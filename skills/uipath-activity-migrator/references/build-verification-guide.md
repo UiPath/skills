@@ -55,7 +55,7 @@ At most 3 iterations. Each iteration:
    |---|---|---|
    | `CS0104` / `BC30561` ambiguous `SelectorStrategy` | Classic and modern enums with the same name both imported | Not a hand fix. Delete `<OUTPUT_DIR>` and rerun Step 4 with `--uia-fix-selector-strategy=true` added to the same flags. The rerun reuses the Step 3 analyze (Rule 4 names it as the exception), counts as one iteration, and needs no question before the delete: the skill created that folder in this session |
    | Missing type from a package reported as `TYPE-MISSING` or `RESTORE-INCOMPATIBLE-PACKAGE` | Package has no Windows version | Needs attention. Report the activities; do not stub them |
-   | Expression compile error in an unchanged expression (`BC30451`, `CS0103` on a variable) | Legacy-only API or implicit `mscorlib` type | Fix the expression with the equivalent .NET 8 API. Keep the change minimal |
+   | Expression compile error in an unchanged expression (`BC30451`, `CS0103` on a variable) | Legacy-only API or implicit `mscorlib` type | Fix the expression with the equivalent API of the Windows framework (modern .NET). Keep the change minimal |
    | Error inside an activity the migrator generated (Assign, Sequence, Application Card) | Migration defect | Needs attention, with the activity name; do not rewrite the generated construct blind |
    | Anything else | Unknown | Ask one yes/no question: what would change, in which file and activity, and why it should clear the error. Yes applies that one targeted fix and counts one iteration; no makes it a needs-attention item |
 

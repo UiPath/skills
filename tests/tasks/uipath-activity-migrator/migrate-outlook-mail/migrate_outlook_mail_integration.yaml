@@ -16,7 +16,7 @@ description: >
   the configured ConnectionId. Graded on the migrated artifact (package pins,
   modern tags, no classic Outlook tags, the trigger still in place, the
   ConnectionId on every migrated activity), an untouched source, and a build
-  the harness runs itself. Windows only: the migrator is a .NET 8 desktop tool
+  the harness runs itself. Windows only: the migrator is a .NET desktop tool
   and the build needs Helm. The runtime check is declined in the prompt because
   the connection is synthetic. Nightly only: the windows tag routes it to
   daily-windows.ps1, and the PR gate filters on smoke.

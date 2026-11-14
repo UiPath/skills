@@ -9,7 +9,7 @@ How the skill obtains, caches, verifies, and updates `UiPath.Upgrade.exe`. The s
 | Public download | `https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip` |
 | Also available from | Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool; Customer Portal (`https://customerportal.uipath.com/`) |
 | Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
-| Runtime | Windows, .NET 8: `Microsoft.NETCore.App 8.x` and `Microsoft.WindowsDesktop.App 8.x` (the .NET Desktop Runtime 8 installer provides both) |
+| Runtime | Windows and the .NET Desktop Runtime of the major version the build targets, recorded in `UiPath.Upgrade.runtimeconfig.json` next to the exe |
 | Version | `UiPath.Upgrade.exe version` prints it (GA line `25.10.x`) |
 | Freshness signal | The URL is unversioned. The server's `Last-Modified` header is the only change signal; the script stores it, reports `update: true` when it changes, and re-downloads on an install run |
 
@@ -63,7 +63,7 @@ The tool is a zip: placing it needs no installer and no elevation. The `Extensio
 The last stdout line is one JSON object.
 
 ```json
-{"status":"ok","exe":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","version":"25.10.0","source":"cached","runtime":"8.0.11"}
+{"status":"ok","exe":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","version":"25.10.0","source":"cached"}
 ```
 
 | Field | Values |
@@ -103,7 +103,7 @@ For air-gapped machines or when both downloaders are blocked:
 4. Set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` so the script never tries the network.
 5. Rerun the acquisition script. Expected: `status: ok`, `source: env` or `cached`.
 
-Runtime missing: install the .NET Desktop Runtime 8 (x64) from `https://dotnet.microsoft.com/download/dotnet/8.0`, then rerun. The script checks the one place the migrator loads its runtime from: `DOTNET_ROOT_X64` or `DOTNET_ROOT` while one is set; otherwise the install location the .NET installer registers, else `%ProgramFiles%\dotnet`. It never uses the `dotnet` on `PATH`, which the migrator ignores. Verify by rerunning the script, which checks those same places:
+Runtime missing (`runtime-missing`): the tool did not start because the .NET Desktop Runtime its build targets is not installed where .NET's launcher looks. The message names the version and the fix; apply it, then verify by rerunning the script:
 
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
