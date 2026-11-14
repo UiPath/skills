@@ -121,7 +121,7 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5. Only when step 4 reports BPMN_PARSE_ERROR: No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: lay out the diagram, then run step 4 again
+# 5. Only when step 4 reports BPMN_PARSE_ERROR with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: lay out the diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn
 ```
 
@@ -131,7 +131,8 @@ uip maestro bpmn format <Name>.bpmn
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
-  `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`. Only then run step 5, run step 4
+  `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
+  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5, run step 4
   again, and tell the user that the canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
