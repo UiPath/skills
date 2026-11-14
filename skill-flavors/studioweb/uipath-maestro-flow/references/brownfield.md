@@ -119,3 +119,7 @@ In Studio Web the target `.flow` is the source: use the round trip in
 <!--skill-flavor:placeholder-flag-sdk-upgrade:start-->
 or tell the user, since Studio Web owns the SDK copy).
 <!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
+
+<!--skill-flavor:layout-edit-sdk-upgrade:start-->
+tell the user, since Studio Web owns the SDK copy and the merged `.flow` is never edited by hand.
+<!--skill-flavor:layout-edit-sdk-upgrade:end-->
