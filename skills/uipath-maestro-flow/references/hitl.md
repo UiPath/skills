@@ -161,7 +161,10 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   field) comes back in the field's `extra`, for instance
   `extra: { variable: 'vars.order.note' }`. Compile writes it back as it
   was, so you can edit the node; keep `extra` as decompile printed it.
-  Never add `extra` to a field you write: use the typed keys above.
+  To change a key that rides in `extra`, change it in `extra`: setting the
+  typed option of the same name next to it is refused
+  (`HITL_FIELD_EXTRA_CONFLICT`). Never add `extra` to a field you write: use
+  the typed keys above.
   `flow decompile` still warns that a key "cannot write back" for a value
   the platform refuses or drops itself (a `colSpan` off the grid, an
   unknown key inside `options`); editing that node drops that key.
