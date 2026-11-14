@@ -72,6 +72,14 @@ is not published yet, so it has no folder. Write it with
 }))
 ```
 
+- **Or name the sibling by project** (an SDK that ships builder-sdk#2028):
+  `publishedFunction({ location: 'in-solution', project: '<FunctionProject>', inputs })`. `compile` and `check` read `key` and `projectId` from
+  `resources/solution_folder/process/function/<Project>.json` (and `returns`
+  from its `entry-points.json` when you declare none), so you copy neither id.
+  They refuse a project the solution lacks (`IN_SOLUTION_PROJECT_NOT_FOUND`,
+  with the nearest name) and the wrong builder for its type
+  (`IN_SOLUTION_WRONG_BUILDER`, which names the right call). Refresh the
+  solution's resources first.
 - **Where the two ids come from.**
 <!--skill-flavor:function-sibling-register:start-->
   Register the sibling and refresh resources

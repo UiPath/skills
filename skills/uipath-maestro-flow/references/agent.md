@@ -180,6 +180,14 @@ first.
 }))
 ```
 
+On an SDK that ships builder-sdk#2028, name the sibling by project instead
+of copying the two ids: `agent({ location: 'in-solution', project:
+'<AgentProject>', inputs, flavour: 'coded' })`. `compile` and `check` read
+`key`, `projectId` and (when you declare none) `returns` from the resource
+file and `entry-points.json`, wherever the resource landed (`process/agent/`
+or `process/function/`). They refuse `publishedFunction()` on an agent with
+`IN_SOLUTION_WRONG_BUILDER`.
+
 An in-solution agent intentionally has no `folderPath`. Its generated binding
 uses the bare local resource key, and its definition carries the sibling
 project id. The SDK checker rejects a missing project id or a published agent
