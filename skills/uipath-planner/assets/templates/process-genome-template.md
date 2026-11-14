@@ -55,6 +55,8 @@ flowchart TB
 
 Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
 
+*Only when the Source Map holds an as-is process map — otherwise delete this line:* The source as it runs, and what each of its parts becomes: Source Map, As-is process map.
+
 *When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*
 
 ## Handoffs
@@ -65,9 +67,50 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 ## Platform Dependencies
 
-| Resource | Type | Shared by | Purpose |
-|----------|------|-----------|---------|
-| {e.g. InvoiceQueue} | Queue | {components} | {purpose} |
+{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is *[Inferred]*, or the Configuration Question that asks it.}
+
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| {e.g. InvoiceQueue} | {one invoice} | {InvoiceNumber: Text, Amount: Number} | {InvoiceNumber, on} | {2} | {component 1} | {component 2} |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| {e.g. ErpBaseUrl} | {Text / Integer / Bool / Secret} | {fixed value, or Configuration Question N; never a secret} | {components} | {what it is for} |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+
+### Data Fabric entities
+
+| Entity | Fields | Written by | Read by |
+|--------|--------|------------|---------|
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| {e.g. DailyIntake} | {component 1} | {Time / Queue / Event} | {weekdays 07:00, Europe/Berlin; or the queue; or the event} | {1} |
+
+### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
 
 ## Configuration Questions
 
@@ -154,9 +197,13 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 ## Deployment
 
-- **Packaging:** {single solution (`uipath-solution`) / independent packages} — {solution name}
-- **Entry points and triggers:** {schedule, queue trigger, connector trigger, manual}
-- **Environments:** {folders, tenants, feeds}
+- **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
+- **Packaging and route:** {single solution (`uipath-solution`) / independent packages} — {solution name}; {each library and the feed it is published to, before its consumers}
+- **Entry points:** {each process's entry point; how each starts: Platform Dependencies, Triggers}
+- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; machine prerequisites}
+- **Robots:** {the robot account, by persona, each process runs as}
+- **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
+- **Logging and retention:** {where the runs log; data kept out of the logs; log and queue-item retention}
 
 ## Complexity
 
@@ -175,10 +222,31 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
-| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
+| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
 | Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
+
+### As-is process map
+
+*Only when the rebuild changes the source's shape (extracted genome guide § Source Map, the as-is process map); otherwise delete this block.*
+
+The source as it runs, and what each of its parts becomes.
+
+```mermaid
+flowchart TB
+  S1["⏰ {source unit}<br/>→ [1]"]
+  SQ[("{source queue}")]
+  S2["{n} {source units}<br/>→ [2]"]
+  S3["{source unit}<br/>→ part of [1]"]
+  S4["{source unit}<br/>→ not rebuilt: {row}"]
+  S1 -->|"{adds items}"| SQ
+  SQ -->|"{takes items}"| S2
+  S1 -->|"{call}"| S3
+  S2 -.->|"{file or mail passed}"| S4
+```
+
+Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file or mail.

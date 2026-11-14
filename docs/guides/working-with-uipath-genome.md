@@ -1,8 +1,8 @@
 # Working with UiPath genomes
 
-A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
+A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process, with a readiness file beside it: everything to settle before the build. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
 
-That leaves you three things to focus on: the review of the genome, the answers to its questions, and the yes before anything runs on a real application.
+That leaves you three things to focus on: the review of the genome, the answers in its readiness file, and the yes before anything runs on a real application.
 
 Use a genome to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
@@ -13,10 +13,10 @@ A genome is a PDD and an SDD in one, written for the agent that builds it. When 
 | Question | Sections | What the build does with them |
 | --- | --- | --- |
 | What it is | Overview, Target Applications | Machine setup and network access go to the open items |
-| How it is built | Build With, Platform Dependencies, Interface, Configuration Questions | Each part goes to its UiPath skill; the open values are asked before anything is written |
+| How it is built | Build With, Platform Dependencies, Interface, Configuration Questions | Each part goes to its UiPath skill; the resources it declares and hands over (queues, assets, credentials, triggers, connections) are one table per kind, with how and where it runs; the open values are asked before anything is written |
 | What it does | Workflow, Business Rules, Error Handling, Transactional Shape | Builds each step, rule and failure handler; asks how to split work done item by item |
 | When it is done | Acceptance Criteria | Gives each numbered criterion a verdict in the completion report |
-| Where it came from (extracted genomes only) | Source Map | Carries the UI targets and test data over from the source |
+| Where it came from (extracted genomes only) | Source Map | Carries the UI targets and test data over from the source. When the rebuild changes the source's shape, its as-is process map draws the source as it runs, by the Process Map's rules, and marks what each part becomes: a project, part of another, or not rebuilt |
 
 One project gives a component genome. Two or more give a process genome, with the process map, the handoffs between the projects and the deployment, plus one component genome per project.
 
@@ -162,7 +162,7 @@ What that run produced:
 
 *Who does what · the five steps below*
 
-Blue boxes are your turns. Say "take the defaults" in the build request and the questions turn goes away.
+Blue boxes are your turns. With the readiness file filled in and confirmed, or "take the defaults" in the build request, the build asks nothing.
 
 ## Before you start
 
@@ -173,7 +173,7 @@ Blue boxes are your turns. Say "take the defaults" in the build request and the 
 
 ## 1 · Get a genome
 
-Say what you have. The agent writes the genome with `uipath-planner`, checks it and asks what to change. Already have a genome? Go to step 2.
+Say what you have. The agent writes the genome with `uipath-planner`, checks it, writes its readiness file and asks what to change. Already have a genome? Go to step 2.
 
 | You have | Say | The agent |
 | --- | --- | --- |
@@ -184,25 +184,34 @@ Say what you have. The agent writes the genome with `uipath-planner`, checks it 
 
 A request can name its skill: "Use the `uipath-planner` skill to extract a genome from `<folder>`".
 
-You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file. Only this skill changes a genome: the build never does.
+You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several, and one readiness file, `<name>-readiness.md`, beside the genome. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file. Only this skill changes a genome: the build never does. Every edit rewrites the readiness file and keeps what you wrote in it.
 
-## 2 · Review it
+## 2 · Review it and settle what is open
 
 This is your main decision point. The build follows the genome, and the agent never changes it while building. Read these parts, in this order:
 
 1. **Acceptance criteria** — the definition of done. Check that each one is testable on your data.
-2. **Lines marked *[Inferred]*** — the agent's best reading where the source is silent. Confirm or correct them.
-3. **Source defects** — bugs the agent found and verified in the source. By default the rebuild keeps the source's behaviour, bugs included, unless a comment or log text in the source says what was meant, or you decide otherwise. The agent lists the ones that need your decision.
-4. **Configuration questions** — the values the build will ask you for, such as URLs, accounts and settings. Check the list now; you answer it in step 3.
+2. **Lines marked *[Inferred]*** — the agent's best reading where the source is silent. The readiness file lists each one as a reading to confirm or correct.
+3. **Source defects** — bugs the agent found and verified in the source. By default the rebuild keeps the source's behaviour, bugs included, unless a comment or log text in the source says what was meant, or you decide otherwise. The readiness file lists each one still open, those that change a business outcome first.
+4. **Configuration questions** — the values the build needs, such as URLs, accounts and settings, each copied into the readiness file with its default.
 5. **Not covered** — parts of the source that no step rebuilds. Ask now if you want them.
 
-To check a step against the original, the Source Map names the part of the source each step came from.
+To check a step against the original, the Source Map names the part of the source each step came from. When the rebuild merges, splits or drops parts of the source, its as-is process map shows the source as a whole, beside the Process Map.
+
+**Prepare the build.** On the machine that will build, say "Prepare the build of `<name>-genome.md`". The agent starts a build with `uipath-genome` (what is installed, which templates exist, where the source is) and asks each UiPath skill how it would build each capability the genome uses: mail, documents, spreadsheets, databases, applications, connectors. It writes two sections into the readiness file and builds nothing:
+
+- **Architecture decisions**, each with its recommended option: how work done item by item is split, whether each library stays a package of its own, the technology for each capability (for mail: Microsoft 365 over Graph, or the desktop Outlook activities), the framework, where settings live.
+- **Build setup:** every other question the build would ask on that machine.
+
+**Fill in the readiness file** with the people each section names: the engineer and your architect for the architecture, the systems to make reachable, existing projects, the build environment and your development standards; the environment owners for the configuration values; the process owner for the business decisions. Most items carry a default (the recommended option, the question's default, or what the genome builds now), so you write a change only under what is wrong, then your name and the date on the section's `Confirmed:` line. The header counts the items with no default, which the build needs. Start with the systems and the build environment: access takes the longest.
+
+Then say "Apply the readiness answers": the agent writes into the genome what the answers change (a ruling at its step, the split, a technology) and marks each item applied. Skip it and the build does it first.
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent builds with `uipath-genome`, and asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, how to split work done item by item, the project location, XAML or C#, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)).
+Say "Build `<name>-genome.md`". The agent builds with `uipath-genome` and reads the readiness file as your answers. It asks first what the file leaves open, in batches of up to four, each with a recommended answer; with every needed item answered and every section confirmed, it asks nothing, and a question whose options changed since the file was prepared (another machine, other packages) is asked again. The questions cover the genome's open values, how to split work done item by item, the project location, XAML or C#, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)).
 
-A source defect that needs your ruling comes back as a question, with where it is in the source and what it affects. The build also looks for projects that already exist, so a library built for an earlier process is reused instead of built twice, and asks whether each library becomes a package of its own.
+A source defect that needs your ruling and that the readiness file leaves open comes back as a question, with where it is in the source and what it affects. The build also looks for projects that already exist, so a library built for an earlier process is reused instead of built twice, and asks whether each library becomes a package of its own.
 
 For a genome extracted from a project, you can take the source's value wherever the genome has one, so only the values the source lacks, the choices it never had and the build setup are asked: pick that answer to the first question, or say "take the source's values" in the build request.
 
@@ -216,7 +225,7 @@ You get:
 
 ## 4 · Check, run and fix
 
-Before it builds, the agent asks whether it can reach the application, or a comparable test copy of it, and how far it may go there. The recommended answers are the cautious ones: not reachable, and a read-only check with no runs. [Live healing pass](live-healing-pass.md) lists what to tell it, what to ask before the first run, how to question a failure and what the final report must say.
+Before it builds, the agent asks whether it can reach the application, or a comparable test copy of it, and how far it may go there, unless the readiness file already says. The recommended answers are the cautious ones: not reachable, and a read-only check with no runs. [Live healing pass](live-healing-pass.md) lists what to tell it, what to ask before the first run, how to question a failure and what the final report must say.
 
 **Prepare:** open the app in a test environment and sign in yourself, since the agent never types a password. Then keep off the mouse and keyboard: the agent takes over the screen, so a VM or a spare machine works best. When the application is only on another machine, ask for a remote session: the RPA skill then works on an Orchestrator unattended robot there. In your answer, name the window or URL it may use and what it must never close.
 
