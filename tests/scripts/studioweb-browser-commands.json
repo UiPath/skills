@@ -150,6 +150,56 @@
       "login tenant set": 1
     }
   },
+  "uipath-bundles": {
+    "allow": [],
+    "ceiling": {
+      "login": 2,
+      "or": 1,
+      "or kb": 6,
+      "or kb archive": 1,
+      "or kb build": 1,
+      "or kb change-proposal add-comment": 1,
+      "or kb change-proposal close": 1,
+      "or kb change-proposal create": 1,
+      "or kb change-proposal diff": 2,
+      "or kb change-proposal get": 1,
+      "or kb change-proposal list": 1,
+      "or kb change-proposal list-comments": 1,
+      "or kb change-proposal merge": 2,
+      "or kb change-proposal resolve-thread": 2,
+      "or kb change-proposal update": 1,
+      "or kb create": 2,
+      "or kb delete": 1,
+      "or kb download": 2,
+      "or kb file": 1,
+      "or kb get": 1,
+      "or kb history": 1,
+      "or kb list": 1,
+      "or kb publish": 1,
+      "or kb share": 1,
+      "or kb status": 2,
+      "or kb sync": 2,
+      "or kb update": 1,
+      "or kb versions": 1,
+      "or skill-bundles": 5,
+      "or skill-bundles archive": 1,
+      "or skill-bundles create": 2,
+      "or skill-bundles delete": 1,
+      "or skill-bundles download": 3,
+      "or skill-bundles file": 1,
+      "or skill-bundles get": 1,
+      "or skill-bundles history": 1,
+      "or skill-bundles list": 1,
+      "or skill-bundles publish": 2,
+      "or skill-bundles status": 2,
+      "or skill-bundles sync": 1,
+      "or skill-bundles tags delete": 1,
+      "or skill-bundles tags list": 1,
+      "or skill-bundles tags set": 1,
+      "or skill-bundles update": 1,
+      "or skill-bundles versions": 1
+    }
+  },
   "uipath-coded-apps": {
     "allow": [],
     "ceiling": {
@@ -291,8 +341,8 @@
     "ceiling": {
       "agent": 1,
       "codedapp pack": 1,
-      "login": 4,
-      "maestro flow hitl": 4,
+      "login": 3,
+      "maestro flow hitl": 2,
       "traces": 1
     }
   },
@@ -306,39 +356,6 @@
       "login tenant set": 2
     }
   },
-  "uipath-bundles": {
-    "allow": [],
-    "ceiling": {
-      "login": 2,
-      "or": 27,
-      "or kb": 6,
-      "or kb archive": 1,
-      "or kb build": 1,
-      "or kb change-proposal add-comment": 1,
-      "or kb change-proposal close": 1,
-      "or kb change-proposal create": 1,
-      "or kb change-proposal diff": 2,
-      "or kb change-proposal get": 1,
-      "or kb change-proposal list": 1,
-      "or kb change-proposal list-comments": 1,
-      "or kb change-proposal merge": 2,
-      "or kb change-proposal resolve-thread": 2,
-      "or kb change-proposal update": 1,
-      "or kb create": 2,
-      "or kb delete": 1,
-      "or kb download": 2,
-      "or kb file": 1,
-      "or kb get": 1,
-      "or kb history": 1,
-      "or kb list": 1,
-      "or kb publish": 1,
-      "or kb share": 1,
-      "or kb status": 2,
-      "or kb sync": 2,
-      "or kb update": 1,
-      "or kb versions": 1
-    }
-  },
   "uipath-maestro-bpmn": {
     "allow": [
       {
@@ -350,7 +367,7 @@
     "ceiling": {
       "login": 3,
       "login status": 1,
-      "maestro bpmn": 41,
+      "maestro bpmn": 37,
       "maestro bpmn eval": 2,
       "maestro bpmn eval list": 1,
       "maestro bpmn pack": 1,
@@ -393,8 +410,9 @@
     "ceiling": {
       "login": 1,
       "maestro": 1,
-      "maestro flow": 30,
+      "maestro flow": 25,
       "maestro flow eval": 16,
+      "maestro flow extraction check": 5,
       "maestro flow nodes": 1,
       "maestro flow nodes provision": 2,
       "solution pack": 2
