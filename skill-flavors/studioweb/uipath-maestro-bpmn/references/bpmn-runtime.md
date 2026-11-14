@@ -30,3 +30,14 @@
   Needs `@uipath/maestro-builder-sdk` 6.93.9 or later. Studio Web ships its own SDK: when `compile` writes the old manual form (`mode="manual"` with the request as context rows), the run faults, so tell the user that this Studio Web build cannot write a plain HTTP call yet.
   From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
+
+<!--skill-flavor:brownfield-merge-form:start-->
+  In Studio Web, run the round trip of the [Validation loop](../SKILL.md#validation-loop): decompile the target to `.flow-sdk/<Name>.bpmn.ts`, compile that fresh source to `<Draft>/baseline/`, edit, compile the edit to `<Draft>/edited/`, then merge:
+
+  ```bash
+  uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn
+  ```
+
+  Here `merge` takes only `--original`, `--baseline` and `-o`: pass it the compiled edit, never the `.bpmn.ts`.
+  To fix the source after a merge, edit `.flow-sdk/<Name>.bpmn.ts` again and rerun the loop from its step 2, never step 1, which would overwrite the undo copy and the baseline with the merged file.
+<!--skill-flavor:brownfield-merge-form:end-->

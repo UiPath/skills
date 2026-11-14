@@ -65,6 +65,9 @@ A failed search gives `uip`'s reason; fix what it names: log in again for a sess
 - Inputs are keyed by the operation's **declared field names**, flat (`fields.project.key`) or as the natural nested object (`fields: { project: { key } }`); both reach the same wire slot.
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
+  `lookup` imports from `@uipath/maestro-builder-sdk`, not `/bpmn` (`TS2305`). In the string form above write `.by('<Field>', value)`; `.byFullName()` exists only on a prepared module.
+- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<action>', 'referenceID').by('FullName', '<path>')`, then `prepare --resolve referenceID:FullName=<path>`. Never paste an item id.
+- Outlook `send-email`: `message.toRecipients`, `ccRecipients` and `bccRecipients` are ONE comma-separated string, never an array (`CONNECTOR_INPUT … expected string, got object`). Always set `saveAsDraft`: `false` to send, `true` to draft. The definition's default (`true`) is not compiled into the task, and the response (`status: "success"`) does not say which happened.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
 - The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
 
@@ -88,7 +91,7 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `OBJECT_UNPREPARED` | a generic operation's object has no local schema. |
 | `CUSTOM_FIELDS_UNPREPARED` | an input outside the tenant-agnostic snapshot, on a connector that discovers fields per connection. |
 | `BINDING_SELF_NAME` | a binding whose value is its own name. That packs into `bindings_v2.json` as a stub where a connection id belongs, and the deploy is what notices. |
-| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare. |
+| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare (reported by `compile`). |
 | `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
 When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
@@ -100,10 +103,29 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
 ```
 
 `--object`, `--resolve` and `-f NAME=VALUE` compose in a single invocation.
-It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./connectors-local/`.
+It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `./.flow-sdk/bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./.flow-sdk/connectors-local/` (its `--help` names `./bindings.json` and `./connectors-local/`, but it writes under `.flow-sdk/`).
 
-Then re-run `check` and compile.
-`compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
+Then re-run `check` and compile. `compile` reads the `bindings.json` in the source's own directory, so a `.bpmn.ts` outside `.flow-sdk/` compiles with a stand-in connection id, not the one `prepare` bound. Unless the source sits in `.flow-sdk/`, add both flags to every `check` and `compile` of the [validation loop](../SKILL.md#validation-loop):
+
+```bash
+uip maestro bpmn check <SOURCE> --source --connectors-local .flow-sdk/connectors-local
+uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings .flow-sdk/bindings.json --connectors-local .flow-sdk/connectors-local
+```
+
+`check` reads no bindings file, so its `CONNECTION_BINDING_NOT_GUID` warning stays; `compile` is the step that reports a label the bindings file does not declare.
+
+**Bind only an Enabled connection.** List the candidates and check the one you pick:
+
+```bash
+uip is connections list <connector-key> --all-folders --output json   # Id, Name, State, Owner, Folder, FolderKey
+uip is connections ping <connection-id> --output json                 # Data.Status must be "Enabled"
+```
+
+- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <Id>` (or `--connection <Name>`, `--connection-folder <Folder>`). It never picks the default connection for you. Ask the user which one when the request does not say.
+- `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
+- `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
+- Report the bound connection by Name, Owner and Folder, from the `connections list` row whose `Id` is `Data.ConnectionId`.
+- `uip maestro bpmn validate` checks connection bindings against the tenant: pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
 
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
@@ -196,6 +218,7 @@ uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --out
   `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
   A bare `'=subject'` reads nothing: the payload is not at the top level.
 - `folderPath` is deprecated and ignored: the task names its folder by the `folder` binding alone, so drop it.
+- Test Manager (`uipath-uipath-testmanager`) has no event a process can use: the library has none, and `uip is triggers` uppercases its operation names (`Created` → 404 "Event operation 'CREATED' was not found"). Do not author `.eventTrigger()` or `.waitForEvent()` for it; tell the user, and poll with an activity instead.
 
 ## 7. Draft with an unresolved connector
 
@@ -224,7 +247,7 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 | Blocker | What it is | Resolved by |
 | --- | --- | --- |
 | connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `bindings.json` |
-| dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
+| dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./.flow-sdk/connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
 <!--skill-flavor:package-metadata-row:start-->

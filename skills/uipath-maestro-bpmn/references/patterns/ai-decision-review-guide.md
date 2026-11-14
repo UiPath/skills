@@ -32,7 +32,7 @@ export default bpmn('claims-review')
   .var('reviewOutcome', 'string')
   .startEvent('start', { name: 'Claim received', message: 'ClaimReceived' })
   .startAgent('analyze', { name: 'Score claim', process: 'ClaimScorer', folder: 'Shared', outputs: { aiDecision: '=Decision', aiConfidenceLevel: '=Confidence' } })
-  .businessRule('validate', { name: 'Validate decision', process: 'ClaimDecisionRules', folder: 'Shared', outputs: { validationPassed: '=result.Validate.passed' } })
+  .businessRule('validate', { name: 'Validate decision', process: 'ClaimDecisionRules', folder: 'Shared', outputs: { validationPassed: '=result.validate.passed' } })
   // Two routes reach the action: the confident arm falls through, and the review
   // arm's Approve falls through. The join `confidenceGate_join` is merge_gate.
   .choose('confidenceGate', [
@@ -139,7 +139,7 @@ Bind the verifier to a **different model** than the analyzer; the same model has
   A decision's column reads `=result.<Decision>.<column>` ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
 - **`humanReview`**: `.humanTask()`.
   Route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
-- **Review SLA**: a non-interrupting `t.onTimer(…, { interrupting: false }, …)` in the human task's body for reminders; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
+- **Review SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 
 ## Adapting it
 

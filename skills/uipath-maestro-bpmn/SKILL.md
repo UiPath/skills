@@ -22,6 +22,11 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5).
 5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
    After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
+6. A different target system (Document Understanding → agent, Outlook → Gmail) changes a node's type and binding, not the graph; reshape only when the process differs.
+7. You author the process; you never take part in it. Where a step reasons, classifies or extracts at run time, place and bind the node that does it (a UiPath agent, Document Understanding, a business rule); never do that work while authoring or hardcode its result. A bare "agent" in a request means a UiPath agent, never you.
+8. A process given as an image is transcribed 1:1, every item a node and every connector a flow, from a confirmed inventory: read [Authoring from an image](references/image-transcription-guide.md) first.
+9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
+10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
 
 <!--skill-flavor:host-setup:start-->
 
@@ -181,6 +186,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
+| Build or draft from an image: sketch, whiteboard photo, diagram screenshot | transcribed 1:1 | [Authoring from an image](references/image-transcription-guide.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -251,7 +257,7 @@ export default bpmn('approval')
   .sequenceFlow('start', 'approve')
   .sequenceFlow('approve', 'approved')
   .eventSubProcess('failures', { error: true }, (h) =>
-    h.task('record', { set: { outcome: '=js:"FAILED: " + vars.failures_Error.message' } }).endEvent('recorded', { name: 'Failure recorded' }))
+    h.task('record', { set: { outcome: '=js:"FAILED: " + JSON.parse(vars.failures_Error).message' } }).endEvent('recorded', { name: 'Failure recorded' }))
   .build();
 ```
 
@@ -264,7 +270,7 @@ export default bpmn('approval')
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
-  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, and you classify on `.code` / `.message` / `.detail` / `.status` with nothing more written. That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
+  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, with nothing more written. The engine stores a net's capture as a JSON **string**, so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).code` (also `.message`, `.detail`, `.status`, `.category`); `vars.failures_Error.code` reads undefined. A boundary's `errorVar` capture is already an object. That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
@@ -321,10 +327,11 @@ Skipping `refresh` is the most common way to fail `validate` on a process that i
 otherwise correct: see step 7 above.
 
 A process with connector nodes gives `check` more to work with. It reads the connector
-library and the project's `bindings.json` when they are there, and reports a missing
-required input, an unresolved `lookup()`, an unprepared object or a self-naming binding
-*before* compile does — each with the one command that closes it. `--library <dir>` and
-`--connectors-local <dir>` name them explicitly; both are auto-detected otherwise.
+library and the prepared overlay, and reports a missing required input, an unresolved
+`lookup()`, an unprepared object or a self-naming binding *before* compile does — each
+with the one command that closes it. `--library <dir>` and `--connectors-local <dir>` name
+them; `prepare` writes the overlay to `.flow-sdk/connectors-local`, so name it. `check`
+reads no bindings file; `compile` does ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 
 ## Operating a process
 
