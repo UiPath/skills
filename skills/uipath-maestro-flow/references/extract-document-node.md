@@ -46,7 +46,7 @@ that lives in Studio Web and has to be pulled down first — ask them for its UR
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant can run it:** `uip maestro flow extraction check --output json`. An answer other than `Available` stops the loop here, and a check that settles nothing is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is the `<trigger>` in `$vars.<trigger>.output.invoice`, so it comes before the node that reads it.
-3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
+3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#layout-of-the-emitted-flow).
 4. **Connect it in the graph** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 5. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
@@ -161,7 +161,7 @@ The `error` port carries failures. Wire it with `edges create --source-port erro
 
 Extraction that nothing reads is not much use, so the flow usually declares an output carrying it. That takes three steps, and the last one has no CLI command — write it into the `.flow` file directly rather than going looking for a verb that does it.
 
-Declare the output global, then add an End node ([laid out](operate.md#lay-out-the-emitted-flow-first)) and wire the extract node to it:
+Declare the output global, then add an End node ([laid out](operate.md#layout-of-the-emitted-flow)) and wire the extract node to it:
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json

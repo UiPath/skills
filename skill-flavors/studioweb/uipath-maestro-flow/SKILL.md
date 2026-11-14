@@ -96,7 +96,6 @@ uip maestro flow decompile new.flow -o .flow-sdk/new.flow.ts --no-pipeline
 # Add your steps to it:
 uip maestro flow check .flow-sdk/new.flow.ts --source
 uip maestro flow compile .flow-sdk/new.flow.ts -o new.flow
-uip maestro flow format new.flow --output json
 uip maestro flow validate new.flow --output json
 ```
 
