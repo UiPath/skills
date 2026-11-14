@@ -13,8 +13,8 @@ moving later nodes right or down and growing containers only to fit added ones.
 
 A new `.flow` that `compile` wrote straight, with no merge, needs no `format`
 either. For a source with no `.layout()`, `compile` lays out every node the way
-`format` does and gives each its canvas-shape size: a container (a loop, for example) 560 × 320, an
-agent node 288 × 96, every other node 96 × 96.
+`format` does and gives each its canvas-shape size: a container (a loop, for
+example) 560 × 320, an agent node 288 × 96, every other node 96 × 96.
 <!--skill-flavor:operate-format:end-->
 
 <!--skill-flavor:layout-sdk-version:start-->
@@ -168,3 +168,7 @@ connection that is not in the solution fails at run time with a binding error.
 tell the user to chat with it from the Studio Web designer. The host returns no
 chat link.
 <!--skill-flavor:operate-debug-conversational:end-->
+
+<!--skill-flavor:compile-layout-sdk-upgrade:start-->
+or tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:compile-layout-sdk-upgrade:end-->

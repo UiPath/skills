@@ -30,6 +30,16 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
+This needs a `@uipath/maestro-builder-sdk` with builder-sdk#2035. An older SDK
+writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
+96 × 96, not 288 × 96). With such an SDK, run
+`uip maestro flow format <Name>.flow --output json` once on a greenfield file
+(never on a merged or `.layout()` file), and in a `.layout()` give each agent
+node `dim(288, 96)` and each container at least `dim(560, 320)`;
+<!--skill-flavor:compile-layout-sdk-upgrade:start-->
+or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:compile-layout-sdk-upgrade:end-->
+
 `nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
 node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
 author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
