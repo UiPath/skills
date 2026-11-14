@@ -19,7 +19,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 1. Edit the `<Name>.bpmn.ts` source, never the compiled `.bpmn`: the next `compile` overwrites a hand edit, so change the source and rebuild.
 2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (step 4).
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (step 4).
-4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5).
+4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5). When you edit an existing `.bpmn`, add `--baseline <the original .bpmn>`: fix every `(edited)` error, and leave `(pre-existing, not counted)` findings alone unless asked ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 5. After each compile, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
 
 <!--skill-flavor:host-setup:start-->
