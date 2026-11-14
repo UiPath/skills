@@ -11,14 +11,10 @@ positions of the user, and `merge` keeps them and places each added node,
 moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
-A new `.flow` that `compile` wrote straight, with no merge, is different.
-`compile` writes a placeholder `ui.position` on each node, all on one flat row,
-and no top-level `layout` block. So run `format` once on such a file, before
-the user opens it, unless its source sets `.layout()` (below):
-
-```bash
-uip maestro flow format <Name>.flow --output json
-```
+A new `.flow` that `compile` wrote straight, with no merge, needs no `format`
+either. For a source with no `.layout()`, `compile` lays out every node the way
+`format` does and gives each its canvas-shape size: a container (a loop, for example) 560 × 320, an
+agent node 288 × 96, every other node 96 × 96.
 <!--skill-flavor:operate-format:end-->
 
 <!--skill-flavor:layout-sdk-version:start-->
