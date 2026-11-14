@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""`uip` mock: answers `uip maestro flow extraction check` with Unknown.
+
+The test tenant has document extraction on, so this is the only way to see the
+skill's Unknown path. Every other call runs the real `uip` later on PATH.
+
+Answering creates mocks/check-answered, so the task can tell the agent got
+the fake answer and not the real one.
+"""
+
+import json
+import os
+import sys
+
+if sys.argv[1:5] == ["maestro", "flow", "extraction", "check"]:
+    open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-answered"), "w").close()
+    print(json.dumps({
+        "Result": "Success",
+        "Code": "ExtractionCheckSuccess",
+        "Data": {
+            "Available": False,
+            "Status": "Unknown",
+            "Reason": "The extraction service answered 403, so availability could not be determined.",
+            "Tenant": "DefaultTenant",
+        },
+        "Instructions": "The extraction service answered 403, so availability could not be determined. Tell the user, and do not add an Extract document node to the flow.",
+    }, indent=2))
+    sys.exit(0)
+
+me = os.path.realpath(__file__)
+for path_dir in os.environ.get("PATH", "").split(os.pathsep):
+    real = os.path.join(path_dir or ".", "uip")
+    if os.path.isfile(real) and os.access(real, os.X_OK) and os.path.realpath(real) != me:
+        os.execv(real, [real, *sys.argv[1:]])
+sys.exit("uip mock: real uip not found later on PATH")
