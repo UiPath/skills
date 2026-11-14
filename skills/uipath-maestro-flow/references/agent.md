@@ -201,10 +201,14 @@ ids:
 }))
 ```
 
-- `compile` and `check` find the sibling's resource file under
+- `compile`, `check` and `flow merge` find the sibling's resource file under
   `resources/solution_folder/process/` themselves, and write its `key` and
   `projectId` into the `.flow`. Studio Web's Run node gets its `projectId`
-  without you setting it.
+  without you setting it. Run them from inside the solution: they look for
+  the nearest folder at or above the flow that holds the `.uipx`, and refuse
+  `project` without one (`IN_SOLUTION_NO_SOLUTION`).
+- In a decompiled flow, the step keeps the `key` and `projectId` decompile
+  wrote. Switching it to `project` is optional; both forms merge back.
 - When the step declares no `returns`, they are read from the sibling's
   `entry-points.json` output schema. An RPA project that was never built, or
   an API workflow whose entry point has `output: null`, has none there:
