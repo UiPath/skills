@@ -32,12 +32,5 @@
 <!--skill-flavor:sdk-http-manual:end-->
 
 <!--skill-flavor:brownfield-merge-form:start-->
-  In Studio Web, run the round trip of the [Validation loop](../SKILL.md#validation-loop): decompile the target to `.flow-sdk/<Name>.bpmn.ts`, compile that fresh source to `<Draft>/baseline/`, edit, compile the edit to `<Draft>/edited/`, then merge:
-
-  ```bash
-  uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn
-  ```
-
-  Here `merge` takes only `--original`, `--baseline` and `-o`: pass it the compiled edit, never the `.bpmn.ts`.
-  To fix the source after a merge, edit `.flow-sdk/<Name>.bpmn.ts` again and rerun the loop from its step 2, never step 1, which would overwrite the undo copy and the baseline with the merged file.
+  In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`.
 <!--skill-flavor:brownfield-merge-form:end-->

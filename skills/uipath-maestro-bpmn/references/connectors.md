@@ -91,7 +91,7 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `OBJECT_UNPREPARED` | a generic operation's object has no local schema. |
 | `CUSTOM_FIELDS_UNPREPARED` | an input outside the tenant-agnostic snapshot, on a connector that discovers fields per connection. |
 | `BINDING_SELF_NAME` | a binding whose value is its own name. That packs into `bindings_v2.json` as a stub where a connection id belongs, and the deploy is what notices. |
-| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare (reported by `compile`). |
+| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare (reported by `compile`, and by `check` given `--bindings`). |
 | `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
 When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
@@ -105,27 +105,26 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
 `--object`, `--resolve` and `-f NAME=VALUE` compose in a single invocation.
 It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `./.flow-sdk/bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./.flow-sdk/connectors-local/` (its `--help` names `./bindings.json` and `./connectors-local/`, but it writes under `.flow-sdk/`).
 
-Then re-run `check` and compile. `compile` reads the `bindings.json` in the source's own directory, so a `.bpmn.ts` outside `.flow-sdk/` compiles with a stand-in connection id, not the one `prepare` bound. Unless the source sits in `.flow-sdk/`, add both flags to every `check` and `compile` of the [validation loop](../SKILL.md#validation-loop):
+Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass both paths:
 
 ```bash
-uip maestro bpmn check <SOURCE> --source --connectors-local .flow-sdk/connectors-local
-uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings .flow-sdk/bindings.json --connectors-local .flow-sdk/connectors-local
+uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local
 ```
 
-`check` reads no bindings file, so its `CONNECTION_BINDING_NOT_GUID` warning stays; `compile` is the step that reports a label the bindings file does not declare.
+`check` reads `.flow-sdk/bindings.json` only when given `--bindings .flow-sdk/bindings.json`; without it, its `CONNECTION_BINDING_NOT_GUID` warning stays.
 
 **Bind only an Enabled connection.** List the candidates and check the one you pick:
 
 ```bash
-uip is connections list <connector-key> --all-folders --output json   # Id, Name, State, Owner, Folder, FolderKey
-uip is connections ping <connection-id> --output json                 # Data.Status must be "Enabled"
+uip is connections list <CONNECTOR_KEY> --all-folders --output json   # Id, Name, State, Owner, Folder, FolderKey
+uip is connections ping <CONNECTION_ID> --output json                 # Data.Status must be "Enabled"
 ```
 
 - With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <Id>` (or `--connection <Name>`, `--connection-folder <Folder>`). It never picks the default connection for you. Ask the user which one when the request does not say.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
-- Report the bound connection by Name, Owner and Folder, from the `connections list` row whose `Id` is `Data.ConnectionId`.
-- `uip maestro bpmn validate` checks connection bindings against the tenant: pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
+- Report the bound connection by Name, Owner and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId`.
+- `uip maestro bpmn validate` checks connection bindings against the tenant: outside Studio Web, pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
 
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
@@ -160,7 +159,7 @@ This covers a connector the Flow node catalog does not carry at all (Test Manage
 
 ```
   source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog, refreshed with `uip maestro flow registry pull --force`, serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step or agent tool needs the registry's node definition).
-prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
+prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → .flow-sdk/connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
 prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
 ```
 
@@ -176,8 +175,8 @@ A draft that cannot wait for access takes the form in §7.
 The identity comes from the catalog, never from the connector's OpenAPI document:
 
 ```bash
-uip is connections list <connector-key> --all-folders --output json      # the connection id
-uip is activities list <connector-key> --output json                     # Name + ObjectName + MethodName + IsCurated
+uip is connections list <CONNECTOR_KEY> --all-folders --output json      # the connection id
+uip is activities list <CONNECTOR_KEY> --output json                     # Name + ObjectName + MethodName + IsCurated
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <ObjectName> --operation <Verb> \
     --input-details '{}' --output json                                     # the V2 element (Data.V2.ElementXml), with the describe

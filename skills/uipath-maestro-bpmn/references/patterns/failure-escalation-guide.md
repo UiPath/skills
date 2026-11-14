@@ -10,7 +10,7 @@ Change one and you are building something else.
 
 - **It covers by placement, not by wiring.** The net is an `.eventSubProcess()` with no flow in or out.
   Place it in a container and every unhandled activity failure inside routes to it, with nothing attached to any task: no `onError` in any activity's body.
-- **The engine seeds the error context.** The net's start captures the caught error into `vars.<net>_Error` by default, so the classification reads real values with no mapping authored. The engine stores it as a JSON string: read a field through `JSON.parse(vars.failures_Error)`, never `vars.failures_Error.<field>`.
+- **The engine seeds the error context.** The net's start captures the caught error into `vars.<net>_Error` by default, so the classification reads real values with no mapping authored. It holds a JSON string: read a field through `JSON.parse(vars.failures_Error)` ([Events and timers](../bpmn-runtime.md#events-and-timers)).
 - **It is interrupting and terminal, so outcomes must be named.** When the net fires, the normal path stops and the instance records **Completed**, not Faulted.
   Without a named end event on every branch, a handled failure is indistinguishable from a success.
 - **Code-specific nets match before the catch-all.** Both can sit in one container, so a known error gets a precise response while everything else still lands somewhere.
@@ -77,7 +77,7 @@ At process level it guards every step above, and every sub-process nested under 
 | `endOps` | `.endEvent()`, named | Mechanism |
 
 The pattern declares no process variables of its own.
-The capture is `vars.<net>_Error` (here `vars.failures_Error`), not `vars.Error`: the designer gives every capture its own id, and the SDK follows it. It holds a JSON string, so every read goes through `JSON.parse`.
+The capture is `vars.<net>_Error` (here `vars.failures_Error`), not `vars.Error`: the designer gives every capture its own id, and the SDK follows it.
 `errorVar` renames it.
 Its fields are lowercase: `code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`.
 `category` is `User`, `System`, or `Deployment`; business errors arrive as `User`.

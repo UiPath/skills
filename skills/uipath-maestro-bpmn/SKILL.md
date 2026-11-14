@@ -186,6 +186,7 @@ Match one name — do not read either end to end — then read the span it gives
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
+| Discover types or save registry evidence only, no authoring | `registry` pull, list, search, get | [Discovery only](references/bpmn-runtime.md#registry-extension-types) | — |
 | Build or draft from an image: sketch, whiteboard photo, diagram screenshot | transcribed 1:1 | [Authoring from an image](references/image-transcription-guide.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
@@ -270,7 +271,7 @@ export default bpmn('approval')
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
-  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, with nothing more written. The engine stores a net's capture as a JSON **string**, so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).code` (also `.message`, `.detail`, `.status`, `.category`); `vars.failures_Error.code` reads undefined. A boundary's `errorVar` capture is already an object. That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
+  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, with nothing more written. It holds a JSON string: read a field through `JSON.parse(vars.failures_Error)` ([Events and timers](references/bpmn-runtime.md#events-and-timers)). That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
@@ -318,6 +319,8 @@ uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
 
 Editing an existing process: first `decompile` it ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), edit, run both `check` lines, then `merge` in place of the `compile` and `format` lines, then `refresh` and `validate`; `format` only when one of them reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, then run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset.
+
+With connector nodes, run `check` and `compile` from the directory `prepare` ran in ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 <!--skill-flavor:validation-loop:end-->
 
 `check` owns source and graph invariants. Product validation owns the compiled
@@ -330,8 +333,8 @@ A process with connector nodes gives `check` more to work with. It reads the con
 library and the prepared overlay, and reports a missing required input, an unresolved
 `lookup()`, an unprepared object or a self-naming binding *before* compile does — each
 with the one command that closes it. `--library <dir>` and `--connectors-local <dir>` name
-them; `prepare` writes the overlay to `.flow-sdk/connectors-local`, so name it. `check`
-reads no bindings file; `compile` does ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
+them; both default to `.flow-sdk/` under the current directory, where `prepare` writes them.
+`check` reads the bindings only given `--bindings`; `compile` reads them by default ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 
 ## Operating a process
 

@@ -143,14 +143,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   Place `.eventSubProcess()` in the scope whose failure it should absorb.
 
 <!-- RULE:bpmn.activity.retry -->
-- Retry is activity configuration: `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration }` on the activity, with `errorMapping: [{ code, retryable: true }]` per transient code or `allErrors: true`.
+- Retry is activity configuration: `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }` on the activity. Set `allErrors: true` inside `retry`, or add `errorMapping: [{ code, retryable: true }]` per transient code beside it.
   It compiles to `<uipath:retry maxRetryCount retryBackoff …>` in the activity's extensions, the same setting as Studio Web's Error handling → Retry. With neither `allErrors` nor a `retryable` code it retries nothing. `maxDuration` caps each delay, not the total time.
   Never draw a retry loop for a failing activity. A `.goto()` that re-runs a whole business block, such as a parallel block ([Draft skeleton](draft-skeleton.md)), is a process step, not a retry.
 
 <!-- RULE:bpmn.event.error-context -->
 - The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
   `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` captures `vars.failures_Error` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
-  The engine stores that capture as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. A boundary's `errorVar` capture is an object with the lowercase fields; a script task's `Error` row is an object with PascalCase keys ([Script tasks](#script-tasks)); read both directly. Other tasks' `Error` rows were not checked. `vars.Error` never resolves.
+  The engine always stores this default capture as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. A boundary's `errorVar` capture is an object with the lowercase fields; a script task's `Error` row is an object with PascalCase keys ([Script tasks](#script-tasks)); read both directly. Other tasks' `Error` rows were not checked. `vars.Error` never resolves.
   The platform validator needs the declaration: a `vars.<id>` read with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else. Note the runtime resolves `vars.<id>` in ONE flat scope whatever a declaration's `elementId` says, so two captures cannot share an id — that is why the default is per-net.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable.
 
@@ -162,9 +162,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.http.webhook-url -->
 - A request that must reach a connection's webhook (to fire a `waitForEvent` on an HTTP Webhook connection, say) is a manual `.http()` with the webhook URL as a literal `url` and no `connection`: `.http('ping', { url: '<WEBHOOK_URL>', method: 'GET' })`.
-  Get the URL from `uip is webhooks config <connector-key> --connection-id <id> --output json`: it is `Data.WebhookUrl`.
+  Get the URL from `uip is webhooks config <CONNECTOR_KEY> --connection-id <id> --output json`: it is `Data.WebhookUrl`.
   Never use `uip is connections base-url` for it; that is the connection's API base, a different address, so the event never arrives.
-  If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <connector-key> --output json`.
+  If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <CONNECTOR_KEY> --output json`.
   Only a connection of the HTTP Webhook connector (`uipath-http-webhook`) can fire this event.
 
 <!-- RULE:bpmn.orchestrator.names -->
@@ -222,7 +222,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.http.connector -->
 - An endpoint the connector catalog has no activity for, called through an existing connection, is
   `.http(id, { method, url, connection, folder, connectorKey })`.
-  - `url` is relative to the connection's base URL (`uip is connections base-url <connection-id> --output json`); an absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
+  - `url` is relative to the connection's base URL (`uip is connections base-url <CONNECTION_ID> --output json`); an absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
   - `connectorKey` is the connection's connector key from `uip is connections list --all-folders --output json`; omit it only for a `uipath-uipath-http` connection. A wrong or missing one passes `check` and fails `validate` with `MISSING_BINDING`.
   - `connection` and `folder` name `.binding()`s holding the connection's `Id` and its `FolderKey` (or what `prepare` wrote); `folder` is required (`EMPTY_REQUIRED_FIELD folderKey`).
   - `outputVar` (`<id>_response`) is the body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
@@ -233,6 +233,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   .http('rateLimit', { method: 'GET', url: '/rate_limit', connection: 'gh', folder: 'ghFolder', connectorKey: 'uipath-microsoft-github' })
   ```
 
+<!-- RULE:bpmn.http.url-placeholders -->
 - Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=`-expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
@@ -390,14 +391,15 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.activity.discovery-only -->
 - **Discovery only.** When the request asks to discover types or save registry evidence before authoring, or says not to author yet, run no `init`, write no `.bpmn.ts`, and read no other reference.
-  Save each command's raw JSON, one file per command, in the directory the request names, else `registry-evidence/` outside `<Project>` (in Studio Web, `/tmp/registry-evidence/`, since nothing under `/solution` may be deleted):
+  Save each command's raw JSON, one file per command, in `<EVIDENCE_DIR>`: the directory the request names, else `registry-evidence/` outside `<Project>` (in Studio Web, `/tmp/registry-evidence/`, since nothing under `/solution` may be deleted):
 
   ```bash
-  mkdir -p registry-evidence
-  uip maestro bpmn registry pull --output json > registry-evidence/pull.json
-  uip maestro bpmn registry list --limit -1 --output json > registry-evidence/list.json
-  uip maestro bpmn registry search <TERM> --output json > registry-evidence/search-<TERM>.json
-  uip maestro bpmn registry get <TYPE_NAME> --output json > registry-evidence/get-<TYPE_NAME>.json
+  E=<EVIDENCE_DIR>
+  mkdir -p "$E"
+  uip maestro bpmn registry pull --output json > "$E/pull.json"
+  uip maestro bpmn registry list --limit -1 --output json > "$E/list.json"
+  uip maestro bpmn registry search <TERM> --output json > "$E/search-<TERM>.json"
+  uip maestro bpmn registry get <TYPE_NAME> --output json > "$E/get-<TYPE_NAME>.json"
   ```
 
   Run `get` for each type the request needs, then stop and report the type names found.
