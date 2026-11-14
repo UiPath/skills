@@ -1,0 +1,65 @@
+task_id: skill-rules-extraction-integration-citations-resolve
+description: >
+  Agent extracts a decision table from a policy that comes with digitizer
+  positions (`document.md` plus `dom.json`) and must cite each row by page and
+  verbatim quote, then turn the quotes into boxes with resolve-refs.mjs. Grades
+  that the script ran and that every uipdm:sourceRef box is exactly a word-run
+  box from dom.json, so a box written or estimated by hand fails. The table's
+  outcomes are graded by the outcome-and-traps task.
+tags: [uipath-rules-extraction, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/policy_digitized
+      mount_point: policy
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named ReimbursementRules from our
+  equipment reimbursement policy. The digitizer already ran: `./policy/document.md`
+  is the page-marked text and `./policy/dom.json` holds the word positions.
+  Record where in the policy each row was read.
+
+  Use these names so we can wire the rule into a workflow:
+  - Inputs: `serviceDays` (number), `requestAmount` (number),
+    `hasDirectorPreApproval` (boolean), `hasMedicalAccommodation` (boolean).
+  - Output: `outcome` (string), one of "Approve", "Deny", "Refer".
+
+  Nobody is available to answer questions: at every checkpoint accept your own
+  proposed answer. There is no tenant, so do not run `uip rules debug`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules-extraction skill"
+    skill_name: "uipath-rules-extraction"
+    expected_skill: "uipath-rules-extraction"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved quotes to boxes with resolve-refs.mjs"
+    tool_name: "Bash"
+    command_pattern: 'node\s+"?[^\s"]*resolve-refs\.mjs'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every uipdm:sourceRef box is a word-run box from dom.json, none written by hand"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py refs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

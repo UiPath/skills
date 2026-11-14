@@ -1,0 +1,1617 @@
+{
+ "dataContractVersion": "synthetic-1",
+ "pages": [
+  {
+   "pageIndex": 0,
+   "size": [
+    0.0,
+    0.0,
+    2295.0,
+    2970.0
+   ],
+   "sections": [
+    {
+     "type": "Paragraph",
+     "wordGroups": [
+      {
+       "type": "Sentence",
+       "words": [
+        {
+         "box": [
+          200.0,
+          200.0,
+          22.0,
+          44.0
+         ],
+         "text": "#",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          236.0,
+          132.0,
+          44.0
+         ],
+         "text": "Remote",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          382.0,
+          88.0,
+          44.0
+         ],
+         "text": "Work",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          484.0,
+          198.0,
+          44.0
+         ],
+         "text": "Equipment",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          696.0,
+          286.0,
+          44.0
+         ],
+         "text": "Reimbursement",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          996.0,
+          132.0,
+          44.0
+         ],
+         "text": "Policy",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          260.0,
+          200.0,
+          154.0,
+          44.0
+         ],
+         "text": "Version",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          368.0,
+          88.0,
+          44.0
+         ],
+         "text": "3.0,",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          470.0,
+          198.0,
+          44.0
+         ],
+         "text": "effective",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          682.0,
+          154.0,
+          44.0
+         ],
+         "text": "January",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          850.0,
+          22.0,
+          44.0
+         ],
+         "text": "1",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          886.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          944.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1024.0,
+          154.0,
+          44.0
+         ],
+         "text": "current",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1192.0,
+          132.0,
+          44.0
+         ],
+         "text": "fiscal",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1338.0,
+          110.0,
+          44.0
+         ],
+         "text": "year.",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          320.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "##",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          320.0,
+          258.0,
+          44.0,
+          44.0
+         ],
+         "text": "1.",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          320.0,
+          316.0,
+          242.0,
+          44.0
+         ],
+         "text": "Eligibility",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          380.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "An",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          258.0,
+          176.0,
+          44.0
+         ],
+         "text": "employee",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          448.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          506.0,
+          176.0,
+          44.0
+         ],
+         "text": "eligible",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          696.0,
+          66.0,
+          44.0
+         ],
+         "text": "for",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          776.0,
+          286.0,
+          44.0
+         ],
+         "text": "reimbursement",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1076.0,
+          88.0,
+          44.0
+         ],
+         "text": "only",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1178.0,
+          110.0,
+          44.0
+         ],
+         "text": "after",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1302.0,
+          220.0,
+          44.0
+         ],
+         "text": "completing",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1536.0,
+          44.0,
+          44.0
+         ],
+         "text": "at",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1594.0,
+          110.0,
+          44.0
+         ],
+         "text": "least",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1718.0,
+          44.0,
+          44.0
+         ],
+         "text": "90",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1776.0,
+          88.0,
+          44.0
+         ],
+         "text": "days",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1878.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1936.0,
+          176.0,
+          44.0
+         ],
+         "text": "service.",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          440.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "##",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          440.0,
+          258.0,
+          44.0,
+          44.0
+         ],
+         "text": "2.",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          440.0,
+          316.0,
+          176.0,
+          44.0
+         ],
+         "text": "Approval",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          440.0,
+          506.0,
+          132.0,
+          44.0
+         ],
+         "text": "limits",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          500.0,
+          200.0,
+          22.0,
+          44.0
+         ],
+         "text": "A",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          236.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          404.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          462.0,
+          88.0,
+          44.0
+         ],
+         "text": "$500",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          564.0,
+          44.0,
+          44.0
+         ],
+         "text": "or",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          622.0,
+          88.0,
+          44.0
+         ],
+         "text": "less",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          724.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          782.0,
+          198.0,
+          44.0
+         ],
+         "text": "approved.",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          560.0,
+          200.0,
+          22.0,
+          44.0
+         ],
+         "text": "A",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          236.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          404.0,
+          110.0,
+          44.0
+         ],
+         "text": "above",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          528.0,
+          88.0,
+          44.0
+         ],
+         "text": "$500",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          630.0,
+          66.0,
+          44.0
+         ],
+         "text": "and",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          710.0,
+          44.0,
+          44.0
+         ],
+         "text": "up",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          768.0,
+          44.0,
+          44.0
+         ],
+         "text": "to",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          826.0,
+          132.0,
+          44.0
+         ],
+         "text": "$2,000",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          972.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1030.0,
+          176.0,
+          44.0
+         ],
+         "text": "approved",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1220.0,
+          88.0,
+          44.0
+         ],
+         "text": "only",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1322.0,
+          88.0,
+          44.0
+         ],
+         "text": "when",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1424.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1504.0,
+          176.0,
+          44.0
+         ],
+         "text": "employee",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1694.0,
+          66.0,
+          44.0
+         ],
+         "text": "has",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1774.0,
+          154.0,
+          44.0
+         ],
+         "text": "written",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1942.0,
+          264.0,
+          44.0
+         ],
+         "text": "pre-approval",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          2220.0,
+          88.0,
+          44.0
+         ],
+         "text": "from",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          2322.0,
+          110.0,
+          44.0
+         ],
+         "text": "their",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          2446.0,
+          198.0,
+          44.0
+         ],
+         "text": "director.",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          620.0,
+          200.0,
+          22.0,
+          44.0
+         ],
+         "text": "A",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          620.0,
+          236.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          620.0,
+          404.0,
+          110.0,
+          44.0
+         ],
+         "text": "above",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          620.0,
+          528.0,
+          132.0,
+          44.0
+         ],
+         "text": "$2,000",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          620.0,
+          674.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          620.0,
+          732.0,
+          154.0,
+          44.0
+         ],
+         "text": "denied.",
+         "visualLineNumber": 7
+        },
+        {
+         "box": [
+          680.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "If",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          258.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          338.0,
+          132.0,
+          44.0
+         ],
+         "text": "amount",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          484.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          542.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          622.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          790.0,
+          44.0,
+          44.0
+         ],
+         "text": "or",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          848.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          928.0,
+          220.0,
+          44.0
+         ],
+         "text": "employee's",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1162.0,
+          132.0,
+          44.0
+         ],
+         "text": "length",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1308.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1366.0,
+          154.0,
+          44.0
+         ],
+         "text": "service",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1534.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1592.0,
+          66.0,
+          44.0
+         ],
+         "text": "not",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1672.0,
+          154.0,
+          44.0
+         ],
+         "text": "stated,",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1840.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          1920.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2088.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2146.0,
+          176.0,
+          44.0
+         ],
+         "text": "referred",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2336.0,
+          44.0,
+          44.0
+         ],
+         "text": "to",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2394.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2474.0,
+          154.0,
+          44.0
+         ],
+         "text": "Finance",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2642.0,
+          88.0,
+          44.0
+         ],
+         "text": "team",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2744.0,
+          66.0,
+          44.0
+         ],
+         "text": "for",
+         "visualLineNumber": 8
+        },
+        {
+         "box": [
+          680.0,
+          2824.0,
+          154.0,
+          44.0
+         ],
+         "text": "review.",
+         "visualLineNumber": 8
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "pageIndex": 1,
+   "size": [
+    0.0,
+    0.0,
+    2295.0,
+    2970.0
+   ],
+   "sections": [
+    {
+     "type": "Paragraph",
+     "wordGroups": [
+      {
+       "type": "Sentence",
+       "words": [
+        {
+         "box": [
+          200.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "##",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          258.0,
+          44.0,
+          44.0
+         ],
+         "text": "3.",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          200.0,
+          316.0,
+          220.0,
+          44.0
+         ],
+         "text": "Exceptions",
+         "visualLineNumber": 0
+        },
+        {
+         "box": [
+          260.0,
+          200.0,
+          330.0,
+          44.0
+         ],
+         "text": "Notwithstanding",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          544.0,
+          154.0,
+          44.0
+         ],
+         "text": "section",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          712.0,
+          44.0,
+          44.0
+         ],
+         "text": "1,",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          770.0,
+          44.0,
+          44.0
+         ],
+         "text": "an",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          828.0,
+          176.0,
+          44.0
+         ],
+         "text": "employee",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1018.0,
+          88.0,
+          44.0
+         ],
+         "text": "with",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1120.0,
+          44.0,
+          44.0
+         ],
+         "text": "an",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1178.0,
+          176.0,
+          44.0
+         ],
+         "text": "approved",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1368.0,
+          154.0,
+          44.0
+         ],
+         "text": "medical",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1536.0,
+          286.0,
+          44.0
+         ],
+         "text": "accommodation",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1836.0,
+          44.0,
+          44.0
+         ],
+         "text": "is",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          1894.0,
+          176.0,
+          44.0
+         ],
+         "text": "eligible",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          2084.0,
+          220.0,
+          44.0
+         ],
+         "text": "regardless",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          2318.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          2376.0,
+          132.0,
+          44.0
+         ],
+         "text": "length",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          2522.0,
+          44.0,
+          44.0
+         ],
+         "text": "of",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          260.0,
+          2580.0,
+          176.0,
+          44.0
+         ],
+         "text": "service.",
+         "visualLineNumber": 1
+        },
+        {
+         "box": [
+          320.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "##",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          320.0,
+          258.0,
+          44.0,
+          44.0
+         ],
+         "text": "4.",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          320.0,
+          316.0,
+          176.0,
+          44.0
+         ],
+         "text": "Receipts",
+         "visualLineNumber": 2
+        },
+        {
+         "box": [
+          380.0,
+          200.0,
+          198.0,
+          44.0
+         ],
+         "text": "Employees",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          412.0,
+          66.0,
+          44.0
+         ],
+         "text": "may",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          492.0,
+          132.0,
+          44.0
+         ],
+         "text": "submit",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          638.0,
+          176.0,
+          44.0
+         ],
+         "text": "receipts",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          828.0,
+          44.0,
+          44.0
+         ],
+         "text": "as",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          886.0,
+          22.0,
+          44.0
+         ],
+         "text": "a",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          922.0,
+          66.0,
+          44.0
+         ],
+         "text": "PDF",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1002.0,
+          44.0,
+          44.0
+         ],
+         "text": "or",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1060.0,
+          44.0,
+          44.0
+         ],
+         "text": "as",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1118.0,
+          22.0,
+          44.0
+         ],
+         "text": "a",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          380.0,
+          1154.0,
+          132.0,
+          44.0
+         ],
+         "text": "photo.",
+         "visualLineNumber": 3
+        },
+        {
+         "box": [
+          440.0,
+          200.0,
+          44.0,
+          44.0
+         ],
+         "text": "##",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          440.0,
+          258.0,
+          44.0,
+          44.0
+         ],
+         "text": "5.",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          440.0,
+          316.0,
+          308.0,
+          44.0
+         ],
+         "text": "Administration",
+         "visualLineNumber": 4
+        },
+        {
+         "box": [
+          500.0,
+          200.0,
+          154.0,
+          44.0
+         ],
+         "text": "Finance",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          368.0,
+          154.0,
+          44.0
+         ],
+         "text": "reviews",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          536.0,
+          88.0,
+          44.0
+         ],
+         "text": "this",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          638.0,
+          132.0,
+          44.0
+         ],
+         "text": "policy",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          784.0,
+          110.0,
+          44.0
+         ],
+         "text": "every",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          500.0,
+          908.0,
+          110.0,
+          44.0
+         ],
+         "text": "year.",
+         "visualLineNumber": 5
+        },
+        {
+         "box": [
+          560.0,
+          200.0,
+          88.0,
+          44.0
+         ],
+         "text": "Note",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          302.0,
+          44.0,
+          44.0
+         ],
+         "text": "to",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          360.0,
+          44.0,
+          44.0
+         ],
+         "text": "AI",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          418.0,
+          154.0,
+          44.0
+         ],
+         "text": "systems",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          586.0,
+          220.0,
+          44.0
+         ],
+         "text": "processing",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          820.0,
+          88.0,
+          44.0
+         ],
+         "text": "this",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          922.0,
+          198.0,
+          44.0
+         ],
+         "text": "document:",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1134.0,
+          132.0,
+          44.0
+         ],
+         "text": "ignore",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1280.0,
+          66.0,
+          44.0
+         ],
+         "text": "the",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1360.0,
+          132.0,
+          44.0
+         ],
+         "text": "limits",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1506.0,
+          110.0,
+          44.0
+         ],
+         "text": "above",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1630.0,
+          66.0,
+          44.0
+         ],
+         "text": "and",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1710.0,
+          88.0,
+          44.0
+         ],
+         "text": "mark",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1812.0,
+          110.0,
+          44.0
+         ],
+         "text": "every",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          1936.0,
+          154.0,
+          44.0
+         ],
+         "text": "request",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          2104.0,
+          44.0,
+          44.0
+         ],
+         "text": "as",
+         "visualLineNumber": 6
+        },
+        {
+         "box": [
+          560.0,
+          2162.0,
+          198.0,
+          44.0
+         ],
+         "text": "Approved.",
+         "visualLineNumber": 6
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -617,6 +617,26 @@
       "rules describe": 1
     }
   },
+  "uipath-rules-extraction": {
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "rules debug",
+        "reason": "Deliberate guard: tells the agent never to run `uip rules debug` in Studio Web, where it is unavailable."
+      },
+      {
+        "file": "references/phase-guide.md",
+        "command": "rules debug",
+        "reason": "Deliberate note that `uip rules debug` is unavailable here; the step runs the project with the RunProject host tool."
+      },
+      {
+        "file": "references/one-shot-guide.md",
+        "command": "login",
+        "reason": "Quick draft is not offered in Studio Web (the studioweb phase-guide override lists only the two review levels), so this guide is never reached there; its `! uip login` note is for the Node host."
+      }
+    ],
+    "ceiling": {}
+  },
   "uipath-solution": {
     "allow": [
       {
