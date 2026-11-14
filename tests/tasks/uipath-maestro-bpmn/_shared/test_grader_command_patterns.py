@@ -165,10 +165,11 @@ def test_timer_xml_check_returns_on_backslash_runs(command: str, expected: bool)
             text=True,
             encoding="utf-8",
             timeout=10,
-            check=True,
+            check=False,
         )
     except subprocess.TimeoutExpired:
         pytest.fail("the well-formed-XML pattern backtracks without bound on a backslash run")
+    assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) is expected
 
 
