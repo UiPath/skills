@@ -7,14 +7,15 @@
  * method/path/objectName) in a `uipath:context`, the inputs split into
  * path/query/body, output rows, and a process-level `uipath:bindings` block for
  * the connection/folder. The op's shape is resolved from the connector library at
- * compile ($FLOW_SDK_LIBRARY_JSON), the same data the Flow node and Case task use.
+ * compile (or fetched through `uip` when none was pulled), the same data the Flow
+ * node and Case task use.
  *
  * `connection`/`folder` are symbolic binding names — `check` and `compile` accept them
  * as `=bindings.<name>` (with a CONNECTION_BINDING_NOT_GUID warning), but `refresh`
  * and a live run need the real connection id, which `uip maestro registry prepare`
  * writes into bindings.json. Compile with
- * `uip maestro bpmn compile NotifyChannel.bpmn.ts -o NotifyChannel.bpmn
- * --library "$FLOW_SDK_LIBRARY_JSON"`, then `uip maestro bpmn validate`.
+ * `uip maestro bpmn compile NotifyChannel.bpmn.ts -o NotifyChannel.bpmn`, then
+ * `uip maestro bpmn validate`.
  */
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 

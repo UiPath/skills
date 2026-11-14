@@ -24,7 +24,7 @@ Use this as a router: read only the capability reference you need, then let Type
 0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
 <!--skill-flavor:workflow-scaffold:start-->
 1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
-2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.70.7 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version). Skip it when a recent enough version is installed. Write `<Name>.case.ts` in the solution dir (the working directory after step 1), beside the Case project folder, not inside it; no `package.json` is needed. Do not add one: an `npm init -y` `package.json` sets `"type": "commonjs"`, and then `check` and `compile` fail with `Cannot use import statement outside a module`.
+2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.70.7 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version). Skip it when a recent enough version is installed. Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin. When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works. Write `<Name>.case.ts` in the solution dir (the working directory after step 1), beside the Case project folder, not inside it; no `package.json` is needed. Do not add one: an `npm init -y` `package.json` sets `"type": "commonjs"`, and then `check` and `compile` fail with `Cannot use import statement outside a module`.
 <!--skill-flavor:workflow-scaffold:end-->
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
@@ -133,11 +133,10 @@ A connector task, external task, event trigger or wait-for-connector that
 `compile` cannot resolve fails `check` first, with compile's code and text.
 
 <!--skill-flavor:library-pull:start-->
-Before `check` on a Case with connector work, run `uip maestro registry pull`:
-with no library cached these rules stay silent, so a clean `check` proves
-nothing about the connector. To use another library, set
-`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
-both resolve against the same one.
+No pull is required first: with no library pulled, an operation is fetched from the tenant through `uip` (SDK 6.97.0 or later) into `.flow-sdk/connectors-local`, and `check` goes on, so it needs a logged-in `uip` then.
+With a pulled library, an operation it lacks is refused, not fetched: refresh the library with `uip maestro registry pull` when the operation is newer than it.
+A `CONNECTOR_NOT_IN_LIBRARY` that remains says, in its last sentence, either that the tenant does not serve the operation, or `uip`'s own reason it could not be asked; fix that reason (`uip login` only when the session is the problem).
+To use another library, set `$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so both resolve against the same one.
 <!--skill-flavor:library-pull:end-->
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,

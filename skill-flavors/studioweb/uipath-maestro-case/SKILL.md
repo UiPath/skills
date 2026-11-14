@@ -130,6 +130,6 @@ uip maestro case validate <Plan> --strict --output json                 # no SDD
 <!--skill-flavor:validation-loop:end-->
 
 <!--skill-flavor:library-pull:start-->
-In Studio Web the connector library of the session is always loaded, so
-`check` reads it with no pull: `uip maestro registry pull` has no effect.
+In Studio Web on cloud the connector library of the session is always loaded, so `check` reads it with no pull: `uip maestro registry pull` has no effect.
+With no session library (Automation Suite), `check` and `compile` fetch a missing operation through `uip` themselves, so re-run `check`.
 <!--skill-flavor:library-pull:end-->

@@ -278,8 +278,9 @@ itself, and both compiles tolerate drafts, so use that loop for these flows.
   written: revert the edit to that node, or fix it. An untouched node that
   fails only because of an edit elsewhere (it reads a step the edit deleted)
   also stops the write. Needs `@uipath/maestro-builder-sdk` 6.64.0 or later.
-- Pass `--library` / `--bindings` to `merge` as you would to `compile`;
-  `--strict` works here too.
+- Pass `--bindings` to `merge` as you would to `compile`, and `--library` only
+  to name a library other than the pulled one (with none, merge fetches what
+  it needs through `uip`); `--strict` works here too.
 <!--skill-flavor:draft-nodes:end-->
 
 ## The generated pipeline
