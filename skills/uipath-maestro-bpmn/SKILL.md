@@ -340,7 +340,8 @@ Read **[`references/evaluate.md`](references/evaluate.md)**.
 
 Triage in order — job status, incidents, runtime variables, the deployed BPMN
 asset, element executions and cursors, the generated package files, traces last
-— with the CLI's exact verbs, every `instance` read carrying `-f <FOLDER_KEY>`.
+— with the CLI's exact verbs, one literal command per read and never a loop,
+every `instance` read carrying `-f <FOLDER_KEY>`.
 Never mutate while diagnosing, and never guess a command shape: the reference
 lists them. Read **[`references/diagnose.md`](references/diagnose.md)**.
 

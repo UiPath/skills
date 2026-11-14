@@ -338,6 +338,21 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
   assert.ok(evaluate.includes("**Not available in Studio Web.**"));
 });
 
+// `debug-instance` is a terminal-CLI alias of `debug-instances`. The browser
+// snapshot (assets/uip-browser-commands-snapshot.json) lists only the plural,
+// and the studioweb operate page and SKILL.md teach it, so diagnose must too.
+// The singular `instance`/`job`/`incident` reads are the same open question,
+// tracked by the `maestro bpmn` ceiling in studioweb-browser-commands.json.
+test("the studioweb BPMN skill reads a debug run with `debug-instances`, never the alias", (t) => {
+  const root = join(buildStudioweb(t), "uipath-maestro-bpmn");
+  for (const rel of ["SKILL.md", "references/operate.md", "references/diagnose.md"]) {
+    const text = readFileSync(join(root, rel), "utf8");
+    assert.ok(!/uip maestro bpmn debug-instance(?!s)/.test(text), `${rel} names the debug-instance alias`);
+  }
+  const diagnose = readFileSync(join(root, "references", "diagnose.md"), "utf8");
+  assert.ok(diagnose.includes("uip maestro bpmn debug-instances variables-all <TRACE_ID> --output json"));
+});
+
 test("the studioweb HITL skill hands Case and BPMN to their own skills", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-human-in-the-loop", "SKILL.md"), "utf8");
 

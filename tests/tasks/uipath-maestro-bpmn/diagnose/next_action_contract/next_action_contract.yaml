@@ -1,0 +1,177 @@
+task_id: skill-bpmn-diagnose-next-action-contract
+description: >
+  Guards two diagnose rules ported from the classic skill to the builder-SDK
+  skill: every diagnostic read is one literal `uip maestro bpmn` command (no
+  loop, function or shell variable in place of the verb, id or folder key), and
+  the diagnosis ends with a named read-only re-check rather than a lifecycle
+  step, without asking the user anything when told not to. Also guards the V2
+  rule that the diagnosis names the fix owner with all four labels. Reuses the
+  minimal_fault_triage mocks (a BindingResolution fault on Task_InvokeLegacyRpa).
+tags: [uipath-maestro-bpmn, smoke, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 30
+
+# The call-log graders run `$REFERENCE_DIR/_shared/check_mock_calls.py`, and
+# coder-eval skips a task whose criteria read $REFERENCE_DIR without this block.
+reference:
+  directory: ../..
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: ../../operate-diagnose/fixtures
+  mock_path_dirs:
+    - mocks
+
+# Deliberately does not mention loops, the owner labels or the shape of the
+# next action: those are what the skill has to teach.
+initial_prompt: |
+  Our Maestro BPMN process failed last night and I need to know why. The `uip`
+  CLI on PATH is a mock that answers for this tenant (don't open `mocks/` or
+  `fixtures/`; use the CLI). These ids are public-safe test values:
+  - job key: job-triage-001
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Write the diagnosis to diagnosis.md and tell me what to do next. I'm in
+  meetings all day, so don't ask me to approve anything.
+
+success_criteria:
+  - type: run_command
+    description: "Agent read instance incidents with folder context"
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance incidents inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent fetched the deployed BPMN asset before diagnosing"
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance asset inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The rule under test. The call log (above) counts a looped read like a
+  # literal one, so this has to grade the transcript. Both guards start with
+  # the same prefix, which steps over every terminated heredoc body: the
+  # diagnosis.md write holds prose ("while") and the named re-check or a
+  # deferred retry line, which are not commands run. It skips only the body,
+  # not the call (tests/README.md: no call-wide exclude), so a loop or a retry
+  # batched beside the write still counts. Text after an unterminated `<<` is
+  # not graded. Matches a `for`/`while`
+  # loop whose body runs `uip maestro bpmn`, a shell function wrapping it, and a
+  # `uip maestro bpmn` command whose verb, id or folder key is a `$VAR` (text
+  # after `>` or `|` is ignored, so `> "$TMP/out.json"` is fine).
+  - type: command_executed
+    description: "Every diagnostic read is a literal command: no loop, function or variable in its place"
+    tool_name: "Bash"
+    command_pattern: '\A(?:(?<!<)<<(?!<)-?\s*[\x22'']?(\w+)[\x22'']?.*?(?<!\S)\1(?!\S)|(?!(?<!<)<<(?!<)).)*?(?:(?:\b(?:for\s+\w+\s+in|while)\b(?:(?!\bdone\b).)*?(?:;|\s)do\s(?:(?!\bdone\b).)*?(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\b\w+\s*\(\)\s*\{[^}]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|\balias\s+\w+=[\x22'']?(?:\buip|\$\{?UIP\}?)\s+maestro\b|\bxargs\b[^|;&\n]*(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\b|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:[\w-]+\s+)?[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|debug-instances?|incidents?|processes)\s+[\w-]+\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+jobs?\s+(?:status|traces)\s+[\x22'']?\$|(?:\buip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(?:instances?|jobs?|incidents?|processes)\s+[\w-]+\s+[\w.:-]+\s+(?:-f|--folder-key)[ =][\x22'']?\$))'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran no lifecycle, debug, run or ship command"
+    tool_name: "Bash"
+    command_pattern: '\A(?:(?<!<)<<(?!<)-?\s*[\x22'']?(\w+)[\x22'']?.*?(?<!\S)\1(?!\S)|(?!(?<!<)<<(?!<)).)*?(?:(?:\buip|\$\{?UIP\}?)\s+(?:maestro\s+bpmn\s+(?:instances?\s+(?:retry|cancel|pause|resume|migrate|goto|variables-set|elements?\s+(?:cancel|retry)|messages?\s+send)|debug-instances?\s+(?:cancel|continue|variables-set|breakpoints|create)|upload|publish|deploy|debug(?!-)|run|process\s+(?:run|publish))|solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish|deploy\b(?!\s+(?:list|status|config\s+get)\b)))\b(?![^\n;&|]*\s(?:--help|-h)\b))'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did not ask the user anything (the request said not to)"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Diagnosis names the fault element and the binding that failed"
+    path: "diagnosis.md"
+    includes:
+      - "Task_InvokeLegacyRpa"
+    patterns:
+      - pattern: 'folderPath|LegacyRpaFolder'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # V2 rule: the owner labels appear "even when a category is not implicated".
+  # Advisory (pass_threshold 0): agents drop an unimplicated label in about half
+  # of runs (claude 2/3 locally, codex 0/1 in CI run 43503109344), so a gate here
+  # would flake every PR that touches the skill. Raise it once the skill makes
+  # the rule stick.
+  - type: file_check
+    description: "Advisory: diagnosis uses all four fix-owner labels"
+    path: "diagnosis.md"
+    patterns:
+      - pattern: 'BPMN\s+source'
+      - pattern: 'Generated\s+package\s+metadata'
+      - pattern: 'Integration\s+Service\s+enrichment'
+      - pattern: 'Cloud\s+configuration'
+    weight: 1.5
+    pass_threshold: 0.0
+
+  # "Name the read": the next action carries the literal read-only command
+  # that re-checks the run, with its folder key.
+  - type: file_check
+    description: "Next action names a literal read-only re-check command"
+    path: "diagnosis.md"
+    patterns:
+      - pattern: 'uip\s+maestro\s+bpmn\s+(?:instances?\s+(?:incidents|get|variables|cursors|element-executions|asset)|jobs?\s+status)\b(?=[^\n]*\b(?:inst|job)-triage-001\b)(?=[^\n]*(?:-f|--folder-key)[ =][\x22'']?folder-public\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No lifecycle step is offered as the next action"
+    include_reference: false
+    weight: 2.0
+    pass_threshold: 0.7
+    include_agent_output: true
+    include_tool_calls: false
+    files:
+      - "diagnosis.md"
+    prompt: >
+      Read the final answer and diagnosis.md. Answer yes or no.
+      Is the recommended next action free of lifecycle steps? A lifecycle step
+      is retry, cancel, pause, resume, migrate, goto or cursor movement, debug,
+      process run, upload, publish or deploy. Yes when the next action is a
+      repair by a named owner and/or a read-only re-check, and any lifecycle
+      step appears only on its own line as a later decision, or only to say it
+      is not the next action. No when a lifecycle step is given as something to
+      do now or as part of the next action, even after a repair.
+      Pass on yes. Grade nothing else: not the diagnosis, the commands that
+      ran, or the wording.
+
+  - type: command_executed
+    description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
+    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The call-log rows above grade mocks/.calls.jsonl, which the agent's shell can
+  # write: the read guard covers reads and the Write tool, not `echo >>`, `printf >`,
+  # `tee` or `touch`. One forged line would satisfy every call-log row, so any mention
+  # of the log, and any shell write into mocks/, fails here. Identical in
+  # diagnose/stuck_gateway and operate-diagnose/minimal_fault_triage; cases in
+  # _shared/test_grader_command_patterns.py.
+
+  - type: command_executed
+    description: "Agent did not write to the mock call log or into mocks/"
+    tool_name: "Bash"
+    command_pattern: '\.calls\.jsonl|(?:>>?|>\|)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\b(?:tee|touch|truncate|mv|ln|install|rsync)\b[^\n;&|]*\s[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\bdd\b[^\n;&|]*\bof=[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

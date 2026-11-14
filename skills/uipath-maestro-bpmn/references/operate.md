@@ -44,6 +44,16 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    that were stale, which is the drift report. Never hand-edit those files and
    never use the deprecated `update-metadata`: it does not materialize `Intsvc.*`
    connection bindings, so a package it wrote validates and faults at run time.
+
+   When the process calls other Orchestrator processes, queues, agents or
+   connections, `bindings_v2.json` must be the versioned object
+   `{ "version": "2.0", "resources": [ … ] }` with one entry per dependency. An
+   empty `resources` array is right only for a process with no dependencies;
+   with dependencies it means the binding never reached the BPMN: fix the
+   `.binding()` in the source, or swap a Data Fabric `entity: { name, folderKey }`
+   (which writes no binding) for `{ name, folder }`
+   ([Connectors and bindings](bpmn-runtime.md#connectors-and-bindings)), and
+   rebuild rather than writing the entry by hand.
 <!--skill-flavor:preflight-host:start-->
 4. Refresh the solution's declared resources when the project sits in the
    solution `bpmn init` scaffolded (it does unless `--skip-solution-registration`
@@ -52,6 +62,12 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    ```bash
    uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
+
+   Check that `Data.Created + Data.Imported + Data.Skipped` covers every
+   resource in `bindings_v2.json` and that `Data.Warnings` names none of them
+   (`Skipped` is a dependency already in the solution, `Created` one with no
+   Orchestrator match; neither is a failure). Otherwise name the missing one
+   in the reply.
 
 5. Confirm login:
 
@@ -152,6 +168,28 @@ uip maestro bpmn process publish <project-path> --folder-key <FOLDER_KEY> --wait
 `--folder-key` is required. `--wait` returns once the entry points are available.
 `Data.ProcessKey`, `Data.ProcessVersion` and `Data.ReleaseKey` feed `process run`; `<PROCESS_KEY>` is `<ProcessKey>:<ProcessVersion>`.
 Anything shipped with a solution still goes through the solution path above.
+
+## When pack, upload or import fails
+
+Capture the error category and the `Instructions` text, then correlate it with
+the four generated files before changing anything:
+
+| File | Check |
+| --- | --- |
+| `entry-points.json` | non-empty; each `filePath` is `/content/<Name>.bpmn#<start-id>` for a root start event in the compiled BPMN |
+| `bindings_v2.json` | one resource per dependency, including each connector's `Connection`; a connection's folder companion and an entity's two bindings are one resource, not two |
+| `operate.json` | `main` is `/content/<Name>.bpmn#<start-id>` for the compiled `.bpmn` |
+| `package-descriptor.json` | its `files` map names the `.bpmn`, `operate.json`, `entry-points.json`, and `bindings.json` → `bindings_v2.json` |
+
+- A file that disagrees with the compiled BPMN is stale: run `refresh` and retry.
+- A file that agrees with a wrong BPMN means the source is wrong: fix the
+  `.bpmn.ts`, recompile, format, validate, `refresh`, retry.
+- An unresolved connector — no connection binding, draft context — goes back
+  through the CLI's Integration Service enrichment, then `refresh`.
+- Never hand-edit a generated file to get past the error.
+
+[diagnose.md](diagnose.md) is for a process that has run; a pack or upload
+failure is fixed here.
 <!--skill-flavor:ship:end-->
 
 ## Debug — a controlled Studio Web run
@@ -254,6 +292,7 @@ When the action reveals a modeling or binding problem, the fix is in the
 ## Anti-patterns
 
 - **Never debug or run without the user's explicit consent for that run.**
+- **Never reuse a previous run's inputs silently.** Confirm the input set for each run, and redact secrets from the summary.
 <!--skill-flavor:publish-default:start-->
 - **Never deploy to Orchestrator because the user said "publish".** Studio Web upload is the default.
 <!--skill-flavor:publish-default:end-->
