@@ -27,40 +27,52 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = REPO_ROOT / "skills" / "uipath-maestro-bpmn"
+STUDIOWEB = REPO_ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn"
 
+# The canonical skill and its Studio Web overrides, so an override cannot bring
+# the old wording back either.
 DOCS = sorted(
-    p for p in SKILL.rglob("*") if p.is_file() and p.suffix in {".md", ".ts"}
+    p
+    for root in (SKILL, STUDIOWEB)
+    for p in root.rglob("*")
+    if p.is_file() and p.suffix in {".md", ".ts"}
 )
+
+
+def _id(path: Path) -> str:
+    return str(path.relative_to(REPO_ROOT))
 
 
 def _read(rel: str) -> str:
     return re.sub(r"\s+", " ", (SKILL / rel).read_text(encoding="utf-8"))
 
 
-# A field read straight off an error net's capture, such as
-# `vars.failures_Error.message`, not preceded by `JSON.parse(`.
-NET_FIELD_READ = re.compile(r"(?<!JSON\.parse\()vars\.failures_Error\.(?:code|message|detail|category|status)\b")
+# A lowercase field read straight off an `<id>_Error` capture, such as
+# `vars.failures_Error.message`. The correct net read is
+# `JSON.parse(vars.failures_Error).message`, which this does not match; a
+# script task's `Error` row is PascalCase (`.Message`), also not matched.
+NET_FIELD_READ = re.compile(r"vars\.\w+_Error\.(?:code|message|detail|category|status)\b")
 
 
 # The one place the skill quotes the wrong read on purpose, to warn against it.
 WARNING = "A plain `vars.failures_Error.message` reads undefined"
 
 
-@pytest.mark.parametrize("path", DOCS, ids=lambda p: str(p.relative_to(SKILL)))
+@pytest.mark.parametrize("path", DOCS, ids=_id)
 def test_error_net_capture_is_parsed_before_a_field_read(path: Path) -> None:
     text = re.sub(r"\s+", " ", path.read_text(encoding="utf-8")).replace(WARNING, "")
     hits = NET_FIELD_READ.findall(text)
     assert not hits, (
-        f"{path.relative_to(SKILL)} reads a field straight off vars.failures_Error; "
+        f"{_id(path)} reads a field straight off an `<id>_Error` capture; "
         "the capture is a JSON string, so read it through JSON.parse(vars.failures_Error)"
     )
 
 
-@pytest.mark.parametrize("path", DOCS, ids=lambda p: str(p.relative_to(SKILL)))
+@pytest.mark.parametrize("path", DOCS, ids=_id)
 def test_business_rule_is_not_keyed_by_display_name(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     assert "=result.<Decision>." not in text, (
-        f"{path.relative_to(SKILL)} keys a business-rule result by `<Decision>`; "
+        f"{_id(path)} keys a business-rule result by `<Decision>`; "
         "the key is the OutputArguments property name"
     )
 
@@ -68,6 +80,7 @@ def test_business_rule_is_not_keyed_by_display_name(path: Path) -> None:
 REQUIRED = [
     ("references/bpmn-runtime.md", "JSON **string**"),
     ("references/bpmn-runtime.md", "not the entry point's `DisplayName`"),
+    ("references/bpmn-runtime.md", "`<decisionKey>` is the property name under `OutputArguments.properties`"),
     ("references/bpmn-runtime.md", "RULE:bpmn.activity.retry"),
     ("references/connectors.md", "./.flow-sdk/bindings.json"),
     ("references/connectors.md", "from the directory you ran `prepare` in"),

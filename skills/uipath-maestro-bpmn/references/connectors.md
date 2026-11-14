@@ -66,7 +66,7 @@ A failed search gives `uip`'s reason; fix what it names: log in again for a sess
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
   `lookup` imports from `@uipath/maestro-builder-sdk`, not `/bpmn` (`TS2305`). In the string form above write `.by('<Field>', value)`; `.byFullName()` exists only on a prepared module.
-- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<action>', 'referenceID').by('FullName', '<path>')`, then `prepare --resolve referenceID:FullName=<path>`. Never paste an item id.
+- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<ACTION>', 'referenceID').by('FullName', '<ITEM_PATH>')`, then `prepare --resolve referenceID:FullName=<ITEM_PATH>`. Never paste an item id.
 - Outlook `send-email`: `message.toRecipients`, `ccRecipients` and `bccRecipients` are ONE comma-separated string, never an array (`CONNECTOR_INPUT … expected string, got object`). Always set `saveAsDraft`: `false` to send, `true` to draft. The definition's default (`true`) is not compiled into the task, and the response (`status: "success"`) does not say which happened.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
 - The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
@@ -105,10 +105,10 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
 `--object`, `--resolve` and `-f NAME=VALUE` compose in a single invocation.
 It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `./.flow-sdk/bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./.flow-sdk/connectors-local/` (its `--help` names `./bindings.json` and `./connectors-local/`, but it writes under `.flow-sdk/`).
 
-Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass both paths:
+Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass all three paths:
 
 ```bash
-uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local
+uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local --resources <PREPARE_DIR>/.flow-sdk/resources.json
 ```
 
 `check` reads `.flow-sdk/bindings.json` only when given `--bindings .flow-sdk/bindings.json`; without it, its `CONNECTION_BINDING_NOT_GUID` warning stays.

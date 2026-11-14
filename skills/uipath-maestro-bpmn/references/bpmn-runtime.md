@@ -148,7 +148,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   Never draw a retry loop for a failing activity. A `.goto()` that re-runs a whole business block, such as a parallel block ([Draft skeleton](draft-skeleton.md)), is a process step, not a retry.
 
 <!-- RULE:bpmn.event.error-context -->
-- The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
+- The engine surfaces a failed element's error under the capital-`Error` key; its fields are lowercase (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`) everywhere except a script task's `Error` row (PascalCase, see [Script tasks](#script-tasks)).
   `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` captures `vars.failures_Error` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
   The engine always stores this default capture as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. A boundary's `errorVar` capture is an object with the lowercase fields; a script task's `Error` row is an object with PascalCase keys ([Script tasks](#script-tasks)); read both directly. Other tasks' `Error` rows were not checked. `vars.Error` never resolves.
   The platform validator needs the declaration: a `vars.<id>` read with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else. Note the runtime resolves `vars.<id>` in ONE flat scope whatever a declaration's `elementId` says, so two captures cannot share an id — that is why the default is per-net.
@@ -162,7 +162,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.http.webhook-url -->
 - A request that must reach a connection's webhook (to fire a `waitForEvent` on an HTTP Webhook connection, say) is a manual `.http()` with the webhook URL as a literal `url` and no `connection`: `.http('ping', { url: '<WEBHOOK_URL>', method: 'GET' })`.
-  Get the URL from `uip is webhooks config <CONNECTOR_KEY> --connection-id <id> --output json`: it is `Data.WebhookUrl`.
+  Get the URL from `uip is webhooks config <CONNECTOR_KEY> --connection-id <CONNECTION_ID> --output json`: it is `Data.WebhookUrl`.
   Never use `uip is connections base-url` for it; that is the connection's API base, a different address, so the event never arrives.
   If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <CONNECTOR_KEY> --output json`.
   Only a connection of the HTTP Webhook connector (`uipath-http-webhook`) can fire this event.
@@ -196,8 +196,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents) with the
      inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
   3. With the user's go-ahead, publish it (outside Studio Web, pack it first) and `uip solution deploy run` it.
-  4. Read its folder and `ProcessType` with the `uip or processes list` command above, and only then
-     write the node with that `process` and `folder`.
+  4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
+     its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
+     type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
   The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
   binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder, so read
@@ -238,7 +239,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
-  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision: a column reads `=result.<decisionKey>.<column>`, as in `outputs: { tier: '=result.eligibility.tier' }` or `vars.<id>_businessRuleResponse.eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `<decisionKey>` is the property name under `OutputArguments.properties` in `uip rules describe <name> --folder-path <folder> --output json` (such as `decision1`), not the entry point's `DisplayName`: a display name reads null. Mapping the whole `=result` into one variable, as the designer does, also works. Only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision: a column reads `=result.<decisionKey>.<column>`, as in `outputs: { tier: '=result.eligibility.tier' }` or `vars.<id>_businessRuleResponse.eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `<decisionKey>` is the property name under `OutputArguments.properties` in `uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json` (such as `decision1`), not the entry point's `DisplayName`: a display name reads null. Mapping the whole `=result` into one variable, as the designer does, also works. Only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
   `releaseKey` is refused: a rule is never addressed by a process key.
 
 <!-- RULE:bpmn.runtime.metadata -->

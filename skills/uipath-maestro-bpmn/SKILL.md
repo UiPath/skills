@@ -333,7 +333,9 @@ A process with connector nodes gives `check` more to work with. It reads the con
 library and the prepared overlay, and reports a missing required input, an unresolved
 `lookup()`, an unprepared object or a self-naming binding *before* compile does — each
 with the one command that closes it. `--library <dir>` and `--connectors-local <dir>` name
-them; both default to `.flow-sdk/` under the current directory, where `prepare` writes them.
+them: `--connectors-local` defaults to `.flow-sdk/connectors-local/` under the current
+directory, where `prepare` writes it; `--library` defaults to `$FLOW_SDK_LIBRARY_JSON`, else
+the `registry pull` cache.
 `check` reads the bindings only given `--bindings`; `compile` reads them by default ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 
 ## Operating a process
