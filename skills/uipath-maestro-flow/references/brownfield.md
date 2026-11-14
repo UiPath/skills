@@ -667,7 +667,11 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced. A container the edit grows can still push that spot aside, so keep where it lands.
+Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced (an SDK with builder-sdk#2036; an older SDK also moves an `at()` where (x − 256) is a multiple of 288 on y = 144 or 304, so avoid those spots,
+<!--skill-flavor:placeholder-flag-sdk-upgrade:start-->
+or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+<!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
+A container the edit grows can still push that spot aside, so keep where it lands.
 At the root, an existing node's position and size come from the original whatever the source says, except that `merge` shifts later nodes and grows a container to fit added steps; moving or resizing one in the source does nothing, so for any other change set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
 Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
