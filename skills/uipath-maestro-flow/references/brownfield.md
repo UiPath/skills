@@ -473,10 +473,15 @@ Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lis
 
 ## A Case-only variable type
 
-A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
+A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`.
+With an SDK whose `dist/api-index.md` lists `NumberFormat`, none of them needs a retype: decompile prints a Flow type, and compile and merge take it.
 
-- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through and keeps an untouched variable's own type. `flow pack` writes a date as a plain string either way.
-- **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
+- **`float` / `double`: nothing to do.** Decompile prints the file's own width, `{ type: types.number, format: "float" }` or `format: "double"`, and the recompile writes that type back (`"type":"float"` / `"type":"double"`). No warning: nothing changes. Keep the `format` as decompile printed it when you edit the variable, and never change `"float"` to `"double"`: `flow pack` writes it into the entry point's schema (`"format":"float"` / `"format":"double"`).
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. `flow pack` writes a date as a plain string either way.
+- **`jsonSchema`: nothing to do.** Decompile prints `types.object` (or `types.array` when the schema is an array's) with the file's schema in `{ schema }`, and warns that a recompile writes `"type":"object"`. The engine reads both as JSON.
+
+Merge goes through for all five and keeps an untouched variable's own type.
+An SDK whose `dist/api-index.md` does not list `NumberFormat` keeps `types.float` / `types.double` / `types.jsonSchema` instead, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` until you retype that declaration (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`).
 
 ## The file's schema version comes back out
 
