@@ -198,7 +198,7 @@ authored.
 `check` prints `uip maestro registry prepare --entity <Name>`; run it in the Flow project folder, where `check` and `compile` run and read `./.flow-sdk/resources.json`.
 It reads the solution as well as the tenant, records the entity's resource key and the placeholder folder key, and names the folder to pin with `folder:`.
 Do not look the entity up on the tenant yourself: it is not there until deploy.
-See [/uipath:uipath-maestro-flow — data-fabric.md](../../../uipath-maestro-flow/references/data-fabric.md#an-entity-the-solution-authors-itself).
+The `uipath-maestro-flow` skill covers this (Data Fabric, an entity the solution authors itself).
 
 <!--skill-flavor:flow-sdk-local-entity-keys:end-->
 <!--skill-flavor:flow-sdk-json-entity-node:start-->
