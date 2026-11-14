@@ -47,10 +47,12 @@ def _read(rel: str) -> str:
     return re.sub(r"\s+", " ", (SKILL / rel).read_text(encoding="utf-8"))
 
 
-# A lowercase field read straight off an `<id>_Error` capture, such as
-# `vars.failures_Error.message`. The correct net read is
-# `JSON.parse(vars.failures_Error).message`, which this does not match; a
-# script task's `Error` row is PascalCase (`.Message`), also not matched.
+# Any lowercase field read straight off an `<id>_Error` variable, such as
+# `vars.failures_Error.message`. Net captures are JSON strings; connector and
+# HTTP `<id>_Error` shapes are unverified, so both are banned until a live run
+# settles them. The correct net read, `JSON.parse(vars.failures_Error).message`,
+# and a script task's PascalCase `Error` row (`.Message`) are not matched. A net
+# capture renamed with `errorVar` is not caught here.
 NET_FIELD_READ = re.compile(r"vars\.\w+_Error\.(?:code|message|detail|category|status|traceId|response|element)\b")
 
 
@@ -63,8 +65,9 @@ def test_error_net_capture_is_parsed_before_a_field_read(path: Path) -> None:
     text = re.sub(r"\s+", " ", path.read_text(encoding="utf-8")).replace(WARNING, "")
     hits = NET_FIELD_READ.findall(text)
     assert not hits, (
-        f"{_id(path)} reads a field straight off an `<id>_Error` capture; "
-        "the capture is a JSON string, so read it through JSON.parse(vars.failures_Error)"
+        f"{_id(path)} reads a field straight off an `<id>_Error` variable; "
+        "a net capture is a JSON string (JSON.parse first), and other tasks' Error shapes are unverified"
+
     )
 
 

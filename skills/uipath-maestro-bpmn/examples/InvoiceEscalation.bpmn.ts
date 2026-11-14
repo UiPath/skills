@@ -8,7 +8,7 @@
  * | --- | --- |
  * | two lookups at once | `.fork('enrich', [ … ])` — a parallel split and its join |
  * | a human approval with no Action App | `.humanTask('approve', { form: { fields, outcomes } })` — an inline form |
- * | a reminder that does not cancel the approval | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
+ * | a process timer that acts while the approval stays open (not the task SLA: see bpmn.hitl.task-settings) | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
  * | a failure exit for the approval itself | `t.onError(true, { errorVar: 'approvalError' }, …)` |
  * | a three-way decision, one arm looping back | `.choose('route', [ … ])` with `when` / `otherwise` arms and `.goto('approve')` |
  * | a safety net for the whole process | `.eventSubProcess('failures', { error: true }, …)` |
@@ -101,7 +101,7 @@ export default bpmn('invoice-escalation')
       outputs: { decision: '=Action' },
     },
     (t) => {
-      // Every two days the approval stays open, nudge — and keep waiting. Non-interrupting,
+      // A process timer, not the task SLA: every two days the approval stays open, nudge — and keep waiting. Non-interrupting,
       // so this path may not rejoin the main flow; it ends at its own end event.
       t.onTimer('P2D', { interrupting: false, name: 'Still waiting' }, (b) =>
         b.task('nudge', { name: 'Send reminder', set: { reminders: '=js:vars.reminders + 1' } }).endEvent('reminded', { name: 'Reminder sent' }),
