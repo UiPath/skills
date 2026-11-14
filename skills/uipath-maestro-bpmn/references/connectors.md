@@ -122,7 +122,7 @@ uip is connections list <CONNECTOR_KEY> --all-folders --output json   # Id, Name
 uip is connections ping <CONNECTION_ID> --output json                 # Data.Status must be "Enabled"
 ```
 
-- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <Id>` (or `--connection <Name>`, `--connection-folder <Folder>`). It never picks the default connection for you. Ask the user which one when the request does not say.
+- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <Id>` (or `--connection <Name>`, `--connection-folder <Folder>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in (else the first one listed) and name it on the final report's `Assumed:` line.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name, Owner and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId`.
@@ -247,7 +247,7 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 
 | Blocker | What it is | Resolved by |
 | --- | --- | --- |
-| connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `bindings.json` |
+| connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `./.flow-sdk/bindings.json` |
 | dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./.flow-sdk/connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |

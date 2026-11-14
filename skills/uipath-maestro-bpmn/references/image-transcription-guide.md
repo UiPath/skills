@@ -8,7 +8,7 @@ The usual failure is dropping or merging items while summarizing, then building 
 1. **Inventory before you interpret.** Before writing any `.bpmn.ts`, list every visible item: its exact wording, its color and shape, and its rough position.
    Then list every visible connector as source → target, with its label, marked certain or ambiguous.
    Mark an unreadable or crossed-out item as such instead of guessing or skipping it.
-   Keep the inventory outside `<Project>`.
+   Keep the inventory outside `<Project>` (in Studio Web, under `/tmp/`, since nothing under `/solution` may be deleted).
 2. **Confirm the inventory, not a summary.**
    - In a build, ask the user to confirm the full inventory before authoring, every node and flow, never a condensed or "interpreted" topology as the recommended option.
      Ask a separate question for each ambiguity and for each element you would add that the image does not show (start or end event, a join, a reading of an implied link).

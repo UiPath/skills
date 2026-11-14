@@ -51,7 +51,7 @@ def _read(rel: str) -> str:
 # `vars.failures_Error.message`. The correct net read is
 # `JSON.parse(vars.failures_Error).message`, which this does not match; a
 # script task's `Error` row is PascalCase (`.Message`), also not matched.
-NET_FIELD_READ = re.compile(r"vars\.\w+_Error\.(?:code|message|detail|category|status)\b")
+NET_FIELD_READ = re.compile(r"vars\.\w+_Error\.(?:code|message|detail|category|status|traceId|response|element)\b")
 
 
 # The one place the skill quotes the wrong read on purpose, to warn against it.
