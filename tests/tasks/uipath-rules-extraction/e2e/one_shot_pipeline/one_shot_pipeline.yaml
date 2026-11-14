@@ -1,0 +1,103 @@
+task_id: skill-rules-extraction-e2e-one-shot-pipeline
+description: >
+  Agent is asked for a one-shot run of IXP rules extraction on a single policy PDF, headless, on a
+  tenant that has the rules extraction feature enabled. Grades that the agent engaged the skill and ran the
+  one-shot.mjs wrapper (not call-rules-api.mjs by hand, and not the guided extraction: no resolve-refs.mjs),
+  that the project's .dmn is the pipeline's output, that uip rules validate passes, that the pipeline declared inputs and exactly the outcomes
+  the prompt named, and that its citations are boxes without quotes. The pipeline's outcomes are not graded
+  against scenarios: the skill states the result is not checked clause by clause. Needs the logged-in user's Personal
+  folder and IXPModels.Create in it; one billed pipeline run per replicate.
+tags: [uipath-rules-extraction, e2e, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  task_timeout: 1800
+  turn_timeout: 1800
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup/policy_pdf
+      mount_point: policy
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Business Rules project named ReimbursementRules from our equipment reimbursement
+  policy, `./policy/policy.pdf`. It is the only document, with no amendments. Use the one-shot extraction
+  pipeline. The rule decides whether a reimbursement request is approved, denied, or referred, with the
+  outcomes "Approve" (positive), "Deny" (negative), and "Refer" (neutral; it also covers missing
+  information), as of today. Run it in the logged-in user's Personal Orchestrator folder.
+
+  Nobody is available to answer questions: at every checkpoint accept your own proposed answer. Do not run
+  `uip rules debug`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules-extraction skill"
+    skill_name: "uipath-rules-extraction"
+    expected_skill: "uipath-rules-extraction"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the one-shot wrapper"
+    tool_name: "Bash"
+    command_pattern: 'node\s+\S*one-shot\.mjs'
+    min_count: 1
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not call the API script directly instead of the wrapper"
+    tool_name: "Bash"
+    command_pattern: '(?m)(?:^|&&|;|\|\|?)\s*node\s+\S*call-rules-api\.mjs'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the guided citation step; the pipeline's citations are boxes"
+    tool_name: "Bash"
+    command_pattern: 'resolve-refs\.mjs'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The project's .dmn is the pipeline's output with a top-level policy_decision"
+    command: "python3 $REFERENCE_DIR/_shared/one_shot_check.py pipeline"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pipeline declared inputs, and the outcomes are exactly Approve, Deny, Refer"
+    command: "python3 $REFERENCE_DIR/_shared/one_shot_check.py declared"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Citations are page-and-box sourceRefs with no quote"
+    command: "python3 $REFERENCE_DIR/_shared/one_shot_check.py refs"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run rules debug"
+    tool_name: "Bash"
+    command_pattern: '(?m)(?:^|&&|;|\|\|?)\s*uip\s+rules\s+debug'
+    weight: 0.5
+    pass_threshold: 0

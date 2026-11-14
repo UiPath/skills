@@ -1,3 +1,6 @@
+<!--skill-flavor:one-shot-offer:start-->
+**One-shot level.** This host does not offer one-shot. List only the two review levels, and do not mention one-shot.
+<!--skill-flavor:one-shot-offer:end-->
 <!--skill-flavor:scaffold:start-->
 **Write.** Create the project in the open solution with the `CreateProjects` host tool, project type BusinessRules. The rule is the one `.dmn` file in `/solution/<RULE_NAME>/`, and that folder is `<PROJECT_DIR>` below. Treat whatever table the seeded `.dmn` holds as a placeholder: keep its file name, root element, and decision `id`, then write the `.dmn` skeleton: DMN 1.5 namespaces, declared inputs with `uipdm:inputVariable`, outputs, an empty table per decision. Set the decision's `name` and `label`, and put the document title, version, effective date, and amendments applied from phase 2 in the decision's `description`. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`. Then `uip rules refresh <PROJECT_DIR> --output json`.
 <!--skill-flavor:scaffold:end-->

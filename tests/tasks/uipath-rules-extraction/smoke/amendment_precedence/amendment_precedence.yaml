@@ -9,7 +9,8 @@ description: >
   policy, and missing information routes to Refer. Also grades the uipdm
   inputVariable provenance, that no sourceRef is written when no positions
   exist, and that review-notes.md records the assumptions and the amendment
-  that was not applied. This is the fast subset of the e2e multi_doc_full task. The prompt
+  that was not applied. Also grades that the Quick draft (IXP) scripts are not run: the documents include
+  amendments, so one-shot is not offered, and no smoke task calls IXP. This is the fast subset of the e2e multi_doc_full task. The prompt
   asks for one table column per named input only so the grader can read the table.
 tags: [uipath-rules-extraction, smoke, "mode:build", "lifecycle:generate"]
 
@@ -118,6 +119,13 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not send the documents to IXP: Quick draft handles one document only, so amendments rule it out whatever the login"
+    tool_name: "Bash"
+    command_pattern: 'node\s+\S*(?:one-shot|call-rules-api)\.mjs'
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
