@@ -14,7 +14,7 @@ The usual failure is dropping or merging items while summarizing, then building 
      Ask a separate question for each ambiguity and for each element you would add that the image does not show (start or end event, a join, a reading of an implied link).
      When the request says nobody will answer, take the most literal reading and list each choice on the final report's `Assumed:` line.
    - In a [draft](draft-skeleton.md), the skeleton is the transcription and its gate is the confirmation: give each ambiguous item its own box rather than merging it into a neighbour, and let the user correct it with *Change it*.
-3. **Transcribe 1:1.** One node per item, with the image's wording as its `name`, and the image's branch labels (Yes/No) as the `label` of each `.choose()` arm.
+3. **Transcribe 1:1.** One node per item, with the image's wording as its `name` (in a draft, followed by the box's ` [Kind]`, per [Draft first](draft-skeleton.md) rule 5), and the image's branch labels (Yes/No) as the `label` of each `.choose()` arm.
    Add an element the image does not show only where the process needs it to compile or validate (start and end events, a named join), and in a build name each addition on the final report's `Assumed:` line.
 4. **Keep the image in view.** A host can replace an earlier turn's image with a text placeholder, especially after the user sends a new message.
    Before any fidelity work, including when the user says the result does not match, check that you can see the image.

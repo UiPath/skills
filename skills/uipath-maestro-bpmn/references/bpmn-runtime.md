@@ -150,7 +150,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.event.error-context -->
 - The engine surfaces a failed element's error under the capital-`Error` key; its fields are lowercase (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`) everywhere except a script task's `Error` row (PascalCase, see [Script tasks](#script-tasks)).
   `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` captures `vars.failures_Error` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
-  The engine always stores this default capture as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. A boundary's `errorVar` capture is an object with the lowercase fields; a script task's `Error` row is an object with PascalCase keys ([Script tasks](#script-tasks)); read both directly. Other tasks' `Error` rows were not checked. `vars.Error` never resolves.
+  The engine always stores an event sub-process's capture, the default `<net>_Error` or one renamed with `errorVar` (the same `=Error` row), as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. A boundary's `errorVar` capture is an object with the lowercase fields; a script task's `Error` row is an object with PascalCase keys ([Script tasks](#script-tasks)); read both directly. Other tasks' `Error` rows were not checked. `vars.Error` never resolves.
   The platform validator needs the declaration: a `vars.<id>` read with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else. Note the runtime resolves `vars.<id>` in ONE flat scope whatever a declaration's `elementId` says, so two captures cannot share an id — that is why the default is per-net.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable.
 
@@ -193,7 +193,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.sibling-resource -->
 - A resource another skill builds for this process is bound after it is deployed, in this order:
   1. Create its project in the same solution as the process.
-  2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents) with the
+  2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
      inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
   3. With the user's go-ahead, publish it (outside Studio Web, pack it first) and `uip solution deploy run` it.
   4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:

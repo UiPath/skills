@@ -105,11 +105,13 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
 `--object`, `--resolve` and `-f NAME=VALUE` compose in a single invocation.
 It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `./.flow-sdk/bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./.flow-sdk/connectors-local/` (its `--help` names `./bindings.json` and `./connectors-local/`, but it writes under `.flow-sdk/`).
 
-Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass all three paths:
+Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass the paths explicitly:
 
 ```bash
-uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local --resources <PREPARE_DIR>/.flow-sdk/resources.json
+uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local
 ```
+
+Add `--resources <PREPARE_DIR>/.flow-sdk/resources.json` only when that file exists: `prepare --entity` or `--kind … --name …` writes it, a connector `prepare` does not, and `compile` refuses a missing one (`RESOURCE_LEDGER_MISSING`).
 
 `check` reads `.flow-sdk/bindings.json` only when given `--bindings .flow-sdk/bindings.json`; without it, its `CONNECTION_BINDING_NOT_GUID` warning stays.
 
