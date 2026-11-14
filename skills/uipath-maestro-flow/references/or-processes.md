@@ -33,55 +33,36 @@ The *Key* field (GUID) is the unique id for the process.
 
 ## Getting the inputs and outputs
 
-Once you find the process, you must use the `get` command with the *Key* to retrieve more details.
-The inputs and outputs of a published process are buried in the *ArgumentsV2* field that is only exposed when using the `--all-fields` option.
-The *Input* and *Output* parameters inside *ArgumentsV2* are escaped JSON strings.
-The following CLI command can be used to extract inputs and outputs as JSON text:
-
-```shell
-uip or processes get BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D --all-fields --output json 2>/dev/null \
-  | jq '.Data.ArgumentsV2 | {Input, Output} | map_values(if (. // "") == "" then null else fromjson end)'
-```
-
-Here is an example output of this command:
-
-```json
-{
-  "Input": {
-    "type": "object",
-    "properties": {
-      "productId": {
-        "type": "integer",
-        "title": "productId"
-      }
-    },
-    "required": []
-  },
-  "Output": {
-    "type": "object",
-    "properties": {
-      "status": {
-        "type": "boolean",
-        "title": "status"
-      }
-    },
-    "required": []
-  }
-}
-```
-
-The defined inputs and outputs would be represented in an action similar to the following:
+Do not copy the key or the argument schema by hand.
+Write the step with `name` and `folderPath` only, and leave `key` and `returns` out:
 
 ```ts
 .step('intake',
   agenticProcess({
-    key: 'BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D',
     name: 'ProcurementProcess',
-    folderPath: 'Shared',
-    inputs: { productId: 1 }, // input object
-    returns: { status: 'boolean' } // output object
+    folderPath: 'Shared/uipath-agents/ProcurementProcess',
+    inputs: { productId: 1 },
   }))
 ```
+
+`check` reports the missing key (`AGENTIC_NO_KEY`, `RPA_NO_KEY`, ...) and prints the command that records the process.
+Run it:
+
+```shell
+uip maestro registry prepare --kind Process --name ProcurementProcess --folder-path Shared/uipath-agents/ProcurementProcess
+```
+
+It prints the process's inputs and outputs:
+
+```text
+Type      ProcessOrchestration
+Inputs    productId: integer
+Outputs   status: boolean
+```
+
+Then `compile` writes the key and the output schema (`returns`) from that record.
+`check` validates the step against it: an unknown input (`PROCESS_INPUT_UNKNOWN`), a required input left out (`PROCESS_INPUT_MISSING`), a literal of the wrong type (`PROCESS_INPUT_TYPE`), a `returns` field the process does not return (`PROCESS_RETURNS_UNKNOWN`), and the wrong factory for the process type (`PROCESS_TYPE_MISMATCH`).
+Fix what it reports; read `out('<step>', '<field>')` with the names `prepare` printed.
 
 ## Notes
 
