@@ -53,7 +53,7 @@ The builder can place the nodes itself, so the emitted file never needs `format`
 A step's id is its name.
 The trigger's is `start` unless `.triggerId()` renamed it.
 An End's is the `name` its `.return` gave it, and an unnamed End is `end`, then `end2`, `end3`, … in emission order, so a flow with several unnamed Ends has that many keys to write.
-Use it when the request asks for a particular arrangement, or when a decompiled source already carries one ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
+Use it when the request asks for a particular arrangement, or when a decompiled source already carries one ([`brownfield.md`](brownfield.md#designer-shapes-decompile-keeps)).
 Otherwise `format` is less work and lays out as well.
 
 ```ts
