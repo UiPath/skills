@@ -64,8 +64,14 @@ nodes right or down to make room for an added one: that is its normal output,
 not drift to undo. Never move them back. The changes to act on are the
 [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
-A refused merge writes nothing, so there is nothing to restore. If validate
-fails after a merge, fix `.flow-sdk/Deployed.flow.ts` and run `check` and
+A refused merge writes nothing, so there is nothing to restore. A merge that
+fails after it printed `flow-merge: wrote Deployed.flow` (an I/O error on an
+agent file or `bindings_v2.json`) is not a refusal: the `.flow` already holds
+the edit, the agent files may not, and the source is not restamped, so the
+next merge refuses with `MERGE_ORIGINAL_CHANGED`. Decompile again and reapply
+the edit, or `git checkout` the project
+([builder-sdk#2043](https://github.com/UiPath/builder-sdk/issues/2043)).
+If validate fails after a merge, fix `.flow-sdk/Deployed.flow.ts` and run `check` and
 `merge` again: merge restamped the source, so the same command merges the fix.
 To drop the edit instead, revert it in the source and merge again. The result
 is equivalent to the original, not byte-identical (edges renumbered, nodes
@@ -468,7 +474,7 @@ Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lis
 
 A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`. `decompile` warns once for each.
 
-- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through. A stamped merge or `--baseline-from` keeps an untouched variable's own type; a merge with a `--baseline` file writes `"type":"string"`. Neither changes the run: `flow pack` already writes a date as a plain string.
+- **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Merge goes through and keeps an untouched variable's own type. `flow pack` writes a date as a plain string either way.
 - **`float` / `double` / `jsonSchema`: retype it in the same round.** Decompile keeps `types.float`, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` even if your edit is elsewhere. Change that one declaration to the type the warning names (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`), then compile and merge as usual. The merged `.flow` carries the new type.
 
 ## The file's schema version comes back out
