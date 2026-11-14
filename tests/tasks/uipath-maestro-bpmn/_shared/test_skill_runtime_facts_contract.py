@@ -67,7 +67,6 @@ def test_error_net_capture_is_parsed_before_a_field_read(path: Path) -> None:
     assert not hits, (
         f"{_id(path)} reads a field straight off an `<id>_Error` variable; "
         "a net capture is a JSON string (JSON.parse first), and other tasks' Error shapes are unverified"
-
     )
 
 
