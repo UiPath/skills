@@ -124,7 +124,9 @@ unreadable: nodes overlap, or a node is drawn at the wrong size. This is not a
 run-time fault and no check reports it — `validate` passes, because layout is
 not an authoring concern. A source with no `.layout()` is not the cause:
 `compile` lays it out the way `uip maestro flow format` does and gives every
-node its canvas size ([`operate.md`](operate.md#layout-of-the-emitted-flow)).
+node its canvas size. The exception is an SDK without builder-sdk#2035, which
+leaves every node on one row; the fallback is in
+[`operate.md`](operate.md#layout-of-the-emitted-flow).
 Do not run `format` on a merged brownfield file; it re-lays out the author's
 canvas.
 <!--skill-flavor:misshapen-format:end-->
