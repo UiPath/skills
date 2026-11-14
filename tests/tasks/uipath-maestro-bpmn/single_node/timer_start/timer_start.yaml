@@ -75,8 +75,11 @@ success_criteria:
     # (3) a `python3 - <<'PY'` heredoc whose body (or the `python3 -` arguments)
     #     names the file and calls `ET.parse(`, up to the terminator word (bounded
     #     by whitespace, so the newline-collapsed haystack stops there too).
+    # The escape branch is `\\\1` (an escaped quote), not `\\.`: `(?!\1).` already takes
+    # any other backslash, so `\\.` only gave each backslash a second way to match, and
+    # a backslash run made a failed search backtrack without bound. Same strings match.
     # Cases in _shared/test_grader_command_patterns.py.
-    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1).)*ET\.parse\()(?=(?:\\.|(?!\1).)*ScheduledReportBpmn\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2).)*ET\.parse\((?:\\.|(?!\2).)*\\?\2\s+[^\s;&|]*ScheduledReportBpmn\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*ScheduledReportBpmn\.bpmn)'
+    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\\1|(?!\1).)*ET\.parse\()(?=(?:\\\1|(?!\1).)*ScheduledReportBpmn\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\\2|(?!\2).)*ET\.parse\((?:\\\2|(?!\2).)*\\?\2\s+[^\s;&|]*ScheduledReportBpmn\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*ScheduledReportBpmn\.bpmn)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

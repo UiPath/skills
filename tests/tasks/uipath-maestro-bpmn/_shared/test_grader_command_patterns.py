@@ -16,6 +16,7 @@ one (R14/R15 `adhoc-2026-11-07_01-31-01` / `_01-31-33`, and a codex smoke run).
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -124,6 +125,51 @@ def test_timer_xml_check_counts_a_parse_of_the_file(command: str) -> None:
 @pytest.mark.parametrize("command", TIMER_NOT_PARSES)
 def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
+
+
+# Backslash runs (`\\n` escapes, codex's `/bin/bash -lc "python3 -c \"...\""`) must not
+# send the pattern into exponential backtracking: when `\\.` and the any-char branch
+# could both take a backslash, a failed match never returned, and the grader hung the
+# whole nightly batch (coder_eval_uipath build 14257838). Searched in a child process
+# so a regression fails on the timeout instead of hanging the suite.
+TIMER_BACKSLASH_HEAVY = [
+    ("/bin/bash -lc \"python3 -c \\\"print('" + "\\\\n" * 400 + "')\\\"\"", False),
+    ("python3 -c \"" + "\\\\" * 900 + "\"", False),
+    ("python3 -c 'print(\"" + "\\\\t" * 400 + "\")' ScheduledReportBpmn/ScheduledReportBpmn.bpmn", False),
+    (
+        "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('ScheduledReportBpmn.bpmn'); print('"
+        + "\\\\n" * 400
+        + "')\"",
+        True,
+    ),
+]
+
+_SEARCH_IN_CHILD = (
+    "import json, re, sys\n"
+    "args = json.load(sys.stdin)\n"
+    "pattern = re.compile(args['pattern'], re.DOTALL)\n"
+    "print(json.dumps(any(pattern.search(h) for h in args['haystacks'])))\n"
+)
+
+
+@pytest.mark.parametrize(("command", "expected"), TIMER_BACKSLASH_HEAVY)
+def test_timer_xml_check_returns_on_backslash_runs(command: str, expected: bool) -> None:
+    payload = json.dumps(
+        {"pattern": _pattern(_TIMER, "well-formed-XML").pattern, "haystacks": _match_haystacks(command)}
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", _SEARCH_IN_CHILD],
+            input=payload,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=10,
+            check=True,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail("the well-formed-XML pattern backtracks without bound on a backslash run")
+    assert json.loads(result.stdout) is expected
 
 
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:
