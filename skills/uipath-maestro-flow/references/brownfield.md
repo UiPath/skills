@@ -667,13 +667,13 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced. A container the edit grows can still push that spot aside, so keep where it lands.
-At the root, an existing node's position and size come from the original whatever the source says, except that `merge` shifts later nodes and grows a container to fit added steps; moving or resizing one in the source does nothing, so for any other change set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
+A step the edit adds has no entry, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced. A container the edit grows can still push that spot aside, so keep where it lands.
+To move or resize an existing node, change its entry in the source and merge again: `merge` applies an entry whose position, size or collapsed state differs from the baseline to the original node, at the root and in subflows, and every other node keeps the original's geometry. For example, `review: at(640, 144)` changed to `at(640, 304)` moves only `review`. No hand edit of the merged `.flow` is needed.
+`merge` still shifts later nodes and grows a container to fit added steps. A subflow the edit changed is taken from the edited compile whole; any other subflow keeps the original (6.44.4 or later; an older SDK takes every subflow from the edited compile,
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
 <!--skill-flavor:subflow-layout-sdk-upgrade:end-->
-A step the edit removes must lose its entry, or compile fails on the unknown key.
+Remove the entry of a step the edit removes. A leftover key does not fail compile: compile drops it and warns `LAYOUT_UNKNOWN_KEY`, and `check` reports the same warning.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## A path without an End stays open
