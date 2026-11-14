@@ -44,9 +44,13 @@ the connector instead of mixing.
 
 Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this
-node family: `onEvent(RecordCreated, { object: '<Entity>', … })`, with the
-entity named through `object`. See
-[`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+node family. They are curated events with the object built in, so do not pass
+`object`: the registry serves them as `record-created-preview-` and
+`record-updated-preview-`, and the entity is picked through the `where` lookups
+that `uip maestro registry prepare uipath-uipath-dataservice --action
+record-updated-preview-` prints (`entityScope`, `tenantEntityName`,
+`folderEntityName`). See
+[`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview
 
