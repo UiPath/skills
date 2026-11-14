@@ -66,22 +66,27 @@ When `uip` says the installed SDK cannot fetch connector definitions through uip
 ### Ask the SDK what it supports
 
 Read this even when the SDK is already installed.
-When a reference says a feature needs SDK 6.97.0 or later, run `npx --no flow-sdk capabilities` before you use the feature.
+From 6.99.0 the SDK can say which features it has: run `npx --no flow-sdk capabilities`.
 `--no` stops npx from downloading anything: it runs the workspace copy, else the global one.
 The command prints the name and version, then one feature name per line:
 
 ```text
 $ npx --no flow-sdk capabilities
-@uipath/maestro-builder-sdk 6.97.0 (gitref 1a2b3c4)
+@uipath/maestro-builder-sdk 6.99.0 (gitref 1a2b3c4)
 json-result
 flow-check-baseline
 flow-pipeline-strict
 ...
 ```
 
-`--json` prints one object instead: `{"ok":true,"name":"@uipath/maestro-builder-sdk","version":"6.97.0","gitref":"1a2b3c4","capabilities":["json-result",...]}`.
+`--json` prints one object instead: `{"ok":true,"name":"@uipath/maestro-builder-sdk","version":"6.99.0","gitref":"1a2b3c4","capabilities":["json-result",...]}`.
 Test one feature with `npx --no flow-sdk capabilities | grep -qx <name>`.
-If the name is missing, upgrade the SDK, or use the fallback the reference gives.
+Read the answer this way:
+
+- The list prints and has the name: the feature is there.
+- The list prints and lacks the name: the feature is not there. Upgrade the SDK, or use the fallback the reference gives.
+- `error: unknown command 'capabilities'`: the SDK is older than 6.99.0. That says nothing about the features below, which all shipped earlier. For one of them, follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
+
 The names are stable:
 
 | Name | Feature |
@@ -94,9 +99,8 @@ The names are stable:
 | `project-min-version` | `flowSdk.minVersion`, below |
 
 To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
-Then `compile`, `check`, `decompile` and `merge` refuse an older SDK with exit 2 and print the `npm install` command that upgrades it.
-Both need `@uipath/maestro-builder-sdk` 6.97.0 or later (UiPath/builder-sdk#1991).
-An older SDK answers `error: unknown command 'capabilities'` and ignores `minVersion`, so upgrade it.
+From 6.99.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
+An SDK older than 6.99.0 ignores `minVersion`, so a floor only takes effect once the SDK in use is 6.99.0 or later (UiPath/builder-sdk#2009).
 <!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
