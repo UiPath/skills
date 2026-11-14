@@ -667,13 +667,21 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-A step the edit adds has no entry, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced. A container the edit grows can still push that spot aside, so keep where it lands.
+A step the edit adds has no entry, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`); `merge` keeps a step you placed and moves only the ones compile left unplaced (an SDK with builder-sdk#2036; an older SDK also moves an `at()` where (x − 256) is a multiple of 288 on y = 144 or 304, so avoid those spots,
+<!--skill-flavor:placeholder-flag-sdk-upgrade:start-->
+or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+<!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
+A container the edit grows can still push that spot aside, so keep where it lands.
 To move or resize an existing node, change its entry in the source and merge again: `merge` applies an entry whose position, size or collapsed state differs from the baseline to the original node, at the root and in subflows, and every other node keeps the original's geometry. For example, `review: at(640, 144)` changed to `at(640, 304)` moves only `review`. No hand edit of the merged `.flow` is needed.
+This needs an SDK with builder-sdk#2037. An older SDK keeps the original's position and size whatever the source says;
+<!--skill-flavor:layout-edit-sdk-upgrade:start-->
+with it, set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead (the node's `ui` only when the file has no `layout.nodes` map), or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:layout-edit-sdk-upgrade:end-->
 `merge` still shifts later nodes and grows a container to fit added steps. A subflow the edit changed is taken from the edited compile whole; any other subflow keeps the original (6.44.4 or later; an older SDK takes every subflow from the edited compile,
 <!--skill-flavor:subflow-layout-sdk-upgrade:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
 <!--skill-flavor:subflow-layout-sdk-upgrade:end-->
-Remove the entry of a step the edit removes. A leftover key does not fail compile: compile drops it and warns `LAYOUT_UNKNOWN_KEY`, and `check` reports the same warning.
+Remove the entry of a step the edit removes. A leftover key does not fail compile: compile drops it and warns `LAYOUT_UNKNOWN_KEY`, and `check` reports the same warning (an SDK with builder-sdk#2037; an older SDK fails compile on it).
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## A path without an End stays open

@@ -30,6 +30,16 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
+This needs a `@uipath/maestro-builder-sdk` with builder-sdk#2035. An older SDK
+writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
+96 × 96, not 288 × 96). With such an SDK, run
+`uip maestro flow format <Name>.flow --output json` once on a greenfield file
+(never on a merged or `.layout()` file), and in a `.layout()` give each agent
+node `dim(288, 96)` and each container at least `dim(560, 320)`;
+<!--skill-flavor:compile-layout-sdk-upgrade:start-->
+or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:compile-layout-sdk-upgrade:end-->
+
 `nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
 node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
 author-chosen layout, run `format`, then confirm each node in `layout.nodes` has a
@@ -70,7 +80,7 @@ Rules:
    Compile gives a node without `dim()` its canvas-shape size: an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) is 288 × 96, so the next column starts 384 px to its right; a container is 560 × 320 unless its `dim()` makes it larger (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
 2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding. The container's 560 × 320 holds a small body; give it a `dim()` only when the body needs more: the right edge of its rightmost child plus 144, by the bottom edge of its lowest child plus 96.
    For one row of 96 px nodes that is `dim(192 × bodyNodes + 192, 320)` from two body nodes on (two nodes: `dim(576, 320)`, as `eachInvoice` above); a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
-3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout. A key that names no node is dropped with a `LAYOUT_UNKNOWN_KEY` warning.
+3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout. A key that names no node is dropped with a `LAYOUT_UNKNOWN_KEY` warning (an older SDK without builder-sdk#2037 fails `compile` on it); remove it.
 4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
 <!--skill-flavor:layout-sdk-version:start-->
 5. **`at` and `dim` need `@uipath/maestro-builder-sdk` 6.36.0 or later** — check that `dist/api-index.md` of the SDK copy in use lists them. If not, upgrade that copy: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
