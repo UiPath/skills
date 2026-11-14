@@ -277,7 +277,7 @@ The reply is the template and nothing else: no line before it, between its parts
 
 <!--skill-flavor:draft-cloud-copy:start-->
 When you uploaded the skeleton, the user may have changed it on the canvas before answering.
-Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, and say so in the reply's one sentence.
+Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking: decompile it and edit through `merge` ([Brownfield](bpmn-runtime.md#brownfield-editing)), not compile and `format`, so their layout survives. Say so in the reply's one sentence.
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->

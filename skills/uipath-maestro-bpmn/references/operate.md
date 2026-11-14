@@ -28,7 +28,7 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    deployment. **"Publish" means Studio Web upload** unless the user names
    Orchestrator.
 <!--skill-flavor:preflight-target:end-->
-2. Confirm the `.bpmn` passes `uip maestro bpmn validate` (no `MISSING_DI_SHAPE`),
+2. Confirm the `.bpmn` passes `uip maestro bpmn validate` (no `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`),
    and that every connector node has been through the
    CLI's Integration Service enrichment — a draft with unresolved enrichment is
    not executable.
