@@ -133,7 +133,8 @@ uip maestro bpmn format <Name>.bpmn
   new elements; an older one draws none, and step 4 then reports
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
   `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5, run step 4
-  again, and tell the user that the canvas layout was reset.
+  again, and, unless step 4 reported `No diagrams found`, tell the user that the
+  canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.

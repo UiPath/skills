@@ -430,7 +430,8 @@ binding half, which is the same for every connector-backed node.
   `BPMN_PARSE_ERROR` with `No diagrams found` (the original had no diagram, so there is no
   layout to lose), `MISSING_DI_SHAPE` or `MISSING_DI_EDGE` (an older SDK's `merge`
   draws no shapes for new elements), run
-  `refresh` and `validate` again, and tell the user that the canvas layout was reset.
+  `refresh` and `validate` again, and, when the original had a diagram (`MISSING_DI_SHAPE` /
+  `MISSING_DI_EDGE`), tell the user that the canvas layout was reset.
 
 ## Contract metadata
 
