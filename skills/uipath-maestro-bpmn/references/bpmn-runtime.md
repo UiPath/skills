@@ -421,8 +421,9 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.brownfield.format -->
 - Do not `format` a merged process. `merge` keeps every shape and edge of the
-  original where the user put it (it only grows a lane or pool with no room for a new
-  shape), and draws the shapes of the elements the
+  original where the user put it (it grows a lane, pool or expanded sub-process that has
+  no room for a new shape and shifts the shapes below it, and reroutes an existing edge
+  whose flow the edit rewired), and draws the shapes of the elements the
   edit added. `format` lays out the whole diagram again, so it drops the user's
   pools, lanes, colors and placement.
   Run `format` only when `refresh` or `validate` reports

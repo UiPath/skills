@@ -80,7 +80,7 @@ When a reference tells you to run a command that is not available, use the Studi
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
    `refresh` and `validate` — in that order, every time
    ([Validation loop](#validation-loop)). Lay out the diagram only when they
-   report a missing shape. `compile` writes no diagram, and `merge` keeps the
+   report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
    shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
    is empty.
@@ -121,7 +121,7 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5. Only when step 4 reports MISSING_DI_SHAPE or MISSING_DI_EDGE: lay out the diagram, then run step 4 again
+# 5. Only when step 4 reports BPMN_PARSE_ERROR: No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: lay out the diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn
 ```
 

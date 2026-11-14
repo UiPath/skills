@@ -122,7 +122,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
    run product validation — in that order, every time you compile a new process
    (an existing process takes step 8's `merge` instead; `format` it only when `refresh` or
-   `validate` reports a missing shape). `validate` refuses a file with
+   `validate` reports a missing diagram or shape). `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
    `format` adds it.
    Exactly one emitted `<Name>.bpmn` may exist, at

@@ -163,7 +163,7 @@ Report, concisely:
   `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas),
   `Cloud configuration` (folder, process, release, connection state on the tenant);
 - the safe next action: the owner from the line above and its repair (a source
-  fix and recompile, a package refresh, an operator hand-off), then the one
+  fix rebuilt through the validation loop, a package refresh, an operator hand-off), then the one
   read-only command that shows the run's state before any Operate decision, for
   example "`BPMN source` fixes `<ELEMENT_ID>`, then re-read
   `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`"
@@ -202,7 +202,7 @@ These are the ones that survive both:
   `resourceKey` is the folder's own key fails to resolve the connection
   (`MISSING_BINDING` at validate; a `BindingResolution` incident at run time).
   The compiler keys it by the companion connection; if the artifact was
-  hand-edited, recompile.
+  hand-edited, fix the `.bpmn.ts` and rebuild it through the validation loop.
 - **Integration Service enrichment missing** — the connector node reached the
   runtime with draft context, no connection binding, or a stale dynamic schema.
   The incident points at the connector node; runtime variables show missing or
