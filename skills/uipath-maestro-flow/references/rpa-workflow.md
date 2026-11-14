@@ -33,6 +33,9 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
+- **Or name the sibling by project:** `rpaWorkflow({ location: 'in-solution', project: '<RpaProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
 <!--skill-flavor:rpa-sibling-register:start-->
   Register the sibling and refresh resources

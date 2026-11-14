@@ -71,6 +71,9 @@ with `form: 'flow'` — set `location: 'in-solution'` and `projectId`, and omit
   inputs: { message: input('who') }, returns: { echoed: 'string' } }))
 ```
 
+- **Or name the sibling by project:** `agenticProcess({ form: 'flow', location: 'in-solution', project: '<Project>', inputs })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
 <!--skill-flavor:agentic-sibling-register:start-->
   Register the sibling and refresh resources
