@@ -75,10 +75,22 @@ def check_rules(plan: dict) -> None:
         sys.exit(f"FAIL: {len(unnamed)} api-event rule(s) carry no businessEventType; they would never fire.")
 
 
+def _find_sdd() -> str | None:
+    candidates = [
+        "sdd.md",
+        "BusinessEventCase/sdd.md",
+        "BusinessEventCase/BusinessEventCase/sdd.md",
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return None
+
+
 def check_strict(plan_path: str) -> None:
-    sdd = "sdd.md" if os.path.exists("sdd.md") else None
+    sdd = _find_sdd()
     if sdd is None:
-        sys.exit("FAIL: no sdd.md in the working directory to validate against.")
+        sys.exit("FAIL: no sdd.md found in working directory or solution subdirectories.")
     result = subprocess.run(
         ["uip", "maestro", "case", "validate", plan_path, "--strict", "--sdd", sdd, "--output", "json"],
         capture_output=True, text=True, timeout=120,

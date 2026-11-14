@@ -19,10 +19,12 @@ Use this as a router: read only the capability reference you need, then let Type
 
 **Design first:** when the request is to build or create a case and no `sdd.md` exists, invoke `uipath-planner`'s `design` verb (Case Management) in this conversation (the Skill tool, never a subagent) before any other step. The lane owns the design, its one review, and the `sdd.md` write; then continue at step 0 with that `sdd.md`. Never overwrite an existing `sdd.md`. If the planner is unavailable, say so once, ask for an `sdd.md` or an approved design, and stop. A targeted edit of an existing plan or `<Name>.case.ts` needs no SDD. An `sdd.md` from an earlier session is approved when its `## Planner Handoff` table reads `Template validation` `passed`; otherwise send it back through the planner.
 
+**Never use `sdd convert` as the build path.** Its output has flat connector inputs and unresolved references — `validate` rejects it. If convert was run, decompile its output and continue from step 5.
+
 0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
 <!--skill-flavor:workflow-scaffold:start-->
 1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
-2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.70.7 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version). Skip it when a recent enough version is installed. Write `<Name>.case.ts` in the solution dir (the working directory after step 1), beside the Case project folder, not inside it; no `package.json` is needed. Do not add one: an `npm init -y` `package.json` sets `"type": "commonjs"`, and then `check` and `compile` fail with `Cannot use import statement outside a module`.
+2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.70.7 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version). Skip it when a recent enough version is installed. Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin. When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works. Write `<Name>.case.ts` in the solution dir (the working directory after step 1), beside the Case project folder, not inside it; no `package.json` is needed. Do not add one: an `npm init -y` `package.json` sets `"type": "commonjs"`, and then `check` and `compile` fail with `Cannot use import statement outside a module`.
 <!--skill-flavor:workflow-scaffold:end-->
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
@@ -51,7 +53,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
-| A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
+| A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: the source is the result field as the Designer saves it, `=<Field>` on every task that runs published work (agent, process, RPA, API workflow, case management, flow process, function, business rule: `AgentExpenseRequest: '=AgentExpenseRequest'`) and `=response.<field>` only on a connector or wait-for-connector task; a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
@@ -60,12 +62,14 @@ three entry points; each file's header spells the paths its rows resolve against
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work and its Action App | `action`; `app: { name, folder }` (SDK 6.46.4+) names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
+| HTTP requests | `httpRequest({ method, url or path, headers?, query?, body?, connector? })` (SDK 6.82.1+) | [HTTP requests](references/case-runtime.md#http-requests) | `examples/HttpRequestSingleCase.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
+| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })` | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
 
 ## Minimal shape
 
@@ -112,6 +116,8 @@ uip solution resources refresh --solution-folder <solution> --output json
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
 
+> **`sdd convert` is a seed, not a build path** — see the Workflow section above.
+
 The build is complete only when `validate --strict` passes. When the request
 supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
 Without an SDD, run `--strict` alone. A default-profile `Valid` whose
@@ -127,11 +133,10 @@ A connector task, external task, event trigger or wait-for-connector that
 `compile` cannot resolve fails `check` first, with compile's code and text.
 
 <!--skill-flavor:library-pull:start-->
-Before `check` on a Case with connector work, run `uip maestro registry pull`:
-with no library cached these rules stay silent, so a clean `check` proves
-nothing about the connector. To use another library, set
-`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
-both resolve against the same one.
+No pull is required first: with no library pulled, an operation is fetched from the tenant through `uip` (SDK 6.97.0 or later) into `.flow-sdk/connectors-local`, and `check` goes on, so it needs a logged-in `uip` then.
+With a pulled library, an operation it lacks is refused, not fetched: refresh the library with `uip maestro registry pull` when the operation is newer than it.
+A `CONNECTOR_NOT_IN_LIBRARY` that remains says, in its last sentence, either that the tenant does not serve the operation, or `uip`'s own reason it could not be asked; fix that reason (`uip login` only when the session is the problem).
+To use another library, set `$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so both resolve against the same one.
 <!--skill-flavor:library-pull:end-->
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,

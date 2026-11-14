@@ -149,6 +149,16 @@ RUN --mount=type=secret,id=npm_auth_token \
         printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version"; \
         printf '%s\n' available > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status"; \
         echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
+        # Also install that exact build globally. The Flow skill tells agents the SDK
+        # is installed with `npm install -g` and checks `npm ls -g`; with only the
+        # prefix copy, 94 Flow/BPMN tasks in the 2026-11-12 nightly spent a
+        # turn installing `@latest` themselves, which also let the version drift
+        # from the one this image smoke-checks. No --userconfig here: with -g, npm
+        # already loads "$npmrc" as the global config and refuses to load it twice.
+        # A failure here fails the build: the prefix install just reached the same
+        # feed, so a warning would only hide a broken command.
+        npm install -g --no-audit --no-fund \
+          "${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
       else \
         echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
       fi; \
@@ -207,16 +217,23 @@ RUN --mount=type=secret,id=npm_auth_token \
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion
 # with `spawn dotnet ENOENT`. libicu is a runtime dependency of the SDK.
+# The SDK install is best-effort: when dot.net is unreachable after retries the
+# image builds without dotnet, so only the tasks that need it fail, not the run.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         jq \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
-    && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
-    && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
-    && rm /tmp/dotnet-install.sh \
-    && dotnet --version
+    && if curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
+            https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+        && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
+        && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
+        && /usr/share/dotnet/dotnet --version; then \
+         ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet; \
+       else \
+         echo "WARNING: .NET SDK install failed; this image has no dotnet, so RPA build and Helm tasks will fail." >&2; \
+         rm -rf /usr/share/dotnet; \
+       fi \
+    && rm -f /tmp/dotnet-install.sh
 
 ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
@@ -282,7 +299,7 @@ RUN set -euo pipefail && \
     if [ "$sdk_status" = available ]; then \
       registry_status=failed; \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
-        uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
+        uip maestro registry pull ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
         registry_snapshot=''; \
         if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \

@@ -328,6 +328,47 @@ test("the studioweb Flow skill is the builder-SDK skill", (t) => {
   assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
 });
 
+test("the studioweb BPMN skill says evals are not available, in the routing table and the page", (t) => {
+  const root = join(buildStudioweb(t), "uipath-maestro-bpmn");
+  const skill = readFileSync(join(root, "SKILL.md"), "utf8");
+  const evaluate = readFileSync(join(root, "references", "evaluate.md"), "utf8");
+
+  assert.ok(!skill.includes("| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` |"));
+  assert.ok(skill.includes("| Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | Not available in Studio Web |"));
+  assert.ok(evaluate.includes("**Not available in Studio Web.**"));
+});
+
+// `debug-instance` is a terminal-CLI alias of `debug-instances`. The browser
+// snapshot (assets/uip-browser-commands-snapshot.json) lists only the plural,
+// and the studioweb operate page and SKILL.md teach it, so diagnose must too.
+// The singular `instance`/`job`/`incident` reads are the same open question,
+// tracked by the `maestro bpmn` ceiling in studioweb-browser-commands.json.
+test("the studioweb BPMN skill reads a debug run with `debug-instances`, never the alias", (t) => {
+  const root = join(buildStudioweb(t), "uipath-maestro-bpmn");
+  for (const rel of ["SKILL.md", "references/operate.md", "references/diagnose.md"]) {
+    const text = readFileSync(join(root, rel), "utf8");
+    assert.ok(!/uip maestro bpmn debug-instance(?!s)/.test(text), `${rel} names the debug-instance alias`);
+  }
+  const diagnose = readFileSync(join(root, "references", "diagnose.md"), "utf8");
+  assert.ok(diagnose.includes("uip maestro bpmn debug-instances variables-all <TRACE_ID> --output json"));
+});
+
+test("the studioweb HITL skill hands Case and BPMN to their own skills", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-human-in-the-loop", "SKILL.md"), "utf8");
+
+  assert.ok(!skill.includes("cover the Case, Low-Code Agent and Maestro"));
+  assert.ok(!skill.includes("bpmn:task id="));
+  assert.ok(skill.includes("Case and Maestro have their own stops below"));
+});
+
+for (const skillName of ["uipath-maestro-bpmn", "uipath-maestro-case"]) {
+  test(`the studioweb ${skillName} skill is the builder-SDK skill`, (t) => {
+    const skill = readFileSync(join(buildStudioweb(t), skillName, "SKILL.md"), "utf8");
+
+    assert.ok(skill.includes("@uipath/maestro-builder-sdk"));
+  });
+}
+
 // UV-17734: the Studio Web override of the project-layout block dropped this,
 // so Autopilot scaffolded Maestro Automate requests as plain Flow projects.
 const AUTOMATE_INIT = /uip maestro flow init <\w+> --automate/;
@@ -349,7 +390,6 @@ test("every Flow skill flavor scaffolds Maestro Automate with `--automate`", (t)
 const FLOW_TERMINAL_ONLY = [
   "npm install",
   "FLOW_SDK_LIBRARY",
-  "registry path --library",
   "pipeline.mjs",
   "flow-sdk flow merge",
   "/tmp/flow-sdk",
@@ -416,4 +456,101 @@ function siblingLinesNaming(root) {
 
 test("the studioweb Flow siblings name no classic Flow instruction", (t) => {
   assert.deepEqual(siblingLinesNaming(buildStudioweb(t)), []);
+});
+
+// The BPMN skill authors with the builder SDK on a desktop terminal.
+// Its studioweb flavor runs the same SDK inside the
+// page, on the open solution, with no npm, no login step, no pack or upload, no
+// local `.uipx` to refresh and no connector markdown files. It must name none
+// of those.
+const BPMN_TERMINAL_ONLY = [
+  "npm install",
+  "npx flow-sdk",
+  "resources refresh --solution-folder",
+  "uip solution upload <",
+  "uip solution pack <",
+  "uip maestro bpmn pack <",
+  "uip maestro bpmn debug <project-path>",
+  "uip login status --output",
+  "`markdownPath` is",
+  "at the workspace root",
+];
+
+function bpmnLinesNaming(skillRoot) {
+  return markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        BPMN_TERMINAL_ONLY.filter((needle) => line.includes(needle)).map(
+          (needle) => `${relative(skillRoot, file)}:${index + 1}: ${needle}`,
+        ),
+      ),
+  );
+}
+
+test("the studioweb BPMN skill names no terminal-only command", (t) => {
+  const skillRoot = join(buildStudioweb(t), "uipath-maestro-bpmn");
+  const debugHits = markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        [TWO_TOKEN_VERB, JSON_DEBUG, PATH_DEBUG].some((pattern) => pattern.test(line))
+          ? [`${relative(skillRoot, file)}:${index + 1}`]
+          : [],
+      ),
+  );
+
+  assert.deepEqual(bpmnLinesNaming(skillRoot), []);
+  assert.deepEqual(debugHits, []);
+});
+
+test("the default BPMN skill keeps its terminal commands (the guard is not vacuous)", () => {
+  const hits = bpmnLinesNaming(join(REPO_ROOT, "skills", "uipath-maestro-bpmn"));
+  assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...BPMN_TERMINAL_ONLY].sort());
+});
+
+// The Case skill authors with the builder SDK on a desktop terminal.
+// Its studioweb flavor runs the same SDK inside the
+// page, on the open solution's plan, with no solution to create, no npm, no
+// login step, no local `.uipx` to refresh or prune and no SDK to upgrade. It
+// must name none of those.
+const CASE_TERMINAL_ONLY = [
+  "uip solution init",
+  "--solution-folder",
+  "uip login status --output",
+  "so upgrade first",
+];
+
+function caseLinesNaming(skillRoot) {
+  return markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        CASE_TERMINAL_ONLY.filter((needle) => line.includes(needle)).map(
+          (needle) => `${relative(skillRoot, file)}:${index + 1}: ${needle}`,
+        ),
+      ),
+  );
+}
+
+test("the studioweb Case skill names no terminal-only command", (t) => {
+  const skillRoot = join(buildStudioweb(t), "uipath-maestro-case");
+  const debugHits = markdownFiles(skillRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        [TWO_TOKEN_VERB, JSON_DEBUG, PATH_DEBUG].some((pattern) => pattern.test(line))
+          ? [`${relative(skillRoot, file)}:${index + 1}`]
+          : [],
+      ),
+  );
+
+  assert.deepEqual(caseLinesNaming(skillRoot), []);
+  assert.deepEqual(debugHits, []);
+  assert.match(readFileSync(join(skillRoot, "SKILL.md"), "utf8"), /uip maestro case debug "<Project>"/);
+});
+
+test("the default Case skill keeps its terminal commands (the guard is not vacuous)", () => {
+  const hits = caseLinesNaming(join(REPO_ROOT, "skills", "uipath-maestro-case"));
+  assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...CASE_TERMINAL_ONLY].sort());
 });

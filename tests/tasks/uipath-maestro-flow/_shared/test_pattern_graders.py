@@ -294,7 +294,7 @@ ENDPOINTS = {"handleBilling": "https://billing.example.test/tickets",
              "handleAccount": "https://accounts.example.test/requests"}
 
 
-def finished(project: Path, keep: str = "") -> None:
+def finished(project: Path, keep: str = "", connection: str = "") -> None:
     """Finish the canvas pattern by hand: real HTTP steps, a real prompt, the item wired in."""
     flow_path = project / "SupportTriage.flow"
     flow = json.loads(flow_path.read_text(encoding="utf-8"))
@@ -304,6 +304,12 @@ def finished(project: Path, keep: str = "") -> None:
             n["type"], n["inputs"] = "core.action.http", {"url": url, "method": "POST"}
     agent = node(flow, "classifyItem")
     agent["inputs"]["agentInputVariables"] = [{"id": "subject", "binding": "=js:$vars.start.output.subject"}]
+    # What managed HTTP compiles in; resourceKey is empty unless a connection is named.
+    flow["bindings"] = [
+        {"id": "b-http", "name": "uipath-uipath-http connection", "resource": "connection", "resourceKey": connection,
+         "default": "ImplicitConnection", "propertyAttribute": "ConnectionId"},
+        {"id": "b-folder", "name": "FolderKey", "resource": "connection", "resourceKey": connection, "propertyAttribute": "FolderKey"},
+    ]
     flow_path.write_text(json.dumps(flow))
     sidecar = project / agent["inputs"]["source"] / "agent.json"
     sidecar.write_text(sidecar.read_text(encoding="utf-8").replace("PLACEHOLDER - replace with your classification instructions.", "Classify the support email."))
@@ -323,7 +329,8 @@ def finish_grade(tmp_path: Path, prepare: Callable[[Path], None]) -> subprocess.
     ("label", "prepare", "want"),
     [("as the canvas inserted it", lambda project: None, 1),
      ("finished", finished, 0),
-     ("one mock left", lambda project: finished(project, keep="handleAccount"), 1)],
+     ("one mock left", lambda project: finished(project, keep="handleAccount"), 1),
+     ("HTTP through a real connection", lambda project: finished(project, connection="3f6c1d0e-conn"), 1)],
 )
 def test_canvas_finish_grader(label: str, prepare: Callable[[Path], None], want: int, tmp_path: Path) -> None:
     result = finish_grade(tmp_path, prepare)

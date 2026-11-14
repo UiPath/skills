@@ -1,0 +1,11 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpUserConnectionsSet",
+  "ErrorCode": "not_found",
+  "Message": "You can see no connection of the UiPath MCP connector named 'Vendor MCP (Jane)'.",
+  "Instructions": "`uip is connections list uipath-uipath-mcp --all-folders` lists the ones you can see. Pass the exact --connection-name, or --connection-id <id>.",
+  "Retry": "RetryWillNotFix",
+  "Context": {
+    "httpStatus": 404
+  }
+}

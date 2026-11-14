@@ -1,31 +1,33 @@
 <!--skill-flavor:sdk-project-layout:start-->
-**In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm` or Node here. `examples/` holds authored examples, and `references/` the details this guide routes to.
+**In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: no `npm` or Node.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for a new project, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for one, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `new.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
 
 **Edit the open flow.** Each turn's context gives:
 
 - `CurrentFile.AbsolutePath` — the open file, for example `/solution/Flow/new.flow`.
-- `CurrentFile.IsCurrentFileEmpty` — `true` when the open `.flow` holds no flow yet.
+- `CurrentFile.IsCurrentFileEmpty` — `true` when the open `.flow` has no flow yet.
 - `CurrentProject.AbsolutePath` — the open project, for example `/solution/Flow`.
-- `CurrentWorkingDirectory` — the shell's directory. It can differ from the project, so `cd` there first.
+- `CurrentWorkingDirectory` — the shell's directory; it can differ from the project, so `cd` there first.
 
 Choose the target `.flow` in order:
 
-1. The user names a file: edit that file.
+1. The user names an existing `.flow`: edit it.
 2. An edit: edit the `.flow` at `CurrentFile.AbsolutePath`.
-3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `.flow`. In a project you created, compile with `-o new.flow`: the flow's name goes in `.name('…')`, and the canvas never opens a `<FlowName>.flow` beside it.
-4. A new flow otherwise: write a new `<Name>.flow` in the open project. Then tell the user to open it in the Explorer: a write refreshes the canvas only for the open file.
+3. A new flow, and `IsCurrentFileEmpty` is `true`, you just created the project, or the project holds only an empty or trigger-only `new.flow`: fill that `new.flow` ([Lifecycle](#lifecycle)).
+4. A different new flow, and `new.flow` already has steps: write a new `<Name>.flow` in the open project ([Lifecycle](#lifecycle)). Then tell the user to open it in the Explorer: a write refreshes the canvas only for the open file.
 
-Below, `<Project>` is the target's folder and `<Name>` its file name without `.flow` (`new` for `new.flow`). `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
+Under rule 3 never write a second `.flow`: the request's flow name names no file. A copy the user asks for is fine.
 
-**The target `.flow` is the single source of truth.** The user can change it on the canvas between your turns, so never reuse a `.flow.ts` from an earlier turn: decompile a fresh one.
+In every reference, `<Project>` is the target's folder, `<Name>` its file name without `.flow`: `new` for `new.flow`, never the flow's name. `<Draft>` is `/tmp/flow-draft/<Project>/<Name>`.
 
-**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
+**The target `.flow` is the single source of truth.** The user can change it on the canvas between turns, so never reuse an earlier turn's `.flow.ts`: decompile a fresh one.
 
-**Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead.
+**Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.flow.ts`, the undo copy `original/<Name>.flow` and the `prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` are throw-away: each turn rebuilds them; a page reload clears `/tmp`. Give each `.flow` its own folder: compile writes inline-agent files next to it ([`references/brownfield.md`](references/brownfield.md#why-three-directories-inline-agents)).
 
-**A read-only page refuses every write.** When the page shows "Locked by you" and an Edit button, a write fails, sometimes as `[object Object]`. Tell the user to click Edit, then try again.
+**Never delete or rename a file under `/solution`:** the file system refuses both; overwrite it instead.
+
+**A read-only page refuses every write.** When the page shows "Locked by you" and an Edit button, writes fail, sometimes as `[object Object]`. Ask the user to click Edit, then retry.
 
 **The Flow SDK can be off for this user.** When an SDK verb answers `ConfigError` "this host has no way to run …", it is off. Say so, and stop.
 
@@ -41,6 +43,7 @@ Commands that differ in Studio Web:
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
 | `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
+| `uip maestro flow extraction check` | Works: it answers whether the tenant of the session can run an Extract document node. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: it confirms the library of the session, ignores its options, and writes no `./connectors/<key>.ts` modules. |
 | `uip maestro registry path` | Not available: there is no local library cache. |
@@ -49,7 +52,7 @@ Commands that differ in Studio Web:
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
 | `uip maestro flow debug "<Project>" --inputs '{}'` | Works: a real run of the flow open in the designer. Without `--inputs` it waits on a dialog. |
 | `uip solution pack`, `upload`, `init` | Not available. Studio Web owns the solution. |
-| `uip login` | Not available. You are already signed in to the tenant of the user. |
+| `uip login` | Not available. You are already signed in to the user's tenant. |
 | `npm`, `node`, the `flow-sdk` bin, `uv`, `uip codedagent` | Not available. Studio Web cannot create a coded agent. |
 
 For a command that is not available, use the Studio Web route this guide gives. With no route, tell the user.
@@ -75,8 +78,8 @@ Run each command from the project folder `/solution/<Project>`. `prepare` writes
 
    With no prepared descriptor, write `connector('<key>', '<action>', inputs, { connection, folder })`. Never import from `./connectors/`: Studio Web writes no modules there.
 5. **Check:** `uip maestro flow check .flow-sdk/<Name>.flow.ts --source` (edits add `--baseline`: [Lifecycle](#lifecycle)). It also reports the required fields of the project from the prepared page (for example Jira `components`). Run each `prepare` it names, then check again.
-6. **Compile and merge** ([Lifecycle](#lifecycle)).
-7. **Add each connection to the solution.** After the merge, read each `connection` row in `bindings_v2.json` of the project. For each row, run `uip solution resources add --source remote --kind connection --cloud-key <ConnectionId>`. If the file has no such row, use the `resourceKey` of each `ConnectionId` entry in `.flow-sdk/bindings.json`. Without this step, the node shows "The selected resource is not part of the solution". Check the result with `uip solution resources list --source local --output json`.
+6. **Compile; an edit also merges** ([Lifecycle](#lifecycle)).
+7. **Add each connection to the solution.** Then read each `connection` row in `bindings_v2.json` of the project. For each row, run `uip solution resources add --source remote --kind connection --cloud-key <ConnectionId>`. If the file has no such row, use the `resourceKey` of each `ConnectionId` entry in `.flow-sdk/bindings.json`. Without this step, the node shows "The selected resource is not part of the solution". Check the result with `uip solution resources list --source local --output json`.
 
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
 `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED` and `CONNECTOR_OBJECT_NOT_GENERIC` are source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe).
@@ -85,37 +88,49 @@ Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRe
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 <!--skill-flavor:sdk-lifecycle:start-->
-Every change — a new flow or an edit — is the same round trip through the target `.flow` ([Project layout](#project-layout)). Merge keeps layout and sidecars and moves nodes to make room: never move them back or edit the merged `.flow`. Run it from the project folder:
+**A new flow** (rule 3) fills the project's `new.flow`:
+
+```bash
+cd /solution/<Project>
+uip maestro flow decompile new.flow -o .flow-sdk/new.flow.ts --no-pipeline
+# Add your steps to it:
+uip maestro flow check .flow-sdk/new.flow.ts --source
+uip maestro flow compile .flow-sdk/new.flow.ts -o new.flow
+uip maestro flow format new.flow --output json
+uip maestro flow validate new.flow --output json
+```
+
+An empty `new.flow` fails `decompile`, and a rule 4 flow has no file yet: write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow) and run the rest on `<Name>.flow`. If `check` or `validate` fails, fix the source and rerun from `check`.
+
+**An edit** round-trips through the target `.flow`. Merge keeps layout and sidecars and moves nodes to make room: never move them back or edit the merged `.flow`.
 
 ```bash
 cd /solution/<Project>
 mkdir -p .flow-sdk/original <Draft>/baseline <Draft>/edited
-# 1. Seed, every turn: a copy of the target, a fresh source, the pristine baseline
+# 1. Seed, every turn: target copy, fresh source, pristine baseline
 cp <Name>.flow .flow-sdk/original/<Name>.flow
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/baseline/<Name>.flow
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly (no .layout() for added steps: merge places them), then check until clean
 #    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline .flow-sdk/original/<Name>.flow
-# 3. Compile the edit (no check: step 2 is the gate), then merge the delta into the target
+# 3. Compile the edit (step 2 is the gate), then merge into the target
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Draft>/edited/<Name>.flow
 uip maestro flow merge <Draft>/edited/<Name>.flow --original <Name>.flow --baseline <Draft>/baseline/<Name>.flow -o <Name>.flow
-# 4. The product's own static check on the file the canvas shows
+# 4. Validate the file the canvas shows
 uip maestro flow validate <Name>.flow --output json
 ```
 
-**A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands instead ([`references/extract-document-node.md`](references/extract-document-node.md)).
+**A flow holding an Extract document node skips this round trip** — its baseline compile fails on that node; use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
-Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If `validate` fails, fix the source and run steps 2 to 4 again. To undo the merge, copy `.flow-sdk/original/<Name>.flow` back over the target.
+Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4. To undo the merge, copy `.flow-sdk/original/<Name>.flow` back over the target.
 
-- **Always finish with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
-- **An open `.flow` with no content** gives `decompile` nothing to read. Treat it as a new file (next item), and compile straight to it.
-- **A new `.flow` in a new file** (rule 4) has no original. Write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow), run step 2 without `--baseline`, and compile it straight to `<Name>.flow`. Then run `uip maestro flow format <Name>.flow --output json` once, and validate it.
-- **A baseline compile that refuses a draft node** (a generic operation with no object picked) stops the round trip: see [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
+- **An edit always ends with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
+- **A baseline compile that refuses a draft node** (a generic operation with no object picked) stops the round trip: [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
 - **If the baseline compile refuses a canvas node**, run step 2. A node it marks `(pre-existing)` is a probable SDK defect: stop and tell the user (UiPath/builder-sdk#1402).
-- **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
+- **A flow with connectors** needs each connection in the solution afterwards ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>" --inputs '{}'` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. If it names the dialog, ask the user to click Save & Debug. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. Or ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip maestro flow debug "<Project>" --inputs '{}'` is a real run: ask per references/operate.md. The reply is plain text and waits up to 120 s (`--timeout <s>`, max 150). `TimedOut` means the run is still going, not that it failed: do not re-run it. If it names the dialog, ask the user to click Save & Debug. First add each connection to the solution (connector loop, step 7). Do not run `uip solution resources refresh`: it fails in this host. Or ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->

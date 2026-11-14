@@ -89,8 +89,12 @@ with `form: 'flow'` — set `location: 'in-solution'` and `projectId`, and omit
   argument names and casing; `uip maestro flow registry get --local` shows
   them when the sibling's manifest lists them.
 
-`check` refuses the wrong shapes: `AGENTIC_LOCAL_NO_PROJECT_ID` (no
-`projectId`), `AGENTIC_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the
+`check` warns on `AGENTIC_LOCAL_NO_PROJECT_ID` (no `projectId`; the call
+resolves by `key`, so a decompiled step without one is fine as is) and refuses
+`AGENTIC_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the
 project GUID), `AGENTIC_LOCAL_HAS_FOLDER` (`folderPath` set as well; drop it,
 or drop `location` to call the published copy). `AGENTIC_NO_FOLDER` applies to
-published steps only.
+published steps only. If `check` reports `AGENTIC_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+add `projectId` from `resource.projectKey`.
+Still set `projectId` on a step you author: Studio Web's Run node reads it
+to deploy the sibling first.

@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "FolderExplore",
+  "Data": {
+    "Key": "folder-mock-jane-ws",
+    "Name": "jane.doe@example.com's workspace",
+    "OwnerName": "jane.doe@example.com",
+    "Status": "Exploring"
+  }
+}

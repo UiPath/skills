@@ -92,6 +92,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-aops` | Preview |
 | `uipath-api-workflow` | Stable |
 | `uipath-automationhub` | Stable |
+| `uipath-bundles` | Preview |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
@@ -101,7 +102,6 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
 | `uipath-ixp` | Stable |
-| `uipath-knowledge-bundles` | Preview |
 | `uipath-maestro-bpmn` | In-development |
 | `uipath-maestro-case` | Stable |
 | `uipath-maestro-flow` | Stable |
