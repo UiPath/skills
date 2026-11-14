@@ -15,7 +15,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.variables.public-types -->
 - A public `.input()` / `.output()` takes `string`, `boolean`, `integer`, `number`,
-  `array`, `object` or `json`. `double` and `float` pass `check`, `compile` and
+  `array` or `object` (`refresh`'s error also names `json`, but the SDK has no `json`
+  type: `check --source` fails with `TS2345`). `double` and `float` pass `check`, `compile` and
   `validate`, then `refresh` fails with `Unsupported process input/output type "double"`:
   write `number`. `double` on a `.var()` or a node's output row is fine.
 
