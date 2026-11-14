@@ -66,7 +66,7 @@ A failed search gives `uip`'s reason; fix what it names: log in again for a sess
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
   `lookup` imports from `@uipath/maestro-builder-sdk`, not `/bpmn` (`TS2305`). In the string form above write `.by('<Field>', value)`; `.byFullName()` exists only on a prepared module.
-- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<ACTION>', 'referenceID').by('FullName', '<ITEM_PATH>')`, then `prepare --resolve referenceID:FullName=<ITEM_PATH>`. Never paste an item id.
+- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<ACTION>', 'referenceID').by('FullName', '<ITEM_PATH>')`, then `uip maestro registry prepare uipath-microsoft-onedrive --action <ACTION> --resolve referenceID:FullName=<ITEM_PATH>`. Never paste an item id.
 - Outlook `send-email`: `message.toRecipients`, `ccRecipients` and `bccRecipients` are ONE comma-separated string, never an array (`CONNECTOR_INPUT … expected string, got object`). Always set `saveAsDraft`: `false` to send, `true` to draft. The definition's default (`true`) is not compiled into the task, and the response (`status: "success"`) does not say which happened.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
 - The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
@@ -122,10 +122,10 @@ uip is connections list <CONNECTOR_KEY> --all-folders --output json   # Id, Name
 uip is connections ping <CONNECTION_ID> --output json                 # Data.Status must be "Enabled"
 ```
 
-- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <Id>` (or `--connection <Name>`, `--connection-folder <Folder>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in (else the first one listed) and name it on the final report's `Assumed:` line.
+- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in (else the first one listed) and name it on the final report's `Assumed:` line.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
-- Report the bound connection by Name, Owner and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId`.
+- Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
 - `uip maestro bpmn validate` checks connection bindings against the tenant: outside Studio Web, pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
 
 <!--skill-flavor:prepare-live:start-->

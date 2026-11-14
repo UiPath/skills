@@ -99,8 +99,7 @@ It is the smaller net, and it sits beside a catch-all in the same container.
   Who works a business error: an operations queue, the process owner.
 - **`recordFailure`**: where a system failure is durably recorded for someone to work later: an exception queue (`.queueItem()`), a task.
 - **`alertOncall`**: the notification channel, usually a `.connector()` call.
-- **Transient failures**: `retry: { maxRetries, backoff }` on the step itself, plus an `errorMapping` row with `retryable: true` for each transient code, as in the example.
-  A policy without `allErrors` retries only the mapped codes, and with no mapping it retries nothing.
+- **Transient failures**: `retry` on the step plus an `errorMapping` row with `retryable: true` per transient code, as in the example ([Retry](../bpmn-runtime.md#events-and-timers)).
   `allErrors: true` retries every failure, business errors included, so bad data would be retried before it reaches the net; use it only on a step whose every failure is transient.
   The codes (`429`, `503`) are illustrative: map the ones the bound service actually raises.
   Transient failures should never reach the net.

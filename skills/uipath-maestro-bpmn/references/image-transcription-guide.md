@@ -20,6 +20,6 @@ The usual failure is dropping or merging items while summarizing, then building 
    Before any fidelity work, including when the user says the result does not match, check that you can see the image.
    If you cannot, read it again from the attachment path the host gave; if that fails, ask the user to attach it again.
    Never rebuild from memory of the image, from your own earlier inventory alone, or from a sub-agent's description of it; check a sub-agent's transcription against the image yourself before editing.
-5. **Verify fidelity before finishing.** After `validate` passes, run `uip maestro bpmn check --graph` on the `.bpmn.ts` and compare its output with the image, node by node and flow by flow.
+5. **Verify fidelity before finishing.** After `validate` passes, run `uip maestro bpmn check <Name>.bpmn.ts --graph` (in Studio Web, `.flow-sdk/<Name>.bpmn.ts`) and compare its output with the image, node by node and flow by flow.
    Fix a mismatch in the source and run the loop again; report one you cannot fix under `Unverified:` rather than calling the result done.
    `validate` proves the file is valid, not that it matches the image.

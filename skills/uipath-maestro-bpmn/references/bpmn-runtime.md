@@ -196,7 +196,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   1. Create its project in the same solution as the process.
   2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
      inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
-  3. With the user's go-ahead, publish it (outside Studio Web, pack it first) and `uip solution deploy run` it.
+  3. With the user's go-ahead, publish it (outside Studio Web, pack it first) and deploy it with
+     `uip solution deploy run --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-name <FOLDER_NAME> --parent-folder-path <FOLDER_PATH> --output json`.
   4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
      its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
