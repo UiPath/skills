@@ -14,7 +14,7 @@ all but the reads need `uip login`.
 > is not consent to run. A debug run is a REAL run: it calls connectors, starts
 > child processes, creates Action Center work, mutates queues and sends messages.
 >
-> **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled into `<Project>/<Name>.bpmn`, formatted and validated (SKILL.md).
+> **Where you came from.** The project is authored in `<Name>.bpmn.ts`, compiled (a new process) or merged (an existing one) into `<Project>/<Name>.bpmn` and validated (SKILL.md).
 > A failed or stuck run is investigated in [diagnose.md](diagnose.md), and the fix goes back into the `.bpmn.ts`.
 
 <!--skill-flavor:upload-consent:start-->
@@ -28,8 +28,8 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    deployment. **"Publish" means Studio Web upload** unless the user names
    Orchestrator.
 <!--skill-flavor:preflight-target:end-->
-2. Confirm the compiled `.bpmn` has been formatted and passes
-   `uip maestro bpmn validate`, and that every connector node has been through the
+2. Confirm the `.bpmn` passes `uip maestro bpmn validate` (no `MISSING_DI_SHAPE`),
+   and that every connector node has been through the
    CLI's Integration Service enrichment — a draft with unresolved enrichment is
    not executable.
 3. Regenerate the package metadata from the compiled BPMN:
@@ -183,7 +183,7 @@ the four generated files before changing anything:
 
 - A file that disagrees with the compiled BPMN is stale: run `refresh` and retry.
 - A file that agrees with a wrong BPMN means the source is wrong: fix the
-  `.bpmn.ts`, recompile, format, validate, `refresh`, retry.
+  `.bpmn.ts`, run the [validation loop](../SKILL.md#validation-loop) again (`merge` for an existing process), retry.
 - An unresolved connector — no connection binding, draft context — goes back
   through the CLI's Integration Service enrichment, then `refresh`.
 - Never hand-edit a generated file to get past the error.
@@ -286,7 +286,7 @@ uip maestro bpmn instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetEle
 After every lifecycle command, fetch the instance again and report its status.
 <!--skill-flavor:fix-and-ship:start-->
 When the action reveals a modeling or binding problem, the fix is in the
-`.bpmn.ts`: recompile, format, validate, `refresh`, and ship again.
+`.bpmn.ts`: run the [validation loop](../SKILL.md#validation-loop) again (`merge` for an existing process), then ship again.
 <!--skill-flavor:fix-and-ship:end-->
 
 ## Anti-patterns
@@ -297,7 +297,7 @@ When the action reveals a modeling or binding problem, the fix is in the
 - **Never deploy to Orchestrator because the user said "publish".** Studio Web upload is the default.
 <!--skill-flavor:publish-default:end-->
 - **Never upload an executable process with unresolved Integration Service enrichment.**
-- **Never fix a packaging error by editing the generated JSON.** Fix the source, recompile, `refresh`.
+- **Never fix a packaging error by editing the generated JSON.** Fix the source, rebuild it through the validation loop, `refresh`.
 - **Never treat package generation as authoring** — the four files are derived from the compiled BPMN.
 - **Never retry a faulted instance before reading its incidents and deployed asset.**
 - **Never omit the folder key** on `process list`/`get`/`run`, `instance …` and `incident get`.
