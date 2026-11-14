@@ -58,6 +58,11 @@ versions the tenant serves). Use the version `registry get` shows. If the
 resource was redeployed with a changed schema, the cache still holds the old
 definition: run `uip maestro flow registry pull --force` first.
 
+Needs `@uipath/maestro-builder-sdk` 6.100.0 or later. An older SDK requires
+`manifest`, so leaving it out is a type error: on an older SDK, pass the
+`Data.Node` that `uip maestro flow registry get <nodeType> --output json`
+prints, unchanged.
+
 Never hand-write a `manifest`: it validates locally and fails on the tenant,
 which resolves the node against its own catalog. A `manifest` that `decompile`
 emitted stays as written; it wins over the cache.
