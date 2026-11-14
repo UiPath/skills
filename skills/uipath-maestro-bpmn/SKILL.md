@@ -21,7 +21,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (step 4).
 4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5).
 5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
-   After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
+   After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR: No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 
 <!--skill-flavor:host-setup:start-->
 
@@ -140,8 +140,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    event id or adds or removes an entry point. It validates before it writes, so it fails
    on a file with no diagram (`BPMN_PARSE_ERROR: No diagrams found`) and on one missing a
    shape (`MISSING_DI_SHAPE` / `MISSING_DI_EDGE`): `format` a newly compiled process first.
-   A merged file normally has its shapes; when `refresh` reports one missing, `format`,
-   then `refresh` again. It needs an
+   A merged file normally has its diagram; when `refresh` reports a missing diagram or
+   shape, `format`, then `refresh` again. It needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
@@ -311,7 +311,7 @@ uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate
 uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
 
-Editing an existing process: first `decompile` it ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), edit, run both `check` lines, then `merge` in place of the `compile` and `format` lines, then `refresh` and `validate`; `format` only when one of them reports `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`.
+Editing an existing process: first `decompile` it ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), edit, run both `check` lines, then `merge` in place of the `compile` and `format` lines, then `refresh` and `validate`; `format` only when one of them reports `BPMN_PARSE_ERROR: No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, then run `refresh` and `validate` again and tell the user the canvas layout was reset.
 <!--skill-flavor:validation-loop:end-->
 
 `check` owns source and graph invariants. Product validation owns the compiled
