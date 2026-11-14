@@ -119,19 +119,18 @@ the flag silently returns a plain Flow.
 <!--skill-flavor:skip-registration-fix:end-->
 
 <!--skill-flavor:misshapen-format:start-->
-**Misshapen nodes on the canvas.** `compile` writes a placeholder
-`ui.position` on each node — all of them on one row — and no top-level `layout`
-block. The canvas uses a node's `layout.nodes[<id>]` entry when there is one
-and its `node.ui` otherwise, so a greenfield file draws at the placeholders.
-Symptom: the flow behaves correctly and is unreadable, a switch's arms strung
-out in a line instead of side by side. This is not a run-time fault and no
-check reports it — `validate` passes, because layout is not an authoring
-concern. Fix, for a greenfield file only: `uip maestro flow format <Name>.flow`,
-which is owed before an upload, a debug, or anyone opening the project in a
-designer — see [`operate.md`](operate.md#lay-out-the-emitted-flow-first). Do not
-run it on a merged brownfield file; it re-lays out the author's canvas.
+**Misshapen nodes on the canvas.** Symptom: the flow behaves correctly and is
+unreadable: nodes overlap, or a node is drawn at the wrong size. This is not a
+run-time fault and no check reports it — `validate` passes, because layout is
+not an authoring concern. A source with no `.layout()` is not the cause:
+`compile` lays it out the way `uip maestro flow format` does and gives every
+node its canvas size. The exception is an SDK without builder-sdk#2035, which
+leaves every node on one row; the fallback is in
+[`operate.md`](operate.md#layout-of-the-emitted-flow).
+Do not run `format` on a merged brownfield file; it re-lays out the author's
+canvas.
 <!--skill-flavor:misshapen-format:end-->
-When the source sets `.layout()`, the misshapen node is the one with no entry, an entry at the wrong coordinates, an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) without `dim(288, 96)`, or a container whose `dim()` no longer holds a body that grew.
+When the source sets `.layout()`, the misshapen node is the one with no entry, an entry at the wrong coordinates, or a container whose `dim()` no longer holds a body that grew.
 In a greenfield source: add or move its `at(x, y)`, resize with `dim(width, height)`, and recompile rather than running `format`, which would discard every other entry too.
 In a merged brownfield file only an added node's entry lands; fix an existing node's position or size in the merged `.flow`'s `layout.nodes` ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim), [`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
 

@@ -10,28 +10,18 @@ Authoring is upstream. Do not ship a flow whose source has not been through the
 loop in [`CLI-LOOP.md`](CLI-LOOP.md) — `check` on the source, `compile` to emit,
 `validate` on the emitted `.flow`.
 
-## Lay out the emitted flow first
+## Layout of the emitted flow
 
 <!--skill-flavor:operate-format:start-->
-```bash
-uip maestro flow format <Name>.flow --output json
-```
+`compile` lays out the flow. For a flow or subflow whose source has no
+`.layout()`, each node gets the position `uip maestro flow format` would give
+it, so a four-armed switch arrives with its arms on their own rows. Running
+`format` on the compiled file moves nothing; skip it. The file is ready for
+`solution upload`, `flow debug`, or a designer as `compile` wrote it.
 
-**Greenfield files only.** Layout is not an authoring concern — nothing
-upstream needs it, and `validate` passes without it. It becomes one here, the
-moment a file `compile` wrote from scratch is opened by something that draws
-it: `solution upload`, `flow debug`, or a person opening the project in a
-designer. Run `format` before any of those, on the artifact as last emitted,
-unless its source sets `.layout()` (below).
-
-`compile` writes a placeholder `ui.position` on each node and no top-level
-`layout` block. The canvas places each node from its `layout.nodes[<id>]`
-entry when there is one, and from `node.ui` otherwise, so a greenfield file
-draws at the placeholders. They are one flat row: a four-armed switch arrives
-as a single 3,000px line with the arms in sequence rather than side by side.
-`format` builds `layout`, fans the arms onto their own rows, sizes each node by
-its canvas shape, and reports `NodesRepositioned`. Skipping it on a greenfield
-file is the most common cause of misshapen nodes in Studio Web.
+Every node also gets its canvas-shape size, unless `.layout()` sets one: a
+container (a loop, for example) is 560 × 320, an agent node (`inlineAgent`,
+`conversationalAgent`, `voiceAgent`) 288 × 96, and every other node 96 × 96.
 
 **Never format a merged brownfield file.** The original's `layout` already
 holds the canvas author's positions, and `merge` keeps them, moving later
@@ -39,6 +29,16 @@ nodes right or down and growing containers only to fit added ones. `format`
 re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
+
+This needs a `@uipath/maestro-builder-sdk` with builder-sdk#2035. An older SDK
+writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
+96 × 96, not 288 × 96). With such an SDK, run
+`uip maestro flow format <Name>.flow --output json` once on a greenfield file
+(never on a merged or `.layout()` file), and in a `.layout()` give each agent
+node `dim(288, 96)` and each container at least `dim(560, 320)`;
+<!--skill-flavor:compile-layout-sdk-upgrade:start-->
+or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:compile-layout-sdk-upgrade:end-->
 
 `nodes create` without `--position`, or a hand edit that adds nodes, leaves every new
 node at `layout.nodes[<id>].position` 0,0. After such an edit to a file with no
@@ -48,13 +48,13 @@ distinct position. With an author-chosen layout, skip `format` and pass
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
-The builder can place the nodes itself, so the emitted file never needs `format` — provided every node that is not 96 × 96 carries its size (rule 1).
+`.layout()` replaces compile's layout with positions you choose.
 `.layout({ nodes })` on the flow takes one entry per node, keyed by node id; `at(x, y)` writes an entry, and `dim(width, height)` the size a container needs.
 A step's id is its name.
 The trigger's is `start` unless `.triggerId()` renamed it.
 An End's is the `name` its `.return` gave it, and an unnamed End is `end`, then `end2`, `end3`, … in emission order, so a flow with several unnamed Ends has that many keys to write.
 Use it when the request asks for a particular arrangement, or when a decompiled source already carries one ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
-Otherwise `format` is less work and lays out as well.
+Otherwise leave it out: compile lays out the flow itself.
 
 ```ts
 import { at, dim, flow } from '@uipath/maestro-builder-sdk';
@@ -65,7 +65,7 @@ export default flow('invoice-intake')
     nodes: {
       start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(576, 320)),
       extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
-      review: at(1312, 144, dim(288, 96)), // an agent node carries its size
+      review: at(1312, 144), // an agent node: compile gives it 288 × 96
       done: at(1696, 144),
       onFailure: at(448, 528), end: at(640, 528), // below the container, not beside its body
     },
@@ -77,9 +77,9 @@ Rules:
 
 1. **Use the canvas grid.** A node is 96 px square; a column is 192 px, a row 160 px: `x = 256 + 192 × column`, `y = 144 + 160 × row`.
    The main path goes on row 0 left to right; an error handler or a side arm takes the row below.
-   Compile writes 96 × 96 on every node and the designer draws the persisted size, so a node whose canvas shape is larger must carry it: an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) is `at(x, y, dim(288, 96))`, and the next column starts 384 px to its right; a container carries its `dim()` (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
-2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` that holds the body: the right edge of its rightmost child plus 144, by the bottom edge of its lowest child plus 96, never smaller than `format`'s `dim(560, 320)`.
-   For one row of 96 px nodes that is `dim(max(560, 192 × bodyNodes + 192), 320)`; a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
+   Compile gives a node without `dim()` its canvas-shape size: an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) is 288 × 96, so the next column starts 384 px to its right; a container is 560 × 320 unless its `dim()` makes it larger (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
+2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding. The container's 560 × 320 holds a small body; give it a `dim()` only when the body needs more: the right edge of its rightmost child plus 144, by the bottom edge of its lowest child plus 96.
+   For one row of 96 px nodes that is `dim(192 × bodyNodes + 192, 320)` from two body nodes on (two nodes: `dim(576, 320)`, as `eachInvoice` above); a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
 3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout; an unknown key fails `compile`.
 4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
 <!--skill-flavor:layout-sdk-version:start-->
