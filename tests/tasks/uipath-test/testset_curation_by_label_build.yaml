@@ -90,7 +90,9 @@ success_criteria:
   - type: command_executed
     description: "Agent applied the tier labels to its test cases — `objectlabel add`, or `testcases bulk-create --file` (labels in the JSON payload)"
     tool_name: "Bash"
-    command_pattern: '(?:(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b|uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S))'
+    # Token separators accept quotes/commas too: gemini-3.8-flash issues the call
+    # as a python subprocess list ('uip', 'tm', 'objectlabel', 'add', ...).
+    command_pattern: '(?:(?=[\s\S]*--object-type[\s"\x27,]+TestCase)(?=[\s\S]*--object-ids[\s"\x27,]+[^\s"\x27,])(?=[\s\S]*--labels[\s"\x27,]+[^\s"\x27,])uip[\s"\x27,]+tm[\s"\x27,]+objectlabel[\s"\x27,]+add\b|uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -98,7 +100,12 @@ success_criteria:
   - type: command_executed
     description: "Agent populated the set by label — `testcases add --test-set-key --labels` or `testsets create --dynamic-labels` — rather than explicit keys"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*EVFX-CURATE-tier1\b)(?=[\s\S]*EVFX-CURATE-tier2\b)(?:(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+testcases?\s+add\b|(?=[\s\S]*--dynamic-labels\s+\S)uip\s+tm\s+testsets?\s+create\b)'
+    # Label literals are checked from the START of the command, not from `uip`:
+    # agents put them in shell variables first (LABEL1="EVFX-CURATE-tier1" ...
+    # --dynamic-labels "$LABEL1" "$LABEL2"), as gpt-5.6-luna did. The selector value
+    # itself must be a tier label or a variable, so labels named by an earlier
+    # command in the same call cannot satisfy it.
+    command_pattern: '^(?=[\s\S]*EVFX-CURATE-tier1\b)(?=[\s\S]*EVFX-CURATE-tier2\b)[\s\S]*?(?:(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\s+["\x27]?(?:EVFX-CURATE-|\$))uip\s+tm\s+testcases?\s+add\b|(?=[\s\S]*--dynamic-labels\s+["\x27]?(?:EVFX-CURATE-|\$))uip\s+tm\s+testsets?\s+create\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

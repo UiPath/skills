@@ -192,7 +192,9 @@ success_criteria:
   - type: command_executed
     description: "Agent listed executions for a test set with --test-set-id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--test-set-id'
+    # `list-filtered` takes the same --test-set-id (SKILL.md: use it for custom
+    # ordering); gpt-6.1-sol picks it to sort newest-first.
+    command_pattern: 'uip\s+tm\s+executions?\s+list(?:-filtered)?\s+.*--test-set-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
