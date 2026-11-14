@@ -17,7 +17,7 @@ Lifecycle commands (scaffold, `uip codedapp pack`, `publish -t Action`, `deploy 
 
 ## Principles this guide enforces
 
-The Human Context Capture Design Principles (Confluence, "Human Context Capture Design Principles") define 11 patterns. Every app this guide generates must satisfy the rule in the second column through the UI element in the third. A pattern marked "not yet" has no UI in this guide: do not invent one, and do not add a field for it.
+Decision capture follows 11 Human Context Capture patterns. Every app this guide generates must satisfy the rule in the second column through the UI element in the third. A pattern marked "not yet" has no UI in this guide: do not invent one, and do not add a field for it.
 
 | # | Pattern | Rule the generated app satisfies | UI element it requires | Status |
 |---|---|---|---|---|
