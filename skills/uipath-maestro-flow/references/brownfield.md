@@ -528,13 +528,13 @@ Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lis
 ## A Case-only variable type
 
 A `.flow` written by Studio Web or an older SDK can carry a global typed `date`, `datetime`, `float`, `double` or `jsonSchema`.
-None of them needs a retype: decompile prints a Flow type, and compile and merge take it.
+With an SDK whose `dist/api-index.md` lists `NumberFormat`, none of them needs a retype: decompile prints a Flow type, and compile and merge take it.
 
 - **`float` / `double`: nothing to do.** Decompile prints `{ type: types.number, format: "double" }`, and the recompile writes `"type":"double"` back. No warning: nothing changes. Keep the `format` when you edit the variable; `flow pack` writes it into the entry point's schema (`"format":"double"`).
 - **`date` / `datetime`: nothing to do.** Decompile prints `types.string` and warns `... The source declares it types.string, so a recompile writes "type":"string" in its place`. Neither changes the run: `flow pack` already writes a date as a plain string.
 - **`jsonSchema`: nothing to do.** Decompile prints `types.object` (or `types.array` when the schema is an array's) with the file's schema in `{ schema }`, and warns that a recompile writes `"type":"object"`. The engine reads both as JSON.
 
-For `date`, `datetime` and `jsonSchema`, merge goes through. Without `--baseline-from` the merged `.flow` carries the new type; with it, an untouched variable keeps its own type.
+Merge goes through for all five. For `date`, `datetime` and `jsonSchema`, without `--baseline-from` the merged `.flow` carries the new type; with it, an untouched variable keeps its own type.
 An SDK whose `dist/api-index.md` does not list `NumberFormat` keeps `types.float` / `types.double` / `types.jsonSchema` instead, and `compile`/`merge` stop with `DECLARATION_TYPE_NOT_FLOW` until you retype that declaration (`types.number`; for `jsonSchema`, `types.object` or `types.array` with `{ schema }`).
 
 ## The file's schema version comes back out
