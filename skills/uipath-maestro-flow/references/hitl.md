@@ -156,11 +156,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   }]
   ```
 
-  If `flow decompile` warns that a form field has a key the SDK "cannot write
-  back" (for example a `variable` other than `vars.<id>`, or a key the
-  platform's schema does not define), editing that node drops the key. Leave
-  that node untouched so merge keeps the original, or edit its JSON in the
-  `.flow` directly. `flow decompile --strict` refuses such a file.
+  A row key the SDK has no option for (a `variable` other than `vars.<id>`,
+  a key the platform's schema does not define, a `binding` on an asked
+  field) comes back in the field's `extra`, for instance
+  `extra: { variable: 'vars.order.note' }`. Compile writes it back as it
+  was, so you can edit the node; keep `extra` as decompile printed it.
+  Never add `extra` to a field you write: use the typed keys above.
+  `flow decompile` still warns that a key "cannot write back" for a value
+  the platform refuses or drops itself (a `colSpan` off the grid, an
+  unknown key inside `options`); editing that node drops that key.
+  An SDK whose `dist/api-index.md` does not list `FormFieldRowExtra` warns
+  for every such key instead: leave that node untouched so merge keeps the
+  original, or edit its JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
