@@ -20,7 +20,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (step 4).
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (step 4).
 4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (step 5).
-5. After each compile, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
+5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (steps 6–7).
+   After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `validate` reports `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 
 <!--skill-flavor:host-setup:start-->
 
@@ -119,7 +120,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    When the installed package ships `dist/bpmn-api.md` (see [API index](#api-index)), `check` also type-checks the source: a `TS<code>` error at `file:line:col` is a wrong option name or value type, so fix it like any other `check` error.
    Node's runtime globals, top-level `await` and ES2024 APIs are accepted.
 6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
-   run product validation — in that order, every time. `validate` refuses a file with
+   run product validation — in that order, every time you compile a new process
+   (an existing process takes step 8's `merge` instead; `format` it only when `validate`
+   reports a missing shape). `validate` refuses a file with
    no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
    `format` adds it.
    Exactly one emitted `<Name>.bpmn` may exist, at
@@ -134,8 +137,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    `entry-points.json references start event "Event_start" via filePath, but no
    <bpmn:startEvent id="Event_start"> exists`. `uip maestro bpmn refresh <project-path>`
    regenerates both from the compiled BPMN. Run it after any edit that changes a start
-   event id or adds or removes an entry point. It validates before it writes, so lay
-   the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
+   event id or adds or removes an entry point. It validates before it writes, so it fails
+   with `MISSING_DI_SHAPE` on a file with no diagram: `format` a newly compiled process
+   first; a merged file already has its shapes. It needs an
    init-generated project — with no `project.uiproj` it has nothing to regenerate.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
@@ -304,6 +308,8 @@ uip maestro bpmn format <Project>/<Name>.bpmn
 uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate.json, from the BPMN
 uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
+
+Editing an existing process: replace the `compile` and `format` lines with `decompile` → edit → `merge` ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), then `refresh` and `validate`; `format` only on `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`.
 <!--skill-flavor:validation-loop:end-->
 
 `check` owns source and graph invariants. Product validation owns the compiled

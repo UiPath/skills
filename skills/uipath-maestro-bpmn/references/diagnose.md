@@ -244,7 +244,7 @@ These are the ones that survive both:
 - **Never assume the local BPMN is the deployed asset.**
 - **Never retry before the root cause is known.**
 - **Never paste private incident payloads or connection details** into notes, commits or issues.
-- **Never patch the generated package files as the only fix for a source defect** — fix the `.bpmn.ts`, recompile, `refresh`.
+- **Never patch the generated package files as the only fix for a source defect** — fix the `.bpmn.ts`, rebuild it through the validation loop, `refresh`.
 
 ## Command reference
 
