@@ -71,14 +71,9 @@ with `form: 'flow'` — set `location: 'in-solution'` and `projectId`, and omit
   inputs: { message: input('who') }, returns: { echoed: 'string' } }))
 ```
 
-- **Or name the sibling by project** (an SDK that ships builder-sdk#2028):
-  `agenticProcess({ form: 'flow', location: 'in-solution', project: '<Project>', inputs })`. `compile` and `check` read `key` and `projectId` from
-  `resources/solution_folder/process/flow/<Project>.json` (and `returns`
-  from its `entry-points.json` when you declare none), so you copy neither id.
-  They refuse a project the solution lacks (`IN_SOLUTION_PROJECT_NOT_FOUND`,
-  with the nearest name) and the wrong builder for its type
-  (`IN_SOLUTION_WRONG_BUILDER`, which names the right call). Refresh the
-  solution's resources first.
+- **Or name the sibling by project:** `agenticProcess({ form: 'flow', location: 'in-solution', project: '<Project>', inputs })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
 <!--skill-flavor:agentic-sibling-register:start-->
   Register the sibling and refresh resources
