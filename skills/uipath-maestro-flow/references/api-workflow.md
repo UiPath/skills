@@ -62,11 +62,16 @@ and `projectId` instead of `folderPath`:
   each field's `type`. Its `entry-points.json` `input`/`output` may be `null`,
   so do not read them there. The sibling is not on the tenant yet; do not look
   it up there.
-- `check` refuses an in-solution step with no `projectId`
-  (`APIWF_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
-  (`APIWF_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
+- `check` warns on an in-solution step with no `projectId`
+  (`APIWF_LOCAL_NO_PROJECT_ID`; the call resolves by `key`, so a decompiled
+  step without one is fine as is), and refuses a `projectId` that is not a GUID
+  (`APIWF_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
   `location: 'in-solution'` (`APIWF_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
+  If `check` reports `APIWF_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+  add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
 - A decompiled in-solution step (folder `''`) comes back as
   `location: 'in-solution'`. Keep it that way when editing; never add a
   `folderPath`.
