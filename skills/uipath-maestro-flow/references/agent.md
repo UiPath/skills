@@ -57,6 +57,10 @@ If the agent is missing, or you redeployed it with a new schema, run `uip maestr
 
 `registry get` is also how you learn the agent's own argument names and its
 return shape — `inputDefinition.properties` and `outputDefinition`.
+Simpler for a published agent: write `name` and `folderPath`, leave `key` and
+`returns` out, and run the `uip maestro registry prepare --kind Process` command
+`check` prints. It records the key and both schemas; see
+[Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs).
 
 When the request asks for a coded agent to be CREATED in this solution,
 scaffold it as a sibling project instead; do not substitute an inline low-code
