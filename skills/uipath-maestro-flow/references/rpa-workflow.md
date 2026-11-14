@@ -4,13 +4,13 @@
 
 Run a published robotic process and wait for its output arguments.
 
-Signature: `rpaWorkflow({ key, name, folderPath?, location?, projectId?, inputs?, returns? })`.
+Signature: `rpaWorkflow({ key?, name, folderPath?, location?, projectId?, inputs?, returns? })`.
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
+For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
 ```ts
-.step('title', rpaWorkflow({ key: releaseKey,
-  name: 'RPA Workflow', folderPath: 'Shared',
-  inputs: { problemId: 123 }, returns: { title: 'string' } }))
+.step('title', rpaWorkflow({ name: 'RPA Workflow', folderPath: 'Shared',
+  inputs: { problemId: 123 } }))
 ```
 
 ## At a glance

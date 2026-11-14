@@ -40,19 +40,21 @@ Write the step with `name` and `folderPath` only, and leave `key` and `returns` 
 .step('intake',
   agenticProcess({
     name: 'ProcurementProcess',
-    folderPath: 'Shared/uipath-agents/ProcurementProcess',
+    folderPath: '<FOLDER_PATH>',
     inputs: { productId: 1 },
   }))
 ```
 
-`check` reports the missing key (`AGENTIC_NO_KEY`, `RPA_NO_KEY`, ...) and prints the command that records the process.
+`check` reports the missing key with the factory's `*_NO_KEY` code (`RPA_NO_KEY`, `APIWF_NO_KEY`, `FUNCTION_NO_KEY`, `AGENTIC_NO_KEY`, `AGENT_NO_KEY`) and prints the command that records the process.
 Run it:
 
 ```shell
-uip maestro registry prepare --kind Process --name ProcurementProcess --folder-path Shared/uipath-agents/ProcurementProcess
+uip maestro registry prepare --kind Process --name ProcurementProcess --folder-path '<FOLDER_PATH>'
 ```
 
-It prints the process's inputs and outputs:
+If `uip` answers `unknown option '--kind'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --kind Process …`.
+
+`prepare` prints the process's inputs and outputs:
 
 ```text
 Type      ProcessOrchestration
@@ -60,9 +62,23 @@ Inputs    productId: integer
 Outputs   status: boolean
 ```
 
+Re-run `check` and fix what it reports:
+
+- `PROCESS_INPUT_UNKNOWN`: an input the process does not declare (it names the nearest real one);
+- `PROCESS_INPUT_MISSING`: a required input left out;
+- `PROCESS_INPUT_TYPE`: a literal of the wrong type;
+- `PROCESS_RETURNS_UNKNOWN`: a `returns` field the process does not return;
+- `PROCESS_TYPE_MISMATCH`: the wrong factory for the process type.
+
 Then `compile` writes the key and the output schema (`returns`) from that record.
-`check` validates the step against it: an unknown input (`PROCESS_INPUT_UNKNOWN`), a required input left out (`PROCESS_INPUT_MISSING`), a literal of the wrong type (`PROCESS_INPUT_TYPE`), a `returns` field the process does not return (`PROCESS_RETURNS_UNKNOWN`), and the wrong factory for the process type (`PROCESS_TYPE_MISMATCH`).
-Fix what it reports; read `out('<step>', '<field>')` with the names `prepare` printed.
+Read `out('<step>', '<field>')` with the names `prepare` printed.
+
+Orchestrator often leaves a process's contract blank (common for API workflows and some RPA processes).
+`prepare` then prints `(not recorded …)` for that side, or `Arguments not recorded`.
+`check` does not validate that side, and `compile` still writes the key.
+Keep your `inputs`, and declare `returns` for the fields you read; to see the contract, use `uip maestro flow registry get <node type>` (`inputDefinition`, `outputDefinition`).
+
+A record more than 24 hours old still compiles; `check` warns `PROCESS_RECORD_STALE` and prints the `prepare` that refreshes it.
 
 ## Notes
 
