@@ -72,7 +72,7 @@ is not published yet, so it has no folder. Write it with
 }))
 ```
 
-- **Or name the sibling by project:** `publishedFunction({ location: 'in-solution', project: '<FunctionProject>', inputs, returns })`. See
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `publishedFunction({ location: 'in-solution', project: '<FunctionProject>', inputs, returns })`. See
   [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
   fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**

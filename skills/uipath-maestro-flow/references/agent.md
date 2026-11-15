@@ -188,9 +188,9 @@ one another.
 
 ## Name an in-solution sibling by project
 
-On an SDK that ships builder-sdk#2028, any of the five process builders can
-name a sibling of the solution by its project name instead of copying the two
-ids:
+Needs `@uipath/maestro-builder-sdk` 6.108.0 or later. Any of the five
+process builders can then name a sibling of the solution by its project name
+instead of copying the two ids:
 
 ```ts
 .step('analyze', agent({

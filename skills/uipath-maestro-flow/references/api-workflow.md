@@ -51,7 +51,7 @@ and `projectId` instead of `folderPath`:
 }))
 ```
 
-- **Or name the sibling by project:** `apiWorkflow({ location: 'in-solution', project: '<ApiWorkflowProject>', inputs, returns })`. See
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `apiWorkflow({ location: 'in-solution', project: '<ApiWorkflowProject>', inputs, returns })`. See
   [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
   fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.** Same recipe as an in-solution function
