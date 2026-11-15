@@ -14,7 +14,9 @@ moving later nodes right or down and growing containers only to fit added ones.
 A new `.flow` that `compile` wrote straight, with no merge, needs no `format`
 either. For a source with no `.layout()`, `compile` lays out every node the way
 `format` does and gives each its canvas-shape size: a container (a loop, for
-example) 560 × 320, an agent node 288 × 96, every other node 96 × 96.
+example) 560 × 320, an agent node 288 × 96, every other node 96 × 96. A
+decompiled `new.flow` carries a `.layout()` with the canvas trigger's entry:
+delete that call before you compile, or every other node stays on one row.
 <!--skill-flavor:operate-format:end-->
 
 <!--skill-flavor:layout-sdk-version:start-->

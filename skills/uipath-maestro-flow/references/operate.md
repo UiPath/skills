@@ -15,9 +15,7 @@ loop in [`CLI-LOOP.md`](CLI-LOOP.md) — `check` on the source, `compile` to emi
 <!--skill-flavor:operate-format:start-->
 `compile` lays out the flow. For a flow or subflow whose source has no
 `.layout()`, each node gets the position `uip maestro flow format` would give
-it, so a four-armed switch arrives with its arms on their own rows. Running
-`format` on the compiled file moves nothing; skip it. The file is ready for
-`solution upload`, `flow debug`, or a designer as `compile` wrote it.
+it. Running `format` on the compiled file moves nothing; skip it.
 
 Every node also gets its canvas-shape size, unless `.layout()` sets one: a
 container (a loop, for example) is 560 × 320, an agent node (`inlineAgent`,
