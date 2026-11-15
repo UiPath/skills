@@ -34,12 +34,29 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| AP_InvoiceIntake | Queue | Entry point A writes one item per invoice |
-| AP_Invoices | Storage bucket | PDFs and extraction results |
-| SAP_AP_Robot | Credential asset | SAP GUI login |
-| AP_Mailbox | Integration Service connection (Exchange Online) | Mailbox access |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| AP_InvoiceIntake | one invoice | as in the process genome's Handoffs row 1 | *[Inferred]* | *[Inferred]* | step 3 | component 1 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction results | steps 3 and 5 | step 5, and components 1 and 3 |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SAP_AP_Robot | the robot's SAP account | SAP GUI | steps 6 and 9 |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| AP_Mailbox | Exchange Online | the shared AP mailbox | step 2 |
 
 ## Interface
 

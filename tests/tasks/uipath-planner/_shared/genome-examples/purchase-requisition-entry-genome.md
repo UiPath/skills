@@ -35,15 +35,47 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| PR_Requisitions | Queue | Entry point A writes one item per requisition row; three robots running entry point B share it, and an item survives a failed run |
-| Coupa_PurchasingRobot | Credential asset | Portal sign-in for the purchasing robot account on the production Coupa tenant |
-| Coupa_PortalUrl | Text asset | Address of the Coupa tenant entry point B opens |
-| FinanceShare_RequisitionsPath | Text asset | Location of the requisition workbook and the summary sheet on the finance share |
-| Purchasing_Mailbox | Integration Service connection (Exchange Online) | Sends requester notifications, the run summary and the stop alert |
-| PR_DispatchSchedule | Time trigger | Starts entry point A every business day at 06:00 |
-| PR_RequisitionsQueueTrigger | Queue trigger | Starts entry point B from 06:30 on up to three unattended robots |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| PR_Requisitions (Configuration Question 3) | one requisition | as in Interface: requester email, supplier name, cost centre, delivery date, line items | the requisition number, on | 2 (Configuration Question 7) | steps 1–4, entry point A | steps 5–13, entry point B |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| Coupa_PortalUrl | Text | Configuration Question 4 | step 6 | address of the Coupa tenant entry point B opens |
+| FinanceShare_RequisitionsPath | Text | Configuration Question 1 | steps 2, 4 and 13 | location of the requisition workbook and the summary sheet on the finance share |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| Coupa_PurchasingRobot | the purchasing robot account | Coupa, production tenant | step 6 |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| Purchasing_Mailbox | Exchange Online | the mailbox of Configuration Question 5 | steps 12 and 13, and the stop alert |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| PR_DispatchSchedule | entry point A | Time | every business day at 06:00; time zone *[Inferred]* | 1 *[Inferred]* |
+| PR_RequisitionsQueueTrigger | entry point B | Queue | `PR_Requisitions`, from 06:30 | up to 3 |
+
+### Runtime and deployment
+
+- **Delivery model:** Automation Cloud *[Inferred]*
+- **Packaging and route:** one package with two entry points
+- **Entry points:** entry point A, the dispatch, and entry point B, the requisitions; how each starts: Triggers above
+- **Runtime and machines:** Windows *[Inferred]*; unattended; each machine reaches the finance share and the Coupa portal *[Inferred]*
+- **Robots:** the purchasing robot account, on each of the three machines *[Inferred]*
+- **Folders and environments:** one Orchestrator folder *[Inferred]*; the production Coupa tenant is the one whose UI targets the genome describes
+- **Logging and retention:** the job log, and the run summary row on the finance share (step 13); retention not stated *[Inferred]*
 
 ## Interface
 

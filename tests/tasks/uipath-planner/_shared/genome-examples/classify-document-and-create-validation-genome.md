@@ -32,10 +32,27 @@ When the classification confidence falls below a configurable threshold, the aut
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| du_storage_bucket | Storage bucket | Holds the document while the validation task is open |
-| Validation folder | Orchestrator folder | Folder where Action Center tasks are created and assigned |
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| du_storage_bucket (Configuration Question 4) | the document while its validation task is open | step 4 | the validation task, step 5 |
+
+### Action Center
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+| Validation task, in the folder of Configuration Question 5 | steps 4–5 | the reviewer confirms or corrects a low-confidence document type |
+
+### Runtime and deployment
+
+- **Delivery model:** Automation Cloud *[Inferred]*
+- **Packaging and route:** one package
+- **Entry points:** the main workflow, called with `DocumentPath` (Interface); it has no trigger of its own *[Inferred]*
+- **Runtime and machines:** Windows *[Inferred]*; unattended, the process persisted while its validation task is open
+- **Robots:** one unattended robot account *[Inferred]*
+- **Folders and environments:** the process's own folder, which receives the Action Center tasks (Configuration Question 5); test and production not stated *[Inferred]*
+- **Logging and retention:** the job log *[Inferred]*; retention not stated
 
 ## Interface
 

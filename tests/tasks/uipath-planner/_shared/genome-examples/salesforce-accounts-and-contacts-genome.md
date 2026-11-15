@@ -31,6 +31,16 @@ The run starts as a job with no input and works in a browser already signed in t
 
 No Orchestrator or Integration Service resources required.
 
+### Runtime and deployment
+
+- **Delivery model:** Automation Cloud *[Inferred]*: the source project names none
+- **Packaging and route:** one package
+- **Entry points:** `Main`, started as a job with no arguments (step 1)
+- **Runtime and machines:** Windows; unattended, in an interactive desktop session with the browser of Configuration Question 2; the Robot version not stated
+- **Robots:** an unattended robot account whose browser session is already signed in to the org (Configuration Question 3) *[Inferred]*
+- **Folders and environments:** the org of Configuration Question 1 is the one whose UI targets the genome describes; the Orchestrator folder not stated *[Inferred]*
+- **Logging and retention:** the job log, two information lines (steps 1 and 7); retention not stated *[Inferred]*
+
 ## Interface
 
 Runs unattended with no arguments; outputs are the side effects listed in Workflow.

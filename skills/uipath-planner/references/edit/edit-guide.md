@@ -8,7 +8,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; the opening lines of the template of the genome's level ([process-genome-template.md](../../assets/templates/process-genome-template.md) or [component-genome-template.md](../../assets/templates/component-genome-template.md)), through the blueprint blockquote — the preamble § Edits rewrites an older preamble to; [readiness-guide.md](../shared/readiness-guide.md) whole |
+| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; [readiness-guide.md](../shared/readiness-guide.md) whole |
 | a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](../extract/extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
 | "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan |
 | "Findings from `uipath-genome`" | a finding names a Build With skill (a retired name) | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) |
@@ -17,8 +17,6 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 Each phase's reads go out in at most three turns: turn 1 every file read whole and the heading list of every file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 
 ## Edits
-
-Every edit rewrites an older preamble (one asking for the `uipath-genome` skill's Execute mode, written before genome writing moved here) to the template's preamble, copied from the template's opening lines the start row reads ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 5).
 
 ### Any genome
 

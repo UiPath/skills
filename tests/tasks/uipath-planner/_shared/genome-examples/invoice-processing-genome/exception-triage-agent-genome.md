@@ -30,9 +30,11 @@ Given an invoice record, its discrepancies, and the PO summary, the agent decide
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| AP_Invoices | Storage bucket | Optional read of full extraction output |
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the full extraction output | component 2 | step 2, when it needs line detail |
 
 ## Interface
 

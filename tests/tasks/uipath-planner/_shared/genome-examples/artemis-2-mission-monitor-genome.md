@@ -33,10 +33,27 @@ The automation maintains a lightweight state file tracking the last known missio
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| ArtemisMonitor-Schedule | Time trigger | Fires the process every 3 minutes |
-| SMTP credentials | Credential asset | Authenticates the outgoing mail server when a custom SMTP server is configured |
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SMTP credentials | the custom SMTP server's account, when Configuration Question 2 names one | the custom SMTP host | step 8 |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| ArtemisMonitor-Schedule | this process | Time | every 3 minutes | 1 *[Inferred]* |
+
+### Runtime and deployment
+
+- **Delivery model:** Automation Cloud *[Inferred]*
+- **Packaging and route:** one package
+- **Entry points:** the main workflow; how it starts: Triggers above
+- **Runtime and machines:** Windows *[Inferred]*; unattended; the machine keeps the local state file between runs (Configuration Question 4)
+- **Robots:** one unattended robot account *[Inferred]*
+- **Folders and environments:** one Orchestrator folder *[Inferred]*; the status page the fallback scrape reads is public, the same in every environment
+- **Logging and retention:** the job log, one summary line per run (step 10); retention not stated *[Inferred]*
 
 ## Interface
 

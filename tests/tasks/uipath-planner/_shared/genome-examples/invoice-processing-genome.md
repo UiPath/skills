@@ -74,13 +74,42 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 ## Platform Dependencies
 
-| Resource | Type | Shared by | Purpose |
-|----------|------|-----------|---------|
-| AP_InvoiceIntake | Queue | 1, 2 | One item per received invoice; the trigger for the process |
-| AP_Invoices | Storage bucket | 1, 2, 3, clerk | PDFs and extraction JSON referenced by every component |
-| SAP_AP_Robot | Credential asset | 2 | SAP GUI login for the robot |
-| AP_Mailbox connection | Integration Service connection (Exchange Online) | 2 | Reads the shared mailbox |
-| Finance/AP | Orchestrator folder | all | Home of every resource and process |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| AP_InvoiceIntake | one received invoice | as in Handoffs row 1: `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | *[Inferred]* | *[Inferred]* | component 2 | component 1, one instance per item |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction JSON | component 2 | components 1 and 3, and the clerk's review |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SAP_AP_Robot | the robot's SAP account | SAP GUI | component 2 |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| AP_Mailbox | Exchange Online | the shared AP mailbox | component 2 |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| AP intake schedule *[Inferred]* | component 2's intake entry point | Time | every 15 minutes | 1 *[Inferred]* |
+| AP intake queue trigger *[Inferred]* | component 1 | Queue | `AP_InvoiceIntake` | *[Inferred]* |
+
+### Action Center
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+| AP Invoice Review | component 1 | the clerk's review task |
 
 ## Configuration Questions
 
@@ -123,9 +152,13 @@ Not transactional: a coordinator whose per-item lifecycle is the orchestration's
 
 ## Deployment
 
-- **Packaging:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; queues, bucket, asset, and connection declared as solution resources.
-- **Entry points and triggers:** component 2's intake entry point on a 15-minute time trigger; component 1 on a queue trigger for `AP_InvoiceIntake`; components 2 (matching, posting) and 3 started only by component 1.
-- **Environments:** folder `Finance/AP` in tenant `Finance`; a `Finance/AP-Test` folder with the same resources for UAT.
+- **Delivery model:** Automation Cloud *[Inferred]*
+- **Packaging and route:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; the queue, bucket, asset and connection declared as solution resources.
+- **Entry points:** component 2's intake entry point and component 1; components 2 (matching, posting) and 3 started only by component 1; how each starts: Platform Dependencies, Triggers.
+- **Runtime and machines:** component 2 on Windows, unattended, with SAP GUI installed *[Inferred]*; components 1 and 3 serverless *[Inferred]*
+- **Robots:** the unattended robot account component 2 runs as, signing in to SAP as `SAP_AP_Robot` *[Inferred]*
+- **Folders and environments:** folder `Finance/AP` in tenant `Finance`, the home of every resource and process; `Finance/AP-Test` with the same resources for UAT; the production SAP is the one whose UI targets the genome describes *[Inferred]*
+- **Logging and retention:** the job logs; retention not stated *[Inferred]*
 
 ## Complexity
 
