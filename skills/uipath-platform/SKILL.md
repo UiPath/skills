@@ -153,7 +153,7 @@ Before interacting with Orchestrator, solutions, or Integration Service, the use
 uip login status --output json
 ```
 
-If it reports `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand.
+If `Data.Status` is `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand. `Data.Status` alone is the session's state: `uip` renews an expired access token from its refresh token and reports `Expired` or `Refresh Failed` only when that fails; `ExpirationDate`, in UTC, is the current access token's.
 
 If the user names a profile, check that profile explicitly:
 

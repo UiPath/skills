@@ -84,12 +84,12 @@ Then add these capabilities even when the user did not name them:
 
 | User mentions | Add |
 |---|---|
-| PDFs, scanned documents, forms | Document Understanding activities in `uipath-rpa` step; `uipath-ixp` component when custom extraction model needed |
+| PDFs, scanned documents, forms | A document-extraction step of the component that uses it; a `uipath-ixp` component when a custom extraction model is trained ([skill-mapping-guide.md § Decision Tree for Ambiguous Steps](../shared/skill-mapping-guide.md) item 3) |
 | Clicking, typing, reading a screen, desktop app | UI automation in `uipath-rpa` |
 | REST APIs, connectors, SaaS systems | Integration Service connector activities (`uipath-rpa`) or `uipath-api-workflow` component when no UI involved |
 | Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([transactional-shape-guide.md](../shared/transactional-shape-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store follows the split chosen at execution, not imposed |
 | Coordinating several automations, waiting on events | `uipath-maestro-flow` (short-lived) or `uipath-maestro-bpmn` (long-running, human lanes) coordinator component |
-| Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
+| Judgement, classification, summarisation, free-text decisions | An agent where [skill-mapping-guide.md § Decision Tree for Ambiguous Steps](../shared/skill-mapping-guide.md) item 5 places it: a `uipath-agents` component, a Flow's inline agent, or an LLM activity |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
 | Screen for end users, dashboard | `uipath-coded-apps` component |
 | Several automations or test suites drive the same application's screens | One `uipath-rpa` library component (screens and shared actions, Interface as per-workflow argument tables) plus consumer components; process genome states the library builds and packs first |

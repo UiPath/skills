@@ -20,7 +20,7 @@ Rules:
 
 ## File Naming and Location
 
-- Slug: split CamelCase on capitals, lowercase, hyphens for spaces, strip other characters. "Invoice Processing" → `invoice-processing`; "InvoiceIntake" → `invoice-intake`; "Email Triage & Routing" → `email-triage-routing`.
+- Slug: split CamelCase on capitals, lowercase, hyphens for spaces and underscores, strip other characters. "Invoice Processing" → `invoice-processing`; "InvoiceIntake" → `invoice-intake`; "Email Triage & Routing" → `email-triage-routing`.
 - A process genome's components are at `<process-slug>-genome/<component-slug>-genome.md`.
 
 ## Build With and Components
