@@ -242,6 +242,20 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 | 1 | `Cannot read the schema file` | The `@` path is absent or unreadable; this is a path error, not malformed schema. |
 | 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry a taxonomy. |
 
+On the SDK route, `check` reports the same content problems before compile, one code per rule, with the path and the problem in the message (SDK with builder-sdk#2055):
+
+| Code | Rule it enforces |
+| --- | --- |
+| `EXTRACT_TAXONOMY_NESTING` | nesting by name: `A > B` needs a group `A`, and a top-level group names no parent ([Field groups](#field-groups)) |
+| `EXTRACT_TAXONOMY_REF` | every field names a field type, and every `$ref` resolves inside `$defs` ([Field types](#field-types)) |
+| `EXTRACT_TAXONOMY_LIMIT` | names within 64 characters, a nested group's whole composed key included; instructions within 4096 ([Names](#names), [Instructions](#instructions)) |
+| `EXTRACT_TAXONOMY_DUPLICATE_ID` | no id on two groups or two fields |
+| `EXTRACT_TAXONOMY_FIELD_TYPE` | a `$defs` key needs no escaping in a `$ref`; every field type has a title |
+| `EXTRACT_TAXONOMY_STRUCTURE` | every group, field and container is the shape the Schema Editor reads |
+| `EXTRACT_TAXONOMY_BARE`, `EXTRACT_TAXONOMY_LEGACY` (warnings) | a bare JSON Schema, or the `{taxonomy, fieldTypes}` form, in place of `{ prompt, outputSchema }` |
+
+Sibling names are unique by construction there: each is a property key.
+
 ## Evidence boundary
 
 Everything here is offline. `set` and `flow validate` prove schema shape, resolved references, and name/instruction limits—not extraction accuracy. Only running the node on real documents shows that; expect a round of tightening afterwards, mostly in the instructions.
