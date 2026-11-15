@@ -172,5 +172,5 @@ chat link.
 <!--skill-flavor:operate-debug-conversational:end-->
 
 <!--skill-flavor:compile-layout-sdk-upgrade:start-->
-or tell the user: Studio Web owns the SDK copy.
+or tell the user the flow needs `@uipath/maestro-builder-sdk` 6.113.0 or later: Studio Web owns the SDK copy.
 <!--skill-flavor:compile-layout-sdk-upgrade:end-->

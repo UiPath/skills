@@ -32,7 +32,7 @@ there is no partial scaffold to repair. If a Flow folder is missing from
 <!--skill-flavor:misshapen-format:start-->
 **Misshapen nodes on the canvas.** A source with no `.layout()` is not the
 cause: `compile` lays it out the way `uip maestro flow format` does and gives
-every node its canvas size. The exception is an SDK without builder-sdk#2035,
+every node its canvas size. The exception is an SDK older than 6.113.0,
 which leaves every node on one row; the fallback is in
 [`operate.md`](operate.md#layout-of-the-emitted-flow).
 `merge` keeps the layout of the original and places each added node, moving

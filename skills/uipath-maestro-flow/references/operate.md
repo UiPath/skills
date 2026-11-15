@@ -28,7 +28,7 @@ re-lays out every node and discards them. Upload or debug the merged file as
 `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
-This needs a `@uipath/maestro-builder-sdk` with builder-sdk#2035. An older SDK
+This needs `@uipath/maestro-builder-sdk` 6.113.0 or later. An older SDK
 writes every node 96 × 96 on one row at y = 144 (an agent node's `ui.size` is
 96 × 96, not 288 × 96). With such an SDK, run
 `uip maestro flow format <Name>.flow --output json` once on a greenfield file
