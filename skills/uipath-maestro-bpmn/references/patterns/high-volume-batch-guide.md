@@ -43,13 +43,13 @@ export default bpmn('invoice-batch')
         .flowMode('sequence')
         .startEvent('itemStart')
         .scriptTask('processInvoice', { name: 'Process invoice', script: 'return { ok: true };' })
-        .task('recordResult', { name: 'Record result', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator["invoice"]["item"], ok: true }])' } })
+        .task('recordResult', { name: 'Record result', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: true }])' } })
         .endEvent('itemDone', { name: 'Invoice processed' })
         .eventSubProcess('itemFailures', { error: true, name: 'Item failure' }, (h) =>
-          h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator["invoice"]["item"], ok: false }])' } })
+          h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: false }])' } })
             .endEvent('itemFailed', { name: 'Invoice failed' })),
     // Sequential, so each iteration appends to the list the one before left.
-    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'invoice', sequential: true } },
+    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
   )
   .scriptTask('aggregate', {
     name: 'Total the results',
@@ -66,12 +66,12 @@ export default bpmn('invoice-batch')
 ```
 
 `loop: { collection, itemVar }` on the sub-process's options is the multi-instance marker; `sequential: true` runs one at a time, which is what lets every iteration append to the same list (see [Getting results to `aggregate`](#getting-results-to-aggregate)).
-Inside a looped sub-process an expression (`set`, a condition, an `outputs` value) reads the current item as `iterator["<itemVar>"]["item"]` and its 1-based position as `iterator["<itemVar>"]["loopCounter"]`: with `itemVar: 'invoice'`, `iterator["invoice"]["item"]`.
-The outer key is the loop's `itemVar` (the builder writes it as `inputElement`); the inner key is always `item`, because the builder writes no `iteratorName` and the engine defaults it to `item`. Writing `iterator["invoice"]["invoice"]` reads `null`.
-A nested loop with different `itemVar` names (`'batch'` outside, `'invoice'` inside) reads `iterator["batch"]["item"]` and `iterator["invoice"]["item"]`; give nested loops different `itemVar` names.
-Use the bracket form: `iterator[0]` is `null`, and the dotted `iterator.invoice.item` is rewritten by the engine and also reads `null`, while both pass validate.
+Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for a loop nested inside it (the canvas gives every loop in one nesting chain its own index).
+An expression (`set`, a condition, an `outputs` value) then reads the current item as `iterator[0].item` and its 1-based position as `iterator[0].loopCounter`.
+A loop Studio Web made, or one `decompile` seeded, already carries `itemVar: 'iterator[N]'`; keep its reads as they are.
+Any other `itemVar` (`'invoice'`) is the outer key, and the inner key stays `item`: `iterator["invoice"]["item"]`, while `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
 A script does not see `iterator`: its scope holds only the `args` envelope, and the engine builds a script's `iterator` only from `iterator[N]` keys in it.
-To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator["invoice"]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
+To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes, and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
 A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading the per-item results with `debug-instance variables-all` after the run.
 The body is its own sequence scope: give it its own `.flowMode('sequence')`, start event and end event.
 

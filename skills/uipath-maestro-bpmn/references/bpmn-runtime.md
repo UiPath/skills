@@ -22,7 +22,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   .output('score', 'number')
   .var('scoreValue', 'number')
   // … tasks write scoreValue …
-  .endEvent('done', { payload: { type: 'BPMN.Variables', tag: 'uipath:mapping', outputRows: [
+  .endEvent('done', { payload: { type: 'BPMN.Variables', outputRows: [
     { name: 'score', type: 'number', source: '=vars.scoreValue', var: 'score' },
   ] } })
   ```
@@ -50,8 +50,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.expression.js-for-methods -->
 - A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
   `vars.x` reads work, a JS method call does not. `=vars.d.toLowerCase() == "approve"` passes
-  validate, then faults the run (incident `400302`). Prefix any expression that calls a method
-  (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`.
+  validate, then faults the run (incident `400302`). Prefix any expression that calls a JavaScript
+  method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
+  (`Contains`, `Split`, `String.IsNullOrEmpty`) work in plain `=`, as decompiled canvas expressions show.
 - A `.task()`'s `set` values are strings: an `=`-expression or a literal. `set: { done: true }`
   fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=true'`.
 
@@ -232,9 +233,12 @@ make from syntax alone. Exact signatures remain in the generated API.
     input: { annualIncome: '=vars.annualIncome' }, outputs: { score: '=result.score' } })
   ```
   The called process must map its outputs at its end event ([output end mapping](#variables-and-the-process-contract)),
-  or `result.score` is `null`. Studio Web Debug starts the child project; `uip maestro bpmn debug`
-  does not (`[170007] The job's associated process could not be found`), so debug the child on
-  its own with the CLI and the pair in Studio Web, and say so.
+  or `result.score` is `null`.
+<!--skill-flavor:in-solution-debug:start-->
+  Studio Web Debug starts the child project; a local `uip maestro bpmn debug` uploads only this
+  project and faults (`[170007] The job's associated process could not be found`), so debug the
+  child on its own with the CLI and the pair in Studio Web, and say so.
+<!--skill-flavor:in-solution-debug:end-->
 
 <!-- RULE:bpmn.orchestrator.sibling-resource -->
 - A resource another skill builds for this process is bound after it is deployed, in this order:
@@ -630,10 +634,7 @@ binding half, which is the same for every connector-backed node.
   To keep the id `bpmn init` assigned, decompile the stub it wrote (the id is carried
   into the seed) or declare `.metadata({ entryPointId: '<uuid>' })`; a second root start
   takes its own on the event (`.startEvent(id, { entryPointId })`), and `false` writes
-  none. `decompile` writes `entryPointId: false` for a `.bpmn` whose start has none (an
-  export from another tool, a hand-made file); `refresh` then fails with `Expected one
-  uipath:entryPointId on root manual start event`: delete that `false` before the first merge
-  so the SDK derives one, as Studio Web assigns one when it opens such a file. A value you set must be a
+  none (`decompile` writes `false` for an id-less import; delete it, see below). A value you set must be a
   GUID — `validate` refuses any other (`Root start event uipath:entryPointId value …
   must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first. Then generate the files from the built BPMN:
 

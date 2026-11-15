@@ -24,7 +24,7 @@ initial_prompt: |
   - A multi-instance SUBPROCESS (`bpmn:subProcess` carrying a
     `bpmn:multiInstanceLoopCharacteristics` marker) that iterates the collection.
   - Inside the subprocess body, map the current item into a `CurrentLine`
-    variable and the current 0-based loop index into a `CurrentIndex` variable.
+    variable and the current 1-based loop position into a `CurrentIndex` variable.
   - A single end event.
 
   Requirements:

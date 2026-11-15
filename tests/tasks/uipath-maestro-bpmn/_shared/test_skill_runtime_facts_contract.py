@@ -115,8 +115,8 @@ REQUIRED = [
     ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
     ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-for-methods"),
     ("references/bpmn-runtime.md", "RULE:bpmn.hitl.no-completer-identity"),
-    ("references/patterns/high-volume-batch-guide.md", 'iterator["<itemVar>"]["item"]'),
-    ("references/patterns/high-volume-batch-guide.md", "the inner key is always `item`"),
+    ("references/patterns/high-volume-batch-guide.md", "Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`"),
+    ("references/patterns/high-volume-batch-guide.md", "the inner key stays `item`"),
     ("SKILL.md", "A process returns only what its end event maps"),
     ("references/operate.md", "not by `Globals`"),
     ("references/patterns/high-volume-batch-guide.md", "1-based"),
@@ -124,18 +124,13 @@ REQUIRED = [
 ]
 
 
-# The one place the guide quotes the wrong read on purpose, to warn against it.
-ITERATOR_WARNING = 'Writing `iterator["invoice"]["invoice"]` reads `null`'
-
-
-def test_batch_guide_never_reads_iterator_zero_in_an_expression() -> None:
-    # `iterator[0]` is null in a `set`/condition. The outer key is the itemVar and the inner key
-    # is always `item`, so repeating the itemVar (`iterator["batch"]["batch"]`) also reads null.
+def test_loop_sketches_name_the_iterator_the_way_the_canvas_does() -> None:
+    # Studio Web writes inputElement="iterator[N]" and reads iterator[N].item. With any other
+    # itemVar, `iterator[0]` reads null (debug run, itemVar 'item' and 'invoice').
     text = _read("references/patterns/high-volume-batch-guide.md") + _read("references/patterns/composing-guide.md")
-    text = text.replace(ITERATOR_WARNING, "")
-    assert "concat([{ item: iterator[0]" not in text and "claim: iterator[0]" not in text
-    for var in set(re.findall(r"itemVar: '(\w+)'", text)) - {"item"}:
-        assert f'iterator["{var}"]["{var}"]' not in text, f"reads the {var!r} loop item with the itemVar as the inner key"
+    item_vars = re.findall(r"itemVar: '([^']+)'", text)
+    assert item_vars, "the loop sketches no longer declare an itemVar"
+    assert all(re.fullmatch(r"iterator\[(\d+|N)\]", v) for v in item_vars), item_vars
 
 
 @pytest.mark.parametrize("rel,phrase", REQUIRED, ids=[f"{r}:{p}" for r, p in REQUIRED])

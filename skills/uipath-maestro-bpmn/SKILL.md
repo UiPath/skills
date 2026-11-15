@@ -27,7 +27,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 8. A process given as an image is transcribed 1:1, every item a node and every connector a flow, from a confirmed inventory: read [Authoring from an image](references/image-transcription-guide.md) first.
 9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
 10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
-11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in every end event's `BPMN.Variables` payload; a task that writes an `.output()` directly returns `null` to the caller, and every check passes ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
+11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in the `BPMN.Variables` payload of every end event that finishes the process (root scope, not a sub-process body); a task that writes an `.output()` directly returns `null` to the caller, and every check passes ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
 
 <!--skill-flavor:host-setup:start-->
 
