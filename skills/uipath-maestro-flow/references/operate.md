@@ -13,9 +13,9 @@ Authoring is upstream. Do not ship source until it completes the loop in [`CLI-L
 uip maestro flow format <Name>.flow --output json
 ```
 
-**Greenfield files only.** Run `format` on the last-emitted artifact before `solution upload`, `flow debug`, or opening it in a designer, unless its source sets `.layout()`. `validate` does not require layout. `compile` writes placeholder `ui.position` values and no top-level `layout`; the canvas uses `layout.nodes[<id>]` when present, otherwise `node.ui`, producing one flat row with sequential switch arms. `format` creates `layout`, fans arms into rows, sizes nodes, and reports `NodesRepositioned`.
+**Greenfield files only.** Run `format` on the last-emitted artifact before `solution upload`, `flow debug`, or opening it in a designer, unless its source sets `.layout()`. `validate` does not require layout. `compile` writes placeholder `ui.position` values and no top-level `layout`; the canvas uses `layout.nodes[<id>]` when present, otherwise `node.ui`, producing one flat row with sequential switch arms. `format` creates `layout`, fans arms into rows, sizes nodes, and reports `NodesRepositioned`. Skipping it on a greenfield file is the most common cause of misshapen nodes in Studio Web.
 
-**Never format a merged brownfield file.** `merge` preserves the original `layout`, shifts later nodes right or down, and grows containers as needed. Upload or debug the merged file exactly as `merge` wrote it.
+**Never format a merged brownfield file.** `merge` preserves the original `layout` (`format` would discard its positions), shifts later nodes right or down, and grows containers as needed. Upload or debug the merged file exactly as `merge` wrote it.
 <!--skill-flavor:operate-format:end-->
 
 `nodes create` without `--position`, or a hand edit adding nodes, leaves new nodes at `layout.nodes[<id>].position` 0,0. After such an edit to a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and pass `--position <x>,<y>` to every `nodes create`.
@@ -82,7 +82,7 @@ Use Orchestrator only when explicitly requested because it bypasses Studio Web:
 uip maestro flow pack <project-path> <OutputDir>
 ```
 
-Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro flow publish <project-path>` packs and uploads the `.nupkg` in one step; `--folder-key` or `--folder-path` selects a folder feed. When the target is genuinely ambiguous, ask before packing.
+Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro flow publish <project-path>` packs and uploads the `.nupkg` to Orchestrator packages in one step; `--folder-key` or `--folder-path` selects a folder feed. When the target is genuinely ambiguous, ask before packing.
 <!--skill-flavor:operate-publish:end-->
 
 ## Debug — a real end-to-end run
@@ -92,7 +92,7 @@ Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro 
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 ```
 
-Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report it unverified. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`; for a solution not scaffolded this turn, debug only on a yes to a question that names that overwrite, and headless, never debug it.
+Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report the flow as unverified rather than letting a passing `validate` stand as the result. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`; for a solution not scaffolded this turn, debug only on a yes to a question that names that overwrite, and headless, never debug it.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints:
@@ -106,14 +106,14 @@ Operational constraints:
 <!--skill-flavor:operate-debug-wait:end-->
 - **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
 <!--skill-flavor:operate-debug-scratch-copy:start-->
-- **Every process and connection node must resolve.** Missing tenant resources prevent provisioning and starting; `Data.missingResources` names them although `check` and `validate` pass. To debug the rest, debug a scratch copy without those nodes, delete it afterward, and report the run as the copy's.
+- **Every process and connection node must resolve.** Missing tenant resources (a placeholder process key, a stub connection) prevent provisioning and starting; `Data.missingResources` names them although `check` and `validate` pass. To debug the rest, debug a scratch copy without those nodes, delete it afterward, and report the run as the copy's.
 <!--skill-flavor:operate-debug-scratch-copy:end-->
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into the personal workspace; another folder fails `403` at `Stage: prepare-custom-debug`, and a personal-workspace `--folder-key` gives `404`. No instance starts.
 <!--skill-flavor:debug-shared-resources:start-->
 Shared resources reach the run through `resources refresh`, not the debug folder.
 <!--skill-flavor:debug-shared-resources:end-->
 
-Exception: an account without a personal workspace (service-principal or CI token, `403` at `get-personal-folder`) passes `--folder-id <number>` to skip that lookup. `prepare-custom-debug` may still `403` for a non-personal folder; tell the user if it does.
+Exception to the folder rule: an account without a personal workspace (service-principal or CI token, `403` at `get-personal-folder`) passes `--folder-id <number>` to skip that lookup. `prepare-custom-debug` may still `403` for a non-personal folder; tell the user if it does.
 
 Inputs for flows with `.input(...)` parameters:
 
@@ -124,7 +124,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json \
 ```
 <!--skill-flavor:operate-debug-inputs:end-->
 
-Build inputs from real records, never invented values. Read an entity id with `uip df entities list --output json`, then a live record with `uip df records list <ENTITY_ID> --output json`.
+Build inputs from real records, never invented values: an invented key matches no record, the lookup returns `[]`, and the run faults on empty data. Read an entity id with `uip df entities list --output json`, then a live record with `uip df records list <ENTITY_ID> --output json`.
 
 <!--skill-flavor:operate-debug-attachment:start-->
 A `types.file` input takes a repeatable local file; the left side is the input name:
@@ -133,7 +133,7 @@ A `types.file` input takes a repeatable local file; the left side is the input n
   --attachment <inputName>=<localPath>
 ```
 
-At runtime the variable is an OBJECT, not a path: scripts read `$vars.<triggerNodeId>.output.<inputName>.FullName` and see only `ID`, `FullName`, `MimeType`, `Metadata`, never content. Pass that reference to a file-reading step, such as an RPA process taking it as its file argument ([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
+At runtime the variable is an OBJECT, not a path: scripts read the uploaded name as `$vars.<triggerNodeId>.output.<inputName>.FullName` and see only `ID`, `FullName`, `MimeType`, `Metadata`, never content. A flow that parses the file passes that reference to a file-reading step, such as an RPA process taking it as its file argument ([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 <!--skill-flavor:operate-debug-attachment:end-->
 
 <!--skill-flavor:operate-debug-entry-point:start-->
@@ -183,7 +183,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 
 Only `process run` lets `--attachment` override `--inputs` on key collision. Its `--validate` accepts pre-uploaded attachment references for file slots and is not a dry run: after validation it starts a real job. Give `types.file` inputs with `flow process run --attachment`, never `uip or jobs start --attachment`.
 
-`--entry-point <triggerNodeId>` starts that root and makes `--validate` check its schema. A wrong id exits 3 and lists process trigger ids. Without it, use the release default entry point. `flow pack` or `solution pack` sets that to the first trigger (the SDK-built default root); other packaging may differ. Pass `--entry-point` whenever the root matters. Do not pass `--feed-id`; the CLI reads the release feed.
+`--entry-point <triggerNodeId>` starts that root and makes `--validate` check its schema. A wrong id exits 3 and lists process trigger ids. Without it, the job starts at the release's default entry point. `flow pack` or `solution pack` sets that to the first trigger (the SDK-built default root); other packaging may differ. Pass `--entry-point` whenever the root matters. Do not pass `--feed-id`; the CLI reads the release feed.
 
 ## Inspect a job
 
@@ -197,7 +197,7 @@ Traces are verbose, full timelines, and a last resort except per-iteration timin
 ## Instance lifecycle
 
 <!--skill-flavor:operate-instance-id:start-->
-Every `instance` command needs `--folder-key` (`-f`) or is rejected before the API. Get it from `uip or folders list --output json`, the job/process context, or `instance list`. An instance id comes from debug `Data.instanceId`, `job status`, or `instance list`.
+Every `instance` command needs `--folder-key` (`-f`) or is rejected before the API. Get it from `uip or folders list --output json` or the job/process context. An instance id comes from debug `Data.instanceId`, `job status`, or `instance list`.
 <!--skill-flavor:operate-instance-id:end-->
 
 ```bash
@@ -207,7 +207,7 @@ uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro flow instance retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
-`-f` does not filter `instance list`; do not assume every listed instance is in that folder. Never `retry` a faulted instance before reading its debug response or incident. Orchestrator defines effect and recoverability; consult `uip maestro flow instance <sub> --help` for flags.
+`-f` does not filter `instance list`; do not assume every listed instance is in that folder. Never `retry` a faulted instance before reading why it faulted in its debug response or incident; retrying without the cause repeats the failure. When each takes effect and what is recoverable is Orchestrator's lifecycle model, not this skill's; consult `uip maestro flow instance <sub> --help` for flags.
 
 ## Evidence boundary
 

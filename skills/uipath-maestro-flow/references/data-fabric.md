@@ -152,7 +152,7 @@ Run `prepare` from the directory used for `check` and `compile`, normally `<Solu
 
 An entity from `uip df entities create <Name> --local` exists only in the solution until deployment and resolves the same way. Write `{ name: '<Name>' }`; from the Flow project folder, run the `prepare` printed by `check`. It reads the solution, records the entity in placeholder folder `99999999-9999-9999-9999-999999999999` (replaced by `flow debug` and `solution deploy`), and names `folder: 'solution_folder'` to pin.
 
-Do not look it up on the tenant before deploy. Omitting keys makes it tenant-scoped; the run fails with `Entity <Name> does not exist`, and `flow validate` reports `INLINE_ENTITY_UNBOUND`. Although its message suggests `uip maestro flow node configure` (which edits compiled `.flow`), fix `.flow.ts` in a builder-SDK project or the next `compile` reverts it. Creating and modelling follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
+Do not look it up on the tenant before deploy. Omitting keys makes it tenant-scoped; the run fails with `Entity <Name> does not exist`, naming an entity that does exist, and `flow validate` reports `INLINE_ENTITY_UNBOUND`. Although its message suggests `uip maestro flow node configure` (which edits compiled `.flow`), fix `.flow.ts` in a builder-SDK project or the next `compile` reverts it. Creating and modelling follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
 
 A decompiled flow uses `folderKey` and `resourceKey`; leave that form unless the entity changes.
 
@@ -238,7 +238,7 @@ uip df entities list --native-only --include-folders --output json  # writes nee
 uip df entities get <entity-id> --output json                       # exact column names and types
 ```
 
-The platform documents `limit`/`skip`/`sort`, but the local converter writes them as `_recordLimit`/`_skip`/`_sort`; they reach runtime, so `flow-debug` is not evidence either way.
+The platform documents `limit`/`skip`/`sort`, but the local engine's converter does not apply them; they reach the file as `_recordLimit`/`_skip`/`_sort` and are read at run time, so `flow-debug` is not evidence either way.
 
 Offline `validate` proves only emitted `entityConfig` shape. It does not verify column existence, writability, value type, native versus federated entity, or whether a `byId` id matches; all validate clean and can fail silently at runtime. The tenant is evidence.
 

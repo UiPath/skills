@@ -13,7 +13,7 @@ Copy `project`, `modelName`, `folderName`, `folderPath`, and `versionTag` from t
 
 ## Listing published models
 
-For questions such as "What document extractors can I add to this flow?", run:
+For "What document extractors can I add to this flow?", "what IxP models can I use here?", "list published extractors", or "what extraction nodes are in the registry?" (read-only Q&A, not build requests), run:
 
 <!--skill-flavor:ixp-list-commands:start-->
 ```bash
@@ -60,13 +60,13 @@ uip maestro flow registry get '<node-type>' \
 
 Scalar results are `ExtractionResult.ResultsDocument.Fields[]`; table results are `ExtractionResult.ResultsDocument.Tables[]`. In both, `FieldName` identifies the model field and `Values` carries extracted values.
 
-If no suitable published extractor exists: for a runtime or published-model requirement, report the missing capability and stop; for a validate-only topology, put `mock()` there, validate the surrounding flow, and report the placeholder as the capability gap. Do not block validate-only topology on unavailable extractors or downstream endpoints when placeholders preserve the requested graph. `pageRange` is a product string; `1-5` is illustrative because no local grammar is published.
+If no suitable published extractor exists: for a runtime or published-model requirement, report the missing capability and stop; for a validate-only topology showing where extraction belongs, put `mock()` in the extraction position, complete and validate the surrounding flow, and report the placeholder as the capability gap. Do not block validate-only topology on unavailable extractors or downstream endpoints when placeholders preserve the requested graph. `pageRange` is a product string; `1-5` is illustrative because no local grammar is published.
 
 ## File input from a connector event
 
 Read the trigger's `outputResponseDefinition` and pass its exact file-reference field to `fileRef`; for example, a SharePoint-backed event that declares `ReferenceID` is wired as `fileRef: out('start', 'ReferenceID')`. This direct connector-event-to-IxP shape passes product validation; do not add a download action merely to change it in a validate-only flow.
 
-The SDK emits the accepted plain expression string:
+The SDK emits that `out(...)` handoff in the one envelope the IxP validator accepts, a plain expression string:
 
 ```json
 "fileRef": "=js:$vars.start.output.ReferenceID"
@@ -76,7 +76,7 @@ Do not replace it with `{ "type": "jsExpression", ... }` or a hand-built attachm
 
 ## Joined document-event recipe
 
-For a joined document event, resolve `documentCreated` from its live connection, copy `extractor` from `registry get`, pass the trigger field directly to extraction, and pass the whole result directly to delivery:
+For a joined document event, resolve `documentCreated` from its live connection, copy the identity object `extractor` from `registry get` (see Resource identity), pass the trigger field directly to extraction, and pass the whole result directly to delivery:
 
 ```ts
 const documentCreated = {

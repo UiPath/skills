@@ -1,8 +1,8 @@
 # Error Handling
 
-An error handler is separate from the preceding action: `.step(name, action).onError(handler => ...)`. Read failures with `h.err(field)` or `err(step, field)`, where `field` is `code`, `message`, `detail`, `category`, or `status`; `response` and `element` also exist at runtime. A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
+An error handler is separate from the preceding action: `.step(name, action).onError(handler => ...)`. Read failures with `h.err(field)` or `err(step, field)`, where `field` is `code`, `message`, `detail`, `category`, or `status`; `response` and `element` also exist at runtime. A handler may run recovery steps with `h.step(...)`, then `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 
-`element` is the failing step's canvas label (`display.label`), not its id; custom labels replace step names. Route on `code` or `message`, never `element`.
+`element` is the failing step's canvas label (`display.label`), not its id; the two are equal only when the step sets no `label` (`{ label: 'Fail A' }` fails with `element: "Fail A"`). A label is display text anyone editing the canvas can change, so route on `code` or `message`, never `element`.
 
 ## At a glance
 
@@ -25,11 +25,11 @@ Measured one debug run per family (2026-09-10):
 
 `serialize` rewrites exception-family reads so authored source stays uniform; a family move requires only a table edit. Never read a failed step's `out(...)` in its own handler (`ERROR_ENVELOPE_VIA_OUTPUT`).
 
-`flow validate` warns `EXPRESSION_DIAGNOSTIC` for runtime-filled but undeclared `element` and `response` on any family, and for every managed HTTP envelope field whose rewritten `<step>.output` read is typed only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these diagnostics on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` resolves to nothing.
+`flow validate` warns `EXPRESSION_DIAGNOSTIC` for runtime-filled but undeclared `element` and `response` on any family (`Property 'element' does not exist on type '<Step>_Error'`), and for every managed HTTP envelope field whose rewritten `<step>.output` read is typed only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these diagnostics on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` is a read that resolves to nothing.
 
 A handled script failure still applies its own `{ updates }`; a sub-flow step and `.loop()` container do not. Put success-only updates on the following step.
 
-Plain `http({ managed: false })` no longer runs: the tenant returns 500 `No handler registered for extension type 'Intsvc.HttpExecution'`, and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`). Moving to the managed node makes non-2xx responses fail the step instead of reaching success with `statusCode`; branch in a handler with `err(step, 'status')`.
+Plain `http({ managed: false })` no longer runs: the tenant returns 500 `No handler registered for extension type 'Intsvc.HttpExecution'`, and its registry serves only `core.action.http.v2`. `check` warns `HTTP_V1_RETIRED` and refuses a handler there (`HTTP_ONERROR_V1`). Moving to the managed node is a behaviour change, not a rename: non-2xx responses fail the step instead of reaching success with `statusCode`, so a status branch becomes a handler reading `err(step, 'status')`.
 
 A `.loop()` can carry a handler: `.onError()` after `.loop(...)` wires the container error port, and body failure routes there. Its measured container envelope has the body's message in `detail`, the failing body's canvas label in `element`, and the instance completes; read it with `h.err('detail')`. Inside a loop body, end a step handler with `.continue()` to skip the item and continue to the next ([`loops.md`](loops.md#loop-options)).
 

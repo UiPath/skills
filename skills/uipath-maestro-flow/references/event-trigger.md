@@ -39,7 +39,7 @@ uip maestro registry prepare uipath-microsoft-outlook365 --action email-received
 
 That one command replaces the manual sequence: it discovers the connection; writes both `bindings.json` entries (connection id and folder key, as connector-action prepare does); fetches the connection-scoped event definition; records a generic event's object decision (`--object <name>`, using the same matching ladder as actions); stores `where`/filter vocabulary in `.flow-sdk/connectors-local/` for offline `check`; and records each `--resolve` in `resolutions.json` for `compile`.
 
-`check` validates every `where` key and `filters[].field`. An unknown leaf is an ERROR, `EVENT_FILTER_UNKNOWN_FIELD`, because the platform would silently drop it. Prepare refuses an event object requiring a BYOA (bring-your-own-app) connection and reports usable connections. For a `webhooks`-mode event, it prints the URL-registration step; it cannot be tested locally, so deploy to test it.
+`check` validates every `where` key and `filters[].field`. An unknown leaf is an ERROR, `EVENT_FILTER_UNKNOWN_FIELD`, because the platform would silently drop it. Prepare refuses an event object requiring a BYOA (bring-your-own-app) connection and reports usable connections, instead of a runtime fault with an unrelated webhook error. For a `webhooks`-mode event, it prints the URL-registration step; it cannot be tested locally, so deploy to test it.
 
 Do not run `uip is triggers objects` / `triggers describe` / `resources run list` manually or paste ids into `where`: prepare performs the same calls deterministically, and pasted ids become invalid after a connection move. Before finishing, inspect `inputs.detail.eventParameters` and confirm it contains the selected id and that connection/folder bindings use the discovery connection.
 
@@ -83,11 +83,11 @@ uip maestro registry prepare uipath-salesforce-sfdc --action record-updated \
   --object Account
 ```
 
-The emitted node carries the object in `inputs.detail.objectName` and `configuration`, its event in `eventType`, and the platform-declared `eventMode`. Curated events such as Outlook `email-received` and OneDrive `file-created` have built-in objects; passing `object` is an error.
+The emitted node carries the object in `inputs.detail.objectName` and `configuration`, its event in `eventType`, and the platform-declared `eventMode`. Curated events such as Outlook `email-received` and OneDrive `file-created` have built-in objects; passing `object` to them is an error.
 
 ## Started by an HTTP call
 
-For a caller such as another webhook or script, run the HTTP Webhook connector subscription: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. Integration Service configures caller authentication on the connection; with header authentication, a missing or wrong header returns 401 and starts no run.
+A caller that starts the flow over HTTP, such as another webhook or script, reaches it through the HTTP Webhook connector: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. Caller authentication is set on the connection when it is created in Integration Service; with header authentication, a missing or wrong header returns 401 and starts no run.
 
 The event is webhook-mode. Read its URL with:
 
@@ -101,10 +101,10 @@ Read the request from `out('start', …)`:
 
 - JSON-body top-level fields directly;
 - parsed `body` and `headers` (header names lower-case);
-- `request_body` and `request_headers` as JSON text, also usable by `filters`;
+- `request_body` and `request_headers` as JSON text, which are the fields `filters` take;
 - `eventType`.
 
-Query-string parameters are not delivered. Headers include the authentication header: never log or return `headers` whole. The caller receives only acceptance (200 with a `webhookEventId`), not flow output; use another trigger if it needs the run result.
+Query-string parameters are not delivered. Headers include the authentication header: never log or return `headers` whole. The caller receives only acceptance (200 with a `webhookEventId`), not flow output; a caller that needs the run's result is not served by this trigger.
 
 ## Filter operators
 
@@ -127,11 +127,11 @@ A local start-trigger run injects a payload; it does not fire a subscription. Fo
 
 ## Completion contract
 
-Unless explicitly required to witness a live subscription, finish after the last edit when both hold:
+Unless the request explicitly requires a live subscription witness, a connector-event start is done after the last edit when both hold:
 
 - `uip maestro flow validate` returns `Valid` for the emitted Flow.
 - The emitted `.flow` has the intended start-trigger type, scope/filter inputs, bindings, and downstream edges.
 
-Use at most one bounded direct-input debug for a downstream behavior question and stop when answered; it is not subscription proof. Do not poll or sleep on debug instances, create a scratch solution, or upload seed content solely to manufacture a trigger event.
+At most one bounded direct-input debug may be used for a downstream behavior question; stop when answered; it is not subscription proof. Do not poll or sleep on debug instances, create a scratch solution, or upload seed content solely to manufacture a trigger event.
 
 If live delivery is required, cause one real platform event and record that witness once. If the environment cannot provide it, report that boundary instead of repeating debug launches.

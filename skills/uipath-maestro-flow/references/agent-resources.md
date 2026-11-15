@@ -27,7 +27,7 @@ Inline-agent capabilities are ARTIFACT nodes on handles, not control-flow steps:
 | `connector` | Integration Service operation | `connector` + `operation` (needs a library), `connection` + `folder` (`bindings.json` labels); see [inline-agent.md](inline-agent.md#tools) |
 | `process` / `api` / `flow` / `maestro` / `agent` / `function` | Deployed resource or sibling project | `key` (GUID) + `name` + `folderPath` (`'solution_folder'` for a sibling); see [inline-agent.md](inline-agent.md#tools) |
 | `ixp` | Published IxP project | `projectId` + `name` |
-| `mcp` | MCP server's tools | `name` + `key`; `slug` is runtime-resolved |
+| `mcp` | MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |
 | `a2a` | Remote agent delegation | `name` + `key` + required `slug` |
 | `clientside` | Calling application runs it | `name` plus `inputs`/`returns`, or whole-JSON-schema `inputSchema`/`outputSchema` (property descriptions, `items`, `required`); not both |
 | `httpRequest` | Built-in HTTP tool | nothing; see below |
@@ -36,7 +36,7 @@ For `mcp`, `a2a`, and per-instance resource kinds, the node TYPE is minted from 
 
 **HTTP fields are three-way.** Each of `url`, `method`, `headers`, `params`, `body`, and `timeout` is FIXED (give a value) or MODEL-filled at call time (omit it, preserving the definition's prompt-mode default and field description). Fix scenario-pinned fields and leave the rest; fixing all defeats the tool's purpose, while fixing none gives no constraints.
 
-**Client-side tools declare only a CONTRACT.** The flow declares the name and input/output contract; the calling application implements and dispatches it. Nothing local runs it.
+**Client-side tools declare only a CONTRACT.** The flow declares the name and input/output contract; the calling application implements it and dispatches on the name. Nothing local runs it.
 
 ## Escalation
 

@@ -6,7 +6,7 @@ Choose one loop before any build command, as [SKILL.md — Lifecycle](../SKILL.m
 - For product-CLI validation/debug, or when `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1` is enabled, use only the eval/product-CLI loop. Its scaffold and full command block are in SKILL.md; the debug flags and projections here are only for runtime-evidence bars.
 - Otherwise use this file's packaged-SDK local gates.
 
-In eval/product mode, create the solution/project scaffold immediately after choosing the loop, before authoring. After the source first compiles, emit it into that nested project artifact—not `/tmp`—and refresh it after every source edit.
+In eval/product mode, create the solution/project scaffold immediately after choosing the loop, before authoring. After the source first compiles, emit it into that nested project artifact—not `/tmp`—and keep the artifact current after every source edit.
 <!--skill-flavor:loop-choice:end-->
 
 Tenant discovery is not a loop phase. First choose the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)); `check` cannot flag a node never written, so a script or `mock()` substitution goes unflagged. Author from the task's words; source `check` names every owed tenant call—unresolved lookup, unmaterialized object, and out-of-snapshot field—with its exact `registry prepare` command. Spend the one expensive call after the cheap pass finds all other errors.
@@ -25,13 +25,13 @@ When editing an existing Flow, edit the supplied `.flow.ts`, preserve existing s
 Skip the install when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
 Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile`, `merge` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
 
-Install globally once per machine:
+Install globally once per machine, so the workspace needs no `package.json` or `node_modules/`:
 
 ```bash
 npm install -g @uipath/maestro-builder-sdk
 ```
 
-The public npm package needs no token and follows npm's configured registry/mirror. Only after E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended. After EACCES, do not use `sudo`; run `npm install --save-dev @uipath/maestro-builder-sdk` in the workspace, which `uip` also finds. Report other failures (including timeout or mirror refusal) for the user's network/registry to fix.
+The public npm package needs no token and follows npm's configured registry/mirror. Only after E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended. After EACCES, do not use `sudo`; run `npm install --save-dev @uipath/maestro-builder-sdk` in the workspace, which `uip` also finds. Report other failures (including timeout or mirror refusal) for the user's network/registry to fix; do not route around them.
 
 When `uip` reports the SDK below minimum, run the command in its `Instructions`, which specifies `-g` or `--save-dev` for the discovered copy. Connector-definition fetching requires `@uipath/maestro-builder-sdk` 6.97.0 or later, through either `uip` or `flow-sdk`. When `uip` says the SDK cannot fetch definitions, run its named upgrade (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works.
 
@@ -119,7 +119,7 @@ The JSON envelope has top-level `Result`; successful validation also reports `Da
 Match final evidence to the acceptance bar after the last edit:
 
 - Validate-only: require `Data.Status: "Valid"` plus the required structural self-check, then stop; do not debug merely for confidence.
-- For each distinct behavior claim, plan at most one bounded debug with inputs/attachments that exercise it; combine compatible claims and do not repeat equivalent inputs.
+- For each distinct behavior claim named by the bar, plan at most one bounded debug with inputs/attachments that exercise it; combine compatible claims and do not repeat equivalent inputs.
 - If one unknown blocks final wiring, run one bounded experiment distinguishing the choices, apply its answer, and return to final emit/validate. Do not create scratch-solution families.
 
 If evidence cannot be obtained within the bound, report the evidence boundary rather than repeating debug launches.
@@ -161,18 +161,18 @@ Compilation resolves the names and writes connector-authenticated node detail an
 <!--skill-flavor:debug-readback:start-->
 ### `--output-filter` is JMESPath, and three things about it are worth knowing
 
-Use `'single-quoted'` for a string literal, not `` `backticked` ``; backticks delimit a JSON literal, so `` `Completed` `` is invalid. Prefer the loud-failure form and wrap the whole expression in DOUBLE quotes:
+Use `'single-quoted'` for a string literal, not `` `backticked` ``; backticks delimit a JSON literal, so `` `Completed` `` is invalid. Both forms below work; prefer the first (its failure is loud), wrapped in DOUBLE quotes so the inner `'…'` survives the shell:
 
 ```bash
 --output-filter "elementExecutions[?status!='Completed']"     # raw string literal
 --output-filter 'elementExecutions[?status!=`"Completed"`]'   # JSON literal
 ```
 
-Project from `Data`, not the envelope: `Result` and `Code` remain top-level, while `finalStatus` is `Data.finalStatus`. Filter rather than pipe through `jq`; a rejected filter exits non-zero with a parse error, so fix it rather than falling back to `--output json | jq`.
+Project from `Data`, not the envelope: `Result` and `Code` remain top-level, so a filter naming `finalStatus` reads `Data.finalStatus`. Filter rather than pipe through `jq`; a rejected filter exits non-zero with a parse error, so fix it rather than falling back to `--output json | jq`.
 
 ### Ready-made projections — copy one, do not compose your own
 
-Use the narrowest verified projection:
+Use the narrowest verified projection that answers the claim:
 
 ```bash
 # Did it finish? The cheapest possible check.
@@ -208,7 +208,7 @@ Name only globals needed by the claim; never project all for a verdict. Each ste
 
 A completed envelope has no `incidents`; its `Data` carries `finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`, `solutionId`, `variables`, and `elementExecutions`, plus `variablesFetch` when variable reading retried; `variablesError` replaces `variables` when it fails. Thus `incidents:incidents` is `null`. A fault usually carries `Data.incidents` (absent if PIMS returns none or fetching fails); project it to retain failures. If missing, fetch with the separate `debug-instance incidents` command below using the returned `instanceId`. With `variablesError`, outputs are unknown, not empty: run the re-read command its `Instructions` give.
 
-For direct-input evidence, refresh first and retain status, instance, URL, failed executions, required declared outputs (`<Out>` is each `direction: out` global), and incidents:
+For direct-input evidence (a real run: [ask first](operate.md#debug--a-real-end-to-end-run)), refresh first and retain `Result`, status, instance, URL, failed executions, required declared outputs (`<Out>` is each `direction: out` global), and incidents:
 
 ```bash
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )

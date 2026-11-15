@@ -3,7 +3,7 @@
 Manage evaluators, eval sets, data points, and simulations with `uip maestro flow eval`; defining an `inlineAgent(...)` node does not create them. Every `eval` command takes `--path <project-dir>`, the directory containing `project.uiproj`.
 
 <!--skill-flavor:eval-login:start-->
-**Local `add` / `list` / `remove` edit project files and need no login.** Starting a run does — run `uip login` first, and ensure a matching solution exists in Studio Web.
+**Local `add` / `list` / `remove` edit project files and need no login.** Starting a run does — run `uip login` first, and it needs a matching solution in Studio Web.
 <!--skill-flavor:eval-login:end-->
 
 Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
@@ -61,7 +61,7 @@ Build expected outputs from real records; invented keys match no record and scor
 
 ## Simulations — stop an eval from really sending
 
-A simulation stands in for a component, keyed by its source step id or inline agent tool name. It is scoped to one data point in one set; all three commands require `--set` and `--data-point`. `add` also requires `--strategy`: `Static` returns `--mock-value` verbatim, while `Llm` generates from `--simulation-instructions`. It requires `--component-type` (`connector`, `agent`, `hitl`, or `Node`) unless `--parent <agent-id>` adds a child-tool simulation, which defaults to `Node`.
+A simulation stands in for a component, keyed by component id: its source step id, or the tool name for an inline agent's tool. It is scoped to one data point in one set; all three commands require `--set` and `--data-point`. `add` also requires `--strategy`: `Static` returns `--mock-value` verbatim, while `Llm` generates from `--simulation-instructions`. It requires `--component-type` (`connector`, `agent`, `hitl`, or `Node`) unless `--parent <agent-id>` adds a child-tool simulation, which defaults to `Node`.
 
 ```bash
 uip maestro flow eval simulation add <component-id> \
@@ -75,7 +75,7 @@ uip maestro flow eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
 
-`--mock-value` is the component's raw `result`; top-level keys must match node outputs such as `=result.<key>`:
+`--mock-value` is the component's raw `result`; its top-level keys are the ones the node's `outputs` read as `=result.<key>`; open the node and match them:
 
 - Connector and inline-agent nodes read `=result.response`; pass `{"response": <value>}`.
 - A `hitl` quick form maps `output` to `=result` and `status` to `=result.Action`; pass `{"Action":"<outcome name>", "<fieldId>": <value>}`. `Action` is the outcome's `name`, not its id.
@@ -104,7 +104,7 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 `eval run start` needs the solution in Studio Web. If it cannot resolve one, it fails with `solution-id could not be resolved` or a variant; never treat that as permission to upload. `eval run start` itself re-uploads and overwrites the matching Studio Web solution unless `--solution-id` and `--project-id` are passed, so ask before it too. If Studio Web assigns another id, `eval run start` and `flow debug` repoint local `.uipx` `SolutionId` and report `Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`); keep and commit that change, or the next upload creates a second solution.
 
-`uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching local `.uipx` `SolutionId`; it needs no flag and raises no prompt. It can publish work in progress, overwrite partial state after `uip solution download`, or discard divergent remote state. The overwrite is restorable only through the browser and only if `--no-snapshot` was not passed; recovery is after the fact and does not undo the first case.
+`uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching local `.uipx` `SolutionId`; it needs no flag and raises no prompt. It can push work in progress to where teammates and triggers pick it up, send partial local state from a `uip solution download` back over whatever else moved, or discard divergent remote state. The overwrite is restorable only through the browser and only if `--no-snapshot` was not passed; recovery is after the fact, by the user, and does not undo published work in progress.
 
 Ask and offer either upload now with the user's acknowledgement, or pass `--solution-id` and `--project-id` for an existing Studio Web solution and plumb them through to `eval run start`.
 <!--skill-flavor:eval-no-upload:end-->
@@ -115,4 +115,4 @@ After authoring, list the evaluator and eval set and read the generated JSON. Co
 
 ## Evidence boundary
 
-A score is evidence about this flow's output on these inputs under these evaluators, not proof that the flow is correct. An `llm-judge-output` score has model variance; a one- or two-point movement is noise. Compare runs rather than reading one, and name the eval set and evaluator behind every reported number.
+A score is evidence about this flow's output on these inputs under these evaluators, not evidence that the flow is correct. An `llm-judge-output` score has model variance; one run moving a point or two is noise. Compare runs rather than reading one, and name the eval set and evaluator behind every reported number.

@@ -29,7 +29,7 @@ Reference a published or in-solution sibling agent rather than create one. For a
 
 ## Reuse a published agent, or create one in the solution
 
-Search for a named or possibly existing agent before creating one, following the request:
+Two shapes; the request decides which. When the request names an agent that may already exist, look for it first:
 
 ```bash
 uip maestro flow registry search "uipath.core.agent" --output json
@@ -89,7 +89,7 @@ uip codedagent review . --output json
 
 Run `uv sync` before `init`: `uip codedagent init` imports the entry-point graph and fails when declared dependencies are absent; a failed `init` leaves `uipath.json` scaffolded without its entry-point map.
 
-**`uip codedagent run` is not part of this path.** It executes the graph and requires `UIPATH_ACCESS_TOKEN` plus access to the LLM gateway. If either is absent, platform-client, import, and virtualenv errors are environmental rather than project defects; do not chase them. `uip codedagent review` is the offline check and does not run the model.
+**`uip codedagent run` is not part of this path.** It executes the graph and requires `UIPATH_ACCESS_TOKEN` plus access to the LLM gateway. If either is absent, `run` fails at the platform client; the import and virtualenv errors it emits on the way there are environmental, not project defects; do not chase them. `uip codedagent review` is the offline check and does not run the model.
 
 Register the sibling, refresh, and read both identifiers back:
 

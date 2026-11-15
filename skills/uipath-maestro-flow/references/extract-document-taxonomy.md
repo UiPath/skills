@@ -13,12 +13,12 @@ Both commands edit the `.flow` without login. `--schema` accepts JSON or a file 
 
 **These commands are new.** If an older CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`, tell the user to update `uip`; this is not a bad node or flow.
 
-This guide assumes the node exists. For adding it, wiring `fileRef`, published IXP-model behavior, and `.flow-sdk/` overwrite behavior, see [extract-document-node.md](extract-document-node.md).
+This guide assumes the node exists. For adding it, wiring `fileRef`, when it applies over a published IXP model, and why these commands do not survive a `.flow-sdk/` project (the next compile overwrites the taxonomy), see [extract-document-node.md](extract-document-node.md).
 
 ## Starting from a flow in Studio Web
 
 <!--skill-flavor:extract-brownfield:start-->
-For a Studio Web flow, work on a local copy: download, edit, and upload it. Identify it by solution id or the Studio Web URL's `solutionId` query parameter. If neither was provided, ask for either; if Studio Web was not mentioned and no local `.flow` exists, ask whether the flow is in Studio Web. **When in doubt, ask, rather than working it out.** Do not enumerate Studio Web or use search endpoints or stored CLI credentials: `uip solution` downloads, uploads, and deletes only by id.
+For a Studio Web flow, work on a local copy: download, edit, and upload it. Identify it by solution id or the Studio Web URL's `solutionId` query parameter. If neither was provided, ask for either; if Studio Web was not mentioned and no local `.flow` exists, ask whether the flow is in Studio Web. **When in doubt, ask, rather than working it out.** Nothing lists Studio Web: `uip solution` downloads, uploads, and deletes only by id. Search endpoints and stored CLI credentials are not ways around asking; say either a link or an id works, and continue once it arrives.
 
 Run:
 
@@ -79,7 +79,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 2. **Read them.** Perform one full `Read` per decoded document; it returns text and image for digital and scanned files, so PDF tooling is unnecessary.
 3. **Design** the taxonomy under the rules below and write it to a JSON file.
 4. **Write:** run `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
-5. **Fix rejections.** Exit 3 means a rule-violating schema; correct each path in `Data.Issues` and rerun the same command.
+5. **Fix rejections.** Exit 3 means a rule-violating schema; fix each problem `Data.Issues` lists at its path and rerun the same command.
 6. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
 7. **Report** what was created, `Data.ProcessorSync`, and `Data.ResourceFile`. The write stores the schema in that file too; keep it with the `.flow`. Taking the node live is the user's decision.
 
@@ -174,13 +174,13 @@ Fields use `$ref` entries in `outputSchema.$defs`; the node initially provides:
 
 Carry the whole `$defs` block through unchanged. `set` replaces the document; omitting an entry removes that type, and every `$ref` must resolve within the same block. Prefer a stricter type only when certain; otherwise use `ft-inferred-text`.
 
-Add a Choice only when its complete, small, fixed set is evident from documents or user instructions. Use an `ft-` key with a URL-safe suffix, for example:
+A Choice is the only type you add; add one only when its complete set of allowed values is small, fixed, and evident from documents or user instructions — a status column, not a description column. Use an `ft-` key with a URL-safe suffix, for example:
 
 ```json
 "ft-payment-status": { "title": "Payment Status", "type": ["string", "null"], "enum": ["Paid", "Unpaid", "Partially paid"] }
 ```
 
-Never infer enum values solely from samples: omitted values will be lost. For large or open sets, use `ft-inferred-text` and list likely values in field instructions.
+Never infer enum values from what appears in the samples: a value they did not show still extracts, and an enum that omits it loses it. For large or open sets, use `ft-inferred-text` and list likely values in field instructions.
 
 ### Names
 
@@ -188,7 +188,7 @@ Group and field property keys, and field-type `title` values, must be **64 chara
 
 ### Instructions
 
-The document `prompt`, every group `description`, and every field `description` must be **4096 characters or fewer**. Write all three: types describe value shape; instructions identify the correct value on the page. User instructions for a field outrank document inference and must be recorded.
+The document `prompt`, every group `description`, and every field `description` must be **4096 characters or fewer**. Write all three: types describe value shape; instructions identify the correct value on the page. `"The date the invoice was issued, not the due date"` earns its place; `"The invoice date"` repeats the field name and tells the model nothing. User instructions for a field outrank document inference; record them even if every sample contradicts them (e.g. a reference number said to exclude a branch prefix).
 
 ### Size
 
@@ -203,7 +203,7 @@ These limits are not CLI-enforced but improve extraction:
 - **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve supplied ids and assign a missing entry the id of the same-named replaced entry.
 - **Model settings:** It rebuilds them from `inputs.modelConfig`.
 - **Validation:** A non-schema or limit violation returns exit 3 and changes nothing on disk.
-- **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop. Never hand-edit `inputs.schemaDocument` to bypass this.
+- **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to bypass this.
 
 ## Editing a taxonomy that already exists
 
@@ -211,7 +211,7 @@ Run `get` first, then send the complete document back. Preserve every existing i
 
 ## Reading the output
 
-`get` returns the stored document under `Data.Schema` with original key casing. `Data.HasDraft` reports an unsaved Studio Web edit; `Data.DraftIssueMessages` reports editor problems.
+`get` returns the stored document under `Data.Schema` with original key casing, so it can be edited and sent straight back. `Data.HasDraft` reports an unsaved Studio Web edit; `Data.DraftIssueMessages` says what the editor found wrong with the draft.
 
 `set` returns:
 
@@ -228,7 +228,7 @@ Run `get` first, then send the complete document back. Preserve every existing i
 | `ResourcePending` | why a newly gained processor has no resource file; pass on what creates it |
 | `ProcessorSync` | whether packing rebuilds that processor; it does not for a read-only mirror (`inputs.processorReadOnly`) or tenant-published processor (`inputs.processorFolderPath`), whose deployed schema this write does not reach |
 
-On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped`. An unintended minted id means a rename dropped its id and detached annotations and checks.
+On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped: its annotations no longer point at the field, and its business checks are gone.
 
 ## When it refuses
 
@@ -237,13 +237,13 @@ On edits, inspect `FieldIdsMinted` and `BusinessChecksDropped`. An unintended mi
 | 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. Define `Parent` when using `Parent > Child`; if an existing group was intended as parent, rename one key to match—never add an empty parent. |
 | 3 | `Invalid schema document` | Send `prompt` and `outputSchema`; the document is not a schema. |
 | 3 | `Legacy schema document shape` | Send `{ prompt, outputSchema }`, not `{taxonomy, fieldTypes}`. An existing legacy node document is replaced and reports `ReplacedLegacyDocument: true`. |
-| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Ask before running `--discard-draft`; it discards the work. Headless: stop and report. |
+| 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. Headless: stop and report. |
 | 1 | `Invalid --schema JSON` | The argument did not parse; prefer `--schema @<file>` for sizeable JSON. |
 | 1 | `Cannot read the schema file` | The `@` path is absent or unreadable; this is a path error, not malformed schema. |
 | 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry a taxonomy. |
 
 ## Evidence boundary
 
-Everything here is offline. `set` and `flow validate` prove schema shape, resolved references, and name/instruction limits—not extraction accuracy. Run the node on real documents to test extraction and tighten instructions.
+Everything here is offline. `set` and `flow validate` prove schema shape, resolved references, and name/instruction limits—not extraction accuracy. Only running the node on real documents shows that; expect a round of tightening afterwards, mostly in the instructions.
 
-When `Data.ResourceFile` is present, the write landed in both the `.flow` node and the processor copy; carry both with the `.flow`. `Data.ResourcePending` means no second file was written. `Data.ProcessorSync` identifies cases where the schema never reaches deployed extraction. Report these values. Taking the node live remains the user's decision.
+When `Data.ResourceFile` is present, the write landed in both the `.flow` node and the processor copy; debug runs and deployed extraction read that copy, so carry it with the `.flow`. `Data.ResourcePending` means no second file was written. `Data.ProcessorSync` identifies cases where the schema never reaches deployed extraction. Report these values. Taking the node live remains the user's decision.
