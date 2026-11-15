@@ -11,14 +11,12 @@ positions of the user, and `merge` keeps them and places each added node,
 moving later nodes right or down and growing containers only to fit added ones.
 `format` lays out every node again and discards them.
 
-A new `.flow` that `compile` wrote straight, with no merge, is different.
-`compile` writes a placeholder `ui.position` on each node, all on one flat row,
-and no top-level `layout` block. So run `format` once on such a file, before
-the user opens it, unless its source sets `.layout()` (below):
-
-```bash
-uip maestro flow format <Name>.flow --output json
-```
+A new `.flow` that `compile` wrote straight, with no merge, needs no `format`
+either. For a source with no `.layout()`, `compile` lays out every node the way
+`format` does and gives each its canvas-shape size: a container (a loop, for
+example) 560 × 320, an agent node 288 × 96, every other node 96 × 96. A
+decompiled `new.flow` carries a `.layout()` with the canvas trigger's entry:
+delete that call before you compile, or every other node stays on one row.
 <!--skill-flavor:operate-format:end-->
 
 <!--skill-flavor:layout-sdk-version:start-->
@@ -172,3 +170,7 @@ connection that is not in the solution fails at run time with a binding error.
 tell the user to chat with it from the Studio Web designer. The host returns no
 chat link.
 <!--skill-flavor:operate-debug-conversational:end-->
+
+<!--skill-flavor:compile-layout-sdk-upgrade:start-->
+or tell the user the flow needs `@uipath/maestro-builder-sdk` 6.113.0 or later: Studio Web owns the SDK copy.
+<!--skill-flavor:compile-layout-sdk-upgrade:end-->
