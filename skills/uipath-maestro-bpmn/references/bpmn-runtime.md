@@ -144,7 +144,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   Place `.eventSubProcess()` in the scope whose failure it should absorb.
 
 <!-- RULE:bpmn.activity.retry -->
-- Retry is activity configuration: `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }` on the activity. Set `allErrors: true` inside `retry`, or add `errorMapping: [{ code, retryable: true }]` per transient code beside it.
+- Retry is activity configuration: `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }` on the activity. Add `errorMapping: [{ code, retryable: true }]` beside it for each transient code; set `allErrors: true` inside `retry` only when every failure of that step is transient, because it also retries business errors.
   It compiles to `<uipath:retry maxRetryCount retryBackoff …>` in the activity's extensions, the same setting as Studio Web's Error handling → Retry. With neither `allErrors` nor a `retryable` code it retries nothing. `maxDuration` caps each delay, not the total time.
   Never draw a retry loop for a failing activity. A `.goto()` that re-runs a whole business block, such as a parallel block ([Draft skeleton](draft-skeleton.md)), is a process step, not a retry.
 
@@ -197,17 +197,22 @@ make from syntax alone. Exact signatures remain in the generated API.
   1. Create its project in the same solution as the process.
   2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
      inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
-  3. With the user's go-ahead, publish it (outside Studio Web, pack it first) and deploy it with
+<!--skill-flavor:sibling-deploy:start-->
+  3. With the user's go-ahead, pack and publish it, then deploy it with
      `uip solution deploy run --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-name <FOLDER_NAME> --parent-folder-path <FOLDER_PATH> --output json`.
+<!--skill-flavor:sibling-deploy:end-->
   4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
      its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
   The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
-  binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
+  binding, so `bindings_v2.json` stays empty. The owning skill handing the project back is not the end.
+<!--skill-flavor:sibling-redeploy:start-->
+  A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
   deployment: with the user's go-ahead, publish it at a higher version than step 3's, then
   `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <NEW_VERSION> --output json`.
-  Never run a second `deploy run`: the folder the node names would no longer hold the resource. The owning skill handing the project back is not the end.
+  Never run a second `deploy run`: the folder the node names would no longer hold the resource.
+<!--skill-flavor:sibling-redeploy:end-->
 
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.

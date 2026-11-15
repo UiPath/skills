@@ -34,3 +34,12 @@
 <!--skill-flavor:brownfield-merge-form:start-->
   In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`.
 <!--skill-flavor:brownfield-merge-form:end-->
+
+<!--skill-flavor:sibling-deploy:start-->
+  3. With the user's go-ahead, publish the open solution as [Publish and deploy](operate.md#publish-and-deploy) says, and have the user confirm it in Publish history.
+     A personal-workspace publish deploys itself: run no `deploy run`. A shared-location publish is deployed once with `uip solution deploy run`, as that section says.
+<!--skill-flavor:sibling-deploy:end-->
+
+<!--skill-flavor:sibling-redeploy:start-->
+  Ship the finished process by publishing the open solution again to the same destination. Never run a second `deploy run`: it deploys to a new folder, which the node does not name.
+<!--skill-flavor:sibling-redeploy:end-->
