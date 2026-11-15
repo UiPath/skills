@@ -17,7 +17,7 @@ Studio Web does not use these gates. Its loop is
 `check --source --baseline` against the canvas copy, each `prepare` it names,
 `compile` into `/tmp/flow-draft/<Project>/<Name>/edited/`, `merge` into the
 target `.flow`, then `validate`. A new flow runs `check --source`, each
-`prepare` it names, `compile` into its `.flow`, `format`, then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
+`prepare` it names, `compile` into its `.flow` (compile lays it out), then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
