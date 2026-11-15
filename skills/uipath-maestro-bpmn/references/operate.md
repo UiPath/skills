@@ -210,7 +210,9 @@ casing varies by CLI version.
 The debug output lists each element's **status**, never a variable's **value**.
 A `Completed` run with every element green proves the process ran, not that any
 output holds the expected value. Read the values in the same session, right
-after the run — a debug instance is ephemeral:
+after the run — a debug instance is ephemeral. A process output is proven by the
+end event's `Outputs` in that response, not by `Globals`: a value set in
+`Globals` that the end event does not map reaches the caller as `null`.
 
 ```bash
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json

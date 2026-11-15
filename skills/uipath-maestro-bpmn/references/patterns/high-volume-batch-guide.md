@@ -43,13 +43,13 @@ export default bpmn('invoice-batch')
         .flowMode('sequence')
         .startEvent('itemStart')
         .scriptTask('processInvoice', { name: 'Process invoice', script: 'return { ok: true };' })
-        .task('recordResult', { name: 'Record result', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: true }])' } })
+        .task('recordResult', { name: 'Record result', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator["invoice"]["item"], ok: true }])' } })
         .endEvent('itemDone', { name: 'Invoice processed' })
         .eventSubProcess('itemFailures', { error: true, name: 'Item failure' }, (h) =>
-          h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: false }])' } })
+          h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator["invoice"]["item"], ok: false }])' } })
             .endEvent('itemFailed', { name: 'Invoice failed' })),
     // Sequential, so each iteration appends to the list the one before left.
-    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'item', sequential: true } },
+    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'invoice', sequential: true } },
   )
   .scriptTask('aggregate', {
     name: 'Total the results',
@@ -66,11 +66,13 @@ export default bpmn('invoice-batch')
 ```
 
 `loop: { collection, itemVar }` on the sub-process's options is the multi-instance marker; `sequential: true` runs one at a time, which is what lets every iteration append to the same list (see [Getting results to `aggregate`](#getting-results-to-aggregate)).
-Inside a looped sub-process the current item is `iterator[0].item` with `itemVar: 'item'` (`iterator[1].item` one nesting level deeper), and the 0-based index is `iterator[0].loopCounter`.
-The index counts enclosing loops outermost-first, so nest this pattern inside another loop and `iterator[0]` becomes the outer item: change the body's reads, including both record steps, to `iterator[1]`.
-An expression (`set`, a condition, an `outputs` value) reads `iterator` directly, as `recordResult` does.
-A script does not: its scope holds only the `args` envelope, which the builder writes as `vars` and `metadata`, and the engine builds a script's `iterator` only from `iterator[N]` keys in that envelope.
-To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes; `validate` still warns that `iterator` is undefined, and that warning is a false positive once the key is there.
+Inside a looped sub-process an expression (`set`, a condition, an `outputs` value) reads the current item as `iterator["<itemVar>"]["item"]` and its 1-based position as `iterator["<itemVar>"]["loopCounter"]`: with `itemVar: 'invoice'`, `iterator["invoice"]["item"]`.
+The outer key is the loop's `itemVar` (the builder writes it as `inputElement`); the inner key is always `item`, because the builder writes no `iteratorName` and the engine defaults it to `item`. Writing `iterator["invoice"]["invoice"]` reads `null`.
+A nested loop with different `itemVar` names (`'batch'` outside, `'invoice'` inside) reads `iterator["batch"]["item"]` and `iterator["invoice"]["item"]`; give nested loops different `itemVar` names.
+Use the bracket form: `iterator[0]` is `null`, and the dotted `iterator.invoice.item` is rewritten by the engine and also reads `null`, while both pass validate.
+A script does not see `iterator`: its scope holds only the `args` envelope, and the engine builds a script's `iterator` only from `iterator[N]` keys in it.
+To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator["invoice"]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
+A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading the per-item results with `debug-instance variables-all` after the run.
 The body is its own sequence scope: give it its own `.flowMode('sequence')`, start event and end event.
 
 | Node | Builder | Role |
@@ -133,10 +135,10 @@ Add fields to the record (a reason, a skipped flag) as the policy needs them.
 
 The builder's `loop` has no output collection: `{ collection, itemVar, sequential, completion }` is all it takes, so nothing gathers the iterations' results for you.
 The sketch collects them itself: each iteration appends to `itemResults`, and `sequential: true` means each one sees the list as the one before left it.
-On the local engine this collected every item, and `aggregate` counted them.
+A Maestro debug run of this shape over `[1, -2, 3]` completed with three results, the `-2` one caught by the net, and `aggregate` counted 3 / 2 ok.
 
-On the local engine, parallel iterations overwrite each other's writes to one variable: three parallel iterations each appending to the list left one entry, the last to finish.
-That is not verified on Maestro, whose engine may scope iteration writes differently, so do not rely on a parallel append either way; use the parallel variant's external store.
+Parallel iterations overwrite each other's writes to one variable: the engine's variable store is last-writer-wins, and a Maestro run appending 12 items in parallel kept 11.
+Never append to one variable from parallel iterations; use the parallel variant's external store.
 
 The append is a `set` expression because it reads `iterator` directly and validates clean.
 Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.

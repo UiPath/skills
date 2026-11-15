@@ -109,7 +109,33 @@ REQUIRED = [
     ("references/connectors.md", "uip is connections ping"),
     ("references/connectors.md", "Always set `saveAsDraft`"),
     ("SKILL.md", "never a drawn loop"),
+    # Live debug runs (2026-11-15): each of these passed validate and broke at run time.
+    ("references/bpmn-runtime.md", "RULE:bpmn.variables.output-end-mapping"),
+    ("references/bpmn-runtime.md", "A process returns only what its end event maps"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-for-methods"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.hitl.no-completer-identity"),
+    ("references/patterns/high-volume-batch-guide.md", 'iterator["<itemVar>"]["item"]'),
+    ("references/patterns/high-volume-batch-guide.md", "the inner key is always `item`"),
+    ("SKILL.md", "A process returns only what its end event maps"),
+    ("references/operate.md", "not by `Globals`"),
+    ("references/patterns/high-volume-batch-guide.md", "1-based"),
+    ("references/connectors.md", "A connection is a sender's identity"),
 ]
+
+
+# The one place the guide quotes the wrong read on purpose, to warn against it.
+ITERATOR_WARNING = 'Writing `iterator["invoice"]["invoice"]` reads `null`'
+
+
+def test_batch_guide_never_reads_iterator_zero_in_an_expression() -> None:
+    # `iterator[0]` is null in a `set`/condition. The outer key is the itemVar and the inner key
+    # is always `item`, so repeating the itemVar (`iterator["batch"]["batch"]`) also reads null.
+    text = _read("references/patterns/high-volume-batch-guide.md") + _read("references/patterns/composing-guide.md")
+    text = text.replace(ITERATOR_WARNING, "")
+    assert "concat([{ item: iterator[0]" not in text and "claim: iterator[0]" not in text
+    for var in set(re.findall(r"itemVar: '(\w+)'", text)) - {"item"}:
+        assert f'iterator["{var}"]["{var}"]' not in text, f"reads the {var!r} loop item with the itemVar as the inner key"
 
 
 @pytest.mark.parametrize("rel,phrase", REQUIRED, ids=[f"{r}:{p}" for r, p in REQUIRED])

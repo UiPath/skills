@@ -60,7 +60,9 @@ A debug run is two steps: run it, then read its values.
 2. **Read its values with the `Trace ID` it prints.** The `Trace ID` is the
    debug instance id. The trace lists each element's **status**, never a
    variable's **value**, so read the values right after the run. Report a value
-   from this read, never from the process logic.
+   from this read, never from the process logic. A process output is proven
+   by the end event's `Outputs`, not by `Globals`: a value in `Globals` that
+   the end event does not map reaches the caller as `null`.
 
    ```bash
    uip maestro bpmn debug-instances variables <TRACE_ID> --output json

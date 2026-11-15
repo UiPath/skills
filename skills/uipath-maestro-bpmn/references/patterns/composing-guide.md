@@ -156,21 +156,21 @@ export default bpmn('claims-nightly')
                     otherwise: true,
                     label: 'Rejected',
                     body: (a) =>
-                      a.task('recordRejected', { name: 'Record rejection', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "rejected" }])' } })
+                      a.task('recordRejected', { name: 'Record rejection', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator["claim"]["item"], outcome: "rejected" }])' } })
                         .endEvent('claimRejected', { name: 'Claim rejected' }),
                   },
                 ]),
           },
         ])
         .scriptTask('settle', { name: 'Settle claim', script: 'return { settled: true };' })
-        .task('recordSettled', { name: 'Record settlement', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "settled" }])' } })
+        .task('recordSettled', { name: 'Record settlement', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator["claim"]["item"], outcome: "settled" }])' } })
         .endEvent('claimSettled', { name: 'Claim settled' })
         // Directly inside the iteration: a failure ends this claim, not the night.
         .eventSubProcess('claimFailures', { error: true, name: 'Claim failure' }, (h) =>
           h.scriptTask('escalateClaim', { name: 'Escalate claim', script: 'return { ok: true };' })
-            .task('recordEscalated', { name: 'Record escalation', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "escalated" }])' } })
+            .task('recordEscalated', { name: 'Record escalation', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator["claim"]["item"], outcome: "escalated" }])' } })
             .endEvent('claimEscalated', { name: 'Claim escalated' })),
-    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'item', sequential: true } },
+    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'claim', sequential: true } },
   )
   // Every exit of the body appended to claimResults; sequential, so none was lost.
   .scriptTask('aggregate', { name: 'Total the results', script: 'return vars.claimResults.length;' })
