@@ -317,9 +317,33 @@ flowchart LR
      (who approves, what criteria); the BPMN specialist owns the task schema. -->
 <!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
-| Node Key | HITL Type | Purpose | Approval Criteria |
-|---|---|---|---|
-| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
+<!-- Capture: for a step with a decision capture spec from the PDD, a link to its Decision Capture subsection below; otherwise —. Its Surface sets HITL Type (design-guide.md, HITL routing). -->
+
+| Node Key | HITL Type | Purpose | Approval Criteria | Capture |
+|---|---|---|---|---|
+| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> | <[Decision Capture: NODE_KEY](#decision-capture-node_key) or —> |
+
+<!-- One subsection per step with a decision capture spec; delete when none. Fields verbatim from the PDD's How the decision is captured part. -->
+
+#### Decision Capture: `<NODE_KEY>`
+
+- **Surface:** <Coded Action App / QuickForm / Document Validation Station>
+- **Reviewer:** <PERSONA> · **Proposed by:** <AGENT_OR_AUTOMATION or none>
+- **Context:** <WHAT_THE_REVIEWER_SEES_FIRST>
+- **Close call:** <yes / no> · **Next time:** <asked or not, default scope this case / like cases / always> · **Stakes triggers:** <CONDITIONS or none>
+- **Second review:** <WHO_AND_WHEN or none>
+- **Stored:** <FIELDS> · **Never stored:** <FIELDS>
+- **Usage statement:** <WHAT_THE_RECORD_FEEDS_AND_NEVER_FEEDS>
+
+| Part | Proposal | Evidence shown beside it |
+|---|---|---|
+| <PART> | <PROPOSAL> | <EVIDENCE> |
+
+| Outcome | Recommended when | Reason required |
+|---|---|---|
+| <OUTCOME> | <CONDITION> | <always / on departure from the recommendation / never> |
+
+**Reasons:** case-level <LIST ending in Other>; part-level <LIST ending in Other>
 
 ---
 
