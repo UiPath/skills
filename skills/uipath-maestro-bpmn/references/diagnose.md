@@ -223,7 +223,10 @@ These are the ones that survive both:
 - **Script task faults or returns nothing** — `vars` undefined inside the
   script, or a return the output row does not read: a v3 script returns a bare
   value and the row reads `=result.response`; `return { response: … }`
-  double-wraps. Owner: `BPMN source`.
+  double-wraps. Owner: `BPMN source`. A brownfield script task whose shape
+  differs from what `.scriptTask()` writes is not a fault by itself: propose a
+  rewrite only when run evidence names that task, and show the user that evidence
+  before any edit.
 - **Message or event wait that never ends** — the message id, the correlation
   reference or the subscription does not match what the caller sends; cursors
   show the token parked at the event. Owner: `BPMN source` for the reference,

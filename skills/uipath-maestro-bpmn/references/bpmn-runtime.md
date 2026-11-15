@@ -13,6 +13,20 @@ make from syntax alone. Exact signatures remain in the generated API.
   `.var()` is internal, process-level state. Name an `elementId` only to scope a
   variable to a specific element yourself.
 
+<!-- RULE:bpmn.variables.public-types -->
+- A public `.input()` / `.output()` takes `string`, `boolean`, `integer`, `number`,
+  `array` or `object` (`refresh`'s error also names `json`, but the SDK has no `json`
+  type: `check --source` fails with `TS2345`). `double` and `float` pass `check`, `compile` and
+  `validate`, then `refresh` fails with `Unsupported process input/output type "double"`:
+  write `number`. `double` on a `.var()` or a node's output row is fine.
+
+<!-- RULE:bpmn.variables.reserved-names -->
+- `validate` and `refresh` reject a `.var()` or `.input()` whose display `name` (the id,
+  unless `name` is given) is one of these, matched case-insensitively
+  (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`, `bindings`, `datafabric`,
+  `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
+  `this`. `check` does not report it. A public `.output()` may be named `result`.
+
 <!-- RULE:bpmn.variables.read-inputs-directly -->
 - A script or expression reads a public input as `vars.<id>` directly; the runtime
   seeds every declaration by id. The start-event mapping that bridges each input into
@@ -110,7 +124,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
   Each row declares its own variable (`score_Error` is scoped to the task), so add no `.var()` for either.
-  The row is spelled as the platform's script-task template writes it and passes `compile` and `validate`; no run has yet shown a failing script fill it, so when no live run showed it, report the `Error` mapping as unverified.
+  The row is spelled as the platform's script-task template writes it. A live run of a failing script filled it with an object whose keys are PascalCase (`Code`, `Message`, `Detail`, `Category`, `Status`, `Element`), unlike a boundary's `errorVar` capture (`code`, `message`, …), so read `vars.score_Error.Message`.
 
 ## Events and timers
 
@@ -118,14 +132,30 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Connector event payloads and timer firing are runtime facts. Static validation
   proves the declaration, not that a tenant subscription fires.
 
+<!-- RULE:bpmn.event.timer-units -->
+- Write a timer duration in days, hours, minutes and seconds: `P7D`, not `P1W`.
+  The runtime parses no week, month or year designator, so such a timer fails at run
+  time while `check` and `validate` only warn (`TIMER_DURATION_NOT_RUNTIME_PARSEABLE`,
+  `TIMER_DURATION_WEEK_UNSUPPORTED`). Treat either warning as an error.
+
 <!-- RULE:bpmn.event.net-scope -->
 - An event sub-process catches only failures raised in the container it sits directly in.
   Declared at process level it ends the whole run on the first failure; declared inside a multi-instance sub-process it ends only that iteration.
   Place `.eventSubProcess()` in the scope whose failure it should absorb.
 
+<!-- RULE:bpmn.activity.retry -->
+- Retry is activity configuration: `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }` on the activity.
+  It compiles to `<uipath:retry maxRetryCount retryBackoff …>` in the activity's extensions, the same setting as Studio Web's Error handling → Retry. `maxDuration` caps each delay, not the total time.
+  Which failures it retries: `allErrors: true`, only when every failure of that step is transient, because it also retries business errors; else the `errorMapping` rows with `retryable: true`. With neither it retries nothing.
+  An `errorMapping` row's `code` is the **id of a declared `bpmn:error`**, whose `errorCode` the engine matches against the failure's code (for an HTTP or connector call, the status as a string, `"429"`), not the code itself: `code: '429'` passes `check` and `validate` and retries nothing.
+  To retry one status, declare it with a boundary, `t.onError({ name: 'RateLimited', code: '429' }, { id: 'onRateLimit' }, …)`, which also catches it once retries run out; compile, read the declaration's id from the `.bpmn` (`<bpmn:error id="Error_1" … errorCode="429">`, numbered in declaration order), set the row's `code` to that id, and compile again.
+  An HTTP or connector call's 5xx is already retried 3 times inside the engine before the element fails; a 4xx such as 429 never is.
+  Never draw a retry loop for a failing activity. A `.goto()` that re-runs a whole business block, such as a parallel block ([Draft skeleton](draft-skeleton.md)), is a process step, not a retry.
+
 <!-- RULE:bpmn.event.error-context -->
-- The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
-  `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` reads `vars.failures_Error.<field>` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
+- The engine surfaces a failed element's error under the capital-`Error` key. A boundary's `errorVar` capture and an event sub-process's capture (once parsed) carry lowercase fields (`code`, `message`, `detail`, `category`, `status`, `response`, `element`); a script task's `Error` row is PascalCase (see [Script tasks](#script-tasks)); other tasks' `Error` rows are unverified.
+  `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` captures `vars.failures_Error` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
+  The engine always stores an event sub-process's capture, the default `<net>_Error` or one renamed with `errorVar` (the same `=Error` row), as a JSON **string** (the net start's `=Error` row reads the serialized payload), so parse it before reading a field: `=js:JSON.parse(vars.failures_Error).message`, and in a script `JSON.parse(vars.failures_Error).code`. A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm. Read a boundary's `errorVar` capture and a script task's `Error` row directly; neither is a string. `vars.Error` never resolves.
   The platform validator needs the declaration: a `vars.<id>` read with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else. Note the runtime resolves `vars.<id>` in ONE flat scope whatever a declaration's `elementId` says, so two captures cannot share an id — that is why the default is per-net.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable.
 
@@ -137,14 +167,57 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.http.webhook-url -->
 - A request that must reach a connection's webhook (to fire a `waitForEvent` on an HTTP Webhook connection, say) is a manual `.http()` with the webhook URL as a literal `url` and no `connection`: `.http('ping', { url: '<WEBHOOK_URL>', method: 'GET' })`.
-  Get the URL from `uip is webhooks config <connector-key> --connection-id <id> --output json`: it is `Data.WebhookUrl`.
+  Get the URL from `uip is webhooks config <CONNECTOR_KEY> --connection-id <CONNECTION_ID> --output json`: it is `Data.WebhookUrl`.
   Never use `uip is connections base-url` for it; that is the connection's API base, a different address, so the event never arrives.
-  If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <connector-key> --output json`.
+  If `webhooks config` fails with `has no element instance id`, check the id and the connector with `uip is connections list <CONNECTOR_KEY> --output json`.
   Only a connection of the HTTP Webhook connector (`uipath-http-webhook`) can fire this event.
 
 <!-- RULE:bpmn.orchestrator.names -->
 - Published work is addressed by name and folder. Queue items require a folder;
   live execution is the evidence that the resource exists and is runnable.
+
+<!-- RULE:bpmn.orchestrator.process-type -->
+- Pick the method by the target's `ProcessType`, never by its name or label. Read it with
+  `uip or processes list --folder-path <FOLDER_PATH> --all-fields --output json` (the default list omits it):
+
+  | `ProcessType` | Method |
+  |---|---|
+  | `Agent` (low-code or coded agent) | `.startAgent()` |
+  | `Process` (RPA) | `.startProcess()` |
+  | `Api` | `.executeApiWorkflow()` |
+  | `ProcessOrchestration` | `.startAgenticProcess()` |
+  | `CaseManagement` | `.startCaseProcess()` |
+  | `WebApp` (an Action App) | `.humanTask()` with an inline form, per [Human tasks](#human-task-outcomes): the SDK cannot yet bind the app |
+  | `Flow` | `.activity(id, 'Orchestrator.StartFlowProcess', { context: { name, folderPath } })`, or `…StartFlowProcessAsync` |
+  | `Function` (a Coded Function, not an agent) | `.activity(id, 'Orchestrator.ExecuteFunctionAsync', { context: { name, folderPath } })` (Preview) |
+  | An agent behind an Integration Service connection | `.externalAgent()`, with its own connection binding |
+
+  This is the mapping Studio Web's resource picker applies. A `ProcessType` not in the table
+  cannot be called from a process. Never author `A2A.AgentExecution`: Studio Web no longer
+  offers it and shows it only on old nodes.
+
+<!-- RULE:bpmn.orchestrator.sibling-resource -->
+- A resource another skill builds for this process is bound after it is deployed, in this order:
+  1. Create its project in the same solution as the process.
+  2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
+     inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
+<!--skill-flavor:sibling-deploy:start-->
+  3. With the user's go-ahead, pack the solution with `uip solution pack <SolutionDir> <OutputDir> --version <VERSION> --output json`,
+     publish it to the tenant feed as [Orchestrator deployment](operate.md#orchestrator-deployment) does (not a Studio Web upload), then deploy it with
+     `uip solution deploy run --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-name <FOLDER_NAME> --parent-folder-path <FOLDER_PATH> --output json`.
+<!--skill-flavor:sibling-deploy:end-->
+  4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
+     its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
+     type is `ProcessType`. Only then write the node with that `process` and `folder`.
+
+  The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
+  binding, so `bindings_v2.json` stays empty. The owning skill handing the project back is not the end.
+<!--skill-flavor:sibling-redeploy:start-->
+  A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
+  deployment: with the user's go-ahead, pack it with a higher `--version` than step 3's and publish it, then
+  `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <NEW_VERSION> --output json`.
+  Never run a second `deploy run`: the folder the node names would no longer hold the resource.
+<!--skill-flavor:sibling-redeploy:end-->
 
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
@@ -162,9 +235,30 @@ make from syntax alone. Exact signatures remain in the generated API.
   From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
 
+<!-- RULE:bpmn.http.connector -->
+- An endpoint the connector catalog has no activity for, called through an existing connection, is
+  `.http(id, { method, url, connection, folder, connectorKey })`.
+  - `url` is relative to the connection's base URL (`uip is connections base-url <CONNECTION_ID> --output json`); an absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
+  - `connectorKey` is the connection's connector key from `uip is connections list --all-folders --output json`; omit it only for a `uipath-uipath-http` connection. A wrong or missing one passes `check` and fails `validate` with `MISSING_BINDING`.
+  - `connection` and `folder` name `.binding()`s holding the connection's `Id` and its `FolderKey` (or what `prepare` wrote); `folder` is required (`EMPTY_REQUIRED_FIELD folderKey`).
+  - `outputVar` (`<id>_response`) is the body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
+
+  ```ts
+  .binding('gh', { resource: 'Connection', propertyAttribute: 'ConnectionId', value: '<CONNECTION_ID>' })
+  .binding('ghFolder', { resource: 'Connection', propertyAttribute: 'folderKey', value: '<FOLDER_KEY>' })
+  .http('rateLimit', { method: 'GET', url: '/rate_limit', connection: 'gh', folder: 'ghFolder', connectorKey: 'uipath-microsoft-github' })
+  ```
+
+<!-- RULE:bpmn.http.url-placeholders -->
+- Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=`-expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
+
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
-  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision name: a column reads `=result.<Decision>.<column>`, as in `outputs: { tier: '=result.Eligibility.tier' }` or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `uip rules describe <name> --folder-path <folder> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision: a column reads `=result.<decisionKey>.<column>`, as in `outputs: { tier: '=result.eligibility.tier' }` or `vars.<id>_businessRuleResponse.eligibility.tier` downstream, never `=result.tier` or `=response.tier`.
+<!--skill-flavor:business-rule-key:start-->
+  `<decisionKey>` is the property name under `OutputArguments.properties` in `uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json` (such as `decision1`), not the entry point's `DisplayName`: a display name reads null. Mapping the whole `=result` into one variable, as the designer does, also works.
+  Only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+<!--skill-flavor:business-rule-key:end-->
   `releaseKey` is refused: a rule is never addressed by a process key.
 
 <!-- RULE:bpmn.runtime.metadata -->
@@ -190,6 +284,15 @@ make from syntax alone. Exact signatures remain in the generated API.
   With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
   Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()` or to `app`.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
+
+<!-- RULE:bpmn.hitl.task-settings -->
+- `title` (the task title), `priority` (`Low`, `Medium`, `High`, `Critical`) and `labels` (a
+  string) are the only Action Center task settings `.humanTask()` writes. The Task timer (the task's SLA: reminder, reassign,
+  unassign or auto-complete after a time) and the assignee are set in the Studio Web task panel.
+  An option such as `Timer` fails `check --source` (`TS2353`); `compile` alone drops it without an error.
+  Tell the user to set the SLA in the panel. When the panel shows no Task timer (it sits behind a
+  feature flag), or when the process itself must act on the breach (notify a manager), draw a
+  non-interrupting `onTimer` in the task's body and call it a process timer, not the task SLA.
 
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform
@@ -305,6 +408,22 @@ binding half, which is the same for every connector-backed node.
   fields. The SDK's typed methods cover only the types in its committed snapshot,
   so a type absent from them is not evidence the platform lacks it — ask the
   registry before concluding a node cannot be authored.
+
+<!-- RULE:bpmn.activity.discovery-only -->
+- **Discovery only.** When the request asks to discover types or save registry evidence before authoring, or says not to author yet, run no `init`, write no `.bpmn.ts`, and read no other reference.
+  Save each command's raw JSON, one file per command, in `<EVIDENCE_DIR>`: the directory the request names, else `registry-evidence/` outside `<Project>` (in Studio Web, `/tmp/registry-evidence/`, since nothing under `/solution` may be deleted):
+
+  ```bash
+  E=<EVIDENCE_DIR>
+  mkdir -p "$E"
+  uip maestro bpmn registry pull --output json > "$E/pull.json"
+  uip maestro bpmn registry list --limit -1 --output json > "$E/list.json"
+  uip maestro bpmn registry search <TERM> --output json > "$E/search-<TERM>.json"
+  uip maestro bpmn registry get <TYPE_NAME> --output json > "$E/get-<TYPE_NAME>.json"
+  ```
+
+  Run `get` for each type the request needs, then stop and report the type names found.
+  When a command answers `"Result": "Failure"`, keep its file as written and report the failure; never replace it with JSON you wrote yourself.
 
 <!-- RULE:bpmn.activity.two-registries -->
 - **This is not the connector library.** `uip maestro bpmn registry` serves the
