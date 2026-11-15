@@ -488,7 +488,7 @@ function checkStepsTable(text, r) {
     if (!sources.length) r.strict(`step table, step ${row[0]}: no source object`);
     const [data, dataProse] = references(row[2]);
     for (const part of [...prose, ...dataProse]) r.strict(`step table, step ${row[0]}: '${part.slice(0, 60)}' is not a reference — move it to Notes`);
-    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when the step reads no data set`);
+    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when no data set drives the step`);
     if (!/^\d+$/.test(row[3])) r.strict(`step table, step ${row[0]}: Captures '${row[3]}' is not a count`);
   }
 }
