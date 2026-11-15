@@ -45,7 +45,7 @@ For Maestro Automate, run `( cd "<Solution>" && uip maestro flow init <Name> --a
 
 When `<Solution>/<Name>/` existed before this turn, skip `init`; edit its `<Name>.flow` via [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`, never at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
 
-See [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for installation checks and failure handling.
+**Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
@@ -122,7 +122,7 @@ Use `flow(id)`, declarations, nodes, `.return(...)`, and `.build()`.
 
 - `.var(name, types.*, default?)` declares state written/read by multiple steps; `.input` and `.output` are the caller contract. A step writes a var with `{ updates: { name: <expr> } }`. Allowed types are `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, and `types.file`; `float`, `double`, `date`, `datetime`, and `jsonSchema` are refused: [variable types](references/author.md#variable-types). There is no node for an Orchestrator asset; use a var default or input.
 - `.return(...)` ends a PATH; `.terminate(...)` ends the RUN. In a `.parallel` arm, terminate aborts sibling arms, while return lets them continue.
-- Expressions: `input(name)` flow input; `v(name)` flow variable; `out(step, path?)` whole or field result; `err(step, field?)` failed-step error envelope only inside its handler; `ran(step)` whether a step ran; `lit(value)` an unambiguous constant; ``js`…` `` / ``tmpl`…` `` an authored expression/string. After converging arms, use one shared continuation where appropriate and `ran` to test whether its value was produced.
+- **Expressions are how a step names something that is not a literal:** `input(name)` flow input; `v(name)` flow variable; `out(step, path?)` whole or field result; `err(step, field?)` failed-step error envelope only inside its handler; `ran(step)` whether a step ran; `lit(value)` an unambiguous constant; ``js`…` `` / ``tmpl`…` `` an authored expression/string. After converging arms, use one shared continuation where appropriate and `ran` to test whether its value was produced.
 
 ## API index
 
