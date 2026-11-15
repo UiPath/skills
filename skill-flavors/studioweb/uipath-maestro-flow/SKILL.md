@@ -93,8 +93,7 @@ Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRe
 ```bash
 cd /solution/<Project>
 uip maestro flow decompile new.flow -o .flow-sdk/new.flow.ts --no-pipeline
-# Delete its .layout({ ... }) call (the canvas trigger's one entry), so compile lays the flow out.
-# Add your steps to it:
+# Delete its .layout() call so compile lays it out, then add your steps:
 uip maestro flow check .flow-sdk/new.flow.ts --source
 uip maestro flow compile .flow-sdk/new.flow.ts -o new.flow
 uip maestro flow validate new.flow --output json
