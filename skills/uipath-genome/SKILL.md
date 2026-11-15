@@ -18,7 +18,7 @@ Two verbs: `build`, and `prepare`, which writes into the genome's readiness file
    - **Extracted** — the genome has a `## Source Map` that is not the stub. **Source framework** — the Source Map's `Source framework` row; a component genome with a `Part of:` line takes it from its process genome. **Build mode** — not extracted: a build; extracted from a UiPath source: a refactor; from another framework: a migration. An extracted genome whose row names no framework: ask the user which framework the source is.
    - **Transactional** — the Transactional Shape is not the stub.
    - **Test components** — a Components Type cell reading "Test-case group…", or `Test case:` steps.
-   - **Packaging** — the process genome's Deployment "Packaging and route" line (an older genome's "Packaging" line).
+   - **Packaging** — the process genome's Deployment "Packaging and route" line.
    - **Designed** — the genome carries a `Designed in:` line; the build reads no SDD for it.
 2. **Open the verb's guide** and read it whole; its § Read Plan names every other file the verb reads and when. Never work from memory of a guide.
 
@@ -27,7 +27,7 @@ Two verbs: `build`, and `prepare`, which writes into the genome's readiness file
 | Verb | Input | Output | Guide |
 |---|---|---|---|
 | `build` | A `*-genome.md` | The projects, built through their owning skills, and the hand-off folder | [build-guide.md](references/build-guide.md) |
-| `prepare` | A `*-genome.md`, on the machine that will build it | Its readiness file's Architecture decisions (each decision that shapes what gets built, with the build's proposal) and Build setup (every other question the build would still ask there); nothing built | [build-guide.md § Prepare](references/build-guide.md) |
+| `prepare` | A `*-genome.md`, on the machine that will build it | Its readiness file's Architecture decisions (each decision that shapes what gets built, with the build's proposal) and Build setup (every other question the build would still ask there); nothing built | [prepare-guide.md](references/prepare-guide.md) |
 
 ## Choosing the Verb
 
