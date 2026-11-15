@@ -46,3 +46,7 @@
   `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --output json` (with no `--version`, it takes the newest published one).
   Never run a second `deploy run`: it deploys to a new folder, which the node does not name.
 <!--skill-flavor:sibling-redeploy:end-->
+
+<!--skill-flavor:business-rule-key:start-->
+  `<decisionKey>` is the decision's `OutputArguments` property name (such as `decision1`), not its display name: a display name reads null. Studio Web cannot read a rule's output contract, so map the whole `=result` into one variable, as the designer does (`outputs: { ruleResult: '=result' }`), and read `vars.ruleResult.<decisionKey>.<column>` downstream; ask the user for the decision's output name when a later node needs one column.
+<!--skill-flavor:business-rule-key:end-->
