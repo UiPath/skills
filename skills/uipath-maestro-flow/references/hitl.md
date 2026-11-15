@@ -168,8 +168,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `flow decompile` still warns that a key "cannot write back" for a value
   the platform refuses or drops itself (a `colSpan` off the grid, an
   unknown key inside `options`); editing that node drops that key.
-  An SDK whose `dist/api-index.md` does not list `FormFieldRowExtra` warns
-  for every such key instead: leave that node untouched so merge keeps the
+  Needs `@uipath/maestro-builder-sdk` 6.104.1 or later (its
+  `dist/api-index.md` lists `FormFieldRowExtra`); an older SDK warns for
+  every such key instead: leave that node untouched so merge keeps the
   original, or edit its JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
