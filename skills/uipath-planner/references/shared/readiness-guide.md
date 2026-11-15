@@ -82,10 +82,10 @@ Needed before the build: <n> answers and <n> tasks — <section>: <n>; <section>
 8. [Configuration values](#8-configuration-values) — <n> needed, <n> to confirm
 9. [Business decisions](#9-business-decisions) — <n> business outcomes, <n> run behaviours, <n> readings
 
-Write an answer after each `Answer:` and `Status:`. Read each section's defaults, write a change under any that is wrong, then your name and the date on its `Confirmed:` line. Then:
 1. On the machine that will build, ask `uipath-genome` to "prepare the build". It writes Architecture decisions and Build setup.
-2. Ask `uipath-planner`: "Apply the readiness answers". It writes into the genome what the answers change.
-3. Build with `uipath-genome`: it asks nothing this file answers or confirms.
+2. Write an answer after each `Answer:` and `Status:`. Read each section's defaults, the two `prepare` wrote included, write a change under any that is wrong, then your name and the date on its `Confirmed:` line.
+3. Ask `uipath-planner`: "Apply the readiness answers". It writes into the genome what the answers change.
+4. Build with `uipath-genome`: it asks nothing this file answers or confirms.
 
 Start the requests of Systems and applications and Build environment first: access takes the longest.
 

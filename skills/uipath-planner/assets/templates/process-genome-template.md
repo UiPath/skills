@@ -53,7 +53,7 @@ flowchart TB
   C3 -.->|"{file or mail passed}"| C4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event trigger · 👤 started by a person · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file, a mail or a shared store.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file, a mail or a shared store.
 
 *Only when the Source Map holds an as-is process map — otherwise delete this line:* The source as it runs, and what each of its parts becomes: Source Map, As-is process map.
 
@@ -200,7 +200,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 - **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
 - **Packaging and route:** {single solution (`uipath-solution`) / independent packages} — {solution name}; {each library and the feed it is published to, before its consumers}
 - **Entry points:** {each process's entry point; how each starts: Platform Dependencies, Triggers}
-- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; machine prerequisites}
+- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; the Robot version, when stated; machine prerequisites}
 - **Robots:** {the robot account, by persona, each process runs as}
 - **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
 - **Logging and retention:** {where the runs log; data kept out of the logs; log and queue-item retention}
@@ -249,4 +249,4 @@ flowchart TB
   S2 -.->|"{file or mail passed}"| S4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file, a mail or a shared store.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file, a mail or a shared store.
