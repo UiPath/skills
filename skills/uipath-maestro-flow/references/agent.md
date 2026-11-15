@@ -5,16 +5,16 @@
 Start a coded or low-code agent and wait for its output. The resource may be
 published in Orchestrator or registered as a sibling project in this solution.
 
-Signature: `agent({ key, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+
+For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
 ```ts
 .step('count', 
   agent({ 
-    key: 'BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D',
     name: 'CountLetters',
     folderPath: 'Shared',
     inputs: { inputString: input('inputString') },
-    returns: { count: 'integer' },
     flavour: 'coded'
   }))
 ```
@@ -27,9 +27,8 @@ Start a published coded/low-code agent, or a sibling agent registered in this
 solution, and wait for its answer.
 
 ```ts
-.step('count', agent({ key: releaseKey, name: 'CountLetters',
-  folderPath: 'Shared', inputs: { word: input('word') },
-  returns: { count: 'integer' }, flavour: 'coded' }))
+.step('count', agent({ name: 'CountLetters',
+  folderPath: 'Shared', inputs: { word: input('word') }, flavour: 'coded' }))
 ```
 
 This references rather than creates an agent; scaffold and register a task-created
@@ -55,8 +54,15 @@ uip maestro flow registry get "uipath.core.agent.<key>" --output json
 Registry reads are cached for 30 minutes.
 If the agent is missing, or you redeployed it with a new schema, run `uip maestro flow registry pull --force` once and look again.
 
-`registry get` is also how you learn the agent's own argument names and its
-return shape — `inputDefinition.properties` and `outputDefinition`.
+To learn a published agent's argument names and return shape, write `name` and
+`folderPath`, leave `key` and `returns` out, and run the
+`uip maestro registry prepare --kind Process` command `check` prints. It records
+the key and both schemas; see
+[Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs).
+`uip maestro registry` (the SDK's prepare) and `uip maestro flow registry` (node
+manifests, above) are two command groups; both exist.
+If `prepare` prints `not recorded` for a side, read it from `registry get`
+instead: `inputDefinition.properties` and `outputDefinition`.
 
 When the request asks for a coded agent to be CREATED in this solution,
 scaffold it as a sibling project instead; do not substitute an inline low-code
