@@ -40,3 +40,6 @@ Mark a box `not checked` only when its lookup ran and exited non-zero; never wri
 This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
+<!--skill-flavor:draft-build-merge:start-->
+  Finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
+<!--skill-flavor:draft-build-merge:end-->

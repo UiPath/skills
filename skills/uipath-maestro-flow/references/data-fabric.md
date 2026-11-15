@@ -15,7 +15,7 @@ Still connector-only: get-by-id when the whole long-text value is needed (native
 
 ## One product, two surfaces
 
-“Data Fabric” and “Data Service” are the same product: the tenant lists connector key `uipath-uipath-dataservice` as **UiPath Data Fabric**, and `uip df entities` manages both. Native `core.datafabric.*` covers all four CRUD verbs and needs neither connection binding nor `prepare`; use the connector only for unsupported operations.
+"Data Fabric" and "Data Service" are the same product: the tenant lists connector key `uipath-uipath-dataservice` as **UiPath Data Fabric**, and `uip df entities` manages both. Native `core.datafabric.*` covers all four CRUD verbs and needs neither connection binding nor `prepare`; use the connector only for unsupported operations.
 
 | Operation | Surface |
 | --- | --- |
@@ -27,7 +27,17 @@ Still connector-only: get-by-id when the whole long-text value is needed (native
 | File record field upload/download/delete | `connector('uipath-uipath-dataservice', 'upload-file-to-record-field' / 'download-file-from-record-field' / 'delete-file-from-record-field', …)` ([example](#a-file-field-connector-example)) |
 | Record Created/Updated events | `onEvent(…)` on the same connector |
 
-Only the bottom three are connector work. Route an entity needing one through the connector rather than mixing surfaces: mixing requires connection binding, a second payload shape, and separate debugging. Data Fabric events are Integration Service connector events, not this node family: `onEvent(RecordCreated, { object: '<Entity>', … })`. See [`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+Only the bottom three are connector work. Route an entity needing one through the connector rather than mixing surfaces: mixing requires connection binding, a second payload shape, and separate debugging.
+
+Data Fabric **events** (Record Created / Record Updated on an entity) are
+Integration Service connector events on `uipath-uipath-dataservice`, not this
+node family. They are curated events with the object built in, so do not pass
+`object`: the registry serves them as `record-created-preview-` and
+`record-updated-preview-`, and the entity is picked through the `where` lookups
+that `uip maestro registry prepare uipath-uipath-dataservice --action
+record-updated-preview-` prints (`entityScope`, `tenantEntityName`,
+`folderEntityName`). See
+[`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview
 
@@ -79,7 +89,7 @@ System columns `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` ar
 
 ## Query-many needs `resultMode`, and `resultMode` needs 1.4
 
-`core.datafabric.read` began as read-one (“Read entity”) and became read-one-or-many at **1.4** (“Query entity records”). `resultMode: 'single'` publishes one record under `output`; `resultMode: 'multiple'` publishes records under `output.results`. Plain `dataFabricRead()` emits SDK-pinned 1.0; passing `resultMode` selects 1.4. `dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time.
+`core.datafabric.read` began as read-one ("Read entity") and became read-one-or-many at **1.4** ("Query entity records"). `resultMode: 'single'` publishes one record under `output`; `resultMode: 'multiple'` publishes records under `output.results`. Plain `dataFabricRead()` emits SDK-pinned 1.0; passing `resultMode` selects 1.4. `dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time.
 
 ```ts
 .step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
@@ -89,7 +99,12 @@ System columns `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` ar
 
 ## Paging a list query
 
-`limit` always applies; omitted means **100**. **1000 is the hard ceiling**; larger values truncate silently. Page larger entities with `skip`, and pair limits with `sort` or the slice is arbitrary. `limit`, `skip`, `sort`, and `fields` are list-query options; `check` refuses them on single-record reads.
+`limit` is always applied — omitting it resolves to **100** — and **1000 is a
+hard ceiling**: `check` refuses a larger value (`DATAFABRIC_LIMIT_RANGE`),
+because the run would silently return only 1000. Cover a bigger entity by
+paging with `skip`, and pair any limit with `sort` or the slice is arbitrary.
+
+`limit`, `skip`, `sort`, and `fields` are list-query options; `check` refuses them on single-record reads.
 
 ```ts
 .step('page1', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
@@ -107,9 +122,9 @@ Tenant-scoped entities use `entity: '<Name>'`; folder-scoped entities use the Or
 .step('read', dataFabricRead({ entity: { name: 'Orders', folder: 'Finance/Prod' }, resultMode: 'multiple' }))
 ```
 
-SDK 6.73.0 or later is required. An older SDK refuses `{ name, folder }` and has no key-less `prepare`:
+SDK 6.73.0 or later is required. An older SDK refuses `{ name, folder }` and has no key-less `prepare`,
 <!--skill-flavor:data-fabric-entity-ref-sdk:start-->
-run `npm install -g @uipath/maestro-builder-sdk@latest`.
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 If `uip maestro registry prepare --entity …` says `missing required argument 'connector-key'`, run the same command as `npx flow-sdk registry prepare --entity …`.
 <!--skill-flavor:data-fabric-entity-ref-sdk:end-->
 

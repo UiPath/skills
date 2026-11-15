@@ -31,6 +31,14 @@ Every `.loop()` emits `core.logic.loop` 2.4. Body writes use `{ updates }`, neve
   workspace copy.
 <!--skill-flavor:continue-sdk-upgrade:end-->
 
+```ts
+.loop('each', input('items'), (body) => body
+  .step('call', http({ url: 'https://api.example.test/items', method: 'POST', managed: true }))
+  .onError((h) => h
+    .step('logFailure', script({ code: 'return "logged";' }))
+    .continue()))
+```
+
 ## Do while
 
 `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })` runs the body, then repeats while the condition is true; check the condition AFTER each pass, so it runs at least once (`core.logic.dowhile`). The container publishes no data output: write results to a `.var()` inside the body with `{ updates }`. `limit` caps iterations at 1–10,000; blank means the platform default of 10,000. `body.break()` and `body.continue()` work exactly as in `.loop()`. A body-step failure can route to `.onError()` after `.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).

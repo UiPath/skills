@@ -4,7 +4,7 @@
 
 Call a curated or generic Integration Service operation.
 
-**Some Data Fabric entity operations are Integration Service connector actions.** “Data Fabric” and “Data Service” name one product; the tenant displays connector key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE: `core.datafabric.*` has `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()`, and `dataFabricDelete()`; read covers filters, paging, and sort. Route here only get-by-id when the whole long-text value is needed (native reads, including `Id` filters, return a 10,000-character preview), file record fields, and Record Created / Updated events; see [`data-fabric.md`](data-fabric.md).
+**Some Data Fabric entity operations are Integration Service connector actions.** "Data Fabric" and "Data Service" name one product; the tenant displays connector key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE: `core.datafabric.*` has `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()`, and `dataFabricDelete()`; read covers filters, paging, and sort. Route here only get-by-id when the whole long-text value is needed (native reads, including `Id` filters, return a 10,000-character preview), file record fields, and Record Created / Updated events; see [`data-fabric.md`](data-fabric.md).
 
 Signatures:
 
@@ -30,12 +30,13 @@ Authoring never waits on `prepare`, and no discovery command precedes the source
 1. **Search** the library and read the operation page.
 2. **Author** intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for generic operations.
 <!--skill-flavor:check-source:start-->
-3. **Run** `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each gap and remedy: `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or `CONNECTOR_INPUT`.
+3. **Run** `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
 <!--skill-flavor:check-source:end-->
+   gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
    `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` mean the operation itself does not resolve; no prepare fixes them. Edit the source and re-run `check`:
    - `CONNECTOR_NOT_IN_LIBRARY`: no library layer has the operation, connector, or version, and with no library pulled neither does the tenant. The message lists operations and a `Closest:` match. Use the node type slug, not tenant `objectName` (`send-email`, not `send-mail-v2`).
 <!--skill-flavor:not-in-library-pull:start-->
-     With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. “The tenant was asked … and does not serve it” means the name is wrong or unavailable: fix the name or use `http()`. Otherwise report `uip`'s reason and stop; run `uip login` only when it says `uip` is not logged in or the session expired.
+     With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. "The tenant was asked … and does not serve it" means the name is wrong or unavailable: fix the name or use `http()`. Otherwise report `uip`'s reason and stop; run `uip login` only when it says `uip` is not logged in or the session expired.
 <!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED`: add `{ object: '<name>' }`; the message lists objects.
    - `CONNECTOR_OBJECT_NOT_GENERIC`: remove `object` from a single, non-generic operation.
@@ -131,9 +132,20 @@ connector('uipath-microsoft-azureactivedirectory', 'list-groups',
   { connection: 'entra', folder: 'shared' })
 ```
 
-The artifact must contain both runtime `inputs.detail.queryParameters.where` and design-time `configuration.essentialConfiguration.savedFilterTrees.where`; Studio Web renders the tree and validation rejects only one half. If a separate review artifact is requested, compile and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property; retain numeric `groupOperator` and `filters`.
+The artifact must contain both runtime `inputs.detail.queryParameters.where` and design-time `configuration.essentialConfiguration.savedFilterTrees.where`. Studio Web renders the FilterBuilder from the tree; product
+validation rejects a literal filter that has only one of the two, so a
+hand-written literal without its tree fails `validate` even though the run
+would have worked (a runtime `tmpl` filter is exempt; see below). If a separate review artifact is requested, compile and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property; retain numeric `groupOperator` and `filters`.
 
-Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR` and parenthesize. Mixing `AND` and `OR` at one level is refused. Tokens are unquoted columns and values use single quotes; double quotes mark COLUMN references. OData `eq`/`ne`/`gt`/`ge`/`lt`/`le` is invalid. A runtime-valued filter keeps only the runtime half: `js` in `where` emits no tree and `validate` rejects it. Filter server-side on constants and narrow downstream, or deliberately accept the design-time gap.
+Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR` and parenthesize. Mixing `AND` and `OR` at one level is refused. Tokens are unquoted columns and values use single quotes; double quotes mark COLUMN references. OData `eq`/`ne`/`gt`/`ge`/`lt`/`le` is invalid.
+
+**A filter built from a runtime value has no filter tree, and that is valid.**
+The tree holds literals only, so a runtime-expression (`tmpl`) filter in `where`
+(for example ``tmpl`displayName = '${input('name')}'` ``) emits the query with no tree.
+`validate` accepts it, and the runtime resolves the whole value. The only cost is
+at design time: the Studio Web filter widget shows no tree for that step. If the
+widget must show the constant terms, put them in a literal filter and narrow the
+rest downstream.
 
 ## Schema-dynamic operations: the parent-field loop
 
@@ -147,7 +159,7 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
 
-If all parents were resolved separately, paste the exact `-f NAME=VALUE` re-run printed by prepare. Missing parents are refused; a value absent from the connection silently yields only parent fields, so treat “I passed `-f` and still got only the parents” as a wrong value. `prepare` fails in both cases rather than writing the overlay.
+If all parents were resolved separately, paste the exact `-f NAME=VALUE` re-run printed by prepare. Missing parents are refused; a value absent from the connection silently yields only parent fields, so treat "I passed `-f` and still got only the parents" as a wrong value. `prepare` fails in both cases rather than writing the overlay.
 
 **1. Find parents.** Describe with no values and inspect each input's reference. A parent has `Reference.Path` containing a `{placeholder}` naming another field; placeholder order is resolution order:
 
@@ -261,7 +273,7 @@ Do not crawl Integration Service after lookup failure. Follow [bindings.md](bind
 `check` reports unresolved lookups as `LOOKUP_UNRESOLVED`, warns on literal ids, and warns runtime expressions as `LOOKUP_RUNTIME_VALUE` with the sent id (for example `reporter.accountId`); it errors when an e-mail expression feeds a lookup that neither sends nor searches by e-mail. Required missing lookup values must use helpers. Run `check` before compile so the one expensive prepare call is last.
 
 <!--skill-flavor:connection-user:start-->
-**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection's own user: take the account from `uip login status` and resolve by **display name**. Search only names declared by the field's “matches on” list; do not query raw collections. Jira user search hides e-mail addresses, so `emailAddress=` returns nothing while `displayName=` finds the user; the spec (`matches on displayName | accountId`) excludes e-mail.
+**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection's own user: take the account from `uip login status` and resolve by **display name**. Search only names declared by the field's "matches on" list; do not query raw collections. Jira user search hides e-mail addresses, so `emailAddress=` returns nothing while `displayName=` finds the user; the spec (`matches on displayName | accountId`) excludes e-mail.
 <!--skill-flavor:connection-user:end-->
 
 Operation pages and generated-descriptor comments list lookup helpers and searchable fields; `grep -B6 'export const SendMessageToUser'` finds the latter. Plain strings are correct for enumerated legal values and tenant-invariant collections (country lists, timezones) when the page says so and supplies the accepted-value command.

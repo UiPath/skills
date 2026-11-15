@@ -4,14 +4,15 @@
 
 Start a coded or low-code agent and wait for its output. It may be published in Orchestrator or registered as a sibling project in this solution.
 
-Signature: `agent({ key, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+
+For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
 ```ts
 .step('count', agent({
-  key: 'BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D',
   name: 'CountLetters', folderPath: 'Shared',
   inputs: { inputString: input('inputString') },
-  returns: { count: 'integer' }, flavour: 'coded'
+  flavour: 'coded'
 }))
 ```
 
@@ -35,7 +36,17 @@ uip maestro flow registry search "uipath.core.agent" --output json
 uip maestro flow registry get "uipath.core.agent.<key>" --output json
 ```
 
-Registry reads are cached for 30 minutes. If the agent is missing or redeployed with a new schema, run `uip maestro flow registry pull --force` once, then search again. `registry get` exposes argument names and return shape in `inputDefinition.properties` and `outputDefinition`.
+Registry reads are cached for 30 minutes. If the agent is missing or redeployed with a new schema, run `uip maestro flow registry pull --force` once, then search again.
+
+To learn a published agent's argument names and return shape, write `name` and
+`folderPath`, leave `key` and `returns` out, and run the
+`uip maestro registry prepare --kind Process` command `check` prints. It records
+the key and both schemas; see
+[Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs).
+`uip maestro registry` (the SDK's prepare) and `uip maestro flow registry` (node
+manifests, above) are two command groups; both exist.
+If `prepare` prints `not recorded` for a side, read it from `registry get`
+instead: `inputDefinition.properties` and `outputDefinition`.
 
 When asked to CREATE a coded agent in this solution, scaffold it as a sibling project; do not substitute an inline low-code agent, duplicate an already-published tenant agent, or bind a pre-existing agent.
 
@@ -114,6 +125,43 @@ ls <SolutionName>/resources/solution_folder/process/*/<AgentProject>.json
 ```
 
 An in-solution agent has no `folderPath`: its generated binding uses the bare local resource key and its definition carries the sibling project id. The SDK checker rejects a missing project id or a published agent with a missing folder, so resource forms cannot silently collapse.
+
+## Name an in-solution sibling by project
+
+Needs `@uipath/maestro-builder-sdk` 6.108.0 or later. Any of the five
+process builders can then name a sibling of the solution by its project name
+instead of copying the two ids:
+
+```ts
+.step('analyze', agent({
+  location: 'in-solution',
+  project: '<AgentProject>',
+  inputs: { sentence: input('sentence') },
+  flavour: 'coded',
+}))
+```
+
+- `compile`, `check` and `flow merge` find the sibling's resource file under
+  `resources/solution_folder/process/` themselves, and write its `key` and
+  `projectId` into the `.flow`. Studio Web's Run node gets its `projectId`
+  without you setting it. Run them from inside the solution: they look for
+  the nearest folder at or above the flow that holds the `.uipx`, and refuse
+  `project` without one (`IN_SOLUTION_NO_SOLUTION`).
+- In a decompiled flow, the step keeps the `key` and `projectId` decompile
+  wrote. Switching it to `project` is optional; both forms merge back.
+- When the step declares no `returns`, they are read from the sibling's
+  `entry-points.json` output schema. An RPA project that was never built, or
+  an API workflow whose entry point has `output: null`, has none there:
+  declare `returns` yourself, as before.
+- The sibling still needs its resource file, made by the register step of
+  the recipe above.
+- They refuse a name the solution does not have
+  (`IN_SOLUTION_PROJECT_NOT_FOUND`, with the nearest name) and the wrong
+  builder for the sibling's type (`IN_SOLUTION_WRONG_BUILDER`, which names the
+  right call; for example `publishedFunction()` on a coded agent filed under
+  `process/function/`).
+- An older SDK ignores `project` and refuses the step for its missing key
+  (`AGENT_NO_KEY`, `RPA_NO_KEY`, …). Then use the id recipe above.
 
 ## Evidence boundary
 

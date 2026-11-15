@@ -27,7 +27,7 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compile
 <!--skill-flavor:sdk-project-layout:start-->
 Install `@uipath/maestro-builder-sdk` globally (`npm install -g`), unless present. Examples are in `examples/`; routed details are in `references/`.
 
-A Flow source is `.flow-sdk/<Name>.flow.ts` under `<Solution>/<Name>/`; compiled `<Name>.flow` is not in `.flow-sdk/`. The SDK work directory contains source, `bindings.json`, `connectors/`, and `connectors-local/`, relative to the directory running `uip`; each project has its own. Studio Web does not read it, and `uip solution pack`/`upload` and `flow debug` omit it. Run SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`, `node .flow-sdk/*.pipeline.mjs`) from `<Solution>/<Name>/`, using `( cd "<Solution>/<Name>" && … )` when needed; other commands run from the workspace root. Every `.flow-sdk/` path is project-relative.
+A Flow source is `.flow-sdk/<Name>.flow.ts` under `<Solution>/<Name>/`; compiled `<Name>.flow` is not in `.flow-sdk/`. The SDK work directory contains source, `bindings.json`, `connectors/`, and `connectors-local/`, relative to the directory running `uip`; each project has its own. Studio Web does not read it, and `uip solution pack`/`upload` and `flow debug` omit it. Run SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`) from `<Solution>/<Name>/`, using `( cd "<Solution>/<Name>" && … )` when needed; other commands run from the workspace root. Every `.flow-sdk/` path is project-relative.
 
 Scaffold first, seed from the scaffold, and emit into it; `compile -o` determines the emitted file. `<Solution>` and `<Name>` come from the request: one supplied name serves both, and only a Flow name also serves both. Preserve `<Solution>` exactly, including spaces; normalize `<Name>` to letters, numbers, `_`, and `-`.
 
@@ -36,7 +36,7 @@ Before `uip solution init`, run `find . -maxdepth 2 -name '*.uipx'`. If solution
 ```bash
 uip solution init "<Solution>"
 ( cd "<Solution>" && uip maestro flow init <Name> --sdk-source )
-# edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop
+# edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
 Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. If `init` says "already exists and is not empty. Use --force to overwrite", edit the existing project and never pass `--force`. Omit `--sdk-source` for a flow containing an Extract document node, which is CLI-authored ([`references/extract-document-node.md`](references/extract-document-node.md)).
@@ -61,6 +61,16 @@ Check every required prepare: `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `
 
 See [bindings.md](references/bindings.md#where-both-values-come-from) for what `prepare` binds or refuses. `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` require source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe). Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) require every `-f` named by prepare `check` and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 <!--skill-flavor:sdk-connector-discovery:end-->
+
+### Hello world Flow
+
+```ts
+import { flow, script, input, out, types } from '@uipath/maestro-builder-sdk';
+export default flow('hello').name('Hello')
+  .input({ name: types.string }).output({ greeting: types.string })
+  .step('greet', script({ code: 'return `Hello ${$vars.start.output.name}`;' }))
+  .return({ greeting: out('greet') }).build();
+```
 
 ## Lifecycle
 
@@ -92,17 +102,18 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 <!--skill-flavor:sdk-editing:start-->
 Preserve supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, edit narrowly, and merge back; decompiling supplied source overwrites it, so use [its loop](references/brownfield.md#a-supplied-source).
 
-`merge` verifies the first-line `decompile` stamp and overwrites the original:
+`decompile` stamps the source's first line; `merge` reads it, derives the baseline from the original, and writes over it:
 
 ```bash
-( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
+( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name baseline -o -name edited -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
-# edit narrowly; retain the first line; no .layout() for added steps (builder-sdk#1320)
+# edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # fix each (edited) error; `unknown option`: brownfield.md
 ( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp (SDK<6.96.0): NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 ```
 
-Back up first (`mktemp -d`), validate after a successful merge, and restore on failure. Only `merge` writes `.flow`. For `no stamp` or `MERGE_ORIGINAL_CHANGED`, see [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses). Keep source in the project with relative sidecars: [the safe project loop](references/brownfield.md#the-safe-project-loop). **True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
+Only `merge` writes the `.flow`; a refusal writes nothing. Validate as in [Lifecycle](#lifecycle); on failure, fix the source, `check` and `merge` again (it is restamped). `no stamp` or `MERGE_ORIGINAL_CHANGED`: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
+**True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
 ## Builder frame

@@ -35,16 +35,40 @@ Do not run `uip is triggers objects` / `triggers describe` / `resources run list
 
 ## Generic events: name the object
 
-Generic `record-created` and `record-updated` events (Data Fabric, Salesforce, ServiceNow, Jira, Dynamics, …) require the object for the bound connection and take no event parameters, so `where` stays empty. `check` rejects a missing object with `EVENT_GENERIC_NO_OBJECT` and rejects an object placed in `where`.
+Most connectors expose their record events generically — `record-created`,
+`record-updated` (Salesforce, ServiceNow, Jira, Dynamics, …). Data Fabric is
+not one of them: its record events are curated, with the object built in.
+One node type covers every object of the connection, so the subscription must
+say which one with `object`. It is not an event parameter: these operations
+take none, so `where` stays empty and `check` refuses a subscription that
+omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
 
+```ts
 <!--skill-flavor:generic-event-import:start-->
-import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
+import { RecordCreated, RecordUpdated } from './connectors/uipath-salesforce-sfdc.ts';
 <!--skill-flavor:generic-event-import:end-->
 
-Use the generated descriptor with `object`, optional `filters`, and required `connection` and `folder`; discover objects from the bound connection, never by guessing:
+// Start when an Opportunity is created with CloseDate before 2026-08-04.
+.trigger(onEvent(RecordCreated, {
+  object: 'Opportunity',
+  filters: [{ field: 'CloseDate', lessThan: '2026-08-04' }],
+  connection: 'salesforce', folder: 'shared',
+}))
+
+// Pause until an Account record is updated.
+.step('updated', waitForEvent(RecordUpdated, {
+  object: 'Account', connection: 'salesforce', folder: 'shared',
+}))
+```
+
+The objects come from the bound connection, never from a guess. Prepare the
+event for the object, as for any event (above); prepare matches the name
+against the connection's objects. Without `--object` it refuses with
+`EVENT_OBJECT_REQUIRED` and lists the objects the connection has:
 
 ```bash
-uip is triggers objects uipath-uipath-dataservice CREATED --connection-id <id> --output json
+uip maestro registry prepare uipath-salesforce-sfdc --action record-updated \
+  --object Account
 ```
 
 The emitted node carries the object in `inputs.detail.objectName` and `configuration`, its event in `eventType`, and the platform-declared `eventMode`. Curated events such as Outlook `email-received` and OneDrive `file-created` have built-in objects; passing `object` is an error.
@@ -81,7 +105,7 @@ A filter is `{ field, <operator>: value }` with exactly one operator. The design
 | `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
 | `is`, `isNot` | always `true` | ``hasAttachments==`true` ``, ``isRead!=`true` `` |
 
-`is`/`isNot` are the canvas's “Is”/“Is not” tests and always compare with `true`; `isNot: true` also matches a missing field. For “is false,” use `equals: false`. Any other `is`/`isNot` value is refused with `EVENT_FILTER_BAD_VALUE`.
+`is`/`isNot` are the canvas's "Is"/"Is not" tests and always compare with `true`; `isNot: true` also matches a missing field. For "is false," use `equals: false`. Any other `is`/`isNot` value is refused with `EVENT_FILTER_BAD_VALUE`.
 
 Ordering a plain string is refused with `EVENT_FILTER_BAD_VALUE`: JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator. A backslash at the end of a filter or `where` value, or before another `\\` or a `'`, is refused with `EVENT_FILTER_BACKSLASH`, because JMESPath engines interpret `\\` differently (the specification as one backslash, reference libraries as two). A backslash before another character, such as `C:\tmp` or `Finance\Q3`, is retained and reads consistently.
 

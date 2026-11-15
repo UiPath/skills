@@ -22,7 +22,7 @@ uip maestro flow format <Name>.flow --output json
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
-A builder `.layout({ nodes })` avoids `format` when every non-96 × 96 node carries its size (rule 1). Entries are keyed by node id; `at(x, y)` writes position and `dim(width, height)` writes container size. A step id is its name; the trigger id is `start` unless renamed by `.triggerId()`; an End id is the name supplied to `.return`, or unnamed `end`, `end2`, `end3`, … in emission order. Include one entry per node. Use source layout for a requested arrangement or decompiled source carrying one ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)); otherwise `format` is simpler.
+A builder `.layout({ nodes })` avoids `format` when every non-96 × 96 node carries its size (rule 1). Entries are keyed by node id; `at(x, y)` writes position and `dim(width, height)` writes container size. A step id is its name; the trigger id is `start` unless renamed by `.triggerId()`; an End id is the name supplied to `.return`, or unnamed `end`, `end2`, `end3`, … in emission order. Include one entry per node. Use source layout for a requested arrangement or decompiled source carrying one ([`brownfield.md`](brownfield.md#designer-shapes-decompile-keeps)); otherwise `format` is simpler.
 
 Rules:
 

@@ -163,7 +163,7 @@ Report, concisely:
   `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas),
   `Cloud configuration` (folder, process, release, connection state on the tenant);
 - the safe next action: the owner from the line above and its repair (a source
-  fix and recompile, a package refresh, an operator hand-off), then the one
+  fix rebuilt through the validation loop, a package refresh, an operator hand-off), then the one
   read-only command that shows the run's state before any Operate decision, for
   example "`BPMN source` fixes `<ELEMENT_ID>`, then re-read
   `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`"
@@ -202,7 +202,7 @@ These are the ones that survive both:
   `resourceKey` is the folder's own key fails to resolve the connection
   (`MISSING_BINDING` at validate; a `BindingResolution` incident at run time).
   The compiler keys it by the companion connection; if the artifact was
-  hand-edited, recompile.
+  hand-edited, fix the `.bpmn.ts` and rebuild it through the validation loop.
 - **Integration Service enrichment missing** — the connector node reached the
   runtime with draft context, no connection binding, or a stale dynamic schema.
   The incident points at the connector node; runtime variables show missing or
@@ -223,7 +223,10 @@ These are the ones that survive both:
 - **Script task faults or returns nothing** — `vars` undefined inside the
   script, or a return the output row does not read: a v3 script returns a bare
   value and the row reads `=result.response`; `return { response: … }`
-  double-wraps. Owner: `BPMN source`.
+  double-wraps. Owner: `BPMN source`. A brownfield script task whose shape
+  differs from what `.scriptTask()` writes is not a fault by itself: propose a
+  rewrite only when run evidence names that task, and show the user that evidence
+  before any edit.
 - **Message or event wait that never ends** — the message id, the correlation
   reference or the subscription does not match what the caller sends; cursors
   show the token parked at the event. Owner: `BPMN source` for the reference,
@@ -244,7 +247,7 @@ These are the ones that survive both:
 - **Never assume the local BPMN is the deployed asset.**
 - **Never retry before the root cause is known.**
 - **Never paste private incident payloads or connection details** into notes, commits or issues.
-- **Never patch the generated package files as the only fix for a source defect** — fix the `.bpmn.ts`, recompile, `refresh`.
+- **Never patch the generated package files as the only fix for a source defect** — fix the `.bpmn.ts`, rebuild it through the validation loop, `refresh`.
 
 ## Command reference
 

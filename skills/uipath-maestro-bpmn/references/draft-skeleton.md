@@ -5,7 +5,7 @@ It makes no registry calls.
 
 **When.** The user wants to see the shape before it is built: *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
 A request to build the process outright skips the draft and authors real nodes directly.
-A brownfield edit (the shape already exists) and a discovery-only question (nothing is authored) skip it too.
+A brownfield edit (the shape already exists) and a [discovery-only](bpmn-runtime.md#registry-extension-types) question (nothing is authored) skip it too.
 Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks to see the shape first.
 Judge the intent, not the word: a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) is a build, not the draft gate.
 A connector step it cannot resolve then follows [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector).
@@ -277,15 +277,18 @@ The reply is the template and nothing else: no line before it, between its parts
 
 <!--skill-flavor:draft-cloud-copy:start-->
 When you uploaded the skeleton, the user may have changed it on the canvas before answering.
-Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, and say so in the reply's one sentence.
+Before you edit it again, download the cloud copy and compare it, as [Check the cloud copy](operate.md#check-the-cloud-copy-before-editing) says; when it differs, build on their copy without asking, as that section's *To build on the Studio Web copy* paragraph says (copy it over `<Project>/<Name>.bpmn`, then decompile and `merge`), not compile and `format`, so their layout survives. Say so in the reply's one sentence.
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->
-- **Change it**: edit the skeleton, run the loop again, and show it again as steps 4 and 5 do.
+- **Change it**: edit the skeleton, run the loop again, and show it again as steps 4 and 5 do. When you built on their copy, `merge` it in place of the loop's `compile` and `format` lines ([Brownfield](bpmn-runtime.md#brownfield-editing)).
 <!--skill-flavor:draft-change-it:end-->
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+<!--skill-flavor:draft-build-merge:start-->
+  When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
+<!--skill-flavor:draft-build-merge:end-->
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
   A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.

@@ -8,9 +8,13 @@ Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, so
 
 ## At a glance
 
-Define an autonomous agent with optional resources. `returns` is the typed answer contract: prompts must describe every field and must not request JSON text. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
+Define an autonomous agent with optional resources.
 
 `tools` also accepts `mcp`, `a2a`, `clientside`, `httpRequest`, and `function` kinds ([agent-resources.md](agent-resources.md#tool-kinds)); attach memory with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); use `escalation` with `variant: 'quick-form'` for an inline form. Set `mode: 'advanced'` to select the Advanced harness.
+
+## Model and answer judgment
+
+`returns` is the typed answer contract: prompts must describe every field and must not request JSON text. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
 
 ## Context grounding
 
@@ -58,13 +62,12 @@ Tool signatures:
 
 For a sibling project, a `process` / `agent` / `api` / `flow` / `maestro` / `function` tool uses `key` = `resource.key` from `resources/solution_folder/process/*/<Project>.json` (the tail of its `uip maestro flow registry list --local` tool type) and `folderPath: 'solution_folder'`. A `ProcessOrchestration` project (folder `processOrchestration`, tool type `…tool.processorchestration.*`) is `kind: 'maestro'`, never `'process'`; every other kind is its tool type's namespace. A tool has no `location` or `projectId`. Declare it on `inlineAgent` so compile writes its `resource.json`; a node created with `uip maestro flow nodes create` gets none.
 
-A connector tool needs `connection` and `folder`, with `bindings.json` labels resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either produces `FLOW_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check` (`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on SDKs older than 6.88.2). `prepare` does not read source labels, so pass them:
+A connector tool needs `connection` and `folder`, with `bindings.json` labels resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either produces `FLOW_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check` (`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on SDKs older than 6.88.2). Write the
+labels on the tool, then run
+`uip maestro registry prepare <connector-key> --action <operation>`: it reads the
+tool's `connection` / `folder` from the source and writes both entries under them.
 
-```bash
-uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>
-```
-
-This finds the connection and writes both entries under the tool's labels. `description` overrides model-facing text; otherwise the library's operation description is used.
+`description` overrides model-facing text; otherwise the library's operation description is used.
 
 The model invokes a tool, not a control-flow edge. Local execution skips tool resources, proving wiring but not invocation. A live test needs a tool-specific side effect or returned witness.
 
