@@ -48,5 +48,5 @@
 <!--skill-flavor:sibling-redeploy:end-->
 
 <!--skill-flavor:business-rule-key:start-->
-  `<decisionKey>` is the decision's `OutputArguments` property name (such as `decision1`), not its display name: a display name reads null. Studio Web cannot read a rule's output contract, so map the whole `=result` into one variable, as the designer does (`outputs: { ruleResult: '=result' }`), and read `vars.ruleResult.<decisionKey>.<column>` downstream; ask the user for the decision's output name when a later node needs one column.
+  `<decisionKey>` is the decision's `OutputArguments` property name (such as `decision1`), not its display name: a display name reads null. Studio Web cannot read a rule's output contract, so read `vars.<id>_businessRuleResponse.<decisionKey>.<column>` downstream, the whole result the builder already maps; ask the user for the decision's output name when a later node needs one column, and whether the rule is decision-keyed when that is not known.
 <!--skill-flavor:business-rule-key:end-->

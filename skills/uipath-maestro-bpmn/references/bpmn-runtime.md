@@ -253,8 +253,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision: a column reads `=result.<decisionKey>.<column>`, as in `outputs: { tier: '=result.eligibility.tier' }` or `vars.<id>_businessRuleResponse.eligibility.tier` downstream, never `=result.tier` or `=response.tier`.
 <!--skill-flavor:business-rule-key:start-->
   `<decisionKey>` is the property name under `OutputArguments.properties` in `uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json` (such as `decision1`), not the entry point's `DisplayName`: a display name reads null. Mapping the whole `=result` into one variable, as the designer does, also works.
-<!--skill-flavor:business-rule-key:end-->
   Only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+<!--skill-flavor:business-rule-key:end-->
   `releaseKey` is refused: a rule is never addressed by a process key.
 
 <!-- RULE:bpmn.runtime.metadata -->

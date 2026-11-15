@@ -153,7 +153,8 @@ uip solution publish <PackageZip> --output json
 ```
 
 Activation and the `uip solution deploy` steps that follow are the platform
-skill's; this skill stops at the BPMN project and package boundary.
+skill's; this skill stops at the BPMN project and package boundary, except the
+sibling-resource deploy in [bpmn-runtime.md](bpmn-runtime.md#http-and-orchestrator-work), which this skill runs itself.
 
 ### Standalone process publish
 
