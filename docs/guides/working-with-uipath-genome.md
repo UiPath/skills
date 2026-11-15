@@ -164,6 +164,28 @@ What that run produced:
 
 Blue boxes are your turns. With the readiness file filled in and confirmed, or "take the defaults" in the build request, the build asks nothing.
 
+## Use cases
+
+Each use case is a few requests in a row. Steps 1 to 5 below say what each request does and what you get from it.
+
+| You want to | Say | Then |
+| --- | --- | --- |
+| Design a new automation from a process document | "Design a solution from `<document>`" | Review the solution design (SDD) it writes, then steps 2 to 5 for the genome of that design |
+| Build from a solution design already agreed | "Write a genome from `<sdd>`" | Steps 2 to 5 |
+| Build from an idea, an SOP or a transcript | "Write a genome for `<idea>`" | Steps 2 to 5 |
+| Try a product on a scenario of its own, for a demo or a workshop | "Propose a demo scenario with `<product>`" | Pick a scenario; its genome is reviewed and built like any other |
+| Document an automation you run | "Extract a genome from `<folder>`" | Review it (step 2); nothing is built. When the automation changes, say "The source changed": the agent reads again the parts that changed |
+| Rebuild an existing automation as it is | "Extract a genome from `<folder>`" | Steps 2 to 5; the build asks how closely to follow the source ([Rebuilding an existing automation](#rebuilding-an-existing-automation)) |
+| Rebuild an existing test suite | "Extract a genome from `<folder>`" | Steps 2 to 5: a test project whose cases assert each checkpoint the source checked, or list it as not asserted, with the reason |
+| Refactor a UiPath project | "Refactor `<folder>`" | Steps 2 to 5, with the plan, the tests written first and the cutover ([As a refactor](#rebuilding-an-existing-automation)) |
+| Change an automation built from a genome | The change, in plain words: "step 4 should also …" | The genome and its readiness file are updated, your answers kept. The build (step 3) changes the projects it made before, or those you name in the readiness file, and the report lists every change made to them |
+| Change answers after the build was prepared | Edit the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again and marked `New since confirmed` |
+| Build on another machine than the one prepared | "Build `<name>-genome.md`" on that machine | The file's answers hold; a question whose options are not the same there (other packages installed) is asked again |
+| Build with nobody to answer | "Build `<name>-genome.md`, take the defaults" | The build asks nothing and takes each recommended option or default; the report lists each one it took |
+| Use a genome that has no readiness file | "Write the readiness file for `<name>-genome.md`" | Steps 2 to 5 |
+| Check a genome you were given | "Check `<name>-genome.md`" | One line per problem found; the genome is not changed. Ask for the fixes as changes |
+| Publish what was built | "Publish the solution", after the build | Publishing and deploying happen only when you ask, never as part of the build |
+
 ## Before you start
 
 - **What you have about the process.** A process document first (a PDD, an SOP, a runbook), then the automation itself, and any test evidence, recordings or tickets. The agent asks for them once and reads only what you give it.
@@ -205,7 +227,7 @@ To check a step against the original, the Source Map names the part of the sourc
 
 **Fill in the readiness file** with the people each section names: the engineer and your architect for the architecture, the systems to make reachable, existing projects, the build environment and your development standards; the environment owners for the configuration values; the process owner for the business decisions. Most items carry a default (the recommended option, the question's default, or what the genome builds now), so you write a change only under what is wrong, then your name and the date on the section's `Confirmed:` line. The header counts the items with no default, which the build needs. Start with the systems and the build environment: access takes the longest.
 
-Then say "Apply the readiness answers": the agent writes into the genome what the answers change (a ruling at its step, the split, a technology) and marks each item applied. Skip it and the build does it first.
+Then say "Apply the readiness answers": the agent writes into the genome what the answers change (a ruling at its step, the split, a technology) and marks each item applied. Answers given in a reply instead of the file are applied the same way. Skip it and preparing or building does it first.
 
 ## 3 · Build
 
