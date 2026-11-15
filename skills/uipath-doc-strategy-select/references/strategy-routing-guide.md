@@ -13,82 +13,98 @@ uip maestro flow registry search "<keyword>" --output json
 uip maestro flow registry get <node-type> --output json
 ```
 
-Tenant-specific nodes (IxP models, connectors) appear only after `uip login` and
-`uip maestro flow registry pull`. An empty search is not proof of absence until you are authenticated
-and have pulled.
+Tenant-specific nodes (IxP models, connectors) appear only after `uip login`. Registry reads are cached
+for 30 minutes, so an empty search is not proof of absence until you have run
+`uip maestro flow registry pull --force` once and searched again.
+
+**The registry cannot confirm the Extract document node.** `uipath.ixp.extract-document-builder` is in
+no tenant manifest — Studio Web adds it to the canvas client-side behind a tenant feature flag — so
+`registry search` reports `AvailableOnTenant: false` on every tenant, enabled or not, even after login
+and pull, and `registry get` answers `Node not found`. `nodes create` and `validate` also succeed on a
+tenant that cannot run it. The registry check holds for wire types and tenant-published IxP models only.
+The tenant check for this node is:
+
+```bash
+uip maestro flow extraction check --output json
+```
+
+`Data.Status` `Available` means the tenant can run it. `FeatureDisabled`, `ModelUnavailable` and
+`ServiceUnavailable` mean it cannot — route to a published IXP model instead (§ Which Extract node,
+rule 4). `Unknown` or a non-zero exit settles nothing: report it, never treat it as unavailable.
+Interpreting the result and acting on it belongs to `uipath-maestro-flow`.
 
 ## Handoff map
 
 | Strategy selected | Owner | Build guide |
 |---|---|---|
-<!--skill-flavor:handoff-ixp:start-->
-| Extract, inside a Flow — a project's trained taxonomy fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
-<!--skill-flavor:handoff-ixp:end-->
-<!--skill-flavor:handoff-document-pipeline:start-->
-| Extract, inside a Flow — a JSON Schema authored inline in the node | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — document-pipeline.md](../../uipath-maestro-flow/references/document-pipeline.md) |
-<!--skill-flavor:handoff-document-pipeline:end-->
-| Extract — taxonomy, labelling, model training, publishing | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
-<!--skill-flavor:handoff-summarize:start-->
+| Extract, inside a Flow — default: a published IXP model | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
+| Extract, inside a Flow — the Extract document node: named by the user, already in the flow, or IXP not enabled | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — extract-document-node.md](../../uipath-maestro-flow/references/extract-document-node.md) · [taxonomy](../../uipath-maestro-flow/references/extract-document-taxonomy.md) |
+| Extract — no trained model yet: taxonomy, labelling, training, deployment | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
 | Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — summarize.md](../../uipath-maestro-flow/references/summarize.md) |
-<!--skill-flavor:handoff-summarize:end-->
 | Summarize, as an agent-chosen action over attachments | `uipath-agents` | [/uipath:uipath-agents — deeprag/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
 | Analyze files | `uipath-agents` | [/uipath:uipath-agents — analyze-attachments.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/analyze-attachments.md) |
-<!--skill-flavor:handoff-batch-transform:start-->
-| Batch transform, per-row LLM work over a CSV | `uipath-agents` · `uipath-maestro-flow` | [/uipath:uipath-agents — batch-transform/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) · [/uipath:uipath-maestro-flow — plugins/batch-transform/planning.md](../../uipath-maestro-flow/references/batch-transform.md) |
-<!--skill-flavor:handoff-batch-transform:end-->
+| Batch transform, per-row LLM work over a CSV | `uipath-agents` · `uipath-maestro-flow` | [/uipath:uipath-agents — batch-transform/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) · [/uipath:uipath-maestro-flow — batch-transform.md](../../uipath-maestro-flow/references/batch-transform.md) |
 | Persistent index, semantic search (PS) | `uipath-agents` | [/uipath:uipath-agents — context/index.md](../../uipath-agents/references/lowcode/capabilities/context/index.md) |
 | Index lifecycle from the CLI — create, ingest, search, delete | `uipath-platform` | [/uipath:uipath-platform — index-management.md](../../uipath-platform/references/context-grounding/index-management.md) |
-<!--skill-flavor:handoff-agent:start-->
 | Agent node referencing a published agent | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — agent.md](../../uipath-maestro-flow/references/agent.md) |
-<!--skill-flavor:handoff-agent:end-->
-<!--skill-flavor:handoff-inline-agent:start-->
 | Agent defined inside the Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — inline-agent.md](../../uipath-maestro-flow/references/inline-agent.md) |
-<!--skill-flavor:handoff-inline-agent:end-->
 | Agent lifecycle — scaffold, configure, evaluate, deploy | `uipath-agents` | [/uipath:uipath-agents — SKILL.md](../../uipath-agents/SKILL.md) |
-<!--skill-flavor:handoff-deterministic:start-->
 | Deterministic transformation, branch, or calculation | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — script.md](../../uipath-maestro-flow/references/script.md) · [transform](../../uipath-maestro-flow/references/transform.md) · [branch](../../uipath-maestro-flow/references/branch.md) |
-<!--skill-flavor:handoff-deterministic:end-->
-<!--skill-flavor:handoff-hitl:start-->
 | Planned human review | `uipath-maestro-flow` · `uipath-human-in-the-loop` | [/uipath:uipath-maestro-flow — hitl.md](../../uipath-maestro-flow/references/hitl.md) |
-<!--skill-flavor:handoff-hitl:end-->
-| Which UiPath product at all, or a PDD/SDD | `uipath-planner` | [/uipath:uipath-planner — product-selection-guide.md](../../uipath-planner/references/product-selection-guide.md) |
+| Which UiPath product at all, or a PDD/SDD | `uipath-planner` | [/uipath:uipath-planner — product-selection-guide.md](../../uipath-planner/references/shared/product-selection-guide.md) |
 
 For the full node palette with real type IDs and selection heuristics, read
-<!--skill-flavor:node-palette-pointer:start-->
 [/uipath:uipath-maestro-flow — author.md](../../uipath-maestro-flow/references/author.md)
-<!--skill-flavor:node-palette-pointer:end-->
 § Plugin Index and § Node Selection Heuristics. That table is maintained against the registry; this one
 is only a routing index.
 
 If a target skill is not installed, still deliver the strategy, the decisive signal, and a concrete
 node-and-binding specification, and name the missing dependency.
 
-## Which Extract node — trained taxonomy or an inline schema
+## Which Extract node — published model or Extract document
 
-<!--skill-flavor:extract-node-choice:start-->
-Both are EX. The two Extract rows above split on one question: **where do the field definitions come
-from?**
+Both are EX. `uipath-maestro-flow` owns this choice; the rules below mirror its default so an agent with
+both skills loaded gets one answer.
 
-1. **A trained taxonomy** — use `ixpExtract`, an `uipath.ixp.*` node. The fields are trained and named,
-   and the model's taxonomy can be looked up when the Flow must select particular extracted fields.
-2. **A schema you write** — use `dynamicExtract` (`uipath.ixp.extract-document-builder`). The schema is
-   a JSON-Schema object authored in the node, so a new document type ships without a training cycle.
-3. **Do not author inline to avoid a training cycle** when the same document type recurs at volume and
-   its fields need calibrated review. An inline schema carries no taxonomy and no trained field
-   evaluation, so that is a training decision deferred, not removed.
+1. **New flow: default to a published IXP model** — node type `uipath.ixp.<project>.<version>-<folder>`,
+   built per `ixp.md`. This covers a new document type with no trained model too: hand off to
+   `uipath-ixp` to build and deploy the project, then wire the Flow against the deployed model.
+2. **New flow: use the Extract document node** (`uipath.ixp.extract-document-builder`) only when the user
+   asks for it by name.
+3. **Existing flow: keep the extraction node it has.** A Flow already holding an Extract document node
+   (`uip maestro flow nodes list <file> --output json` shows the types), or a request about the taxonomy
+   that node carries, stays on the Extract document node.
+4. **Each falls back to the other.** IXP not enabled in the environment (`uip ixp` returns
+   `not_supported`: Automation Suite, or a tenant without the IXP service) → stop IXP work and offer the
+   Extract document node. Extract document not available on the tenant (§ Registry before labels) → a
+   published IXP model whose taxonomy covers the requested fields. Neither available → stop and say so;
+   never put a `mock()` or fixed-value script where extraction should run.
+5. **Never pick the Extract document node to skip a training cycle.** Setup cost is not a routing signal.
+   A recurring document type whose fields need calibrated review needs the trained model's field
+   evaluation regardless.
 
-**Neither choice avoids IXP.** Both nodes address the model by `{FolderKey, DeploymentName}`, so both
-need a trained version deployed to an Orchestrator folder (`uip ixp deployments create --folder-key`).
-For `dynamicExtract` that identity is `model.modelName` and `model.folderKey`, both required and both
-copied from the tenant — never constructed.
+Extract document facts that change the handoff — detail lives in the owning guides:
 
-Deploying is not publishing. `uip ixp projects publish` pins a version and makes it usable inside the
-project; it is a separate operation and is not what supplies the folder identity these nodes resolve.
-Treat "is there a project for this?" as a question about deployment, and route the deployment itself to
-`uipath-ixp`.
+- **Taxonomy, not JSON Schema.** The node carries its taxonomy inline at `inputs.schemaDocument`: an
+  object with `prompt` and `outputSchema`, where every field group and field holds a stable id
+  (`x-uipath-field-group-id` / `x-uipath-field-id`). A bare JSON-Schema object with `properties` alone
+  is not valid.
+- **Author with the CLI.** `uip maestro flow nodes create` adds the node; `uip maestro flow nodes schema set`
+  writes the taxonomy and mints the ids. Do not hand off to the SDK `dynamicExtract()` factory — it
+  demands a published model identity the node never reads, and emits the schema without ids.
+- **No IXP model or deployment.** The node requires only `fileRef`. It runs through a processor that the
+  authoring commands provision; carry into the handoff what `nodes create` reported about that processor
+  ([Making it actually extract](../../uipath-maestro-flow/references/extract-document-node.md#making-it-actually-extract)).
+- **Tenant-gated and invisible to the registry** — run the extraction check in § Registry before labels.
+- **Model settings, test documents and evaluations are out of CLI reach.** Extraction strategy, model
+  choice, language, layout parsing, attribution, sample documents, annotation and evaluators are set in
+  the Studio Web designer. Do not promise them as part of the build.
 
-Confirm whichever node type you name against the registry first — § Registry before labels above.
-<!--skill-flavor:extract-node-choice:end-->
+**Published model: deploying is not publishing.** The published-model node addresses the model by
+`{FolderKey, DeploymentName}`, so the trained version must be deployed to an Orchestrator folder
+(`uip ixp deployments create --folder-key`). `uip ixp projects publish` pins a version inside the project
+and does not supply that folder identity. Treat "is there a project for this?" as a question about
+deployment, and route the deployment itself to `uipath-ixp`.
 
 ## Flow-owned versus agent-owned placement
 

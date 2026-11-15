@@ -434,7 +434,8 @@ field-review data and continuation bindings.
 
 **Decision reasoning.** The decisive signal is a fixed schema plus a real review requirement — that
 combination is what rules out a bounded read. Start at the lowest supported strategy and evaluate it
-against the actual forms; consider a specialized trained model where appropriate. Define the schema,
+against the actual forms. Inside a Flow, run it on a published IXP model — the default in
+[strategy-routing-guide.md](strategy-routing-guide.md#which-extract-node--published-model-or-extract-document). Define the schema,
 evaluate field errors, set review gates using validated confidence behavior, and preserve the correction
 workflow. Skip duplicate classification when inputs are already reliably separated.
 

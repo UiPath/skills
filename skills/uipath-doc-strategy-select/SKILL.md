@@ -34,7 +34,10 @@ to the owning skill.
 3. **The registry is ground truth, not this document.** Before naming a node, run
    `uip maestro flow registry search "<keyword>" --output json` and `registry get <node-type> --output json`.
    Canvas labels drift from wire types: the Summarize node is `uipath.pattern.deep-rag`. Never invent a
-   node type, tool name, or configuration field.
+   node type, tool name, or configuration field. One exception: the Extract document node is in no
+   tenant registry, so a miss there proves nothing — confirm it with
+   `uip maestro flow extraction check --output json` instead, per
+   [strategy-routing-guide.md § Registry before labels](references/strategy-routing-guide.md#registry-before-labels).
 4. **Keep calculations, keyed lookups, and known branches deterministic.** Exact arithmetic, row
    iteration, and fixed mappings go to Data nodes or Tool → script. A long input or a multi-step chain is
    not by itself a reason to use an agent.
