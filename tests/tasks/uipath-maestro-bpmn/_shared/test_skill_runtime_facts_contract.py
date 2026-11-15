@@ -128,9 +128,9 @@ def test_loop_sketches_name_the_iterator_the_way_the_canvas_does() -> None:
     # Studio Web writes inputElement="iterator[N]" and reads iterator[N].item. With any other
     # itemVar, `iterator[0]` reads null (debug run, itemVar 'item' and 'invoice').
     text = _read("references/patterns/high-volume-batch-guide.md") + _read("references/patterns/composing-guide.md")
-    item_vars = re.findall(r"itemVar: '([^']+)'", text)
+    item_vars = re.findall(r"loop: \{[^}]*itemVar: '([^']+)'", text)
     assert item_vars, "the loop sketches no longer declare an itemVar"
-    assert all(re.fullmatch(r"iterator\[(\d+|N)\]", v) for v in item_vars), item_vars
+    assert all(re.fullmatch(r"iterator\[\d+\]", v) for v in item_vars), item_vars
 
 
 @pytest.mark.parametrize("rel,phrase", REQUIRED, ids=[f"{r}:{p}" for r, p in REQUIRED])
