@@ -34,7 +34,11 @@ The *Key* field (GUID) is the unique id for the process.
 ## Getting the inputs and outputs
 
 Do not copy the key or the argument schema by hand.
-Write the step with `name` and `folderPath` only, and leave `key` and `returns` out:
+Write the step with `name` and `folderPath` only, and leave `key` and `returns` out.
+
+Needs `@uipath/maestro-builder-sdk` 6.109.0 or later: `prepare --kind Process` then prints `Type`, `Inputs` and `Outputs` lines.
+An older SDK records only the catalogue row (no `Type` line), and its `compile` refuses a step with no `key` (`*_NO_KEY`).
+Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy, else `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 ```ts
 .step('intake',
