@@ -621,7 +621,7 @@ A step the edit adds has no entry, so compile places it on its placeholder row a
 or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
 <!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
 A container the edit grows can still push that spot aside, so keep where it lands.
-To move or resize an existing node, change or add its entry in the source (decompile writes none for a node compile placed and nobody moved since) and merge again: `merge` applies an entry whose position, size or collapsed state differs from the baseline to the original node, at the root and in subflows, and every other node keeps the original's geometry. For example, `review: at(640, 144)` changed to `at(640, 304)` moves only `review`. No hand edit of the merged `.flow` is needed.
+To move or resize an existing node, change or add its entry in the source (decompile writes none while every node of that flow or subflow is still where compile put it) and merge again: `merge` applies an entry whose position, size or collapsed state differs from the baseline to the original node, at the root and in subflows, and every other node keeps the original's geometry. For example, `review: at(640, 144)` changed to `at(640, 304)` moves only `review`. No hand edit of the merged `.flow` is needed.
 This needs an SDK with builder-sdk#2037. An older SDK keeps the original's position and size whatever the source says;
 <!--skill-flavor:layout-edit-sdk-upgrade:start-->
 with it, set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead (the node's `ui` only when the file has no `layout.nodes` map), or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
