@@ -12,7 +12,9 @@ A later edit that brings the old wording back fails here.
   current directory, so it runs where `prepare` ran.
 * Only an Enabled connection may be bound.
 * Outlook `saveAsDraft` must be set explicitly.
-* Retry is activity configuration, never a drawn loop.
+* Retry is activity configuration, never a drawn loop, and an `errorMapping`
+  row names a declared error's id, never a bare status code: `code: '429'`
+  validates and retries nothing.
 
 Run from repo root:
     pytest tests/tasks/uipath-maestro-bpmn/_shared/test_skill_runtime_facts_contract.py -v
@@ -79,11 +81,28 @@ def test_business_rule_is_not_keyed_by_display_name(path: Path) -> None:
     )
 
 
+# An `errorMapping` row whose code is a bare status (`code: '429'`). The engine
+# reads the row's code as a declared error's id, so this retries nothing.
+BARE_STATUS_MAPPING = re.compile(r"errorMapping:\s*\[[^\]]*code:\s*['\"]\d{3}['\"]")
+# The one place the skill quotes the wrong row on purpose, to warn against it.
+MAPPING_WARNING = "`code: '429'` passes `check` and `validate` and retries nothing"
+
+
+@pytest.mark.parametrize("path", DOCS, ids=_id)
+def test_error_mapping_names_a_declared_error(path: Path) -> None:
+    text = re.sub(r"\s+", " ", path.read_text(encoding="utf-8")).replace(MAPPING_WARNING, "")
+    assert not BARE_STATUS_MAPPING.search(text), (
+        f"{_id(path)} maps a bare status code in errorMapping; "
+        "the row's code is a declared bpmn:error id, so a status code retries nothing"
+    )
+
+
 REQUIRED = [
     ("references/bpmn-runtime.md", "JSON **string**"),
     ("references/bpmn-runtime.md", "not the entry point's `DisplayName`"),
     ("references/bpmn-runtime.md", "`<decisionKey>` is the property name under `OutputArguments.properties`"),
     ("references/bpmn-runtime.md", "RULE:bpmn.activity.retry"),
+    ("references/bpmn-runtime.md", "is the **id of a declared `bpmn:error`**"),
     ("references/connectors.md", "./.flow-sdk/bindings.json"),
     ("references/connectors.md", "from the directory you ran `prepare` in"),
     ("references/connectors.md", "Bind only an Enabled connection"),

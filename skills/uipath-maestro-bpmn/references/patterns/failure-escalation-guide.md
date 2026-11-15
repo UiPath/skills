@@ -23,20 +23,13 @@ The process around it is only there to show where the net sits.
 ```ts
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
-// Retry only what is transient. Without `allErrors`, a retry policy retries just the
-// codes `errorMapping` marks retryable, so bad data goes straight to the net.
-const transient = {
-  retry: { maxRetries: 3, backoff: 'PT1M' },
-  errorMapping: [{ code: '429', retryable: true }, { code: '503', retryable: true }],
-};
-
 export default bpmn('payroll-run')
   .name('PayrollRun')
   .flowMode('sequence')
   .startEvent('start', { name: 'Payroll due' })
-  .scriptTask('fetchTimesheets', { name: 'Fetch timesheets', script: 'return { ok: true };', ...transient })
-  .scriptTask('calculatePay', { name: 'Calculate pay', script: 'return { ok: true };', ...transient })
-  .scriptTask('postPay', { name: 'Post to finance', script: 'return { ok: true };', ...transient })
+  .scriptTask('fetchTimesheets', { name: 'Fetch timesheets', script: 'return { ok: true };' })
+  .scriptTask('calculatePay', { name: 'Calculate pay', script: 'return { ok: true };' })
+  .scriptTask('postPay', { name: 'Post to finance', script: 'return { ok: true };' })
   .endEvent('done', { name: 'Payroll posted' })
   // Placed, not wired: no flow enters or leaves the net. Sitting at process level,
   // it catches what any step above raises and nothing closer caught.
@@ -79,7 +72,7 @@ At process level it guards every step above, and every sub-process nested under 
 The pattern declares no process variables of its own.
 The capture is `vars.<net>_Error` (here `vars.failures_Error`), not `vars.Error`: the designer gives every capture its own id, and the SDK follows it.
 `errorVar` renames it.
-Its fields are lowercase: `code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`.
+Its fields are lowercase: `code`, `message`, `detail`, `category`, `status`, `response`, `element`.
 `category` is `User`, `System`, or `Deployment`; business errors arrive as `User`.
 
 ## Variants
@@ -99,9 +92,8 @@ It is the smaller net, and it sits beside a catch-all in the same container.
   Who works a business error: an operations queue, the process owner.
 - **`recordFailure`**: where a system failure is durably recorded for someone to work later: an exception queue (`.queueItem()`), a task.
 - **`alertOncall`**: the notification channel, usually a `.connector()` call.
-- **Transient failures**: `retry` on the step plus an `errorMapping` row with `retryable: true` per transient code, as in the example ([Retry](../bpmn-runtime.md#events-and-timers)).
+- **Transient failures**: an HTTP or connector call's 5xx is retried inside the engine before it fails; to retry anything else, set `retry` on the step as [Retry](../bpmn-runtime.md#events-and-timers) says.
   `allErrors: true` retries every failure, business errors included, so bad data would be retried before it reaches the net; use it only on a step whose every failure is transient.
-  The codes (`429`, `503`) are illustrative: map the ones the bound service actually raises.
   Transient failures should never reach the net.
 
 ## Adapting it
