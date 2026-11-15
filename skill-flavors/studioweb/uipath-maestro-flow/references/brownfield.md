@@ -111,5 +111,5 @@ In Studio Web the target `.flow` is the source: use the round trip in
 <!--skill-flavor:supplied-source:end-->
 
 <!--skill-flavor:placeholder-flag-sdk-upgrade:start-->
-or tell the user, since Studio Web owns the SDK copy).
+or tell the user this needs `@uipath/maestro-builder-sdk` 6.114.0 or later, since Studio Web owns the SDK copy).
 <!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
