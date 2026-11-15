@@ -115,5 +115,5 @@ or tell the user this needs `@uipath/maestro-builder-sdk` 6.114.0 or later, sinc
 <!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
 
 <!--skill-flavor:layout-edit-sdk-upgrade:start-->
-tell the user, since Studio Web owns the SDK copy and the merged `.flow` is never edited by hand.
+tell the user this needs `@uipath/maestro-builder-sdk` 6.115.0 or later, since Studio Web owns the SDK copy and the merged `.flow` is never edited by hand.
 <!--skill-flavor:layout-edit-sdk-upgrade:end-->
