@@ -74,13 +74,20 @@ one flow: the next compile overwrites what the commands wrote.
 
 Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
-written. One difference decides between them: every field group and field must
-carry a stable id, and `nodes schema set` mints those for you, while a `schema`
-passed to the factory is emitted verbatim — `flow validate` warns about each
-missing id, and the remedy its warning names, `nodes schema set`, is overwritten
-by the next compile. On this route the ids have to be written into the source,
-which the taxonomy guide warns against because hand-managed ids are how
-annotations detach from fields.
+written. Write it without ids on either route: every field group and field
+must carry a stable id, and both `nodes schema set` and compile mint them.
+Compile keeps an id the source carries, mints a missing one from the entry's
+place (so a recompile or an unrelated edit keeps it), keeps the ids the `.flow`
+it overwrites already has, and prints what it kept and minted:
+
+```text
+compile: "extract" taxonomy ids: 1 group and 2 field id(s) kept, 0 group and 1 field id(s) minted
+```
+
+Check a minted count after an edit as you would `set`'s `FieldIdsMinted`: a
+renamed field gets a new id unless the source keeps its old one. On an SDK
+without builder-sdk#2054, the factory emits the `schema` verbatim and `flow
+validate` warns about every missing id; author with the CLI there.
 
 ## Schema and outputs
 
