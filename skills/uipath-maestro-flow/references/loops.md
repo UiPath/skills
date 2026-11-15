@@ -39,6 +39,24 @@ Every `.loop()` emits `core.logic.loop` 2.4. Body writes use `{ updates }`, neve
     .continue()))
 ```
 
+```ts
+.var('found', types.string, '')
+.loop('scan', input('items'), (body) => body
+  .step('probe', script({ code: 'return $vars.scan.currentItem;', returns: 'object' }),
+    { updates: { found: js`$vars.probe.output.id` } })
+  .branch('hit', js`$vars.probe.output.score > 90`, (t) => t.break()),
+  { completionCondition: js`$vars.found !== ""` })
+```
+
 ## Do while
 
 `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })` runs the body, then repeats while the condition is true; check the condition AFTER each pass, so it runs at least once (`core.logic.dowhile`). The container publishes no data output: write results to a `.var()` inside the body with `{ updates }`. `limit` caps iterations at 1–10,000; blank means the platform default of 10,000. `body.break()` and `body.continue()` work exactly as in `.loop()`. A body-step failure can route to `.onError()` after `.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).
+
+```ts
+.var('page', types.number, 1)
+.doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
+  .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
+    method: 'GET', managed: true, returns: { hasNextPage: 'boolean' } }),
+    { updates: { page: js`$vars.page + 1` } }),
+  { limit: 50 })
+```

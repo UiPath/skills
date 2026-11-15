@@ -2,7 +2,22 @@
 
 *Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
 
-Inline-agent capabilities are ARTIFACT nodes on handles, not control-flow steps: tools on `tool`, a context index on `context`, and escalation on `escalation`. Author each on `inlineAgent`; the compiler emits its node and edge. `voiceAgent` and `conversationalAgent` accept the same `tools`, `context`, and `escalation` options under [voice and conversational agents](#voice-and-conversational-agents); only inline agents have `memory`.
+Inline-agent capabilities are ARTIFACT nodes on handles, not control-flow steps: tools on `tool`, a context index on `context`, and escalation on `escalation`. Author each on `inlineAgent`; the compiler emits its node and edge. `voiceAgent` and `conversationalAgent` accept the same `tools`, `context`, and `escalation` options under [voice and conversational agents](#voice-and-conversational-agents); only inline agents have `memory`. Context index: [inline-agent.md](inline-agent.md#context-grounding).
+
+```ts
+.step('triage', inlineAgent({
+  model: 'gpt-5.4', systemPrompt: '…', userPrompt: '…',
+  tools: [
+    { kind: 'mcp', name: 'Ticket MCP', key: '<guid>', slug: 'ticket-mcp', folderPath: 'Shared' },
+    { kind: 'a2a', name: 'Research Agent', key: '<guid>', slug: 'research-agent' },
+    { kind: 'clientside', name: 'pickFile', inputs: { prompt: 'string' }, returns: { path: 'string' } },
+    { kind: 'httpRequest', url: 'https://api.example.test/items', method: 'GET' },
+    { kind: 'function', key: '<guid>', name: 'acme-echo', folderPath: 'Shared/acme-echo' },
+  ],
+  escalation: [{ variant: 'quick-form', name: 'Confirm', outcomes: ['Approve', 'Reject'],
+    fields: [{ id: 'approved', type: 'boolean', direction: 'output' }] }],
+}))
+```
 
 ## Tool kinds
 

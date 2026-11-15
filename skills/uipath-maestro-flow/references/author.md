@@ -4,7 +4,7 @@
 Everything on disk before a flow touches the cloud—scaffolding, node choice, `<Name>.flow.ts`, and the loop in [`CLI-LOOP.md`](CLI-LOOP.md)—ends when the emitted `.flow` validates. Publishing, running, and debugging are [`operate.md`](operate.md) and [`diagnose.md`](diagnose.md).
 <!--skill-flavor:author-scope:end-->
 
-The builder owns `.flow` JSON: `compile` emits node definitions, `variables.nodes[]` entries for `$vars.<step>.output`, resource bindings, `connector.inputs.detail`, and error flags. Author judgment remains: node, topology, output meaning, and questions.
+The builder owns `.flow` JSON: `compile` emits node definitions, `variables.nodes[]` entries for `$vars.<step>.output`, resource bindings, the connector `inputs.detail`, and error flags. Author judgment remains: node, topology, output meaning, and questions.
 
 ## Critical rules
 
@@ -18,12 +18,12 @@ The builder owns `.flow` JSON: `compile` emits node definitions, `variables.node
 5. **Run the loop once the source is complete.** Use `check --source` while writing; run `compile` and `validate` on finished source and again after the last edit. `compile` does not run `check`: run a clean `check` before every `compile`; for brownfield edits use `--baseline <original.flow>` ([`brownfield.md`](brownfield.md#check-only-what-you-changed-check---baseline)). Ignore an error only when its message says to do so and that case applies (for example, false-positive `INLINE_AGENT_PROMPT_JSON_TEXT` when JSON is mentioned only as data). In emit-only mode `check` refuses and `validate` is the gate. Treat every `validate` warning as failure unless the loop reference names it reviewed.
 6. **Bind every declared output on every path.** Every `.return({...})` must name every `.output({...})` key. `check` misses this: `compile` binds `$vars.<name>`, `validate` only warns (`EXPRESSION_DIAGNOSTIC`), and the run returns `undefined`.
 7. **Handle errors only when requested.** Add `.onError(...)` only for stated failure behavior ("if the call fails…", invalid-input return, or timeout handling); otherwise let failure fault the run. A handler must recover genuinely or reach a caller-distinguishable terminal: a distinct `.return` or `.terminate`. Add `hitl` only when the request says the run waits for a person; post-run review of output, such as a drafted reply, is not hitl. This overrides `uipath-human-in-the-loop` Step 2b and its pattern guide; put unstated signals under Open questions.
-8. **Never invent a named output's meaning or an uncovered input case—ask.** If derivation, pass-through, or reformatting of a named output (`caseKey`, `severity`, `ticketId`) is unspecified, ask or state and confirm an assumption. Check stated rules for every valid value, range, and combination; list each uncovered case and ask—never fold it into a stated value or an unprovided default. Invalid input remains under rule 7. If nobody can answer (headless, CI), map each uncovered case to the most defensible stated value and list each under Open questions as **[REQUIRED]**.
+8. **Never invent a named output's meaning or an uncovered input case—ask.** If derivation, pass-through, or reformatting of a named output (`caseKey`, `severity`, `ticketId`) is unspecified, ask or state and confirm an assumption. Check stated rules for every valid value, range, and combination (`High` for refunds over $500 and `Low` under $50 leave $50 to $500 unassigned; `Expedite` for an overdue order from a Gold customer leaves overdue orders from every other tier unassigned); list each uncovered case and ask—never fold it into a stated value or an unprovided default. Invalid input remains under rule 7. If nobody can answer (headless, CI), map each uncovered case to the most defensible stated value and list each under Open questions as **[REQUIRED]**.
 9. **Present finite decisions as options, with "Something else" last.** For solution, connector, trigger, or resource choices, use enumerated options or a numbered chat list without a structured-question tool. If nobody can answer (CI, headless), choose the recommended option and record it prominently; without a recommendation, stop and report the open decision. The rule-8 uncovered-case exception still requires a decision. Never auto-answer consent gates (destructive operations or tenant writes).
 <!--skill-flavor:solution-lookup:start-->
 10. **Look for an existing solution before `uip solution init`.** Run `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use—one option per solution, "Create a new solution", then "Something else"—and do not silently adopt, re-initialize, or repair it. The scaffold is in [SKILL.md](../SKILL.md#project-layout).
 <!--skill-flavor:solution-lookup:end-->
-11. **Never invoke another skill on your own.** If an RPA process, agent, or nonexistent app is needed, name the gap and tell the user what to switch skills.
+11. **Never invoke another skill on your own.** When the flow needs an RPA process, an agent, or an app that does not exist, name the gap and tell the user what to switch skills.
 12. **Batch independent calls; chain dependent ones.** Put scaffold, install, and registry search in one turn. In the next, chain `check`, each named `prepare`, re-`check`, `compile`, and `validate`; split only when a later step needs earlier output.
 
 ## Journeys
@@ -41,7 +41,7 @@ Count named services, systems, documents, decisions, approvals, schedules, and c
 
 ### Plan first only when the flow is complex
 
-Plan before building for five or more nodes with branching/parallel paths, connector/resource discovery, or ambiguity. Build directly for a single-node edit, linear pipeline, or specified topology; skipping a plan does not skip node choice. Use `.branch` for two outcomes and `.switch` for three or more; named external services follow rule 1.
+Plan before building for five or more nodes with branching/parallel paths, connector/resource discovery, or ambiguity. Build directly for a single-node edit, linear pipeline, or specified topology; skipping a plan does not skip node choice. Use `.branch` for two outcomes, never a script ternary, and `.switch` for three or more; named external services follow rule 1.
 
 A plan gives a one-line summary; node table (step, node, why); wiring; inputs/outputs; each connector and connection; and open questions. Get approval before building (rule 9, with "proceed" recommended).
 
@@ -97,7 +97,7 @@ When authoring ends, report:
 2. **What was built** — steps, branches, and outputs in one or two sentences.
 3. **Loop status** — last `check`, `compile`, and `validate` results, including each accepted warning and why.
 4. **Placeholders** — every `mock()` and its capability.
-5. **Connections** — for each connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. Put guessed connections ([bindings.md](bindings.md#where-both-values-come-from)) under Open questions as **[REQUIRED]**.
+5. **Connections** — for each connector, the `connection: <Name> (<id>)` line printed by `prepare` and its folder (candidate line or `uip is connections list <connector-key> --all-folders --output json`), or what is missing/still to prepare. A guessed connection ([bindings.md](bindings.md#where-both-values-come-from)) also goes under Open questions as **[REQUIRED]**.
 6. **Open questions** — every unresolved decision, marked **[REQUIRED]** or **[OPTIONAL]**.
 <!--skill-flavor:completion-next:start-->
 7. **What's next** — if not specified, ask by rule 9: upload to Studio Web, debug, deploy to Orchestrator, or "Something else". Each hands off to [`operate.md`](operate.md). If specified ("publish it", "debug it"), select and act on it.
@@ -105,7 +105,7 @@ When authoring ends, report:
 
 ## Narration and progress
 
-Be silent by default; surface decisions, failures, consent gates, and the final result. Narrate each logical step in one plain-English line. Keep a step-level progress list only when requested (verbose, show steps, track progress) or required by standing preference. A logical step is the smallest user-valued outcome, not its commands.
+Be silent by default; surface decisions, failures, consent gates, and the final result. Narrate each logical step in one plain-English line, and keep a step-level progress list, only when requested (verbose, show steps, track progress) or required by standing preference. A logical step is the smallest user-valued outcome, not its commands.
 
 ## API index lookups
 
@@ -117,6 +117,6 @@ The installed `@uipath/maestro-builder-sdk` package contains `dist/api-members.m
 
 The path is package-root-relative. Each file header names its source repo/generator and says not to edit it; rows regenerate from declarations on every build.
 
-Match one name, then read its full span—the declaration, doc comment, types, `@remarks`, and `@example`—to answer the question. Do not search or use shell; this also works on Windows. Field/method names usually belong in `api-members.md` because it has one row per field. Both indexes cover all three entry points, including `/case` and `/bpmn`.
+Match one name, then read its full span—the declaration, doc comment, types, `@remarks`, and `@example`—to answer the question. Reading the span needs no search and no shell, so it works the same on Windows. Field/method names usually belong in `api-members.md` because it has one row per field. Both indexes cover all three entry points, including `/case` and `/bpmn`.
 
 They remain beside neither `SKILL.md` nor the source because spans are build-specific: declaration changes move lines, while the skill ships independently. Read `.d.ts`, never `dist/*.js`; JavaScript has no types/comments and causes extra tool calls. A name absent from both indexes is probably a runtime output key (such as a human task's `Action` or error-envelope fields), documented in node references. Runtime-only decisions for sibling surfaces belong to `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to build a Flow.

@@ -65,7 +65,12 @@ If download fails or none is published (Automation Suite), pull is optional: `pu
 Library verbs are `pull`, `search`, `describe`, `path`, and `prepare`; they require prerelease `@uipath/cli` and run the installed `@uipath/maestro-builder-sdk`. `uip` is the entry point and is present here. The package also exposes `flow-sdk`; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
 <!--skill-flavor:library-discovery:end-->
 
-**`uip maestro registry` is not `uip maestro flow registry`.** The former is the connector library; the latter's `pull|search|get` sync tenant **node manifests** such as `uipath.core.function` and `uipath.core.agent.<name>`. Connectors are never node-registry entries and nodes are never library entries.
+**`uip maestro registry` is not `uip maestro flow registry`.** The names are one
+word apart and the jobs are unrelated: this one is the connector library the
+compilers resolve operations against, while `uip maestro flow registry
+pull|search|get` syncs the tenant's **node manifests** — the node types other
+references reach for (`uipath.core.function`, `uipath.core.agent.<name>`).
+Connectors are never node-registry entries and nodes are never library entries.
 
 <!--skill-flavor:library-search:start-->
 Search static contracts, then read an operation page:
@@ -137,7 +142,16 @@ validation rejects a literal filter that has only one of the two, so a
 hand-written literal without its tree fails `validate` even though the run
 would have worked (a runtime `tmpl` filter is exempt; see below). If a separate review artifact is requested, compile and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property; retain numeric `groupOperator` and `filters`.
 
-Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR` and parenthesize. Mixing `AND` and `OR` at one level is refused. Tokens are unquoted columns and values use single quotes; double quotes mark COLUMN references. OData `eq`/`ne`/`gt`/`ge`/`lt`/`le` is invalid.
+Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND` and `OR` at one level is refused.
+
+Three spellings are compile errors here rather than a tenant-side
+`[102003] Integration Services bad request`:
+
+| Wrong | Why | Right |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` | a quoted token is a VALUE to CEQL | `accountNumber = 'ACC123'` |
+| `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
+| `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
 
 **A filter built from a runtime value has no filter tree, and that is valid.**
 The tree holds literals only, so a runtime-expression (`tmpl`) filter in `where`
@@ -151,7 +165,7 @@ rest downstream.
 
 For `loadByDefault`, dependent dropdowns, and `customFieldsRequestDetails`, the static descriptor is insufficient. Run the prepare named by `check`, including every `-f NAME=VALUE`; it creates schema-replay metadata. Do not substitute `resources run list`, static `./connectors/<key>.ts`, `rawNode`, emitted-flow edits, or hand-written `connectors-local/` overlays. After compile, inspect connector configuration: completion requires non-null `customFieldsRequestDetails` whose parent values match runtime inputs, even though `flow validate` may accept a missing cache.
 
-Field sets depend on parent **values**, not merely connection. Parent ids recorded by `--resolve` are exactly the values `-f` needs; combine them:
+Field sets depend on parent **values**, not merely connection, and `fields.summary` — *required* — appears in none of the snapshot's static inputs. Parent ids recorded by `--resolve` are exactly the values `-f` needs; combine them:
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -159,7 +173,7 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
 
-If all parents were resolved separately, paste the exact `-f NAME=VALUE` re-run printed by prepare. Missing parents are refused; a value absent from the connection silently yields only parent fields, so treat "I passed `-f` and still got only the parents" as a wrong value. `prepare` fails in both cases rather than writing the overlay.
+If all parents were resolved separately, paste the exact `-f NAME=VALUE` re-run printed by prepare. Missing parents are refused (`No api-type ObjectAction matched for fields [fields.project.key]`); a value absent from the connection silently yields only parent fields, so treat "I passed `-f` and still got only the parents" as a wrong value. `prepare` fails in both cases rather than writing the overlay.
 
 **1. Find parents.** Describe with no values and inspect each input's reference. A parent has `Reference.Path` containing a `{placeholder}` naming another field; placeholder order is resolution order:
 
@@ -268,7 +282,7 @@ uip maestro registry prepare uipath-salesforce-slack --action send-message-to-us
 
 Do not find the connection first: prepare searches `uip is connections list` (own folder then tenant), writes connection id and folder key, and accepts `--connection <name>` only to disambiguate candidates. If a value is absent, it tries other enabled connections unless `--connection-id` or `--connection` pinned one; it does not retry transport/permission failures or choose between two resolving connections. The message names the connection and alternatives; choose and re-run with the printed `--connection-id`.
 
-Do not crawl Integration Service after lookup failure. Follow [bindings.md](bindings.md#where-both-values-come-from): source labels `connection:` and `folder:` must differ; no labels default to the connector's last segment (for example `slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a label cannot be traced from source, prepare prints `bindings:` and binds the readable label or default. It refuses multiple labels for one connector or one connection label shared by two connectors, and prints bound names on `next:`. `compile` refuses undeclared entries (`BINDING_UNDECLARED`) and warns unresolved declared entries (`CONNECTION_STUB`).
+Do not crawl Integration Service after lookup failure. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints. Source labels `connection:` and `folder:` [must differ](bindings.md#where-both-values-come-from); no labels default to the connector's last segment (for example `slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a label cannot be traced from source, prepare prints `bindings:` and binds the readable label or default. It refuses multiple labels for one connector or one connection label shared by two connectors, and prints bound names on `next:`. `compile` refuses undeclared entries (`BINDING_UNDECLARED`) and warns unresolved declared entries (`CONNECTION_STUB`).
 
 `check` reports unresolved lookups as `LOOKUP_UNRESOLVED`, warns on literal ids, and warns runtime expressions as `LOOKUP_RUNTIME_VALUE` with the sent id (for example `reporter.accountId`); it errors when an e-mail expression feeds a lookup that neither sends nor searches by e-mail. Required missing lookup values must use helpers. Run `check` before compile so the one expensive prepare call is last.
 

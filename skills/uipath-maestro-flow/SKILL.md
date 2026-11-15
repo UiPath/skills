@@ -39,27 +39,27 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. If `init` says "already exists and is not empty. Use --force to overwrite", edit the existing project and never pass `--force`. Omit `--sdk-source` for a flow containing an Extract document node, which is CLI-authored ([`references/extract-document-node.md`](references/extract-document-node.md)).
+Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. Omit `--sdk-source` for a flow containing an Extract document node, which is CLI-authored ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 For Maestro Automate, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; bare "automate invoice intake" means a plain Flow. Nothing after `init` changes: it writes `runtimeOptions.profile` to `operate.json` and a `.maestro_automate` marker; `compile -o` rewrites only `.flow`, so both survive.
 
-If `<Solution>/<Name>/` predates this turn, skip `init`; edit its `<Name>.flow` via [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`, never at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
+When `<Solution>/<Name>/` existed before this turn, skip `init`; edit its `<Name>.flow` via [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`, never at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
 
 See [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for installation checks and failure handling.
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-For non-UiPath integrations, choose the node before writing it: run `uip maestro registry search '<brand or service name>'`. A hit is a connector; `"total": 0` means `http()` unless the request explicitly names the transport (for example, "over HTTP, not a connector"). With no pulled connectors, search the tenant through `uip`. For capabilities outside that library (agent/process), run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); use the Extract document node only when named or already present ([`references/extract-document-node.md`](references/extract-document-node.md)). Never replace such a step with fixed-value `script()`; `mock()` only marks a capability the search proved absent.
+For non-UiPath integrations, choose the node before writing it: run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector; `"total": 0` means `http()` (not for an external agent: see the table). With no pulled connectors, search the tenant through `uip`. For capabilities outside that library (agent/process), run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); use the Extract document node only when named or already present ([`references/extract-document-node.md`](references/extract-document-node.md)). Never replace such a step with fixed-value `script()`; `mock()` only marks a capability the search proved absent.
 
-Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes descriptors to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. If download fails, `pull` fetches through `uip` into `connectors-local/`; with none pulled, run `check` and `compile`. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptors under `.flow-sdk/connectors-local/descriptors/<key>/`; import them as `./connectors/<key>.ts` or `./connectors-local/<key>.ts`.
+Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes descriptors to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. If download fails, `pull` fetches through `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptors under `.flow-sdk/connectors-local/descriptors/<key>/`; import them as `./connectors/<key>.ts` or `./connectors-local/<key>.ts`.
 
 ### The connector loop: author → check → prepare → check → compile
 
 Do not run `prepare` during authoring. After search selects the node, write from the task's words: intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for a generic operation. Then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`.
 
-Check every required prepare: `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `LOOKUP_UNRESOLVED`, and `CONNECTOR_INPUT`. Run one `uip maestro registry prepare <connector-key> --action <action>`; `--object`, `--resolve`, and `-f` compose in one invocation. It finds the connection, writes `.flow-sdk/bindings.json`, and repoints the import to `./connectors-local/<key>.ts`; then re-run `check` and compile. If two flows import the same connector, name them rather than guessing and ask for `--source`.
+`check` names every prepare you owe, with the exact command: `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run one `uip maestro registry prepare <connector-key> --action <action>`; `--object`, `--resolve`, and `-f` compose in one invocation. It finds the connection, writes `.flow-sdk/bindings.json`, and repoints the import to `./connectors-local/<key>.ts`; then re-run `check` and compile. Where two flows import the same connector, `prepare` names them instead of guessing and asks for `--source`.
 
-See [bindings.md](references/bindings.md#where-both-values-come-from) for what `prepare` binds or refuses. `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` require source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe). Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) require every `-f` named by prepare `check` and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
+What `prepare` binds or refuses: [bindings.md](references/bindings.md#where-both-values-come-from). `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` require source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe). Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) require every `-f` named by prepare `check` and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 ### Hello world Flow
@@ -94,13 +94,13 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
   --output json )
 ```
 
-`<Out>` means each declared `out` variable, never all of `variables.globals`. Re-run from `compile` after every source or binding edit. Valid means top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. Runtime evidence requires `Completed`, expected globals, and empty `failed`; an exit code alone is insufficient. Debug inputs, attachments, other projections, and incidents per [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+`<Out>` means each declared `out` variable, never all of `variables.globals`. Re-run from `compile` after the last source or binding edit. Valid means top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. Runtime evidence requires `Completed`, expected globals, and empty `failed`; an exit code alone is insufficient. Debug inputs, attachments, other projections, and incidents per [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
 <!--skill-flavor:sdk-lifecycle:end-->
 
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-Preserve supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, edit narrowly, and merge back; decompiling supplied source overwrites it, so use [its loop](references/brownfield.md#a-supplied-source).
+Preserve supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, edit narrowly, and merge back. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
 `decompile` stamps the source's first line; `merge` reads it, derives the baseline from the original, and writes over it:
 
@@ -139,63 +139,63 @@ Match one name; do not read either file end to end. Read the whole declaration a
 
 ## Supported node types
 
-This table is authoritative; read each node's `Reference` before writing it ([Critical Rule 2](#critical-rules)).
+This table is authoritative; read each node's `Reference` before writing it ([Critical Rule 2](#critical-rules)). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
 
-| Node or surface | Emitted node type | Builder | Reference |
-|---|---|---|---|
-| Manual trigger | `core.trigger.manual` | omit `.trigger(...)` | [manual-trigger.md](references/manual-trigger.md) |
-| Entry points (multiple triggers) | one trigger per extra root | `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)`; shared var: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) |
-| Scheduled trigger | `core.trigger.scheduled` | `scheduled(...)` | [scheduled-trigger.md](references/scheduled-trigger.md) |
-| Connector event trigger; HTTP start | `uipath.connector.trigger.<key>.<event>` | `onEvent(...)` | [event-trigger.md](references/event-trigger.md), [HTTP call](references/event-trigger.md#started-by-an-http-call) |
-| Connector event wait | `uipath.connector.event.<key>.<event>` | `waitForEvent(...)` | [event-trigger.md](references/event-trigger.md) |
-| Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) |
-| Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) |
-| Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) |
-| HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) |
-| Script | `core.action.script` | `script(fn)` SDK ≥ 6.57.0 (`$metadata` ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) |
-| Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) |
-| Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) |
-| Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) |
-| Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [transform.md](references/transform.md) |
-| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric/Data Service native-family gaps include file fields/events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [connector-params.md](references/connector-params.md) |
-| Data Fabric read | `core.datafabric.read` (`resultMode: 'multiple'` selects 1.4; `limit` max 1000) | `dataFabricRead(...)` | [data-fabric.md](references/data-fabric.md) |
-| Data Fabric create | `core.datafabric.create` | `dataFabricCreate(...)` | [data-fabric.md](references/data-fabric.md) |
-| Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [data-fabric.md](references/data-fabric.md) |
-| Data Fabric delete | `core.datafabric.delete` (NO outputs) | `dataFabricDelete(...)` | [data-fabric.md](references/data-fabric.md) |
-| Subflow | `core.subflow` | `subflow(...)` | [subflow.md](references/subflow.md) |
-| Human task | `uipath.human-in-the-loop` | `hitl(...)` | [hitl.md](references/hitl.md) |
-| Human quick form | `uipath.human-in-the-loop.quick-form` (one exit/outcome; `.stepSwitch` routes; plain `.step()` continues all) | `hitl({ variant: 'quick-form', ... })` | [hitl.md](references/hitl.md) |
-| Human action app | `uipath.human-in-the-loop.coded-action-app` | `hitl({ variant: 'action-app', ... })` | [hitl.md](references/hitl.md) |
-| RPA workflow | `uipath.core.rpa-workflow.<key>` | `rpaWorkflow(...)` | [rpa-workflow.md](references/rpa-workflow.md) |
-| Queue item | `core.action.queue.create*` | `queueItem(...)` | [queue.md](references/queue.md) |
-| Summarize | `uipath.pattern.deep-rag` | `summarize(...)` | [summarize.md](references/summarize.md) |
-| Batch transform | `uipath.pattern.batch-transform` | `batchTransform(...)` | [batch-transform.md](references/batch-transform.md) |
-| Branch | `core.logic.decision` | `.branch(...)` | [branch.md](references/branch.md) |
-| Switch | `core.logic.switch` | `.switch(...)` | [switch.md](references/switch.md) |
-| Parallel / Merge | `core.logic.merge` | `.parallel(...)` | [parallel-merge.md](references/parallel-merge.md) |
-| Loop | `core.logic.loop` | `.loop(...)` | [loops.md](references/loops.md) |
-| Do while | `core.logic.dowhile` | `.doWhile(...)` | [loops.md](references/loops.md#do-while) |
-| Return / End | `core.control.end` | `.return(...)` | [return.md](references/return.md) |
-| Terminate | `core.logic.terminate` | `.terminate(...)` | [terminate.md](references/terminate.md) |
-| Placeholder | `core.logic.mock` | `mock()` | [placeholder.md](references/placeholder.md) |
-| Unknown node type | registry `nodeType` verbatim (never `uipath.connector.*`) | `rawNode(...)` | [placeholder.md](references/placeholder.md#unknown-node-types) |
-| Error handler | `error` handle on action | `.onError(...)` | [error-handling.md](references/error-handling.md) |
-| Delay | `core.logic.delay` | `delay(...)` | [delay.md](references/delay.md) |
-| API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) |
-| Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) |
-| Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) |
-| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or CLI when absent from library | [external-agent.md](references/external-agent.md) |
-| Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) |
-| IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) |
-| Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) |
-| Extract document | `uipath.ixp.extract-document-builder` | CLI only | [extract-document-node.md](references/extract-document-node.md) |
-| Published function | `uipath.core.function.<key>` | `publishedFunction(...)` | [published-function.md](references/published-function.md) |
-| Conversation message wait | `uipath.conversational.wait-for-message` | `waitForMessage(...)` | [conversational.md](references/conversational.md) |
-| Conversational agent | `uipath.agent.conversational` | `conversationalAgent(...)` | [conversational.md](references/conversational.md) |
-| Conversation send message | `uipath.conversational.send-message` | `sendMessage(...)` | [conversational.md](references/conversational.md) |
-| Voice outgoing call | `uipath.conversational.voice.create-outgoing-call` | `createOutgoingCall(...)` | [voice.md](references/voice.md) |
-| Voice agent | `uipath.agent.voice` | `voiceAgent(...)` | [voice.md](references/voice.md) |
-| Voice end call | `uipath.conversational.voice.end-call` | `endCall(...)` | [voice.md](references/voice.md) |
+| Node or surface | Emitted node type | Builder | Reference | Example |
+|---|---|---|---|---|
+| Manual trigger | `core.trigger.manual` | omit `.trigger(...)` | [manual-trigger.md](references/manual-trigger.md) | `examples/GreenhouseWatering.flow.ts` |
+| Entry points (multiple triggers) | one trigger per extra root | `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)`; shared var: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) | — |
+| Scheduled trigger | `core.trigger.scheduled` | `scheduled(...)` | [scheduled-trigger.md](references/scheduled-trigger.md) | `examples/HerbariumDispatch.flow.ts` |
+| Connector event trigger; HTTP start | `uipath.connector.trigger.<key>.<event>` | `onEvent(...)` | [event-trigger.md](references/event-trigger.md), [HTTP call](references/event-trigger.md#started-by-an-http-call) | `examples/DoorbellLog.flow.ts` |
+| Connector event wait | `uipath.connector.event.<key>.<event>` | `waitForEvent(...)` | [event-trigger.md](references/event-trigger.md) | `examples/PlanetariumConfirmation.flow.ts` |
+| Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) | `examples/BakeOffEntryForm.flow.ts` |
+| Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
+| Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
+| HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
+| Script | `core.action.script` | `script(fn)` SDK ≥ 6.57.0 (`$metadata` ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
+| Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
+| Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
+| Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
+| Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric/Data Service native-family gaps include file fields/events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Data Fabric read | `core.datafabric.read` (`resultMode: 'multiple'` selects 1.4; `limit` max 1000) | `dataFabricRead(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric create | `core.datafabric.create` | `dataFabricCreate(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric delete | `core.datafabric.delete` (NO outputs) | `dataFabricDelete(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Subflow | `core.subflow` | `subflow(...)` | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
+| Human task | `uipath.human-in-the-loop` | `hitl(...)` | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
+| Human quick form | `uipath.human-in-the-loop.quick-form` (one exit/outcome; `.stepSwitch` routes; plain `.step()` continues all) | `hitl({ variant: 'quick-form', ... })` | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
+| Human action app | `uipath.human-in-the-loop.coded-action-app` | `hitl({ variant: 'action-app', ... })` | [hitl.md](references/hitl.md) | `examples/KilnReview.flow.ts` |
+| RPA workflow | `uipath.core.rpa-workflow.<key>` | `rpaWorkflow(...)` | [rpa-workflow.md](references/rpa-workflow.md) | `examples/WorkshopInventory.flow.ts` |
+| Queue item | `core.action.queue.create*` | `queueItem(...)` | [queue.md](references/queue.md) | `examples/HerbariumDispatch.flow.ts` |
+| Summarize | `uipath.pattern.deep-rag` | `summarize(...)` | [summarize.md](references/summarize.md) | `examples/OralHistoryDigest.flow.ts` |
+| Batch transform | `uipath.pattern.batch-transform` | `batchTransform(...)` | [batch-transform.md](references/batch-transform.md) | `examples/FossilCatalogEnrich.flow.ts` |
+| Branch | `core.logic.decision` | `.branch(...)` | [branch.md](references/branch.md) | `examples/GreenhouseWatering.flow.ts` |
+| Switch | `core.logic.switch` | `.switch(...)` | [switch.md](references/switch.md) | `examples/BeltProgression.flow.ts` |
+| Parallel / Merge | `core.logic.merge` | `.parallel(...)` | [parallel-merge.md](references/parallel-merge.md) | `examples/ConcertSoundcheck.flow.ts` |
+| Loop | `core.logic.loop` | `.loop(...)` | [loops.md](references/loops.md) | `examples/ClubDirectory.flow.ts` |
+| Do while | `core.logic.dowhile` | `.doWhile(...)` | [loops.md](references/loops.md#do-while) | `examples/MeteorShowerPages.flow.ts` |
+| Return / End | `core.control.end` | `.return(...)` | [return.md](references/return.md) | `examples/GreenhouseWatering.flow.ts` |
+| Terminate | `core.logic.terminate` | `.terminate(...)` | [terminate.md](references/terminate.md) | `examples/AquariumSafetyStop.flow.ts` |
+| Placeholder | `core.logic.mock` | `mock()` | [placeholder.md](references/placeholder.md) | `examples/FestivalMapScaffold.flow.ts` |
+| Unknown node type | registry `nodeType` verbatim (never `uipath.connector.*`) | `rawNode(...)` | [placeholder.md](references/placeholder.md#unknown-node-types) | — |
+| Error handler | `error` handle on action | `.onError(...)` | [error-handling.md](references/error-handling.md) | `examples/ObservatorySeeing.flow.ts` |
+| Delay | `core.logic.delay` | `delay(...)` | [delay.md](references/delay.md) | `examples/LighthouseSignal.flow.ts` |
+| API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) | `examples/BirdCountLookup.flow.ts` |
+| Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) | `examples/NeighborhoodWalkPlanner.flow.ts` |
+| Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) | `examples/PlantNameAdvisor.flow.ts` |
+| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or CLI when absent from library | [external-agent.md](references/external-agent.md) | — |
+| Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
+| IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
+| Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
+| Extract document | `uipath.ixp.extract-document-builder` | CLI only | [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
+| Published function | `uipath.core.function.<key>` | `publishedFunction(...)` | [published-function.md](references/published-function.md) | `examples/TideTableConverter.flow.ts` |
+| Conversation message wait | `uipath.conversational.wait-for-message` | `waitForMessage(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
+| Conversational agent | `uipath.agent.conversational` | `conversationalAgent(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
+| Conversation send message | `uipath.conversational.send-message` | `sendMessage(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
+| Voice outgoing call | `uipath.conversational.voice.create-outgoing-call` | `createOutgoingCall(...)` | [voice.md](references/voice.md) | `examples/PotteryStudioCallback.flow.ts` |
+| Voice agent | `uipath.agent.voice` | `voiceAgent(...)` | [voice.md](references/voice.md) | `examples/PotteryStudioCallback.flow.ts` |
+| Voice end call | `uipath.conversational.voice.end-call` | `endCall(...)` | [voice.md](references/voice.md) | `examples/PotteryStudioCallback.flow.ts` |
 
 ## Authoring a flow
 
@@ -204,7 +204,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 ## Operating a deployed flow
 
 <!--skill-flavor:sdk-operate:start-->
-Upload, deploy, debug, trigger, inspect jobs, and drive instance lifecycle only with `uip login`; run `uip solution resources refresh` before every upload, publish, or debug. `flow debug` is a REAL run, not validation: ask first. Read **[`references/operate.md`](references/operate.md)**.
+Upload, deploy, debug, trigger, inspect jobs, and drive instance lifecycle only with `uip login`; run `uip solution resources refresh` before every upload, publish, or debug. `flow debug` is a REAL run, not a validation step: ask first, as it says. Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->
 
 ## Diagnosing a failed run

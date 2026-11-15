@@ -1,7 +1,7 @@
 # Operate — ship, run, and manage a deployed flow
 
 <!--skill-flavor:operate-auth:start-->
-Before any cloud operation—upload, deploy, debug, trigger, inspect, or instance lifecycle—run `uip login`; check with `uip login status --output json`.
+Everything that touches the cloud—upload, deploy, debug, trigger, inspect, and instance lifecycle—needs `uip login`; check with `uip login status --output json`.
 <!--skill-flavor:operate-auth:end-->
 
 Authoring is upstream. Do not ship source until it completes the loop in [`CLI-LOOP.md`](CLI-LOOP.md): `check` the source, `compile` it, and `validate` the emitted `.flow`.
@@ -23,6 +23,23 @@ uip maestro flow format <Name>.flow --output json
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
 A builder `.layout({ nodes })` avoids `format` when every non-96 × 96 node carries its size (rule 1). Entries are keyed by node id; `at(x, y)` writes position and `dim(width, height)` writes container size. A step id is its name; the trigger id is `start` unless renamed by `.triggerId()`; an End id is the name supplied to `.return`, or unnamed `end`, `end2`, `end3`, … in emission order. Include one entry per node. Use source layout for a requested arrangement or decompiled source carrying one ([`brownfield.md`](brownfield.md#designer-shapes-decompile-keeps)); otherwise `format` is simpler.
+
+```ts
+import { at, dim, flow } from '@uipath/maestro-builder-sdk';
+
+export default flow('invoice-intake')
+  // …steps…
+  .layout({
+    nodes: {
+      start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(576, 320)),
+      extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
+      review: at(1312, 144, dim(288, 96)), // an agent node carries its size
+      done: at(1696, 144),
+      onFailure: at(448, 528), end: at(640, 528), // below the container, not beside its body
+    },
+  })
+  .build();
+```
 
 Rules:
 
@@ -75,7 +92,7 @@ Then run `uip solution publish`—see the `uipath-solution` skill. `uip maestro 
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json
 ```
 
-Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run; that approval covers fix-and-rerun for this turn. With nobody to ask, run it when the request is for a working flow unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report it unverified. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`; for a solution not scaffolded this turn, debug only after an explicit question naming that overwrite, and never headlessly.
+Pass the PROJECT directory containing `project.uiproj`. `flow debug` executes the flow for real; it is not validation (`validate` is). If the user can answer and did not request a run, ask once before the first run, even when the request is for a flow that works; that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn. With nobody to ask, run it when the request is for a flow that works, unless a connection was guessed ([bindings.md](bindings.md#where-both-values-come-from)); otherwise report it unverified. Debug overwrites the Studio Web solution whose `SolutionId` matches local `.uipx`; for a solution not scaffolded this turn, debug only on a yes to a question that names that overwrite, and headless, never debug it.
 <!--skill-flavor:operate-debug:end-->
 
 Operational constraints:

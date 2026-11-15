@@ -71,7 +71,7 @@ No other CLI command answers this question. `registry search` reports `Available
 ## Adding the node
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialized with `--sdk-source` compiles `.flow.ts` over CLI edits. Check for `.flow-sdk/`; if present, build this flow in a separate project without source and use only the CLI. The SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits). Do not alternate between the two; re-apply CLI edits after each compile.
+**These commands edit the `.flow` file, so they do not mix with a project built from TypeScript source.** A project initialized with `--sdk-source` compiles `.flow.ts` over CLI edits. Check for `.flow-sdk/`; if present, build this flow in a separate project without source and use only the CLI. The SDK's `dynamicExtract()` is not the route here ([document-pipeline.md](document-pipeline.md) explains its limits). Do not alternate between the two and re-apply CLI edits after each compile.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 `--label` sets the canvas name and seeds the node id; run `uip maestro flow nodes list <file> --output json` to obtain the minted id. `nodes create` supplies `inputs.schemaDocument` (empty taxonomy with six built-in field types), `inputs.modelConfig` (working model defaults), `inputs.source` (minted extraction identifier), `inputs.processorKey` and `inputs.processorName` (processor; in a solution its resource file is written, otherwise output says `ResourcePending` and pack creates it later ([Making it actually extract](#making-it-actually-extract))), and `outputs.output` and `outputs.error` (named instance ports for downstream `$vars`). It has no top-level `model` block: the slim manifest model belongs in `definitions[]`; validation rejects an instance copy.
@@ -168,7 +168,7 @@ Validation requires `fileRef` to be a `$vars` reference, both output ports to be
 ## Making it actually extract
 
 <!--skill-flavor:extract-processor-sync:start-->
-At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. Run `nodes create` to mint the key and write the resource; run `nodes schema set` to write it for a node without a processor or update it in place; run `uip solution pack` to regenerate it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
+At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. The CLI provisions it while you author: `nodes create` mints the key and writes the resource; `nodes schema set` writes it for a node without a processor or updates it in place; `uip solution pack` regenerates it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
 <!--skill-flavor:extract-processor-sync:end-->
 
 A pre-provisioned, hand-written, or `.flow.ts`-compiled node may lack a processor; `validate` errors. Repair the whole file by running:

@@ -10,17 +10,26 @@ Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, so
 
 Define an autonomous agent with optional resources.
 
+```ts
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
+  userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
+```
+
 `tools` also accepts `mcp`, `a2a`, `clientside`, `httpRequest`, and `function` kinds ([agent-resources.md](agent-resources.md#tool-kinds)); attach memory with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); use `escalation` with `variant: 'quick-form'` for an inline form. Set `mode: 'advanced'` to select the Advanced harness.
 
 ## Model and answer judgment
 
-`returns` is the typed answer contract: prompts must describe every field and must not request JSON text. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
+`returns` is the typed answer contract: prompts must describe every field ("Return a result conforming to the output schema. `<field>`: `<how to fill it>`.") and must not request JSON text. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
 
 ## Context grounding
 
 Context signature: `{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
 
-Resolve the tenant index and know its name. Run:
+Resolve the tenant index. If you know its name, run:
 
 ```bash
 uip solution resources list --kind Index --source remote --search "<index-name>" --output json

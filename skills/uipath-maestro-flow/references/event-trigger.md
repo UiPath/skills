@@ -20,12 +20,24 @@ Follow the completion contract before debugging: an injected start payload tests
 
 Author the subscription with `lookup()` for every id-valued parameter, then run one `prepare`:
 
+```ts
+.trigger(onEvent({
+  connector: 'uipath-microsoft-outlook365', event: 'email-received',
+  where: {
+    parentFolderId: lookup({ connector: 'uipath-microsoft-outlook365', event: 'email-received' },
+      'parentFolderId').by('displayName', 'Inbox'),
+  },
+  filters: [{ field: 'subject', contains: 'Approval' }],
+  connection: 'outlook', folder: 'shared',
+}))
+```
+
 ```bash
 uip maestro registry prepare uipath-microsoft-outlook365 --action email-received \
   --resolve parentFolderId:displayName=Inbox
 ```
 
-Run that command to discover the connection; write both `bindings.json` entries (connection id and folder key, as connector-action prepare does); fetch the connection-scoped event definition; record a generic event's object decision (`--object <name>`, using the same matching ladder as actions); store `where`/filter vocabulary in `.flow-sdk/connectors-local/` for offline `check`; and record each `--resolve` in `resolutions.json` for `compile`.
+That one command replaces the manual sequence: it discovers the connection; writes both `bindings.json` entries (connection id and folder key, as connector-action prepare does); fetches the connection-scoped event definition; records a generic event's object decision (`--object <name>`, using the same matching ladder as actions); stores `where`/filter vocabulary in `.flow-sdk/connectors-local/` for offline `check`; and records each `--resolve` in `resolutions.json` for `compile`.
 
 `check` validates every `where` key and `filters[].field`. An unknown leaf is an ERROR, `EVENT_FILTER_UNKNOWN_FIELD`, because the platform would silently drop it. Prepare refuses an event object requiring a BYOA (bring-your-own-app) connection and reports usable connections. For a `webhooks`-mode event, it prints the URL-registration step; it cannot be tested locally, so deploy to test it.
 
@@ -107,7 +119,7 @@ A filter is `{ field, <operator>: value }` with exactly one operator. The design
 
 `is`/`isNot` are the canvas's "Is"/"Is not" tests and always compare with `true`; `isNot: true` also matches a missing field. For "is false," use `equals: false`. Any other `is`/`isNot` value is refused with `EVENT_FILTER_BAD_VALUE`.
 
-Ordering a plain string is refused with `EVENT_FILTER_BAD_VALUE`: JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator. A backslash at the end of a filter or `where` value, or before another `\\` or a `'`, is refused with `EVENT_FILTER_BACKSLASH`, because JMESPath engines interpret `\\` differently (the specification as one backslash, reference libraries as two). A backslash before another character, such as `C:\tmp` or `Finance\Q3`, is retained and reads consistently.
+Ordering a plain string is refused with `EVENT_FILTER_BAD_VALUE`: JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator. A backslash at the end of a filter or `where` value, or before another `\` or a `'`, is refused with `EVENT_FILTER_BACKSLASH`, because JMESPath engines interpret `\\` differently (the specification as one backslash, reference libraries as two). A backslash before another character, such as `C:\tmp` or `Finance\Q3`, is retained and reads consistently.
 
 ## Evidence boundary
 

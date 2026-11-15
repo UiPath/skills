@@ -6,7 +6,18 @@ Pause a Flow for a person with the default inline form, quick-form node, deploye
 
 Signature: `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError?, legacyCompleted? })`.
 
-Each outcome exits as `outcome-<slug>`; a task with outcomes never emits `completed`. On the default node, multiple outcomes route automatically. `.stepSwitch` provides one arm per outcome on the default node, quick-form, or pinned task; do not combine it with `outcomePorts: false` (`STEP_SWITCH_NO_EXITS`). Arms behave like `.switch()` arms: terminal `.return()` arms end, others CONVERGE, so later steps fan in. Wire every outcome. Missing arms warn `STEP_SWITCH_EXIT_UNROUTED`; an unhandled `.stepToList` outcome can stall the run (`HITL_OUTCOME_UNROUTED`).
+```ts
+.var('status', types.string)
+.stepSwitch('review', hitl({ title: 'Review invoice',
+  fields: [{ id: 'comment', type: 'text', direction: 'output' }],
+  outcomes: ['Approve', 'Reject'] }), [
+  { value: 'Approve', body: (b) => b.step('pay', script({ … }), { updates: { status: lit('approved') } }) },
+  { value: 'Reject', body: (b) => b.step('notify', script({ … }), { updates: { status: lit('rejected') } }) },
+])
+.return({ status: v('status') })
+```
+
+Each outcome exits as `outcome-<slug>`; a task with outcomes never emits `completed`. On the default node, multiple outcomes route automatically. `.stepSwitch` provides one arm per outcome on the default node, quick-form, or pinned task; do not combine it with `outcomePorts: false` (`STEP_SWITCH_NO_EXITS`). Arms behave like `.switch()` arms: terminal `.return()` arms end, others CONVERGE, so later steps fan in. That is what makes the single `.return()` above correct, and what a flow VARIABLE is for: each arm assigns it with `{ updates }` and the one return reads it. Wire every outcome. Missing arms warn `STEP_SWITCH_EXIT_UNROUTED`; an unhandled `.stepToList` outcome can stall the run (`HITL_OUTCOME_UNROUTED`).
 
 ## At a glance
 
@@ -22,7 +33,7 @@ Use `.stepSwitch` for per-outcome routing. Use `.step()` followed by `.switch()`
 <!--skill-flavor:field-variable-sdk-upgrade:start-->
   — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:field-variable-sdk-upgrade:end-->
-- Field `type` is one of 11 quick-form types: `'string'`, `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`, `'datetime'`, `'file'`, `'object'`, `'array'`. Preserve older spellings `'text'` and `'date-time'` as `'string'` and `'datetime'`; bound-variable types such as `'string[]'` and `'string | null'` decompile as `'array'` and `'string'`.
+- Field `type` is one of 11 quick-form types: `'string'`, `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`, `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are accepted as older spellings of `'string'` / `'datetime'`; leave them as they are in existing source; bound-variable types such as `'string[]'` and `'string | null'` decompile as `'array'` and `'string'`.
 - Picker types are `'singleSelect'` and `'enum'` (single-choice dropdown, `string` answer) or `'multiSelect'` (multi-select, `array` answer), with `options: [{ id, value, label }]` and all three keys required. Never replace them with `'string'` or `'array'`; preserve spellings and options in decompiled forms. SDK 6.31.9+ is required; older SDKs report `HITL_FIELD_TYPE_UNKNOWN` (ignore its `type: 'string'` hint),
 <!--skill-flavor:field-type-sdk-upgrade:start-->
   so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
@@ -85,7 +96,15 @@ so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 Use the scenario's explicit variant. Default and quick-form own fields in the Flow; action-app delegates to a deployed app or an app in this solution. For app tasks, resolve key, name, folder, and argument names from the same tenant resource and pass its schema as `app.actionSchema` ([Action App inputs and answers](#action-app-inputs-and-answers)).
 
-A coded Action App in the SAME solution is not yet deployed to a folder. Use `location: 'in-solution'` and omit `folderPath`.
+A coded Action App in the SAME solution is not yet deployed to a folder. Use `location: 'in-solution'` and omit `folderPath`:
+
+```ts
+.step('review', hitl({
+  variant: 'action-app',
+  app: { name: '<App>', key: '<APP_RESOURCE_KEY>', location: 'in-solution' },
+  outcomes: ['Approve', 'Reject'],
+}))
+```
 
 - **Where the key comes from.**
 <!--skill-flavor:app-sibling-register:start-->

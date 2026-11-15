@@ -10,7 +10,7 @@ Decompile fresh, after deleting any `.flow` an older loop left under `.flow-sdk/
 
 Never hand-transcribe the graph. Decompile to builder source, edit that source, and merge only its delta into the original.
 
-For each [pattern](author.md#patterns) (review gate, triage, batch loop, chat or voice front door, or panel of agents), read its guide first and insert only what the flow lacks, per "Adapting it". Finish every unfinished pattern: replace each `core.logic.mock` labelled "(replace with …)" with the real node, rewrite every `PLACEHOLDER -` prompt for the request, and do the setup sticky note's tasks. Put builder-impossible items (for example attaching a tool to a voice agent) under Open questions. Preserve every other inserted step, port, and name.
+An edit that adds a [pattern](author.md#patterns) (review gate, triage, batch loop, chat or voice front door, or panel of agents) reads its guide first and inserts only what the flow lacks, per "Adapting it"; inserting a pattern is still a narrow edit through this loop. A pattern the canvas inserted arrives unfinished; finishing it means: replace each `core.logic.mock` labelled "(replace with …)" with the real node, rewrite every `PLACEHOLDER -` prompt for the request, and do the setup sticky note's tasks. Put builder-impossible items (for example attaching a tool to a voice agent) under Open questions. Preserve every other inserted step, port, and name.
 
 ## The safe project loop
 

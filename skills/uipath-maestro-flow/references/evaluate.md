@@ -6,7 +6,7 @@ Manage evaluators, eval sets, data points, and simulations with `uip maestro flo
 **Local `add` / `list` / `remove` edit project files and need no login.** Starting a run does — run `uip login` first, and ensure a matching solution exists in Studio Web.
 <!--skill-flavor:eval-login:end-->
 
-Probe the installed CLI once:
+Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
 
 ```bash
 uip maestro flow eval --help --output json

@@ -59,6 +59,17 @@ A script can read `$metadata`: `InstanceId`, `FolderKey`, `ProcessKey`, `Externa
 
 `ElementCount` and `ExternalId` can be unset (`ElementCount` until its first count). Read through either with `?.`; strict `tsc` refuses plain `.` or `[…]`, and the run throws `TypeError` when the key is unset.
 
+```ts
+import { script, type FlowVars, type FlowMetadata } from '@uipath/maestro-builder-sdk';
+
+// … flow(…) chain
+  .step('tag', script(tag, { returns: 'string' }))
+
+function tag($vars: FlowVars, $metadata: FlowMetadata) {
+  return $metadata.InstanceId + ':' + $vars.start.output.id;
+}
+```
+
 These five keys are all the engine sets. `check` warns `UNKNOWN_METADATA_KEY` for any other key, including misspellings (`$metadata.instanceId` reads `undefined`); the suggestion names the correct key. A case that starts the flow may set its own instance keys. Keep such a read and warning, and widen the parameter type: `$metadata: FlowMetadata & { Region?: string }`. Decompile instead widens it to `FlowMetadata & Record<string, any>`; these forms are interchangeable, so leave either.
 
 <!--skill-flavor:script-function-metadata-sdk-version:start-->

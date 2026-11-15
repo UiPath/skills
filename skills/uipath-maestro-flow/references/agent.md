@@ -48,7 +48,7 @@ manifests, above) are two command groups; both exist.
 If `prepare` prints `not recorded` for a side, read it from `registry get`
 instead: `inputDefinition.properties` and `outputDefinition`.
 
-When asked to CREATE a coded agent in this solution, scaffold it as a sibling project; do not substitute an inline low-code agent, duplicate an already-published tenant agent, or bind a pre-existing agent.
+When asked to CREATE a coded agent in this solution, scaffold it as a sibling project; do not substitute an inline low-code agent. Creating one the tenant already publishes is duplication, and binding a pre-existing one when the request said to build it is a different task, so read the request; do not guess from what the registry happens to hold.
 
 **Never invent `key` or `projectId`.** Tooling mints both; read them back. If no source below yields one, stop on that field rather than provide a plausible GUID: `check` and `validate` accept a well-formed GUID that resolves to nothing on the tenant, so a fabricated key fails at run time, not author time.
 

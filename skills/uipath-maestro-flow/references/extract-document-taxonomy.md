@@ -6,7 +6,7 @@ An Extract document node (`uipath.ixp.extract-document-builder`) extracts from t
 
 ```bash
 uip maestro flow nodes schema get <file> --node-id <id> --output json
-uip maestro maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json> --output json
+uip maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json> --output json
 ```
 
 Both commands edit the `.flow` without login. `--schema` accepts JSON or a file when its value starts with `@`.
@@ -86,6 +86,72 @@ uip maestro flow validate Flow/Flow.flow --output json
 ## The document
 
 The written document has `prompt` (overall extraction instructions) and `outputSchema` (an OpenAI structured-outputs JSON Schema whose top-level `properties` are groups and `$defs` are field types). Do not write `config`: `set` rebuilds it from `inputs.modelConfig`, so supplied `config` is discarded.
+
+Here's a worked invoice taxonomy example, which illustrates the format specification:
+
+```json
+{
+  "prompt": "Extract the header of the invoice and every billed line. Values are on the page; do not compute totals yourself.",
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["Invoice", "Invoice > Line Items"],
+    "properties": {
+      "Invoice": {
+        "type": ["object", "null"],
+        "description": "The invoice header, which appears once per document.",
+        "additionalProperties": false,
+        "required": ["Invoice Number", "Invoice Date", "Total"],
+        "properties": {
+          "Invoice Number": {
+            "$ref": "#/$defs/ft-exact-text",
+            "description": "The invoice number as printed, without a leading # or the word 'Invoice'."
+          },
+          "Invoice Date": {
+            "$ref": "#/$defs/ft-date",
+            "description": "The date the invoice was issued, not the due date and not the delivery date."
+          },
+          "Total": {
+            "$ref": "#/$defs/ft-monetary-quantity",
+            "description": "The amount payable including tax, usually the last line of the summary block."
+          }
+        }
+      },
+      "Invoice > Line Items": {
+        "type": "array",
+        "description": "One entry per billed line in the table of charges.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Description", "Quantity", "Amount"],
+          "properties": {
+            "Description": {
+              "$ref": "#/$defs/ft-inferred-text",
+              "description": "What was billed, from the line's description column."
+            },
+            "Quantity": {
+              "$ref": "#/$defs/ft-number",
+              "description": "How many units the line bills for. Leave empty where the line has no quantity."
+            },
+            "Amount": {
+              "$ref": "#/$defs/ft-monetary-quantity",
+              "description": "The line total, not the unit price."
+            }
+          }
+        }
+      }
+    },
+    "$defs": {
+      "ft-exact-text": { "title": "Exact Text", "type": ["string", "null"], "format": "verbatim" },
+      "ft-inferred-text": { "title": "Inferred Text", "type": ["string", "null"] },
+      "ft-date": { "title": "Date", "type": ["string", "null"], "format": "date" },
+      "ft-number": { "title": "Number", "type": ["string", "null"], "format": "decimal" },
+      "ft-monetary-quantity": { "title": "Monetary Quantity", "type": ["string", "null"], "format": "monetary" },
+      "ft-boolean": { "title": "Boolean", "type": ["boolean", "null"] }
+    }
+  }
+}
+```
 
 ### Field groups
 
