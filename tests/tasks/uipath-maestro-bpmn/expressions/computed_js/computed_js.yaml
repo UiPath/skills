@@ -3,8 +3,7 @@ description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a
   computed inline-JavaScript expression with the exact case-sensitive `=js:`
   prefix (no space after the colon) inside a json-typed mapping that still emits
-  valid JSON. Grades the `=js:` escape-hatch rules from
-  references/expression-authoring.md. Authoring only — no cloud effects.
+  valid JSON. Grades the `=js:` escape-hatch rules. Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
 run_limits:
@@ -46,17 +45,19 @@ initial_prompt: |
     do NOT pause for approval — build the complete local project in one pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ComputedJsBpmn"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses the exact =js: computed prefix"
-    path: "ComputedJsBpmn/ComputedJsBpmn.bpmn"
-    includes:
-      - "=js:"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ComputedJsBpmn --contains '=js:'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

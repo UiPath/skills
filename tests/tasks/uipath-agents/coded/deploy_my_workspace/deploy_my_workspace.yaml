@@ -13,7 +13,7 @@ description: >
   `uip codedagent deploy`. Do not reword the prompt back to a
   deterministic echo, and keep it free of implementation hints (no
   framework or node mechanics).
-tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
+tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 43

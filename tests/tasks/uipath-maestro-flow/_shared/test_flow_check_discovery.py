@@ -286,3 +286,29 @@ def test_validate_flow_uses_root_fallback(tmp_path, monkeypatch):
     assert kwargs["capture_output"] is True
     assert kwargs["text"] is True
     assert 0 < kwargs["timeout"] <= 80
+
+
+def _make_studio_web_flow_project(root, solution, project):
+    """Studio Web names a Flow project's main file ``new.flow``."""
+    proj = root / solution / project
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    (proj / "new.flow").write_text(json.dumps({"nodes": [{"id": "n1"}]}))
+    return proj
+
+
+def test_named_glob_takes_studio_webs_new_flow_in_the_named_project(tmp_path, monkeypatch):
+    proj = _make_studio_web_flow_project(tmp_path, "BillingSol", "BillingDisputeAnalyst")
+    monkeypatch.chdir(tmp_path)
+
+    assert find_flow_file(flow_glob="BillingDispute*.flow") == os.path.join(
+        os.path.relpath(proj, tmp_path), "new.flow"
+    )
+
+
+def test_named_glob_still_refuses_new_flow_in_another_project(tmp_path, monkeypatch):
+    _make_studio_web_flow_project(tmp_path, "BillingSol", "Other")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        find_flow_file(flow_glob="BillingDispute*.flow")

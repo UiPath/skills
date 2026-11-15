@@ -105,7 +105,7 @@ Key options:
 
 > The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
 
-#### Inspect / Edit / Roll back / Delete Processes
+### Inspect / Edit / Roll back / Delete Processes
 
 ```bash
 # Get one process by key (cross-folder; resolved through the release lookup)

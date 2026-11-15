@@ -50,11 +50,12 @@ What to look for:
    query, not proof that the queue is absent. Preserve it, then retry once without the backend name
    filter and filter the small response client-side:
    ```
-   uip or queues list --folder-key <folder-key> --output json \
+   uip or queues list --folder-key <folder-key> --limit 500 --output json \
      --output-filter "[?Name=='<queue-name>'].{Key:Key,Name:Name}" \
      | tee .local/investigations/raw/triage-queue-folder-fallback.json
    ```
-   An empty successful fallback supports current absence only after the folder key is verified. For
+   If `Pagination.HasMore` is true, continue with `--offset 500`, `--offset 1000`, and so on.
+   An empty successful fallback supports current absence only after all pages are checked and the folder key is verified. For
    incidents older than 24 hours, current absence cannot distinguish never-created from deleted-since;
    the correlated runtime 404 establishes only that the name was unavailable then.
 3. If a validation error fired, inspect the empty queue name and — for Add only — reserved characters

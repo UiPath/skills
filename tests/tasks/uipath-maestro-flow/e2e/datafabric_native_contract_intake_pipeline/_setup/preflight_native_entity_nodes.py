@@ -7,8 +7,8 @@ Usage:
 
 Checks `uip maestro flow registry get` for all four `core.datafabric.*`
 node types. Each is gated by its own tenant feature flag
-(`canvas.nodes.{read,create,update,delete}-entity`); per
-references/author/plugins/data-fabric/impl.md, the correct agent response
+(`canvas.nodes.{read,create,update,delete}-entity`); per the v1 Flow
+skill's Data Fabric plugin guide (retired with the v2 promotion), the correct agent response
 to an unavailable native node is to fall back to the Data Fabric
 Integration Service connector — which would make this task's native-node
 checks fail through no fault of the skill. A `pre_run` failure lands the

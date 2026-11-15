@@ -56,6 +56,20 @@ def is_real_uuid(value: object) -> bool:
     )
 
 
+STUDIO_WEB_FLOW_FILE = "new.flow"
+"""Studio Web names every Flow project's main file ``new.flow``; the Node CLI names it after the project."""
+
+
+def main_flow_path(path: Path) -> Path:
+    """``path``, or the ``new.flow`` beside it when only Studio Web's main file exists.
+
+    Mirrors ``_studio_web_main_file`` in ``uipath-maestro-flow/_shared/validate_flow.py``: a task names
+    the file the Node CLI writes (``<Sol>/<Name>/<Name>.flow``), Studio Web writes ``<Sol>/<Name>/new.flow``.
+    """
+    candidate = path.with_name(STUDIO_WEB_FLOW_FILE)
+    return candidate if not path.is_file() and candidate.is_file() else path
+
+
 def load_json(path: Path) -> dict:
     """Load a JSON file. Exit with FAIL on missing or invalid JSON."""
     if not path.is_file():

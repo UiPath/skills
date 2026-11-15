@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LicenceReader",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a3056362-e78d-48ea-b873-9ef3637cb246",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LicenceReader"
+    },
+    "locks": [],
+    "key": "5ca866c7-1403-4695-8a02-2ef0d1bf28d9",
+    "files": []
+  }
+}

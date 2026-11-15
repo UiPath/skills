@@ -48,6 +48,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 1. **No LLM calls inside a Coded Function.** LLM reasoning breaks the deterministic contract — that project is an agent → `uipath-agents`.
 2. **The `functions` map in `uipath.json` identifies the project as a Coded Function** — it is the marker every tool reads.
 3. **Cloud-backed work needs auth**: `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
+4. **Reach third-party systems through an Integration Service connection, or build a connector with `uip is connectors builder`.** A direct call with a key from an Orchestrator asset is allowed (custom-auth API calls are in scope) but needs a stated reason: the asset keeps the secret safe, but the integration stays out of `uip is connections list` and cannot be re-pointed per environment.
 
 ### Python
 
@@ -87,6 +88,10 @@ uip function init                # generate entry-points.json / project.uiproj; 
 uip function run <ENTRYPOINT> '{"document_id": "42"}'
 uip function pack && uip function publish
 ```
+
+<!--skill-flavor:python-scaffold-location:start-->
+From a solution root (directory holding a `.uipx`), `new` creates `<NAME>/` — `cd <NAME>` before `init`. Elsewhere it scaffolds into the current directory. `init`, `run` and `pack` run through the Python environment `uip function setup` bound: that environment needs `uipath` installed; re-run `uip function setup --force` after switching venv.
+<!--skill-flavor:python-scaffold-location:end-->
 
 Full workflow (schema, template, `uipath.json` registration, `pyproject.toml`, SDK capabilities, attachments, packOptions): [references/python/workflow-guide.md](references/python/workflow-guide.md).
 

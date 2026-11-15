@@ -48,7 +48,11 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import assert_no_flow_files, find_flow_files  # noqa: E402
+from flow_check import (  # noqa: E402
+    assert_no_flow_files,
+    find_flow_files,
+    flow_file_is_named,
+)
 
 
 def _parse(argv: list[str]):
@@ -102,7 +106,7 @@ def main(argv: list[str]) -> int:
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:
-        targets = [p for p in flows if os.path.basename(p) == f"{flow_name}.flow"]
+        targets = [p for p in flows if flow_file_is_named(p, flow_name)]
         if not targets:
             print(
                 f"FAIL: no discovered .flow file is named {flow_name}.flow",

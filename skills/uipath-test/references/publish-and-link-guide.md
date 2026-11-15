@@ -26,7 +26,7 @@ uip tm wait              → block until terminal
 uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 ```
 
-Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. See [/uipath:uipath-rpa § cli-reference.md § Pack & Publish to Orchestrator](../../uipath-rpa/references/cli-reference.md#pack--publish-to-orchestrator) for full pack flags. Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
+Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. For the other flags, run the command with `--help` (the `uipath-rpa` skill covers packing). Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
 
 ## Step 2 — Upload to Orchestrator
 

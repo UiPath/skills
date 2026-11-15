@@ -3,7 +3,7 @@ description: >
   Verifies the agent knows to use uip codedagent push and pull when
   UIPATH_PROJECT_ID is already wired in .env. Project is pre-seeded;
   tests command selection, not cloud connectivity.
-tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
+tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 20
@@ -24,7 +24,7 @@ sandbox:
 
 pre_run:
   - command: "bash -c 'cd roundtrip-agent && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 180
+    timeout: 300
   - command: "bash -c 'echo UIPATH_PROJECT_ID=89852b5d-8559-4c57-b752-0e2b500902fc >> roundtrip-agent/.env'"
     timeout: 10
 

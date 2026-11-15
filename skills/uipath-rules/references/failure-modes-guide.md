@@ -33,7 +33,8 @@ Errors exit 1 with `Validation failed for <DIR>`; warnings are reported and do n
 
 | Message | Fix |
 |---|---|
-| `Business Rules is not enabled on tenant '<TENANT>'.` | Stop; the user asks their UiPath contact to enable it, or switches to a tenant that has it with `uip login tenant set <TENANT_NAME>`. |
+| `Business Rules is not available on tenant '<TENANT>': it is not enabled there, or not offered in the tenant's region.` | Stop; the user switches to a tenant that has it with `uip login tenant set <TENANT_NAME>`, or asks their UiPath representative to enable it for this tenant. |
+| `Business Rules is a preview feature and is not enabled for your organization.` | Stop; the user asks their UiPath representative to enroll the organization in the Business Rules preview. No role, login, or tenant change fixes it. |
 | `<DIR> holds no .uipx, so the rules project is not inside a solution.` | Move the project directly inside its solution folder, or scaffold it with `rules init`. |
 | `Studio Web returned no project named '<NAME>' for the uploaded solution.` | The project is missing from the solution's `.uipx`; register it with `uip solution projects add` (uipath-solution skill). |
 | `Studio Web did not let the rules engine read the uploaded project.` | The account cannot open the uploaded solution in Studio Web; ask the user to check their access. |

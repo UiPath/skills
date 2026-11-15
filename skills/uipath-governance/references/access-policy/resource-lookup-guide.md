@@ -50,7 +50,7 @@ graph LR
     D --> E[Key UUID → policy JSON]
 ```
 
-**Step 1 — list folders.** See [§ 2 Folders](#2-folders) for the command and filter patterns. Grab `FullyQualifiedName` (e.g. `"Shared"`, `"Prod/Agents"`) for the next step.
+**Step 1 — list folders.** See [§ 2 Folders](#2-folders) for the command and filter patterns. Grab `Path` (e.g. `"Shared"`, `"Prod/Agents"`) for the next step.
 
 **Step 2 — list processes in that folder:**
 
@@ -65,7 +65,7 @@ uip or processes list \
 
 | Flag | Required? | Purpose |
 |------|-----------|---------|
-| `--folder-path "<PATH>"` **or** `--folder-key "<UUID>"` | **Yes (one of)** | Mandatory. Processes are folder-scoped; the command fails without it. Use `FullyQualifiedName` from `uip or folders list` for `--folder-path`. |
+| `--folder-path "<PATH>"` **or** `--folder-key "<UUID>"` | **Yes (one of)** | Mandatory. Processes are folder-scoped; the command fails without it. Use `Path` from `uip or folders list` for `--folder-path`. |
 | `--process-type "<TYPE>"` | Recommended | Filters server-side by Orchestrator `ProcessType` — narrows to the right access-policy block (see mapping below). Note the Orchestrator value is **different** from the access-policy enum. |
 | `--name "<SUBSTRING>"` | Optional | Case-insensitive substring match on the process name. Use whenever the user named the process ("the Invoice agent" → `--name "Invoice"`). |
 
@@ -145,14 +145,14 @@ Folders are **tenant-scoped**. Run this first when the user names a folder ("the
 uip or folders list --output json
 ```
 
-Parse `.Data[]` for `FullyQualifiedName` (e.g. `"Shared"`, `"Prod/Agents"`) and `Key` (the UUID). Either value works as `--folder-path` / `--folder-key` on subsequent calls. Prefer `--folder-path` in chat transcripts — it is human-readable.
+Parse `.Data[]` for `Path` (e.g. `"Shared"`, `"Prod/Agents"`) and `Key` (the UUID). Either value works as `--folder-path` / `--folder-key` on subsequent calls. Prefer `--folder-path` in chat transcripts — it is human-readable.
 
-Filter client-side with `--output-filter` when the tenant has many folders:
+Filter client-side with `--output-filter` and an explicit `--limit`. If `Pagination.HasMore` is true, repeat with `--offset 500`, `--offset 1000`, and so on before treating the lookup as complete:
 
 ```bash
-uip or folders list \
+uip or folders list --limit 500 \
   --output json \
-  --output-filter "[?contains(FullyQualifiedName, 'Prod')]"
+  --output-filter "[?contains(Path, 'Prod')]"
 ```
 
 ---
@@ -277,7 +277,7 @@ grep "^UIPATH_TENANT_NAME=" ~/.uipath/.auth | cut -d= -f2
 
 | I need to find... | Command |
 |-------------------|---------|
-| A folder path / UUID by display name | `uip or folders list --output json` → filter on `FullyQualifiedName` |
+| A folder path / UUID by display name | `uip or folders list --output json` → filter on `Path` |
 | A process / agent / flow / case-management UUID by name | `uip or processes list --folder-path "<PATH>" --process-type "<ORCHESTRATOR_TYPE>" --name "<SUBSTR>" --output json` — paste the response's `Key` into `values[]`. Do not use `ProcessKey` (dotted string), `ProcessVersion`, or the folder UUID. |
 | All processes of a given access-policy type in a folder | `uip or processes list --folder-path "<PATH>" --process-type "<ORCHESTRATOR_TYPE>" --output json` — paste each row's `Key` into `values[]`. |
 | Details on a specific process UUID | `uip or processes get "<UUID>" --output json` |

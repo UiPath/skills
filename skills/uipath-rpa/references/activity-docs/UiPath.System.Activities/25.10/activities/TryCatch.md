@@ -40,4 +40,5 @@ Error handling. No namespace prefix.
 - The `DelegateInArgument` `Name` is the exception variable (usable in the Catch body)
 - Can have multiple `<Catch>` blocks for different exception types
 - `TryCatch.Finally` is optional
+- Wrap `Try`, every `Catch` body, and `Finally` in a `Sequence`, even for a single activity (Rule 24)
 - `s:` prefix requires `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`

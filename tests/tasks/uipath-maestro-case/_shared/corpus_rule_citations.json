@@ -47,9 +47,6 @@
   "golden_rebuild/cm_golden_expense/cm_golden_expense.yaml": {
     "Artifact I/O": 1
   },
-  "hitl/quality_04_skeleton_completion_report.yaml": {
-    "The build is lossless against the SDD": 1
-  },
   "pack/pack_only/pack_only.yaml": {
     "Never auto-debug or publish to Orchestrator": 2
   },

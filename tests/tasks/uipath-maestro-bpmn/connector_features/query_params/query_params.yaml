@@ -73,10 +73,75 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The tenant this suite runs on may hold no HTTP connection fit for a Google
+  # Tasks call (R14: the only enabled `uipath-uipath-http` connection was another
+  # user's "Spotify"). The v2 skill then leaves the connection binding as a
+  # placeholder rather than bind the wrong one, and `validate` reports
+  # MISSING_BINDING on that node (builder-sdk#1884). That refusal passes here only
+  # when it is the ONLY error, on a `uipath-uipath-http` node, with a placeholder
+  # (non-GUID) binding default — a fabricated connection id still fails — and the
+  # judge below separately requires the final answer to name the connection as the
+  # blocker. Any other failure still fails.
+  #
+  # The refusal earns half the validate weight, not all of it: the clean row
+  # below passes only when validate does (score only, pass_threshold 0.0, so the
+  # documented refusal still passes the task), so a process left unbound scores
+  # 1.0 of 2.0 here whether or not the agent looked for a connection, and the judge
+  # (which requires the lookup) carries the rest.
   - type: run_command
-    description: "The completed process validates"
+    description: "The completed process validates (an unbound HTTP connection placeholder is accepted as the documented refusal)"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py --accept-unbound-connection uipath-uipath-http"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The completed process validates cleanly (connection bound)"
     command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
     timeout: 180
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # Advisory: did the agent look for a connection at all? An unbound placeholder
+  # passes the validate criterion above whether or not one existed, so this row
+  # shows in the report whether the agent searched first (the judge below
+  # requires it for the unbound case). The lookups both skills document: v1
+  # `uip is connections list --all-folders` (registry-workflow.md), v2
+  # `uip is connections list <key>` and `uip maestro registry prepare` /
+  # `describe` (connectors.md); `connections ping` checks a chosen one.
+  - type: command_executed
+    description: "Agent looked up connections before binding the HTTP step (report only)"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:is\s+connections\s+(?:list|ping)\b|maestro\s+(?:bpmn\s+)?registry\s+(?:prepare|describe)\b)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: llm_judge
+    description: "A process left with an unbound connection says so and why"
+    include_reference: false
+    include_agent_output: true
+    include_tool_calls: true
+    weight: 1.0
+    pass_threshold: 0.7
+    prompt: >
+      Grade one thing: whether the final answer is honest about validation.
+      Pass if the agent's last `uip maestro bpmn validate` run on the final BPMN
+      reported it valid and the final answer does not claim otherwise.
+      Also pass if validation failed only because the HTTP step's connection is
+      not bound to a real connection (MISSING_BINDING), the tool calls show the
+      agent looked the connections up BEFORE leaving the binding unbound (a
+      connection lookup such as `uip is connections list`, `uip is connections
+      ping`, or `uip maestro registry prepare` / `describe` against the
+      connector, run before the final validate), and the final answer says
+      validation fails for that reason, explains why no available connection
+      was bound (for example, the only enabled connection belongs to an
+      unrelated service or another user), and says what is needed to unblock
+      it.
+      Fail if validation failed and the final answer claims it passed, or does
+      not name the unbound connection as the blocker, or if the binding was
+      left unbound without any connection lookup in the tool calls.
+      Nothing else is graded here: the connector choice, the query parameter and
+      the BPMN structure have their own criteria.

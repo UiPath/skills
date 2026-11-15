@@ -3,9 +3,11 @@ description: >
   Middleware-style PII detection guardrail for a coded agent. A simple LangGraph
   customer support agent (with a lookup_account_info tool) is seeded with no guardrails.
   Use the skill to add a PII detection middleware guardrail at Agent and Tool scope
-  that logs Email and PhoneNumber entities. Verifies that the guardrails list was
-  the correct middleware class is imported and spread into create_agent().
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+  that logs Email and PhoneNumber entities in the typed question and in an uploaded
+  account statement. Verifies that the correct middleware class is imported and
+  spread into create_agent(), that the statement is an Attachment input rendered into
+  the user message, and that the Agent-scope middleware sets detection_scope Both.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -20,9 +22,11 @@ reference:
 
 initial_prompt: |
   I have a coded LangGraph agent in graph.py. It handles customer support questions
-  and uses a lookup_account_info tool. I want to add a PII detection guardrail
-  using the middleware style. It should detect Email and PhoneNumber entities
-  at both Agent and Tool scope and log them as warnings so the agent keeps running.
+  and uses a lookup_account_info tool. Users will also upload an account statement
+  with their question. I want to add a PII detection guardrail using the middleware
+  style. It should detect Email and PhoneNumber entities in both the typed question and
+  the uploaded statement, at both Agent and Tool scope, and log them as warnings so the
+  agent keeps running.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation. Complete the entire task
@@ -31,12 +35,12 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "PII middleware guardrail correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/_shared/check_pii_middleware.py"
+    command: "python3 $REFERENCE_DIR/_shared/guardrails/check_pii_middleware.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 10
+  expected_turns: 13
   turn_timeout: 1200

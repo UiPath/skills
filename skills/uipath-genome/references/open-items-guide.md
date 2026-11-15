@@ -1,15 +1,15 @@
 # Open Items Guide — what the target environment needs before the first run
 
-The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. The files are written when the target environment needs at least one setup step — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite; an automation that needs none of them gets no open-items file. Build results, acceptance verdicts and review notes stay in the completion report ([execution-guide.md § 3.3](execution-guide.md)) and never enter these files. They are written last.
+The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. The files are written when the target environment needs at least one setup step — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite; an automation that needs none of them gets no open-items file. Build results, acceptance verdicts and review notes stay in the completion report ([completion-report-guide.md](completion-report-guide.md)) and never enter these files. They are written last.
 
-**Files and placement.** Write them in the hand-off folder ([execution-guide.md § 3.3](execution-guide.md)), which travels with the genome and the built solution or project — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
+**Files and placement.** Write them in the hand-off folder ([completion-report-guide.md](completion-report-guide.md)), which travels with the genome and the built solution or project — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
 
 | Executed genome | Files |
 |---|---|
 | Component genome (one project) | `open-items.md` |
 | Process genome (a solution) | `open-items.md`, plus `open-items/<project-slug>.md` for every project built — per project, not per component: a split that materialises one component as several projects gives each project its own file |
 
-Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-guide.md).
+Slugs follow [genome-reading-guide.md § File Naming and Location](genome-reading-guide.md).
 
 **Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Others and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Others — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. A refactor's solution file ends with a Cutover section after Triggers ([refactor-guide.md § Cutover](refactor-guide.md)). The template shows the common ones:
 

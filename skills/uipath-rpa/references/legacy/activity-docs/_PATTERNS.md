@@ -177,7 +177,7 @@ For the full error handling guide (exception classification, TryCatch best pract
 In `Throw.Exception` bracket expressions, fully-qualified class names + complex string concatenation with `&quot;` can cause compiler errors. The VB.NET expression compiler rejects the combination.
 
 **Rules:**
-1. **Use short-form class names** — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`
+1. **Use short-form class names** — `BusinessRuleException` not `UiPath.Core.BusinessRuleException`
 2. **For complex messages, use a variable** — Assign the message string first, then `[New BusinessRuleException(errorMessage)]`
 3. **Simple inline is fine** — `[New BusinessRuleException(&quot;simple message&quot;)]`
 

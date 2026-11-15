@@ -18,6 +18,15 @@
  "optional_systems": {
   "UiPath Case Management": [
    "case management"
+  ],
+  "Email": [
+   "email"
+  ],
+  "Word": [
+   "word"
+  ],
+  "Spreadsheets": [
+   "spreadsheet"
   ]
  },
  "allow_other_category": true

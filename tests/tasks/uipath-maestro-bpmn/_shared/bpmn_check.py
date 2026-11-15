@@ -11,8 +11,9 @@ import sys
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Iterator
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 
 _PathLike = TypeVar("_PathLike", str, Path)
 
@@ -65,18 +66,99 @@ def entry_point_files(project_dir: Path) -> list[Path] | None:
     return out
 
 
+# Scratch files the brownfield pipeline and agents leave beside the real artifact.
+# `decompile` -> `compile -o X.baseline.bpmn` -> edit -> `compile -o X.edited.bpmn` ->
+# `merge` writes the first two and often `X.merged.bpmn`, and an agent that keeps the
+# untouched input around names it `X.original.bpmn`. `X.baseline.bpmn` sorts first and
+# still holds the UNEDITED process, so a grader that took the first match failed seven
+# correct edits in one run (builder-sdk#1871). None of these suffixes is ever the file a
+# task names, and no task ships one as a fixture.
+SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original.bpmn")
+# Directories that hold scratch copies rather than the artifact: tool caches, an
+# agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run), and
+# temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
+# Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
+# that name. No task names one today; a task that must ever do so needs these
+# names taken out (or the grader pointed at the path), or its artifact goes unseen
+# and reads as "no BPMN file found".
+SCRATCH_DIR_NAMES = frozenset(
+    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", "tmp", "temp", ".tmp"}
+)
+SCRATCH_DIR_PREFIXES = ("tmp.",)
+
+
+def is_scratch_bpmn(path: str | Path) -> bool:
+    """True for a ``.bpmn`` no grader should read as the task's artifact.
+
+    Scratch by name (:data:`SCRATCH_SUFFIXES`) or by location: under a directory
+    in :data:`SCRATCH_DIR_NAMES`, or one whose name starts with a
+    :data:`SCRATCH_DIR_PREFIXES` entry. Only the directories are tested, never
+    the file name, so ``tmp.bpmn`` itself is not excluded.
+    """
+    p = Path(path)
+    if p.name.lower().endswith(SCRATCH_SUFFIXES):
+        return True
+    dirs = p.parts[:-1]
+    return any(
+        d in SCRATCH_DIR_NAMES or d.startswith(SCRATCH_DIR_PREFIXES) for d in dirs
+    )
+
+
+STUDIO_WEB_MAIN_FILE = "Process.bpmn"
+"""The main file Studio Web gives every BPMN project; the Node CLI names it ``<Project>.bpmn``."""
+
+
+def _entry_point_beside(path: str) -> str:
+    """``path``, or the one entry point beside it when ``path`` is not an entry point.
+
+    The project runs only its entry points. A Studio Web project's is
+    ``Process.bpmn``, so a ``<Name>.bpmn`` an agent wrote beside it never runs
+    and must not be graded in its place.
+    """
+    file = Path(path)
+    entries = entry_point_files(file.parent)
+    if not entries or file.name in {e.name for e in entries}:
+        return path
+    existing = [e for e in entries if e.is_file()]
+    return str(existing[0]) if len(existing) == 1 else path
+
+
+def bpmn_file_is_named(path: _PathLike, name: str) -> bool:
+    """True for ``<name>.bpmn``, or for Studio Web's ``Process.bpmn`` in a project directory named ``<name>``."""
+    file = Path(path)
+    stem = name.removesuffix(".bpmn")
+    return file.name == f"{stem}.bpmn" or (file.name == STUDIO_WEB_MAIN_FILE and file.parent.name == stem)
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
-    paths = sorted(glob.glob("**/*.bpmn", recursive=True))
+    paths = [
+        p for p in sorted(glob.glob("**/*.bpmn", recursive=True)) if not is_scratch_bpmn(p)
+    ]
     if not paths:
         fail("no BPMN file found")
     if name_hint:
-        matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
+        # The file the task NAMED first: `<hint>.bpmn` exactly (case-insensitive).
+        # Only when none exists does the hint widen to a substring of the basename,
+        # which older tasks rely on (`parse_bpmn("Contract")`).
+        wanted = f"{name_hint.removesuffix('.bpmn')}.bpmn".lower()
+        exact = [p for p in paths if os.path.basename(p).lower() == wanted]
+        matches = exact or [
+            p for p in paths if name_hint.lower() in os.path.basename(p).lower()
+        ]
+        if not matches:
+            # Studio Web names the file Process.bpmn and the project after the task's name.
+            matches = [
+                p
+                for p in paths
+                if os.path.basename(p) == STUDIO_WEB_MAIN_FILE
+                and name_hint.lower() in os.path.basename(os.path.dirname(p)).lower()
+            ]
         if matches:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             hinted = _project_files(matches)
-            return hinted[0] if len(hinted) == 1 else matches[0]
+            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -97,7 +179,12 @@ def _sha256(path: str | Path) -> str:
 
 
 def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
-    """Locate the project directory containing ``bpmn_name``.
+    """Locate the project directory containing ``bpmn_name``; see :func:`resolve_bpmn_file`."""
+    return resolve_bpmn_file(bpmn_name, exclude_under).parent
+
+
+def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
+    """Locate ``bpmn_name`` (or Studio Web's ``Process.bpmn`` for it) in its project.
 
     Grades the project wherever the agent placed it (top level or nested under
     a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
@@ -113,17 +200,22 @@ def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
     billing_invoice_lookup ``bindings``).
     """
     excluded = [Path(d).resolve() for d in exclude_under]
+    cwd = Path.cwd()
+    named = list(cwd.rglob(bpmn_name)) or [
+        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    ]
     candidates = [
         p
-        for p in _project_files(Path.cwd().rglob(bpmn_name))
+        for p in _project_files(named)
         if not any(p.resolve().is_relative_to(d) for d in excluded)
+        and not is_scratch_bpmn(p.relative_to(cwd))
     ]
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
             f"found {[str(p) for p in candidates]}"
         )
-    return candidates[0].parent
+    return candidates[0]
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:
@@ -245,7 +337,7 @@ def body_object(element: ET.Element) -> dict:
     """The request body ``element``'s ``target="body"`` input encodes.
 
     The runtime reads exactly one ``target="body"`` input as the whole body;
-    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    several do not merge (classic/skills/uipath-maestro-bpmn/references/registry-workflow.md,
     "Body shape"). So the only gradeable shape is::
 
         <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
@@ -321,7 +413,7 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
     A V1 template node writes one ``target="path"`` input per field. A V2
     element from ``registry get --input-details`` writes one
     ``target="pathParameters"`` input holding them all as a JSON object
-    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    (classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
     from the V1 template"). A V2 payload that is not a JSON object adds
     nothing, and neither does a null, object or array value. A V2 boolean or
     number reads as V1 spells it: ``"false"``, ``"1"``.
@@ -427,6 +519,8 @@ HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 LEGACY_HTTP_OBJECT = "http-request"
 _JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
 _TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
+_EXPRESSION_SLOT = "{}"
+_LITERAL_SLOT = "{literal}"
 
 
 class RequestShape(Enum):
@@ -434,19 +528,28 @@ class RequestShape(Enum):
     HTTP = UNIFIED_HTTP_REQUEST
 
 
+def _literal_text(text: str) -> str:
+    return text.replace(_EXPRESSION_SLOT, _LITERAL_SLOT)
+
+
 def _literal_path(value: str) -> str:
-    """``value`` with each non-literal operand as ``{}``:
-    ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``."""
+    """``value`` with each non-literal operand as ``{}``, and a literal ``{}``
+    as ``{literal}``: ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``,
+    ``/v2/{}/items`` -> ``/v2/{literal}/items``."""
     if not value.startswith("="):
-        return value
+        return _literal_text(value)
 
     expression = value.removeprefix("=js:").removeprefix("=")
     parts: list[str] = []
     for single, double, template, other in _JS_OPERAND_RE.findall(expression):
         if other.strip("() \t\n"):
-            parts.append("{}")
+            parts.append(_EXPRESSION_SLOT)
             continue
-        parts.append(single or double or _TEMPLATE_SLOT_RE.sub("{}", template))
+        if template:
+            slots = _TEMPLATE_SLOT_RE.split(template)
+            parts.append(_EXPRESSION_SLOT.join(_literal_text(s) for s in slots))
+            continue
+        parts.append(_literal_text(single or double))
     return "".join(parts)
 
 
@@ -492,6 +595,199 @@ def connector_requests(
 
         method, path = context_value(task, "method"), context_value(task, "path")
         yield task, method, path, RequestShape.ACTIVITY
+
+
+_PATH_SEGMENT = (
+    r"(?!=)(?![^/]*=js:)(?!\$?vars\.)(?![^/]*%7B[^/]*%7D)(?![^/]*<[^/]*>)(?!:\w)"
+    r"(?:\{\}|[^/{])+"
+)
+_PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
+_CATALOG_ONLY_METHODS = {"getbyid"}
+
+
+@lru_cache(maxsize=None)
+def _filled_path_re(template: str, taken: frozenset[tuple[str, str]]) -> re.Pattern[str]:
+    """End-anchored match for an IS path, each ``{name}`` one filled segment:
+    ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
+    not ``/v2/{projectId}/items``, ``/v2/${projectId}/items``,
+    ``/v2/<projectId>/items`` or ``/v2/:projectId/items``. A placeholder
+    segment never takes a ``(parent, literal)`` in ``taken``, ``parent`` being
+    the ``_parent`` of that segment."""
+    segments: list[str] = []
+    template_segments = template.split("/")
+    for position, segment in enumerate(template_segments):
+        parts = _PLACEHOLDER_RE.split(segment)
+        guard = ""
+        if parts == ["", ""]:
+            parent = _parent(template_segments[:position])
+            literals = sorted(s for p, s in taken if p == parent)
+            guard = "".join(rf"(?!{re.escape(s)}(?:/|$))" for s in literals)
+        segments.append(guard + _PATH_SEGMENT.join(re.escape(part) for part in parts))
+    return re.compile("/".join(segments) + "/?$", re.IGNORECASE)
+
+
+def _parent(segments: list[str]) -> str:
+    """The segments above one, each placeholder as ``{}``:
+    ``/v2/{ProjectId}/items`` -> ``/v2/{}/items``."""
+    return "/".join("{}" if "{" in s else s.lower() for s in segments)
+
+
+class ConnectorOperation(NamedTuple):
+    """``alternatives``: further ``(object_name, path)`` targets that also
+    satisfy the operation. ``operation``: the activity operation (``Create``,
+    ``Retrieve``, ...) an ``Intsvc.ActivityExecution`` node writes in its
+    context, any case. When the node has one it decides, whatever its
+    ``method``; without one, ``methods`` decides."""
+
+    label: str
+    object_name: str
+    methods: set[str]
+    path: str
+    alternatives: tuple[tuple[str, str], ...] = ()
+    operation: str = ""
+
+
+def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
+    return [(operation.object_name, operation.path), *operation.alternatives]
+
+
+def _methods(operation: ConnectorOperation) -> set[str]:
+    return {method.lower() for method in operation.methods}
+
+
+def _http_methods(operation: ConnectorOperation) -> set[str]:
+    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in _methods(operation)}
+
+
+def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[str, str]]:
+    return frozenset(
+        (_parent(segments[:position]), segment.lower())
+        for operation in operations
+        for _, path in _targets(operation)
+        for segments in [path.split("/")]
+        for position, segment in enumerate(segments)
+        if segment and "{" not in segment
+    )
+
+
+def _operation_matches(
+    task: ET.Element,
+    method: str,
+    path: str,
+    shape: RequestShape,
+    operation: ConnectorOperation,
+    taken: frozenset[tuple[str, str]],
+) -> bool:
+    method = method.lower()
+    targets = _targets(operation)
+    if shape is RequestShape.ACTIVITY:
+        object_name = context_value(task, "objectName")
+        if not any(object_name == o for o, _ in targets):
+            return False
+
+        recorded = context_value(task, "operation").strip().lower()
+        if operation.operation and recorded:
+            return recorded == operation.operation.lower()
+        return method in _methods(operation)
+
+    if method not in _http_methods(operation):
+        return False
+    request_path = path.split("?", 1)[0]
+    return any(_filled_path_re(p, taken).search(request_path) for _, p in targets)
+
+
+def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
+    """Each operation's request index, no request used twice, as many
+    operations covered as possible (augmenting-path bipartite matching)."""
+    owner: dict[int, int] = {}
+
+    def claim(operation: int, seen: set[int]) -> bool:
+        for request in candidates[operation]:
+            if request in seen:
+                continue
+            seen.add(request)
+            if request not in owner or claim(owner[request], seen):
+                owner[request] = operation
+                return True
+        return False
+
+    for operation in range(len(candidates)):
+        claim(operation, set())
+    return {operation: request for request, operation in owner.items()}
+
+
+def _require_valid(operation: ConnectorOperation) -> None:
+    for _, path in _targets(operation):
+        if not path.strip("/"):
+            raise ValueError(f"{operation.label}: path {path!r} matches any request")
+    if not _http_methods(operation):
+        raise ValueError(f"{operation.label}: methods {sorted(operation.methods)} hold no HTTP verb")
+
+
+def _missing_operation(operation: ConnectorOperation, taken_by: list[str]) -> str:
+    http_methods = "/".join(sorted(_http_methods(operation))).upper()
+    if operation.alternatives:
+        object_names, paths = zip(*_targets(operation))
+        targets = (
+            f"objectName in {list(object_names)} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} on one of {list(paths)}"
+        )
+    else:
+        targets = (
+            f"objectName={operation.object_name!r} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} {operation.path!r}"
+        )
+    message = f"{operation.label} ({targets} with every placeholder filled)"
+    if taken_by:
+        message += f"; matching node(s) already used: {', '.join(taken_by)}"
+    return message
+
+
+def no_connector_node_message(connector_name: str, connector_key: str) -> str:
+    return (
+        f"no bpmn:sendTask calls the {connector_name} connector: expected "
+        f"{ACTIVITY_EXECUTION} with context connectorKey {connector_key!r} "
+        f"(objectName not {LEGACY_HTTP_OBJECT!r}), or {UNIFIED_HTTP_REQUEST} "
+        f"with context connectorKey {HTTP_CONNECTOR_KEY!r} and body "
+        f"authentication 'connector', targetConnector {connector_key!r}"
+    )
+
+
+def require_operations(
+    requests: list[tuple[ET.Element, str, str, RequestShape]],
+    operations: list[ConnectorOperation],
+    group: str,
+) -> None:
+    for operation in operations:
+        _require_valid(operation)
+
+    taken = _literal_segments(operations)
+    candidates = [
+        [i for i, request in enumerate(requests) if _operation_matches(*request, operation, taken)]
+        for operation in operations
+    ]
+    assigned = _assign_requests(candidates)
+
+    missing: list[str] = []
+    for index, operation in enumerate(operations):
+        if index not in assigned:
+            taken_by = [
+                f"{requests[request][0].attrib.get('id', '?')} by {operations[other].label!r}"
+                for other, request in assigned.items()
+                if request in candidates[index]
+            ]
+            missing.append(_missing_operation(operation, taken_by))
+            continue
+
+        task, method, request_path, _shape = requests[assigned[index]]
+        target = request_path or context_value(task, "objectName")
+        print(f"OK: {operation.label} -> {task.attrib.get('id', '?')} ({method} {target})")
+
+    if missing:
+        fail(
+            f"missing {group} connector node(s), each operation needs its own node:\n  "
+            + "\n  ".join(missing)
+        )
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

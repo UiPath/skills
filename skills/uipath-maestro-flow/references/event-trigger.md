@@ -98,7 +98,8 @@ not patch a prebuilt sample/cache entry to make the missing event appear.
 ## Generic events: name the object
 
 Most connectors expose their record events generically — `record-created`,
-`record-updated` (Data Fabric, Salesforce, ServiceNow, Jira, Dynamics, …).
+`record-updated` (Salesforce, ServiceNow, Jira, Dynamics, …). Data Fabric is
+not one of them: its record events are curated, with the object built in.
 One node type covers every object of the connection, so the subscription must
 say which one with `object`. It is not an event parameter: these operations
 take none, so `where` stays empty and `check` refuses a subscription that
@@ -106,26 +107,30 @@ omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
 
 ```ts
 <!--skill-flavor:generic-event-import:start-->
-import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
+import { RecordCreated, RecordUpdated } from './connectors/uipath-salesforce-sfdc.ts';
 <!--skill-flavor:generic-event-import:end-->
 
-// Start when a ContractRegistry record is created with dueDate before 2026-08-04.
+// Start when an Opportunity is created with CloseDate before 2026-08-04.
 .trigger(onEvent(RecordCreated, {
-  object: 'ContractRegistry',
-  filters: [{ field: 'dueDate', lessThan: '2026-08-04' }],
-  connection: 'dataFabric', folder: 'shared',
+  object: 'Opportunity',
+  filters: [{ field: 'CloseDate', lessThan: '2026-08-04' }],
+  connection: 'salesforce', folder: 'shared',
 }))
 
-// Pause until a FileUploadVerify_20260618 record is updated.
+// Pause until an Account record is updated.
 .step('updated', waitForEvent(RecordUpdated, {
-  object: 'FileUploadVerify_20260618', connection: 'dataFabric', folder: 'shared',
+  object: 'Account', connection: 'salesforce', folder: 'shared',
 }))
 ```
 
-The objects come from the bound connection, never from a guess:
+The objects come from the bound connection, never from a guess. Prepare the
+event for the object, as for any event (above); prepare matches the name
+against the connection's objects. Without `--object` it refuses with
+`EVENT_OBJECT_REQUIRED` and lists the objects the connection has:
 
 ```bash
-uip is triggers objects uipath-uipath-dataservice CREATED --connection-id <id> --output json
+uip maestro registry prepare uipath-salesforce-sfdc --action record-updated \
+  --object Account
 ```
 
 The emitted node carries the object as `inputs.detail.objectName` (and inside
@@ -165,6 +170,12 @@ vocabulary is the designer's, and each form compiles to the same
 | `contains`, `startsWith`, `endsWith` | text | `contains(subject,'Invoice')` |
 | `equals`, `notEquals` | text, number or boolean | `status=='open'`, ``priority==`3` `` |
 | `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual` | number, or an ISO date string | ``priority>`3` ``, `to_number(dueDate)<to_number('2026-08-04')` |
+| `is`, `isNot` | always `true` | ``hasAttachments==`true` ``, ``isRead!=`true` `` |
+
+`is` / `isNot` are the designer's boolean tests ("Is" / "Is not" on the
+canvas). They always test against `true`, so `isNot: true` also matches an
+event that lacks the field. For "is false" write `equals: false`; any other
+value for `is` / `isNot` is refused (`EVENT_FILTER_BAD_VALUE`).
 
 Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath
 compares numbers only, so the subscription would match nothing. Write the

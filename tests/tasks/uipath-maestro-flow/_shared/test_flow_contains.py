@@ -143,3 +143,27 @@ def test_absent_regex_fails_without_flow(tmp_path, monkeypatch):
 def test_absent_and_positive_combined(sandbox):
     assert main(["quick-form", "--absent-regex", "forbidden-token"]) == 0
     assert main(["quick-form", "--absent-regex", r"\.output\.approved"]) == 1
+
+
+def _make_studio_web_project(tmp_path, solution="Demo", project="Demo", body=FLOW_BODY):
+    """Studio Web names a Flow project's main file ``new.flow``."""
+    proj = tmp_path / solution / project
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    (proj / "new.flow").write_text(body)
+    return proj
+
+
+def test_flow_name_matches_studio_webs_new_flow_in_the_named_project(tmp_path, monkeypatch):
+    _make_studio_web_project(tmp_path, project="SimEval")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--flow-name", "SimEval", "quick-form"]) == 0
+
+
+def test_flow_name_rejects_new_flow_in_another_project(tmp_path, monkeypatch, capsys):
+    _make_studio_web_project(tmp_path, project="Other")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--flow-name", "SimEval"]) == 1
+    assert "no discovered .flow file is named SimEval.flow" in capsys.readouterr().err

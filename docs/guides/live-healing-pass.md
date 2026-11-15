@@ -1,6 +1,6 @@
 # Live healing pass: what to tell the agent and what to ask
 
-The live healing pass checks a finished build against the real application and fixes what the offline build got wrong. It expands step 4 of [Working with uipath-genome](working-with-uipath-genome.md#4--check-run-and-fix).
+The live healing pass checks a finished build against the real application and fixes what the offline build got wrong. It expands step 4 of [Working with UiPath genomes](working-with-uipath-genome.md#4--check-run-and-fix).
 
 The agent already works read-only outside the runs you allow, never edits the genome while building, and closes only the windows it opened. What it does not know is your system, your data and your limits. This page lists what to tell it, what to ask before the first run, how to question a failure, and what the final report must say.
 

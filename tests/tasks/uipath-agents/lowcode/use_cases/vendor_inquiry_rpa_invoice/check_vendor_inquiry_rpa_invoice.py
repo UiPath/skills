@@ -2,8 +2,10 @@
 """Vendor inquiry — document + RPA (file returned by an RPA tool) check.
 
 Final-state only. Validates:
-  1. Autonomous agent; schemas in sync; vendor-name and inquiry inputs
-     (names are the agent's choice) templated.
+  1. Autonomous agent; schemas in sync. Input names are the agent's choice,
+     so the checker requires at least two string inputs (vendor name and
+     inquiry) and every input templated into a message; which input plays
+     which role is left to the LLM judge.
   2. A solution-local RPA process tool for the "DownloadVendorInvoice"
      project already in the solution (type=process, location=solution,
      folderPath=solution_folder, UUID referenceKey) whose input/output schemas
@@ -23,8 +25,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
     assert_existing_project,
+    _resolve,
     entry_point_schemas,
-    require_input,
     strip_schema,
     UUID_RE,
     assert_autonomous,
@@ -108,11 +110,12 @@ def main() -> None:
     assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    inputs = [
-        require_input(in_schema, "vendor name", "vendorName", "vendor", "supplierName", "name"),
-        require_input(in_schema, "inquiry", "inquiry", "inquiryText", "emailText", "email", "emailBody", "query", "message", "body"),
-    ]
-    assert_inputs_referenced(agent, inputs)
+    props = {k: v for k, v in (in_schema.get("properties") or {}).items() if isinstance(v, dict)}
+    strings = [k for k, v in props.items() if _resolve(in_schema, v).get("type") == "string"]
+    if len(strings) < 2:
+        fail(f"inputSchema must declare the vendor name and the inquiry as string inputs, found {sorted(props)}")
+    print(f"OK: string inputs {sorted(strings)}")
+    assert_inputs_referenced(agent, list(props))
     check_rpa_tool()
     require_resource(AGENT_DIR, is_file_reading_tool, "file-reading built-in tool")
     assert_unique_resource_ids(AGENT_DIR)

@@ -420,7 +420,7 @@ Analyze folder conventions, names, workflows, `expressionLanguage`, and `depende
 
 ### Step 2: Consult Activity Reference Docs
 
-Read `references/activity-docs/`: known package → `activity-docs/{PackageName}.md`; unknown package → `activity-docs/_INDEX.md`; VB.NET → `activity-docs/_PATTERNS.md`; XAML → `references/xaml-basics-and-rules.md`; gotchas → `activity-docs/_COMMON-PITFALLS.md`; InvokeCode → `activity-docs/_INVOKE-CODE.md`; REFramework → `activity-docs/_REFRAMEWORK.md`; Document Understanding → `activity-docs/_DU-PROCESS.md`; all activities → `activity-docs/AllActivities.md`. These describe behavior, not exact CLR names, property names, or enum values; Steps 4 and 5 remain mandatory for those.
+Read `references/activity-docs/`: known package → `activity-docs/{PackageName}.md`; unknown package → `activity-docs/_INDEX.md`; VB.NET → `activity-docs/_PATTERNS.md`; XAML → `references/legacy/xaml-basics-and-rules.md`; gotchas → `activity-docs/_COMMON-PITFALLS.md`; InvokeCode → `activity-docs/_INVOKE-CODE.md`; REFramework → `activity-docs/_REFRAMEWORK.md`; Document Understanding → `activity-docs/_DU-PROCESS.md`; all activities → `activity-docs/AllActivities.md`. These describe behavior, not exact CLR names, property names, or enum values; Steps 4 and 5 remain mandatory for those.
 
 ### Step 3: Search Current Project
 

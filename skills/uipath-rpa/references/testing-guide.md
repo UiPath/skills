@@ -83,10 +83,10 @@ If the workflow has arguments, pass them as entries of `InvokeWorkflowFile.Argum
 ```xml
 <ui:InvokeWorkflowFile WorkflowFileName="CalculateDiscount.xaml" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:Decimal" x:Key="amount">
+    <InArgument x:TypeArguments="x:Decimal" x:Key="in_Amount">
       <CSharpValue x:TypeArguments="x:Decimal">1500.00m</CSharpValue>
     </InArgument>
-    <InArgument x:TypeArguments="x:Decimal" x:Key="discountRate">
+    <InArgument x:TypeArguments="x:Decimal" x:Key="in_DiscountRate">
       <CSharpValue x:TypeArguments="x:Decimal">0.10m</CSharpValue>
     </InArgument>
   </ui:InvokeWorkflowFile.Arguments>

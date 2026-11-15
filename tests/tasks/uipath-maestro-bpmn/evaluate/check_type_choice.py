@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Verify the persisted evaluator types and the agent's reasoning report (BPMN).
+
+The evaluator taxonomy is the shared eval engine, identical to Flow. Reads
+`report.json` written by the agent and asserts:
+
+  Goal A — natural-language similarity → llm-judge-output
+  Goal B — deterministic JSON shape similarity → json-similarity
+  Goal C — substring presence → contains
+
+Pass ``--artifact goal-a|goal-b|goal-c`` to check one persisted evaluator;
+without it, check the report.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+REPORT = Path("report.json")
+EXPECTED = {
+    "goal_a_type": {
+        "llm-judge-output",
+        "uipath-llm-judge-output-semantic-similarity",
+    },
+    "goal_b_type": {"json-similarity", "uipath-json-similarity"},
+    "goal_c_type": {"contains", "uipath-contains"},
+}
+ARTIFACT_EXPECTED = {
+    "goal-a": ("goal-a-evaluator", "uipath-llm-judge-output-semantic-similarity"),
+    "goal-b": ("goal-b-evaluator", "uipath-json-similarity"),
+    "goal-c": ("goal-c-evaluator", "uipath-contains"),
+}
+
+
+def _load_jsons() -> list[tuple[Path, dict]]:
+    docs = []
+    for path in Path(".").rglob("*.json"):
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict):
+            docs.append((path, value))
+    return docs
+
+
+def _evaluator_name(doc: dict) -> str | None:
+    # The persisted evaluator schema keys identity off top-level ``id`` and
+    # carries the display name under ``evaluatorConfig.name`` — there is no
+    # top-level ``name`` (unlike eval-set files).
+    config = doc.get("evaluatorConfig")
+    if isinstance(config, dict) and config.get("name"):
+        return config["name"]
+    return doc.get("name") or doc.get("id")
+
+
+def _check_artifact(goal: str) -> None:
+    name, type_id = ARTIFACT_EXPECTED[goal]
+    match = next(
+        (
+            path
+            for path, doc in _load_jsons()
+            if _evaluator_name(doc) == name and doc.get("evaluatorTypeId") == type_id
+        ),
+        None,
+    )
+    if match is None:
+        sys.exit(f"FAIL: no {name!r} evaluator artifact has type {type_id!r}")
+    print(f"OK: {match} persists {name!r} with type {type_id!r}")
+
+
+def _check_report() -> None:
+    if not REPORT.is_file():
+        sys.exit(f"FAIL: missing {REPORT}")
+    try:
+        doc = json.loads(REPORT.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        sys.exit(f"FAIL: {REPORT} is not valid JSON: {e}")
+
+    failures: list[str] = []
+    for key, accepted in EXPECTED.items():
+        got = doc.get(key)
+        if got not in accepted:
+            failures.append(f"{key}: got {got!r}, expected one of {sorted(accepted)!r}")
+
+    if failures:
+        sys.exit("FAIL: " + " | ".join(failures))
+    print("OK: all 3 evaluator-type choices match their persisted evaluator kinds")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--artifact", choices=ARTIFACT_EXPECTED)
+    args = parser.parse_args()
+    if args.artifact:
+        _check_artifact(args.artifact)
+    else:
+        _check_report()
+
+
+if __name__ == "__main__":
+    main()

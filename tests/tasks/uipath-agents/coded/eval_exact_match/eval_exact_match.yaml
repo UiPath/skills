@@ -11,7 +11,7 @@ description: >
   the authored agent's quality, reported as INFO and never graded. The
   skill-mandated `smoke-test.json` may coexist with the task's own set;
   the checker locates sets and results by content, not by file count.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:validate, feature:eval, feature:framework-langgraph]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:validate, feature:eval, feature:framework-langgraph, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 35

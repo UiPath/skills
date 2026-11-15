@@ -1,0 +1,66 @@
+task_id: skill-api-workflow-trycatch-retry
+description: >
+  Build: author a Try/Catch with Studio Web's task-level Retry section
+  (`catch.retry`) around a flaky JavaScript activity. Grades the exact shape the
+  designer writes — `retry` inside `catch` beside `as` and `do`, never on the
+  activity — with the requested count, delay (inline object or ISO 8601) and
+  linear backoff, a `catch.do` Response returning "failed", a success-path
+  Response, the `FlakyCompute` project folder, and a Valid `validate`. Before per-activity retry shipped the
+  skill called this an anti-pattern, so the regression is an agent refusing it,
+  hand-rolling a DoWhile retry loop, or reaching for workflow-level
+  `httpRetryConfig` (GET-only, does not apply to JavaScript).
+
+  Offline: no HTTP or connector call. Retry behaviour is not graded because the
+  executor a local `uip` release bundles may predate `catch.retry`.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ..
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+initial_prompt: |
+  Create an API workflow project `FlakyCompute`. It runs a JavaScript activity
+  that can fail transiently. Use the Try/Catch activity's own Retry setting so the
+  activity is retried up to 5 times, 2 seconds apart with linear backoff; if it
+  still fails, return { "status": "failed" } from the catch branch, otherwise
+  return the script result.
+
+  Validate. Do not run.
+
+success_criteria:
+  - type: run_command
+    description: "TryCatch carries catch.retry (5, 2000 ms, linear) around the JavaScript activity, with a catch.do fallback"
+    command: "python3 $REFERENCE_DIR/check_activity_retry.py trycatch"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip api-workflow validate returns Valid"
+    command: "python3 $REFERENCE_DIR/check_activity_retry.py validation"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the API Workflow static validator"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent respected the request not to execute the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
+    weight: 1.0
+    pass_threshold: 1.0

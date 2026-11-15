@@ -77,6 +77,7 @@ Quality checklist for UiPath Coded Web Applications — apps built with web fram
 | Check | Severity | How to Verify |
 |---|---|---|
 | No hardcoded API keys, tokens, or secrets | Critical | Grep for `apiKey`, `secret`, `token`, `password` in source |
+| Third-party APIs reached through an IS connection, not a `fetch` the app authenticates | **Critical** | Grep `fetch(` / `axios` to non-UiPath hosts with an auth header. Any key (env var, `uipath.json`, build-time inject) ships in `dist/`. Fix: IS connector, or `uip is connectors builder`. SDK calls on the app's session are fine |
 | No `.env` file included in build output | Critical | `ls dist/.env` |
 | No source maps in production (`*.map` files) | Warning | `find dist/ -name "*.map"` |
 | Authentication properly configured | Warning | Check auth patterns |

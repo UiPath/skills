@@ -81,4 +81,3 @@ When the user adds an org-level signal ("apply the traceability settings organiz
 - [impl.md](impl.md) — the per-step apply implementation.
 - [synthesize-formdata-guide.md](synthesize-formdata-guide.md) — the `synthesize-formdata` script (args, exit codes, warnings).
 - [merge-overrides-guide.md](merge-overrides-guide.md) — the `merge-overrides` script (merge rules, exit codes).
-- `assets/examples/partial-apply-example.md` — worked example of the full flow.

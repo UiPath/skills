@@ -158,8 +158,8 @@ initial_prompt: |
   - The `uip` CLI is already available.
   - Treat the generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
-  - If either resource is unresolved, write a skeleton task per the
-    skeleton-tasks reference. Its `tasks/registry-resolved.json` entry MUST
+  - If either resource is unresolved, write a skeleton (placeholder) task for
+    it, as the skill's unresolved-resource rule says. Its `tasks/registry-resolved.json` entry MUST
     still record the cross-task references in a fenced wiring-notes code
     block (e.g. `approved <- "Review"."Review Expense".approved`). When both
     tasks resolve, the downstream input MUST be bound via `=vars.<varId>`.

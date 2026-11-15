@@ -1,7 +1,7 @@
 <!--skill-flavor:loop-choice:start-->
-Studio Web has one loop: the round trip in
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle). It merges every change into the
-target `.flow` and validates that file. The emit-only mode and the packaged-SDK
+Studio Web's loop is in [SKILL.md — Lifecycle](../SKILL.md#lifecycle): a new
+flow compiles straight into its `.flow`, an edit merges into the target `.flow`, and
+both validate that file. The emit-only mode and the packaged-SDK
 local gates below are for a terminal; do not use them here.
 <!--skill-flavor:loop-choice:end-->
 
@@ -13,10 +13,11 @@ copy.
 
 <!--skill-flavor:local-gates:start-->
 Studio Web does not use these gates. Its loop is
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle): `check --source --baseline`
-against the canvas copy, each `prepare` it names, `compile` into
-`.flow-sdk/edited/`, `merge` into the target `.flow`,
-then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle). An edit runs
+`check --source --baseline` against the canvas copy, each `prepare` it names,
+`compile` into `/tmp/flow-draft/<Project>/<Name>/edited/`, `merge` into the
+target `.flow`, then `validate`. A new flow runs `check --source`, each
+`prepare` it names, `compile` into its `.flow`, `format`, then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
@@ -33,15 +34,15 @@ SDK verbs run in the page — see
 <!--skill-flavor:product-cli-scaffold:end-->
 
 <!--skill-flavor:debug-flags:start-->
-In Studio Web the verb is `uip maestro flow debug "<Project>"`. `<Project>` is a
+In Studio Web the verb is `uip maestro flow debug "<Project>" --inputs '{}'`. `<Project>` is a
 project name in the open solution, not a path; it defaults to the open project.
 Each connection must be in the solution first. A `500` at `prepare-custom-debug` is
 transient: retry once. These are the flags the host takes:
 
 | Need | Exact form |
 |---|---|
-| JSON inputs | `-i '{"name":"value"}'`, inline only; the host does not read `@file` |
-| Start trigger | `--entry-point <path>`, exactly as `entry-points.json` lists it; omit to start at the default root |
+| JSON inputs | Always: `-i '{"name":"value"}'`, or `-i '{}'` when the flow takes none; without it the run waits on the Debug configuration dialog. Inline only; the host does not read `@file` |
+| Start trigger | `--entry-point <path>`, exactly as `entry-points.json` lists it; omit to start at the default root. It cannot start another flow |
 | Wait bound | `--timeout <seconds>`; the default is 120, the range is 10 to 150 |
 
 The host ignores `--attachment`, `--output` and `--output-filter`.

@@ -69,7 +69,7 @@ def main():
     if shape == CONNECTOR_READ and not q["type"].endswith(".query-entity-records"):
         fail(f"the Data Service node is {q['type']!r}; the lookup is the query-entity-records operation")
     # A raw HTTP call would satisfy every behaviour rung, so name it out.
-    http = [n for n in nodes if str(n.get("type", "")) in ("core.action.http", "uipath.connector.uipath-uipath-http.http-request")]
+    http = [n for n in nodes if str(n.get("type", "")).startswith("core.action.http") or str(n.get("type", "")) == "uipath.connector.uipath-uipath-http.http-request"]
     if http:
         fail(f"the flow calls Data Service over raw HTTP ({[n['id'] for n in http]}); use the connector action")
 

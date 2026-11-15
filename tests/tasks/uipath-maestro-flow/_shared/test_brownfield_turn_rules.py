@@ -58,7 +58,7 @@ PINNED = {
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("studioweb", "SKILL.md"): [
-        "`uip maestro flow debug \"<Project>\"` is a real run: ask per references/operate.md.",
+        "`uip maestro flow debug \"<Project>\" --inputs '{}'` is a real run: ask per references/operate.md.",
         "`flow debug` is a REAL run, not a validation step: ask first, as it says.",
     ],
     ("default", "references/operate.md"): [
@@ -242,7 +242,7 @@ def test_work_loops_clear_work_first():
 
 def test_cleanups_are_guarded():
     unguarded = [c for c in _cleanups() if CLEANUP_GUARD not in c]
-    assert len(_cleanups()) >= 4, "expected the Editing, pipeline, hand and supplied-source cleanups"
+    assert len(_cleanups()) >= 3, "expected the Editing, pipeline and supplied-source cleanups"
     assert not unguarded, f"each .flow-sdk cleanup must start `{CLEANUP_GUARD}`:\n" + "\n".join(unguarded)
 
 

@@ -48,7 +48,7 @@ When a workflow fails at runtime with a selector error:
 1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
-4. **Follow the package's recover selector guide** - check ui-automation-guide.md for information on how to perform the recovery. If nothing relevant is found there, check uia-improve-selector-guide.md.
+4. **Follow the package's recover selector guide** -- routed from `ui-automation-guide.md` § Documentation.
 5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
@@ -135,11 +135,11 @@ That XAML compiles, validates, runs — and does nothing. A re-run of the build 
 
 ```csharp
 [Workflow]
-public void Execute(string in_CredentialAssetName, out string out_WIID)
+public string Execute(string credentialAssetName)
 {
     // TODO[Indicate]: attach to the ACME WI app — replace placeholder with Descriptors.<App>.<Screen>
     using var app = uiAutomation.Open(/* TODO[Indicate]: Descriptors.AcmeWi.Login */);
-    var (username, password) = system.GetCredential(in_CredentialAssetName);
+    var (username, password) = system.GetCredential(credentialAssetName);
 
     // TODO[Indicate]: target the Username field
     app.TypeInto(/* TODO[Indicate]: Descriptors.AcmeWi.Login.Username */ "username-placeholder", username);
@@ -152,7 +152,7 @@ public void Execute(string in_CredentialAssetName, out string out_WIID)
 
     // TODO[Indicate]: target the WIID readout field on the next screen
     using var home = uiAutomation.Attach(/* TODO[Indicate]: Descriptors.AcmeWi.Home */);
-    out_WIID = home.GetText(/* TODO[Indicate]: Descriptors.AcmeWi.Home.WIIDField */ "wiid-field-placeholder");
+    return home.GetText(/* TODO[Indicate]: Descriptors.AcmeWi.Home.WIIDField */ "wiid-field-placeholder");
 }
 ```
 
@@ -165,14 +165,14 @@ What you must NOT do:
 
 ```csharp
 [Workflow]
-public void Execute(string in_CredentialAssetName, out string out_WIID)
+public string Execute(string credentialAssetName)
 {
     // TODO[selectors]: replace these with real uiAutomation calls once Object Repository is populated
     Log("LoginWorkflow: type username");
     Log("LoginWorkflow: type password");
     Log("LoginWorkflow: click Login");
     Log("LoginWorkflow: read WIID");
-    out_WIID = "";
+    return "";
 }
 ```
 

@@ -8,7 +8,7 @@ description: >
   Verifies the agent stacks @guardrail with ByoValidator — pinned
   to the configuration by its validator name, blocking on violations — over a real
   factory function rather than reaching for the built-in PII validator.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:edit, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

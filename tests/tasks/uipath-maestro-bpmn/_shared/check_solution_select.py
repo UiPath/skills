@@ -20,9 +20,10 @@ Assertion map (Flow -> BPMN):
                   check, different file suffix
 
 Ground truth for the `.uipx` `Projects[].Type` value a Maestro BPMN project
-registers as ("ProcessOrchestration", not "Bpmn" or "Flow"): the
+registers as ("ProcessOrchestration", not "Bpmn" or "Flow", compared
+case-insensitively because `bpmn init` writes "processOrchestration"): the
 `ProjectType`/`contentType` value documented throughout
-skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md
+classic/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md
 and mirrored in an existing `.uipx` fixture elsewhere in this repo
 (tests/tasks/uipath-maestro-flow/inline_agent/inline_solution_maestro_tool/_fixtures/
 OnboardingFlowSol/OnboardingFlowSol.uipx has `"Type": "ProcessOrchestration"`
@@ -95,7 +96,8 @@ def check_solution() -> None:
     path = SELECTED / f"{SELECTED.name}.uipx"
     projects = read_solution(path).get("Projects")
     if not isinstance(projects, list) or not any(
-        isinstance(project, dict) and project.get("Type") == PROJECT_TYPE
+        isinstance(project, dict)
+        and str(project.get("Type", "")).lower() == PROJECT_TYPE.lower()
         for project in projects
     ):
         fail(f"{path} does not register a {PROJECT_TYPE} project")

@@ -65,6 +65,14 @@
       },
       "last_synced": null
     },
+    "uipath-bundles": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-coded-apps": {
       "status": "stable",
       "confluence": {
@@ -145,14 +153,6 @@
       },
       "last_synced": null
     },
-    "uipath-knowledge-bundles": {
-      "status": "preview",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
     "uipath-maestro-bpmn": {
       "status": "in-development",
       "confluence": {
@@ -162,7 +162,7 @@
       "last_synced": null
     },
     "uipath-maestro-case": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null

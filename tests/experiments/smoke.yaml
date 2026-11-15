@@ -32,8 +32,6 @@ defaults:
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
-    permission_mode: acceptEdits
-    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:

@@ -89,6 +89,61 @@ def test_unedited_fixture_is_preserved(project: Path) -> None:
         assert intent(project, which) == 1
 
 
+# What the compiler adds for a managed HTTP step that names no connection.
+HTTP_BINDINGS = [
+    {
+        "id": "b-http-connection",
+        "name": "uipath-uipath-http connection",
+        "type": "string",
+        "resource": "connection",
+        "resourceKey": "",
+        "default": "ImplicitConnection",
+        "propertyAttribute": "ConnectionId",
+    },
+    {
+        "id": "b-http-folder",
+        "name": "FolderKey",
+        "type": "string",
+        "resource": "connection",
+        "resourceKey": "",
+        "propertyAttribute": "FolderKey",
+    },
+]
+ALLOW_HTTP_BINDINGS = ("--added-binding", "uipath-uipath-http connection", "--added-binding", "FolderKey")
+
+
+def add_bindings(*bindings: dict):
+    return lambda flow: flow.setdefault("bindings", []).extend(copy.deepcopy(list(bindings)))
+
+
+def test_added_binding_fails_unless_the_task_allows_it(project: Path, capsys) -> None:
+    mutate(project, add_bindings(*HTTP_BINDINGS))
+
+    assert graph(project) == 1
+    out = capsys.readouterr().out
+    assert "binding added: 'uipath-uipath-http connection'" in out and "binding added: 'FolderKey'" in out
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 0
+
+
+def test_allowing_one_binding_does_not_allow_another(project: Path, capsys) -> None:
+    mutate(project, add_bindings(*HTTP_BINDINGS, {"id": "b-other", "name": "slackConnection", "resource": "connection"}))
+
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 1
+    assert capsys.readouterr().out.strip() == "FAIL: binding added: 'slackConnection'"
+    assert graph(project, "--added-binding", "FolderKey") == 1
+
+
+def test_allowed_binding_does_not_excuse_a_changed_original(project: Path, capsys) -> None:
+    def change(flow: dict) -> None:
+        original = next(b for b in flow["bindings"] if b["name"] == "FolderKey")
+        original["resourceKey"] = "changed"
+
+    mutate(project, change)
+
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 1
+    assert capsys.readouterr().out.strip() == "FAIL: binding removed or altered: 'FolderKey'"
+
+
 def test_credit_cap_edit_passes_only_with_its_allowance(project: Path) -> None:
     mutate(project, insert_cap)
     assert intent(project, "credit-cap") == 0
@@ -727,6 +782,19 @@ def test_container_growing_around_nothing_on_the_canvas_fails(child: dict) -> No
 def test_added_node_right_of_its_successor_on_another_row_fails(tmp_path: Path) -> None:
     original = row_flow({"a": (0, 0), "b": (384, 0)}, [("a", "b")])
     final = row_flow({"a": (0, 0), "n": (600, 200), "b": (384, 0)}, [("a", "n"), ("n", "b")])
+    assert layout_of(tmp_path, original, final) == 1
+
+
+@pytest.mark.parametrize("r_x, expected", [pytest.param(672, 0, id="pushed-clear-of-the-added-node"), pytest.param(1200, 1, id="pushed-further")])
+def test_added_node_pushes_the_original_node_it_points_to(tmp_path: Path, r_x: int, expected: int) -> None:
+    original = row_flow({"a": (0, 0), "r": (384, 160)}, [("a", "r")])
+    final = row_flow({"a": (0, 0), "n": (480, -16), "r": (r_x, 160)}, [("a", "r"), ("a", "n"), ("n", "r")])
+    assert layout_of(tmp_path, original, final) == expected
+
+
+def test_original_node_moved_by_an_edge_from_a_kept_node_fails(tmp_path: Path) -> None:
+    original = row_flow({"a": (0, 0), "b": (192, 0), "r": (384, 160)}, [("a", "b")])
+    final = row_flow({"a": (0, 0), "b": (192, 0), "r": (576, 160)}, [("a", "b"), ("b", "r")])
     assert layout_of(tmp_path, original, final) == 1
 
 

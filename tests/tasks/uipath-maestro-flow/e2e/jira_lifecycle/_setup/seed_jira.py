@@ -26,10 +26,11 @@ issues = [
     {"summary": f"coder-eval jira lifecycle {tag} item2", "priority": "Low"},
     {"summary": f"coder-eval jira lifecycle {tag} item3", "priority": "High"},
 ]
+conn = jira_is.connection_id()
 seed = {
     "tag": tag,
     "project_key": jira_is.PROJECT_KEY,
-    "issuetype_id": jira_is.ISSUETYPE_ID,
+    "issuetype_id": jira_is.issuetype_id(conn),
     "issues": issues,
     "escalated_marker": f"ESCALATED {tag}",
     "routine_marker": f"ROUTINE {tag}",

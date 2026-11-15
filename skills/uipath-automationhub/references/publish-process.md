@@ -207,12 +207,15 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
 
+If an answer differs from what the user saw or approved (an application substituted after a failed create, a required question answered just to pass validation), list it in the report so they can correct it in AH.
+
 Then summarize. The report **MUST end with both View deep links** — they are not optional; a publish report without them is incomplete. The URL segment is `process_slug`: take it from the 201's `data.process_slug`, and **if you no longer have it, fetch it** — `GET /automations/{process_id}` returns the record with `process_slug`. URL-encode it. Emit the links only after the verification read-back above succeeded:
 
 ```
 Published to Automation Hub:
   Process: <name>  (process_id: <id>)
   Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
+  Changed after a failed create: <only when something was: what, and why>
   View process:   {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}
   View documents: {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
 ```

@@ -254,7 +254,7 @@ def test_lint_file_classifies_high_medium_and_info(env):
     p = _task(env, "t.yaml", [
         r"uip\s+zzz\s+run",
         r"uip\s+flow\s+init",
-        r"uip\s+.*anything",
+        r"uip\s+\w+\s+anything",
     ])
     findings = _lint(p)
     assert [f["severity"] for f in findings] == ["High", "Medium", "Info"]
@@ -264,7 +264,7 @@ def test_lint_file_classifies_high_medium_and_info(env):
     assert high["message"] == "No verb in pattern matches uip catalog (unmatched: ['zzz run'])."
     assert medium["message"] == "Pattern matches only retired verbs: `flow init` → `maestro flow`"
     assert info["message"].startswith("Pattern too dynamic to verify")
-    assert info["command_pattern"] == r"uip\s+.*anything"
+    assert info["command_pattern"] == r"uip\s+\w+\s+anything"
     assert all(f["path"] == str(p) and f["axis"] == "cli-verb-reachability" for f in findings)
 
 
@@ -300,7 +300,7 @@ def test_main_text_ok_when_all_patterns_reachable(env, monkeypatch, capsys):
 
 
 def test_main_text_lists_findings_by_severity_and_exits_one(env, monkeypatch, capsys):
-    info = _task(env, "a_info.yaml", [r"uip\s+.*x"])
+    info = _task(env, "a_info.yaml", [r"uip\s+\w+\s+x"])
     high = _task(env, "z_high.yaml", [r"uip\s+zzz\s+run"])
     medium = _task(env, "m_medium.yaml", [r"uip\s+flow\s+init"])
     code, out, _ = _run(monkeypatch, capsys, str(info), str(high), str(medium))
@@ -314,7 +314,7 @@ def test_main_text_lists_findings_by_severity_and_exits_one(env, monkeypatch, ca
 
 
 def test_main_text_info_only_exits_zero(env, monkeypatch, capsys):
-    p = _task(env, "t.yaml", [r"uip\s+.*x"])
+    p = _task(env, "t.yaml", [r"uip\s+\w+\s+x"])
     code, out, _ = _run(monkeypatch, capsys, str(p))
     assert code == 0
     assert "0 High, 0 Medium, 1 Info" in out
@@ -331,7 +331,7 @@ def test_main_skips_missing_paths_with_message(env, monkeypatch, capsys):
 # --- main: json -------------------------------------------------------------
 
 def test_main_json_emits_ndjson_and_exits_one_on_high(env, monkeypatch, capsys):
-    p = _task(env, "t.yaml", [r"uip\s+zzz\s+run", r"uip\s+.*x"])
+    p = _task(env, "t.yaml", [r"uip\s+zzz\s+run", r"uip\s+\w+\s+x"])
     code, out, _ = _run(monkeypatch, capsys, "--json", str(p))
     assert code == 1
     rows = [json.loads(line) for line in out.splitlines()]
@@ -349,7 +349,7 @@ def test_main_json_with_no_findings_prints_nothing_and_exits_zero(env, monkeypat
 def test_main_report_summarises_findings_and_exits_one_on_high(env, monkeypatch, capsys):
     t1 = _task(env, "tests/tasks/skill-a/one.yaml", [r"uip\s+zzz\s+run", r"uip\s+flow\s+init"])
     t2 = _task(env, "tests/tasks/skill-a/two.yaml", [r"uip\s+zzz\s+run"])
-    t3 = _task(env, "tests/tasks/skill-b/three.yaml", [r"uip\s+qqq\s+go", r"uip\s+.*x"])
+    t3 = _task(env, "tests/tasks/skill-b/three.yaml", [r"uip\s+qqq\s+go", r"uip\s+\w+\s+x"])
     report = env / "out" / "report.md"
     code, out, _ = _run(
         monkeypatch, capsys, "--report", str(report),
@@ -392,3 +392,127 @@ def test_write_report_ignores_high_findings_whose_message_lacks_unmatched_list(t
     assert "| **High** (verb not in catalog) | 1 | 1 |" in text
     assert "verbs not in catalog\n" not in text
     assert "High findings by skill" not in text
+
+
+# --- unbounded-dot-repeat ---------------------------------------------------
+
+@pytest.mark.parametrize("pattern", [
+    r"uip\s+rpa\s+validate\b.*\bProjectA\b",
+    r"\bProjectA\b.*\buip\s+rpa\s+validate\b",
+    r"(uip|\$UIP)\s+solution\s+list[\s\S]*--flag",
+    r"uip\s+solution(?:.|\n)*?--flag",
+    r"uip\s+solution[^\n]*--flag",
+])
+def test_has_unbounded_dot_flags_command_crossing_repeats(pattern):
+    assert cv.has_unbounded_dot(pattern)
+
+
+@pytest.mark.parametrize("pattern", [
+    r"uip\s+rpa\s+validate\b[^;&|\n]*\bProjectA\b",   # tied to one simple command
+    r"uip\s+solution\s+list",                             # no trailing literal
+    r"uip\s+solution\s+.*",                               # repeat ends the pattern
+    r"echo\b.*\bfoo",                                     # no uip verb
+    r"uip\s+tm\b(?:\\\n|(?!\s\|)[^\n;&])*?--new-name",   # [^;&] stops at separators
+    r"do\b(?:(?!\bdone\b)[\s\S])*?\buip\s+rpa\s+validate",  # guarded body, no literal before uip-side
+    r"uip\s+(",                                            # does not compile
+])
+def test_has_unbounded_dot_ignores_constrained_or_unanchored_repeats(pattern):
+    assert not cv.has_unbounded_dot(pattern)
+
+
+def test_lint_file_reports_unbounded_dot_as_info_without_changing_exit(env, monkeypatch, capsys):
+    p = _task(env, "t.yaml", [r"uip\s+solution\s+list\b.*\bProjectA\b"])
+    (f,) = _lint(p)
+    assert (f["severity"], f["axis"], f["criterion_index"]) == ("Info", "unbounded-dot-repeat", 0)
+    assert "`[^;&|\\n]*`" in f["message"]
+    code, out, _ = _run(monkeypatch, capsys, str(p))
+    assert code == 0
+    assert "0 High, 0 Medium, 1 Info" in out
+    code, out, _ = _run(monkeypatch, capsys, "--json", str(p))
+    assert code == 0
+    assert json.loads(out)["axis"] == "unbounded-dot-repeat"
+
+
+# --- negative-guard-coverage ------------------------------------------------
+
+LOGIN_CATALOG = {"login", "login refresh", "login status", "login which", "login tenant",
+                 "login tenant list", "login tenant set", "login profiles",
+                 "login profiles list", "login profiles delete", "solution", "solution list"}
+
+# The swagger-not-supported guard as rewritten to exempt read-only subcommands.
+READ_ONLY_EXEMPT_GUARD = (
+    r"uip\s+(login|auth\s+login)\b(?!\s+(status|which|tenant\s+list|profiles\s+list)\b)"
+    r"(?!(?:(?!\n|uip\s)[^&;|])*(--help(?![-\w])|\s-h\b))"
+)
+
+
+def test_guard_coverage_lists_forbidden_and_allowed_subcommands():
+    forbidden, allowed = cv.guard_coverage(READ_ONLY_EXEMPT_GUARD, LOGIN_CATALOG)
+    assert forbidden == ["uip login profiles delete", "uip login refresh", "uip login tenant set"]
+    assert allowed == ["uip login profiles list", "uip login status", "uip login tenant list",
+                       "uip login which", "uip login --help"]
+
+
+def test_guard_coverage_status_only_guard_still_forbids_read_only_subcommands():
+    forbidden, allowed = cv.guard_coverage(r"uip\s+(login|auth\s+login)\b(?!\s+status\b)", LOGIN_CATALOG)
+    assert {"uip login which", "uip login tenant list", "uip login --help"} <= set(forbidden)
+    assert allowed == ["uip login status"]
+
+
+@pytest.mark.parametrize("pattern", [
+    r"uip\s+solution\s+list",       # group not in the pattern as a group with subcommands guarded bare
+    r"uip\s+agenthub\s+mcp\s+create",  # not in this catalog
+    r"uip\s+(",                      # does not compile
+])
+def test_guard_coverage_none_without_a_guarded_catalog_group(pattern):
+    assert cv.guard_coverage(pattern, LOGIN_CATALOG) is None
+
+
+def test_swagger_not_supported_login_guard_coverage():
+    """The real task's guard, against the real catalog: session-changing
+    subcommands stay forbidden, `login status` stays allowed."""
+    import yaml
+    task = REPO_ROOT / "tests/tasks/uipath-mcp-servers/swagger-not-supported/task.yaml"
+    spec = yaml.safe_load(task.read_text(encoding="utf-8"))
+    (pattern,) = [c["command_pattern"] for c in spec["success_criteria"]
+                  if c.get("type") == "command_not_executed" and "login" in c["command_pattern"]]
+    catalog = set(json.loads((REPO_ROOT / "assets/uip-catalog-snapshot.json").read_text())["verbs"])
+    forbidden, allowed = cv.guard_coverage(pattern, catalog)
+    assert {"uip login refresh", "uip login tenant set"} <= set(forbidden)
+    assert "uip login status" in allowed
+
+
+def test_lint_file_reports_guard_coverage_as_info(env, monkeypatch, capsys):
+    monkeypatch.setattr(cv, "CATALOG_PATH", env / "login-catalog.json")
+    (env / "login-catalog.json").write_text(
+        json.dumps({"cli_version": "7.7.7", "verbs": sorted(LOGIN_CATALOG)}), encoding="utf-8")
+    p = _task(env, "t.yaml", [], extra=[
+        "  - type: command_not_executed",
+        "    description: did not log in again",
+        f"    command_pattern: '{READ_ONLY_EXEMPT_GUARD}'",
+        "  - type: command_not_executed",
+        "    tool_name: Read",
+        f"    command_pattern: '{READ_ONLY_EXEMPT_GUARD}'",
+    ])
+    (f,) = _lint(p)
+    assert (f["severity"], f["axis"], f["criterion_index"]) == ("Info", "negative-guard-coverage", 0)
+    assert f["forbidden"] == ["uip login profiles delete", "uip login refresh", "uip login tenant set"]
+    assert f["message"].startswith("Guard forbids: `uip login profiles delete`")
+    code, _, _ = _run(monkeypatch, capsys, str(p))
+    assert code == 0
+
+
+def test_write_report_counts_new_info_axes_separately(tmp_path):
+    findings = [
+        {"path": "a.yaml", "severity": "Info", "axis": "cli-verb-reachability", "message": "x"},
+        {"path": "a.yaml", "severity": "Info", "axis": "unbounded-dot-repeat", "message": "x"},
+        {"path": "b.yaml", "severity": "Info", "axis": "unbounded-dot-repeat", "message": "x"},
+        {"path": "b.yaml", "severity": "Info", "axis": "negative-guard-coverage", "message": "x"},
+    ]
+    report = tmp_path / "r.md"
+    cv.write_report(findings, 3, "1.0", report)
+    text = report.read_text()
+    assert "| **Info** (pattern too dynamic to verify) | 1 | 1 |" in text
+    assert "| **Info** (unbounded `.` repeat crosses commands) | 2 | 2 |" in text
+    assert "| **Info** (negative-guard coverage report) | 1 | 1 |" in text
+    assert "1 patterns could not be statically enumerated" in text

@@ -6,7 +6,7 @@ Every rule in check_shape.py and check_behavior.py iterates RESOURCES so a
 second row (v2's RPA leg, Phase 5) plugs in without touching either
 checker's control flow -- only this table, and that row's own
 context-field spec, grow. Do NOT assume every wrapper kind shares the
-releaseKey/folderKey shape verified below for
+two addressing forms verified below for
 `Orchestrator.ExecuteApiWorkflowAsync`: Phase 5's `Orchestrator.StartJob`
 row must verify its own runtime contract before copying this one (see
 SKILL.md rule 18 -- the same broken-template family, not proven identical
@@ -60,23 +60,56 @@ RESOURCES: list[dict[str, Any]] = [
         "project_file": "project.uiproj",
         "wrapper": "Orchestrator.ExecuteApiWorkflowAsync",
         "output": "message",
-        # Verified end-to-end for this wrapper (SKILL.md rule 18 /
-        # references/registry-workflow.md): the runtime reads `releaseKey`
-        # (bound via =bindings.<id> to the resource's real process Key) and
-        # a LITERAL `folderKey` (the target folder's real FolderKey GUID)
-        # -- never `name`/`folderPath`, and never the template's own
-        # (misnamed) `folderId`.
-        "context_fields": {
-            "releaseKey": {
-                "mode": "binding",
-                "binding_resource": "process",
-                "binding_attr": "Key",
+        # `ProcessType` of the resource's deployment in `uip or processes list
+        # --all-fields`. The live resolvers keep only rows of this type before
+        # matching the project name, so the BPMN orchestrator deployed beside
+        # the API workflow (`ProcessOrchestration`) can never stand in for it.
+        "process_type": "Api",
+        # The runtime contract depends on the node's `uipath:type version`,
+        # so the required context fields are keyed by it. Both forms were
+        # verified end-to-end with `uip maestro bpmn debug` against a deployed
+        # API workflow (UiPath/builder-sdk#1807):
+        #   v1 (the registry template's version; SKILL.md rule 18 /
+        #       references/registry-workflow.md): the runtime reads
+        #       `releaseKey` (bound via =bindings.<id> to the resource's real
+        #       process Key) and a LITERAL `folderKey` (the target folder's
+        #       real FolderKey GUID). A v1 node addressed only by
+        #       `name`/`folderPath` faults with `170009 Could not get value
+        #       for key:ReleaseKey from context in input`.
+        #   v2 (what the BPMN builder SDK's `.executeApiWorkflow({ process,
+        #       folder })` emits): the runtime resolves the release itself
+        #       from `name` (the deployed process's Name) and `folderPath`
+        #       (the folder it is deployed in), and reads no key.
+        # A node with no version attribute is graded as v1.
+        "context_forms": {
+            "v1": {
+                "releaseKey": {
+                    "mode": "binding",
+                    "binding_resource": "process",
+                    "binding_attr": "Key",
+                },
+                "folderKey": {"mode": "literal_guid"},
             },
-            "folderKey": {"mode": "literal_guid"},
+            "v2": {
+                # Either a literal, or =bindings.<id> to a binding of this
+                # resource/propertyAttribute (the solution's process binding
+                # for the field), whose default is the value.
+                "name": {
+                    "mode": "process_name",
+                    "binding_resource": "process",
+                    "binding_attr": "name",
+                },
+                "folderPath": {
+                    "mode": "folder_path",
+                    "binding_resource": "process",
+                    "binding_attr": "folderPath",
+                },
+            },
         },
         # The broken registry template's misnamed field -- its presence
         # signals the template was pasted as served rather than fixed per
-        # rule 18. Leftover `name`/`folderPath` are harmless and allowed.
+        # rule 18. Leftover `name`/`folderPath` on a v1 node are harmless
+        # and allowed (verified: a v1 node carrying all four runs).
         "forbidden_context_fields": ("folderId",),
     },
 ]
@@ -237,6 +270,17 @@ def find_wrapper_task(process: ET.Element, wrapper_type: str) -> Optional[ET.Ele
         if type_el is not None and type_el.attrib.get("value") == wrapper_type:
             return element
     return None
+
+
+def wrapper_type_version(task_element: ET.Element) -> str:
+    """The `version` on the activity's `uipath:type`, defaulting to "v1"
+    (the registry template's version) when the attribute is absent."""
+
+    activity = activity_of(task_element)
+    type_el = activity.find(q(UIPATH_NS, "type")) if activity is not None else None
+    if type_el is None:
+        return "v1"
+    return type_el.attrib.get("version") or "v1"
 
 
 def context_fields_of(task_element: ET.Element) -> dict[str, dict[str, str]]:
@@ -408,6 +452,14 @@ ReleaseKeyResolver = Callable[[dict[str, str]], Optional[set[str]]]
 # None means the same abstention contract as above; a live resolver raises
 # CompositionError on failure rather than returning None.
 FolderKeyResolver = Callable[[], Optional[str]]
+# resolve_process_names() -> set[str] | None
+# The Name of the resource project's own deployment(s) in the seeded folder
+# (the v2 form's `name` must be one of them). Same abstention contract as above: None only
+# to abstain, an EMPTY set when the folder has no deployed process.
+ProcessNameResolver = Callable[[], Optional[set[str]]]
+# resolve_folder_path() -> str | None
+# The seeded folder's full path (the v2 form's `folderPath` must equal it).
+FolderPathResolver = Callable[[], Optional[str]]
 
 
 def never_resolves(*_args: Any, **_kwargs: Any) -> None:

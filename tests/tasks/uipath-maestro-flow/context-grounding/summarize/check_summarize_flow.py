@@ -7,7 +7,11 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      stays `deep-rag` even though the canvas display name is "Summarize").
   2. The instance has no `model` block (BPMN type/serviceType lives in
      `definitions[].model` only — rule 16).
-  3. `typeVersion` is exactly `"1.0"` (matches `definitions[<dr>].version`).
+  3. `typeVersion` equals the version of the `uipath.pattern.deep-rag` definition
+     the flow itself carries in `definitions[]`, in MAJOR.MINOR form, >= 1.0.
+     The version is read from the carried definition, not hard-coded: the
+     builder SDK writes 1.1 by default (builder-sdk#1868) and still writes 1.0
+     when pinned, and a hard-coded constant breaks on every definition bump.
   4. `inputs.prompt` is non-empty.
   5. `inputs.attachment` matches the canonical trigger-output wiring, either
      as the v1 string `=js:$vars.<triggerId>.output.<fileVarId>` or the SDK's
@@ -34,7 +38,10 @@ from _shared.advisory_flow_utils import unwrap  # noqa: E402
 from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "uipath.pattern.deep-rag"
-EXPECTED_TYPE_VERSION = "1.0"
+# Lowest deep-rag version this scenario accepts. The exact version comes from the
+# carried definition (see `_check_type_version`).
+MIN_TYPE_VERSION = (1, 0)
+_MAJOR_MINOR = re.compile(r"^(\d+)\.(\d+)$")
 EXPECTED_OUTPUT_SOURCE = "=response"
 
 _ATTACHMENT_REF = re.compile(
@@ -142,13 +149,33 @@ def _check_no_instance_model(node: dict) -> None:
         )
 
 
-def _check_type_version(node: dict) -> None:
-    tv = node.get("typeVersion")
-    if tv != EXPECTED_TYPE_VERSION:
+def _check_type_version(flow: dict, node: dict) -> str:
+    """`node.typeVersion` must name the deep-rag definition the flow carries.
+
+    Returns the checked version.
+    """
+    carried = [
+        d for d in flow.get("definitions") or []
+        if isinstance(d, dict) and d.get("nodeType") == NODE_TYPE
+    ]
+    if not carried:
         _fail(
-            f"typeVersion={tv!r}; must be {EXPECTED_TYPE_VERSION!r} (matches "
-            "`definitions[<deep-rag>].version`). `1.0.0` is wrong."
+            f"definitions[] carries no {NODE_TYPE!r} definition; the node's typeVersion "
+            "must match a definition the flow carries."
         )
+    tv = node.get("typeVersion")
+    versions = sorted({d.get("version") for d in carried}, key=str)
+    if tv not in versions:
+        _fail(
+            f"typeVersion={tv!r}; must equal `definitions[<deep-rag>].version` "
+            f"(carried: {versions})."
+        )
+    m = _MAJOR_MINOR.match(tv) if isinstance(tv, str) else None
+    if not m:
+        _fail(f"typeVersion={tv!r}; must be MAJOR.MINOR (e.g. `1.1`). `1.0.0` is wrong.")
+    if (int(m.group(1)), int(m.group(2))) < MIN_TYPE_VERSION:
+        _fail(f"typeVersion={tv!r}; must be >= {'.'.join(map(str, MIN_TYPE_VERSION))}.")
+    return tv
 
 
 def _check_output_source(node: dict) -> None:
@@ -223,7 +250,7 @@ def main():
     inputs = node.get("inputs") or {}
 
     _check_no_instance_model(node)
-    _check_type_version(node)
+    type_version = _check_type_version(flow, node)
 
     prompt = inputs.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
@@ -242,7 +269,8 @@ def main():
     _check_pascal_output_mappings(flow, node["id"])
 
     print(
-        f"OK: {NODE_TYPE} node present; no instance model; typeVersion=1.0; prompt set; "
+        f"OK: {NODE_TYPE} node present; no instance model; typeVersion={type_version} "
+        f"(matches the carried definition); prompt set; "
         f"attachment wired via trigger output to a `type: file` `in` variable; "
         f"returnCitations=true; output source=`=response`; End node maps `summary` to "
         f"`content.Text` and `citations` to `content.Citations` (PascalCase) via `=js:`"

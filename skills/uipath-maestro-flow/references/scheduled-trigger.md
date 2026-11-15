@@ -18,8 +18,7 @@ export default flow('nightly')
 A platform timer starts the flow on a recurring interval.
 
 Signature: `.trigger(scheduled({ every: string }))`. `every` takes an ISO-8601
-repeating interval, or a Quartz cron expression (e.g. `'0 0 2 * * ?'`), which
-selects the trigger's 1.2 definition automatically.
+repeating interval or a Quartz cron expression (e.g. `'0 0 2 * * ?'`).
 
 Prefer self-contained variables because there may be no caller supplying inputs.
 
@@ -53,7 +52,12 @@ not prove the platform scheduler fired. The scheduling claim requires a
 deployed run observed at the requested cadence.
 
 `every` is an ISO-8601 repeating interval (`R/PT30M`, `R/PT1H`, `R/P1W`) or a
-Quartz cron expression (`0 0 2 * * ?`, `0 30 9 ? * MON-FRI`). A cron `every`
-selects the trigger's 1.2 definition automatically and emits `timerValue`; an
-ISO interval stays on 1.1 byte-identically. Pinning `{ version: '1.1' }` with a
-cron expression is a compile error.
+Quartz cron expression (`0 0 2 * * ?`, `0 30 9 ? * MON-FRI`). Cron and a
+single-unit interval are written at the trigger's 1.2 definition, in
+`timerValue`. 1.2 takes exactly one unit within these ranges: `PT1S`–`PT59S`,
+`PT1M`–`PT59M`, `PT1H`–`PT23H`, `P1D`–`P31D`, `P1W`–`P52W`, `P1M`–`P12M`, or
+`P1Y`–`P9999Y` (so `R/PT45M`, `R/PT2H` and `R/P2W` are 1.2). Any other ISO
+interval, such as `R/PT90M`, `R/PT24H` or `R/P1DT12H`, is written at 1.1.
+Pinning `{ version: '1.2' }` with such an interval is a compile error
+(`SCHEDULE_INTERVAL_VERSION`), and so is pinning `{ version: '1.1' }` with cron.
+A decompiled node keeps its version, e.g. `{ version: '1.1' }`.

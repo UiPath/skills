@@ -93,7 +93,9 @@ else:
 ## Gotchas
 
 - `uip codedagent run` / `invoke` cannot upload attachments — use the env-var fallback above, or test the platform path via Studio Web / Orchestrator.
+- Guardrails can inspect these files — see [guardrails/files-guide.md](guardrails/files-guide.md). The placeholder `Attachment` above does not exercise a file guardrail: it reads the file from the platform by id, so test with a real upload.
 
 ## References
 
 - `sdk-services.md` § Attachments, § Jobs
+- [guardrails/files-guide.md](guardrails/files-guide.md) — guardrails that inspect uploaded and produced files

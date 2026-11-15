@@ -191,8 +191,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No source file imports SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` / `getAppBase` imports are allowed — the SDK class + app-base helper live at the package root and a Web app's OAuth hook legitimately imports them; only service classes are subpath-only."
-    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b|\\bgetAppBase\\b'"
+    description: "No source file imports SERVICE CLASSES from the package root (Anti-pattern #1). Root-level `{ UiPath }` / `getAppBase` imports are allowed — the SDK class + app-base helper live at the package root and a Web app's OAuth hook legitimately imports them; only service classes are subpath-only. `import type { … }` from the root is allowed too — type-only imports erase at build and are not the runtime service-class import the anti-pattern targets."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '^\\s*import\\s+type\\b' | grep -vE '\\bUiPath\\b|\\bgetAppBase\\b'"
     timeout: 15
     expected_exit_code: 1
     weight: 1.5
@@ -219,8 +219,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uipath.json baseUrl uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
-    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; b=str(json.load(open('$F')).get('baseUrl','')); sys.exit(0 if re.match(r'https://([\\w-]+\\.)*api\\.uipath\\.com', b) else 1)\""
+    description: "uipath.json baseUrl follows the Rule #8 host table: a UiPath cloud host uses the API subdomain (api.uipath.com / <prefix>.api.uipath.com, never cloud.uipath.com / <prefix>.uipath.com); any other host (Automation Suite, custom) is used verbatim, so a real https host passes as-is (no path, no placeholder, no localhost)"
+    command: "F=$(find . -name 'uipath.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys,re; from urllib.parse import urlparse; u=urlparse(str(json.load(open('$F')).get('baseUrl',''))); h=(u.hostname or '').lower().rstrip('.'); cloud=h=='uipath.com' or h.endswith('.uipath.com'); real=bool(re.fullmatch(r'[a-z0-9-]+(\\.[a-z0-9-]+)+', h)) and u.path in ('', '/'); sys.exit(0 if u.scheme=='https' and real and (re.fullmatch(r'([a-z0-9-]+\\.)*api\\.uipath\\.com', h) if cloud else True) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

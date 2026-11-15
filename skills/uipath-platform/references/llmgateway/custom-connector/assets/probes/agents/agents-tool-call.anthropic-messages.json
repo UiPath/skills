@@ -1,0 +1,95 @@
+{
+  "id": "agents-tool-call",
+  "description": "Agents forces one call to tool2 with the arguments the prompt gives. The gateway sends tool2, not tool1, because EnableByoGeminiForAgents is on in every environment; it accepts one or two calls because EnableParallelToolCallsExemption is on.",
+  "source": "AgentsChatCompatibilityProbe",
+  "apiFlavor": "AnthropicMessages",
+  "excludeFeatures": [
+    "agents-autopilot"
+  ],
+  "replaces": [
+    "base-chat"
+  ],
+  "order": 90,
+  "path": "/v1/messages",
+  "body": {
+    "model": "{{model}}",
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Please process the following:\n1. A string input: \"This is a test.\"\n2. A numeric input: 42"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "tool2",
+        "description": "Processes a generic user input, either string or numeric. Use option1 for string input and option2 for numeric input.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "parameter1": {
+              "type": "string",
+              "enum": [
+                "option1",
+                "option2"
+              ]
+            },
+            "parameter2": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "parameter1",
+            "parameter2"
+          ]
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "any"
+    }
+  },
+  "retries": [
+    {
+      "status": 400,
+      "ifBodyContains": [
+        "tool_choice: type",
+        "are not supported for this model"
+      ],
+      "edit": ".tool_choice = {\"type\": \"auto\"}",
+      "why": "the model refuses a forced tool choice; the gateway sends it once more with tool choice auto"
+    }
+  ],
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "content is an array of blocks with a string type",
+      "jq": "(.content | type) == \"array\" and all(.content[]; (.type | type) == \"string\")"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "true"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the answer comes from the assistant",
+      "jq": ".role == \"assistant\""
+    },
+    {
+      "reason": "MISSING_TOOL_CALL",
+      "says": "the answer calls a tool",
+      "jq": "([.content[] | select(.type == \"tool_use\") | {name, args: .input}] | length) > 0"
+    },
+    {
+      "reason": "INCORRECT_TOOL_CALL",
+      "says": "every call is tool2; one call carries one of the two expected argument sets, two calls carry both",
+      "jq": "[.content[] | select(.type == \"tool_use\") | {name, args: .input}] as $calls | [{\"parameter1\": \"option1\", \"parameter2\": \"This is a test.\"}, {\"parameter1\": \"option2\", \"parameter2\": \"42\"}] as $expected | ($calls | length) as $n | $n > 0 and all($calls[]; .name == \"tool2\" and .args != null) and (if $n == 1 then any($expected[]; . == $calls[0].args) elif $n == 2 then ($calls | map(.args) | sort) == ($expected | sort) else false end)"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ description: >
   a multi-instance SUBPROCESS whose body reads the current item and loop index at
   subprocess depth — `iterator[0].item` and `iterator[0].loopCounter` — not the
   task-level `iterator.item`. Grades the iterator-depth indexing rule from
-  references/expression-authoring.md. Authoring only — no cloud effects.
+  references/patterns/high-volume-batch-guide.md. Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:loop"]
 
 run_limits:
@@ -47,17 +47,19 @@ initial_prompt: |
     do NOT pause for approval — build the complete local project in one pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py MultiInstanceIteratorBpmn"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses a multi-instance loop marker"
-    path: "MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn"
-    includes:
-      - "multiInstanceLoopCharacteristics"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py MultiInstanceIteratorBpmn --contains 'multiInstanceLoopCharacteristics'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

@@ -20,21 +20,17 @@ Multi-branch based on an expression value. No namespace prefix.
       </ui:LogMessage>
     </Sequence>
   </Switch.Default>
-  <x:String x:Key="Active">
-    <Sequence DisplayName="Active Case">
-      <!-- Activities for "Active" -->
-    </Sequence>
-  </x:String>
-  <x:String x:Key="Inactive">
-    <Sequence DisplayName="Inactive Case">
-      <!-- Activities for "Inactive" -->
-    </Sequence>
-  </x:String>
+  <Sequence x:Key="Active" DisplayName="Active Case">
+    <!-- Activities for "Active" -->
+  </Sequence>
+  <Sequence x:Key="Inactive" DisplayName="Inactive Case">
+    <!-- Activities for "Inactive" -->
+  </Sequence>
 </Switch>
 ```
 
 **Key rules:**
 - `x:TypeArguments` must match the switch expression type
-- Case keys use `x:Key` attribute with the matching value
+- Each case is a `Sequence` carrying `x:Key="<literal>"` directly inside `<Switch>`; wrap every case and `Switch.Default` in a `Sequence`, even for a single activity (Rule 24)
 - `Switch.Default` is optional but recommended
-- For `x:Int32` switch: use `<x:Int32 x:Key="1">...</x:Int32>` etc.
+- For `x:Int32` switch: set `x:TypeArguments="x:Int32"` on `<Switch>`, its `Switch.Expression` `InArgument`, and the expression value, then key cases as `<Sequence x:Key="1" ...>`

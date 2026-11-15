@@ -109,6 +109,14 @@ def load_flow(expected_name: str) -> tuple[Path, dict[str, Any], list[dict[str, 
             for path in cwd.rglob(expected_name)
             if not EXCLUDED_GENERATED_PARTS.intersection(path.relative_to(cwd).parts)
         )
+        if not candidates:
+            # Studio Web names the main file `new.flow` inside a project named for the flow.
+            candidates = sorted(
+                path
+                for path in cwd.rglob("new.flow")
+                if path.parent.name == Path(expected_name).stem
+                and not EXCLUDED_GENERATED_PARTS.intersection(path.relative_to(cwd).parts)
+            )
         if len(candidates) != 1:
             fail(
                 f"expected exactly one generated {expected_name}, found {len(candidates)}: "

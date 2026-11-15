@@ -26,7 +26,7 @@ uip df entities create "MyEntity" \
 
 ## Supported Field Types
 
-Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive. **Only use types from this table.** The SDK enum is broader (`INTEGER`, `BIG_INTEGER`, `FLOAT`, `DOUBLE`, `UUID`, `DATETIME`) but those render broken in the UiPath Data Fabric UI — see [UI-broken types](#ui-broken-types-do-not-use) below.
+Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive. **Only use types from this table.** The SDK enum is broader (`INTEGER`, `BIG_INTEGER`, `FLOAT`, `DOUBLE`, `UUID`, `DATETIME`) but those render broken in the UiPath Data Fabric UI — see [UI-broken types](#ui-broken-types--do-not-use) below.
 
 | CLI type | SQL | Notes |
 |---|---|---|

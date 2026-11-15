@@ -29,7 +29,7 @@ A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Sol
 
 **Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
 `.flow-sdk/` is the SDK's own work directory: the source, `bindings.json`, `connectors/` and `connectors-local/` all go there by default, relative to the directory you run `uip` from. Each Flow project keeps its own, so a solution can hold several flows; Studio Web never reads it, and `uip solution pack`/`upload` and `flow debug` leave it out.
-**Run the SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`, `node .flow-sdk/*.pipeline.mjs`) from the project folder `<Solution>/<Name>/`**, as `( cd "<Solution>/<Name>" && … )` when your shell does not keep its directory between commands; every `.flow-sdk/` path in this guide and its references is relative to that folder. Everything else runs from the workspace root.
+**Run the SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`) from the project folder `<Solution>/<Name>/`**, as `( cd "<Solution>/<Name>" && … )` when your shell does not keep its directory between commands; every `.flow-sdk/` path in this guide and its references is relative to that folder. Everything else runs from the workspace root.
 Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
 `<Solution>` and `<Name>` come from the request's own names; one name given for both ("inside a solution of the same name"), or only the Flow's, serves both. `<Solution>` keeps it as written, spaces included; `<Name>` keeps only letters, numbers, `_` and `-` (`Headcount report form` → `HeadcountReportForm`).
 **Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
@@ -56,10 +56,11 @@ Emitting to the root is correct only for the packaged-SDK local gates, which nev
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table), and a usage error means the library is not cached, so run `uip maestro registry pull` first. For another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
+Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table). With none pulled it searches the tenant through `uip`. For another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
-`uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts`, and caches the library itself outside the project.
-Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`; their descriptor data is kept separately below `.flow-sdk/connectors-local/descriptors/<key>/`.
+`uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project.
+If the library cannot be downloaded, `pull` fetches referenced connectors via `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`.
+Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`, their descriptor data under `.flow-sdk/connectors-local/descriptors/<key>/`.
 Because the source sits in `.flow-sdk/` too, it imports them as `./connectors/<key>.ts` and `./connectors-local/<key>.ts`.
 
 ### The connector loop: author → check → prepare → check → compile
@@ -117,21 +118,19 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, compile the baseline, edit narrowly, and merge the delta into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
+In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, edit narrowly, and merge the edited source back into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
-For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
+`decompile` stamps the source's first line; `merge` reads it, derives the baseline from the original, and writes over it:
 
 ```bash
-( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
-uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
-node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
-# edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error
-node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
+( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name baseline -o -name edited -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
+uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+# edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320)
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
+( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp (SDK<6.96.0): NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 ```
 
-Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
-Source that must stay inside the project (relative sidecars): [the safe project loop](references/brownfield.md#the-safe-project-loop).
+Only `merge` writes the `.flow`; a refusal writes nothing. Validate as in [Lifecycle](#lifecycle); on failure, fix the source, `check` and `merge` again (it is restamped). `no stamp` or `MERGE_ORIGINAL_CHANGED`: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 **True-brownfield procedure:** **[`references/brownfield.md`](references/brownfield.md)**.
 <!--skill-flavor:sdk-editing:end-->
 
@@ -139,7 +138,7 @@ Source that must stay inside the project (relative sidecars): [the safe project 
 
 The quick start above shows the shape — `flow(id)`, declarations, nodes, `.return(...)`, `.build()`. Three things it does not show:
 
-- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`. Inputs, outputs and vars use one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`. The other `types` members (`integer`, `float`, `double`, `date`, `datetime`, `jsonSchema`) come from the Case and BPMN builders; the Flow builder and `validate` accept them without an error, but Workbench does not offer them, so write a date as `types.string` and an integer as `types.number`. The builder has no node that reads an Orchestrator asset: keep a setting as a var default or an input.
+- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`. Inputs, outputs and vars use one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`. `float`, `double`, `date`, `datetime` and `jsonSchema` are refused: [variable types](references/author.md#variable-types). The builder has no node that reads an Orchestrator asset: keep a setting as a var default or an input.
 - **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look interchangeable on a straight chain and are not: inside a `.parallel` arm a terminate aborts the sibling arms mid-flight, where a return leaves them going.
 - **Expressions are how a step names something that is not a literal.** There is one per kind of thing you can refer to:
 
@@ -182,9 +181,8 @@ The table is the authoritative router; read a node's `Reference` before writing 
 | Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) | `examples/BakeOffEntryForm.flow.ts` |
 | Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
-| Standalone HTTP | `core.action.http` | `http({ managed: false, ... })` | [http.md](references/http.md) | `examples/LighthouseSignal.flow.ts` |
-| Managed HTTP | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
-| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0; `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
+| HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
+| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0 (`$metadata` parameter ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
 | Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |

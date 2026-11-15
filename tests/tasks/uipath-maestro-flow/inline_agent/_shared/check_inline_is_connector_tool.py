@@ -41,6 +41,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     assert_inline_agent_definition,
     find_inline_resource,
     is_real_uuid,
@@ -54,7 +55,7 @@ CONNECTOR_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.connector."
 
 SOLUTION = Path(os.getcwd()) / "ResearchFlowSol"
 FLOW_PROJECT = SOLUTION / "ResearchFlow"
-FLOW_PATH = FLOW_PROJECT / "ResearchFlow.flow"
+FLOW_PATH = main_flow_path(FLOW_PROJECT / "ResearchFlow.flow")
 
 
 def load(path: Path) -> dict:

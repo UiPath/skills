@@ -30,7 +30,7 @@ reference:
 initial_prompt: |
   Migrate the UiPath project in ./ConsentBannerProbe with the Activity
   Migrator. Target the 26.10 UIAutomation line. Do not run the migrated
-  project.
+  project. Download the Activity Migrator if it is not installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 

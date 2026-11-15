@@ -1,0 +1,62 @@
+parameters:
+  poolName: 'Security-Linux'
+  # Commit the GitHub publish job is packing. The checkout must match it, or
+  # the scan verdict would belong to different bytes than the ones published.
+  sourceCommit: ''
+
+stages:
+  # Customers run the published package through a DLP-style content
+  # inspection gate that rejects a whole skill on one shape match (card
+  # number, SSN, `--expiration` date, phone number, street address, token).
+  # This stage scans the packed tarball -- the composed, marker-free tree --
+  # with scripts/check-sensitive-content.py, the same scanner the PR check
+  # (validate-sensitive-content.yml) and the publish job run. No baseline:
+  # every block-tier finding blocks the release, on every channel.
+  - stage: Security_SensitiveContent
+    displayName: Sensitive content
+    dependsOn: []
+    jobs:
+      - job: Scan
+        pool: ${{ parameters.poolName }}
+        steps:
+          - checkout: self
+
+          - bash: |
+              set -euo pipefail
+              HEAD_SHA=$(git rev-parse HEAD)
+              if [ "$HEAD_SHA" != "$SOURCE_COMMIT" ]; then
+                echo "##vso[task.logissue type=error]Checked out $HEAD_SHA but the publish is packing $SOURCE_COMMIT (the ref moved after the gate was queued). Re-run the publish."
+                exit 1
+              fi
+              echo "Scanning $HEAD_SHA"
+            displayName: Verify checkout matches the published commit
+            env:
+              SOURCE_COMMIT: ${{ parameters.sourceCommit }}
+
+          - task: NodeTool@0
+            displayName: Use Node 22
+            inputs:
+              versionSpec: '22.x'
+
+          # npm 12, matching publish.yml: the nested pack inside `prepack`
+          # parses the npm 12 `npm pack --json` payload shape.
+          - bash: |
+              set -euo pipefail
+              npm install -g npm@12
+              echo "npm $(npm --version) / node $(node --version)"
+              rm -f uipath-skills-*.tgz
+              npm pack --pack-destination .
+              TARBALL=$(ls uipath-skills-*.tgz)
+              echo "##vso[task.setvariable variable=tarball]$TARBALL"
+              echo "Packed $TARBALL"
+            displayName: Pack the package
+
+          - bash: |
+              set -euo pipefail
+              if ! command -v python3 >/dev/null 2>&1; then
+                echo "##vso[task.logissue type=error]python3 is not available on agent pool '${{ parameters.poolName }}'."
+                exit 1
+              fi
+              python3 --version
+              python3 scripts/check-sensitive-content.py "$(tarball)"
+            displayName: Scan the packed tarball for customer-blocked content

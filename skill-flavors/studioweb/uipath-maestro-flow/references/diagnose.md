@@ -11,7 +11,7 @@ long reply, redirect it to a file as you start the run, then search the file:
 <!--skill-flavor:debug-redirect:start-->
 ```bash
 cd /solution/<Project>
-uip maestro flow debug "<Project>" > .flow-sdk/flow-debug.txt
+uip maestro flow debug "<Project>" --inputs '{}' > .flow-sdk/flow-debug.txt
 ```
 <!--skill-flavor:debug-redirect:end-->
 

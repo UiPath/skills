@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LicenceReader",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a3056362-e78d-48ea-b873-9ef3637cb246",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "LicenceReader"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "LicenceReader",
+      "package": {
+        "key": "5ca866c7-1403-4695-8a02-2ef0d1bf28d9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "1a0c1bb0-d977-45cd-b5e1-840d53cfd076",
+    "files": []
+  }
+}

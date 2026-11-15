@@ -16,7 +16,7 @@ import json
 
 from bpmn_doc_example import NS, REGISTRY_REFERENCE, ROOT, section_blocks
 
-SPEC = ROOT / "skills" / "uipath-maestro-bpmn" / "validator" / "bpmn-spec.json"
+SPEC = ROOT / "classic" / "skills" / "uipath-maestro-bpmn" / "validator" / "bpmn-spec.json"
 
 BODY_SECTION = '### Body shape: hand-authored files need ONE `target="body"` input'
 PARAM_SECTION = "### Required `Parameters` are separate from the body"

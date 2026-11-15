@@ -69,7 +69,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Final .flow passes `uip maestro flow validate`"
-    command: 'set -e; flows=$(find . -maxdepth 6 -name "*.flow"); [ -n "$flows" ] || exit 1; for f in $flows; do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)"; done'
+    command: 'find . -maxdepth 6 -name "*.flow" | { n=0; while IFS= read -r f; do n=$((n+1)); uip maestro flow validate "$f" --output json </dev/null | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" || exit 1; done; [ "$n" -gt 0 ]; }'
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
