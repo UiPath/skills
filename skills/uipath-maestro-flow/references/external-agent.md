@@ -22,17 +22,17 @@ Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name 
 uip maestro registry prepare <connector-key> --action <operation>
 ```
 
-`prepare` reads the tenant's node (`uip maestro flow registry get`) and the object's request fields (`uip is resources describe`). It writes the operation to `./.flow-sdk/connectors-local/`, adds the connection to `.flow-sdk/bindings.json`, and prints the import and the `connector(...)` call to paste. For example, Salesforce Agentforce's Execute Salesforce Agent:
+`prepare` reads the tenant's node (`uip maestro flow registry get`) and the object's request fields (`uip is resources describe`). It writes the operation to `./.flow-sdk/connectors-local/`, adds the connection to `.flow-sdk/bindings.json`, and prints the `connector(...)` call to paste. The source in `.flow-sdk/` imports the module as `./connectors-local/<connector-key>.ts`. For example, Salesforce Agentforce's Execute Salesforce Agent:
 
 ```ts
-import { ExecuteSalesforceAgent } from './.flow-sdk/connectors-local/uipath-salesforce-agent.ts';
+import { ExecuteSalesforceAgent } from './connectors-local/uipath-salesforce-agent.ts';
 
-.step('ask', connector(ExecuteSalesforceAgent, { message: { text: input('question') }, agent_id: '<agent id>' },
+.step('ask', connector(ExecuteSalesforceAgent, { message: { text: input('question') }, agent_id: lookup(ExecuteSalesforceAgent, 'agent_id').byDeveloperName('<agent name>') },
   { connection: 'agent', folder: 'shared' }))
 ```
 
 - Required inputs are the describe's `RequestFields` with `Required: true`, and the descriptor types them as required; `registry get` may not list them (CrewAI's `inputs.email_content`). A dotted field is a nested object in the source (`inputs: { email_content: ... }`); compile writes it back as the one key `inputs.email_content`.
-- A picker input such as `agent_id` is a lookup: `prepare` names it and prints the `--resolve <field>:<by>=<value>` that records the id, so author `lookup(...)` rather than pasting one ([connector-params.md](connector-params.md#resolving-connection-scoped-reference-values)).
+- A picker input such as `agent_id` is a lookup: author `lookup(...)` as above, and record its id with the `--resolve agent_id:DeveloperName=<agent name>` that `prepare` prints, rather than pasting an id ([connector-params.md](connector-params.md#resolving-connection-scoped-reference-values)).
 - The node runs as the connector object says (`sync`, `async` or `hybrid`). Compile writes that as `inputs.detail.executionType`, as `nodes configure` does, and the runtime picks the sync or async service type from it. Leave the definition's service type alone (`Intsvc.AsyncAgentExecution` even for a sync agent). If `prepare` warns that Integration Service reported no execution type, run `uip update` and prepare again.
 - To run it, `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)); ask first ([operate.md](operate.md#debug--a-real-end-to-end-run)).
 <!--skill-flavor:external-agent-cli:end-->
