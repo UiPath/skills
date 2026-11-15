@@ -186,6 +186,43 @@ project id. The SDK checker rejects a missing project id or a published agent
 with a missing folder, so the two resource forms cannot silently collapse into
 one another.
 
+## Name an in-solution sibling by project
+
+Needs `@uipath/maestro-builder-sdk` 6.108.0 or later. Any of the five
+process builders can then name a sibling of the solution by its project name
+instead of copying the two ids:
+
+```ts
+.step('analyze', agent({
+  location: 'in-solution',
+  project: '<AgentProject>',
+  inputs: { sentence: input('sentence') },
+  flavour: 'coded',
+}))
+```
+
+- `compile`, `check` and `flow merge` find the sibling's resource file under
+  `resources/solution_folder/process/` themselves, and write its `key` and
+  `projectId` into the `.flow`. Studio Web's Run node gets its `projectId`
+  without you setting it. Run them from inside the solution: they look for
+  the nearest folder at or above the flow that holds the `.uipx`, and refuse
+  `project` without one (`IN_SOLUTION_NO_SOLUTION`).
+- In a decompiled flow, the step keeps the `key` and `projectId` decompile
+  wrote. Switching it to `project` is optional; both forms merge back.
+- When the step declares no `returns`, they are read from the sibling's
+  `entry-points.json` output schema. An RPA project that was never built, or
+  an API workflow whose entry point has `output: null`, has none there:
+  declare `returns` yourself, as before.
+- The sibling still needs its resource file, made by the register step of
+  the recipe above.
+- They refuse a name the solution does not have
+  (`IN_SOLUTION_PROJECT_NOT_FOUND`, with the nearest name) and the wrong
+  builder for the sibling's type (`IN_SOLUTION_WRONG_BUILDER`, which names the
+  right call; for example `publishedFunction()` on a coded agent filed under
+  `process/function/`).
+- An older SDK ignores `project` and refuses the step for its missing key
+  (`AGENT_NO_KEY`, `RPA_NO_KEY`, …). Then use the id recipe above.
+
 ## Evidence boundary
 
 A green live run proves that a real job received inputs and returned the
