@@ -37,7 +37,7 @@ Present each `Data[]` entry's `DisplayName`, `NodeType`, and `Version` as a tabl
 
 ## Resource identity
 
-For one model, resolve the complete node type and companion defaults below; for listings, use [Listing published models](#listing-published-models). Run:
+This is the AUTHORING path, for the one model a step will run; for listings, use [Listing published models](#listing-published-models). Copy the complete node type and its companion defaults. The node type is tenant/version identity, not a string to reconstruct:
 
 ```bash
 uip maestro flow registry search '<project hint>' \
@@ -48,7 +48,7 @@ uip maestro flow registry get '<node-type>' \
   --output json
 ```
 
-Registry reads are cached for 30 minutes. If the model is missing, run `uip maestro flow registry pull --force` once and search again. `registry get` is the source of truth for ONE node: copy `project`, `modelName`, `folderName`, `folderPath`, and `versionTag`; do not use `uip ixp projects ...` or other IxP APIs. `--output-filter` runs against `Data`, so get paths start at `Node`; the projection avoids the full schema.
+Registry reads are cached for 30 minutes. If the model is missing, run `uip maestro flow registry pull --force` once and search again. `registry get` is the authoring source of truth for ONE node. Copy `project`, `modelName`, `folderName`, `folderPath`, and `versionTag` from that response; do not switch to `uip ixp projects ...` or reconstruct the deployment through other IxP APIs. `--output-filter` runs against `Data`, so get paths start at `Node`; the projection avoids the full schema.
 
 To read selected extraction fields, inspect only these two result-item schemas:
 
@@ -64,7 +64,7 @@ If no suitable published extractor exists: for a runtime or published-model requ
 
 ## File input from a connector event
 
-Read the trigger's `outputResponseDefinition` and pass its exact file-reference field to `fileRef`; for a `ReferenceID`, use `fileRef: out('start', 'ReferenceID')`. This direct connector-event-to-IxP shape passes product validation; do not add a download action merely to change it in a validate-only flow.
+Read the trigger's `outputResponseDefinition` and pass its exact file-reference field to `fileRef`; for example, a SharePoint-backed event that declares `ReferenceID` is wired as `fileRef: out('start', 'ReferenceID')`. This direct connector-event-to-IxP shape passes product validation; do not add a download action merely to change it in a validate-only flow.
 
 The SDK emits the accepted plain expression string:
 
