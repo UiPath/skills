@@ -47,8 +47,8 @@ artifact can establish.
 ## Installing the package
 
 <!--skill-flavor:install-package:start-->
-Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
-Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
+Skip the install when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
+Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile`, `merge` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
 Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
 
 ```bash
@@ -62,6 +62,45 @@ Any other failure (a timeout, a mirror refusing the package) is the user's netwo
 When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
 Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin.
 When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works.
+
+### Ask the SDK what it supports
+
+Read this even when the SDK is already installed.
+From `@uipath/maestro-builder-sdk` 6.101.0 the SDK can say which features it has: run `npx --no flow-sdk capabilities`.
+`--no` stops npx from downloading anything: it runs the workspace copy, else the global one.
+The command prints the name and version, then one feature name per line:
+
+```text
+$ npx --no flow-sdk capabilities
+@uipath/maestro-builder-sdk 6.101.0 (gitref 1a2b3c4)
+json-result
+flow-check-baseline
+flow-pipeline-strict
+...
+```
+
+`--json` prints one object instead: `{"ok":true,"name":"@uipath/maestro-builder-sdk","version":"6.101.0","gitref":"1a2b3c4","capabilities":["json-result",...]}`.
+Test one feature with `npx --no flow-sdk capabilities | grep -qx <name>`.
+Read the answer this way:
+
+- The list prints and has the name: the feature is there.
+- The list prints and lacks the name: the feature is not there. Upgrade the SDK, or use the fallback the reference gives.
+- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. That says nothing about the features below, which all shipped earlier. For one of them, follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
+
+The names are stable:
+
+| Name | Feature |
+|---|---|
+| `flow-check-baseline` | `check --baseline <original>.flow` ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)) |
+| `flow-pipeline-strict` | `node .flow-sdk/<Name>.pipeline.mjs --strict` |
+| `flow-decompile-scripts` | decompile prints scripts as functions and takes `--scripts string` |
+| `flow-script-metadata` | the `$metadata` parameter of a script function |
+| `flow-merge-source` | `merge <Name>.flow.ts --original <Name>.flow`, from the `// @decompiled-from` stamp |
+| `project-min-version` | `flowSdk.minVersion`, below |
+
+To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
+From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
+Both need `@uipath/maestro-builder-sdk` 6.101.0 or later (UiPath/builder-sdk#2009). An older SDK ignores `minVersion`, so a floor only takes effect once the SDK in use is 6.101.0 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` (or `--save-dev` for a workspace copy).
 <!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
