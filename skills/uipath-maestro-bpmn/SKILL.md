@@ -337,7 +337,7 @@ library and the prepared overlay, and reports a missing required input, an unres
 with the one command that closes it. `--library <dir>` and `--connectors-local <dir>` name
 them: `--connectors-local` defaults to `.flow-sdk/connectors-local/` under the current
 directory, where `prepare` writes it; `--library` defaults to `$FLOW_SDK_LIBRARY_JSON`, else
-the `registry pull` cache.
+the `uip maestro registry pull` cache (the connector library, not `uip maestro bpmn registry pull`).
 `check` reads the bindings only given `--bindings`; `compile` reads them by default ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 
 ## Operating a process
