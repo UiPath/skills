@@ -60,6 +60,24 @@ Never open with a yes/no question. Read the request and set the toggle yourself:
 
 When the toggle is on and the user did not ask for it by name, say in one line what you turned on and why, then proceed without waiting. When it is off but a proposal is close to the surface, mention it once in the final report as a one-line option.
 
+## Build from a genome Decision Capture block
+
+When the step's genome carries a `**Decision Capture:**` block, the toggle and the layout come from it, field by field. Never drop a field the block gives, and never switch off a card the block asks for.
+
+| Block field | What the app does |
+|---|---|
+| Level | Reasoning capture: toggle on, full layout. Light capture: toggle on, correction recorded, a reason only on an exception. Task only: toggle off |
+| Surface | Picks the surface below |
+| Proposed by · Parts | One part per row, pre-filled with its proposal and marked Recommended, evidence and its source beside it, nothing pre-selected |
+| Outcomes | One outcome card per row in the block's terms; a reason required as its Reason required column says |
+| Reasons | The starting reason chips per outcome, ending in Other |
+| What would change it | The drafted rules on the Next time card, one per question; never switched off when the block lists questions |
+| Add a factor | The "+ Add a reason" row when allowed |
+| Controls | Additional reason, Not relevant chips, weight menu and Next time each shown only when the block applies it |
+| Stakes triggers · Second review | Recorded in the task data for the process to route on; no extra step until pattern 9 has UI |
+| Signals · Stored · Never stored | `record`, `changeLog`, `timeOnTaskSeconds` and `intrinsicSignals` always on; never-stored fields kept out of the task data |
+| Usage statement | Shown as one line on the task |
+
 ## Pick the surface
 
 | Surface | Use when | Layout |

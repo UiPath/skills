@@ -27,7 +27,7 @@ Rules:
 One skill per row names the build skill that owns each component. **The build finds a process genome's components only through the Components table's Genome links.** A test component's Type cell names the shared test project.
 
 - A Type cell names the component type (`RPA process`), never a role: a split chosen at build may turn one `uipath-rpa` component into several `uipath-rpa` projects with the skill unchanged.
-- **A human approval or validation checkpoint** inside a Flow, BPMN process, Case plan or agent is built by the containing component's skill; a Rationale naming `uipath-human-in-the-loop` means the builder consults it for the gate design.
+- **A human approval or validation checkpoint** inside a Flow, BPMN process, Case plan or agent is built through `uipath-human-in-the-loop`, which hands the authoring to the containing component's skill. A Workflow step carrying a `**Decision Capture:**` block is handed to `uipath-human-in-the-loop` whole, for the step's task app: the person deciding gets an app that captures the decision and its reasons, with the surface, outcomes, reasons and reason rule the block states, and nothing summarised or dropped.
 - **Solution packaging** (`.uipx`) is under Deployment with `uipath-solution`, never a Build With row.
 - **A retired skill name** — `uipath-rpa-workflows`, `uipath-coded-workflows`, `uipath-coded-agents` — builds through `uipath-rpa`, and the report names the row for a `uipath-planner` edit.
 - **A skill the host lacks**: [build-guide.md § Start](build-guide.md) (name it and stop).

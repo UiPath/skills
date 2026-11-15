@@ -325,14 +325,40 @@ flowchart LR
 ### HITL Touchpoints
 
 <!--skill-flavor:bpmn-hitl-touchpoints:start-->
-<!-- One row per human-task node. Authored INLINE by uipath-maestro-bpmn (`.humanTask(...)` in the `.bpmn.ts` source) — never
-     route to uipath-human-in-the-loop, which hands Maestro HITL back to uipath-maestro-bpmn. Record business intent only
-     (who approves, what criteria); the BPMN specialist owns the task schema. -->
+<!-- One row per human-task node. Built through uipath-human-in-the-loop, which hands the authoring to uipath-maestro-bpmn (`.humanTask(...)`). Record business intent only (who approves, what criteria); the task schema is built from it. -->
 <!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
-| Node Key | HITL Type | Purpose | Approval Criteria |
+<!-- Capture: for a step with a decision capture spec from the PDD, a link to its Decision Capture subsection below; otherwise —. Its Surface sets HITL Type (design-guide.md, HITL routing). -->
+
+| Node Key | HITL Type | Purpose | Approval Criteria | Capture |
+|---|---|---|---|---|
+| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> | <[Decision Capture: NODE_KEY](#decision-capture-node_key) or —> |
+
+<!-- One subsection per step with a decision capture spec; delete when none. Fields verbatim from the PDD's How the decision is captured part. -->
+
+#### Decision Capture: `<NODE_KEY>`
+
+- **Level:** <Reasoning capture / Light capture / Task only, with who opted it out and why>
+- **Surface:** <Coded Action App / QuickForm / Document Validation Station>
+- **Reviewer:** <PERSONA> · **Proposed by:** <AGENT_OR_AUTOMATION or none>
+- **Context:** <WHAT_THE_REVIEWER_SEES_FIRST>
+- **What would change it:** <TWO_OR_THREE_CASE_SPECIFIC_QUESTIONS> · **Add a factor:** <allowed / not>
+- **Controls:** <additional reason / why a reason is not relevant / reason weights / rule for next time: applied, or off and why>
+- **Stakes triggers:** <CONDITIONS or none>
+- **Signals:** <DERIVED_INTERACTION_SIGNALS>
+- **Second review:** <WHO_AND_WHEN or none>
+- **Stored:** <FIELDS> · **Never stored:** <FIELDS>
+- **Usage statement:** <WHAT_THE_RECORD_FEEDS_AND_NEVER_FEEDS>
+
+| Part | Proposal | Evidence shown beside it | Source |
 |---|---|---|---|
-| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
+| <PART> | <PROPOSAL> | <EVIDENCE> | <DOCUMENT_OR_SYSTEM> |
+
+| Outcome | Recommended when | Reason required |
+|---|---|---|
+| <OUTCOME> | <CONDITION> | <always / on departure from the recommendation / never> |
+
+**Reasons:** per outcome <SHORT_LIST ending in Other>
 
 ---
 

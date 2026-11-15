@@ -116,7 +116,22 @@
 2. **{Step name}** (input: {data in}; output: {data out}):
    a. {Substep with specific field/data detail}
    b. {Conditional: if {condition}, then {action}; otherwise {action}}
-3. **Output**: {What the automation produces}
+<!-- Human decision step: only when the SDD holds a Decision Capture block for it; carry the block whole, drop the step otherwise. -->
+3. **{Human decision step}** (input: {data shown}; output: {the decision and its reasons}):
+   a. {The person decides; the run waits for the outcome}
+   **Decision Capture:**
+   - Level: {Reasoning capture / Light capture / Task only}
+   - Surface: {Coded Action App / QuickForm / Document Validation Station}
+   - Reviewer: {persona} · Proposed by: {agent or automation, or none}
+   - Context: {what the reviewer sees first}
+   - Parts: {part → proposal → evidence → source}; …
+   - Outcomes: {outcome → recommended when → reason required (always / on departure from the recommendation / never)}; …
+   - Reasons: per outcome {short list ending in Other}
+   - What would change it: {case-specific questions} · Add a factor: {allowed / not}
+   - Controls: {additional reason / why not relevant / reason weights / rule for next time: applied, or off and why}
+   - Stakes triggers: {conditions or none} · Second review: {who and when, or none} · Signals: {derived interaction signals}
+   - Stored: {fields} · Never stored: {fields} · Usage statement: {what the record feeds and never feeds}
+4. **Output**: {What the automation produces}
 
 ## Business Rules
 
