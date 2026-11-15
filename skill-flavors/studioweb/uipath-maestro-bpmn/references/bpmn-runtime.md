@@ -41,5 +41,8 @@
 <!--skill-flavor:sibling-deploy:end-->
 
 <!--skill-flavor:sibling-redeploy:start-->
-  Ship the finished process by publishing the open solution again to the same destination. Never run a second `deploy run`: it deploys to a new folder, which the node does not name.
+  Ship the finished process by publishing the open solution again to the same destination.
+  A personal-workspace publish deploys itself. After a shared-location publish, with the user's go-ahead, move step 3's deployment to it with
+  `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --output json` (with no `--version`, it takes the newest published one).
+  Never run a second `deploy run`: it deploys to a new folder, which the node does not name.
 <!--skill-flavor:sibling-redeploy:end-->
