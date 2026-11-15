@@ -85,6 +85,10 @@ def main() -> None:
     if not any(LOOPCTR_RE.search(v) for v in values):
         fail("no mapping/value reads iterator[0].loopCounter")
 
+    # loopCounter is already 1-based on Maestro; arithmetic on it (`+ 1`) writes the wrong position.
+    if any(re.search(r"iterator\[0\]\.loopCounter\s*[-+*/]", v) for v in values):
+        fail("CurrentIndex must read iterator[0].loopCounter as is; it is already 1-based")
+
     # Guard against task-level depth leaking into the subprocess body.
     bare_item = re.compile(r"(?<!\])iterator\.item")
     if any(bare_item.search(v) for v in values):

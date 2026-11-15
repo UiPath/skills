@@ -16,7 +16,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.variables.output-end-mapping -->
 - A process returns only what its end event maps. A task that writes an `.output()` variable
   directly (`outputs: { score: '…' }`) sets it inside the run, but the caller and the job receive
-  `null`: validate passes and the run completes, so only a run shows it. Compute into a `.var()`
+  `null`: validate passes and the run completes, so only a Maestro debug run shows it; local
+  `flow-debug` does not ([offline checks](operate.md#debug--a-controlled-studio-web-run)). Compute into a `.var()`
   and map it onto the output at each end event that finishes the process, the canvas's shape:
   ```ts
   .output('score', 'number')
@@ -50,9 +51,11 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.expression.js-for-methods -->
 - A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
   `vars.x` reads work, a JS method call does not. `=vars.d.toLowerCase() == "approve"` passes
-  validate, then faults the run (incident `400302`). Prefix any expression that calls a JavaScript
+  validate, then faults the run (incident `400302`); in a gateway `when` it evaluates `false` and the
+  run takes the wrong branch. Prefix any expression that calls a JavaScript
   method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
   (`Contains`, `Split`, `String.IsNullOrEmpty`) work in plain `=`, as decompiled canvas expressions show.
+  Local `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
 - A `.task()`'s `set` values are strings: an `=`-expression or a literal. `set: { done: true }`
   fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=true'`.
 
@@ -255,7 +258,7 @@ make from syntax alone. Exact signatures remain in the generated API.
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
   `folder: 'solution_folder'` compiles to a literal folder with no binding, so `bindings_v2.json`
-  stays empty; for a Maestro BPMN sibling use [the binding pair](#http-and-orchestrator-work) instead.
+  stays empty; for a Maestro BPMN sibling use the binding pair in `RULE:bpmn.orchestrator.in-solution-process` above instead.
   The owning skill handing the project back is not the end.
 <!--skill-flavor:sibling-redeploy:start-->
   A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
@@ -275,7 +278,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
   `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
   Never write a credential (a bearer token, an API key, a password) into `headers` or `url`: it is stored in plain text in the
-  `.bpmn` and in Studio Web. Use a connection ([connectors](connectors.md)) or read it from an Orchestrator asset at run time.
+  `.bpmn` and in Studio Web. Use a connection ([connectors](connectors.md)); when none exists for the API, ask the user.
   When the user insists on a literal, say where it will be visible before you upload.
   `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
 <!--skill-flavor:sdk-http-manual:start-->

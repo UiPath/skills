@@ -109,7 +109,6 @@ REQUIRED = [
     ("references/connectors.md", "uip is connections ping"),
     ("references/connectors.md", "Always set `saveAsDraft`"),
     ("SKILL.md", "never a drawn loop"),
-    # Live debug runs (2026-11-15): each of these passed validate and broke at run time.
     ("references/bpmn-runtime.md", "RULE:bpmn.variables.output-end-mapping"),
     ("references/bpmn-runtime.md", "A process returns only what its end event maps"),
     ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
