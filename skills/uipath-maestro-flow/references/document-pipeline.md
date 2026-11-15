@@ -76,16 +76,22 @@ Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
 written. Write it without ids on either route: every field group and field
 must carry a stable id, and both `nodes schema set` and compile mint them.
-Compile keeps an id the source carries, mints a missing one from the entry's
-place (so a recompile or an unrelated edit keeps it), keeps the ids the `.flow`
-it overwrites already has, and prints what it kept and minted:
+Compile keeps an id the source carries. For an entry with none it takes the
+id the `.flow` it overwrites has for the same name (a group by its key, a field
+by its name within that group), else mints one from that name, so a recompile
+or an unrelated edit keeps it. It prints what it kept and minted:
 
 ```text
 compile: "extract" taxonomy ids: 1 group and 2 field id(s) kept, 0 group and 1 field id(s) minted
 ```
 
-Check a minted count after an edit as you would `set`'s `FieldIdsMinted`: a
-renamed field gets a new id unless the source keeps its old one. On an SDK
+Matching is by name, so a rename mints a new id and detaches what is stored
+against the old one. Before a rename, copy the entry's `x-uipath-field-id`
+(or `x-uipath-field-group-id`) from the compiled `.flow` onto the renamed entry
+in the source; decompile prints them, so a decompiled source already has them.
+Treat a minted count after a rename as a dropped id, as `set`'s
+`FieldIdsMinted` ([Reading the output](extract-document-taxonomy.md#reading-the-output)):
+restore the id and recompile. On an SDK
 without builder-sdk#2054, the factory emits the `schema` verbatim and `flow
 validate` warns about every missing id; author with the CLI there.
 

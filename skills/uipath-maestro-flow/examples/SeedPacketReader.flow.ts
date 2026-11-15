@@ -8,8 +8,8 @@
  *
  * It takes no `model` argument: compile gives the step its IDP processor, named after the
  * step's label, and writes the processor's resource file into the solution
- * (references/document-pipeline.md). The taxonomy's stable ids are written by
- * hand here, because an SDK without builder-sdk#2054 emits `schema` verbatim.
+ * (references/document-pipeline.md). The taxonomy carries no ids: compile
+ * gives every field group and field its stable id.
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
@@ -27,22 +27,18 @@ const sowingTaxonomy = {
         description: 'The sowing table printed on the back of the packet.',
         additionalProperties: false,
         required: ['Variety', 'Sow Depth Mm', 'Days To Germinate'],
-        'x-uipath-field-group-id': '0b6f2e5e-8d1a-4a53-9b2e-6a4a1c2d7f31',
         properties: {
           'Variety': {
             $ref: '#/$defs/ft-exact-text',
             description: 'The variety name as printed on the front.',
-            'x-uipath-field-id': '6a1d9c0a-2f4b-4e3c-8a7d-5b9e0c1f2a43',
           },
           'Sow Depth Mm': {
             $ref: '#/$defs/ft-number',
             description: 'The sowing depth in millimetres.',
-            'x-uipath-field-id': '9c3b7a51-4d2e-4f60-b18a-7e5d2c0b9f64',
           },
           'Days To Germinate': {
             $ref: '#/$defs/ft-number',
             description: 'How many days germination takes; the upper bound where a range is printed.',
-            'x-uipath-field-id': '2e8f4b63-7c1d-4a95-8d02-1a6b3e9c5d87',
           },
         },
       },
