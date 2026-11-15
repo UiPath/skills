@@ -3,7 +3,8 @@
 
 Grades that a multi-instance SUBPROCESS body reads the current item and loop
 index at subprocess depth — `iterator[0].item` and `iterator[0].loopCounter`
-(NOT the task-level `iterator.item`), per references/expression-authoring.md.
+with the loop bound as `inputElement="iterator[0]"` the way Studio Web writes it
+(NOT the task-level `iterator.item`), per references/patterns/high-volume-batch-guide.md.
 Reuses the shared uipath-maestro-bpmn check helpers (stdlib ElementTree).
 """
 
@@ -71,6 +72,12 @@ def main() -> None:
             "multi-instance marker must sit on a bpmn:subProcess "
             "(subprocess-depth iterator indexing uses iterator[0])"
         )
+
+    # Any other itemVar makes every iterator[0] read null at run time.
+    loop_ext = [el for sp in find_local(root, "subProcess") for el in sp.iter()
+                if local(el.tag).lower() == "loopcharacteristics" and "inputElement" in el.attrib]
+    if not any(el.attrib["inputElement"] == "iterator[0]" for el in loop_ext):
+        fail('looped subProcess must bind inputElement="iterator[0]"; any other itemVar makes iterator[0] read null')
 
     values = collect_values(root)
     if not any(ITEM_RE.search(v) for v in values):

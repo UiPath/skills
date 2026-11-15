@@ -66,9 +66,10 @@ export default bpmn('invoice-batch')
 ```
 
 `loop: { collection, itemVar }` on the sub-process's options is the multi-instance marker; `sequential: true` runs one at a time, which is what lets every iteration append to the same list (see [Getting results to `aggregate`](#getting-results-to-aggregate)).
-Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for a loop nested inside it (the canvas gives every loop in one nesting chain its own index).
+Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for a loop nested inside it (the canvas gives every connected loop, ancestor, descendant or sibling, its own index).
 An expression (`set`, a condition, an `outputs` value) then reads the current item as `iterator[0].item` and its 1-based position as `iterator[0].loopCounter`.
-A loop Studio Web made, or one `decompile` seeded, already carries `itemVar: 'iterator[N]'`; keep its reads as they are.
+A looped sub-process Studio Web made, or one `decompile` seeded from it, already carries `itemVar: 'iterator[N]'`; keep its reads as they are.
+A looped task outside any looped sub-process carries no `inputElement` on the canvas (it reads `iterator.item`), and `decompile` seeds it as `itemVar: 'item'`: prove its reads with a debug run after recompiling.
 Any other `itemVar` (`'invoice'`) is the outer key, and the inner key stays `item`: `iterator["invoice"]["item"]`, while `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
 A script does not see `iterator`: its scope holds only the `args` envelope, and the engine builds a script's `iterator` only from `iterator[N]` keys in it.
 To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes, and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
