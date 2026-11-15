@@ -203,8 +203,9 @@ make from syntax alone. Exact signatures remain in the generated API.
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
   The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
-  binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder, so read
-  the folder again after every deploy. The owning skill handing the project back is not the end.
+  binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder. After writing the node, deploy the
+  finished solution with `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <VERSION> --output json`,
+  never a second `deploy run`, so the folder the node names stays the folder the resource is in. The owning skill handing the project back is not the end.
 
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.

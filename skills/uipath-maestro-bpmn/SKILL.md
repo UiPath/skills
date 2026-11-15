@@ -33,6 +33,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:host-setup:end-->
 ## Workflow
 
+A discovery-only request (discover types or save registry evidence, no authoring) skips this whole Workflow: follow [Discovery only](references/bpmn-runtime.md#registry-extension-types).
+
 <!--skill-flavor:workflow-scaffold:start-->
 1. **Before the first `init`, ask which solution to use when one already exists.**
    Look for a `.uipx` up to two levels below the working directory and in every directory above it:
