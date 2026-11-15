@@ -183,6 +183,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   | `Api` | `.executeApiWorkflow()` |
   | `ProcessOrchestration` | `.startAgenticProcess()` |
   | `CaseManagement` | `.startCaseProcess()` |
+  | `WebApp` (an Action App) | `.humanTask()` with an inline form, per [Human tasks](#human-task-outcomes): the SDK cannot yet bind the app |
   | `Flow` | `.activity(id, 'Orchestrator.StartFlowProcess', { context: { name, folderPath } })`, or `…StartFlowProcessAsync` |
   | `Function` (a Coded Function, not an agent) | `.activity(id, 'Orchestrator.ExecuteFunctionAsync', { context: { name, folderPath } })` (Preview) |
   | An agent behind an Integration Service connection | `.externalAgent()`, with its own connection binding |
@@ -203,9 +204,10 @@ make from syntax alone. Exact signatures remain in the generated API.
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
   The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
-  binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder. After writing the node, deploy the
-  finished solution with `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <VERSION> --output json`,
-  never a second `deploy run`, so the folder the node names stays the folder the resource is in. The owning skill handing the project back is not the end.
+  binding, so `bindings_v2.json` stays empty. A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
+  deployment: with the user's go-ahead, publish it at a higher version than step 3's, then
+  `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <NEW_VERSION> --output json`.
+  Never run a second `deploy run`: the folder the node names would no longer hold the resource. The owning skill handing the project back is not the end.
 
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
