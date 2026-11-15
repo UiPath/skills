@@ -192,7 +192,7 @@ node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --
 
 A refactor or migration request continues from the written genome in the same session; no PDD is needed:
 
-1. **Invoke `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim** once the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there, and Build With / Components, the `Requested change` row and the `Decided:` lines are its target design — the handover message adds nothing else the genome does not hold, and never a waiver of the build's questions the user did not write.
+1. **Invoke `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare the build, and the user's request quoted verbatim** once the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there, and Build With / Components, the `Requested change` row and the `Decided:` lines are its target design — the handover message adds nothing else the genome does not hold, and never a waiver of the build's questions the user did not write.
 2. **`uipath-genome` not installed** → stop after Step 7 and say that the build needs it.
 
 A refactor or migration produces the genome alone: `uipath-genome` plans and builds from it, so no SDD or tasks file is written for it. A documentation request ends at Step 7: the genome is the as-built record. A governance SDD can be written from it on request (`design`, with the genome as the process-knowledge source).

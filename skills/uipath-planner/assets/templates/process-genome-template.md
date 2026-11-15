@@ -53,7 +53,7 @@ flowchart TB
   C3 -.->|"{file or mail passed}"| C4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event trigger · 👤 started by a person · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file, a mail or a shared store.
 
 *Only when the Source Map holds an as-is process map — otherwise delete this line:* The source as it runs, and what each of its parts becomes: Source Map, As-is process map.
 
@@ -249,4 +249,4 @@ flowchart TB
   S2 -.->|"{file or mail passed}"| S4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file or mail.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file, a mail or a shared store.
