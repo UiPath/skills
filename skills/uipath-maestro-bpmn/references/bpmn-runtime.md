@@ -198,7 +198,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
      inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
 <!--skill-flavor:sibling-deploy:start-->
-  3. With the user's go-ahead, pack and publish it, then deploy it with
+  3. With the user's go-ahead, pack the solution with `uip solution pack <SolutionDir> <OutputDir> --version <VERSION> --output json`,
+     publish it to the tenant feed as [Orchestrator deployment](operate.md#orchestrator-deployment) does (not a Studio Web upload), then deploy it with
      `uip solution deploy run --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-name <FOLDER_NAME> --parent-folder-path <FOLDER_PATH> --output json`.
 <!--skill-flavor:sibling-deploy:end-->
   4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
@@ -209,7 +210,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   binding, so `bindings_v2.json` stays empty. The owning skill handing the project back is not the end.
 <!--skill-flavor:sibling-redeploy:start-->
   A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
-  deployment: with the user's go-ahead, publish it at a higher version than step 3's, then
+  deployment: with the user's go-ahead, pack it with a higher `--version` than step 3's and publish it, then
   `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --version <NEW_VERSION> --output json`.
   Never run a second `deploy run`: the folder the node names would no longer hold the resource.
 <!--skill-flavor:sibling-redeploy:end-->
