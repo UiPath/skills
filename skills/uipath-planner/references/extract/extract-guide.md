@@ -130,7 +130,7 @@ A finding that the source misbehaves is a suspected defect until two passes sett
 
 A **test component** is rated by its test cases and the checkpoints they assert; a **library** by its public workflows, counted as its workflow files, with the library as one entry point. Neither takes the population matrix's step minimums ([genome-format-guide.md § Population Matrix](../shared/genome-format-guide.md)).
 
-Count only the rows that apply to the component: the composite UI row is left out for a component that drives no UI, the test row for one that is not a test component. Take the level most counted rows land on; ties go lower. Process genomes: [genome-format-guide.md § Complexity](../shared/genome-format-guide.md).
+Count only the rows that apply to the component: the composite UI row is left out for a component that drives no UI, the test row for one that is not a test component. A value two columns hold lands in the lower one. Take the middle level of the counted rows, ordered simple to complex, the lower of the two middle ones when the count is even (2 simple, 1 medium, 2 complex → medium). Process genomes: [genome-format-guide.md § Complexity](../shared/genome-format-guide.md).
 
 ### Step 6 — Map signals to sections
 

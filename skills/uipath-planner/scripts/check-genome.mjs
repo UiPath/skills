@@ -113,7 +113,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{unit of work}",
   ": {producer}",
   "→ {consumer}",
-  "{producer | consumer | consumer of Flow {M}",
+  "{producer | consumer | producer and consumer | consumer of Flow {M}",
   "{one sentence}",
   "one {item}",
   "{identifying field(s)}",
