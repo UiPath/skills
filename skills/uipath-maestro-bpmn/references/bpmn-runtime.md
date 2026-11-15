@@ -269,8 +269,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
 
 <!-- RULE:bpmn.hitl.task-settings -->
-- `priority` (`Low`, `Medium`, `High`, `Critical`) and `labels` (a string) are the only Action
-  Center task settings `.humanTask()` writes. The Task timer (the task's SLA: reminder, reassign,
+- `title` (the task title), `priority` (`Low`, `Medium`, `High`, `Critical`) and `labels` (a
+  string) are the only Action Center task settings `.humanTask()` writes. The Task timer (the task's SLA: reminder, reassign,
   unassign or auto-complete after a time) and the assignee are set in the Studio Web task panel.
   An option such as `Timer` fails `check --source` (`TS2353`); `compile` alone drops it without an error.
   Tell the user to set the SLA in the panel. When the panel shows no Task timer (it sits behind a

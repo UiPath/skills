@@ -122,7 +122,7 @@ uip is connections list <CONNECTOR_KEY> --all-folders --output json   # Id, Name
 uip is connections ping <CONNECTION_ID> --output json                 # Data.Status must be "Enabled"
 ```
 
-- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in (else the first one listed) and name it on the final report's `Assumed:` line.
+- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in (else the one with `IsDefault: Yes`, else the first one listed) and name it on the final report's `Assumed:` line.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
