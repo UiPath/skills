@@ -136,6 +136,11 @@ uip maestro bpmn format <Name>.bpmn
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
   start again at step 2. Step 1 again would copy the merged file over the undo
   copy and the baseline.
+- **The baseline is the compile of the unedited source, never a copy of the target.**
+  `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
+  target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
+  them. When `merge` cannot open the baseline, decompile `.flow-sdk/original/<Name>.bpmn`
+  to `<Draft>/<Name>.baseline.bpmn.ts` and compile that to `<Draft>/baseline/<Name>.bpmn`.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
