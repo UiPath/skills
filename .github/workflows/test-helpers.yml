@@ -83,8 +83,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install pytest
-        run: pip install pytest pyyaml
+      - name: Install pytest dependencies
+        run: pip install pytest pyyaml jmespath
 
       # test_tenant_catalog.py fails when a case task gains a tenant dependency
       # that no disposition rule in tests/scripts/tenant_catalog.py classifies.

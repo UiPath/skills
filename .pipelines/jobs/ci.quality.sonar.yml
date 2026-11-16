@@ -39,8 +39,8 @@ stages:
             displayName: Use Python 3.13
             inputs:
               versionSpec: '3.13'
-          - script: python -m pip install --disable-pip-version-check coverage pytest pyyaml
-            displayName: Install coverage, pytest, pyyaml
+          - script: python -m pip install --disable-pip-version-check coverage pytest pyyaml jmespath
+            displayName: Install coverage, pytest, pyyaml, jmespath
           - template: Sonar/prepare-sonar-coverage.yml@sonar
             parameters:
               configFile: sonar-project.properties
