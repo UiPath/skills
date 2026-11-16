@@ -305,6 +305,7 @@ The deploy config is a plain JSON file that lists every resource the package exp
 
 - **Per-resource properties** — queue retry count, retention periods, conflict-resolution behaviour, etc.
 - **Link vs. install** — whether each resource is bound to an existing Orchestrator/Apps entity (`linkToResource` set) or provisioned fresh in the deployment folder (no `linkToResource`).
+- **Coded app environment variables** — a coded app resource carries `environmentVariables`: dotenv text (`UIPATH_APPS_NAME=value`, one per line) the deployed app reads at runtime, seeded from the package's defaults. Set it with `deploy config set <file> <APP_RESOURCE> environmentVariables "<TEXT>"`. The deployment's text replaces the package defaults as a whole, so write the full set; an upgrade keeps the deployment's text, so a name a later version adds has to be added to the deployment by hand. Only `UIPATH_APPS_*` names are accepted, and the values are public to anyone who opens the app, so never put a secret there. Where the tenant does not have the feature, validation reports `Environment variables are not enabled for this tenant`; clear the field.
 
 The CLI exposes `get` / `set` / `link` / `unlink` for the common edits, but the file is just JSON — you can also open it in an editor and modify any field directly. Pass the file to `deploy run --config-file <path>` to apply.
 
