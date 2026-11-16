@@ -31,7 +31,7 @@ Role and assignment scope vocabularies differ:
 
 ### Echo-before-mutate protocol
 
-1. **Run** the applicable search command for the requested name.
+1. **Run** the applicable search command for the requested name. For client-side rows (`Group`, `ExternalApplication`), filter the output by `displayName` first; the hit count below is the count after filtering.
 2. Branch on hit count:
    - **0:** stop; say the name did not match and request corrected spelling or a UUID. Do not fall back to the login user or guess fuzzy matches.
    - **More than 1:** present `displayName — userName — id` as a numbered list and stop until the user supplies a digit.
