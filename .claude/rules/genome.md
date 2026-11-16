@@ -86,7 +86,7 @@ Each row is one fact written in both skills. A change to either side changes the
 
 | Subject | uipath-planner | uipath-genome |
 |---|---|---|
-| Options A, B and C, the item store, per-item state a queue cannot hold, a source's coordination stores and owned database | `references/shared/transactional-shape-guide.md` § Rules rule 3 | `references/transactional-execution-guide.md` § Shape Rules rule 2 |
+| Options A, B and C, the item store, per-item state a queue cannot hold, an item a stopped job held, a source's coordination stores and owned database | `references/shared/transactional-shape-guide.md` § Rules rule 3 | `references/transactional-execution-guide.md` § Shape Rules rule 2 |
 | The REFramework and the behaviour owed whatever the split | `references/shared/transactional-shape-guide.md` opening paragraph | `references/transactional-execution-guide.md` § Shape Rules opening paragraph |
 | `Decided:` line form and its project chain | `references/shared/transactional-shape-guide.md` § Rules rule 8 | `references/transactional-execution-guide.md` § Shape Rules rule 4 |
 | Split-option signals table, different-component producer and consumer | `references/shared/transactional-shape-guide.md` § Rules rule 8 derivation table | `references/transactional-execution-guide.md` § Shape Rules rule 5 |
