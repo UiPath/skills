@@ -18,6 +18,14 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.bpmn.ts`, the undo copy `original/<Name>.bpmn` and the `registry prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`.
 
+**A target outside `/solution` and `/tmp`** — an attached or mounted file, for example under `/sandbox` — is readable by your file tools and by `validate`, but not by `decompile`, `compile`, `merge` or `node`: they answer `ENOENT` or `path is outside /solution and /tmp`. Edit a copy:
+
+1. Copy the target to `/tmp/bpmn-work/<Name>/<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Validation loop](#validation-loop).
+2. Run the loop there without `refresh`: a loose file has no `project.uiproj`, so `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id.
+3. Copy the result back over the target, then `validate` the target.
+
+Never run `init` to give a loose file a project. The user did not ask for one, and its template is a second process that fails `validate`.
+
 **Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead. `ls -l` shows every file there as 0 bytes: use `wc -c` for a size.
 
 **A read-only page refuses every write.** When the page shows "Locked by you" and an Edit button, a write fails, sometimes as `[object Object]`. Tell the user to click Edit, then try again.
@@ -65,7 +73,7 @@ When a reference tells you to run a command that is not available, use the Studi
 4. Seed the source every turn by decompiling the target —
    `uip maestro bpmn decompile <Name>.bpmn -o .flow-sdk/<Name>.bpmn.ts --style nested` — rather than
    hand-writing the skeleton. A new project's `.bpmn` is the template Studio Web or `init` wrote: decompile it too.
-   Its source has `.metadata({ entryPointId: false })`: delete that key, or `refresh` fails. The SDK then derives the id.
+   When its source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. The SDK then derives the id, as the canvas mints one for a start event without it. A [target outside `/solution`](#studio-web) keeps the key.
 <!--skill-flavor:workflow-seed:end-->
 
 <!--skill-flavor:workflow-compile:start-->
