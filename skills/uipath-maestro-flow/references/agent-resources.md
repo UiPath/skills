@@ -44,9 +44,7 @@ The default variant is app-backed: `app: { key, name, folderPath }`, naming the 
 
 ## Memory
 
-Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`). Find the space, declare it in the solution, then attach it to the sidecar after the last `compile`. `add` attaches only an existing space; an empty list means stop and report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`. `<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`.
-
-Run:
+Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`). Find the space, declare it in the solution, then attach it to the sidecar after the last `compile`. `add` attaches only an existing space; an empty list means stop and report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`. `<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
 
 ```bash
 uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
