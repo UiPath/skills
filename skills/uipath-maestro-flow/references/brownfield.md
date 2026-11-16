@@ -280,8 +280,9 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 `agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge keeps it embedded and applies node edits (input, output, label).
 From SDK 6.117.2, merge also writes a prompt, model or settings edit to an embedded agent onto the node and prints `flow-merge: carried the agent.json edit onto embedded agent "<id>"`.
 If merge prints no such line for your edit, the SDK does not carry it; edit it on the canvas.
-Removing a setting is not carried either: merge warns `NOT carried` and the node keeps its value.
-`--strict` refuses a merged node that drops or changes configuration you did not edit, a prompt you edited that uses a new `{{input.X}}` the node does not declare, or a prompt that still uses an input your edit removed.
+Deleting a setting from the source is carried as its default value when compile writes one (for example `maxTokenPerResponse` becomes 16384); to keep a value, leave the setting in the source.
+A deletion merge cannot carry, such as `model`, warns `NOT carried`, and the node keeps its value.
+`--strict` refuses an edit merge cannot carry onto the node, a merged node that drops or changes configuration you did not edit, a prompt you edited that uses a new `{{input.X}}` the node does not declare, or a prompt that still uses an input your edit removed.
 An undeclared placeholder the original prompt already had is not refused.
 <!--skill-flavor:strict-merge:start-->
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
