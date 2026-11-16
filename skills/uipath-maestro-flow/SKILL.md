@@ -182,7 +182,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 | API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) | `examples/BirdCountLookup.flow.ts` |
 | Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) | `examples/NeighborhoodWalkPlanner.flow.ts` |
 | Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) | `examples/PlantNameAdvisor.flow.ts` |
-| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or CLI when absent from library | [external-agent.md](references/external-agent.md) | — |
+| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`; `registry prepare` first when absent from library | [external-agent.md](references/external-agent.md) | — |
 | Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
 | IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
 | Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
