@@ -286,7 +286,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
-  A value the request leaves open, such as a rate, a threshold or a formula, is not a question either: *Build it* hands it to you, so pick a plausible one, build with it, and name it under `Assumed`.
+  A value the request leaves open, such as a rate, a threshold or a formula, is not a question either: *Build it* hands it to you, so pick a plausible one, build with it, and name it under `Assumed`; an identifier or URL part is never invented.
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
