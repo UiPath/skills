@@ -26,17 +26,18 @@ def _outside_flavor_blocks(text: str) -> str:
 
 def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None:
     text = _outside_flavor_blocks((REFS / "gate-reply-template.md").read_text())
-    assert "only after `validate` reported `Status: Valid` on the target" in text
+    assert "`validate` reported `Status: Valid` on the target `.bpmn` and the target contains" in text
     assert "When a turn resumes after an interruption that came after you wrote this reply" in text
     assert "the two candidates ending in `which one?`" in text
-    assert "search the target `.bpmn` for each box's `.task()` id and find `<bpmn:task id=\"<id>\"`" in text
+    assert "the target contains `<bpmn:task id=\"<id>\"` for every box's `.task()` id; `merge`'s counts cannot show this" in text
+    assert "On a *Change it* round, also find each changed box's new `name`." in text
 
 
 def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
     text = _outside_flavor_blocks((REFS / "draft-skeleton.md").read_text())
     assert "A value the request leaves open" in text
     assert "name it under `Assumed`" in text
-    assert "Read [final-report-template.md](final-report-template.md) in full" in text
+    assert "End the turn with the [final report](final-report-template.md), read as [SKILL.md](../SKILL.md#workflow) step 9 says" in text
     assert "search the target for each box's `<bpmn:task id=\"<id>\"`" in text
 
 
@@ -47,10 +48,12 @@ def test_skill_step_9_reads_the_report_template() -> None:
 
 def test_studio_web_merges_against_the_seeded_baseline() -> None:
     text = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "SKILL.md").read_text()
-    assert "`--baseline` is step 1's compile of the seeded source**, never the edited" in text
-    assert "compile a fresh baseline from the\n  undo copy" in text
+    assert "**The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**" in text
+    assert "When the gate's outline search finds a box\n  missing, rebuild the baseline the same way and run step 3 again." in text
     sw = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md").read_text()
     assert "the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton" in sw
+    gate = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / "gate-reply-template.md").read_text()
+    assert "rebuild the baseline as the [Validation loop](../SKILL.md#validation-loop) says, run its step 3 into the target once more" in gate
 
 
 def test_final_report_survives_a_resume() -> None:
