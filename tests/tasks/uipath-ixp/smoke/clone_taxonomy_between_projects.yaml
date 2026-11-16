@@ -63,14 +63,43 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The filename in `positional` ties the payload graded below to the one
-  # actually imported. Compared literally, hence the bare name in the prompt.
   - type: cli_called
-    description: "Imported `taxonomy-payload.json` into the blank target with `projects import-taxonomy`"
+    description: "Imported into the blank target with `projects import-taxonomy`"
     verb: "ixp projects import-taxonomy"
     tool: "uip"
-    positional: ["vendor_bills-7c2e10b4-ixp", "taxonomy-payload.json"]
-    weight: 3.0
+    positional: ["vendor_bills-7c2e10b4-ixp"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Ties the payload graded below to the one actually imported. `positional`
+  # compares literally, so it rejected the same file passed by absolute path, or
+  # a byte-identical copy imported from elsewhere. This resolves the file instead.
+  - type: run_command
+    description: "The file imported into the target is `taxonomy-payload.json` (same file or byte-identical copy)"
+    command: |
+      python3 - <<'PY'
+      import json, os, sys
+      want = open("taxonomy-payload.json", "rb").read()
+      for line in open("cli_mocks/calls.jsonl"):
+          argv = json.loads(line).get("argv", [])
+          args, skip = [], False
+          for tok in argv:
+              if skip:
+                  skip = False
+              elif tok == "--output":
+                  skip = True
+              elif not tok.startswith("-"):
+                  args.append(tok)
+          if args[:4] != ["ixp", "projects", "import-taxonomy", "vendor_bills-7c2e10b4-ixp"] or len(args) < 5:
+              continue
+          f = args[4]
+          if os.path.isfile(f) and (os.path.samefile(f, "taxonomy-payload.json") or open(f, "rb").read() == want):
+              print("imported", f); sys.exit(0)
+      sys.exit("no import-taxonomy on the target sent taxonomy-payload.json")
+      PY
+    expected_exit_code: 0
+    read_only: true
+    weight: 1.5
     pass_threshold: 1.0
 
   # `type()`, not `length()`: it answers "null" for a missing key instead of raising.
