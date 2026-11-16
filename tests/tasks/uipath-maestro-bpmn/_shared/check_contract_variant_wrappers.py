@@ -41,9 +41,9 @@ EXPECTED_MODEL_OR_PRESERVE_SHELLS = [
     ("serviceTask", "activity", "Maestro.CasePlanScheduler"),
     ("serviceTask", "activity", "Maestro.CaseManagerGuardrails"),
     # Studio Web's case converter writes it on a plain bpmn:Task (PO.Frontend
-    # CaseManagementCaseRulesEvaluationNodes.ts, taskType "bpmn:Task"), as
-    # `uip maestro bpmn registry get` says; the builder SDK's snapshot writes
-    # bpmn:serviceTask. Either element still needs the typed activity shell.
+    # CaseManagementCaseRulesEvaluationNodes.ts, taskType "bpmn:Task"); the
+    # builder SDK's registry-types.json writes bpmn:serviceTask. Either element
+    # still needs the typed activity shell.
     (("task", "serviceTask"), "activity", "Maestro.CaseRulesEvaluator"),
     ("receiveTask", "event", "Intsvc.WaitForEvent"),
 ]
