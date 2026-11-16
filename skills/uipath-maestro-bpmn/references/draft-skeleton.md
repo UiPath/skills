@@ -220,7 +220,7 @@ When this run already found no `uip login` (the upload failed for it), skip the 
 Otherwise run every lookup in **one** Bash call.
 <!--skill-flavor:lookup-no-login:end-->
 The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
-It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
+It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md), search the target for `<bpmn:task ` as its [End the turn](gate-reply-template.md#end-the-turn) says, and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
 
 - **Processes and queues:** `uip solution resources list --kind <Process|Queue> --search "<term>" --output json`.
   It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).
