@@ -28,6 +28,7 @@ def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None
     text = _outside_flavor_blocks((REFS / "gate-reply-template.md").read_text())
     assert "only after `validate` reported `Status: Valid` on the target" in text
     assert "When a turn resumes after an interruption that came after you wrote this reply" in text
+    assert "the target holds the outline: search it for `<bpmn:task ` and find one per box line" in text
 
 
 def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:

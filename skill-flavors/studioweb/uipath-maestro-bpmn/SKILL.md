@@ -128,6 +128,9 @@ uip maestro bpmn format <Name>.bpmn
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
   start again at step 2. Step 1 again would copy the merged file over the undo
   copy and the baseline.
+- **`--baseline` is step 1's compile of the seeded source**, never the edited
+  file. Given the edited file, `merge` finds no change, reports `Authored: 0`,
+  and writes the target back as it was.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
