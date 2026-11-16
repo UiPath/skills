@@ -38,7 +38,7 @@ Created inside the source project on every run, `analyze` included. Files per ru
 - Extension package pins run before restore and replace the dependency with an exact `[x.y.z]`.
 - Every other dependency that is not Windows-compatible moves to the smallest compatible `major.minor` above its current version, highest patch. The tool does not chase the newest line.
 - A pinned version that no reachable feed serves surfaces as `RESTORE-MISSING-PACKAGE`.
-- Tenant feeds: without `--orchestrator-url`, `uip rpa project migrate` uses the tenant library feeds of the `uip login` session, for `analyze`, `upgrade` and `bulk` alike; the token travels in the environment, never on the command line. The standalone tool, or uip without a session, falls back to the local Studio or Robot connection. With the URL, it needs a PAT or a confidential external application with `OR.Execution.Read`.
+- Tenant feeds: without `--orchestrator-url`, `uip rpa project migrate` uses the tenant library feeds of the `uip login` session, for `analyze`, `upgrade` and `bulk` alike; the token travels in the environment, never on the command line. The standalone tool, or a run with no `uip login` session, falls back to the local Studio or Robot connection. With the URL, it needs a PAT or a confidential external application with `OR.Execution.Read`.
 
 ## Orchestrator hand-off template
 

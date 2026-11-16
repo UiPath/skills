@@ -20,6 +20,16 @@
         "file": "references/tool-behavior-guide.md",
         "command": "rpa",
         "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "login",
+        "reason": "Names the `uip login` session whose tenant feeds the desktop migrator restores from; prose, not a step, and the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/tool-behavior-guide.md",
+        "command": "login",
+        "reason": "Names the `uip login` session whose tenant feeds the desktop migrator restores from; prose, not a step, and the studioweb flavor stops this skill before any step (host-availability-extra)."
       }
     ],
     "ceiling": {
