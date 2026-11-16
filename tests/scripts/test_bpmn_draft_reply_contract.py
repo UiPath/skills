@@ -41,3 +41,9 @@ def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
 def test_skill_step_9_reads_the_report_template() -> None:
     text = _outside_flavor_blocks((REFS.parent / "SKILL.md").read_text())
     assert "read it in full once `validate` passes or fails only that way, before any upload" in text
+
+
+def test_studio_web_merges_against_the_seeded_baseline() -> None:
+    text = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "SKILL.md").read_text()
+    assert "`--baseline` is step 1's compile of the seeded source**, never the edited" in text
+    assert "When `merge` reports `Authored: 0`" in text
