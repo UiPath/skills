@@ -136,8 +136,8 @@ uip maestro bpmn format <Name>.bpmn
 ```
 
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
-  start again at step 2. Step 1 again would copy the merged file over the undo
-  copy and the baseline.
+  start again at step 2. Step 1 again would copy the written target over the
+  undo copy and the baseline.
 - **The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
@@ -158,7 +158,8 @@ uip maestro bpmn format <Name>.bpmn
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
 - ***Build it* after a draft gate skips `merge`.** `merge` keeps each element's
   BPMN tag, so an outline box that becomes a `.scriptTask()`, `.humanTask()` or
-  any other typed step keeps `bpmn:task`, and Studio Web drops its payload.
+  any other typed step keeps `bpmn:task`, not the tag Studio Web writes for that
+  step; a script task then loses its script when Studio Web loads the file.
   This is the one exception to Critical Rule 5's merge rule. Before compiling,
   search `.flow-sdk/original/<Name>.bpmn` for `bpmn:participant`, `bpmn:lane`,
   `bpmn:textAnnotation`, `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject`,
