@@ -1,6 +1,6 @@
 # CSV Activities
 
-The CSV file activities — **Read CSV** (`ReadCsvFile`), **Write CSV** (`WriteCsvFile`), and **Append To CSV** (`AppendToCsvFile`), all under the `UiPath.Core.Activities` namespace and shipped in the **`UiPath.System.Activities`** package — read and write delimited text files to/from a `DataTable`. They run in-process against a **local file path** (no COM, no Office); the underlying (de)serialization is done by the bundled **`CsvHelper`** library.
+The CSV file activities — **Read CSV** (`ReadCsvFile`), **Write CSV** (`AppendWriteCsvFile`), and **Append To CSV** (`AppendCsvFile`), all under the `UiPath.CSV.Activities` namespace and shipped in the **`UiPath.Excel.Activities`** package — read and write delimited text files to/from a `DataTable`. They run in-process against a **local file path** (no COM, no Office); the underlying (de)serialization is done by the bundled **`CsvHelper`** library.
 
 ## How CSV Activities Execute
 
@@ -12,9 +12,9 @@ Failures originate at distinct layers — **package/dependency load** (the bundl
 
 ## Key Activities
 
-- **Read CSV** (`UiPath.Core.Activities.ReadCsvFile`, "Read CSV") — read a delimited file into a `DataTable` (`Path` in, `DataTable` out).
-- **Write CSV** (`UiPath.Core.Activities.WriteCsvFile`, "Write CSV") — overwrite a file from a `DataTable` (`Path`, `DataTable`).
-- **Append To CSV** (`UiPath.Core.Activities.AppendToCsvFile`, "Append To CSV") — append a `DataTable`'s rows to an existing file (`Path`, `DataTable`). **Local files only.**
+- **Read CSV** (`UiPath.CSV.Activities.ReadCsvFile`, "Read CSV") — read a delimited file into a `DataTable` (`Path` in, `DataTable` out).
+- **Write CSV** (`UiPath.CSV.Activities.AppendWriteCsvFile`, "Write CSV"; `WriteCsvFile` in older releases) — overwrite a file from a `DataTable` (`Path`, `DataTable`).
+- **Append To CSV** (`UiPath.CSV.Activities.AppendCsvFile`, "Append To CSV") — append a `DataTable`'s rows to an existing file (`Path`, `DataTable`). **Local files only.**
 
 ## Common Failure Patterns
 
@@ -31,8 +31,8 @@ Failures originate at distinct layers — **package/dependency load** (the bundl
 
 ## Package
 
-NuGet: `UiPath.System.Activities` (CSV file activities; underlying library: `CsvHelper`)
+NuGet: `UiPath.Excel.Activities` (CSV file activities; underlying library: `CsvHelper`)
 
-Namespaces: `UiPath.Core.Activities`
+Namespaces: `UiPath.CSV.Activities`
 
-> The `CsvHelper` dependency is shared with `UiPath.Excel.Activities` — keep the two packages on aligned versions. Version-specific behavior is documented in the relevant playbooks.
+> The `CsvHelper` dependency is shared with `UiPath.System.Activities` — keep the two packages on aligned versions. Version-specific behavior is documented in the relevant playbooks.

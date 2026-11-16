@@ -24,7 +24,7 @@ What this looks like:
 What can cause it (in a running job that 401s at the activity):
 - Machine key or client credentials do not match what is configured in Orchestrator (e.g. the machine key was regenerated, or the robot was provisioned against a different machine template). Dispatch can still succeed from a cached session while fresh API-token requests get 401.
 - Robot key authentication is disabled for the tenant ("Allow both user authentication and robot key authentication" is off), so a machine-key-authenticated robot's API token is rejected.
-- A `UiPath.System.Activities` package upgrade introduced an authentication regression (historically reported on 20.10.1+ and 2021.10.5) — suspect this when the failure began right after a package change.
+- A `UiPath.System.Activities` package upgrade introduced an authentication regression (historically reported on 20.10.1+ and 21.10.5) — suspect this when the failure began right after a package change.
 
 What to look for:
 - Robot connection + license status in the UiPath Assistant tray icon (must be Connected **and** Licensed) and in `or users list` (`IsLicensed`, `ConnectionState`)
