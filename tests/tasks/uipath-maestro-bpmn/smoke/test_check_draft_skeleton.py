@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for the fork-exit and multi-instance checks in check_draft_skeleton.py.
+"""Unit tests for the fork-exit, multi-instance and payload checks in check_draft_skeleton.py.
 
 Stdlib and pytest only. Each rule gets a passing and a failing fixture.
 """
@@ -53,6 +53,9 @@ def end(eid: str, kind: str = "") -> str:
 FORK = ('<bpmn:startEvent id="S" /><bpmn:parallelGateway id="F" /><bpmn:parallelGateway id="J" />'
         '<bpmn:task id="A" /><bpmn:task id="B" />' + end("End"))
 FORK_FLOWS = "S>F F>A F>B A>J B>J J>End"
+# A second fork F2 → C, D → J2, for fixtures that run two forks in sequence.
+SECOND = ('<bpmn:parallelGateway id="F2" /><bpmn:parallelGateway id="J2" />'
+          '<bpmn:task id="C" /><bpmn:task id="D" />')
 
 
 class ForkExitTests(unittest.TestCase):
@@ -90,6 +93,86 @@ class ForkExitTests(unittest.TestCase):
     def test_recovery_onto_a_sibling_branch_stalls(self):
         # A's fallback runs through B, so A's own flow into J never delivers.
         self.assert_stalls(boundary("Err", "A") + '<bpmn:task id="X" />', "Err>X X>B", "instead of its own branch")
+
+    def test_decision_arm_to_plain_end_stalls(self):
+        # A → G → J, with G's rejection arm ending at a plain end inside the branch.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />' + end("Rejected"),
+                       "S>F F>A F>B A>G G>J G>Rejected B>J J>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("plain end event(s) ['Rejected']", str(caught.exception))
+
+    def test_decision_arm_to_terminate_end_passes(self):
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />' + end("Stop", "terminate"),
+                       "S>F F>A F>B A>G G>J G>Stop B>J J>End")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
+    def test_decision_arm_into_a_sibling_branch_stalls(self):
+        # Decompiled source: A → G → J, with G's rejection arm doing .goto('B') into the
+        # sibling branch. Two fork outputs, two join inputs, yet A's input never delivers.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>B B>J J>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("both reach ['B'] before the join", str(caught.exception))
+
+    def test_decision_arm_past_the_join_stalls(self):
+        # G's rejection arm jumps over the join to the box after it.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" /><bpmn:task id="After" />',
+                       "S>F F>A F>B A>G G>J G>After B>J J>After After>End")
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn("runs past the join to ['After', 'End']", str(caught.exception))
+
+    def test_decision_arm_looping_back_on_its_own_branch_passes(self):
+        # A → G → J, with G's retry arm doing .goto('A') on the same branch.
+        root = process(FORK + '<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>A B>J J>End")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
+    def test_both_branches_sharing_a_terminating_exit_passes(self):
+        # Either branch's failure alerts HR and terminates; the shared path never reaches the join.
+        root = process(FORK + boundary("ErrA", "A") + boundary("ErrB", "B") + '<bpmn:task id="Alert" />'
+                       + end("Stop", "terminate"), FORK_FLOWS + " ErrA>Alert ErrB>Alert Alert>Stop")
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
+    def stalls(self, body: str, flows: str, message: str, base: str = FORK):
+        root = process(base + body, flows)
+        with self.assertRaises(SystemExit) as caught:
+            skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+        self.assertIn(message, str(caught.exception))
+
+    def passes(self, body: str, flows: str, base: str = FORK):
+        root = process(base + body, flows)
+        skeleton.require_fork_exits_safe(root, skeleton.elements(root, "sequenceFlow"))
+
+    def test_decision_arm_into_its_own_join_beside_its_branch_stalls(self):
+        # G's arm does .goto('F_join') while its other arm continues to Y → J: three inputs, two branches.
+        self.stalls('<bpmn:exclusiveGateway id="G" /><bpmn:task id="Y" />',
+                    "S>F F>A F>B A>G G>Y Y>J G>J B>J J>End", "has 3 inputs but fork F opens 2 branches")
+
+    def test_decision_arm_into_an_earlier_forks_join_stalls(self):
+        # Two forks in sequence; the second fork's arm jumps back into the first fork's join.
+        self.stalls(SECOND + '<bpmn:exclusiveGateway id="G2" />',
+                    "S>F F>A F>B A>J B>J J>F2 F2>C F2>D C>G2 G2>J2 G2>J D>J2 J2>End",
+                    "join J has 3 inputs but fork F opens 2 branches")
+
+    def test_decision_arm_into_the_fork_itself_stalls(self):
+        self.stalls('<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>F B>J J>End",
+                    "parallel fork F has 2 incoming flows")
+
+    def test_two_forks_in_sequence_pass(self):
+        self.passes(SECOND, "S>F F>A F>B A>J B>J J>F2 F2>C F2>D C>J2 D>J2 J2>End")
+
+    def test_safe_nested_fork_passes(self):
+        self.passes('<bpmn:parallelGateway id="F2" /><bpmn:parallelGateway id="J2" /><bpmn:task id="A1" />'
+                    '<bpmn:task id="A2" />', "S>F F>A F>B A>F2 F2>A1 F2>A2 A1>J2 A2>J2 J2>J B>J J>End")
+
+    def test_decision_arms_rejoining_on_a_merge_pass(self):
+        self.passes('<bpmn:exclusiveGateway id="G" /><bpmn:exclusiveGateway id="M" /><bpmn:task id="Y" />'
+                    '<bpmn:task id="Z" />', "S>F F>A F>B A>G G>Y G>Z Y>M Z>M M>J B>J J>End")
+
+    def test_whole_block_retry_through_a_merge_before_the_fork_passes(self):
+        self.passes('<bpmn:exclusiveGateway id="Pre" /><bpmn:exclusiveGateway id="C" />',
+                    "S>Pre Pre>F F>A F>B A>J B>J J>C C>Pre C>End")
 
     def test_non_interrupting_escalation_to_plain_end_passes(self):
         self.assert_safe(boundary("Late", "A", interrupting=False, kind="timer") + '<bpmn:task id="Esc" />'
@@ -155,6 +238,41 @@ class MultiInstanceTests(unittest.TestCase):
     def test_missing_input_collection_fails(self):
         self.assert_fails(mi_task("Seq", True, "=vars.Flagged", collection="") + mi_task("Par", False),
                           "inputCollection")
+
+
+CAPTURE = ('<uipath:activity version="v1"><uipath:type value="uipath:Activity" version="v1" />'
+           '<uipath:output name="Error" type="jsonSchema" source="=Error" var="failure" /></uipath:activity>')
+
+
+def with_payload(owner: str, payload: str, definition: str = "<bpmn:errorEventDefinition />") -> ET.Element:
+    inner = f"<bpmn:extensionElements>{payload}</bpmn:extensionElements>{definition}"
+    if owner == "boundary":
+        return process(f'<bpmn:task id="A" /><bpmn:boundaryEvent id="E" attachedToRef="A">{inner}</bpmn:boundaryEvent>', "")
+    return process(f'<bpmn:task id="A">{inner}</bpmn:task>', "")
+
+
+class WiringPayloadTests(unittest.TestCase):
+    def test_error_capture_on_error_boundary_is_not_wiring(self):
+        self.assertEqual(skeleton.wiring_payloads(with_payload("boundary", CAPTURE)), [])
+
+    def test_capture_shape_on_a_task_is_wiring(self):
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("task", CAPTURE, ""))), 1)
+
+    def test_capture_shape_on_a_timer_boundary_is_wiring(self):
+        root = with_payload("boundary", CAPTURE, '<bpmn:timerEventDefinition />')
+        self.assertEqual(len(skeleton.wiring_payloads(root)), 1)
+
+    def test_capture_with_extra_rows_is_wiring(self):
+        extra = CAPTURE.replace("</uipath:activity>", '<uipath:input name="x" value="=1" /></uipath:activity>')
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", extra))), 1)
+
+    def test_output_from_another_source_is_wiring(self):
+        other = CAPTURE.replace('source="=Error"', 'source="=vars.other"')
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", other))), 1)
+
+    def test_payload_nested_below_extension_elements_is_wiring(self):
+        nested = f"<uipath:wrapper>{CAPTURE}</uipath:wrapper>"
+        self.assertEqual(len(skeleton.wiring_payloads(with_payload("boundary", nested))), 1)
 
 
 if __name__ == "__main__":

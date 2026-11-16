@@ -149,7 +149,7 @@ After the test project exists, migrate each data set from the derived data catal
 
 Component genome: after all groups, connect steps built by different skills (a coded workflow invoking a XAML workflow, a shared state file, a main entry point calling the others). Edit, then re-validate touched files.
 
-Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), start job, Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes.
+Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), library workflow call (the library consumed as a package), Invoke Process of a sibling process, start job (waited for with its outputs read, or left, as the row says), Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes.
 
 <!--skill-flavor:process-genome-pack:start-->
 Then refresh the solution's resources and pack it per the `uipath-solution` skill; on failure follow that skill's diagnosis. Without a tenant login, resource refresh, publish and deploy are out of reach; that skill's pack dry run, resolving packages from the local feed when libraries come from it, still proves the solution packs and is the last local gate, and a failure there takes the same diagnosis as pack.

@@ -24,16 +24,14 @@ initial_prompt: |
   simulations** on an agent node — purely local, no Studio Web round-trip.
 
   Steps:
-  1. Create a solution `ChildSimEval` and a Flow project `ChildSimEval`. The
-     flow file MUST live at `ChildSimEval/ChildSimEval/ChildSimEval.flow`
-     (double-nested layout) and be linked via `uip solution project add`.
+  1. Create a solution `ChildSimEval` and a Flow project `ChildSimEval` inside
+     it.
 
-  2. Declare a string input variable named `query` on
-     `ChildSimEval/ChildSimEval/ChildSimEval.flow` before adding the data point.
+  2. Declare a string input variable named `query` on the flow before adding
+     the data point.
 
-  3. Create an eval set named `Agent Tools` in the Flow project at
-     `ChildSimEval/ChildSimEval`. (No `--entry-point`, no `--evaluators` —
-     defaults are fine.)
+  3. Create an eval set named `Agent Tools` in the Flow project. (No
+     `--entry-point`, no `--evaluators` — defaults are fine.)
 
   4. Add one data point named `search-test` to that eval set with inputs
      `{"query":"weather in NYC"}` and expected
@@ -98,9 +96,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file was created at the double-nested path"
-    path: "ChildSimEval/ChildSimEval/ChildSimEval.flow"
+  - type: run_command
+    description: "The ChildSimEval project holds its flow file (ChildSimEval.flow, or Studio Web's new.flow)"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/ChildSimEval/ChildSimEval.flow', recursive=True) or glob.glob('**/ChildSimEval/new.flow', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

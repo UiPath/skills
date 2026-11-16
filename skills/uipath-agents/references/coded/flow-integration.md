@@ -24,10 +24,9 @@ The coded agent is deployed to Orchestrator as a standalone tenant resource. Any
 
 ```bash
 uip codedagent deploy --my-workspace
-uip maestro flow registry pull --force
 ```
 
-**Capture the package key from the deploy command's own output** — `uip codedagent deploy` prints JSON containing the package `Key` (an Orchestrator-assigned GUID). That GUID is the `resourceKey` used in the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey`. Always run `uip maestro flow registry pull --force` after deploy to refresh the local flow registry cache, but do NOT depend on `uip maestro flow registry search "uipath.core.agent"` to return the deployed agent — that search only enumerates built-in node types (`uipath.agent.autonomous`, etc.); user-deployed coded agents do not appear there, so an empty result is the *expected* state and is NOT a sign the deploy failed.
+**Capture the package key from the deploy command's own output** — `uip codedagent deploy` prints JSON containing the package `Key` (an Orchestrator-assigned GUID). That GUID is the `resourceKey` used in the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey`. Flow registry reads are cached for 30 minutes, so run `uip maestro flow registry pull --force` only when `uip maestro flow registry get "uipath.core.agent.<resourceKey>"` misses the agent you just deployed, or the deploy replaced a version the cache may already hold. Do NOT depend on `uip maestro flow registry search "uipath.core.agent"` to return the deployed agent — that search only enumerates built-in node types (`uipath.agent.autonomous`, etc.); user-deployed coded agents do not appear there, so an empty result is the *expected* state and is NOT a sign the deploy failed.
 
 Fallback discovery paths if the deploy output is unavailable or unparseable, **tried in order** — stop at the first one that returns the package:
 
@@ -85,5 +84,5 @@ Coded agents use `location: "external"`.
 | Error | Cause | Fix |
 | --- | --- | --- |
 | Node doesn't resolve in SW (Pattern 1) | `resourceKey` was hand-invented rather than read from the resource file | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (it matches `resource.key` in `resources/solution_folder/process/agent/<name>.json`) |
-| Agent not found in registry (Pattern 2/3) | Not deployed or registry stale | `uip codedagent deploy`, then `uip maestro flow registry pull --force` |
+| Agent not found in registry (Pattern 2/3) | Not deployed or registry stale | `uip codedagent deploy`; if `registry get` still misses it, `uip maestro flow registry pull --force` and look again |
 | Tool resource never called | Tool description too vague | Sharpen the `description` in `resource.json` |

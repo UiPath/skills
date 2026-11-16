@@ -35,11 +35,16 @@ compile -> merge loop, not a hand edit.
 its edges, node variables and layout entry; the task's own grader checks
 whether it had to go.
 
+`--added-binding` names a binding the edit may add, for a step whose node type
+brings its own: managed HTTP adds `uipath-uipath-http connection` and
+`FolderKey` even for a URL that needs no connection. Any other added binding
+still fails.
+
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py \\
         --original $REFERENCE_DIR/<fixture>/<Sol>/<Project> --project <Sol>/<Project> \\
         [--changed-node ID ...] [--removable-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
-        [--changed-agent UUID ...] [--aspect graph|layout|merged]
+        [--changed-agent UUID ...] [--added-binding NAME ...] [--aspect graph|layout|merged]
 
 Exit 0 on pass; exit 1 with one `FAIL:` line per difference.
 """
@@ -123,6 +128,7 @@ def check_graph(
     removed_edges: set[tuple[str, str, str, str]],
     changed_agents: set[str],
     removable_nodes: set[str] = frozenset(),
+    added_bindings: set[str] = frozenset(),
 ) -> list[str]:
     failures: list[str] = []
 
@@ -165,7 +171,9 @@ def check_graph(
         elif final_bindings[signature] > count:
             failures.append(f"binding duplicated: {name!r}")
     for signature in final_bindings.keys() - original_bindings.keys():
-        failures.append(f"binding added: {json.loads(signature).get('name')!r}")
+        name = json.loads(signature).get("name")
+        if name not in added_bindings:
+            failures.append(f"binding added: {name!r}")
 
     variables, final_variables = original.get("variables", {}), final.get("variables", {})
     final_globals = {v["id"]: v for v in final_variables.get("globals", [])}
@@ -687,6 +695,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--removable-node", action="append", default=[])
     parser.add_argument("--removed-edge", action="append", default=[])
     parser.add_argument("--changed-agent", action="append", default=[])
+    parser.add_argument("--added-binding", action="append", default=[])
     parser.add_argument("--aspect", choices=("graph", "layout", "merged"), default="graph")
     args = parser.parse_args(argv)
 
@@ -707,6 +716,7 @@ def main(argv: list[str] | None = None) -> int:
             {parse_edge(e) for e in args.removed_edge},
             set(args.changed_agent),
             set(args.removable_node),
+            set(args.added_binding),
         )
 
     for failure in failures:

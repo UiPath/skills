@@ -1,0 +1,39 @@
+                         uip or folders stop-exploring                          
+Stop exploring a Personal Workspace you explore, which removes the role 'folders explore' gave you. Orchestrator notifies the owner. Same login, permissions and workspace arguments as 'folders explore'.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or folders stop-exploring [options] [workspace-key-or-name]              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ workspace-key-or-name   Personal Workspace key (GUID) or name — use 'folders │
+│                         list --all --type personal' to find. Or pass --owner │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --owner <user>                 The workspace's owner instead of the          │
+│                                workspace: their user name (usually their     │
+│                                email) or user key (GUID)                     │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Stop exploring a Personal Workspace by key                                   │
+│                                                                              │
+│   $ uip or folders stop-exploring a1b2c3d4-0000-0000-0000-000000000020       │
+│                                                                              │
+│   Key        a1b2c3d4-0000-0000-0000-000000000020                            │
+│   Name       jane.doe@example.com's workspace                                │
+│   OwnerName  jane.doe@example.com                                            │
+│   Status     Stopped exploring                                               │
+└──────────────────────────────────────────────────────────────────────────────┘

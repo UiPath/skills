@@ -89,6 +89,61 @@ def test_unedited_fixture_is_preserved(project: Path) -> None:
         assert intent(project, which) == 1
 
 
+# What the compiler adds for a managed HTTP step that names no connection.
+HTTP_BINDINGS = [
+    {
+        "id": "b-http-connection",
+        "name": "uipath-uipath-http connection",
+        "type": "string",
+        "resource": "connection",
+        "resourceKey": "",
+        "default": "ImplicitConnection",
+        "propertyAttribute": "ConnectionId",
+    },
+    {
+        "id": "b-http-folder",
+        "name": "FolderKey",
+        "type": "string",
+        "resource": "connection",
+        "resourceKey": "",
+        "propertyAttribute": "FolderKey",
+    },
+]
+ALLOW_HTTP_BINDINGS = ("--added-binding", "uipath-uipath-http connection", "--added-binding", "FolderKey")
+
+
+def add_bindings(*bindings: dict):
+    return lambda flow: flow.setdefault("bindings", []).extend(copy.deepcopy(list(bindings)))
+
+
+def test_added_binding_fails_unless_the_task_allows_it(project: Path, capsys) -> None:
+    mutate(project, add_bindings(*HTTP_BINDINGS))
+
+    assert graph(project) == 1
+    out = capsys.readouterr().out
+    assert "binding added: 'uipath-uipath-http connection'" in out and "binding added: 'FolderKey'" in out
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 0
+
+
+def test_allowing_one_binding_does_not_allow_another(project: Path, capsys) -> None:
+    mutate(project, add_bindings(*HTTP_BINDINGS, {"id": "b-other", "name": "slackConnection", "resource": "connection"}))
+
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 1
+    assert capsys.readouterr().out.strip() == "FAIL: binding added: 'slackConnection'"
+    assert graph(project, "--added-binding", "FolderKey") == 1
+
+
+def test_allowed_binding_does_not_excuse_a_changed_original(project: Path, capsys) -> None:
+    def change(flow: dict) -> None:
+        original = next(b for b in flow["bindings"] if b["name"] == "FolderKey")
+        original["resourceKey"] = "changed"
+
+    mutate(project, change)
+
+    assert graph(project, *ALLOW_HTTP_BINDINGS) == 1
+    assert capsys.readouterr().out.strip() == "FAIL: binding removed or altered: 'FolderKey'"
+
+
 def test_credit_cap_edit_passes_only_with_its_allowance(project: Path) -> None:
     mutate(project, insert_cap)
     assert intent(project, "credit-cap") == 0
