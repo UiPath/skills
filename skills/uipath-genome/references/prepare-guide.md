@@ -4,7 +4,7 @@
 
 1. **Start as a build starts:** [build-guide.md](build-guide.md) § Start and the reads of § Read Plan, then [execution-guide.md](execution-guide.md) § 1.1 and its § 1.2, the preflight discovery the options are built from.
 2. **Read the answers already given.** That means the SDD beside the genome, and an earlier readiness file, both as the user's files of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rules 4 and 4a). Their genome edits not yet made go to `uipath-planner` first, as at build. A genome with no SDD beside it is read for its open entries and its Configuration Questions directly.
-3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there, or under a filled `Confirmed:` line). An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Location, when Existing projects holds the project to build into.
+3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there). An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Location, when Existing projects holds the project to build into.
 4. **Ask each owning skill how it builds each capability the genome uses**, through the skill invoked for preflight discovery: its recommended activity package, connector or API, and the alternatives it supports. Never from memory.
    - **The capabilities:** mail, documents and PDFs, spreadsheets, databases, files and shares, web and desktop applications, SAP, APIs and connectors, AI and document understanding, people in the loop.
    - **When the skill's discovery needs a project** (the docs an installed package brings, its activity search), create a scratch project through the skill's project-creation step, in a temporary folder outside the genome's folder and every folder the build will use. Install there the packages the options name, at the feed's latest stable versions. An install there chooses nothing for the build and takes no question: the build's package questions stay in Build setup.
@@ -22,7 +22,7 @@
    - `Instead:` one line per other option, with what it gives;
    - `Change:`.
 
-   Each label is in bold and every line is in short sentences. Backticks hold only a name a person types or searches for (a queue, an asset, a file, a package); components and source objects are written plain. A question with no option the build can recommend (a path only the user knows) ends instead on `Until answered:` (what the build does while it stays open) and `Answer:`. A task ends on `Status:`. Each section of questions opens with a `Confirmed:` line.
+   Each label is in bold and every line is in short sentences. Backticks hold only a name a person types or searches for (a queue, an asset, a file, a package); components and source objects are written plain. A question with no option the build can recommend (a path only the user knows) ends instead on `Until answered:` (what the build does while it stays open) and `Answer:`. A task ends on `Status:`.
 7. **Build nothing:** no project or install but the scratch project of step 4, no tenant write, no question asked. End by naming the file, how many items each section holds, and how many are needed before the build.
 
 ## The readiness file
@@ -30,7 +30,7 @@
 The header says, in this order:
 - when and on what machine facts it was prepared, those facts alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found. It never names a signed-in account, a user name or a tenant URL, since the file travels with the genome;
 - how many items are needed before the build, by section;
-- how to answer: fill in an item, or confirm a section, then ask `uipath-planner` to "apply the answers", which writes into the genome what changes it;
+- how to answer: fill in an item, `accept` under its `Change:` taking its Recommended option or default, then ask `uipath-planner` to "apply the answers", which writes into the genome what changes it;
 - the Contents, with each section's counts.
 
 The sections:
@@ -53,11 +53,11 @@ The sections:
    Each ends on `Status:`. Usually answered by: the engineer, with the tenant admin.
 6. **Still open in the SDD** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form. An answer given here is the same item's: it reaches the genome as the SDD's would. Usually answered by: as each item names.
 
-`prepare` run again keeps every change, every `Status:` and every `Confirmed:` line. It drops:
+`prepare` run again keeps every change and every `Status:`. It drops:
 - each item whose question is now answered elsewhere (the genome, by the decided-values table of [configuration-questions-guide.md](configuration-questions-guide.md) rule 5; the SDD; the preferences file), unless it carries a change, which stays as the record of the decision;
 - each edit line marked applied.
 
-It draws again a decision whose Recommended option rests on an answer since changed (a settings store that names the template a change removed), opening it with `New since confirmed`, which the `Confirmed:` line no longer covers.
+It draws again a decision whose Recommended option rests on an answer since changed (a settings store that names the template a change removed), clearing an `accept` under it: that took the option the change replaced.
 
 ## The Architecture decisions section
 
@@ -89,7 +89,7 @@ Genome: [`<genome file>`](<relative path>). Prepared <YYYY-MM-DD> by `uipath-gen
 
 Needed before the build: <n> answers and <n> tasks — <section>: <n>; <section>: <n>. Every other item has a default.
 
-Write an answer after each `Answer:`, `Change:` and `Status:`, or put your name and the date on a section's `Confirmed:` line to accept its defaults. Then ask `uipath-planner` to "apply the answers", and build with `uipath-genome`: it asks nothing this file answers.
+Write an answer after each `Answer:`, `Change:` and `Status:`. To take an item's Recommended option or default, write `accept` under its `Change:`. An item left blank stays open, and the build asks it. Then ask `uipath-planner` to "apply the answers", and build with `uipath-genome`: it asks nothing this file answers.
 
 ## Contents
 
@@ -104,9 +104,7 @@ Write an answer after each `Answer:`, `Change:` and `Status:`, or put your name 
 
 Usually answered by: the engineer, with the architect.
 
-Each decision carries the build's proposal: confirm it, or change it.
-
-**Confirmed:**
+Each decision carries the build's proposal: accept it, or change it.
 
 ### Processes and their work items
 
@@ -158,8 +156,6 @@ Gaps found in the genome while preparing; applying the answers fixes each one. D
 
 Usually answered by: the engineer.
 
-**Confirmed:**
-
 1. **<The question in plain words>**
    - **Context:** <…>
    - **Recommended:** <…>
@@ -169,8 +165,6 @@ Usually answered by: the engineer.
 ## 3. Existing projects
 
 Usually answered by: the engineer.
-
-**Confirmed:**
 
 1. **<Component>: a project of it an earlier build made**
    - **Default:** none — the build makes a new project

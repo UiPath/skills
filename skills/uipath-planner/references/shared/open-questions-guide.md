@@ -11,10 +11,10 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 ## Writing Rules
 
 1. **Written from the genome after its strict check, on every write, its answers kept.**
-   - An item keeps its answer, and a heading its `Confirmed:` line. Each is matched by its id (`D3`, `CQ2`, under its component's heading), or by what it asks when the id no longer fits.
+   - An item keeps its answer, matched by its id (`D3`, `CQ2`, under its component's heading), or by what it asks when the id no longer fits.
    - An item the answers made into a genome edit leaves the section on the rewrite after that edit; the genome's decided entry keeps the record. One the edit could not make stays, marked `Not applied: <why>`.
    - A configuration value's answer stays as it is: it is the build's answer.
-   - A new item comes in blank. Under a filled `Confirmed:` line it opens with `New since confirmed`, which that line does not cover.
+   - A new item comes in blank.
 2. **Written for a person filling it in a text editor**, who has read neither the genome nor this skill:
    - plain words, and no tables;
    - every item is its id and the question in bold, then labelled lines as the template lays them out, each label in bold;
@@ -24,12 +24,11 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
    - components by their Components names, and source objects by the names their author wrote, in plain text, never by an id or a line;
    - backticks only for a name a person types or searches for (a queue, an asset, a file, a package).
 3. **Every item says what a blank costs**, in one of two forms:
-   - **A default.** The item states it: `Builds now:` for what the genome builds, `Recommended:` for the option the genome's entry recommends, `Default:` for a question's default, `Reading:` for an inferred point. Then `Instead:` for each other option, ending on `Change:`. A filled `Change:` is the item's answer.
+   - **A default.** The item states it: `Builds now:` for what the genome builds, `Recommended:` for the option the genome's entry recommends, `Default:` for a question's default, `Reading:` for an inferred point. Then `Instead:` for each other option, ending on `Change:`. A filled `Change:` is the item's answer; one that only agrees (`accept`) takes its Recommended option, otherwise its default, what it builds now, or its reading.
    - **Needed.** An item with no default the build can run with ends on `Answer:`, after an `Until answered:` line. That line says whether the build stops, asks, builds a placeholder, or builds an empty setting the run stops on.
 4. **Answered by** names the role on every item, from the genome entry's `answered by:` (for a Configuration Question, the section's role), so one person's items can be picked out.
-5. **Confirmed in one line.** Each component heading in Business decisions and in Configuration values opens with a `Confirmed:` line. A name and date there accept, for every item under it with no change, its Recommended option, otherwise its default, what it builds now, or its reading. A blank confirms nothing: the reviewer reads the defaults and corrects what is wrong.
-6. **Only what the genome states.** An item's context comes from its step, its entry and the sections that use it. A fact the genome lacks is asked as an item, never written as one.
-7. **Marked where the design states it.** The SDD section that holds an item's subject carries `[SME REVIEW]` for an answer only the business can give, or `[DEFAULT]` for a default applied, with the note after the bracket naming the item (`[SME REVIEW] D3: refund approval when the approver is absent`), as [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers states.
+5. **Only what the genome states.** An item's context comes from its step, its entry and the sections that use it. A fact the genome lacks is asked as an item, never written as one.
+6. **Marked where the design states it.** The SDD section that holds an item's subject carries `[SME REVIEW]` for an answer only the business can give, or `[DEFAULT]` for a default applied, with the note after the bracket naming the item (`[SME REVIEW] D3: refund approval when the approver is absent`), as [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers states.
 
 ## Items
 
@@ -50,10 +49,10 @@ The section opens with its counts: needed before the build, by group and by role
 
 ## Where Answers Go
 
-- **Business decisions, Material to supply and Preferences are genome edits.** `edit`'s "Apply the answers" writes into the genome each answer, change, and confirmed recommendation that alters what it builds ([edit-guide.md](../edit/edit-guide.md)). The entry then reads decided, and the step and the SDD follow. A confirmed default that keeps what the genome builds decides the entry as it stands.
+- **Business decisions, Material to supply and Preferences are genome edits.** `edit`'s "Apply the answers" writes into the genome each answer and change that alters what it builds, an accepted recommendation included ([edit-guide.md](../edit/edit-guide.md)). The entry then reads decided, and the step and the SDD follow. An accepted default that keeps what the genome builds decides the entry as it stands.
   - On the design path, an item taken from the SDD's own design is a design change first ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
-- **A point an answer opens** (a clash the new behaviour can meet, a value it needs) is a new entry, added at the end with its default and marked where the genome states it. On the design path it is a new SDD item, after the SDD's last id. It comes into Action Required under `New since confirmed`.
-- **Configuration values are the build's answers.** `uipath-genome` reads this section as the user's file of answers, so an answered or confirmed question is not asked again.
+- **A point an answer opens** (a clash the new behaviour can meet, a value it needs) is a new entry, added at the end with its default and marked where the genome states it. On the design path it is a new SDD item, after the SDD's last id.
+- **Configuration values are the build's answers.** `uipath-genome` reads this section as the user's file of answers, so an answered or accepted question is not asked again.
 - **Before the build asks anything,** `uipath-genome` sends back as that edit every answered item of the genome-edit groups not yet applied.
 
 ## Template
@@ -64,7 +63,7 @@ The section opens with its counts: needed before the build, by group and by role
 <n> questions are open. Needed before the build: <n> — <group>: <n>; <group>: <n>. Every other item has a default the build uses until someone changes it. By role: the process owner <n>; the environment's owners <n>; whoever holds the source <n>.
 
 How to answer:
-1. Write your answer under an item's `Change:` or `Answer:`, or put your name and the date on a `Confirmed:` line to accept every default under it.
+1. Write your answer under an item's `Change:` or `Answer:`. To take an item's recommendation or default, write `accept` under its `Change:`. An item left blank stays open.
 2. Or ask `uipath-planner` to interview you on them: "Interview me on the open questions", adding a role to be asked only that person's. It first asks how you want to answer: every item, only what needs a decision, or the defaults.
 3. Then ask it to "Apply the answers". It writes them into the genome and this document.
 
@@ -75,8 +74,6 @@ How to answer:
 #### Business outcomes
 
 ##### <Component>
-
-**Confirmed:**
 
 **D<n>. <The decision as a question>**
 - **Context:** <the facts the decision rests on>
@@ -91,8 +88,6 @@ How to answer:
 
 ##### <Component>
 
-**Confirmed:**
-
 **D<n>. <The point as a question>**
 - **Context:** <…>
 - **Where:** step <N>, <step name>
@@ -104,8 +99,6 @@ How to answer:
 #### The genome's readings
 
 ##### <Component>
-
-**Confirmed:**
 
 **D<n>. <The reading as a question>**
 - **Where:** step <N>, <step name>
@@ -134,8 +127,6 @@ The source states what each was meant to do, and the rebuild does that. Name any
 ### Configuration values
 
 #### <Process, or the component>
-
-**Confirmed:**
 
 **CQ<n>. <The question as the genome writes it, whole>**
 - **Kind:** <setting | constant>
