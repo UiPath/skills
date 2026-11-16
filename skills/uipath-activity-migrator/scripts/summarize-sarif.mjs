@@ -103,6 +103,12 @@ try {
   console.error(`cannot parse ${file}: ${e.message}`);
   process.exit(2);
 }
+// Through `uip rpa project migrate`, a uip failure (its FailureOutput JSON) can land in the redirected .sarif. It is
+// no migrator log: report it as such rather than as a log without results.
+if (sarif && sarif.Result === 'Failure' && !sarif.runs) {
+  console.error(`failure reported by uip in ${file}: ${[sarif.Code, sarif.Message, sarif.Instructions].filter(Boolean).join(': ')}`);
+  process.exit(2);
+}
 
 const run = (sarif.runs && sarif.runs[0]) || {};
 const rules = new Map(((run.tool && run.tool.driver && run.tool.driver.rules) || []).map((r) => [r.id, r]));

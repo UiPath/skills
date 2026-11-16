@@ -139,7 +139,7 @@ Then apply the stop conditions:
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
-| Summarizer exits 2 (`cannot parse`, `no .sarif files`) | The tool wrote no log: it died or rejected the command line. Read `<PROJECT_DIR>/.upgrade/analyze-latest.err` and the exit code, fix the cause, rerun analyze. Through `uip`, a `uip` failure (JSON, `"Result":"Failure"`) may sit in the `.sarif` instead: rerun Step 0. A crash is not yours to fix: stop and report it with the `.err` content. |
+| Summarizer exits 2 (`cannot parse`, `no .sarif files`, `failure reported by uip`) | The tool wrote no log: it died or rejected the command line. On `failure reported by uip`, the migrator never ran: rerun Step 0. Otherwise read `<PROJECT_DIR>/.upgrade/analyze-latest.err` and the exit code, fix the cause, rerun analyze. A crash is not yours to fix: stop and report it with the `.err` content. |
 | `status: failed` or `status: unknown` for any other reason | Stop. Show the blockers or the `Reason:` line and the `.upgrade` log path. Never continue to Step 4. |
 
 ### Step 4 — Upgrade
@@ -151,7 +151,7 @@ Same flags as the analyze run, plus the output path:
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" --out "<PROJECT_DIR>/.upgrade/upgrade-latest.md"
 ```
 
-Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows`. If the summarizer cannot parse the log or the status is `failed` or `unknown`, report and stop: `<OUTPUT_DIR>` may be partially written, so delete or rename it before any rerun (Step 1 item 4). Do not retry with different flags unless a package guide says so.
+Confirm `<OUTPUT_DIR>/project.json` exists and its `targetFramework` is `Windows`. On `failure reported by uip`, rerun Step 0. If it cannot parse the log or the status is `failed` or `unknown`, report and stop: `<OUTPUT_DIR>` may be partially written, so delete or rename it before any rerun (Step 1 item 4). Do not retry with different flags unless a package guide says so.
 
 ### Step 5 — Verify
 

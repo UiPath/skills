@@ -113,8 +113,9 @@ const fromUip = () => {
     uipMessage = `${UIP_COMMAND} version: ${reply.Code ? `${reply.Code}: ` : ''}${message}`;
     return;
   }
-  const version = lastLine(r.out);
-  if (r.ok && /^\d+\.\d+/.test(version)) emit({ status: 'ok', source: 'uip', command: UIP_COMMAND, version }, 0);
+  // The last line that reads as a version: a notice uip prints after Helm's output does not hide it.
+  const version = r.out.split(/\r?\n/).map((l) => l.trim()).findLast((l) => /^\d+\.\d+/.test(l)) || '';
+  if (r.ok && version) emit({ status: 'ok', source: 'uip', command: UIP_COMMAND, version }, 0);
   // No uip on PATH, a uip without the command, or a Helm that does not know `migrate`: their own error text.
   const detail = head(r.err, 300) || head(r.out, 300) || (r.status == null ? 'no output' : `exit code ${r.status}, no output`);
   uipMessage = `${UIP_COMMAND} version: ${detail}`;
