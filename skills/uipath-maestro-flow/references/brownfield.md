@@ -277,7 +277,9 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 
 `the round trip appends End "<id>" after …` is benign: compile caps a path that simply stops and does not change behavior. A `.openTails()` flow gets it only after a human task; see [A path without an End stays open](#a-path-without-an-end-stays-open).
 
-`agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge preserves it and applies only node edits (input, output, label). Prompt/model/settings edits in source do not affect embedded agents; edit them on the canvas. `--strict` accepts input/output edits but refuses dropped/changed embedded configuration or a kept prompt still using `{{input.X}}` after input `X` was removed.
+`agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge keeps it embedded and applies node edits (input, output, label).
+From SDK 6.117.2, merge also writes a prompt, model or settings edit to an inline agent onto the node and prints `flow-merge: carried the agent.json edit onto embedded agent "<id>"`; earlier SDKs do not carry it, so edit it on the canvas.
+`--strict` refuses a merged node that drops or changes configuration you did not edit, or whose prompt uses `{{input.X}}` when the node declares no input `X`.
 <!--skill-flavor:strict-merge:start-->
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
   warning. The benign End line never refuses. Every merge on this page has a
