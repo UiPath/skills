@@ -42,7 +42,8 @@ function childRefs(text) {
 }
 
 const lf = (text) => text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-const normalize = (text) => lf(text).replace(LATE_ROWS, '').replace(OPEN_QUESTIONS, '');
+const whole = (text) => lf(text).replace(LATE_ROWS, '');
+const normalize = (text) => whole(text).replace(OPEN_QUESTIONS, '');
 
 function read(path, what, clean = normalize) {
     try {
@@ -66,14 +67,16 @@ export function genomeFingerprint(file) {
     return hash.digest('hex');
 }
 
-/** The fingerprint of an SDD, a solution root's covering every child it lists; throws when the SDD or a child cannot be read. */
-export function sddFingerprint(file) {
-    const root = read(file, file);
+/** The fingerprint of an SDD, a solution root's covering every child it lists; throws when the SDD or a child cannot be read.
+ * keepOpenQuestions: hash the Action Required section too, as a `Designed in:` line taken over the whole SDD records it. */
+export function sddFingerprint(file, { keepOpenQuestions = false } = {}) {
+    const clean = keepOpenQuestions ? whole : normalize;
+    const root = read(file, file, clean);
     const hash = createHash('sha256').update(root);
     if (ROOT_ROLE.test(root)) {
         const self = resolve(file);
         const children = [...new Set(childRefs(root).map((ref) => resolve(dirname(self), ref)))].filter((p) => p !== self);
-        for (const child of children) hash.update(read(child, `child SDD ${child} listed by ${file}`));
+        for (const child of children) hash.update(read(child, `child SDD ${child} listed by ${file}`, clean));
     }
     return hash.digest('hex');
 }

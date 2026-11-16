@@ -60,7 +60,7 @@ One skill per row from [skill-mapping-guide.md](skill-mapping-guide.md). Rationa
 **Process genomes with test components:** the Type column of every test component reads "Test-case group in project `<ProcessName>.Tests`", and the Process Map diagram nests the test components inside a subgraph for the test project.
 
 ### Platform Dependencies
-Every Orchestrator, Integration Service and other UiPath service resource the automation touches, laid out so that a reader sees what the build declares and hands over for the target environment: one `###` table per kind the automation uses, in this order, a kind it does not use left out. Extracted genomes keep the source resource name and take each field from the source — a UiPath source's from its deployed state ([uipath-source-guide.md § Deployed State](../extract/uipath-source-guide.md)); authored genomes propose names. A field the source or the description does not show is `*[Inferred]*`, or, bound to the environment, the Configuration Question that asks it. *Used by* names steps in a component genome, components in a process genome.
+Every Orchestrator, Integration Service and other UiPath service resource the automation touches, laid out so that a reader sees what the build declares and hands over for the target environment: one `###` table per kind the automation uses, in this order, a kind it does not use left out. Extracted genomes keep the source resource name and take each field from the source — a UiPath source's from its deployed state ([uipath-source-guide.md § Deployed State](../extract/uipath-source-guide.md)); authored genomes propose names. A field the source or the description does not show is classed as § Open Decisions classes a point, a value bound to the environment being the Configuration Question that asks it. *Used by* names steps in a component genome, components in a process genome.
 
 | Kind | Columns |
 |---|---|
@@ -75,7 +75,7 @@ Every Orchestrator, Integration Service and other UiPath service resource the au
 
 A transactional flow's queues and triggers are its As-is: the split answers can change them ([transactional-shape-guide.md](transactional-shape-guide.md)).
 
-**Runtime and deployment** — how and where the automation runs, beside the projects the build makes: these bullets, each present, each value the source or the description does not settle written as `*[Inferred]*` or as the Configuration Question that asks it. A standalone component genome ends this section with them under `### Runtime and deployment`, after the stub or the tables; a process genome's Deployment holds them, and its component genomes do not repeat them.
+**Runtime and deployment** — how and where the automation runs, beside the projects the build makes: these bullets, each present, each value the source or the description does not settle classed as a Platform Dependencies field is. A standalone component genome ends this section with them under `### Runtime and deployment`, after the stub or the tables; a process genome's Deployment holds them, and its component genomes do not repeat them.
 
 - **Delivery model:** Automation Cloud, Automation Suite and its version, or standalone Orchestrator.
 - **Packaging and route:** one solution or independent packages, with the buildable projects named; a library with the feed it is published to and before its consumers, apart from the solution's projects, since it is never one of them; with test components, exactly one test project and one Test Manager test set per test component.

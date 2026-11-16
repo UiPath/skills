@@ -112,9 +112,9 @@ The delivery model, packaging and route, entry points, runtime and machines, rob
 
 `> Preferences: [{title}]({relative path})` names the preferences file the genome was written to: the build reads it before the first question as a file of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rule 4).
 
-An SDD beside a genome with no `Designed in:` line is written from the genome for people; the build reads only its Action Required section, as answers (rule 4a).
+An SDD beside a genome with no `Designed in:` line is written from the genome for people; the SDD a `Designed in:` line links gets its Action Required section written from the genome. The build reads only that section of either, as answers ([configuration-questions-guide.md](configuration-questions-guide.md) rule 4a).
 
-`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The build does not compare the fingerprint: `uipath-planner` keeps a designed genome current ([execution-guide.md](execution-guide.md) § 1.1).
+`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no other SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The build does not compare the fingerprint: `uipath-planner` keeps a designed genome current ([execution-guide.md](execution-guide.md) § 1.1).
 
 ## Source Map
 

@@ -7,6 +7,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 | Phase | Condition | Read |
 |---|---|---|
 | Step 1 | filling RPA §4 Business Rules or BPMN §5 Gateways, and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
+| Step 2 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 | Step 2 item 6 | finalizing a Case Management draft | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Finalizing a Case Draft |
 | Step 2 item 8 | a Case Management SDD | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § SDD Conformance Checklist |
 | Step 3, next turn | the SDD is `Status: ready` and no build skill handed the design over | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |

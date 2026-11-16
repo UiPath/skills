@@ -19,7 +19,7 @@ Two verbs: `build`, and `prepare`, which writes a readiness file beside the geno
    - **Transactional** — the Transactional Shape is not the stub.
    - **Test components** — a Components Type cell reading "Test-case group…", or `Test case:` steps.
    - **Packaging** — the process genome's Deployment "Packaging and route" line.
-   - **Designed** — the genome carries a `Designed in:` line; the build reads no SDD for it.
+   - **Designed** — the genome carries a `Designed in:` line; the build reads only that SDD's Action Required section, as answers.
 2. **Open the verb's guide** and read it whole; its § Read Plan names every other file the verb reads and when. Never work from memory of a guide.
 
 ## Verbs

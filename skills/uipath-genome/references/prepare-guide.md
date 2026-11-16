@@ -15,8 +15,8 @@
    - it is Recommended for a library component when it lacks no workflow.
 5. **Write the readiness file**, `<slug>-readiness.md` beside the genome (the genome's file name with `-readiness.md` in place of `-genome.md`). A process genome has one, covering its components. It holds the sections of § The readiness file, in their order, each with its "Usually answered by" line; a section with no item reads "None.".
 6. **Every question is worded as rules 2–2b state**, in the item form:
-   - the question in bold;
-   - one `Context:` line, with the facts rule 2a names;
+   - its id and the question in bold, `R<n>.`, numbered through the file and kept on a re-run, a new item taking the next number;
+   - at most one `Context:` line, with the facts rule 2a names;
    - `See:` the genome sections they rest on;
    - `Recommended:` the Recommended option, with what it gives;
    - `Instead:` one line per other option, with what it gives;
@@ -108,43 +108,43 @@ Each decision carries the build's proposal: accept it, or change it.
 
 ### Processes and their work items
 
-1. **<The split question in plain words>**
-   - **Context:** <the flow, and the facts of its As-is the answer rests on>
-   - **See:** <the genome sections the context rests on>
-   - **Recommended:** <the option, with what it gives and why it fits this genome>
-   - **Instead:** <one alternative, with what it gives>
-   - **Instead:** <the next alternative, one line each>
-   - **Recorded in:** <the flow's `Decided:` line>
-   - **Change:**
+**R<n>. <The split question in plain words>**
+- **Context:** <the flow, and the facts of its As-is the answer rests on>
+- **See:** <the genome sections the context rests on>
+- **Recommended:** <the option, with what it gives and why it fits this genome>
+- **Instead:** <one alternative, with what it gives>
+- **Instead:** <the next alternative, one line each>
+- **Recorded in:** <the flow's `Decided:` line>
+- **Change:**
 
 ### Libraries and reusable parts
 
-<n>. **<The Library layout question>**
-   - **Context:** <the libraries, and the source units each is built from>
-   - **See:** <the genome sections the context rests on>
-   - **Recommended:** …
-   - **Instead:** <one alternative per line>
-   - **Recorded in:** the build
-   - **Change:**
+**R<n>. <The Library layout question>**
+- **Context:** <the libraries, and the source units each is built from>
+- **See:** <the genome sections the context rests on>
+- **Recommended:** …
+- **Instead:** <one alternative per line>
+- **Recorded in:** the build
+- **Change:**
 
 ### Technology per capability
 
-<n>. **<Capability>: how should the automation <do it>?**
-   - **Today:** <how the source does it>
-   - **Recommended:** <the owning skill's way>
-   - **Instead:** <one alternative per line, with when it fits>
-   - **Recorded in:** <the component's Target Applications row>
-   - **Change:**
+**R<n>. <Capability>: how should the automation <do it>?**
+- **Today:** <how the source does it>
+- **Recommended:** <the owning skill's way>
+- **Instead:** <one alternative per line, with when it fits>
+- **Recorded in:** <the component's Target Applications row>
+- **Change:**
 
 ### Other decisions
 
-<n>. **<The question in plain words>**
-   - **Context:** <the facts the answer rests on>
-   - **See:** <the genome sections the context rests on>
-   - **Recommended:** <the option, with what it gives>
-   - **Instead:** <one alternative per line>
-   - **Recorded in:** <the genome section, or the build>
-   - **Change:**
+**R<n>. <The question in plain words>**
+- **Context:** <the facts the answer rests on>
+- **See:** <the genome sections the context rests on>
+- **Recommended:** <the option, with what it gives>
+- **Instead:** <one alternative per line>
+- **Recorded in:** <the genome section, or the build>
+- **Change:**
 
 ### Edits for `uipath-planner`
 
@@ -156,26 +156,25 @@ Gaps found in the genome while preparing; applying the answers fixes each one. D
 
 Usually answered by: the engineer.
 
-1. **<The question in plain words>**
-   - **Context:** <…>
-   - **Recommended:** <…>
-   - **Instead:** <one alternative per line>
-   - **Change:**
+**R<n>. <The question in plain words>**
+- **Context:** <…>
+- **Recommended:** <…>
+- **Instead:** <one alternative per line>
+- **Change:**
 
 ## 3. Existing projects
 
 Usually answered by: the engineer.
 
-1. **<Component>: a project of it an earlier build made**
-   - **Default:** none — the build makes a new project
-   - **Change:** <its path>
+**R<n>. <Component>: a project of it an earlier build made**
+- **Default:** none — the build makes a new project
+- **Change:** <its path>
 
 ## 4. Systems and applications
 
 Usually answered by: each system's owner.
 
-### <System>
-
+**R<n>. <System>**
 - **Reached through:** <screens | API or connector | database | files | mail>
 - **The build uses it for:** <what the build does with it>
 - **To arrange:** <an instance or endpoint the build may reach; the account of each credential asset that signs in to it; a connection's identity; network access; machine prerequisites>
@@ -185,8 +184,8 @@ Usually answered by: each system's owner.
 
 Usually answered by: the engineer, with the tenant admin.
 
-1. **<What to make available>** — <what the build needs it for>
-   - **Status:**
+**R<n>. <What to make available>** — <what the build needs it for>
+- **Status:**
 
 ## 6. Still open in the SDD
 

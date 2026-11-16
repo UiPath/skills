@@ -89,7 +89,7 @@ What each section holds:
 2a. **Changes to existing projects:** every difference between each project the build reused and its copy from before the first change (§ 1.4) — a workflow added, rewritten or removed, an argument added, removed, renamed or retyped, a dependency, the version it packs under — with why; a change to a library's public workflow or its arguments is marked breaking for the consumers outside this build.
 3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is a `uipath-planner` edit (re-extraction), then a new build.
 3a. **Rulings still owed:** the questions raised after the configuration answers that the user has not answered, each with the default in place and what changes if the answer differs.
-3b. **Unconfirmed decisions:** each open Open Decisions entry of the run-behaviour or reading tier that the build followed as the genome builds it, by its id and component, so the owner can still confirm or change it through `uipath-planner`.
+3b. **Unconfirmed decisions:** each open Open Decisions entry the build followed as the genome builds it, of the run-behaviour or reading tier or one the defaults covered, by its id and component, so the owner can still confirm or change it through `uipath-planner`.
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
 5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
 

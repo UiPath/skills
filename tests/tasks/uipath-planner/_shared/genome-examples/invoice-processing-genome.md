@@ -80,17 +80,17 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 |-------|-------------|-------------|------------------|---------|----------|-----------|
 | AP_InvoiceIntake | one received invoice | as in Handoffs row 1: `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | *[Inferred: D1]* | *[Inferred: D2]* | component 2 | component 1, one instance per item |
 
-### Storage buckets
-
-| Bucket | Holds | Written by | Read by |
-|--------|-------|------------|---------|
-| AP_Invoices | the invoice PDFs and the extraction JSON | component 2 | components 1 and 3, and the clerk's review |
-
 ### Credentials
 
 | Asset | Account or persona | Signs in to | Used by |
 |-------|--------------------|-------------|---------|
 | SAP_AP_Robot | the robot's SAP account | SAP GUI | component 2 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction JSON | component 2 | components 1 and 3, and the clerk's review |
 
 ### Connections
 

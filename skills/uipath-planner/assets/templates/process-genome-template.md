@@ -107,7 +107,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 | Trigger | Starts | Kind | When | Runners |
 |---------|--------|------|------|---------|
-| {e.g. DailyIntake} | {component 1} | {Time / Queue / Event} | {weekdays 07:00, Europe/Berlin; or the queue; or the event} | {1} |
+| {e.g. DailyIntake} | {component 1} | {Time / Queue / Event / API} | {weekdays 07:00, Europe/Berlin; or the queue; or the event; or the API endpoint} | {1} |
 
 ### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
 

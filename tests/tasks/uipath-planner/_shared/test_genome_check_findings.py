@@ -5,6 +5,7 @@ message the author sees and the exit code the grader gets. The checker is Node; 
 Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check_findings.py -v
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -178,6 +179,19 @@ def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
     rc, out = check(text, profile="strict")
     assert rc == 1
     assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
+
+
+def test_designed_in_fingerprint_taken_over_the_whole_sdd_still_matches(check, tmp_path):
+    body = "# SDD\n\n## Action Required — SME Review Items\n\n**D1. Which folder?**\n\n## 1. Overview\n\nBody.\n"
+    (tmp_path / "x-sdd.md").write_text(body, encoding="utf-8")
+    whole = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    assert whole != sdd_fingerprint(tmp_path / "x-sdd.md")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {whole}")
+    assert check(text, profile="strict")[0] == 0
+    (tmp_path / "x-sdd.md").write_text(body.replace("Body.", "Changed."), encoding="utf-8")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: sdd-sha256 does not match x-sdd.md" in out
 
 
 def test_designed_in_root_sdd_with_an_unreadable_child_fails_strict(check, tmp_path):
@@ -642,6 +656,24 @@ def test_component_without_part_of_line_fails_strict_only(process_tree, check_pr
     assert "invoice-extraction-genome.md: component inside a process genome lacks the 'Part of:' line" in out
 
 
+def test_runtime_and_deployment_in_a_component_inside_a_process_fails_strict(process_tree, check_process):
+    target = process_tree.parent / PROCESS_DIR.name / "invoice-extraction-genome.md"
+    text = target.read_text(encoding="utf-8")
+    pd = section(text, "## Platform Dependencies", "## Interface")
+    target.write_text(text.replace(pd, pd + "### Runtime and deployment\n\n- **Delivery model:** Automation Cloud\n\n", 1), encoding="utf-8")
+    assert check_process()[0] == 0
+    rc, out = check_process(profile="strict")
+    assert rc == 1
+    assert "invoice-extraction-genome.md: Platform Dependencies: '### Runtime and deployment' in a component inside a process genome" in out
+
+
+def test_a_process_deployment_missing_a_bullet_fails_strict(check_process):
+    drop = lambda t: re.sub(r"^- \*\*Entry points:\*\*[^\n]*\n", "", t, count=1, flags=re.M)
+    rc, out = check_process(profile="strict", transform=drop)
+    assert rc == 1
+    assert "invoice-processing-genome.md: Deployment: no bullet for ['Entry points']" in out
+
+
 def handoff_rows(rows):
     table = "| From | To |\n|---|---|\n" + "".join(f"| a{i} | b{i} |\n" for i in range(rows))
     return lambda text: re.sub(r"(## Handoffs\n)(.*?)(?=^## )", rf"\1\n{table}\n", text, flags=re.S | re.M)
@@ -883,3 +915,55 @@ def test_an_open_entry_the_genome_never_names_fails_strict(check):
     rc, out = check(text, profile="strict")
     assert rc == 1
     assert f"Open Decisions entry {last + 1} is named nowhere in the genome" in out
+
+
+# --- Platform Dependencies ---------------------------------------------------------------------
+
+def platform_dependencies(text):
+    return section(text, "## Platform Dependencies", "## Interface")
+
+
+def swap_tables(text, first, second):
+    pd = platform_dependencies(text)
+    blocks = re.split(r"(?=^### )", pd, flags=re.M)
+    i, j = (next(n for n, b in enumerate(blocks) if b.startswith(f"### {name}\n")) for name in (first, second))
+    blocks[i], blocks[j] = blocks[j], blocks[i]
+    return text.replace(pd, "".join(blocks), 1)
+
+
+def test_platform_dependencies_kinds_out_of_order_fail_strict_only(check):
+    text = swap_tables(COMPONENT, "Queues", "Assets")
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: '### Queues' out of the kinds' order" in out
+
+
+def test_a_kind_after_another_service_fails_strict(check):
+    service = "### Action Center\n\n| Resource | Used by | Purpose |\n|---|---|---|\n| Approvals | step 9 | the approver's task |\n\n"
+    rc, out = check(COMPONENT.replace("### Triggers\n", service + "### Triggers\n", 1), profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: '### Triggers' after '### Action Center'" in out
+
+
+def test_a_standalone_component_without_runtime_and_deployment_fails_strict(check):
+    pd = platform_dependencies(COMPONENT)
+    rc, out = check(COMPONENT.replace(pd, pd[:pd.index("### Runtime and deployment")], 1), profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: no '### Runtime and deployment' in a standalone component genome" in out
+
+
+def test_runtime_and_deployment_missing_a_bullet_fails_strict(check):
+    rc, out = check(re.sub(r"^- \*\*Robots:\*\*[^\n]*\n", "", COMPONENT, count=1, flags=re.M), profile="strict")
+    assert rc == 1
+    assert "Runtime and deployment: no bullet for ['Robots']" in out
+
+
+def test_platform_dependencies_with_neither_tables_nor_stub_fails_strict(check):
+    pd = platform_dependencies(COMPONENT)
+    runtime = pd[pd.index("### Runtime and deployment"):]
+    rc, out = check(COMPONENT.replace(pd, "## Platform Dependencies\n\nSome resources.\n\n" + runtime, 1), profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: neither a table per kind nor the stub line" in out
+    stub = COMPONENT.replace(pd, "## Platform Dependencies\n\nNo Orchestrator or Integration Service resources required.\n\n" + runtime, 1)
+    assert "Platform Dependencies: neither a table per kind" not in check(stub, profile="strict")[1]

@@ -29,7 +29,9 @@
 //           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
-//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; no H2 heading twice; no
+//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
+//           in the kinds' order, and the seven Runtime and deployment bullets last there in a standalone component
+//           genome and in a process genome's Deployment, never in a component inside a process; no H2 heading twice; no
 //           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
@@ -86,6 +88,11 @@ export const PROCESS_SECTIONS = [
   "Error Handling and Recovery", "Transactional Shape", "Acceptance Criteria", "Deployment",
   "Complexity", "Tags",
 ];
+// Platform Dependencies: one `###` table per kind, in this order, then any other service's, then Runtime and deployment
+export const DEPENDENCY_KINDS = ["Queues", "Assets", "Credentials", "Storage buckets", "Connections", "Data Fabric entities", "Triggers"];
+const NO_DEPENDENCIES = "No Orchestrator or Integration Service resources required";
+const RUNTIME = "Runtime and deployment";
+export const RUNTIME_LABELS = ["Delivery model", "Packaging and route", "Entry points", "Runtime and machines", "Robots", "Folders and environments", "Logging and retention"];
 // an Open Decisions entry is open (its tier and who answers it), decided or withdrawn; it is never removed
 export const DECISION_TIERS = ["business outcome", "run behaviour", "reading", "material"];
 const OPEN_ENTRY = new RegExp(`\\((?:${DECISION_TIERS.join("|")}); answered by: `);
@@ -419,9 +426,11 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
 function checkDesignedIn(path, text, r) {
   const m = text.match(DESIGNED_IN);
   if (!m || !m[2]) return;
-  let current;
-  try { current = sddFingerprint(resolvePath(dirname(path), m[1])); } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
-  if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  const sdd = resolvePath(dirname(path), m[1]);
+  let matches;
+  // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
+  try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
+  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;
@@ -438,6 +447,38 @@ function checkWrittenSdd(path, text, level, r) {
   let current;
   try { current = genomeFingerprint(path); } catch { r.strict(`${baseName(sdd)}: a component genome the genome links cannot be read for its genome-sha256`); return; }
   if (current !== row[1]) r.strict(`${baseName(sdd)}: genome-sha256 does not match the genome; the genome changed since the SDD was written from it`);
+}
+
+/** strict: Platform Dependencies holds the stub or a table per kind in the kinds' order, another service's after
+ * them; Runtime and deployment's bullets sit last there in a standalone component genome, in a process genome's
+ * Deployment, and nowhere in a component inside a process. */
+function checkPlatformDependencies(text, level, inProcess, r) {
+  const body = sectionBody(text, "Platform Dependencies");
+  const headings = [...body.matchAll(/^### (.+)$/gm)].map((m) => m[1].trim());
+  const tables = headings.filter((h) => h !== RUNTIME);
+  if (!tables.length && !body.includes(NO_DEPENDENCIES)) r.strict(`Platform Dependencies: neither a table per kind nor the stub line '${NO_DEPENDENCIES}.'`);
+  let last = -1, other = null;
+  for (const h of tables) {
+    const kind = DEPENDENCY_KINDS.indexOf(h);
+    if (kind === -1) { other ??= h; continue; }
+    if (other) r.strict(`Platform Dependencies: '### ${h}' after '### ${other}'; another service's table follows the kinds`);
+    else if (kind < last) r.strict(`Platform Dependencies: '### ${h}' out of the kinds' order ${repr(DEPENDENCY_KINDS)}`);
+    last = Math.max(last, kind);
+  }
+  const runtime = headings.indexOf(RUNTIME);
+  if (runtime !== -1 && runtime !== headings.length - 1) r.strict(`Platform Dependencies: '### ${RUNTIME}' is not its last table`);
+  if (level === "process" || inProcess) {
+    if (runtime !== -1) r.strict(`Platform Dependencies: '### ${RUNTIME}' in a ${level === "process" ? "process genome" : "component inside a process genome"}; the process genome's Deployment holds those bullets`);
+    if (level === "process") checkRuntimeLabels(sectionBody(text, "Deployment"), "Deployment", r);
+    return;
+  }
+  if (runtime === -1) { r.strict(`Platform Dependencies: no '### ${RUNTIME}' in a standalone component genome`); return; }
+  checkRuntimeLabels(body.slice(body.search(new RegExp(`^### ${RUNTIME}`, "m"))), RUNTIME, r);
+}
+
+function checkRuntimeLabels(body, where, r) {
+  const missing = RUNTIME_LABELS.filter((l) => !new RegExp(`^- \\*\\*${esc(l)}:\\*\\*`, "m").test(body));
+  if (missing.length) r.strict(`${where}: no bullet for ${repr(missing)}`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -614,6 +655,7 @@ function checkComponent(path, a, partOf, shape = true, library = false, processE
   if (!cq.trim()) r.core("Configuration Questions section is empty");
   else if (!questions.length && !cq.includes("no configuration needed")) r.strict("Configuration Questions: neither a numbered list of questions nor the stub line");
   checkOpenDecisions(text, r, processEntries);
+  checkPlatformDependencies(text, "component", partOf || text.includes("Part of:"), r);
   if (a.sourceMap.length) {
     const sm = sectionBody(text, "Source Map");
     if (!sm.trim()) r.core("missing or empty '## Source Map' section");
@@ -656,6 +698,7 @@ function checkProcess(path, a) {
     try { for (const n of namedEntries(read(target), true)) namedByComponents.add(n); } catch (e) { if (!(e instanceof InputError)) throw e; }
   }
   checkOpenDecisions(text, r, null, namedByComponents);
+  checkPlatformDependencies(text, "process", false, r);
   const processEntries = openDecisions(text);
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {

@@ -18,7 +18,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 2. **Written for a person filling it in a text editor**, who has read neither the genome nor this skill:
    - plain words, and no tables;
    - every item is its id and the question in bold, then labelled lines as the template lays them out, each label in bold;
-   - one `Context:` line per item, and one option per `Instead:` line;
+   - at most one `Context:` line per item, and one option per `Instead:` line;
    - every line in short sentences;
    - a pointer to the step on a `Where:` line of its own, as `step <N>, <step name>`, or the SDD section for a point no step holds;
    - components by their Components names, and source objects by the names their author wrote, in plain text, never by an id or a line;

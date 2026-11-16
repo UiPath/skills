@@ -40,17 +40,17 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 |-------|-------------|-------------|------------------|---------|----------|-----------|
 | AP_InvoiceIntake | one invoice | as in the process genome's Handoffs row 1 | *[Inferred: process D1]* | *[Inferred: process D2]* | step 3 | component 1 |
 
-### Storage buckets
-
-| Bucket | Holds | Written by | Read by |
-|--------|-------|------------|---------|
-| AP_Invoices | the invoice PDFs and the extraction results | steps 3 and 5 | step 5, and components 1 and 3 |
-
 ### Credentials
 
 | Asset | Account or persona | Signs in to | Used by |
 |-------|--------------------|-------------|---------|
 | SAP_AP_Robot | the robot's SAP account | SAP GUI | steps 6 and 9 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction results | steps 3 and 5 | step 5, and components 1 and 3 |
 
 ### Connections
 

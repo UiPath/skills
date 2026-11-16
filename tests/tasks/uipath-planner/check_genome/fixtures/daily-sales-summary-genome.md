@@ -31,12 +31,29 @@ It runs unattended on an Orchestrator time trigger, needs no application with a 
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| DailySales_InputFolder | Text asset | Folder the regional CSV exports are dropped into |
-| DailySales_OutputFolder | Text asset | Folder the Excel summary is written to |
-| DailySales_ArchiveFolder | Text asset | Folder the processed exports are moved to |
-| DailySales-Evening | Time trigger | Starts the process every weekday at 19:00 |
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|---|---|---|---|---|
+| DailySales_InputFolder | Text | Configuration Question 1 | steps 1–2 | Folder the regional CSV exports are dropped into |
+| DailySales_OutputFolder | Text | Configuration Question 2 | steps 1 and 5 | Folder the Excel summary is written to |
+| DailySales_ArchiveFolder | Text | Configuration Question 3 | steps 1 and 6 | Folder the processed exports are moved to |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---|---|---|---|---|
+| DailySales-Evening | this process | Time | weekdays 19:00, the tenant's time zone | 1 |
+
+### Runtime and deployment
+
+- **Delivery model:** Automation Cloud
+- **Packaging and route:** one package
+- **Entry points:** `Main`, with no arguments; how it starts is the Triggers table
+- **Runtime and machines:** Windows; unattended; the robot machine reaches the operations share
+- **Robots:** one unattended robot account
+- **Folders and environments:** one Orchestrator folder
+- **Logging and retention:** the job log; retention as the tenant sets it
 
 ## Interface
 
