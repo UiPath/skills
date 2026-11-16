@@ -28,6 +28,7 @@ Not covered, because Test Manager never emits the event: TestCaseLog Created, De
 | `_setup/preflight_connections.py` | `pre_run`. Fails the task as ERROR when no `uipath-uipath-testmanager` connection answers a ping. Copied from `uipath-maestro-bpmn/_setup`, so these tasks mount no other surface's test folder. |
 | `_setup/cleanup.py` | `post_run`, pass or fail, within the 300 s hook cap. Deletes only what it can prove this run created; see [Cleanup ownership](#cleanup-ownership). Always exits 0. |
 | `check_trigger_run.py` | Grader, reached via `$REFERENCE_DIR`. `--artifact <surface>` checks the trigger is the workflow entry point; `--validate <surface>` runs the offline validator; `--live` polls up to 120 s for a Successful Orchestrator job of `process_name` that the trigger started, and asserts its output payload. |
+| `test_check_trigger_run.py` | Offline unit tests for the grader: fixture artifacts per surface and a fake `run_uip`, no tenant. Run by the `testmanager event-trigger grader unit tests` job in `.github/workflows/test-helpers.yml`: `pytest tests/tasks/uipath-platform/integration-service/testmanager/_tm_events/ -v`. |
 
 `--live` does not trust the agent's report of the run:
 
