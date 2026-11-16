@@ -1,0 +1,76 @@
+task_id: skill-coded-apps-deploy-folder-path-smoke
+description: >
+  Smoke test (mode:build): agent writes the CI deploy step for a coded app
+  whose target folder the user knows only by its path. Critical Rule #11
+  names such a folder with `uip codedapp deploy --folder-path`, so the
+  script's deploy call carries the path itself; a key lookup may appear
+  only as the fallback for CLIs without the flag (APPS-38490). Unlike
+  cli_env_setup_smoke, which grades the name→key resolver older CLIs still
+  need, this grades the deploy call itself. Offline: the script is graded,
+  never run, so the runner's CLI version does not matter.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Our CI pipeline deploys a UiPath Coded Web App that an earlier job in
+  the same workspace already packed and published
+  (`.uipath/app.config.json` is in place), and the job is already logged
+  in to UiPath. The app must go into the existing Orchestrator folder
+  `Finance/Invoicing`.
+
+  Author `deploy.sh` at the sandbox root: the step that deploys the app
+  into that folder. It runs unattended, so nothing may prompt.
+
+  Write the script only — do NOT execute it, and do NOT run any `uip` or
+  `npm` commands yourself.
+
+success_criteria:
+  - type: file_exists
+    description: "deploy.sh was created"
+    path: "deploy.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+    # The flag must sit on an actual deploy command: continuation lines are
+    # joined, comment lines dropped and `||` / `&&` / `;` chains split first.
+    # The path may live in a variable, so it is checked anywhere in the file.
+    # A key lookup that only runs after deploy answers `unknown option
+    # '--folder-path'` (older CLIs) is allowed. Flags built in a bash array
+    # are not recognized.
+  - type: run_command
+    description: "deploy.sh passes `--folder-path` on its `codedapp deploy` command and names Finance/Invoicing (Rule #11 — the path goes straight to deploy)"
+    command: |
+      awk '{ if (sub(/\\$/, "")) printf "%s ", $0; else print }' deploy.sh \
+        | grep -vE '^[[:space:]]*#' \
+        | awk '{ gsub(/[|][|]|&&|;/, "\n"); print }' \
+        | grep -E 'codedapp[[:space:]]+deploy' \
+        | grep -qE -- '--folder-path' \
+        && grep -qF 'Finance/Invoicing' deploy.sh
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No `codedapp deploy` command passes both `--folder-path` and `--folder-key` (Rule #11 — deploy refuses the pair)"
+    command: |
+      ! awk '{ if (sub(/\\$/, "")) printf "%s ", $0; else print }' deploy.sh \
+        | grep -vE '^[[:space:]]*#' \
+        | awk '{ gsub(/[|][|]|&&|;/, "\n"); print }' \
+        | grep -E 'codedapp[[:space:]]+deploy' \
+        | grep -E -- '--folder-path' \
+        | grep -qE -- '--folder-key'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "deploy.sh is valid bash syntax (bash -n parse check)"
+    command: "bash -n deploy.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

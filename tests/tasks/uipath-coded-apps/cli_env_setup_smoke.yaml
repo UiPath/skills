@@ -5,7 +5,8 @@ description: >
   and `@uipath/orchestrator-tool` via `uip tools install` (checking
   `uip tools list` first), and resolve a user-provided folder NAME to the
   folder KEY via `uip or folders list --output json` (match on `Name`,
-  read `Key`) per Critical Rule #11. Covers the 2 `uip tools install`
+  read `Key`) — the key Critical Rule #11 falls back to when deploy has no
+  `--folder-path`. Covers the 2 `uip tools install`
   components and promotes the folders-list name→key resolution from
   Indirect to Direct — none of these had a covering test.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
@@ -26,8 +27,8 @@ initial_prompt: |
      resolves an Orchestrator folder NAME to its folder KEY (GUID) using
      the documented `uip or ...` command with JSON output, matching on
      the `Name` field of the output rows and printing the `Key` field.
-     (This is what makes `uip codedapp deploy --folder-key <GUID>` run
-     non-interactively when the user only knows the folder name.)
+     (Pipelines on a CLI whose `uip codedapp deploy` has no
+     `--folder-path` pass this key as `--folder-key <GUID>` instead.)
 
   Write the script only — do NOT execute it, and do NOT run any `uip` or
   `npm` commands yourself.
@@ -70,7 +71,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "setup.sh resolves folder name→key via `… or folders list --output json` (Rule #11 — the documented non-interactive resolution path; binary may be a variable)"
+    description: "setup.sh resolves folder name→key via `… or folders list --output json` (Rule #11's key fallback for CLIs without deploy --folder-path; binary may be a variable)"
     command: "grep -E 'or\\s+folders\\s+list\\b.*--output\\s+json' setup.sh"
     timeout: 10
     expected_exit_code: 0

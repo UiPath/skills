@@ -455,6 +455,6 @@ Copy `src/components/DocumentTab.tsx` verbatim from the template's [DocumentTab 
 
 If the app uses SDK services, confirm `uipath.json` exists at the project root with `scope` and `clientId` populated before packing — the `uip codedapp` CLI reads it during pack.
 
-Full pack/publish/deploy pipeline, options, folder-key resolution, and troubleshooting live in **[pack-publish-deploy.md](pack-publish-deploy.md)**. Follow it for deployment — with one mandatory override below.
+Full pack/publish/deploy pipeline, options, folder targeting, and troubleshooting live in **[pack-publish-deploy.md](pack-publish-deploy.md)**. Follow it for deployment — with one mandatory override below.
 
 > **Critical — always publish action apps with `--type Action`.** `uip codedapp publish` defaults to `--type Web`. An action app published without `--type Action` registers as a Web app and will **not** bind to Action Center tasks. Pass `--type Action` on **every** publish of this app — first deploy and every version update. Never omit it, never rely on the default.
