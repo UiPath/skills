@@ -42,8 +42,6 @@ initial_prompt: |
       `average`) and a non-empty `alias` for the output field.
     - The node's `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` from the authoritative definition for
-      `core.action.transform.group-by`.
 
   Validate the flow.
 
