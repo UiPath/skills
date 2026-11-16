@@ -46,3 +46,8 @@ def test_skill_step_9_reads_the_report_template() -> None:
 def test_studio_web_merges_against_the_seeded_baseline() -> None:
     text = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "SKILL.md").read_text()
     assert "`--baseline` is step 1's compile of the seeded source**, never the edited" in text
+
+
+def test_final_report_survives_a_resume() -> None:
+    text = _outside_flavor_blocks((REFS / "final-report-template.md").read_text())
+    assert "When a turn resumes after an interruption that came after you wrote this report" in text

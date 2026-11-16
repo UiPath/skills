@@ -55,6 +55,7 @@ Write every line in the user's words: say what each step now does.
 No element type ids (`Orchestrator.StartAgentJob`), connector keys, object or operation names, payload, binding or placeholder terms, and no file names other than the path line.
 
 This reply is your whole final message, and its first characters are the process name: write no status sentence or introduction before the `<Name>:` line.
+When a turn resumes after an interruption that came after you wrote this report, send that report again, unchanged and whole, as this turn's final message.
 Send nothing beyond these lines: no extra sections, headings, tables, numbered lists, questions or suggested next steps.
 **Write at most five change lines. A sixth line is a defect, not a judgment call.**
 Count the `-` change lines before you send: when there are more than five, merge related steps into one line each, and fold anything else the user must act on into `Needs`, `Assumed` or `Unverified`.
