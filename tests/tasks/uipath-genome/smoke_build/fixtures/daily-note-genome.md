@@ -33,16 +33,6 @@ Each weekday morning this automation writes a one-line text note, `Daily note fo
 |---|---|---|---|---|
 | DailyNote-Morning | this process | Time | weekdays 08:00, the tenant's time zone | 1 |
 
-### Runtime and deployment
-
-- **Delivery model:** Automation Cloud
-- **Packaging and route:** one package
-- **Entry points:** `Main`, with no arguments; how it starts is the Triggers table
-- **Runtime and machines:** Windows; unattended
-- **Robots:** one unattended robot account
-- **Folders and environments:** one Orchestrator folder
-- **Logging and retention:** the job log; retention as the tenant sets it
-
 ## Interface
 
 Runs unattended with no arguments; the output is the note file Workflow step 3 writes.

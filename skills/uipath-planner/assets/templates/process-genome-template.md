@@ -207,13 +207,12 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 ## Deployment
 
-- **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
 - **Packaging and route:** {single solution (`uipath-solution`) / independent packages} — {solution name}; {each library and the feed it is published to, before its consumers}
-- **Entry points:** {each process's entry point; how each starts: Platform Dependencies, Triggers}
-- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; the Robot version, when stated; machine prerequisites}
-- **Robots:** {the robot account, by persona, each process runs as}
-- **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
-- **Logging and retention:** {where the runs log; data kept out of the logs; log and queue-item retention}
+- **Entry points:** {each process's entry point, and who or what starts it; how each starts: Platform Dependencies, Triggers}
+- **Runtime:** {Windows / cross-platform / serverless, and unattended or attended, per component}
+- **Kept out of the logs:** {the data a run must not log, or none}
+
+UI targets: {the environment whose screens the targets describe}
 
 ## Complexity
 

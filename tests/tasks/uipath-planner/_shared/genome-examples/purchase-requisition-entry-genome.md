@@ -22,7 +22,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 | Application | Role | Notes |
 |-------------|------|-------|
 | Microsoft Excel (purchasing requisition workbook on the finance share) | Input source and output target | Open-requisitions sheet with the dispatched-timestamp column, approved-supplier sheet, run-summary sheet |
-| Coupa (web portal) | Output target | Requisition search, header and line entry, submit; purchasing robot account |
+| Coupa (web portal) | Output target | Requisition search, header and line entry, submit; purchasing robot account; UI targets: the production Coupa tenant |
 | Exchange Online | Notification channel | Requester notifications, run summary and stop alert to purchasing operations |
 | Orchestrator | Queue, assets, triggers | Shared queue for three unattended robots |
 
@@ -67,16 +67,6 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 | PR_DispatchSchedule | entry point A | Time | every business day at 06:00; time zone *[Inferred: D1]* | 1 *[Inferred: D2]* |
 | PR_RequisitionsQueueTrigger | entry point B | Queue | `PR_Requisitions`, from 06:30 | up to 3 |
 
-### Runtime and deployment
-
-- **Delivery model:** Automation Cloud *[Inferred: D3]*
-- **Packaging and route:** one package with two entry points
-- **Entry points:** entry point A, the dispatch, and entry point B, the requisitions; how each starts: Triggers above
-- **Runtime and machines:** Windows *[Inferred: D3]*; unattended; each machine reaches the finance share and the Coupa portal *[Inferred: D3]*
-- **Robots:** the purchasing robot account, on each of the three machines *[Inferred: D3]*
-- **Folders and environments:** one Orchestrator folder *[Inferred: D3]*; the production Coupa tenant is the one whose UI targets the genome describes
-- **Logging and retention:** the job log, and the run summary row on the finance share (step 13); retention not stated *[Inferred: D4]*
-
 ## Interface
 
 - **Inputs:** A: none (time trigger); reads the open-requisition rows. B: one queue item per requisition — requisition number, requester email, supplier name, cost centre, delivery date, line items (description, quantity, unit price)
@@ -101,8 +91,6 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 1. In which time zone does the 06:00 dispatch run? (reading; answered by: whoever knows the process; reading: the finance team's local time zone, since the description gives a time but no zone) — Platform Dependencies, Triggers
 2. How many runners does the dispatch schedule use? (reading; answered by: whoever knows the process; reading: one runner, since the dispatch is a single daily run; the description does not state it) — Platform Dependencies, Triggers
-3. Where does the automation run: which delivery model, machine type, robot account and Orchestrator folder, and can each machine reach the finance share and the Coupa portal? (reading; answered by: the environment's owners; reading: Automation Cloud, Windows machines that reach both, the purchasing robot account on each of the three machines and one folder, since the description names none) — Platform Dependencies, Runtime and deployment
-4. How long are the job logs kept? (reading; answered by: whoever knows the process; reading: no retention beyond the platform default, since none is stated) — Platform Dependencies, Runtime and deployment
 
 ## Workflow
 

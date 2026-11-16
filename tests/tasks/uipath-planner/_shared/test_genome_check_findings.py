@@ -656,22 +656,12 @@ def test_component_without_part_of_line_fails_strict_only(process_tree, check_pr
     assert "invoice-extraction-genome.md: component inside a process genome lacks the 'Part of:' line" in out
 
 
-def test_runtime_and_deployment_in_a_component_inside_a_process_fails_strict(process_tree, check_process):
-    target = process_tree.parent / PROCESS_DIR.name / "invoice-extraction-genome.md"
-    text = target.read_text(encoding="utf-8")
-    pd = section(text, "## Platform Dependencies", "## Interface")
-    target.write_text(text.replace(pd, pd + "### Runtime and deployment\n\n- **Delivery model:** Automation Cloud\n\n", 1), encoding="utf-8")
-    assert check_process()[0] == 0
+def test_a_process_deployment_missing_a_bullet_fails_strict(check_process):
+    drop = lambda t: re.sub(r"^- \*\*Kept out of the logs:\*\*[^\n]*\n", "", t, count=1, flags=re.M)
+    assert check_process(transform=drop)[0] == 0
     rc, out = check_process(profile="strict")
     assert rc == 1
-    assert "invoice-extraction-genome.md: Platform Dependencies: '### Runtime and deployment' in a component inside a process genome" in out
-
-
-def test_a_process_deployment_missing_a_bullet_fails_strict(check_process):
-    drop = lambda t: re.sub(r"^- \*\*Entry points:\*\*[^\n]*\n", "", t, count=1, flags=re.M)
-    rc, out = check_process(profile="strict", transform=drop)
-    assert rc == 1
-    assert "invoice-processing-genome.md: Deployment: no bullet for ['Entry points']" in out
+    assert "invoice-processing-genome.md: Deployment: no bullet for ['Kept out of the logs']" in out
 
 
 def handoff_rows(rows):
@@ -946,24 +936,10 @@ def test_a_kind_after_another_service_fails_strict(check):
     assert "Platform Dependencies: '### Triggers' after '### Action Center'" in out
 
 
-def test_a_standalone_component_without_runtime_and_deployment_fails_strict(check):
-    pd = platform_dependencies(COMPONENT)
-    rc, out = check(COMPONENT.replace(pd, pd[:pd.index("### Runtime and deployment")], 1), profile="strict")
-    assert rc == 1
-    assert "Platform Dependencies: no '### Runtime and deployment' in a standalone component genome" in out
-
-
-def test_runtime_and_deployment_missing_a_bullet_fails_strict(check):
-    rc, out = check(re.sub(r"^- \*\*Robots:\*\*[^\n]*\n", "", COMPONENT, count=1, flags=re.M), profile="strict")
-    assert rc == 1
-    assert "Runtime and deployment: no bullet for ['Robots']" in out
-
-
 def test_platform_dependencies_with_neither_tables_nor_stub_fails_strict(check):
     pd = platform_dependencies(COMPONENT)
-    runtime = pd[pd.index("### Runtime and deployment"):]
-    rc, out = check(COMPONENT.replace(pd, "## Platform Dependencies\n\nSome resources.\n\n" + runtime, 1), profile="strict")
+    rc, out = check(COMPONENT.replace(pd, "## Platform Dependencies\n\nSome resources.\n\n", 1), profile="strict")
     assert rc == 1
     assert "Platform Dependencies: neither a table per kind nor the stub line" in out
-    stub = COMPONENT.replace(pd, "## Platform Dependencies\n\nNo Orchestrator or Integration Service resources required.\n\n" + runtime, 1)
+    stub = COMPONENT.replace(pd, "## Platform Dependencies\n\nNo Orchestrator or Integration Service resources required.\n\n", 1)
     assert "Platform Dependencies: neither a table per kind" not in check(stub, profile="strict")[1]

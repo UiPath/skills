@@ -79,19 +79,7 @@
 | Resource | Used by | Purpose |
 |----------|---------|---------|
 
-*Stub when none: "No Orchestrator or Integration Service resources required." — the Runtime and deployment block follows it all the same.*
-
-### Runtime and deployment
-
-*(A standalone component genome only; a component inside a process leaves these to its process genome's Deployment.)*
-
-- **Delivery model:** {Automation Cloud / Automation Suite <version> / standalone Orchestrator}
-- **Packaging and route:** {one package, or the library feed it is published to}
-- **Entry points:** {the entry point; how it starts: Triggers above}
-- **Runtime and machines:** {Windows / cross-platform / serverless; unattended or attended; the Robot version, when stated; machine prerequisites}
-- **Robots:** {the robot account, by persona}
-- **Folders and environments:** {the folder and tenant of test and of production; the one whose UI targets this genome describes}
-- **Logging and retention:** {where it logs; data kept out of the logs; log and queue-item retention}
+*Stub when none: "No Orchestrator or Integration Service resources required."*
 
 ## Interface
 

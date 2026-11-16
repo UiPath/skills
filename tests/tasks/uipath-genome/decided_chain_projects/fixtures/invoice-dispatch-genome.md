@@ -46,16 +46,6 @@ It runs unattended on Orchestrator triggers and needs no application with a user
 | Invoice_OutputFolder | Text | Configuration Question 2 | step 5 | Folder the approval files are written to |
 | Invoice_RegisterPath | Text | Configuration Question 3 | step 7 | Path of the invoice register workbook |
 
-### Runtime and deployment
-
-- **Delivery model:** Automation Cloud
-- **Packaging and route:** independent packages, one per process the `Decided:` line names: InvoiceDispatcher, InvoicePerformer, InvoiceReporter
-- **Entry points:** each process's `Main`, with no arguments: the dispatcher every weekday at 07:00 (Transactional Shape), the performer and the reporter as items reach their queues
-- **Runtime and machines:** Windows; unattended; the robot machine reaches the finance share
-- **Robots:** one unattended robot account for the three processes
-- **Folders and environments:** one Orchestrator folder holding the queues, the assets and the three processes
-- **Logging and retention:** the job log; the queue items' status and history per invoice number, kept as the tenant sets it
-
 ## Interface
 
 Runs unattended with no arguments; outputs are the side effects listed in Workflow.

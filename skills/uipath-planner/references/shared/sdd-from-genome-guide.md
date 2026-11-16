@@ -42,14 +42,13 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - **Planner Handoff:**
      - `Status: ready`: the genome exists, and its open entries are Action Required items, not a gate;
      - `Execution autonomy`: `interactive` when someone answers the run's questions, otherwise `autonomous`;
-     - `Delivery model`, from the genome's Runtime and deployment or Deployment;
+     - `Delivery model`: `unspecified` unless the request names it, since a genome describes no deployment;
      - `SDD scope`, and the solution rows for a process genome;
      - `Template validation`, as the template check sets it;
      - last, `| **Genome** | <relative path to the genome> · genome-sha256 <fingerprint> |` (item 4). This row tells every reader that the genome is the source.
    - **Decisions Made**, whatever the `Execution autonomy` (the template's condition is `design`'s): what the genome decides, one row each, the reason taken from the genome's own words:
      - each component's skill;
      - each `Decided:` split;
-     - the delivery model;
      - an implementation mode or package pin the Build With rationale states;
      - each decided Open Decisions entry.
    - **Recommended Scope:** the genome's Components (or its one Build With product) as the recommendation.
@@ -68,7 +67,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    | 10 Master Project Architecture; 11 Project Structure; 12 Queue Architecture | Components or Build With; the Transactional Shape; Queues |
    | 13 Implementation Mode; 14 Packages | the Build With rationale, where it decides them |
    | 15 Credentials & Assets | Assets, Credentials, and the Configuration Questions by number |
-   | 16 Deployment Environment | Runtime and deployment or Deployment, and Triggers |
+   | 16 Deployment Environment | Deployment, Interface and the Triggers table; the environments themselves as decided when the build is prepared |
    | 17 Testing Strategy | Acceptance Criteria, by number |
    | 18 Next Steps | preparing the build (optional) and building with `uipath-genome` |
 
