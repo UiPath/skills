@@ -159,16 +159,8 @@ def iso_age_seconds(timestamp: str | None) -> float | None:
     return (datetime.now(timezone.utc) - created).total_seconds()
 
 
-def write_snapshot(
-    project_names: set[str],
-    run_folder_key: str,
-    debug_folder_keys: list[str] | None = None,
-) -> None:
-    """Record the baseline as opaque digests — see the module docstring.
-
-    `debug_folder_keys` are the Debug_ folders that existed at seed; None means
-    they could not be listed, and teardown then deletes none.
-    """
+def write_snapshot(project_names: set[str], run_folder_key: str) -> None:
+    """Record the baseline as opaque digests — see the module docstring."""
     with open(SNAPSHOT, "w", encoding="utf-8") as handle:
         # Neutral key names. "scope" is the seed-created run folder's Key (a
         # bare GUID leaks nothing the prompt's folder name doesn't already say).
@@ -176,7 +168,6 @@ def write_snapshot(
             {
                 "names": sorted(project_digest(name) for name in project_names),
                 "scope": run_folder_key,
-                "held": debug_folder_keys,
             },
             handle,
             indent=2,
@@ -191,12 +182,7 @@ def read_snapshot() -> dict[str, Any]:
         )
     with open(SNAPSHOT, encoding="utf-8") as handle:
         raw = json.load(handle)
-    held = raw.get("held")
-    return {
-        "projects": set(raw["names"]),
-        "scope": str(raw["scope"]),
-        "held": None if held is None else set(held),
-    }
+    return {"projects": set(raw["names"]), "scope": str(raw["scope"])}
 
 
 def new_project_names() -> list[str]:

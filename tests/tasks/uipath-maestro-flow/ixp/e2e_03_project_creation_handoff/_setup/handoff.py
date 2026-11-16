@@ -60,8 +60,7 @@ where teardown cannot: attribution is per-run, but the fixture domain is
 owned outright. The run folder itself is always deleted — deleting a folder is
 what removes its deployments and their registry nodes (deployments have no
 delete verb of their own), so the tenant does not accumulate a published
-extractor per run. The only other folders deleted are this sandbox's own `Debug_<project>`
-folders (a debug run's). A deployment the agent
+extractor per run. A deployment the agent
 parked elsewhere is reported as LEAKED for a hand-delete. Packages bound to a
 process in the run folder are deleted from the tenant feed after the folder,
 fixture-domain names only. Always exits 0: post_run
@@ -74,7 +73,6 @@ from __future__ import annotations
 import glob
 import json
 import os
-import re
 import sys
 import traceback
 import uuid
@@ -90,6 +88,7 @@ from handoff_tenant import (  # noqa: E402  (path set above)
     ixp_node_identifiers,
     list_deployments_if_present,
     list_domain_package_versions,
+    list_projects,
     list_folder_process_packages,
     matches_fixture_domain,
     new_project_names,
@@ -102,7 +101,7 @@ from handoff_tenant import (  # noqa: E402  (path set above)
 
 # The run-scoped Orchestrator folder: seed creates it, seed.json names it for
 # the prompt, and it is the only folder this script deletes by name (plus
-# this sandbox's own Debug_ folders and stale fixture-domain ones). Suffixed per
+# stale fixture-domain Debug_ folders). Suffixed per
 # RUN (uuid8, per tests/tasks/uipath-platform/seed.py), because a fixed literal
 # is what two concurrent runs collided on in RE-13543. The prefix must not
 # contain "ixp"/"project"/"publish" — the name reaches the agent, and e2e_03
@@ -163,13 +162,12 @@ DOMAIN_MARKERS = ("falconry", "bird-of-prey", "bird_of_prey")
 LEAKED_PROJECT_AGE_SECONDS = 7200.0
 
 # `uip maestro flow debug` deploys the flow's packages into a `Debug_<project>`
-# folder under the caller's Personal Workspace. Debug_<N> with N a name from
-# this sandbox, absent at seed, is this run's; any other Debug_ folder is deleted only by the
-# seed sweep, and only when stale and wholly fixture-domain.
+# folder under the caller's Personal Workspace, shared by every concurrent run
+# and named from the agent's own project name, so a folder cannot be attributed
+# to one run. Only the seed sweep deletes one, and only when stale and wholly
+# fixture-domain.
 DEBUG_FOLDER_PREFIX = "Debug_"
 DEBUG_FOLDER_TYPE = "DebugSolution"
-# A second debug run of one project lands in `Debug_<N> 1`, `Debug_<N> 2`, ...
-DEBUG_RERUN_SUFFIX = re.compile(r" \d+$")
 FOLDER_LIST_LIMIT = "500"
 
 
@@ -267,19 +265,6 @@ def list_debug_folders() -> list[dict]:
     ]
 
 
-def held_debug_folder_keys() -> list[str] | None:
-    """Keys of the Debug_ folders that exist now, or None when unlistable.
-
-    Runs share the bot's Personal Workspace, so a folder already here is not
-    this run's; teardown deletes only the ones that appear after this.
-    """
-    try:
-        return sorted(str(folder["Key"]) for folder in list_debug_folders())
-    except Exception as exc:  # noqa: BLE001 — teardown then deletes no Debug_ folder
-        print(f"WARN: could not record existing Debug_ folders: {exc}")
-        return None
-
-
 def sweep_debug_folders() -> list[str]:
     """Delete stale Debug_ folders holding only fixture-domain processes.
 
@@ -365,7 +350,7 @@ def unbacked_nodes(nodes: list[dict], projects: list[dict]) -> list[str]:
     )
 
 
-def require_no_ghost_nodes(projects: list[dict]) -> None:
+def require_no_ghost_nodes(projects: list[dict], excluded: set[str]) -> None:
     """Fail pre_run (ERROR, not FAILURE) on a fixture-domain node with no project.
 
     A deployment outlives its project, and the registry keeps serving its node.
@@ -378,6 +363,11 @@ def require_no_ghost_nodes(projects: list[dict]) -> None:
         ["maestro", "flow", "registry", "search", IXP_NODE_PREFIX.rstrip("."), "--output", "json"]
     )["Data"]
     ghosts = unbacked_nodes(nodes, projects)
+    if ghosts:
+        # A sibling may have created and published a project after `projects`
+        # was listed; judge once more against a fresh listing.
+        fresh = [p for p in list_projects() if str(p["Name"]) not in excluded]
+        ghosts = unbacked_nodes(nodes, fresh)
     if ghosts:
         raise RuntimeError(
             "tenant not ready: published IxP node(s) cover the fixture domain "
@@ -441,8 +431,6 @@ def require_deployments_create() -> None:
 
 
 def seed_main(name_extractor: bool = False) -> int:
-    from handoff_tenant import list_projects  # local: only seed needs it
-
     require_deployments_create()
     # One listing serves both the sweep and the baseline. Sweep first, so a
     # swept name is not recorded as pre-existing — an agent that recreates that
@@ -452,15 +440,14 @@ def seed_main(name_extractor: bool = False) -> int:
     sweep_debug_folders()
     sweep_domain_packages()
     live = [project for project in projects if str(project["Name"]) not in swept]
-    require_no_ghost_nodes(live)
+    require_no_ghost_nodes(live, set(swept))
     # Snapshot the projects BEFORE creating the folder, so the only step
     # between the folder existing and the snapshot recording it is a local
     # file write. A network failure in between leaks a folder teardown cannot
     # see (it reads the scope from the snapshot) — inert, per RUN_FOLDER_PREFIX.
     project_names = {str(project["Name"]) for project in live}
-    held_debug_folders = held_debug_folder_keys()
     run_folder_key = create_run_folder(name_extractor)
-    write_snapshot(project_names, run_folder_key, held_debug_folders)
+    write_snapshot(project_names, run_folder_key)
     print(f"Snapshotted {len(project_names)} pre-existing IXP project(s) to {SNAPSHOT}")
     return 0
 
@@ -485,45 +472,6 @@ def delete_debug_folder(folder_key: str, name: str) -> bool:
     detail = (completed.stdout or completed.stderr).strip()
     print(f"WARN: could not delete debug folder '{name}' (exit {completed.returncode}): {detail}")
     return False
-
-
-def sandbox_project_names() -> list[str]:
-    """Project and solution names in this sandbox: .flow dirs and stems, .uipx stems."""
-    names: set[str] = set()
-    for flow_path in glob.glob("**/*.flow", recursive=True):
-        names.add(os.path.basename(os.path.dirname(os.path.abspath(flow_path))))
-        names.add(os.path.splitext(os.path.basename(flow_path))[0])
-    for solution_path in glob.glob("**/*.uipx", recursive=True):
-        names.add(os.path.splitext(os.path.basename(solution_path))[0])
-    return sorted(names)
-
-
-def delete_owned_debug_folders(held: set[str] | None) -> list[str]:
-    """Delete this run's Debug_<N> folders; return the packages bound in them.
-
-    N is a project or solution name from this sandbox, and the folder must not
-    have existed at seed (`held`), so a Debug_ folder of anyone else's is never
-    matched. Deleting the folder removes its processes; the packages outlive it
-    and are returned for the caller's package delete.
-    """
-    packages: list[str] = []
-    if held is None:
-        print("NOTE: no Debug_ folder baseline was recorded; none deleted.")
-        return packages
-    owned = {f"{DEBUG_FOLDER_PREFIX}{name}" for name in sandbox_project_names()}
-    for folder in list_debug_folders():
-        folder_name = str(folder["Name"])
-        if str(folder["Key"]) in held:
-            continue
-        if DEBUG_RERUN_SUFFIX.sub("", folder_name) not in owned:
-            continue
-        folder_key = str(folder["Key"])
-        try:
-            packages.extend(list_folder_process_packages(folder_key))
-        except Exception as exc:  # noqa: BLE001 — the folder delete still runs
-            print(f"WARN: could not list the processes of '{folder_name}': {exc}")
-        delete_debug_folder(folder_key, folder_name)
-    return packages
 
 
 def delete_project(project_name: str) -> bool:
@@ -672,8 +620,7 @@ def cleanup() -> None:
     if not os.path.exists(SNAPSHOT):
         print(f"SKIP: no {SNAPSHOT} — the pre_run seed step did not run.")
         return
-    snapshot = read_snapshot()
-    run_folder_key = snapshot["scope"]
+    run_folder_key = read_snapshot()["scope"]
 
     # Project cleanup is best-effort and MUST NOT be able to skip the folder
     # delete below: the folder is what removes this run's deployment and its
@@ -686,17 +633,9 @@ def cleanup() -> None:
         print("WARN: project cleanup failed; still deleting the run folder:")
         traceback.print_exc(file=sys.stdout)
 
-    debug_packages: list[str] = []
-    try:
-        debug_packages = delete_owned_debug_folders(snapshot["held"])
-    except BaseException:  # noqa: BLE001 — the run folder delete is what matters
-        print("WARN: Debug_ folder cleanup failed; still deleting the run folder:")
-        traceback.print_exc(file=sys.stdout)
-
     # Deployments cannot be deleted directly, but deleting their folder removes
     # them (and their registry nodes). The run folder seed created is the only
-    # folder deleted here besides this sandbox's Debug_ folders; anything the agent parked elsewhere is
-    # reported below.
+    # folder deleted here; anything the agent parked elsewhere is reported below.
     # Judge deletion by the delete's OWN result, never by a lookup — a failing
     # `folders get` is not proof the folder is gone, and treating it as proof
     # is what burned the fixture domain before. A spurious LEAKED line is
@@ -713,7 +652,7 @@ def cleanup() -> None:
     # A process in the run folder is this run's, but its package lives in the
     # tenant feed and outlives the folder. Delete only fixture-domain names:
     # the agent may have bound a package it did not upload.
-    for package_key in dict.fromkeys([*debug_packages, *bound_packages]):
+    for package_key in dict.fromkeys(bound_packages):
         if matches_fixture_domain(package_key):
             delete_package(package_key)
         else:

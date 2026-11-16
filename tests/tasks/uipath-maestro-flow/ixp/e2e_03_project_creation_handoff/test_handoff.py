@@ -16,7 +16,6 @@ import pathlib
 import re
 import subprocess
 import sys
-from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -97,7 +96,10 @@ if argv[:3] == ["ixp", "projects", "list"]:
     if payload.get("list_exit"):
         print("boom: tenant unreachable", file=sys.stderr)
         sys.exit(payload["list_exit"])
-    names = [name for name in payload["projects"] if name not in deleted_projects()]
+    listed = payload["projects"]
+    if os.path.exists(os.path.join(here, "searched.txt")):
+        listed = payload.get("projects_after_search", listed)
+    names = [name for name in listed if name not in deleted_projects()]
     # The real record carries Name/Title/CreatedAt (verified on the CI tenant);
     # CreatedAt is what seed's residue sweep ages projects by. Default old, as
     # a pre-existing project is. project_created_at overrides per name; a None
@@ -132,6 +134,7 @@ elif argv[:4] == ["maestro", "flow", "registry", "get"]:
         sys.exit(1)
     print(json.dumps({"Data": {"Node": {"type": argv[4]}}}))
 elif argv[:4] == ["maestro", "flow", "registry", "search"]:
+    open(os.path.join(here, "searched.txt"), "w").close()
     print(json.dumps({"Data": payload.get("registry_nodes", [])}))
 elif argv[:3] == ["ixp", "deployments", "list"]:
     # Mirrors the real 404 once the project is gone, so the read-before-delete
@@ -317,7 +320,6 @@ def write_snapshot(
     sandbox: pathlib.Path,
     project_names: list[str],
     scope: str = RUN_FOLDER_KEY,
-    held: Sequence[str] | None = (),
 ) -> None:
     """Baseline in the same opaque form seed writes (digests + run folder key)."""
     (sandbox / SNAPSHOT).write_text(
@@ -325,7 +327,6 @@ def write_snapshot(
             {
                 "names": sorted(project_digest(name) for name in project_names),
                 "scope": scope,
-                "held": held,
             }
         ),
         encoding="utf-8",
@@ -921,7 +922,6 @@ def test_seed_snapshots_existing_projects_and_records_the_run_folder(
     expected = {
         "names": sorted(project_digest(name) for name in PRE_EXISTING),
         "scope": RUN_FOLDER_KEY,
-        "held": [],
     }
     assert json.loads((sandbox / SNAPSHOT).read_text()) == expected
 
@@ -1495,53 +1495,31 @@ def operation_order(sandbox: pathlib.Path) -> list[str]:
     return log.read_text().split() if log.exists() else []
 
 
-def test_teardown_deletes_the_owned_debug_folder_before_its_packages(
-    sandbox: pathlib.Path,
-) -> None:
-    wired_flow(sandbox)
-    env = debug_tenant(sandbox)
-
-    completed = run_script("teardown", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    order = operation_order(sandbox)
-    assert f"folder:{DEBUG_FOLDER_KEY}" in order
-    assert f"package:{DEBUG_PACKAGE}" in order
-    assert order.index(f"folder:{DEBUG_FOLDER_KEY}") < order.index(f"package:{DEBUG_PACKAGE}")
-
-
-def test_teardown_keeps_a_debug_folder_this_run_does_not_own(
-    sandbox: pathlib.Path,
-) -> None:
+def test_teardown_leaves_every_debug_folder_alone(sandbox: pathlib.Path) -> None:
+    """Runs share the Personal Workspace and one prompt: `Debug_Proj 1` can be a
+    sibling's, and a new `Debug_Proj` can hold someone else's process."""
+    sibling_key = "a1b2c3d4-0000-4000-8000-000000000004"
+    other_key = "a1b2c3d4-0000-4000-8000-000000000005"
+    sibling_package = "FalconryLicenceFlow.flow.Flow:1.0.5"
     wired_flow(sandbox)
     env = debug_tenant(
         sandbox,
         debug_folders=[
             {"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME},
-            {"Key": FOREIGN_DEBUG_FOLDER_KEY, "Name": "Debug_SomeoneElsesFlow"},
-            {"Key": "a1b2c3d4-0000-4000-8000-000000000003", "Name": "Debug_Proj2"},
-            {"Key": "a1b2c3d4-0000-4000-8000-000000000004", "Name": "Debug_Proj 1"},
+            {"Key": sibling_key, "Name": "Debug_Proj 1"},
+            {"Key": other_key, "Name": "Debug_Proj"},
         ],
+        folder_processes={
+            DEBUG_FOLDER_KEY: [DEBUG_PACKAGE],
+            sibling_key: [sibling_package],
+            other_key: ["Calculator.flow.Flow:1.0.0"],
+        },
+        folder_ids={RUN_FOLDER_KEY: 100010, DEBUG_FOLDER_KEY: 1, sibling_key: 2, other_key: 3},
     )
 
     completed = run_script("teardown", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    deleted = (sandbox.parent / "bin" / "deleted_folders.txt").read_text()
-    assert DEBUG_FOLDER_KEY in deleted
-    assert FOREIGN_DEBUG_FOLDER_KEY not in deleted
-    assert "a1b2c3d4-0000-4000-8000-000000000003" not in deleted
-    assert "a1b2c3d4-0000-4000-8000-000000000004" in deleted
-
-
-def test_a_failing_debug_folder_delete_still_exits_zero_and_cleans_the_rest(
-    sandbox: pathlib.Path,
-) -> None:
-    wired_flow(sandbox)
-    env = debug_tenant(sandbox, undeletable_folders=[DEBUG_FOLDER_KEY])
-
-    completed = run_script("teardown", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert "WARN: could not delete debug folder 'Debug_Proj'" in completed.stdout
-    assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
+    assert operation_order(sandbox) == [f"folder:{RUN_FOLDER_KEY}"]
 
 
 def test_seed_sweeps_a_stale_fixture_debug_folder_before_its_packages(
@@ -1666,35 +1644,18 @@ def test_seed_errors_on_a_ghost_node_beside_a_live_deployed_project(
     assert "08963f00" not in completed.stderr
 
 
-# ── Debug_ ownership: only folders that appeared after seed ──────────────────
-
-def test_teardown_keeps_a_debug_folder_that_existed_at_seed(
+def test_seed_relists_projects_before_calling_a_node_a_ghost(
     sandbox: pathlib.Path,
 ) -> None:
-    wired_flow(sandbox)
-    env = debug_tenant(sandbox)
-    write_snapshot(sandbox, PRE_EXISTING, held=[DEBUG_FOLDER_KEY])
-
-    completed = run_script("teardown", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert operation_order(sandbox) == [f"folder:{RUN_FOLDER_KEY}"]
-
-
-def test_teardown_deletes_no_debug_folder_without_a_baseline(
-    sandbox: pathlib.Path,
-) -> None:
-    wired_flow(sandbox)
-    env = debug_tenant(sandbox)
-    write_snapshot(sandbox, PRE_EXISTING, held=None)
-
-    completed = run_script("teardown", sandbox, env)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert f"folder:{DEBUG_FOLDER_KEY}" not in operation_order(sandbox)
-
-
-def test_seed_records_the_debug_folders_that_exist(sandbox: pathlib.Path) -> None:
-    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(600)})
-
+    """A sibling that publishes between the project listing and the registry
+    search has a node but is not in the first listing."""
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING,
+        projects_after_search=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(5)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[registry_node("falconry-licences-08963f00-ixp")],
+    )
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
-    assert json.loads((sandbox / SNAPSHOT).read_text())["held"] == [DEBUG_FOLDER_KEY]
