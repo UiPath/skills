@@ -60,7 +60,8 @@ Before you send it, compare the message with the template line by line and delet
 
 ## End the turn
 
-Send this reply only after `validate` reported `Status: Valid` on the target `.bpmn` in this turn, or in the interrupted turn it resumes, and the target holds the outline: search it for `<bpmn:task ` and find one per box line.
+Send this reply only after `validate` reported `Status: Valid` on the target `.bpmn` in this turn, or in the interrupted turn it resumes, and the target holds the outline: search the target `.bpmn` for each box's `.task()` id and find `<bpmn:task id="<id>"`.
+That reads the file the canvas shows, so it holds whatever `merge` reported: its counts read `Authored: 0, Removed: 0` both when nothing reached the target and when a process-level edit did.
 A file compiled anywhere else, such as a scratch copy, leaves the target unchanged: when a box is missing, finish the loop of [Steps](draft-skeleton.md#steps) into the target once more and search it again; when a box is still missing, send no gate reply: tell the user in one sentence that the outline did not reach the canvas.
 Send this reply as your final message and end the turn.
 When a turn resumes after an interruption that came after you wrote this reply, send that reply again, unchanged and whole, as this turn's final message.
