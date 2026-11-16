@@ -6,7 +6,7 @@
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 5 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
-   Merge keeps the shapes the user already has on the canvas. An empty target is the one exception: compile straight over it, then lay it out with `format`.
+   Merge keeps the shapes the user already has on the canvas. An empty target is the one exception at the gate: compile straight over it, then lay it out with `format` (*Build it* is the other, below).
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
 
@@ -41,5 +41,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  *Build it* changes every box's type, so finish as the [Validation loop](../SKILL.md#validation-loop)'s type-change rule says: compile over the target, `format`, `refresh` and `validate`, and say in the report's one sentence that the canvas layout was reset.
+  *Build it* changes every box's BPMN tag, which `merge` keeps, so finish as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says: compile over the target, `format`, `refresh` and `validate`, and in the report's one sentence say the canvas layout was reset and name any lanes, notes, colors or other canvas content the rebuild removed.
 <!--skill-flavor:draft-build-merge:end-->

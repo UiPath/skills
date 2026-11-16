@@ -91,13 +91,13 @@ When a reference tells you to run a command that is not available, use the Studi
    report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
    shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
-   is empty or the edit changes a step's type ([Validation loop](#validation-loop)).
+   is empty, or for *Build it* after a draft gate ([Validation loop](#validation-loop)).
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->
 8. Every change is a targeted edit of the target, so every change goes through
-   the merge pipeline of the [Validation loop](#validation-loop), except one
-   that changes a step's type.
+   the merge pipeline of the [Validation loop](#validation-loop), except
+   *Build it* after a draft gate.
 <!--skill-flavor:workflow-merge:end-->
 
 <!--skill-flavor:api-index-location:start-->
@@ -111,8 +111,9 @@ the whole declaration, doc comment included.
 
 <!--skill-flavor:validation-loop:start-->
 Every change is the same round trip through the target `.bpmn`. Merge keeps
-what the SDK does not model (layout, extension rows). Run it from the project
-folder:
+what the SDK does not model (layout, lanes, annotations, extension rows); only
+an empty target and *Build it* after a draft gate compile over it instead. Run
+it from the project folder:
 
 ```bash
 cd /solution/<Project>
@@ -149,19 +150,25 @@ uip maestro bpmn format <Name>.bpmn
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
-  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5, run step 4
+  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then, or after a compile over
+  the target, run step 5, run step 4
   again, and, unless step 4 reported `No diagrams found`, tell the user that the
   canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
-- **A type change skips `merge`.** `merge` keeps each element's tag, so a box
-  the edit makes another type, such as a `.task()` that becomes a
-  `.scriptTask()` (every *Build it*), stays `bpmn:task`, and Studio Web drops
-  its payload. When the edit changes a step's type, compile straight over the
-  target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
-  run step 5, then step 4, and tell the user that the canvas layout was reset.
-- **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
+- ***Build it* after a draft gate skips `merge`.** `merge` keeps each element's
+  BPMN tag, so an outline box that becomes a `.scriptTask()`, `.humanTask()` or
+  any other typed step keeps `bpmn:task`, and Studio Web drops its payload.
+  This is the one exception to Critical Rule 5's merge rule. Before compiling,
+  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:lane`, `bpmn:textAnnotation`,
+  `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject` and `color:`: the
+  compile drops them, with the positions of every shape. Then compile straight
+  over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
+  run step 5, then step 4. In the report's one sentence, say the canvas layout
+  was reset and name each kind of content the search found as removed.
+  Any other edit merges, even one that changes a step's tag.
+- **To undo the turn's write**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish by
   writing the target; never `uip solution upload`.

@@ -3,7 +3,7 @@ When the built process validates, the canvas shows it, so there is nothing to up
 <!--skill-flavor:final-upload:end-->
 
 <!--skill-flavor:final-first-line:start-->
-<Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's canvas edits or reset the canvas layout.>
+<Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's canvas edits, reset the canvas layout, or removed canvas content the rebuild cannot carry.>
 <!--skill-flavor:final-first-line:end-->
 
 <!--skill-flavor:final-path-line:start-->
