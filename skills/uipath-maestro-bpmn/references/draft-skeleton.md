@@ -52,13 +52,14 @@ A skeleton is not a working process and must never be reported as one.
    When several kinds could fit, pick the one a Studio Web user would most likely choose; the user changes it at the gate if they disagree.
 6. **Label each decision arm** with the outcome it carries (`label: 'Approved'`), so the routing reads off the picture.
    `fork` branches take no label: every branch runs.
-7. **Declare the variables the decisions read, for real**, with `.var()`.
+7. **Declare the variables the decisions read, for real**, with `.var()`, or `.input()` for a value the process is given at start.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
-   What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`: never draw a box that receives, reads or captures it.
+   What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`: never draw a box whose only job is to receive, read or capture it, since the steps that use it read `vars.<id>`.
+   Data a person supplies after the process has started is a real step: draw its box (`[Action app]`).
 8. **Mark a step that runs once per item on its own box.**
-   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
+   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.

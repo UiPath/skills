@@ -36,7 +36,6 @@ def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None
 def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
     text = _outside_flavor_blocks((REFS / "draft-skeleton.md").read_text())
     assert "A value the request leaves open" in text
-    assert "never draw a box that receives, reads or captures it" in text
     assert "name it under `Assumed`" in text
     assert "End the turn with the [final report](final-report-template.md), read as [SKILL.md](../SKILL.md#workflow) step 9 says" in text
     assert "search the target for each box's `<bpmn:task id=\"<id>\"`" in text
@@ -61,3 +60,9 @@ def test_studio_web_merges_against_the_seeded_baseline() -> None:
 def test_final_report_survives_a_resume() -> None:
     text = _outside_flavor_blocks((REFS / "final-report-template.md").read_text())
     assert "When a turn carries no new user instruction and only resumes after an interruption that came after you wrote this report" in text
+
+
+def test_skeleton_declares_start_data_as_inputs() -> None:
+    text = _outside_flavor_blocks((REFS / "draft-skeleton.md").read_text())
+    assert "never draw a box whose only job is to receive, read or capture it" in text
+    assert "Data a person supplies after the process has started is a real step" in text
