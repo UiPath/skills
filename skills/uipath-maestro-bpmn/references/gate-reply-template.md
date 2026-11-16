@@ -61,7 +61,7 @@ Before you send it, compare the message with the template line by line and delet
 ## End the turn
 
 Send this reply only after `validate` reported `Status: Valid` on the target `.bpmn` in this turn, or in the interrupted turn it resumes, and the target holds the outline: search it for `<bpmn:task ` and find one per box line.
-A file compiled anywhere else, such as a scratch copy, leaves the target unchanged: when a box is missing, run the loop again before you reply.
+A file compiled anywhere else, such as a scratch copy, leaves the target unchanged: when a box is missing, finish the loop into the target (its compile or `merge`, then `refresh` and `validate`) and search it again before you reply.
 Send this reply as your final message and end the turn.
 When a turn resumes after an interruption that came after you wrote this reply, send that reply again, unchanged and whole, as this turn's final message.
 Ask the gate question in the message, not with a pick-list or question tool: a pending question keeps the turn open, and Studio Web locks the canvas while a turn runs, so the user could not review the shape they are asked to approve.

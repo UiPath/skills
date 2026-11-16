@@ -131,8 +131,8 @@ uip maestro bpmn format <Name>.bpmn
 - **`--baseline` is step 1's compile of the seeded source**, never the edited
   file. Given the edited file, `merge` finds no change, reports `Authored: 0`,
   and writes the target back as it was. When `merge` reports `Authored: 0`
-  after an edit, the target is unchanged: run step 1 again, which is safe
-  then, and redo the edit.
+  and `Removed: 0` after an edit, the target is unchanged: run step 1 again,
+  which is safe then, and redo the edit.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
