@@ -36,6 +36,7 @@ def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
     assert "A value the request leaves open" in text
     assert "name it under `Assumed`" in text
     assert "Read [final-report-template.md](final-report-template.md) in full" in text
+    assert "search the target for each box's `<bpmn:task id=\"<id>\"`" in text
 
 
 def test_skill_step_9_reads_the_report_template() -> None:
@@ -46,6 +47,9 @@ def test_skill_step_9_reads_the_report_template() -> None:
 def test_studio_web_merges_against_the_seeded_baseline() -> None:
     text = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "SKILL.md").read_text()
     assert "`--baseline` is step 1's compile of the seeded source**, never the edited" in text
+    assert "compile a fresh baseline from the\n  undo copy" in text
+    sw = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md").read_text()
+    assert "the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton" in sw
 
 
 def test_final_report_survives_a_resume() -> None:

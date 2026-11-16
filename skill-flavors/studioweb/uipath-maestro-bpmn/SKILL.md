@@ -131,6 +131,10 @@ uip maestro bpmn format <Name>.bpmn
 - **`--baseline` is step 1's compile of the seeded source**, never the edited
   file. Given the edited file, `merge` finds no change and writes the target
   back as it was.
+- **When `--baseline` was the edited file**, compile a fresh baseline from the
+  undo copy, then run step 3 again:
+  `uip maestro bpmn decompile .flow-sdk/original/<Name>.bpmn -o <Draft>/baseline/<Name>.bpmn.ts --style nested`,
+  then `uip maestro bpmn compile <Draft>/baseline/<Name>.bpmn.ts -o <Draft>/baseline/<Name>.bpmn`.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
