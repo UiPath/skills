@@ -21,7 +21,7 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 **A target outside a `/solution` project** — a mounted file, for example under `/sandbox`, or a loose file in `/tmp` — has no `project.uiproj`. Outside `/solution` and `/tmp`, your file tools, `cp` and `validate` reach it, but `decompile`, `compile`, `merge` and `node` do not: they answer `ENOENT`, `the builder SDK works only on files under /solution and /tmp` or `path is outside /solution and /tmp`. Ignore the hint to pass a copy under `/solution`. Edit a copy:
 
 1. From an existing directory, run `mkdir -p /tmp/bpmn-work/<Name>` and copy the target there as `<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Validation loop](#validation-loop), and `<Draft>` is `/tmp/bpmn-draft/<Name>`.
-2. Run the loop there without `refresh`: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event.
+2. Run the loop there without `refresh`: with no `project.uiproj`, `refresh` fails. Skip the connector step too: only `refresh` writes `bindings_v2.json`. Name each connection the process binds in the reply instead. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event.
 3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target.
 
 Never run `init` to give a loose file a project. The user did not ask for one, and its template is a second process that fails `validate`.
