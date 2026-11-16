@@ -71,8 +71,8 @@ Before reading the PDD in full, search it for platform signals ("Automation Suit
 
 > How should I handle this SDD generation? (The SDD is written this turn; its genome — the build blueprint — is written from the finished SDD on the next turn.)
 >
-> 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, generate the full SDD, then write its genome on the next turn. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
-> 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
+> 1. **Interactive** *(recommended)* — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding, and offer to interview you on the points the PDD leaves open.
+> 2. **Autonomous** — I will read the PDD, make all decisions, generate the full SDD, then write its genome on the next turn. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 
 **Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the structured prompt entirely and record both values. A caller's `execution` key answers Question 1; ask it only when the key is missing (Verb Rule 14).
 
