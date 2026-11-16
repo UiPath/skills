@@ -23,11 +23,9 @@ To drop an edit that changed or
 added, revert it in the source and merge again: the result is equivalent to the
 target, not byte-identical. An edit that removed a node, agent or resource is
 not restored that way: the source rebuilds it from SDK defaults and the
-canvas-only fields are lost. Before such a merge, copy the target outside the
-project, `mkdir -p /tmp/flow-undo/<Project> && cp <Name>.flow
-/tmp/flow-undo/<Project>/<Name>.flow` (a page reload clears it), and copy it
-back to drop the edit. Merge leaves the agent folders on disk, so the copy
-brings back the agent. Without that copy, ask the user to undo on the canvas.
+canvas-only fields are lost. Tell the user to undo it on the canvas, or in
+Studio Web's version history if the page offers one. Make no copy of the
+target.
 
 ### The stamp, and when merge refuses
 
