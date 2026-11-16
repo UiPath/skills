@@ -1,6 +1,6 @@
-# Preferences: {customer or team}
+# Preferences: {team or organisation}
 
-> Standing answers and development standards for every UiPath build of {customer or team}. `uipath-planner` applies them while it writes a genome, and `uipath-genome` reads them before its first question. A preference that conflicts with a rule of either skill is put to you with both. Leave out a line to have it asked each time.
+> Standing answers and development standards for every UiPath build of {team or organisation}. `uipath-planner` applies them while it writes a genome, and `uipath-genome` reads them before its first question. A preference that conflicts with a rule of either skill is put to you with both. Leave out a line to have it asked each time.
 
 ## Standing answers
 
@@ -19,7 +19,7 @@ The questions a build asks that this file answers for every genome, one line eac
 
 The standards the build follows beyond the genome.
 
-1. **Standards document:** {a path or link to the customer's development standards, read as part of this file; or none}
+1. **Standards document:** {a path or link to your development standards, read as part of this file; or none}
 2. **Naming:** {projects, workflows, arguments and variables, Object Repository screens and elements, queues and assets}
 3. **Project structure:** {the folder layout; libraries per application or per module}
 4. **Logging:** {levels; what each workflow logs (its start and end, business milestones); the fields of a log line; what must never be logged}

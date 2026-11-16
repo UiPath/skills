@@ -34,7 +34,7 @@ The header says, in this order:
 - the Contents, with each section's counts.
 
 The sections:
-1. **Architecture decisions** (§ The Architecture decisions section). Usually answered by: the engineer, with the customer's architect.
+1. **Architecture decisions** (§ The Architecture decisions section). Usually answered by: the engineer, with the architect.
 2. **Build setup** — every other selected question, grouped by topic (rule 1). Usually answered by: the engineer.
 3. **Existing projects** — one item per component that gets a project of its own, its Rationale opening neither `Retired:` nor `Folded into`: a project of it an earlier build made, to build into. Default: none, a new project. Usually answered by: the engineer.
 4. **Systems and applications** — a task per system the automation acts on: each row of Target Applications, each system row of Actors and Systems (never a person, nor an automation that calls this one), each connection of Platform Dependencies. Each task holds:
@@ -102,7 +102,7 @@ Write an answer after each `Answer:`, `Change:` and `Status:`, or put your name 
 
 ## 1. Architecture decisions
 
-Usually answered by: the engineer, with the customer's architect.
+Usually answered by: the engineer, with the architect.
 
 Each decision carries the build's proposal: confirm it, or change it.
 

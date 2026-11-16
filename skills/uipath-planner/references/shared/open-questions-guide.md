@@ -38,7 +38,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 | Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order | the process owner |
 | Material to supply | open entry of the material tier | whoever holds the source and its documents |
 | Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed | the environment's owners, with the engineer |
-| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice | the customer's delivery lead or centre of excellence |
+| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice | the delivery lead or the centre of excellence |
 
 Business decisions close with two lists that ask nothing one item at a time:
 - **Checked against the application at build:** each reading entry that only the live application shows (a screen label, a window title, a control's position), one line each, with no `Change:`.
@@ -153,9 +153,9 @@ The source states what each was meant to do, and the rebuild does that. Name any
 
 <only when the genome names no preferences file; otherwise this group is left out>
 
-**The customer's preferences file**
-- **Context:** <the standards the build follows beyond the genome: naming, project structure, logging, error handling, UI automation, code, testing, packaging>
+**Which preferences file should the build follow?**
+- **Context:** <the development standards and standing answers the build follows beyond the genome: naming, project structure, logging, error handling, UI automation, code, testing, packaging>
 - **Default:** none: the building skills' own practice
-- **Answered by:** the customer's delivery lead or centre of excellence
+- **Answered by:** the delivery lead or the centre of excellence
 - **Change:** <a path or link; start one from `preferences-template.md`, which `uipath-planner` ships>
 ````
