@@ -32,10 +32,14 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # The three discovery criteria need --output json in the same call: no ; | &&
+  # or background & and no later `uip` between the subcommand and the flag, so
+  # chained calls each count and one call's flag cannot cover another. An & next
+  # to > (2>&1, >&2, &>file) is a redirect and stays inside the call.
   - type: command_executed
     description: "Agent listed SourceControl connections via uip aops"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+connection\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+connection\s+list\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -43,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed the pipelines already defined in the runtime environment"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+pipeline\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+pipeline\s+list\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed published Orchestrator processes"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+pipeline\s+processes\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+pipeline\s+processes\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -68,12 +72,4 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+cicd\s+(pipeline|execution)\b'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consistently used --output json across uip aops calls"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+.*--output\s+json'
-    min_count: 3
-    weight: 1.0
     pass_threshold: 1.0
