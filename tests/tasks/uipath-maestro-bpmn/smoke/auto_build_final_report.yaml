@@ -110,3 +110,44 @@ success_criteria:
 
       Score 1.0 only if every item holds; otherwise 0.0. In findings, list
       each failed item by number and quote the offending line.
+
+  # Records the warnings `validate` reports on the shipped process: each is one
+  # the agent kept. Informational; the judge below grades the report against it.
+  - type: run_command
+    description: "Recorded the validate warnings the built process keeps"
+    command: "python3 $REFERENCE_DIR/smoke/write_validate_warnings.py .validate-warnings.txt"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final report names, in plain words on Assumed: or Unverified:, each validate warning the built process keeps"
+    include_reference: false
+    include_agent_output: true
+    files:
+      - .validate-warnings.txt
+    max_file_chars: 60000
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      `.validate-warnings.txt` lists the warnings `uip maestro bpmn validate`
+      reports on the process the agent shipped, or holds `none`.
+
+      Find the final report in AGENT OUTPUT: the text from the LAST
+      occurrence of `LoyaltyDiscount: built` to the end. Ignore markdown
+      emphasis.
+
+      - If the file holds `none`, score 1.0.
+      - Otherwise score 1.0 only if the report's `Assumed:` and
+        `Unverified:` lines together cover every distinct warning in the
+        file. Warnings that differ only in which element raised them count
+        as one. A warning is covered when it is named in plain words (for
+        example "order total shows as unset"), on `Assumed:` with a reason
+        it cannot change the run, or on `Unverified:`. A warning code (such
+        as `VARIABLE_NOT_SET`) or a raw variable id in place of plain words
+        does not cover it, and text about warnings outside the report does
+        not count.
+
+      Score 0.0 otherwise. In findings, quote the `Assumed:` and `Unverified:`
+      lines, or say they are missing, and name each warning they do not cover.

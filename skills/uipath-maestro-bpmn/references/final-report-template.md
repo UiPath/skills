@@ -45,7 +45,7 @@ When the upload failed, say so in the first line's one sentence.
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
 
-`Assumed:` gives each `validate` warning you kept one short clause in the user's words with its reason, such as `order total and years as customer show as unset; both are required inputs, set when the run starts`. No warning codes or variable ids, and no word about warnings anywhere else in the reply.
+`Assumed:` gives each `validate` warning you kept one short clause in the user's words with why it cannot change the run, such as `order total and years as customer show as unset; both are required inputs, set when the run starts`. A kept warning you cannot explain goes on `Unverified:` the same way. No warning codes or variable ids, and no word about warnings anywhere else in the reply.
 
 <!--skill-flavor:final-path-rule:start-->
 The path line belongs to this final message.
