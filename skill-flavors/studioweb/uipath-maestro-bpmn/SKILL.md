@@ -165,8 +165,9 @@ uip maestro bpmn format <Name>.bpmn
   `bpmn:dataStoreReference` and `color:background-color`: the
   compile drops them, with the positions of every shape. Then compile straight
   over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
-  run step 5, then step 4. In the report's one sentence, say the canvas layout
-  was reset and name each kind of content the search found as removed.
+  run step 5, then step 4. The report's one sentence is exactly `The canvas layout
+  was reset.`, or `The canvas layout was reset; the rebuild removed <kinds>.`
+  when the search found any.
   Any other edit merges, even one that changes a step's tag; `merge` then keeps
   the old tag, so name each such step under the report's `Unverified:` as one
   Studio Web may still show as its old type, and a step that became a script
