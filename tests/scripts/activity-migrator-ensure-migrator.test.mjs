@@ -37,13 +37,23 @@ const result = (o) => ({ status: 0, stdout: '', stderr: '', ...o });
 const writeLayout = (dir, layout) => {
   dir = norm(dir);
   fs.mkdirSync(dir, { recursive: true });
-  if (layout !== 'no-exe') fs.writeFileSync(path.join(dir, 'UiPath.Upgrade.exe'), 'exe');
+  if (layout !== 'no-exe') {
+    fs.writeFileSync(path.join(dir, 'UiPath.Upgrade.exe'), 'exe');
+    // The 25.10 archives target .NET 8.
+    fs.writeFileSync(path.join(dir, 'UiPath.Upgrade.runtimeconfig.json'), JSON.stringify({ runtimeOptions: { frameworks: [{ name: 'Microsoft.WindowsDesktop.App', version: '8.0.0' }] } }));
+  }
   if (layout !== 'no-extensions') fs.mkdirSync(path.join(dir, 'Extensions'), { recursive: true });
 };
 const arg = (command, re) => (re.exec(command) || [])[1];
 cp.spawnSync = (cmd, argv, opts) => {
   const command = String(cmd);
   const text = argv.join(' ');
+  if (command.startsWith('uip ')) {
+    // One shell command line; record it whole, and whether UIPATH_STUDIO_PID reached it.
+    calls.push(command + (opts && opts.env && 'UIPATH_STUDIO_PID' in opts.env ? ' [STUDIO_PID]' : ''));
+    if (scn.uip) return result(scn.uip);
+    return result({ status: 1, stderr: "'uip' is not recognized as an internal or external command" });
+  }
   calls.push(command.replace(/^.*[\\/]/, '') + ' ' + text.slice(0, 60));
   if (command === 'curl') {
     if (argv.includes('-sSIL')) return result(scn.head || { status: 1 });
@@ -104,16 +114,23 @@ writeFileSync(preload, PRELOAD);
 const DOTNET_OK = { stdout: "Microsoft.NETCore.App 8.0.1 [x]\nMicrosoft.WindowsDesktop.App 8.0.7 [C:\\x]\nMicrosoft.WindowsDesktop.App 6.0.1 [y]\n" };
 let n = 0;
 
-// Each case gets its own install root and a fake DOTNET_ROOT_X64 holding a dotnet.exe marker file.
-function setup({ cached = null, stamp = null, dotnet = true } = {}) {
+/** The runtimeconfig a migrator build ships, asking for `version` of the desktop runtime. */
+const runtimeConfig = (version, extra = {}) =>
+  JSON.stringify({ runtimeOptions: { frameworks: [{ name: "Microsoft.NETCore.App", version }, { name: "Microsoft.WindowsDesktop.App", version, ...extra }] } });
+
+// Each case gets its own install root and a fake DOTNET_ROOT_X64 holding a dotnet.exe marker file. A cached tool asks
+// for `needs` (default .NET 8, as the 25.10 archives do); null leaves its runtimeconfig out.
+function setup({ cached = null, stamp = null, dotnet = true, needs = "8.0.0" } = {}) {
   const dir = mkdtempSync(join(base, "case-"));
   const root = join(dir, "root");
   mkdirSync(root, { recursive: true });
-  if (cached === "root") writeFileSync(join(root, "UiPath.Upgrade.exe"), "exe");
-  if (cached === "current") {
-    mkdirSync(join(root, "current"), { recursive: true });
-    writeFileSync(join(root, "current", "UiPath.Upgrade.exe"), "exe");
-  }
+  const place = (toolDir) => {
+    mkdirSync(toolDir, { recursive: true });
+    writeFileSync(join(toolDir, "UiPath.Upgrade.exe"), "exe");
+    if (needs) writeFileSync(join(toolDir, "UiPath.Upgrade.runtimeconfig.json"), runtimeConfig(needs));
+  };
+  if (cached === "root") place(root);
+  if (cached === "current") place(join(root, "current"));
   if (stamp !== null) writeFileSync(join(root, ".last-modified"), stamp);
   const dotnetRoot = join(dir, "dotnet");
   mkdirSync(dotnetRoot, { recursive: true });
@@ -230,6 +247,7 @@ test("without an install dir the cache lives under LOCALAPPDATA and counts as ca
   const cacheRoot = join(local, "UiPath", "ActivityMigrator");
   mkdirSync(cacheRoot, { recursive: true });
   writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
+  writeFileSync(join(cacheRoot, "UiPath.Upgrade.runtimeconfig.json"), runtimeConfig("8.0.0"));
   const r = run(ctx, { head: { status: 1 }, psHead: { status: 1 }, runtimes: DOTNET_OK }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
   assert.equal(r.json.status, "ok");
   assert.equal(r.json.source, "cached");
@@ -334,6 +352,7 @@ function cachedUnderLocalAppData(ctx, stamp) {
   const cacheRoot = join(local, "UiPath", "ActivityMigrator");
   mkdirSync(cacheRoot, { recursive: true });
   writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
+  writeFileSync(join(cacheRoot, "UiPath.Upgrade.runtimeconfig.json"), runtimeConfig("8.0.0"));
   if (stamp !== undefined) writeFileSync(join(cacheRoot, ".last-modified"), stamp);
   return { local, cacheRoot };
 }
@@ -382,8 +401,43 @@ test("a missing .NET Desktop Runtime 8 is reported with the install hint", () =>
   const r = run(ctx, { runtimes: { stdout: "Microsoft.WindowsDesktop.App 6.0.1 [x]\nMicrosoft.NETCore.App 8.0.1 [y]\n" } });
   assert.equal(r.status, 1);
   assert.equal(r.json.code, "runtime-missing");
-  assert.match(r.json.message, /Microsoft\.WindowsDesktop\.App 8\.x not found/);
+  assert.match(r.json.message, /Microsoft\.WindowsDesktop\.App 8\.x \(8\.0\.0 or later\) not found/);
   assert.match(r.json.message, /while DOTNET_ROOT_X64 is set/);
+  assert.match(r.json.message, /\.NET Desktop Runtime 8 \(x64\)/);
+});
+
+const DOTNET_8_AND_10 = { stdout: "Microsoft.WindowsDesktop.App 8.0.7 [x]\nMicrosoft.WindowsDesktop.App 10.0.12 [x]\nMicrosoft.WindowsDesktop.App 10.0.15 [x]\n" };
+
+test("a .NET 10 build is checked against the .NET 10 desktop runtime, newest first", () => {
+  const ctx = setup({ cached: "root", needs: "10.0.0" });
+  const r = run(ctx, { runtimes: DOTNET_8_AND_10 });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.runtime, "10.0.15");
+});
+
+test("a .NET 10 build with only .NET 8 installed asks for the .NET 10 runtime", () => {
+  const ctx = setup({ cached: "root", needs: "10.0.0" });
+  const r = run(ctx, { runtimes: DOTNET_OK });
+  assert.equal(r.json.code, "runtime-missing");
+  assert.match(r.json.message, /Microsoft\.WindowsDesktop\.App 10\.x \(10\.0\.0 or later\) not found/);
+  assert.match(r.json.message, /\.NET Desktop Runtime 10 \(x64\)/);
+});
+
+test("a .NET 8 build does not take a .NET 10 runtime unless the roll-forward policy allows it", () => {
+  const ctx = setup({ cached: "root" });
+  const only10 = { stdout: "Microsoft.WindowsDesktop.App 10.0.15 [x]\n" };
+  assert.equal(run(ctx, { runtimes: only10 }).json.code, "runtime-missing");
+  const r = run(ctx, { runtimes: only10 }, { env: { DOTNET_ROLL_FORWARD: "Major" } });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.runtime, "10.0.15");
+});
+
+test("a tool without its runtimeconfig is reported incomplete", () => {
+  const ctx = setup({ cached: "root", needs: null });
+  const r = run(ctx, { runtimes: DOTNET_OK });
+  assert.equal(r.json.code, "verify-failed");
+  assert.match(r.json.message, /UiPath\.Upgrade\.runtimeconfig\.json/);
+  assert.match(r.json.message, /rerun with --force/);
 });
 
 test("without a dotnet.exe at all the runtime is reported missing", () => {
@@ -453,6 +507,150 @@ test("a failing tool with a strict telemetry value is a plain verify failure", (
   const ctx = setup({ cached: "root" });
   const r = run(ctx, { runtimes: DOTNET_OK, version: { status: 1, stderr: "boom" } }, { env: { UIPATH_TELEMETRY_DISABLED: "true" } });
   assert.equal(r.json.code, "verify-failed");
+});
+
+// --- uip rpa project migrate (Helm) ----------------------------------------
+// The uip path runs only when neither UIPATH_ACTIVITY_MIGRATOR_DIR nor UIPATH_ACTIVITY_MIGRATOR_URL is set.
+
+const UIP_VERSION_CALL = "uip rpa project migrate version";
+const uipVersion = (version = "27.0.207-dev") => ({ stdout: `${version}\n` });
+const uipFailure = (code, message, instructions = "Fix it like this.", stream = "stderr") => ({
+  status: 1,
+  [stream]: JSON.stringify({ Result: "Failure", Message: message, Instructions: instructions, Code: code }, null, 2) + "\n",
+});
+const UNKNOWN_COMMAND = {
+  status: 3,
+  stdout: JSON.stringify({ Result: "ValidationError", ErrorCode: "invalid_argument", Message: "error: unknown command 'migrate'" }) + "\n",
+};
+// A Helm released before the verb treats `migrate` as an unknown argument and exits with its own error.
+const OLD_HELM = { status: 1, stderr: "Unrecognized command or argument 'migrate'.\n" };
+
+function runUip(ctx, scenario, { args = [], env = {} } = {}) {
+  return run(ctx, scenario, { args, useEnvDir: false, env: { UIPATH_ACTIVITY_MIGRATOR_URL: "", LOCALAPPDATA: join(ctx.dir, "local"), ...env } });
+}
+
+test("a migrator in uip's Helm is reported as source uip with its command, and nothing else runs", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: { stdout: "Resolving Helm...\n27.0.207-dev\n" } });
+  assert.equal(r.status, 0);
+  assert.deepEqual(r.json, { status: "ok", source: "uip", command: "uip rpa project migrate", version: "27.0.207-dev" });
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no download, no runtime check, no exe verification");
+});
+
+test("UIPATH_STUDIO_PID never reaches the uip command", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipVersion() }, { env: { UIPATH_STUDIO_PID: "1234" } });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.calls[0], UIP_VERSION_CALL);
+});
+
+test("uip's not-windows failure stops the run with its message, wherever uip prints it", () => {
+  for (const stream of ["stdout", "stderr"]) {
+    const ctx = setup({ cached: "root" });
+    const r = runUip(ctx, { uip: uipFailure("not-windows", "The Activity Migrator runs on Windows only.", "Run it on Windows.", stream), runtimes: DOTNET_OK });
+    assert.equal(r.status, 1, stream);
+    assert.equal(r.json.code, "not-windows");
+    assert.match(r.json.message, /Windows only\. Run it on Windows\./);
+    assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no archive fallback");
+  }
+});
+
+test("helm-missing on a plain run reports missing with uip's message and downloads nothing", () => {
+  const ctx = setup();
+  const r = runUip(ctx, {
+    uip: uipFailure("helm-missing", "The Activity Migrator ships with Helm, which was not found: no @uipath/studio-helm-win32-x64.", "Reinstall the uip CLI with its optional dependencies, or set HELM_LOCAL_DIR to a Helm tools directory.", "stdout"),
+  });
+  assert.equal(r.status, 3);
+  assert.equal(r.json.status, "missing");
+  assert.match(fwd(r.json.dir), /\/local\/UiPath\/ActivityMigrator$/);
+  assert.equal(r.json.url, "https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip");
+  assert.match(r.json.uipMessage, /^uip rpa project migrate version: helm-missing: The Activity Migrator ships with Helm/);
+  assert.match(r.json.uipMessage, /HELM_LOCAL_DIR/);
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no download without --install");
+});
+
+test("helm-missing with --install falls back to the archive download and keeps uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found.", "Reinstall the uip CLI.", "stdout"), curl: { ok: true }, expand: "ok", runtimes: DOTNET_OK }, { args: ["--install"] });
+  assert.equal(r.status, 0);
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "downloaded");
+  assert.equal(r.json.command, r.json.exe);
+  assert.match(fwd(r.json.exe), /\/local\/UiPath\/ActivityMigrator\/current\/UiPath\.Upgrade\.exe$/);
+  assert.equal(r.json.runtime, "8.0.7");
+  assert.match(r.json.uipMessage, /helm-missing: Helm was not found\. Reinstall the uip CLI\./);
+  assert.equal(r.calls[0], UIP_VERSION_CALL);
+  assert.ok(r.calls.some((c) => c.startsWith("curl")));
+});
+
+test("a uip without project migrate, a Helm without the verb, or no uip fall back to the archive with the reason", () => {
+  for (const [uip, reason] of [[UNKNOWN_COMMAND, /unknown command 'migrate'/], [OLD_HELM, /Unrecognized command or argument 'migrate'/], [undefined, /not recognized/]]) {
+    const ctx = setup();
+    const missing = runUip(ctx, { uip });
+    assert.equal(missing.status, 3, String(reason));
+    assert.equal(missing.json.status, "missing");
+    assert.match(missing.json.uipMessage, reason);
+    const installed = runUip(ctx, { uip, curl: { ok: true }, expand: "ok", runtimes: DOTNET_OK }, { args: ["--install"] });
+    assert.equal(installed.json.source, "downloaded", String(reason));
+    assert.match(installed.json.uipMessage, reason);
+  }
+});
+
+test("a cached archive tool is used after the fallback, with uip's message", () => {
+  const ctx = setup();
+  const local = join(ctx.dir, "local");
+  const cacheRoot = join(local, "UiPath", "ActivityMigrator", "current");
+  mkdirSync(cacheRoot, { recursive: true });
+  writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
+  writeFileSync(join(cacheRoot, "UiPath.Upgrade.runtimeconfig.json"), runtimeConfig("8.0.0"));
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found."), runtimes: DOTNET_OK });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "cached");
+  assert.match(r.json.uipMessage, /helm-missing/);
+  assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")), "no download");
+});
+
+test("an archive failure after the fallback still carries uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found."), curl: {}, psDownload: {} }, { args: ["--install"] });
+  assert.equal(r.json.code, "download-failed");
+  assert.match(r.json.uipMessage, /helm-missing: Helm was not found\./);
+});
+
+test("offline mode after the fallback is offline-missing with uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found.") }, { args: ["--install"], env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.code, "offline-missing");
+  assert.match(r.json.uipMessage, /helm-missing/);
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL]);
+});
+
+test("UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1 still asks uip, which downloads nothing", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipVersion() }, { env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.source, "uip");
+});
+
+test("UIPATH_ACTIVITY_MIGRATOR_URL or UIPATH_ACTIVITY_MIGRATOR_DIR keeps uip out of it", () => {
+  const ctx = setup({ cached: "root" });
+  const viaDir = run(ctx, { uip: uipVersion(), runtimes: DOTNET_OK }, { env: { UIPATH_ACTIVITY_MIGRATOR_URL: "" } });
+  assert.equal(viaDir.json.source, "env");
+  assert.equal(viaDir.json.command, viaDir.json.exe);
+  assert.equal(viaDir.json.uipMessage, undefined);
+  assert.ok(!viaDir.calls.some((c) => c.startsWith("uip ")));
+  const viaUrl = runUip(ctx, { uip: uipVersion(), curl: { ok: true }, expand: "ok", runtimes: DOTNET_OK }, { args: ["--install"], env: { UIPATH_ACTIVITY_MIGRATOR_URL: "http://example.invalid/UiPath.Upgrade.Cli.zip" } });
+  assert.equal(viaUrl.json.source, "downloaded");
+  assert.ok(!viaUrl.calls.some((c) => c.startsWith("uip ")));
+});
+
+test("--install and --force do not touch the archive when uip supplies the migrator", () => {
+  for (const flag of ["--install", "--force"]) {
+    const ctx = setup();
+    const r = runUip(ctx, { uip: uipVersion("26.10.3") }, { args: [flag] });
+    assert.equal(r.json.source, "uip", flag);
+    assert.equal(r.json.version, "26.10.3");
+    assert.deepEqual(r.calls, [UIP_VERSION_CALL], flag);
+  }
 });
 
 test("POSIX-style install dirs from Git Bash are normalised to Windows paths", { skip: process.platform !== "win32" }, () => {

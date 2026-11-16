@@ -8,7 +8,7 @@ The migration logic is not in the CLI. The extension loads the migration service
 
 ### Flags
 
-Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the installed build (Step 0). This table says what each flag does and when to use it. Other `--uia-*` flags may exist in a newer build; Step 0 says when an unlisted flag may be used.
+Availability and defaults come from `<MIGRATOR> analyze --help` on the installed build (Step 0). This table says what each flag does and when to use it. Other `--uia-*` flags may exist in a newer build; Step 0 says when an unlisted flag may be used.
 
 | Flag | Use |
 |---|---|
