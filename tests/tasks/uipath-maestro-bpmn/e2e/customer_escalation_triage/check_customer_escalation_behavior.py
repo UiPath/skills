@@ -37,6 +37,9 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "_setup"))  # local escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
+
+sys.path.insert(0, HERE)
+import escalation_project  # noqa: E402
 from _shared import bpmn_check, bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -59,11 +62,10 @@ from _shared.bpmn_live import (  # noqa: E402
     UIPATH_NS,
 )
 
-# The prompt states this exact layout, so the pinned path is a stated
-# requirement — not the unstated-solution-name trap the flow suite's
-# discovery helper exists for.
-PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
-BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
+# The prompt states the CLI layout, so that pinned path is graded first; a
+# Studio Web export (`CustomerEscalationTriage/CustomerEscalationTriage/Process.bpmn`)
+# is accepted in its place. escalation_project owns both rules.
+BPMN_FILE = escalation_project.CLI_BPMN_FILE
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
@@ -455,10 +457,10 @@ def assert_jira_issue_on_tenant(
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    if not BPMN_FILE.is_file():
-        raise CheckFailure(f"missing {BPMN_FILE}")
-    contract = resolve_contract()
-    original_hash = sha256(BPMN_FILE)
+    bpmn_file = escalation_project.bpmn_file(exclude_under=[LIVE_RUN_DIR])
+    project = bpmn_file.parent
+    contract = resolve_contract(bpmn_file)
+    original_hash = sha256(bpmn_file)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()
 
@@ -481,14 +483,14 @@ def main() -> None:
             "solution",
             "projects",
             "import",
-            str(PROJECT.resolve()),
+            str(project.resolve()),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
         cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / PROJECT.name
-    if sha256(imported_project / BPMN_FILE.name) != original_hash:
+    imported_project = solution_dir / project.name
+    if sha256(imported_project / bpmn_file.name) != original_hash:
         raise CheckFailure("solution import changed the submitted BPMN bytes")
     print(f"OK: imported exact artifact (sha256={original_hash})")
 

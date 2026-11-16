@@ -110,3 +110,37 @@ def test_migration_version_rejects_another_value(version: str) -> None:
 def test_migration_version_rejects_a_missing_one() -> None:
     with pytest.raises(SystemExit):
         require_process_migration_version(_versioned(None))
+
+
+def _rules_evaluator(element: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" '
+        f'xmlns:uipath="{NS["uipath"]}"><bpmn:process>'
+        f'<bpmn:{element} id="Task_1"><bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Maestro.CaseRulesEvaluator" version="v1" /></uipath:activity>'
+        f"</bpmn:extensionElements></bpmn:{element}></bpmn:process></bpmn:definitions>"
+    )
+
+
+@pytest.mark.parametrize("element", ["task", "serviceTask"])
+def test_case_rules_evaluator_accepts_the_registry_task_and_the_classic_service_task(element: str) -> None:
+    # The registry gives bpmn:task ("the case converter always emits it as bpmn:Task");
+    # the classic skill's spec templates bpmn:serviceTask.
+    require_wrapper(_rules_evaluator(element), "serviceTask", "activity", "Maestro.CaseRulesEvaluator")
+
+
+def test_case_rules_evaluator_rejects_another_element() -> None:
+    with pytest.raises(SystemExit):
+        require_wrapper(_rules_evaluator("sendTask"), "serviceTask", "activity", "Maestro.CaseRulesEvaluator")
+
+
+def test_the_task_alternative_is_only_for_case_rules_evaluator() -> None:
+    root = ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" '
+        f'xmlns:uipath="{NS["uipath"]}"><bpmn:process>'
+        '<bpmn:task id="Task_1"><bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Maestro.CaseManagerGuardrails" version="v1" /></uipath:activity>'
+        "</bpmn:extensionElements></bpmn:task></bpmn:process></bpmn:definitions>"
+    )
+    with pytest.raises(SystemExit):
+        require_wrapper(root, "serviceTask", "activity", "Maestro.CaseManagerGuardrails")

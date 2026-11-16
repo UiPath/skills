@@ -8,7 +8,8 @@ description: >
 
   The replies are graded as the user reads them, by an itemized llm_judge
   over the agent-neutral dialog: both follow their templates and carry the
-  Studio Web link. Registry discovery before approval is graded only by the
+  Studio Web link (on the Studio Web host, which never uploads, the
+  /solution/ target path instead). Registry discovery before approval is graded only by the
   smokes: phase 4 pulls here, and coder_eval cannot scope a command check
   to one turn. Every step is a computation, so the build
   needs no tenant resource and the dialog measures the gate, not discovery.
@@ -70,7 +71,7 @@ success_criteria:
 
   # --- Turn 1: the 3c gate ---------------------------------------------------
   - type: llm_judge
-    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded, the Studio Web link, one line per box, the fixed question and three options, and nothing else"
+    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line (saying uploaded, with the Studio Web link, on the CLI; the /solution/ target path in Studio Web), one line per box, the fixed question and three options, and nothing else"
     include_reference: false
     include_dialog: true
     max_file_chars: 60000
@@ -89,15 +90,28 @@ success_criteria:
       (markdown emphasis around the name allowed) to the end, and ignore what
       comes before it. If the phrase does not occur at all, item 1 fails.
 
-      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). Check
-      every item:
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). The
+      agent ran on one of two hosts, and items 1 and 2 hold for either one,
+      but both items must hold for the SAME host:
+      - CLI host: it uploads the outline, so the first line says `uploaded`
+        and the second line is the Studio Web link.
+      - Studio Web host: the outline is already open on the canvas, so the
+        skill never uploads; the first line has no `uploaded` and the second
+        line is the target path, which always starts with `/solution/`.
+
+      Check every item:
 
       1. The first line starts with `ShippingQuote: outline ready, uploaded
-         (draft mode).` After that, the same line may hold at most one more
-         sentence, about a lookup that failed or changes kept.
-      2. The second line is an `https://` link to the uploaded solution in
-         Studio Web (bare or as a markdown link), and nothing else. A local
-         file path here fails.
+         (draft mode).` (CLI host) or with `ShippingQuote: outline ready
+         (draft mode).` (Studio Web host). After that, the same line may hold
+         at most one more sentence, about a lookup that failed or changes
+         kept.
+      2. CLI host: the second line is an `https://` link to the uploaded
+         solution in Studio Web (bare or as a markdown link), and nothing
+         else; a local file path here fails. Studio Web host: the second line
+         is the target path as plain text, starting with `/solution/` and
+         ending in `.bpmn`, and nothing else; a markdown link fails. A
+         first line of one host with the second line of the other fails.
       3. Next come between one and eight box lines, each starting with `- `,
          each naming one step of the process (with or without a bracketed
          kind, and with or without a trailing ` → <variable>`, the variable
@@ -140,10 +154,15 @@ success_criteria:
     pass_threshold: 1.0
 
   # One upload shows the skeleton at the gate, one shows the built process.
+  # Studio Web has no upload: the canvas shows its target, Process.bpmn, and
+  # the Studio Web flavor never runs `uip solution upload`. Its stand-in is
+  # the validate each turn runs on that target (the CLI main file is
+  # ShippingQuote.bpmn, so the second alternative never counts a CLI command;
+  # the `.flow-sdk` copy is not the target).
   - type: command_executed
-    description: "The shape and the built process were both uploaded"
+    description: "The shape and the built process were both uploaded (CLI), or both validated in the canvas target Process.bpmn (Studio Web, which has no upload)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b'
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b|(uip|\$UIP)\s+maestro\s+bpmn\s+validate\s+(?!\S*\.flow-sdk/)(\S*/)?Process\.bpmn(?=\s|$)'
     min_count: 2
     weight: 1.5
     pass_threshold: 1.0
@@ -173,14 +192,30 @@ success_criteria:
       allowed) to the end, and ignore what comes before it. If the phrase does
       not occur in Turn 2, item 1 fails.
 
-      Ignore blank lines and markdown emphasis. Check every item:
+      Ignore blank lines and markdown emphasis. The agent ran on one of two
+      hosts, and items 1 and 2 hold for either one, but both items must hold
+      for the SAME host:
+      - CLI host: it uploads the built process, so the first line says
+        `uploaded` and the second line is the Studio Web link.
+      - Studio Web host: the process is already open on the canvas, so the
+        skill never uploads; the first line has no `uploaded` and the second
+        line is the target path, which always starts with `/solution/`.
 
-      1. Turn 2 ends with the report: its first line starts with
+      Check every item:
+
+      1. Turn 2 ends with the report. CLI host: its first line starts with
          `ShippingQuote: built, validated, uploaded` and contains
-         `(draft mode).`; `, run` may follow `uploaded`. After that, the same
-         line may hold at most one more sentence, about changes kept.
-      2. The second line is an `https://` link to the solution in Studio Web
-         (bare or as a markdown link), and nothing else.
+         `(draft mode).`; `, run` may follow `uploaded`. Studio Web host: its
+         first line starts with `ShippingQuote: built, validated` and
+         contains `(draft mode).`, with only `, run` allowed between them.
+         After that, the same line may hold at most one more sentence, about
+         changes kept.
+      2. CLI host: the second line is an `https://` link to the solution in
+         Studio Web (bare or as a markdown link), and nothing else. Studio
+         Web host: the second line is the target path as plain text,
+         starting with `/solution/` and ending in `.bpmn`, and nothing else;
+         a markdown link fails. A first line of one host with the second line
+         of the other fails.
       3. Then at most five lines starting with `- `, each one change.
       4. Then optionally `Needs:`, `Assumed:` and `Unverified:` lines, in
          that order (each on its own line, or the last two on one line), and

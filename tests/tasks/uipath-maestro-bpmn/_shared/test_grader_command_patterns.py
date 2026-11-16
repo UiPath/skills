@@ -795,3 +795,68 @@ def test_recheck_accepts_a_named_read(text: str) -> None:
 )
 def test_recheck_rejects_anything_else(text: str) -> None:
     assert not _recheck().search(text), text
+
+
+# The CLI accepts `debug-instance` and `debug-instances`; the Studio Web flavor
+# teaches the plural, and a singular-only pattern failed its correct reads
+# (coder-eval 2026-11-16_09-25-49, debug-instance-inspect and debug-workflow-mocked).
+_DEBUG_READS = [
+    ("debug/debug_instance_inspect_mocked/debug_instance_inspect_mocked.yaml", "incidents", "incidents debug-fault-777"),
+    ("debug/debug_instance_inspect_mocked/debug_instance_inspect_mocked.yaml", "runtime variables", "variables debug-fault-777"),
+    ("debug/debug_instance_inspect_mocked/debug_instance_inspect_mocked.yaml", "runtime variables", "variables-all debug-fault-777"),
+    ("debug/debug_workflow_mocked/debug_workflow_mocked.yaml", "runtime variables", "variables-all debug-run-042"),
+    ("debug/live_debug_e2e/live_debug_e2e.yaml", "runtime variables", "variables-all 0b6c2f3e"),
+]
+
+
+@pytest.mark.parametrize("noun", ["debug-instance", "debug-instances"])
+@pytest.mark.parametrize(("task", "description", "tail"), _DEBUG_READS)
+def test_debug_instance_reads_accept_both_spellings(task: str, description: str, tail: str, noun: str) -> None:
+    command = f"uip maestro bpmn {noun} {tail} --output json"
+    assert _hits(_pattern(task, description), command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro bpmn debug-instance retry debug-fault-777",
+        "uip maestro bpmn debug-instances cancel debug-fault-777",
+        "uip maestro bpmn instance continue debug-fault-777",
+        "uip maestro bpmn instances retry debug-fault-777 -f folder-public",
+    ],
+)
+def test_debug_instance_operate_guard_catches_both_spellings(command: str) -> None:
+    pattern = _pattern("debug/debug_instance_inspect_mocked/debug_instance_inspect_mocked.yaml", "did not operate")
+    assert _hits(pattern, command), command
+
+
+# draft_build_after_gate: two uploads on the CLI; on Studio Web, which has no
+# upload, two validates of the canvas target Process.bpmn (coder-eval
+# 2026-11-16_09-25-49 failed a Studio Web run that, as its skill says, never uploaded).
+_GATE = "interactive/draft_build_after_gate/draft_build_after_gate.yaml"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip solution upload ShippingQuoteSolution --output json",
+        "$UIP solution upload ShippingQuoteSolution",
+        "uip maestro bpmn refresh . --output json && uip maestro bpmn validate Process.bpmn --output json",
+        "uip maestro bpmn validate /solution/ShippingQuote/Process.bpmn --output json",
+    ],
+)
+def test_gate_upload_counts_cli_uploads_and_studio_web_target_validates(command: str) -> None:
+    assert _hits(_pattern(_GATE, "both uploaded"), command), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # The CLI main file is <Project>.bpmn: validating it is not an upload.
+        "uip maestro bpmn validate ShippingQuoteSolution/ShippingQuote/ShippingQuote.bpmn --output json",
+        "uip maestro bpmn validate .flow-sdk/original/Process.bpmn --output json",
+        "uip solution resources list --search Quote",
+    ],
+)
+def test_gate_upload_ignores_cli_validates_and_scratch_copies(command: str) -> None:
+    assert not _hits(_pattern(_GATE, "both uploaded"), command), command

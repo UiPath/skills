@@ -219,6 +219,42 @@ def system_prompt(agent: dict) -> dict:
     return next((m for m in agent.get("messages", []) if m.get("role") == "system"), {})
 
 
+_SENTENCE_END = (".", "!", "?", ":")
+
+
+def first_unkept_line(old: str, new: str) -> str | None:
+    """The first non-blank line of ``old`` whose text ``new`` no longer holds verbatim, in order.
+
+    A line may share its line in ``new`` with added text, because a new sentence appended to an
+    existing paragraph keeps every original word. Only whole sentences may be added around it:
+    text before it must end a sentence, and text after it may follow only an original line that
+    ends one. So ``"Never send."`` kept as ``"Never send. Copy the manager."`` passes, while
+    ``"Never send"`` extended to ``"Never send unless asked"``, or a clause spliced into the
+    middle of a line, does not.
+    """
+    cursor = 0
+    for raw in old.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        start = cursor
+        while True:
+            at = new.find(line, start)
+            if at < 0:
+                return line
+            end = at + len(line)
+            before = new[new.rfind("\n", 0, at) + 1:at]
+            line_end = new.find("\n", end)
+            after = new[end:line_end if line_end >= 0 else len(new)]
+            before_ok = not before.strip() or (before[-1].isspace() and before.rstrip().endswith(_SENTENCE_END))
+            after_ok = not after.strip() or (after[0].isspace() and line.endswith(_SENTENCE_END))
+            if before_ok and after_ok:
+                cursor = end
+                break
+            start = at + 1
+    return None
+
+
 def check_writer_prompt(_original: dict, _final: dict, original_agents: dict, agents: dict) -> int:
     writer = agents.get(WRITER_AGENT)
     if writer is None:
@@ -230,10 +266,9 @@ def check_writer_prompt(_original: dict, _final: dict, original_agents: dict, ag
         return fail("writer system prompt does not mention 5 business days")
     if not re.search(r"next\s+statement", content, re.IGNORECASE):
         return fail("writer system prompt does not mention the next statement")
-    kept = {line.strip() for line in content.splitlines()}
-    lost = [line.strip() for line in str(old.get("content", "")).splitlines() if line.strip() and line.strip() not in kept]
-    if lost:
-        return fail(f"writer system prompt changed or dropped an existing line: {lost[0]!r}")
+    lost = first_unkept_line(str(old.get("content", "")), content)
+    if lost is not None:
+        return fail(f"writer system prompt changed or dropped an existing line: {lost!r}")
     tokens = new.get("contentTokens")
     if tokens is not None and "".join(str(t.get("rawString", "")) for t in tokens) != content:
         return fail("writer system prompt contentTokens rawString no longer matches content")
