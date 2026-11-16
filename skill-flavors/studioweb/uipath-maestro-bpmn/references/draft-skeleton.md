@@ -42,5 +42,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  *Build it* changes every box's BPMN tag, which `merge` keeps, so finish as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says: compile over the target, `format`, `refresh` and `validate`, and in the report's one sentence say the canvas layout was reset and name any pools, lanes, notes, colors or other canvas content the rebuild removed.
+  *Build it* turns boxes into typed steps with other BPMN tags, which `merge` would keep as `bpmn:task`, so finish as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says: compile over the target, `format`, `refresh` and `validate`, and in the report's one sentence say the canvas layout was reset and name any pools, lanes, notes, colors or other canvas content the rebuild removed.
 <!--skill-flavor:draft-build-merge:end-->
