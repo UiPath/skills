@@ -22,9 +22,10 @@ tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:mult
 
 run_limits:
   max_turns: 120
-  # Turn 1 is the skeleton plus one upload; turn 2 is the wiring, validate,
-  # refresh and a second upload. Grading needs at most 180 (validate) plus
-  # two judge calls.
+  # Turn 1 is the skeleton plus one upload (on Studio Web, one write to the
+  # open target); turn 2 is the wiring, validate, refresh and a second upload
+  # or target write. Grading needs at most 180 (validate) + 60 (outline-box
+  # check) plus two judge calls.
   turn_timeout: 1500
   task_timeout: 3600
 
