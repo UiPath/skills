@@ -110,7 +110,7 @@ uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320). Then check until clean
 #    (refused, or `decompile` stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
-# 3. Merge into the target; never without a stamp
+# 3. Merge, stamped only; undo a removal on the canvas
 ( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp: NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 # 4. Validate the file the canvas shows
 uip maestro flow validate <Name>.flow --output json
