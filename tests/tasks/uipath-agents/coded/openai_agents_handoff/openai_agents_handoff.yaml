@@ -9,7 +9,7 @@ description: >
   `_openai_shared.set_default_openai_client` are deferred
   (Critical Rule C4 — module-level setup breaks
   `uip codedagent init`), and runs the triage agent end-to-end.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 33
@@ -68,7 +68,9 @@ success_criteria:
   - type: run_command
     description: "OpenAI Agents project shape, factory pattern, handoff wiring"
     command: "python3 $REFERENCE_DIR/_shared/check_openai_agents_handoff.py"
-    timeout: 30
+    # The checker runs `uip codedagent run agent` with its own 180s limit; leave
+    # headroom for the static checks so that limit, not this one, fires first.
+    timeout: 240
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

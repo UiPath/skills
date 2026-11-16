@@ -36,6 +36,7 @@ criterion budget instead, with a diagnosable message.
 from __future__ import annotations
 
 import json
+import re
 import os
 import subprocess
 import sys
@@ -44,7 +45,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from flow_check import find_flow_files  # noqa: E402
+from flow_check import STUDIO_WEB_FLOW_FILE, find_flow_files, flow_file_is_named  # noqa: E402
 
 # The criterion budget to self-terminate inside. coder_eval exports only
 # TASK_DIR to a criterion's command, not the criterion's own timeout, so there
@@ -119,11 +120,34 @@ def _attempt_cap(remaining: float, attempts_left: int) -> float:
     return max(_MIN_ATTEMPT_SECONDS, remaining / attempts_left)
 
 
-def _warnings(stdout: str) -> str:
+_CANONICAL_LAYOUT_WARNING = "does not match canonical layout"
+"""The warning `flow validate` gives a ``.flow`` not named after its project directory."""
+_WARNING_COUNT = re.compile(r"^\s*(\d+) warning\(s\):\s*$")
+"""The header line of a ``Data.Warnings`` string: how many ``- `` items follow."""
+
+
+def _only_layout_warnings(warnings: str) -> bool:
+    """True when the count header matches its items and every item is the canonical-layout warning.
+
+    Any other line (another warning, a different bullet, a wrapped continuation) keeps the warnings.
+    """
+    lines = [line for line in warnings.splitlines() if line.strip()]
+    count = _WARNING_COUNT.match(lines[0]) if lines else None
+    items = lines[1:]
+    return (
+        count is not None
+        and int(count.group(1)) == len(items) > 0
+        and all(item.lstrip().startswith("- ") and _CANONICAL_LAYOUT_WARNING in item for item in items)
+    )
+
+
+def _warnings(stdout: str, flow: str) -> str:
     """``Data.Warnings`` of a ``flow validate --output json`` envelope, or ``""``.
 
     Output that is not a JSON envelope is reported as a warning, since a clean
-    result cannot be read from it.
+    result cannot be read from it. For Studio Web's ``new.flow`` the
+    canonical-layout warning is dropped: Studio Web always names the main file
+    that, so the warning only says which host made the project.
     """
     try:
         envelope = json.loads(stdout)
@@ -131,6 +155,9 @@ def _warnings(stdout: str) -> str:
         return f"no JSON envelope in stdout: {stdout.strip()[:500]!r}"
     data = envelope.get("Data") if isinstance(envelope, dict) else None
     warnings = data.get("Warnings") if isinstance(data, dict) else None
+    if isinstance(warnings, str) and Path(flow).name == STUDIO_WEB_FLOW_FILE and _only_layout_warnings(warnings):
+        print(f"note: ignoring the canonical-layout warning for Studio Web's {flow}", file=sys.stderr)
+        return ""
     return json.dumps(warnings) if warnings else ""
 
 
@@ -182,7 +209,7 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
         sys.stdout.write(result.stdout)
         sys.stderr.write(result.stderr)
         if result.returncode == 0 and no_warnings:
-            warnings = _warnings(result.stdout)
+            warnings = _warnings(result.stdout, flow)
             if warnings:
                 print(f"FAIL: {flow} validated with warnings: {warnings}", file=sys.stderr)
                 return 1
@@ -191,10 +218,26 @@ def _validate(flow: str, deadline: float, budget: int, no_warnings: bool = False
     return 1  # unreachable; keeps the return type honest
 
 
+def _studio_web_main_file(path: str) -> str:
+    """``path``, or the ``new.flow`` beside it when ``path`` names a Flow project's main file.
+
+    A task names the file the Node CLI writes (``<Sol>/<Name>/<Name>.flow``); Studio Web writes
+    the same project's flow as ``<Sol>/<Name>/new.flow``.
+    """
+    if os.path.isfile(path) or not path.endswith(".flow"):
+        return path
+    project_dir, base = os.path.split(path)
+    candidate = os.path.join(project_dir, STUDIO_WEB_FLOW_FILE)
+    if os.path.isfile(candidate) and flow_file_is_named(candidate, base[: -len(".flow")]):
+        return candidate
+    return path
+
+
 def main(paths: list[str] | None = None) -> int:
     no_warnings = "--no-warnings" in (paths or [])
     paths = [p for p in paths or [] if p != "--no-warnings"]
     if paths:
+        paths = [_studio_web_main_file(p) for p in paths]
         missing = [p for p in paths if not os.path.isfile(p)]
         if missing:
             print(f"FAIL: flow file not found: {', '.join(missing)}", file=sys.stderr)

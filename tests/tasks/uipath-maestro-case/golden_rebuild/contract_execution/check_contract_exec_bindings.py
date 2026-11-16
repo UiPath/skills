@@ -37,6 +37,7 @@ from _shared.case_check import (  # noqa: E402
     find_caseplan,
     find_stages,
     iter_tasks,
+    localize_ids,
     read_caseplan,
     task_is_skeleton,
 )
@@ -74,7 +75,7 @@ def parse_fixture() -> dict:
     if not os.path.exists(FIXTURE_SDD):
         _fail(f"fixture SDD not found at {FIXTURE_SDD}")
     with open(FIXTURE_SDD, encoding="utf-8") as stream:
-        sdd = stream.read()
+        sdd = localize_ids(stream.read())
 
     resource_keys = {f"{folder}.{name}" for name, folder in RESOURCE_RE.findall(sdd)}
     child_keys = {f"{folder}.{name}" for name, folder in CHILD_CASE_RE.findall(sdd)}

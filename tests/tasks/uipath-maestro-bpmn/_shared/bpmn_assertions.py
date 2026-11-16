@@ -24,7 +24,13 @@ def local(tag: str) -> str:
 def load_bpmn(path: str) -> ET.Element:
     bpmn_path = Path(path)
     if not bpmn_path.is_file():
-        fail(f"missing BPMN file: {path}")
+        # The pinned path is the CLI layout. A project created in a Studio Web
+        # solution exports as <Solution>/<Project>/<Name>.bpmn or
+        # <Project>/Process.bpmn, so find it by name the way bpmn_check does.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from bpmn_check import find_bpmn_file
+
+        bpmn_path = Path(find_bpmn_file(bpmn_path.stem))
     try:
         return ET.parse(bpmn_path).getroot()
     except ET.ParseError as exc:

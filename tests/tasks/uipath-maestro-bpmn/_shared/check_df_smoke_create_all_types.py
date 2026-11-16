@@ -7,7 +7,7 @@ Ported from Flow `connector_features/datafabric_connector/smoke_create_all_types
 FlowCodeEvalEntity binding all 8 field types), translated from a JSON
 `bodyParameters` walk to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Flow's task
 names no project, so this grader locates the BPMN file with no name hint
 (`parse_bpmn()` prefers the one with `project.uiproj` beside it).
 

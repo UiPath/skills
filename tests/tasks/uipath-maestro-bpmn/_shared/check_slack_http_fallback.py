@@ -4,7 +4,7 @@
 The Slack catalog connector (``uipath-salesforce-slack``) has no activity for
 "list a team's custom emoji" (Slack's ``emoji.list``), so the skill sends it as
 a connector-mode ``Intsvc.UnifiedHttpRequest`` through the Slack connection
-(skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "HTTP
+(classic/skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "HTTP
 requests"), then the process must debug green.
 
 Two subcommands:

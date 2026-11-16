@@ -110,6 +110,8 @@ uip admin organizations regions list --output json
 
 Render a numbered Markdown list (`1. Europe`, `2. UnitedStates`, ...) and ask the user to reply with a digit. Do not assume a default region.
 
+On Automation Suite this command fails because there is no region list. Don't stop or retry: [use the organization's `Region`](organizations-commands.md#regions-list), tell the user that's the region the tenant goes in, and continue to Step 3.
+
 ### Step 3 — Environment (optional)
 
 Ask the user to pick an environment tag — numbered list of `Production`, `NonProduction`, `Development`, or "skip". If the user skips, omit the field from the body.

@@ -65,12 +65,6 @@ def main():
         sys.exit(f"FAIL: no wait-for-timer task in caseplan. Types seen: {types_seen}")
 
     review_lanes = (review.get("data") or {}).get("tasks") or []
-    timer_lane_indices = {
-        lane_idx
-        for lane_idx, lane in enumerate(review_lanes)
-        for t in (lane or [])
-        if t.get("type") == "wait-for-timer"
-    }
     review_task_ids = {t.get("id") for lane in review_lanes for t in (lane or [])}
     review_timers = [t for t in timer_tasks if t.get("id") in review_task_ids]
     if len(review_timers) < 2:
@@ -79,11 +73,26 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    if len(timer_lane_indices) != 1:
-        sys.exit(
-            f"FAIL: Review's explicit parallel timer tasks must share one "
-            f"data.tasks inner task set; got set indices {sorted(timer_lane_indices)}"
-        )
+    # [[A, B]] and [[A], [B]] serialize to identical rulesJson; only the entry
+    # rules decide whether the timers run in parallel, so grade the rules, not
+    # set placement. Every rule in every group must be current-stage-entered: a
+    # runs-sequentially rule, or an AND with selected-tasks-completed on the
+    # sibling, would make one timer wait for the other.
+    for t in review_timers:
+        other = [
+            (r or {}).get("rule")
+            for cond in (t.get("entryConditions") or [])
+            for group in (cond.get("rules") or [])
+            for r in (group or [])
+            if (r or {}).get("rule") != "current-stage-entered"
+        ]
+        if other:
+            label = t.get("displayName") or t.get("label")
+            sys.exit(
+                f"FAIL: Review timer {label!r} has entry rule(s) {other} besides "
+                f"current-stage-entered; both Review timers must activate on "
+                f"current-stage-entered alone (parallel)"
+            )
 
     def _by_label(label: str) -> dict | None:
         for t in review_timers:
@@ -265,7 +274,7 @@ def main():
         "OK: 3 stages (Intake → Review → Decision) chained via condition-driven "
         "transitions (Review←Intake, Decision←Review via selected-stage-completed); "
         "case-entered on Intake; "
-        "TWO parallel wait-for-timer tasks on Review in one shared task set — "
+        "TWO parallel wait-for-timer tasks on Review (current-stage-entered only) — "
         "'Hold For 1 Hour' (shouldRunOnlyOnce + skipCondition =vars.skipReview) "
         "and 'Notify Reviewer' (isRequired=false) — both carrying "
         "current-stage-entered task-entry; root has all 7 variables "

@@ -29,6 +29,11 @@ the next step instead, each on its own edge.
 
 `.stepSwitch` is how you route them: one arm per outcome, none of them the tacit
 next step. It works on the default node, on quick-form and on a pinned task.
+Never combine it with `outcomePorts: false` (STEP_SWITCH_NO_EXITS: no ports to
+route). Drop the flag to get an arm per outcome. Keeping it means routing on
+`out('<step>', 'Action')` downstream ("The decision as data" below), and that
+branch must send every outcome value somewhere: an unhandled `Reject` continues
+down the main path.
 Arms behave like `.switch()`'s — one that ends in `.return()` is terminal, and one
 that does not CONVERGES, so the step after the `.stepSwitch` fans in from every
 arm that reaches it.
@@ -54,7 +59,7 @@ document-validation station.
 .return({ status: v('status') })
 ```
 
-Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
+Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task, never with `outcomePorts: false`. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
 
 ## Delivery, fields, and routing
 
@@ -132,8 +137,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `controlType` turns the dropdown into a text box. A decompiled canvas form
   keeps all of these, and you can edit the node like any other. `check`
   reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
-  (`INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
-  escalation).
+  (`FLOW_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
+  escalation; `INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an SDK older
+  than 6.88.2).
   These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
   an older SDK drops them on decompile and does not write them on compile,
 <!--skill-flavor:field-settings-sdk-upgrade:start-->
@@ -150,11 +156,22 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   }]
   ```
 
-  If `flow decompile` warns that a form field has a key the SDK "cannot write
-  back" (for example a `variable` other than `vars.<id>`, or a key the
-  platform's schema does not define), editing that node drops the key. Leave
-  that node untouched so merge keeps the original, or edit its JSON in the
-  `.flow` directly. `flow decompile --strict` refuses such a file.
+  A row key the SDK has no option for (a `variable` other than `vars.<id>`,
+  a key the platform's schema does not define, a `binding` on an asked
+  field) comes back in the field's `extra`, for instance
+  `extra: { variable: 'vars.order.note' }`. Compile writes it back as it
+  was, so you can edit the node; keep `extra` as decompile printed it.
+  To change a key that rides in `extra`, change it in `extra`: setting the
+  typed option of the same name next to it is refused
+  (`HITL_FIELD_EXTRA_CONFLICT`). Never add `extra` to a field you write: use
+  the typed keys above.
+  `flow decompile` still warns that a key "cannot write back" for a value
+  the platform refuses or drops itself (a `colSpan` off the grid, an
+  unknown key inside `options`); editing that node drops that key.
+  Needs `@uipath/maestro-builder-sdk` 6.104.1 or later (its
+  `dist/api-index.md` lists `FormFieldRowExtra`); an older SDK warns for
+  every such key instead: leave that node untouched so merge keeps the
+  original, or edit its JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
@@ -189,7 +206,8 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   Do not route the FIRST outcome with `.stepToList`: its port is already taken by
   the main path (flow-builder-sdk#741). After a task that does not route per
   outcome EVERY outcome port is taken, so `.stepToList('outcome-…')` there is
-  refused (HITL_OUTCOME_PORTS_OFF) — use `.stepSwitch`, or `outcomePorts: true`.
+  refused (HITL_OUTCOME_PORTS_OFF) — use `outcomePorts: true`, or `.stepSwitch`
+  on quick-form or a pin (never with `outcomePorts: false`).
 
   **So `.step()` means one of two things.** After a task that routes per outcome,
   the FIRST outcome continues and the others need routes. After any other task,

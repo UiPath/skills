@@ -134,6 +134,7 @@ A script gets modern syntax (`?.`, `??`, arrow functions), the language's built-
 Nothing more: `require`, `fetch`, Luxon's `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`, `Buffer` and `structuredClone` all read `undefined` in a real run, and `crypto` has no other member.
 A body ported from a runtime that has them (a Node.js script, a low-code platform's code step) is rewritten without them.
 `console` has only `debug`, `error`, `info`, `log` and `warn`, and they do nothing, so a script's logging goes nowhere. Any other `console` method (`console.table`, `console.assert`) is undefined, so calling it throws and fails the run.
+The execution envelope is ~64 MB: a script that allocates more fails with `Script has allocated <n> but is limited to 67108864` (incident 300501, no variable named). Copying a large `$vars` value counts, such as a connector output carrying attachment `contentBytes`, so copy only the fields the script needs.
 `toLocaleDateString` returns the long English form whatever locale and options it is given, so build a formatted date from its `getUTC…` parts.
 
 The engine declares `console`, `uipath`, `aggregate`, `_aggregate` and `_pipe` with `const` before the body runs.

@@ -7,21 +7,27 @@ Final-state only. Validates:
      "Shared/uipath-agents" with a valid lowercase retrievalMode.
   3. bindings_v2.json carries the index binding, and the solution provisions
      the index manifest under resources/solution_folder/index/.
-  4. Subject, description and tier inputs (names are the agent's
-     choice) are templated into the messages with contentTokens.
+  4. Inputs, checked structurally (names are the agent's choice): at least
+     three inputs (subject, description, tier), one of which carries the tier
+     values enterprise/standard as its enum or in its description; every
+     input is templated into the messages with contentTokens. Which input is
+     the subject or the description is left to the LLM judge.
   5. Output contract: resolutionType enum (5 values), suggestedReply,
      docReferences (array), escalateToEngineering (boolean), confidence.
   Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    _norm,
+    _resolve,
+    enum_values,
     assert_existing_project,
-    require_input,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -34,6 +40,20 @@ from _shared.use_case_assertions import (  # noqa: E402
     load,
     require_resource,
 )
+
+
+def _covers(node: dict, expected) -> bool:
+    """Structural role signal: enum (or description) spells out every expected value."""
+    got = {_norm(v) for v in enum_values(node)}
+    if got:
+        return all(_norm(v) in got for v in expected)
+    desc = str(node.get("description") or "")
+    return all(re.search(rf"(?<![A-Za-z0-9_]){re.escape(v)}(?![A-Za-z0-9_])", desc) for v in expected)
+
+
+def _inputs(in_schema: dict) -> dict:
+    return {k: v for k, v in (in_schema.get("properties") or {}).items() if isinstance(v, dict)}
+
 
 SOLUTION_DIR = Path(os.getcwd()) / "CaseTriageSol"
 AGENT_DIR = SOLUTION_DIR / "AgentsCaseTriageAgent"
@@ -86,11 +106,14 @@ def main() -> None:
     assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    inputs = [
-        require_input(in_schema, "case subject", "caseSubject", "subject", "title"),
-        require_input(in_schema, "case description", "caseDescription", "description", "details"),
-        require_input(in_schema, "tier", "customerTier", "tier", "caseTier", "supportTier"),
-    ]
+    ins = _inputs(in_schema)
+    if len(ins) < 3:
+        fail(f"inputSchema must declare the case subject, description and tier (>=3 inputs), found {sorted(ins)}")
+    tiers = [k for k, v in ins.items() if _covers(_resolve(in_schema, v), ["enterprise", "standard"])]
+    if not tiers:
+        fail(f"one input must be the tier, with enterprise/standard as its enum or listed in its description; found {sorted(ins)}")
+    print(f"OK: inputs {sorted(ins)}; tier input is {tiers[0]!r}")
+    inputs = list(ins)
     assert_inputs_referenced(agent, inputs)
     _, ctx = require_resource(AGENT_DIR, is_index_context(INDEX_NAME), f"index context on {INDEX_NAME!r}")
     assert_index_context(ctx, FOLDER_PATH)

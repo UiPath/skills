@@ -21,8 +21,8 @@ from _shared.bpmn_assertions import (  # noqa: E402
     one_element,
     variable_ids,
 )
+from _shared.bpmn_check import find_bpmn_file  # noqa: E402
 
-PROJECT = Path("BusinessRuleDecision/BusinessRuleDecision")
 BPMN_NAME = "BusinessRuleDecision.bpmn"
 RULE_FOLDER = "Shared"
 RULE_KEY = f"{RULE_FOLDER}.LoanEligibility"
@@ -64,7 +64,10 @@ def assert_rule_bindings(root, task) -> None:
 
 
 def main() -> None:
-    root = load_bpmn(str(PROJECT / BPMN_NAME))
+    # The graded file, wherever the project lives: Studio Web's is Process.bpmn.
+    bpmn = Path(find_bpmn_file(Path(BPMN_NAME).stem))
+    project, bpmn_name = bpmn.parent, bpmn.name
+    root = load_bpmn(str(bpmn))
     task = one_element(root, "businessRuleTask")
 
     if activity_type(task) != "Orchestrator.BusinessRules":
@@ -99,7 +102,7 @@ def main() -> None:
     assert_has_shape(root, task.attrib["id"])
 
     start = one_element(root, "startEvent")
-    assert_package_lifecycle(PROJECT, BPMN_NAME, start.attrib["id"])
+    assert_package_lifecycle(project, bpmn_name, start.attrib["id"])
     print("OK: businessRuleTask wrapper and package lifecycle are present")
 
 

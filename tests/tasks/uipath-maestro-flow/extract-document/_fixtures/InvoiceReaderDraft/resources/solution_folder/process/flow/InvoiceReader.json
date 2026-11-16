@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceReader",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "556dec2b-82d9-454f-ab0c-353a43c2b991",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceReader"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "InvoiceReader",
+      "package": {
+        "key": "94e61fd0-8b2f-447f-860d-ce15d62a064b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "31244849-8029-4a9c-b256-a881879fb13b",
+    "files": []
+  }
+}

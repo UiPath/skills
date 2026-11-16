@@ -42,8 +42,8 @@ success_criteria:
     description: "The taxonomy has fields for the vendor name, invoice number, invoice date and total"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
-      '[{"name_contains": "vendor|supplier|seller"}, {"name_contains": "number|(^|[^a-z])(no|id)([^a-z]|$)|#"},
-      {"name_contains": "date"}, {"name_contains": "total|amount"}]'
+      '[{"name_matches": "vendor|supplier|seller"}, {"name_matches": "number|(^|[^a-z])(no|id)([^a-z]|$)|#"},
+      {"name_matches": "date"}, {"name_matches": "total|amount"}]'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -52,7 +52,7 @@ success_criteria:
     description: "The invoice date is typed as a date and the total as a monetary quantity"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
-      '[{"name_contains": "date", "type": "ft-date"}, {"name_contains": "total|amount", "type": "ft-monetary-quantity"}]'
+      '[{"name_matches": "date", "type": "ft-date"}, {"name_matches": "total|amount", "type": "ft-monetary-quantity"}]'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -61,7 +61,7 @@ success_criteria:
     description: "The user's rule about the No. prefix is in the invoice number's instructions"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceFields fields
-      '[{"name_contains": "number|(^|[^a-z])(no|id)([^a-z]|$)|#", "says_contains": "No[.]|prefix"}]'
+      '[{"name_matches": "number|(^|[^a-z])(no|id)([^a-z]|$)|#", "instructions_matches": "No[.]|prefix"}]'
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

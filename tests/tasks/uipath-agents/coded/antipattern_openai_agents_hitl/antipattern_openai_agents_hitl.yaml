@@ -9,7 +9,7 @@ description: >
   and remove the broken `interrupt(...)` invocation (and its
   langgraph import) without breaking the OpenAI Agents shape. Closes
   the explicit gap that no negative test enforces this constraint.
-tags: [uipath-agents, smoke, "mode:build", coded, "lifecycle:edit", "feature:antipattern", "feature:framework-openai-agents"]
+tags: [uipath-agents, smoke, "mode:build", coded, "lifecycle:edit", "feature:antipattern", "feature:framework-openai-agents", studio-web-unsupported, studio-web-unsupported:coded-agent]
 max_iterations: 1
 sandbox:
   template_sources:

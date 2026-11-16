@@ -3,8 +3,10 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. `receipt` is a job-attachment input and `claim` is declared, both
-     templated into the messages; a file-reading built-in tool is enabled.
+  2. `receipt` is a job-attachment input and the claim is declared — as a
+     `claim` object holding every claim field, or as those fields at the top
+     level — and every input is templated into the messages; a file-reading
+     built-in tool is enabled.
   3. An enabled escalation resource has an actionCenter channel bound to the
      solution-local "ExpenseFraudReview" Workflow Action app (appName,
      folderName=solution_folder, the app's Key as resourceKey), with at least
@@ -12,7 +14,10 @@ Final-state only. Validates:
      (its .app/schemas file) exactly: form inputs =
      inputs + inOuts, outputs = inOuts + outputs, outcomeMapping keys =
      outcomes, each mapped to "continue" / "end". Invented form fields —
-     what happened when the app exposed no schema — fail here.
+     what happened when the app exposed no schema — fail here. resourceKey
+     may be either the fixture's app Key or the Key the solution declares
+     now: `uip solution resources refresh` re-keys a solution-internal app,
+     and the Key the agent discovers comes from before that refresh.
   4. The solution declares the app under resources/solution_folder/app/.
   5. Output contract: decision, policyViolations, fraudSignals,
      reviewedByHuman and explanation are declared (types are helper-only).
@@ -46,38 +51,76 @@ APP_NAME = "ExpenseFraudReview"
 APP_FOLDER = "solution_folder"
 # Ground truth from the fixture copy of the solution-local app. For a local app
 # `uip solution resources get` returns ActionSchema=null; the form lives in the
-# project's .app/schemas/*.json; the app's Key is read from the solution at
-# grading time (see current_app_key).
+# project's .app/schemas/*.json; the app's Key is read from both the fixture
+# and the solution at grading time (see app_keys / current_app_key).
 FIXTURE_SOL = Path(__file__).resolve().parent / "_fixtures" / "ExpenseAuditSol"
 _SCHEMA = json.loads(next((FIXTURE_SOL / APP_NAME / ".app" / "schemas").glob("*.json")).read_text())
 APP_INPUTS = {f["name"] for f in _SCHEMA["inputs"]}
 APP_INOUTS = {f["name"] for f in _SCHEMA["inOuts"]} | {f["name"] for f in _SCHEMA["outputs"]}
 APP_OUTCOMES = {o["name"] for o in _SCHEMA["outcomes"]}
 SOLUTION_DIR = AGENT_DIR.parent
+# The claim's fields, as the prompt names them.
+CLAIM_FIELDS = {"employeeId", "amount", "currency", "expenseDate", "category", "merchant", "businessPurpose"}
+
+
+def app_keys(solution_dir: Path) -> set[str]:
+    """Keys of every APP_NAME app declaration under resources/solution_folder/app/.
+    rglob matches both the app/workflow Action/ and the flat app/ layouts."""
+    return {
+        r["key"]
+        for p in (solution_dir / "resources" / "solution_folder" / "app").rglob("*.json")
+        for r in [json.loads(p.read_text()).get("resource") or {}]
+        if r.get("name") == APP_NAME and r.get("kind") == "app" and r.get("key")
+    }
+
+
+FIXTURE_APP_KEYS = app_keys(FIXTURE_SOL)
 
 
 def current_app_key() -> str:
     """Key of the app's declaration as it is NOW in the solution. `uip solution
-    resources refresh` re-registers a Studio Web app under a new key (and moves
-    it out of app/workflow Action/), so the fixture's key goes stale; the
-    channel must match whatever the solution currently declares."""
-    keys = [
-        r["key"]
-        for p in (SOLUTION_DIR / "resources" / "solution_folder" / "app").rglob("*.json")
-        for r in [json.loads(p.read_text()).get("resource") or {}]
-        if r.get("name") == APP_NAME and r.get("kind") == "app"
-    ]
+    resources refresh` re-registers a solution-internal Studio Web app under a
+    new key (and moves it out of app/workflow Action/). The key the agent
+    discovers comes from before that refresh, so check_escalation accepts
+    either this key or the fixture's key (FIXTURE_APP_KEYS)."""
+    keys = app_keys(SOLUTION_DIR)
     if len(keys) != 1:
         fail(f"expected one app declaration for {APP_NAME} under resources/solution_folder/app/, found {len(keys)}")
-    return keys[0]
+    return next(iter(keys))
 
 
-def check_inputs(in_schema: dict) -> None:
+def _resolve(schema: dict, node: dict) -> dict:
+    ref = node.get("$ref") or ""
+    if ref.startswith("#/definitions/"):
+        return (schema.get("definitions") or {}).get(ref.rsplit("/", 1)[-1]) or {}
+    return node
+
+
+def check_inputs(in_schema: dict) -> list[str]:
+    """`receipt` must be a job-attachment. The prompt lists the claim's fields in
+    prose ("the `claim` itself (employeeId, …)"), which reads either as one
+    `claim` object or as the fields themselves — both carry the same data and
+    nothing downstream depends on the shape. Accept a `claim` object holding
+    every CLAIM_FIELDS entry, or every CLAIM_FIELDS entry at the top level.
+    Returns the input names that must be templated into the messages."""
     if "receipt" not in attachment_fields(in_schema):
         fail("receipt must be a job-attachment input")
-    if "claim" not in (in_schema.get("properties") or {}):
-        fail("inputSchema must declare the claim input")
-    print("OK: receipt is a job-attachment and claim is declared")
+    props = in_schema.get("properties") or {}
+    if "claim" in props:
+        claim = _resolve(in_schema, props["claim"])
+        missing = sorted(CLAIM_FIELDS - set(claim.get("properties") or {}))
+        if claim.get("type") != "object" or missing:
+            fail(f"claim input must be an object declaring {sorted(CLAIM_FIELDS)}; missing {missing}")
+        print("OK: receipt is a job-attachment and claim is an object with every claim field")
+        return ["receipt", "claim"]
+    missing = sorted(CLAIM_FIELDS - set(props))
+    if missing:
+        fail(
+            "inputSchema must declare the claim — either a `claim` object or its fields "
+            f"{sorted(CLAIM_FIELDS)} as top-level inputs; missing {missing}"
+        )
+    print("OK: receipt is a job-attachment and every claim field is a top-level input")
+    return ["receipt", *sorted(CLAIM_FIELDS)]
 
 
 def check_escalation() -> None:
@@ -94,9 +137,12 @@ def check_escalation() -> None:
         fail(f"{path.parent.name}: no actionCenter channel bound to appName {APP_NAME!r}")
     ch = channels[0]
     props = ch.get("properties") or {}
-    app_key = current_app_key()
-    if props.get("resourceKey") != app_key:
-        fail(f"channel resourceKey must be the in-solution app's current Key {app_key!r} (from discovery), got {props.get('resourceKey')!r}")
+    accepted = FIXTURE_APP_KEYS | {current_app_key()}
+    if props.get("resourceKey") not in accepted:
+        fail(
+            f"channel resourceKey must be the {APP_NAME} app's Key — the fixture's (discovered before refresh) "
+            f"or the solution's current (after refresh), one of {sorted(accepted)} — got {props.get('resourceKey')!r}"
+        )
     if props.get("folderName") != APP_FOLDER:
         fail(f"channel folderName must be the app's Folder {APP_FOLDER!r}, got {props.get('folderName')!r}")
     recipients = [r for r in ch.get("recipients") or [] if isinstance(r, dict) and r.get("value")]
@@ -159,8 +205,7 @@ def main() -> None:
     assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    check_inputs(in_schema)
-    assert_inputs_referenced(agent, ["receipt", "claim"])
+    assert_inputs_referenced(agent, check_inputs(in_schema))
     require_resource(AGENT_DIR, is_file_reading_tool, "file-reading built-in tool")
     check_escalation()
     check_app_declaration()

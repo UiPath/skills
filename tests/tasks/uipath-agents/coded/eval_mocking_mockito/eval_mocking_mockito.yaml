@@ -9,7 +9,7 @@ description: >
   pipeline runs offline. Project files are pre-seeded via `pre_run`
   (fixtures in `_fixtures/`) so the eval grades mocking + evaluator
   wiring, not file transcription.
-tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-langgraph]
+tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-langgraph, studio-web-unsupported, studio-web-unsupported:coded-agent]
 max_iterations: 1
 
 sandbox:

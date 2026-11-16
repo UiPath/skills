@@ -33,7 +33,7 @@ export default flow('support-line')
 Talk to someone on a phone call. The call is identified by a `callContext`
 OBJECT — pass the whole thing, never a field inside it.
 
-Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations?, tools?, context?, escalation? })`.
 
 ```ts
 .step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('phone') }))
@@ -78,6 +78,25 @@ emits the runtime bindings and matching sidecar schema. There are no declared
 `returns`: the definition declares what comes back. Compile writes a
 voice-dialect `<source>/agent.json` sidecar (`settings.mode: 'voice'`) beside
 the `.flow`.
+
+## Tools, context and escalations
+
+`voiceAgent` takes the same `tools`, `context` and `escalation` options as
+`inlineAgent`, written the same way ([agent-resources.md](agent-resources.md)).
+Each one becomes a resource node on the agent's `tool`, `context` or
+`escalation` handle:
+
+```ts
+.step('serviceAgent', voiceAgent({
+  systemPrompt: 'Look the caller up before you answer.',
+  callContext: out('start', 'callContext'),
+  tools: [{ kind: 'api', key: '<guid>', name: 'LookupCustomer', folderPath: 'Shared/ContactCenter' }],
+}))
+```
+
+The SDK version these options need, their `check` codes, and what decompile
+does not carry back yet:
+[agent-resources.md](agent-resources.md#voice-and-conversational-agents).
 
 ## Evidence boundary
 

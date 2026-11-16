@@ -33,6 +33,7 @@ EXPECTED_FOLDER_NAME = "solution_folder"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     assert_edge,
     find_autonomous_agent_node,
     find_inline_resource,
@@ -41,7 +42,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
+FLOW_PATH = main_flow_path(Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow")
 ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 
 

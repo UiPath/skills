@@ -24,8 +24,23 @@ import sys
 import time
 from datetime import datetime, timezone
 
-OUTLOOK_CONN = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
-JIRA_CONN = "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def _live_id(cloud_id: str) -> str:
+    """The running tenant's ID for a pinned cloud ID.
+
+    `localize_tenant_ids.py` rewrites the sandbox copy of this file, but the graders import
+    the reference copy, so they read the map it wrote into the sandbox instead."""
+    try:
+        with open(TENANT_ID_MAP, encoding="utf-8") as fh:
+            return str(json.load(fh).get(cloud_id, cloud_id))
+    except (OSError, ValueError):
+        return cloud_id
+
+
+OUTLOOK_CONN = _live_id("dd657127-91f5-4568-a3a3-c024bc03fb0f")
+JIRA_CONN = _live_id("f5273a4d-d492-4bcd-a106-5a20bf89a3ef")
 JIRA_PROJECT = "SJP"
 MAILBOX_FOLDER = "Inbox"
 
@@ -257,20 +272,30 @@ def _await_instance(since_iso: str) -> dict:
 
 
 def _do_debug(since: str) -> dict:
-    solution_dir = _find_dir("**/*.uipx")
-    project_dir = _find_dir("**/project.uiproj")
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
+    in_studio_web = os.path.isdir("/solution")
 
-    # Resource refresh is mandatory: without it the connector resources are not
-    # resolvable at runtime and debug reports "Resource is not configured".
-    r = _uip_json(["solution", "resources", "refresh",
-                   "--solution-folder", solution_dir])
-    if r.get("Result") != "Success":
-        blob = json.dumps(r)
-        # Refresh is not idempotent — re-running it over its own output fails.
-        # When the agent already refreshed, the resource docs are on disk and
-        # debug can proceed; only that exact failure is tolerated.
-        if "Node already added to the graph" not in blob:
-            fail(f"solution resources refresh failed: {blob[:600]}")
+    if in_studio_web:
+        project_dir = _find_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        solution_dir = _find_dir("**/*.uipx")
+        project_dir = _find_dir("**/project.uiproj")
+
+    if not in_studio_web:
+        # Resource refresh is mandatory: without it the connector resources are
+        # not resolvable at runtime and debug reports "Resource is not configured".
+        r = _uip_json(["solution", "resources", "refresh",
+                       "--solution-folder", solution_dir])
+        if r.get("Result") != "Success":
+            blob = json.dumps(r)
+            # Refresh is not idempotent — re-running it over its own output
+            # fails.  When the agent already refreshed, the resource docs are
+            # on disk and debug can proceed; only that exact failure is
+            # tolerated.
+            if "Node already added to the graph" not in blob:
+                fail(f"solution resources refresh failed: {blob[:600]}")
 
     # stderr is kept: on a fault the CLI names the incident only there
     # (UiPath/cli#5519), and check_case_ran.py prints it from debug_result.json.

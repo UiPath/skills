@@ -20,12 +20,13 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     find_autonomous_agent_node,
     load_json,
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "MemoryFlow.flow"
+FLOW_PATH = main_flow_path(Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "MemoryFlow.flow")
 FLOW_BINDINGS = Path(os.getcwd()) / "MemoryFlowSol" / "MemoryFlow" / "bindings_v2.json"
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 

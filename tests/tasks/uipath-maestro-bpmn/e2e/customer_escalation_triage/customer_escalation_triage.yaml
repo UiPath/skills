@@ -44,7 +44,7 @@ sandbox:
 
 pre_run:
   - command: "python3 _setup/seed.py"
-    timeout: 60
+    timeout: 240
 
 reference:
   directory: ../..

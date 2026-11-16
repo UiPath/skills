@@ -60,8 +60,9 @@ bind every `callContext` to the trigger.
 reads the transcript, `distillMemory` (an inline agent) returns `summary`,
 `preferences` and `openItems`, and `saveMemory` writes them to the caller's record,
 such as a Data Fabric entity. The canvas attaches a lookup on that record to the
-voice agent as a tool; `voiceAgent()` takes no tools, so read the record before
-the agent and pass it in through `inputs`.
+voice agent as a tool; in the SDK, give `voiceAgent()` the same tool through
+`tools` ([voice.md](../voice.md#tools-context-and-escalations)), or read the
+record before the agent and pass it in through `inputs`.
 
 ## What to bind
 

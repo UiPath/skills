@@ -48,7 +48,7 @@ An API workflow is a JSON object with required `document`, `do`, and `evaluate` 
 | `evaluate.language` | string | yes | MUST be `"javascript"`. |
 | `evaluate.mode` | string | yes | `"strict"`. |
 | `do` | array | yes | Ordered tasks; each entry is `{ "<TaskName>": { ... } }`. Root is conventionally one `Sequence_1`. |
-| `httpRetryConfig` | object | optional | Workflow-level retry policy for HTTP **GET** calls (`UiPath.Http` GET + `UiPath.IntSvc` list/get). Absent → no retry. See [http-retry-config.md](http-retry-config.md). |
+| `httpRetryConfig` | object | optional | Workflow-level retry policy for HTTP **GET** calls (`UiPath.Http` GET + `UiPath.IntSvc` list/get). Absent → no retry. Per-activity retry is task-level `catch.retry` on a Try/Catch or an HTTP Request `<id>#Retry` wrapper, and replaces this policy for calls inside it. See [http-retry-config.md](http-retry-config.md). |
 
 ## Variables
 

@@ -101,7 +101,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 2. Test delivery: `uip admin smtp test --recipient "<TEST_EMAIL>" --output json`
 3. Branch on test result error message
 
-**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --secure <true|false> --user "<USER>" --password "<PASS>" --output json`. Re-test after each change.
+**Fix:** Update config with correct values: `uip admin smtp update --host "<HOST>" --port <PORT> --enable-ssl <true|false> --username "<USER>" --password "<PASS>" --output json`. Re-test after each change.
 
 ---
 
@@ -280,7 +280,7 @@ Validate the binding (Rule 17):
 1. Poll: `uip admin organizations operation get "<OPERATION_ID>" --output json`
 2. Interpret status: `Pending`/`Queued`/`Creating`/`Updating`/`Enabling`/`Disabling`/`Deleting`/`InProgress` → still in progress (auto-poll 3× at 5s, Rule 18). `Failed` → inspect `Data.error` / `Data.message`. Terminal success statuses are verb-specific: `Created`/`Updated`/`Enabled`/`Disabled`/`Deleted`/`Done` → verify with `tenants get "<TENANT_ID>" --output json`
 
-**Fix:** Cause 1 → try different region: `organizations regions list --output json`. Cause 2 → check catalog: `tenants services list-available --region "<REGION>" --output json`. Cause 3 → retry. Cause 4 → contact support. Do NOT auto-retry failed mutations.
+**Fix:** Cause 1 → try different region: `organizations regions list --output json` (cloud only: Automation Suite has one region). Cause 2 → check catalog: `tenants services list-available --region "<REGION>" --output json`. Cause 3 → retry. Cause 4 → contact support. Do NOT auto-retry failed mutations.
 
 ---
 

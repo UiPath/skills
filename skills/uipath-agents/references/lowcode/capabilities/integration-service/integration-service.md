@@ -260,10 +260,12 @@ uip is typecache packages --output json
 ### Step 3 — Find a connection
 
 ```bash
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-Present connections to the user. Recommend the default enabled one but let the user confirm. Note the connection `Id`, `FolderKey`, `Name`. If no connection exists, prompt the user to create one via `uip is connections create "<connector-key>"`.
+**Always pass `--all-folders`.** Without it the CLI searches only the default scope (usually the personal workspace) and reports "No connections found" for connections that live in shared folders. `--all-folders` is mutually exclusive with `--folder` / `--folder-key`.
+
+Present connections to the user. Recommend the default enabled one but let the user confirm. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`.
 
 This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resources refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resources list --kind Connection`, because refresh reads from the cache this command writes.
 

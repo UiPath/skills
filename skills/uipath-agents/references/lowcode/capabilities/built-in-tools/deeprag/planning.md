@@ -18,7 +18,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/deeprag
 | Input | Why | Source |
 |---|---|---|
 | Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
-| Attachment ingress | The `deep-rag` tool consumes runtime-uploaded attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
+| Attachment ingress | The `deep-rag` tool consumes runtime attachments. Autonomous: declare a `job-attachment` array input and template it into the user message. Conversational Studio Web chat: chat uploads reach the tool without schema wiring. See [impl-json.md](impl-json.md) § Attachment Ingress | `agent.json` → `inputSchema` / `entry-points.json` |
 | Prompt wiring | The agent's system prompt or per-call prompt must mention when to invoke the tool | Author / Studio Web |
 | Other built-in tools | Do not enable `deep-rag` AND `analyze-attachments` if a single research pass suffices — pick one | User intent |
 

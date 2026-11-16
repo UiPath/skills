@@ -1,0 +1,62 @@
+task_id: skill-flow-extract-document-sdk-project
+description: >
+  Integration: the user's flow is built from TypeScript source (`.flow-sdk/`)
+  and they ask for an Extract document step. A compile would overwrite CLI
+  edits and `dynamicExtract()` is not the route, so the agent builds the
+  Extract document flow in a separate project without source and leaves the
+  SDK project as it was. The node, its wiring and its taxonomy are graded by
+  `explicit_node` and the taxonomy tasks.
+
+  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  until the flow is saved once in Studio Web.
+
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/PermitDesk
+      mount_point: PermitDesk
+reference:
+  directory: ../..
+
+initial_prompt: |
+  My PermitDesk flow takes a permit document. Add an Extract document step
+  that pulls out the permit number, the holder's name and the expiry date.
+  Make sure what you build validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "A Flow project other than PermitDesk, with no .flow-sdk/, holds an Extract document node and validates"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings "$(python3 $REFERENCE_DIR/extract-document/sdk_project/sdk_project_helper.py)"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDK project is as it was: PermitDesk.flow keeps every node and gains no uipath.ixp.* node, and its .flow.ts source is byte for byte the same"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk --project PermitDesk/PermitDesk &&
+      ! grep -q '"uipath[.]ixp[.]' PermitDesk/PermitDesk/PermitDesk.flow &&
+      cmp -s PermitDesk/PermitDesk/.flow-sdk/PermitDesk.flow.ts $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk/.flow-sdk/PermitDesk.flow.ts
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 30
+  max_turns: 60
+  task_timeout: 1200

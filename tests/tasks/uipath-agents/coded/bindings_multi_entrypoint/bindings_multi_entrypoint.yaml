@@ -7,7 +7,7 @@ description: >
   either declared entrypoint (or an omitted entrypoint field); the
   load-bearing assertion is that no binding ends up with a fabricated
   `EntryPointUniqueId` that doesn't match either real entrypoint.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 13

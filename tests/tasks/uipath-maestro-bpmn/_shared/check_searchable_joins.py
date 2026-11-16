@@ -7,7 +7,7 @@ in related Opportunities for each Account in the same query, then branches on
 whether any opportunities came back), translated from a JSON node/edge
 substring search to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3). Flow's own
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3). Flow's own
 grader never asserted the join/branch shape itself (only that the file
 exists, that a Salesforce connector node is present, and that the flow
 validates), so this port keeps that same breadth rather than narrowing or

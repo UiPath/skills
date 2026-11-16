@@ -6,8 +6,8 @@ Signature: `.parallel(name, [armFn, armFn, ...])`; `name` identifies the Merge.
 
 ```ts
 .parallel('ready', [
-  (a) => a.step('weather', http({ url: weatherUrl, managed: false })),
-  (b) => b.step('news', http({ url: newsUrl, managed: false })),
+  (a) => a.step('weather', http({ url: weatherUrl, managed: true })),
+  (b) => b.step('news', http({ url: newsUrl, managed: true })),
 ])
 .step('combine', script({ code: 'return "ready";' }))
 ```

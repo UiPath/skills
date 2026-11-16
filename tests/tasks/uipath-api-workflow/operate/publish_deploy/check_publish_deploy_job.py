@@ -6,7 +6,11 @@ happened against a real tenant and left nothing standing.
 
   1. `solution deploy list` still carries apiwf-deploy-<uuid8>
      -> a deployment was really created. Uninstalled deployments remain listed as
-        history rows (`Operation: Uninstall`), so this holds after teardown.
+        history rows (`Operation: Uninstall`), so this holds after teardown —
+        unless the agent also ran `uip solution deploy delete` (uipath-solution
+        prescribes it after uninstall), which removes the row. Then the captured
+        job must instead have run in a folder that no longer exists: the
+        deployment's folder, removed by teardown.
   2. ./job_status.json shows the JOB in state Successful
      -> the deployed workflow actually executed. Read from Data.State, never by
         grepping the payload: `uip or jobs get` wraps every successful CALL in
@@ -84,11 +88,7 @@ dl = uip_json("solution", "deploy", "list", "--limit", "200")
 if dl.get("Result") != "Success":
     sys.exit(f"FAIL: `solution deploy list` Result={dl.get('Result')!r}: {dl.get('Message')!r}")
 names = [_pick(d, "Name", "DeploymentName") for d in _items(dl) if isinstance(d, dict)]
-if deploy_name not in names:
-    sys.exit(
-        f"FAIL: no deployment named {deploy_name!r} — the solution was never deployed. "
-        f"Saw {names[:5]}"
-    )
+row_deleted = deploy_name not in names  # checked against the job's folder below
 
 # 2) The deployed workflow ran, per evidence captured during the run
 status_file = Path("job_status.json")
@@ -122,6 +122,18 @@ if job_state.strip().lower() != "successful":
         f"FAIL: the captured job finished in state {job_state!r}, not 'Successful'. "
         "The deployed API workflow was started but did not complete successfully."
     )
+
+# 1, continued) No row: fine only if the job ran in a folder that is now gone.
+# A job in any surviving folder (Shared, parent, personal workspace) was not
+# the deployment's.
+if row_deleted:
+    job_folder = str(_pick(data, "FolderKey") or "")
+    if not job_folder or uip_json("or", "folders", "get", job_folder).get("Result") == "Success":
+        sys.exit(
+            f"FAIL: no deployment named {deploy_name!r}, and the captured job did not run "
+            f"in a since-removed deployment folder (FolderKey={job_folder!r}) — the solution "
+            f"was never deployed. Saw {names[:5]}"
+        )
 
 # 3) The deployment was torn back down
 fg = uip_json("or", "folders", "get", folder_path)

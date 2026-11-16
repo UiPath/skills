@@ -33,9 +33,11 @@ initial_prompt: |
   publish, deploy, debug, run, or pack anything, and do not pause for approval.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "SupportTriage/SupportTriage.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py SupportTriage"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

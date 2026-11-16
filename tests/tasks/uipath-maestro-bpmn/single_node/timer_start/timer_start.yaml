@@ -29,7 +29,6 @@ initial_prompt: |
   - Retrieve the Intsvc.TimerTrigger template with `uip maestro bpmn registry
     get` before authoring, and author the node from that template rather than
     from prose.
-    Author the node from that template, not from prose.
   - The process start MUST be a bpmn:startEvent carrying the Intsvc.TimerTrigger
     wrapper and a bpmn:timerEventDefinition. There must be NO manual start event.
     This makes the process source-only: only a manual root start derives an
@@ -40,9 +39,9 @@ initial_prompt: |
     interval.
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
-  - Validate the generated project BPMN is well-formed XML with an explicit
-    Bash command before finishing, e.g.
-    `python3 -c "import xml.etree.ElementTree as ET, pathlib; ET.parse(next(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn')))"`.
+  - Before finishing, validate that the generated project BPMN is well-formed
+    XML with an explicit Bash command that parses it with Python's
+    `xml.etree.ElementTree`.
   - Do not upload, publish, deploy, debug, run, or pack anything, and do not
     pause for approval or confirmation.
 
@@ -63,7 +62,21 @@ success_criteria:
   - type: command_executed
     description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
     tool_name: "Bash"
-    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*ScheduledReportBpmn\.bpmn'
+    # A Python ElementTree parse of THIS file, in one of three shapes, each bounded
+    # to its own program so a later, unrelated `find` cannot supply the name:
+    # (1) `ET.parse(` and the file name inside the same quoted `python3 -c` program,
+    #     in either order (an agent that globbed into a variable wrote
+    #     `fs=list(...rglob('ScheduledReportBpmn.bpmn')); ET.parse(fs[0])`, R14 v2,
+    #     builder-sdk#1882); an escaped inner quote does not end the program, and
+    #     the program may open with an escaped quote, as it does inside a wrapper
+    #     like `/bin/bash -lc "python3 -c \"...\""` (the codex shell tool's form);
+    # (2) the argv form, the file after the closing quote:
+    #     `python3 -c "...ET.parse(sys.argv[1])" ScheduledReportBpmn/ScheduledReportBpmn.bpmn`;
+    # (3) a `python3 - <<'PY'` heredoc whose body (or the `python3 -` arguments)
+    #     names the file and calls `ET.parse(`, up to the terminator word (bounded
+    #     by whitespace, so the newline-collapsed haystack stops there too).
+    # Cases in _shared/test_grader_command_patterns.py.
+    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1).)*ET\.parse\()(?=(?:\\.|(?!\1).)*ScheduledReportBpmn\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2).)*ET\.parse\((?:\\.|(?!\2).)*\\?\2\s+[^\s;&|]*ScheduledReportBpmn\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*ScheduledReportBpmn\.bpmn)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

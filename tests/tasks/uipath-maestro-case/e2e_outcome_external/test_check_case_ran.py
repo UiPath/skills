@@ -90,3 +90,16 @@ def test_probe_keeps_the_debug_stderr(monkeypatch: pytest.MonkeyPatch, tmp_path:
     assert result["stderr_tail"].endswith("WARN tail")
     assert len(result["stderr_tail"]) == probe.STDERR_TAIL_CHARS
     assert result["data"]["finalStatus"] == "Faulted"
+
+
+def test_the_probe_uses_the_tenant_ids_the_localizer_mapped(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The graders load this reference copy, which the localizer never rewrites."""
+    (tmp_path / "_setup").mkdir()
+    (tmp_path / "_setup" / ".tenant-ids.map.json").write_text(
+        '{"dd657127-91f5-4568-a3a3-c024bc03fb0f": "11111111-1111-1111-1111-111111111111"}'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert outcome_probe._live_id("dd657127-91f5-4568-a3a3-c024bc03fb0f") == "11111111-1111-1111-1111-111111111111"
+    assert outcome_probe._live_id("f5273a4d-d492-4bcd-a106-5a20bf89a3ef") == "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+

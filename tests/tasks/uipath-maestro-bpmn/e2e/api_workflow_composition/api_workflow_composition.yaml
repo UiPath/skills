@@ -91,7 +91,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Shape: solution wires the API workflow into the BPMN through the real v2 runtime contract (project registered + present, wrapper context fields correct, JobArguments by reference, no undeclared var reads, output mapped and published, entry-points.json contract complete, uip maestro bpmn validate clean)"
+    description: "Shape: solution wires the API workflow into the BPMN through a runtime contract verified live (project registered + present, wrapper context fields correct for its uipath:type version -- v1 releaseKey binding + folderKey, or v2 name + folderPath, JobArguments by reference, no undeclared var reads, output mapped and published, entry-points.json contract complete, uip maestro bpmn validate clean)"
     command: "python3 $REFERENCE_DIR/e2e/api_workflow_composition/check_shape.py"
     timeout: 300
     expected_exit_code: 0

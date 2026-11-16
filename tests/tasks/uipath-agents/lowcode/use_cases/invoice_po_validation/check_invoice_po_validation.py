@@ -3,11 +3,13 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. The invoice file is a job-attachment input and the purchase order
-     another input (names and the PO's type are the agent's choice).
+  2. Inputs, checked structurally (names and the PO's type are the agent's
+     choice): exactly one job-attachment input (the invoice file) and at
+     least one other input of any type (the purchase order). Which input
+     holds the PO is left to the LLM judge.
   3. A file-reading built-in tool (analyze-attachments / load-attachments /
      deep-rag) is enabled — the only way a low-code agent reads file contents.
-  4. Both inputs reach the LLM via templated messages with contentTokens.
+  4. Every input reaches the LLM via templated messages with contentTokens.
   5. Output contract: extractedInvoice, validationIssues (array), status enum
      {approved, needs_review, rejected}, confidence (number).
   Brownfield: the agent must be built inside the existing (fixture) project.
@@ -20,7 +22,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
     assert_existing_project,
-    require_input,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -35,6 +36,11 @@ from _shared.use_case_assertions import (  # noqa: E402
     require_resource,
 )
 
+
+def _inputs(in_schema: dict) -> dict:
+    return {k: v for k, v in (in_schema.get("properties") or {}).items() if isinstance(v, dict)}
+
+
 AGENT_DIR = Path(os.getcwd()) / "InvoiceValidationSol" / "InvoiceValidationAgent"
 FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "InvoiceValidationSol" / "InvoiceValidationAgent"
 
@@ -43,9 +49,12 @@ def check_inputs(in_schema: dict) -> list[str]:
     files = attachment_fields(in_schema)
     if len(files) != 1:
         fail(f"expected exactly one job-attachment input for the invoice file, found {files}")
-    po = require_input(in_schema, "purchase order", "purchaseOrder", "po", "purchaseOrderData", "sapPurchaseOrder")
-    print(f"OK: invoice file input {files[0]!r} is a job-attachment")
-    return [files[0], po]
+    ins = _inputs(in_schema)
+    others = [k for k in ins if k not in files]
+    if not others:
+        fail(f"inputSchema needs a purchase-order input besides the invoice file, found {sorted(ins)}")
+    print(f"OK: invoice file input {files[0]!r} is a job-attachment; other inputs {others}")
+    return list(ins)
 
 
 def check_outputs(out_schema: dict) -> None:

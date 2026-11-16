@@ -20,7 +20,7 @@ the sendTasks that call the Test Manager connector
 (``bpmn_check.connector_requests``), in either shape:
 
 - ``Intsvc.ActivityExecution`` with ``connectorKey`` ``uipath-uipath-testmanager``
-  (see skills/uipath-maestro-bpmn/references/registry-workflow.md §3), except
+  (see classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3), except
   on object ``http-request``.
 - connector-mode ``Intsvc.UnifiedHttpRequest`` with ``targetConnector``
   ``uipath-uipath-testmanager``. A manual-mode request, or one through

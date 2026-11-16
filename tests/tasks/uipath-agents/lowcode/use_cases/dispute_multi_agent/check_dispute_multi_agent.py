@@ -5,12 +5,15 @@ The prompt names neither the solution nor the agents, so everything is located
 by role. Final-state only. Validates:
   1. Exactly one solution in the sandbox, registering exactly three autonomous
      low-code agents with distinct projectIds and schemas in sync.
-  2. Classifier: outputs disputeType (pricing, duplicate_charge, tax,
-     service_not_received, other) and a sentiment field (positive, neutral,
-     negative, angry); declares no tools.
-  3. Drafter: outputs subject and body; declares no tools.
-  4. Coordinator: takes the customer's message and the invoice (types are
-     the agent's choice), both templated; returns disputeType, sentiment,
+  2. Classifier (the child that outputs disputeType): disputeType covers
+     pricing, duplicate_charge, tax, service_not_received, other; a sentiment
+     output is identified structurally as the one whose enum or description
+     covers positive, neutral, negative, angry; declares no tools.
+  3. Drafter (the remaining child): declares no tools. Its subject/body
+     output names are the agent's choice; the LLM judge covers them.
+  4. Coordinator: at least two inputs of any type (the customer's message
+     and the invoice; names, types and roles are the agent's choice and left
+     to the LLM judge), every input templated; returns disputeType, sentiment,
      proposedResolution, replySubject, replyBody; declares one
      solution-internal agent tool per child (type=agent, location=solution,
      processName=<child project>, folderPath=solution_folder) whose schemas
@@ -23,12 +26,16 @@ can read it.
 """
 
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    _norm,
+    _resolve,
+    enum_values,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -40,11 +47,24 @@ from _shared.use_case_assertions import (  # noqa: E402
     fail,
     find_property,
     load,
-    require_input,
     resources,
     strip_schema,
     walk_properties,
 )
+
+
+def _covers(node: dict, expected) -> bool:
+    """Structural role signal: enum (or description) spells out every expected value."""
+    got = {_norm(v) for v in enum_values(node)}
+    if got:
+        return all(_norm(v) in got for v in expected)
+    desc = str(node.get("description") or "")
+    return all(re.search(rf"(?<![A-Za-z0-9_]){re.escape(v)}(?![A-Za-z0-9_])", desc) for v in expected)
+
+
+def _inputs(in_schema: dict) -> dict:
+    return {k: v for k, v in (in_schema.get("properties") or {}).items() if isinstance(v, dict)}
+
 
 ROOT = Path(os.getcwd())
 GRADING_COPY = ROOT / ".grading" / "coordinator-agent.json"
@@ -88,7 +108,7 @@ def identify(dirs: list[Path]) -> tuple[Path, Path, Path]:
     coord = coordinator[0]
     rest = [d for d in dirs if d != coord]
     classifier = [d for d in rest if find_property(outputs(d), "disputeType")]
-    drafter = [d for d in rest if find_property(outputs(d), "subject") and find_property(outputs(d), "body")]
+    drafter = [d for d in rest if d not in classifier]
     if len(classifier) != 1 or len(drafter) != 1 or classifier == drafter:
         fail(f"could not tell classifier from drafter among {[d.name for d in rest]}")
     print(f"OK: coordinator={coord.name}, classifier={classifier[0].name}, drafter={drafter[0].name}")
@@ -97,9 +117,13 @@ def identify(dirs: list[Path]) -> tuple[Path, Path, Path]:
 
 def check_children(classifier: Path, drafter: Path) -> None:
     cls_out = load(classifier / "agent.json").get("outputSchema") or {}
-    f = assert_has_fields(cls_out, f"{classifier.name}.outputSchema", {"disputeType": [], "sentiment": ["customerSentiment"]})
+    f = assert_has_fields(cls_out, f"{classifier.name}.outputSchema", {"disputeType": []})
     assert_enum(f["disputeType"], "disputeType", DISPUTE_TYPES)
-    assert_enum(f["sentiment"], "sentiment", SENTIMENTS)
+    props = walk_properties(cls_out)
+    sent = [k for k, v in props.items() if k != "disputeType" and _covers(_resolve(cls_out, v), SENTIMENTS)]
+    if not sent:
+        fail(f"{classifier.name}.outputSchema needs an output whose enum or description covers {SENTIMENTS}; found {sorted(props)}")
+    print(f"OK: classifier sentiment output is {sent[0]!r} (identified by its value set)")
     for child in (classifier, drafter):
         if tools(child):
             fail(f"{child.name} is a narrow single-purpose agent and should not declare tools")
@@ -110,9 +134,11 @@ def check_coordinator(coord: Path, children: list[Path]) -> None:
     agent = load(coord / "agent.json")
     in_schema, out_schema = assert_schema_sync(agent, load(coord / "entry-points.json"))
     # The prompt says only "the customer's message and invoice" — types are the agent's choice.
-    msg = require_input(in_schema, "customer message", "customerMessage", "message", "customerMessageText", "disputeMessage")
-    inv = require_input(in_schema, "invoice", "invoice", "invoiceDetails", "invoiceData")
-    assert_inputs_referenced(agent, [msg, inv])
+    ins = _inputs(in_schema)
+    if len(ins) < 2:
+        fail(f"{coord.name} must take the customer message and the invoice (>=2 inputs), found {sorted(ins)}")
+    print(f"OK: coordinator inputs {sorted(ins)}")
+    assert_inputs_referenced(agent, list(ins))
     assert_has_fields(
         out_schema,
         f"{coord.name}.outputSchema",

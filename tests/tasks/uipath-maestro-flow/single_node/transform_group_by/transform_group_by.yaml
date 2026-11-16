@@ -68,6 +68,14 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "The project holds one .flow, with the flow built in it"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
   # -- Structural checks (node type, collection path, groupBy op shape, ports) --
   - type: run_command
     description: "Flow has exactly one core.action.transform.group-by node with a plain $vars collection, a non-empty groupBy operation, and the standard output/error ports"

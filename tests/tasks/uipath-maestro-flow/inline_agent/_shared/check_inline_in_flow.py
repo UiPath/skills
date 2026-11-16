@@ -32,12 +32,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.inline_wiring import assert_inline_agent_definition  # noqa: E402
+from _shared.inline_wiring import assert_inline_agent_definition, main_flow_path  # noqa: E402
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
 FLOW_PROJECT = Path(os.getcwd()) / "GreetingSol" / "GreetingFlow"
-FLOW_PATH = FLOW_PROJECT / "GreetingFlow.flow"
+FLOW_PATH = main_flow_path(FLOW_PROJECT / "GreetingFlow.flow")
 
 
 def main() -> None:

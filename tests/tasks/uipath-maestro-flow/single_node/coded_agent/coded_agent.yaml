@@ -9,6 +9,8 @@ tags:
   - shape:single-node
   - resource
   - path-to-ga
+  - studio-web-unsupported
+  - studio-web-unsupported:coded-agent
 sandbox:
   template_sources:
     - type: template_dir

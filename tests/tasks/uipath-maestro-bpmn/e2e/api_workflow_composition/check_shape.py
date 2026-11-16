@@ -11,9 +11,15 @@ Per row in composition.RESOURCES:
      just because the BPMN wiring around it happens to be correct.
   1. The resource's project is present inside the submitted solution AND
      registered in its `.uipx`.
-  2. The wrapper serviceTask carries the row's required context
-     fields, correctly shaped -- for the API-workflow row (SKILL.md rule 18 /
-     references/registry-workflow.md): `releaseKey` bound via
+  2. The wrapper serviceTask carries the required context fields of the
+     form its `uipath:type version` selects (composition.RESOURCES
+     `context_forms`; both forms verified live, UiPath/builder-sdk#1807).
+     v2 -- what the BPMN builder SDK emits: a `name` naming the resource
+     project's own deployed process in the seeded folder (the same exact-then-
+     substring match v1's releaseKey gets), and a `folderPath` exactly equal to the
+     seeded folder's path (each a literal, or a declared =bindings.<id>
+     whose default is that value). v1 -- the registry template's version
+     (SKILL.md rule 18 / references/registry-workflow.md): `releaseKey` bound via
      `=bindings.<id>` to a `resource="process" propertyAttribute="Key"`
      binding whose `default` matches the resource's REAL process Key
      (cross-tenant match: fails CLOSED -- a resolver that cannot reach the
@@ -141,6 +147,20 @@ def check_api_workflow_authored(
     return problems
 
 
+def literal_or_binding_default(value: str, bindings: dict[str, dict[str, str]]) -> Optional[str]:
+    """A context value as the runtime will see it: the literal itself, or
+    the `default` of the declared binding a `=bindings.<id>` names. None for
+    any other expression, or a binding that is undeclared or has no default."""
+
+    match = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", value)
+    if match:
+        binding = bindings.get(match.group(1))
+        return None if binding is None else binding.get("default")
+    if value.startswith("="):
+        return None
+    return value
+
+
 def check_resource_row(
     *,
     root: Path,
@@ -149,6 +169,8 @@ def check_resource_row(
     row: dict[str, Any],
     resolve_release_key: composition.ReleaseKeyResolver = composition.never_resolves,
     resolve_folder_key: composition.FolderKeyResolver = composition.never_resolves,
+    resolve_process_names: composition.ProcessNameResolver = composition.never_resolves,
+    resolve_folder_path: composition.FolderPathResolver = composition.never_resolves,
 ) -> list[str]:
     problems: list[str] = []
 
@@ -184,10 +206,22 @@ def check_resource_row(
     bindings = composition.bindings_index(process)
     context = composition.context_fields_of(task)
 
-    for field_name, spec in row["context_fields"].items():
+    version = composition.wrapper_type_version(task)
+    forms = row["context_forms"]
+    if version not in forms:
+        problems.append(
+            f"{row['kind']}: {node_id!r} has uipath:type version={version!r}; "
+            f"expected one of {sorted(forms)}"
+        )
+        forms_fields: dict[str, Any] = {}
+    else:
+        forms_fields = forms[version]
+
+    for field_name, spec in forms_fields.items():
         if field_name not in context:
             problems.append(
-                f"{row['kind']}: context field {field_name!r} missing on {node_id!r}"
+                f"{row['kind']}: context field {field_name!r} missing on {node_id!r} "
+                f"(required by the uipath:type version={version!r} form)"
             )
             continue
         value = context[field_name].get("value", "") or ""
@@ -261,6 +295,69 @@ def check_resource_row(
                         problems.append(
                             f"{row['kind']}: {field_name} {value!r} does not match "
                             f"the seeded folder's real FolderKey {resolved!r}"
+                        )
+        elif spec["mode"] in ("process_name", "folder_path"):
+            bound = re.fullmatch(r"=bindings\.([A-Za-z0-9_]+)", value)
+            binding = bindings.get(bound.group(1)) if bound else None
+            if binding is not None and (
+                binding.get("resource") != spec["binding_resource"]
+                or binding.get("propertyAttribute") != spec["binding_attr"]
+            ):
+                problems.append(
+                    f"{row['kind']}: binding {bound.group(1)} for {field_name} must be "
+                    f"resource={spec['binding_resource']!r} "
+                    f"propertyAttribute={spec['binding_attr']!r}, got "
+                    f"resource={binding.get('resource')!r} "
+                    f"propertyAttribute={binding.get('propertyAttribute')!r}"
+                )
+                continue
+            literal = literal_or_binding_default(value, bindings)
+            if literal is None:
+                problems.append(
+                    f"{row['kind']}: {field_name} must be a literal or a declared "
+                    f"=bindings.<id> with a default, got {value!r}"
+                )
+                continue
+            if not literal.strip():
+                problems.append(f"{row['kind']}: {field_name} on {node_id!r} is empty")
+                continue
+            if spec["mode"] == "process_name":
+                try:
+                    names = resolve_process_names()
+                except composition.CompositionError as error:
+                    problems.append(
+                        f"{row['kind']}: could not resolve the processes deployed "
+                        f"in the seeded folder: {error}"
+                    )
+                else:
+                    if names is None:
+                        pass  # abstained -- structural-only mode
+                    elif not names:
+                        problems.append(
+                            f"{row['kind']}: no deployed process found in the "
+                            f"seeded folder for the resource project ({field_name} {literal!r})"
+                        )
+                    elif literal.casefold() not in {n.casefold() for n in names}:
+                        problems.append(
+                            f"{row['kind']}: {field_name} {literal!r} does not name the "
+                            f"resource project's deployed process {sorted(names)!r}"
+                        )
+            else:
+                try:
+                    seeded = resolve_folder_path()
+                except composition.CompositionError as error:
+                    problems.append(
+                        f"{row['kind']}: could not resolve the seeded folder's "
+                        f"path: {error}"
+                    )
+                else:
+                    # Exact: the live runs (UiPath/builder-sdk#1807) only
+                    # proved the path as `uip or folders get` spells it; a
+                    # leading slash or a different case is unverified.
+                    if seeded is not None and literal != seeded:
+                        problems.append(
+                            f"{row['kind']}: {field_name} {literal!r} does not match "
+                            f"the seeded folder {seeded!r}"
                         )
         else:  # pragma: no cover - table author error, not a submission defect
             raise composition.CompositionError(f"unknown context-field mode {spec['mode']!r}")
@@ -433,6 +530,8 @@ def collect_shape_problems(
     *,
     resolve_release_key_for_row=lambda row, project_dir: composition.never_resolves,
     resolve_folder_key: composition.FolderKeyResolver = composition.never_resolves,
+    resolve_process_names_for_row=lambda row, project_dir: composition.never_resolves,
+    resolve_folder_path: composition.FolderPathResolver = composition.never_resolves,
     resources: list[dict[str, Any]] = composition.RESOURCES,
 ) -> list[str]:
     """Every structural + cross-tenant shape rule except the live `validate`
@@ -443,7 +542,8 @@ def collect_shape_problems(
 
     `resolve_release_key_for_row(row, project_dir)` lets each row build its
     own resolver from its own discovered project (v1 has one row; Phase 5's
-    second row needs its own project hint too).
+    second row needs its own project hint too); `resolve_process_names_for_row`
+    does the same for the v2 form's `name`.
     """
 
     uipx_path = composition.find_uipx(root)
@@ -465,6 +565,8 @@ def collect_shape_problems(
             row=row,
             resolve_release_key=resolve_release_key_for_row(row, project_dir),
             resolve_folder_key=resolve_folder_key,
+            resolve_process_names=resolve_process_names_for_row(row, project_dir),
+            resolve_folder_path=resolve_folder_path,
         )
     problems += check_no_undeclared_var_reads(process)
     problems += check_published_contract(process, entry_points, resources)
@@ -517,7 +619,41 @@ def live_folder_key_resolver(folder_path: str) -> composition.FolderKeyResolver:
     return resolve
 
 
-def live_release_key_resolver(folder_path: str, project_name_hint: str) -> composition.ReleaseKeyResolver:
+def processes_for_project(
+    rows: list[Any], project_name_hint: str, process_type: Optional[str] = None
+) -> list[Any]:
+    """The `processes list --all-fields` rows that are the submitted resource
+    project's own deployment. With `process_type` (the RESOURCES row's), only
+    rows of that `ProcessType` are considered at all; then the exact project
+    Name (casefold) wins, and only when none matches, a substring of Name or
+    ProcessKey. Shared by both addressing forms' live resolvers, so v2's
+    `name` is held to the same process v1's `releaseKey` must point at --
+    never the BPMN orchestrator deployed beside it (a different type, so not
+    even the substring fallback can reach it), or any other process."""
+
+    if process_type is not None:
+        wanted = process_type.casefold()
+        rows = [
+            row for row in rows
+            if str(get_ci(row, "ProcessType", "") or "").casefold() == wanted
+        ]
+    needle = project_name_hint.casefold()
+
+    def name_of(row: Any) -> str:
+        return str(get_ci(row, "Name", "") or "").casefold()
+
+    exact = [row for row in rows if name_of(row) == needle]
+    return exact or [
+        row
+        for row in rows
+        if needle in name_of(row)
+        or needle in str(get_ci(row, "ProcessKey", "") or get_ci(row, "ProcessName", "") or "").casefold()
+    ]
+
+
+def live_release_key_resolver(
+    folder_path: str, project_name_hint: str, process_type: Optional[str] = None
+) -> composition.ReleaseKeyResolver:
     """Never abstains on a live-tenant hiccup (raises CompositionError
     instead), and never silently skips the comparison merely because more
     than one process matches. Matches on the exact project name first
@@ -545,22 +681,44 @@ def live_release_key_resolver(folder_path: str, project_name_hint: str) -> compo
                 f"could not resolve the resource's real process Key: {error}"
             ) from error
         rows = data if isinstance(data, list) else []
-        needle = project_name_hint.casefold()
-
-        def name_of(row: Any) -> str:
-            return str(get_ci(row, "Name", "") or "").casefold()
-
-        exact = [row for row in rows if name_of(row) == needle]
-        matches = exact or [
-            row
-            for row in rows
-            if needle in name_of(row)
-            or needle in str(get_ci(row, "ProcessKey", "") or get_ci(row, "ProcessName", "") or "").casefold()
-        ]
         return {
             key
-            for row in matches
+            for row in processes_for_project(rows, project_name_hint, process_type)
             if isinstance((key := get_ci(row, "Key")), str)
+        }
+
+    return resolve
+
+
+def live_process_names_resolver(
+    folder_path: str, project_name_hint: str, process_type: Optional[str] = None
+) -> composition.ProcessNameResolver:
+    """The Name of the resource project's own deployment(s) in the seeded
+    folder (processes_for_project), for the v2 form's `name`. Fails CLOSED
+    like the other live resolvers: a failed `processes list` raises, and a
+    folder with no matching deployment returns an empty set."""
+
+    def resolve() -> set[str]:
+        completed = run_cli(
+            [
+                "uip", "or", "processes", "list",
+                "--folder-path", folder_path,
+                "--all-fields",
+                "--limit", "200",
+            ],
+            timeout=PROCESSES_LIST_TIMEOUT,
+        )
+        try:
+            _payload, data = payload_data(completed, "processes list", require_success=True)
+        except CheckFailure as error:
+            raise composition.CompositionError(
+                f"could not list the seeded folder's processes: {error}"
+            ) from error
+        rows = data if isinstance(data, list) else []
+        return {
+            name
+            for row in processes_for_project(rows, project_name_hint, process_type)
+            if isinstance((name := get_ci(row, "Name")), str)
         }
 
     return resolve
@@ -580,9 +738,17 @@ def main() -> None:
     problems: list[str] = collect_shape_problems(
         root,
         resolve_release_key_for_row=lambda row, project: live_release_key_resolver(
-            folder_path, project.name if project is not None else row["kind"]
+            folder_path,
+            project.name if project is not None else row["kind"],
+            row.get("process_type"),
         ),
         resolve_folder_key=live_folder_key_resolver(folder_path),
+        resolve_process_names_for_row=lambda row, project: live_process_names_resolver(
+            folder_path,
+            project.name if project is not None else row["kind"],
+            row.get("process_type"),
+        ),
+        resolve_folder_path=lambda: folder_path,
     )
 
     validate = run_cli(["uip", "maestro", "bpmn", "validate", str(bpmn_path)], timeout=VALIDATE_TIMEOUT)

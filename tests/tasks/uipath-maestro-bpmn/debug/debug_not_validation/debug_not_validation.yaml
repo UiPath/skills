@@ -5,8 +5,14 @@ description: >
   it's correct" bar, the agent must confirm correctness with LOCAL validation
   (`uip maestro bpmn validate`, or a well-formed-XML parse if the CLI is
   unavailable) and must NOT reach for a cloud debug session to prove correctness.
-  Authoring only — no cloud side effects.
+  Authoring only; the only cloud effect is the build's own Studio Web upload, deleted in post_run.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 
 run_limits:
   expected_turns: 18
@@ -67,3 +73,9 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+# A build request authorizes the Studio Web upload of the solution the run
+# created, and a debug run uploads too, so delete it after grading.
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

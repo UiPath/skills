@@ -45,6 +45,39 @@ def tasks_by_id(asset):
     return found
 
 
+def _get_ci(obj, key):
+    """Case-insensitive read of a runtime payload key (the CLI may PascalCase or camelCase it)."""
+    if not isinstance(obj, dict):
+        return None
+    for actual, value in obj.items():
+        if str(actual).lower() == key.lower():
+            return value
+    return None
+
+
+def failed_tasks_under(element_id, executions, names):
+    """Names of the failed tasks that ran inside ``element_id``.
+
+    Automation Suite raises a case task's incident on the ``tasksEventSubProcess``
+    wrapper that runs the tasks, not on the task itself (``ElementId`` is the
+    wrapper, ``SourceElementId`` is null). The element executions still record which
+    task inside it failed, so that task is the one the incident is about."""
+    return sorted(
+        names[_get_ci(e, "ElementId")]
+        for e in executions
+        if _get_ci(e, "ParentElementId") == element_id
+        and str(_get_ci(e, "Status") or "").casefold() in {"failed", "faulted"}
+        and _get_ci(e, "ElementId") in names
+    )
+
+
+def task_names_for(incident, names, executions):
+    name = names.get(incident.get("ElementId"))
+    if name is not None:
+        return [name]
+    return failed_tasks_under(incident.get("ElementId"), executions(), names)
+
+
 def truth():
     processes = uip("maestro", "case", "processes", "list")["Processes"]
     rows = [p for p in processes if p.get("FolderName") == FOLDER and p.get("PackageId", "").startswith(PACKAGE_PREFIX)]
@@ -62,8 +95,22 @@ def truth():
             continue
         asset = uip("maestro", "case", "instance", "asset", inst["InstanceId"], "--folder-key", proc["FolderKey"])
         names = tasks_by_id(asset)
+        cache = {}
+
+        def executions(instance_id=inst["InstanceId"]):
+            # Read only when an incident is not on a task (Automation Suite), so a cloud run
+            # makes the same calls as before.
+            if "rows" not in cache:
+                data = uip("maestro", "case", "instance", "element-executions", instance_id, "--folder-key", proc["FolderKey"])
+                cache["rows"] = _get_ci(data, "ElementExecutions") or []
+            return cache["rows"]
+
         faulted[inst["InstanceId"]] = [
-            {"errorCode": str(i.get("ErrorCode")), "taskName": names.get(i.get("ElementId")), "elementId": i.get("ElementId")}
+            {
+                "errorCode": str(i.get("ErrorCode")),
+                "taskNames": task_names_for(i, names, executions),
+                "elementId": i.get("ElementId"),
+            }
             for i in open_incidents
         ]
     if not faulted:
@@ -86,9 +133,11 @@ def main():
     code = str(answer.get("errorCode", "")).strip()
     task = str(answer.get("taskName", "")).strip()
     for incident in faulted[inst]:
-        if code == incident["errorCode"] and task == (incident["taskName"] or ""):
+        if code == incident["errorCode"] and task in incident["taskNames"]:
             print(f"PASS: {inst} faulted at {task!r} with {code}")
             return
+    if all(not incident["taskNames"] for incident in faulted[inst]):
+        sys.exit(f"FAIL: could not identify the incident's task for {inst}; incidents {faulted[inst]}")
     sys.exit(f"FAIL: answer {task!r}/{code!r} matches no open incident {faulted[inst]}")
 
 

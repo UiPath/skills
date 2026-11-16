@@ -7,8 +7,9 @@ nothing to install with `cp`, and nothing to delete: the project file system
 refuses deletes.
 
 Never write or patch the `.flow` yourself. Merge renumbers every edge
-(`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields: that is
-its normal output, not drift to undo. The changes to act on are the
+(`edge_0`, `edge_1`, ...), may reorder nodes, and adds default fields, and moves
+original nodes right or down to make room for an added one: that is its normal
+output, not drift to undo. Never move them back. The changes to act on are the
 [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate the target `.flow`, not `/tmp/flow-draft/<Project>/<Name>/edited/`: that folder holds only
@@ -37,6 +38,10 @@ and Studio Web owns the SDK copy, so tell the user. Until it is upgraded, run
 changed. If a compile then stops on a node you did not change, stop: name the
 node and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
+
+<!--skill-flavor:check-baseline-uip-version:start-->
+
+<!--skill-flavor:check-baseline-uip-version:end-->
 
 <!--skill-flavor:install-agent-files:start-->
 `merge -o` into the target writes the `.flow` and every agent file merge
@@ -71,12 +76,6 @@ Studio Web has no generated pipeline: `decompile` writes no pipeline helper
 here. Use the round trip in [SKILL.md — Lifecycle](../SKILL.md#lifecycle).
 <!--skill-flavor:generated-pipeline:end-->
 
-<!--skill-flavor:hand-loop:start-->
-In Studio Web this loop is the round trip in
-[SKILL.md — Lifecycle](../SKILL.md#lifecycle). It keeps every draft in
-`.flow-sdk/` and merges straight into the target `.flow`.
-<!--skill-flavor:hand-loop:end-->
-
 <!--skill-flavor:resource-ids-sdk-upgrade:start-->
 so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:resource-ids-sdk-upgrade:end-->
@@ -110,3 +109,11 @@ so tell the user, since Studio Web owns the SDK copy).
 In Studio Web the target `.flow` is the source: use the round trip in
 [SKILL.md — Lifecycle](../SKILL.md#lifecycle).
 <!--skill-flavor:supplied-source:end-->
+
+<!--skill-flavor:placeholder-flag-sdk-upgrade:start-->
+or tell the user this needs `@uipath/maestro-builder-sdk` 6.114.0 or later, since Studio Web owns the SDK copy).
+<!--skill-flavor:placeholder-flag-sdk-upgrade:end-->
+
+<!--skill-flavor:layout-edit-sdk-upgrade:start-->
+tell the user this needs `@uipath/maestro-builder-sdk` 6.115.0 or later, since Studio Web owns the SDK copy and the merged `.flow` is never edited by hand.
+<!--skill-flavor:layout-edit-sdk-upgrade:end-->

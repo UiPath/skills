@@ -1,3 +1,15 @@
-<!--skill-flavor:planner-next-step:start-->
-The planner detects the `## Planner Handoff` header, parses §4 Activities Inventory and §9 Integrated Components, derives the per-skill task list (routing each task to `uipath-maestro-bpmn`, `uipath-rpa`, `uipath-agents`, `uipath-api-workflow`, `uipath-platform`, etc. — userTask/HITL nodes stay inline with `uipath-maestro-bpmn`), writes `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD. If `Execution autonomy: interactive`, it presents the task list for approval in plan mode, and the approved plan becomes the live task list.
-<!--skill-flavor:planner-next-step:end-->
+<!--skill-flavor:bpmn-project-structure:start-->
+<!-- Editable source layout in Studio Web: the project lives in the open solution under `/solution`, and its
+     `.bpmn.ts` source sits in the project's `.flow-sdk/` folder under the main .bpmn's basename (Studio Web
+     names a new project's main file `Process.bpmn`). Compile it into that .bpmn; never hand-edit the compiled .bpmn. bindings_v2.json, entry-points.json, operate.json,
+     package-descriptor.json are generated/CLI-managed package metadata — never scaffolded by hand. -->
+
+```text
+/solution/
+└── <BPMN_PROJECT_NAME>/
+    ├── .flow-sdk/
+    │   └── <BPMN_MAIN_FILE>.bpmn.ts   # source: edit this, then compile
+    ├── <BPMN_MAIN_FILE>.bpmn          # compiled output: the project's main file
+    └── project.uiproj
+```
+<!--skill-flavor:bpmn-project-structure:end-->

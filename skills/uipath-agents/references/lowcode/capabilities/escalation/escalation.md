@@ -33,8 +33,10 @@ uip solution resources list --kind App --source remote --search "<APP_NAME>" --o
 
 ```bash
 # --kind and --search only work with --source remote; list everything, filter .Data[] client-side by Kind == "App".
-uip solution resources list --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 ```
+
+`<SOLUTION_DIR>` is the folder containing the `.uipx`. Empty `Data` for an app the user says is in the solution means the wrong folder — see [../../project-lifecycle.md § Resource Discovery](../../project-lifecycle.md#resource-discovery). Never fall back to `--source remote` for it.
 
 The row's `Source` field (`"Local"` or `"Remote"`) determines whether the app is solution-internal or external.
 

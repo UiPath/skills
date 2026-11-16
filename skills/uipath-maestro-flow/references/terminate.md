@@ -14,8 +14,8 @@ Signature: `.terminate(name, label?)`.
 Choose Terminate only when the requirement is stop-all rather than return an
 answer from one path. A green run alone is weak evidence for this node. Use an
 abort-specific witness: for example, show that a sibling side effect never
-happened or that the run reached the terminated state without producing normal
-Flow outputs.
+happened. Do not use the instance status: a terminated run ends `Completed`, and
+`.terminate()` outputs come back null.
 
 Inside a parallel arm it aborts sibling arms, whereas `.return(...)` only ends its
 own path. Its mappings are terminal metadata, not a readable action result:

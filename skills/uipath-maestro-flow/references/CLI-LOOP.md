@@ -47,8 +47,8 @@ artifact can establish.
 ## Installing the package
 
 <!--skill-flavor:install-package:start-->
-Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
-Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
+Skip the install when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
+Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile`, `merge` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
 Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
 
 ```bash
@@ -60,6 +60,47 @@ Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` nam
 If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
 Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
 When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
+Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin.
+When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works.
+
+### Ask the SDK what it supports
+
+Read this even when the SDK is already installed.
+From `@uipath/maestro-builder-sdk` 6.101.0 the SDK can say which features it has: run `npx --no flow-sdk capabilities`.
+`--no` stops npx from downloading anything: it runs the workspace copy, else the global one.
+The command prints the name and version, then one feature name per line:
+
+```text
+$ npx --no flow-sdk capabilities
+@uipath/maestro-builder-sdk 6.101.0 (gitref 1a2b3c4)
+json-result
+flow-check-baseline
+flow-pipeline-strict
+...
+```
+
+`--json` prints one object instead: `{"ok":true,"name":"@uipath/maestro-builder-sdk","version":"6.101.0","gitref":"1a2b3c4","capabilities":["json-result",...]}`.
+Test one feature with `npx --no flow-sdk capabilities | grep -qx <name>`.
+Read the answer this way:
+
+- The list prints and has the name: the feature is there.
+- The list prints and lacks the name: the feature is not there. Upgrade the SDK, or use the fallback the reference gives.
+- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. That says nothing about the features below, which all shipped earlier. For one of them, follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
+
+The names are stable:
+
+| Name | Feature |
+|---|---|
+| `flow-check-baseline` | `check --baseline <original>.flow` ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)) |
+| `flow-pipeline-strict` | `node .flow-sdk/<Name>.pipeline.mjs --strict` |
+| `flow-decompile-scripts` | decompile prints scripts as functions and takes `--scripts string` |
+| `flow-script-metadata` | the `$metadata` parameter of a script function |
+| `flow-merge-source` | `merge <Name>.flow.ts --original <Name>.flow`, from the `// @decompiled-from` stamp |
+| `project-min-version` | `flowSdk.minVersion`, below |
+
+To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
+From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
+Both need `@uipath/maestro-builder-sdk` 6.101.0 or later (UiPath/builder-sdk#2009). An older SDK ignores `minVersion`, so a floor only takes effect once the SDK in use is 6.101.0 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` (or `--save-dev` for a workspace copy).
 <!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
@@ -92,14 +133,12 @@ uip maestro flow validate <Name>.flow --output json
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
 
-Layout is deliberately absent from this sequence. `uip maestro flow format`
-is not an authoring gate — `validate` passes without it and nothing upstream
-reads a position. For a greenfield file (one `compile` wrote from scratch), run
-it before the file reaches anything that draws it: `solution upload`,
-`flow debug`, or a person opening the project in a designer. Do not run it on a
-merged brownfield file, or on one whose source sets `.layout()`: `format`
-re-lays out every node, so it discards the positions the author chose. See
-[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+Layout is not a step in this sequence. `compile` lays out a source with no
+`.layout()` the way `uip maestro flow format` does, so the file is ready for
+`solution upload`, `flow debug`, or a designer. Do not run `format` on a merged
+brownfield file, or on one whose source sets `.layout()`: `format` re-lays out
+every node, so it discards the positions the author chose. See
+[`operate.md`](operate.md#layout-of-the-emitted-flow).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 <!--skill-flavor:local-gates:end-->
@@ -173,14 +212,16 @@ compile. Omit both options only when manual/implicit authentication is intended.
 <!--skill-flavor:debug-flags:start-->
 `flow debug` takes the project directory, not the `.flow` file, and resource
 refresh must run first. From the solution directory, `<Name>` names that project.
-A `500` at `prepare-custom-debug` is transient: retry once.
+A `500` at `prepare-custom-debug` is transient: retry once. A `403` or `404`
+there comes from a folder flag: drop it, unless the account has no personal
+workspace ([operate.md](operate.md#debug--a-real-end-to-end-run)).
 These are the common flags; use only the ones the behavior claim needs:
 
 | Need | Exact form |
 |---|---|
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
-| Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Folder | omit it; debug uses your personal workspace. With none (service-principal or CI token): `--folder-id <number>` |
 | Start trigger | `--entry-point <trigger-node-id>`; omit to start at the default root |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |

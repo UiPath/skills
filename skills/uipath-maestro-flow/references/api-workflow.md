@@ -5,13 +5,14 @@
 Run a coded API workflow, deployed or a sibling in the same solution, as a
 serverless Orchestrator job.
 
-Signature: `apiWorkflow({ key, name, folderPath, inputs?, returns? })`, or
+Signature: `apiWorkflow({ key?, name, folderPath, inputs?, returns? })`, or
 `apiWorkflow({ key, name, location: 'in-solution', projectId, inputs?, returns? })`
 for an API workflow in the same solution (see [In the same solution](#in-the-same-solution)).
+For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
+Orchestrator often leaves an API workflow's contract blank, so `prepare` prints `Outputs (not recorded …)`; then keep `returns`, as below.
 
 ```ts
-.step('age', apiWorkflow({ key: workflowKey,
-  name: 'NameToAge', folderPath: 'Shared',
+.step('age', apiWorkflow({ name: 'NameToAge', folderPath: 'Shared',
   inputs: { name: input('name') }, returns: { age: 'integer' } }))
 ```
 
@@ -23,7 +24,7 @@ Published workflow: confirm identity and exact argument casing on the tenant.
 In-solution sibling: read them from the sibling project
 ([In the same solution](#in-the-same-solution)). `.onError(...)` is supported.
 
-**Finding the key: [`or-processes.md`](or-processes.md)**
+**Recording the key and contract: [`or-processes.md`](or-processes.md#getting-the-inputs-and-outputs)**
 
 ## Tenant contract
 
@@ -51,6 +52,9 @@ and `projectId` instead of `folderPath`:
 }))
 ```
 
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `apiWorkflow({ location: 'in-solution', project: '<ApiWorkflowProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.** Same recipe as an in-solution function
   ([published-function.md](published-function.md#in-the-same-solution)), with
   `process/api/` in place of `process/function/`:
@@ -62,11 +66,16 @@ and `projectId` instead of `folderPath`:
   each field's `type`. Its `entry-points.json` `input`/`output` may be `null`,
   so do not read them there. The sibling is not on the tenant yet; do not look
   it up there.
-- `check` refuses an in-solution step with no `projectId`
-  (`APIWF_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
-  (`APIWF_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
+- `check` warns on an in-solution step with no `projectId`
+  (`APIWF_LOCAL_NO_PROJECT_ID`; the call resolves by `key`, so a decompiled
+  step without one is fine as is), and refuses a `projectId` that is not a GUID
+  (`APIWF_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
   `location: 'in-solution'` (`APIWF_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
+  If `check` reports `APIWF_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+  add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
 - A decompiled in-solution step (folder `''`) comes back as
   `location: 'in-solution'`. Keep it that way when editing; never add a
   `folderPath`.

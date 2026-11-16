@@ -69,3 +69,20 @@ test("no signing remnants survive in the publish path", () => {
 test("publish.yml is the only publish workflow", () => {
   assert.ok(!existsSync(join(WORKFLOWS, "publish-signed.yml")));
 });
+
+test("the flavor publisher scans with its own copy of the gate, not the built commit's", () => {
+  // A stable build re-cuts a commit that may predate the sensitive-content
+  // gate (added 23 Oct 2026), and the gate's rules must be today's anyway.
+  const flavorPublish = readFileSync(join(WORKFLOWS, "publish-skill-flavor.yml"), "utf8");
+  // Fixed indentation on purpose: `\s` would span lines and backtrack for ages.
+  const gateCheckout = flavorPublish.match(
+    /^ {6}- uses: actions\/checkout@v4\n {8}with:\n(?: {10}[^\n]*\n)*? {10}path: \.publisher\n/m,
+  );
+  assert.ok(gateCheckout, "no second checkout of the publisher's own ref into .publisher");
+  assert.doesNotMatch(gateCheckout[0], /^\s*ref:/m, "the gate checkout takes the triggering ref, never inputs.commit");
+  assert.match(
+    flavorPublish,
+    /^\s*run: python3 \.publisher\/scripts\/check-sensitive-content\.py "\$TARBALL"\s*$/m,
+  );
+  assert.doesNotMatch(flavorPublish, /python3 scripts\/check-sensitive-content\.py/);
+});

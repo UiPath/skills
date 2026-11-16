@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    main_flow_path,
     assert_edge,
     find_autonomous_agent_node,
     find_inline_resource,
@@ -33,7 +34,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_inline_agent_dir,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "DevToolsFlowSol" / "DevToolsFlow" / "DevToolsFlow.flow"
+FLOW_PATH = main_flow_path(Path(os.getcwd()) / "DevToolsFlowSol" / "DevToolsFlow" / "DevToolsFlow.flow")
 MCP_NODE_PREFIX = "uipath.agent.resource.mcp."
 
 
