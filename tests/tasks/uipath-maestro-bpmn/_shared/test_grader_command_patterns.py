@@ -813,6 +813,7 @@ SHOWN_ON_STUDIO_WEB = [
     "  --baseline /tmp/d/baseline/Process.bpmn \\\n  -o Process.bpmn",
     "uip maestro bpmn compile s.bpmn.ts --output-file /solution/ShippingQuote/Process.bpmn",
     "uip maestro bpmn compile x.bpmn.ts -o ./Process.bpmn",
+    "uip maestro bpmn compile x.bpmn.ts --output-file=Process.bpmn",
 ]
 
 NOT_SHOWN = [
