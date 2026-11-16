@@ -70,7 +70,7 @@ Read this table first, then the one nearest case and its linked boundary. Do not
 | **AF** | Analyze files | Bounded file reading inside an agent step; the input demonstrably fits the model budget. The answer is a plain read of what was handed over — no citation trail and no coverage guarantee asked for | A cited, defensible assessment of the whole set is wanted, which is SU. Or exhaustive coverage, production field extraction, exact arithmetic, or calibrated field review is required |
 | **SU** | Summarize | Either deliverable: a **cited** assessment somebody will have to defend, every statement traceable to its source; or a **complete review** of the set, where the coverage itself is the claim — "all of them", "none of them". The set is defined and closed, which is what separates it from AH | Neither a citation trail nor a coverage guarantee is asked for — a plain read of what was handed over is AF. Or the set is open-ended and the agent must discover what to read next, which is AH |
 | **PS** | Persistent index — semantic search (default) | Reusable corpus; a bounded question answerable from a few passages | Evidence must be joined across dependent lookups the agent has to work out as it goes, which is AH — or the user requires exhaustive coverage, which is SU |
-| **EX** | Extract | Repeated structured fields with a schema, field evaluation, and review requirements | Logical documents are still mixed together — Classify & Split has to separate them first, and this release does not route it yet — or the deliverable is really a narrative or a decision |
+| **EX** | Extract | Repeated structured fields with a schema, field evaluation, and review requirements | Logical documents are still mixed together — Classify & Split has to separate them first, as a prerequisite step rather than a seventh strategy — or the deliverable is really a narrative or a decision |
 | **BT** | Batch transform | Per-row LLM work over every row of a tabular file, appending columns against a fixed output contract | The row needs cross-row reasoning, an external lookup, or a per-row side effect; or the derivation is deterministic |
 
 **AH is the fallback, and it is the only one.** The other five are fixed capabilities with a known shape:
@@ -102,11 +102,12 @@ which two you counted. Full capability matrix, preview limits and the destructiv
    only when the row genuinely needs natural-language reasoning; a formula, regex, or date reformat is a
    Transform or Script.
 3. **Check document boundaries before extraction.** A file holding several logical documents must be
-   classified and split into separate documents before EX runs. That separation is Classify & Split,
-   which this release does not route yet: state it as the prerequisite step and say it is unrouted, so
-   the dependency is visible rather than silently skipped. Never extract a packet as one document — it
-   merges unrelated headers and produces fields from the wrong form. Route each step separately, and
-   name one primary strategy for the requested deliverable.
+   classified and split into separate documents before EX runs. That separation is Classify & Split — a
+   prerequisite step, not one of the six strategies. Hand it to `uipath-maestro-flow` per
+   [strategy-routing-guide.md § Packets](references/strategy-routing-guide.md#which-extract-node--published-model-or-extract-document)
+   and report it as its own step, so the dependency is visible rather than silently skipped. Never
+   extract a packet as one document — it merges unrelated headers and produces fields from the wrong
+   form. Route each step separately, and name one primary strategy for the requested deliverable.
 4. **Match the nearest case** in [case-library-guide.md](references/case-library-guide.md) using the table
    above. Read one boundary case only if the decisive signals conflict.
 5. **Pick the corpus lifetime.** Transient per-run files → a bounded read. Reused corpus → a persistent

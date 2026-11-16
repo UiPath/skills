@@ -625,7 +625,7 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | The same control produces different computed results | AH3 | Deterministic tools before judgment |
 | A file read has grown into bulk spreadsheet processing | AF1 | EX2 when field review is required |
 | Confidence-based approval misses critical errors | EX1 — calibrated field-level review | A looser threshold is not a fix when a critical error is unacceptable |
-| Header groups or signatures come from the wrong document | Classify & Split the packet into separate documents before extracting — not routed in this release, so name it as the prerequisite | EX3 when boundaries are already reliable and only entity density is the problem |
+| Header groups or signatures come from the wrong document | Classify & Split the packet into separate documents before extracting — a prerequisite step, handed off per [strategy-routing-guide.md](strategy-routing-guide.md#which-extract-node--published-model-or-extract-document) | EX3 when boundaries are already reliable and only entity density is the problem |
 | Partial results or missing repeated entities | EX3 | AH1 when precedence is also required |
 | Search misses files or source metadata | PS1 | Repair ingestion and metadata; do not loop blindly |
 | A "summary" task also requires research and external actions | SU3 | Separate collection and orchestration from synthesis |

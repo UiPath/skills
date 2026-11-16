@@ -39,6 +39,7 @@ Interpreting the result and acting on it belongs to `uipath-maestro-flow`.
 |---|---|---|
 | Extract, inside a Flow — default: a published IXP model | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
 | Extract, inside a Flow — the Extract document node: named by the user, already in the flow, or IXP not enabled | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — extract-document-node.md](../../uipath-maestro-flow/references/extract-document-node.md) · [taxonomy](../../uipath-maestro-flow/references/extract-document-taxonomy.md) |
+| Classify & Split — separate a packet into its logical documents before Extract | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — document-pipeline.md](../../uipath-maestro-flow/references/document-pipeline.md) |
 | Extract — no trained model yet: taxonomy, labelling, training, deployment | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
 | Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — summarize.md](../../uipath-maestro-flow/references/summarize.md) |
 | Summarize, as an agent-chosen action over attachments | `uipath-agents` | [/uipath:uipath-agents — deeprag/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
@@ -105,6 +106,13 @@ Extract document facts that change the handoff — detail lives in the owning gu
 (`uip ixp deployments create --folder-key`). `uip ixp projects publish` pins a version inside the project
 and does not supply that folder identity. Treat "is there a project for this?" as a question about
 deployment, and route the deployment itself to `uipath-ixp`.
+
+**Packets: classify and split before Extract.** Classify & Split is a prerequisite step, not one of the
+six strategies, and this skill does not choose between ways of doing it. Hand it to `uipath-maestro-flow`,
+which builds it with the Document classify node (`uipath.document.classify`; `documentClassify()` takes
+`splitPages`) per `document-pipeline.md`. A class label is not a split: before wiring Extract per
+document, confirm from the node's output that each logical document reaches Extract on its own. If the
+build cannot show that, report the separation as unresolved — never extract the packet as one document.
 
 ## Flow-owned versus agent-owned placement
 
