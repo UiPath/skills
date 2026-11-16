@@ -13,6 +13,22 @@ make from syntax alone. Exact signatures remain in the generated API.
   `.var()` is internal, process-level state. Name an `elementId` only to scope a
   variable to a specific element yourself.
 
+<!-- RULE:bpmn.variables.output-end-mapping -->
+- A process returns only what its end event maps. A task that writes an `.output()` variable
+  directly (`outputs: { score: '…' }`) sets it inside the run, but the caller and the job receive
+  `null`: validate passes and the run completes, so only a Maestro debug run shows it; local
+  `flow-debug` does not ([offline checks](operate.md#debug--a-controlled-studio-web-run)). Compute into a `.var()`
+  and map it onto the output at each end event that finishes the process, the canvas's shape:
+  ```ts
+  .output('score', 'number')
+  .var('scoreValue', 'number')
+  // … tasks write scoreValue …
+  .endEvent('done', { payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'score', type: 'number', source: '=vars.scoreValue', var: 'score' },
+  ] } })
+  ```
+  Never read an `.output()` before its end event; read the `.var()` instead.
+
 <!-- RULE:bpmn.variables.public-types -->
 - A public `.input()` / `.output()` takes `string`, `boolean`, `integer`, `number`,
   `array` or `object` (`refresh`'s error also names `json`, but the SDK has no `json`
@@ -31,6 +47,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 - A script or expression reads a public input as `vars.<id>` directly; the runtime
   seeds every declaration by id. The start-event mapping that bridges each input into
   an internal variable is the canvas's spelling, not a requirement.
+
+<!-- RULE:bpmn.expression.js-for-methods -->
+- A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
+  `vars.x` reads work, a JS method call does not. `=vars.d.toLowerCase() == "approve"` passes
+  validate, then faults the run (incident `400302`); in a gateway `when` it evaluates `false` and the
+  run takes the wrong branch. Prefix any expression that calls a JavaScript
+  method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
+  (`Contains`, `Split`, `String.IsNullOrEmpty`) work in plain `=`, as decompiled canvas expressions show.
+  Local `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
+- A `.task()`'s `set` values are strings: an `=`-expression or a literal. `set: { done: true }`
+  fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=true'`.
 
 <!-- RULE:bpmn.variables.input-name -->
 - Input values are matched to declarations by display `name` when a run starts, so an
@@ -196,6 +223,26 @@ make from syntax alone. Exact signatures remain in the generated API.
   cannot be called from a process. Never author `A2A.AgentExecution`: Studio Web no longer
   offers it and shows it only on old nodes.
 
+<!-- RULE:bpmn.orchestrator.in-solution-process -->
+- A Maestro BPMN process in the same solution is called without deploying it: bind it by name the
+  way Studio Web's picker does, a binding pair with `resourceKey` = the project name and no folder value.
+  ```ts
+  .binding('childName', { name: 'name', value: 'CreditAssessment', resource: 'process',
+    propertyAttribute: 'name', resourceKey: 'CreditAssessment', resourceSubType: 'ProcessOrchestration' })
+  .binding('childFolder', { name: 'folderPath', resource: 'process',
+    propertyAttribute: 'folderPath', resourceKey: 'CreditAssessment', resourceSubType: 'ProcessOrchestration' })
+  // …
+  .startAgenticProcess('assess', { process: '=bindings.childName', folder: '=bindings.childFolder',
+    input: { annualIncome: '=vars.annualIncome' }, outputs: { score: '=result.score' } })
+  ```
+  The called process must map its outputs at its end event ([output end mapping](#variables-and-the-process-contract)),
+  or `result.score` is `null`.
+<!--skill-flavor:in-solution-debug:start-->
+  Studio Web Debug starts the child project; a local `uip maestro bpmn debug` uploads only this
+  project and faults (`[170007] The job's associated process could not be found`), so debug the
+  child on its own with the CLI and the pair in Studio Web, and say so.
+<!--skill-flavor:in-solution-debug:end-->
+
 <!-- RULE:bpmn.orchestrator.sibling-resource -->
 - A resource another skill builds for this process is bound after it is deployed, in this order:
   1. Create its project in the same solution as the process.
@@ -210,8 +257,9 @@ make from syntax alone. Exact signatures remain in the generated API.
      its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
      type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
-  The SDK has no in-solution form: `folder: 'solution_folder'` compiles to a literal folder with no
-  binding, so `bindings_v2.json` stays empty. The owning skill handing the project back is not the end.
+  `folder: 'solution_folder'` compiles to a literal folder with no binding, so `bindings_v2.json`
+  stays empty; for a Maestro BPMN sibling use the binding pair in `RULE:bpmn.orchestrator.in-solution-process` above instead.
+  The owning skill handing the project back is not the end.
 <!--skill-flavor:sibling-redeploy:start-->
   A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
   deployment: with the user's go-ahead, pack it with a higher `--version` than step 3's and publish it, then
@@ -229,6 +277,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 - A plain HTTP call with no connection is `.http(id, { url, method, parameters, headers, body })` with no `connection`.
   It writes the request in manual mode with the `ImplicitConnection` binding Studio Web uses, so nothing on the tenant has to exist.
   `outputVar` (default `<id>_response`) holds the response body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
+  Never write a credential (a bearer token, an API key, a password) into `headers` or `url`: it is stored in plain text in the
+  `.bpmn` and in Studio Web. Use a connection ([connectors](connectors.md)); when none exists for the API, ask the user.
+  When the user insists on a literal, say where it will be visible before you upload.
   `check` warns `HTTP_MANUAL_V1` on the old manual form (`mode="manual"` with the request as context rows), which the runtime faults with 102018 "Body cannot be null"; rewrite it as `.http()` and compile.
 <!--skill-flavor:sdk-http-manual:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.9 or later; an older SDK still writes the old manual form, with `outputVar` holding the whole response and no `HTTP_MANUAL_V1` warning, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again.
@@ -273,7 +324,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   The SDK cannot yet write a working app-backed task: `.humanTask(id, { app })` writes a v1 `Actions.HITL` task with only an `appId`, which `uip maestro bpmn validate` rejects with `MISSING_BINDING` / `MISSING_RESOURCE` and which the engine does not read.
   When the request names a deployed Action App, author the inline form anyway, tell the user the task is not bound to their app, and point them to the Studio Web designer to switch it to the app.
   Never swap a human task for a plain `.task()` to get past that — use the form.
-- A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
+- A field's `direction` is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back); its `type` is the data type:
+  `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=vars.amount' }`. `type: 'input'` fails `check` with `TS2322`.
   The call refuses a form that breaks any of these:
   - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
   - No field is called `Action`; that is the outcome picked.
@@ -284,6 +336,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
   Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()` or to `app`.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
+
+<!-- RULE:bpmn.hitl.no-completer-identity -->
+- An inline-form task returns only its form fields and `Action`, never who completed it: the
+  `hitlTask` object with `CompletedByUser`, `AssignedToUser` and `CompletionTime` comes only from an
+  Action App task, which the SDK cannot bind yet. So never build a control on identity (four-eyes,
+  "a different approver", an audit "who") from a field the user types. Build the routing, and tell
+  the user the identity check needs the task switched to an Action App in Studio Web, or
+  enforced by task assignment (assignee groups) in Action Center.
 
 <!-- RULE:bpmn.hitl.task-settings -->
 - `title` (the task title), `priority` (`Low`, `Medium`, `High`, `Critical`) and `labels` (a
@@ -577,7 +637,7 @@ binding half, which is the same for every connector-backed node.
   To keep the id `bpmn init` assigned, decompile the stub it wrote (the id is carried
   into the seed) or declare `.metadata({ entryPointId: '<uuid>' })`; a second root start
   takes its own on the event (`.startEvent(id, { entryPointId })`), and `false` writes
-  none. A value you set must be a
+  none (`decompile` writes `false` for an id-less import; delete it, see below). A value you set must be a
   GUID — `validate` refuses any other (`Root start event uipath:entryPointId value …
   must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first. Then generate the files from the built BPMN:
 

@@ -210,7 +210,9 @@ casing varies by CLI version.
 The debug output lists each element's **status**, never a variable's **value**.
 A `Completed` run with every element green proves the process ran, not that any
 output holds the expected value. Read the values in the same session, right
-after the run — a debug instance is ephemeral:
+after the run — a debug instance is ephemeral. A process output is proven by the
+end event's `Outputs` in that response, not by `Globals`: a value set in
+`Globals` that the end event does not map reaches the caller as `null`.
 
 ```bash
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
@@ -223,6 +225,10 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 Never use `debug` as validation. `check`, `validate` and the local engine
 (`flow-debug`, which runs the compiled `.bpmn` on this machine with every
 service mocked) are the offline checks; `debug` executes against real services.
+`flow-debug` does not model three runtime facts, so only a Maestro debug run proves them: loop
+iterator reads (it shows `loopCounter` 0-based and binds `itemVar` to the bare item), end-event
+output mapping (it reports a mapped output as undefined), and plain `=` expressions (it runs them
+as JavaScript).
 <!--skill-flavor:offline-checks:end-->
 
 ## Run a deployed process
