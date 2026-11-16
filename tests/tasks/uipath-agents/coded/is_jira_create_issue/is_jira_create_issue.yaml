@@ -14,7 +14,7 @@ description: >
   reachable by that connection must accept new issues of type `Task`,
   and `JIRA_EPIC_KEY` must name an epic in that project to file under
   (the check asserts the created issue's parent is that epic).
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, uipath-atlassian-jira, connector]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, uipath-atlassian-jira, connector, studio-web-unsupported, studio-web-unsupported:coded-agent]
 skip: true
 sandbox:
   template_sources:

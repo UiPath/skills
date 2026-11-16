@@ -8,7 +8,7 @@ SQL query must route through the Database Hub / JDBC gateway connector
 `uipath-uipath-jdbc`, not the native Databricks connector or a manual HTTP
 call), translated from a JSON node/edge walk to an XML walk over the
 registry-driven `Intsvc.ActivityExecution` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
 Catalog checked read-only via `uip is activities list uipath-uipath-jdbc
 --output json`: the connector exposes exactly one curated activity capable

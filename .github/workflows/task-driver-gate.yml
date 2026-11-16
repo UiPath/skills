@@ -4,6 +4,7 @@ name: Task Driver Gate
 #   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
 #   2. every Windows-reachable `pre_run`/`post_run` command is a single line
 #   3. no task stages a `skills/<name>` directory via `sandbox.template_sources`
+#   4. no `command_pattern` backtracks catastrophically on a failing search
 #
 # Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:
@@ -20,7 +21,7 @@ name: Task Driver Gate
 # experiment hook plus the hooks of `windows`-tagged tasks.
 #
 # No `paths:` filter so this can be wired as a required check — it is a
-# sub-second full scan that always reports a definitive pass/fail. The job
+# few-second full scan that always reports a definitive pass/fail. The job
 # `name:` below is a required status check in the `main` ruleset; do not rename
 # it without updating the ruleset first.
 

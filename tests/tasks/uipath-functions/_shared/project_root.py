@@ -1,6 +1,6 @@
 """Resolve the on-disk project root for a coded-agent test.
 
-The skill's `references/coded/lifecycle/setup.md` teaches `mkdir
+The skill's `skills/uipath-agents/references/coded/lifecycle/setup.md` teaches `mkdir
 <PROJECT_NAME> && cd <PROJECT_NAME>` as the canonical scaffolding
 step, but in practice agents sometimes work directly in the
 sandbox cwd (no subdir) — especially when the prompt doesn't

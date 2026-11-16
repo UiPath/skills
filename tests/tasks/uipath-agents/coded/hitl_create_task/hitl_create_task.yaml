@@ -5,7 +5,7 @@ description: >
   `CreateEscalation` from `uipath.platform.common`, compiles the
   graph with a `MemorySaver` checkpointer, and emits the `app`
   binding for the Action Center app the escalation targets.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:hitl-coded]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:hitl-coded, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 40

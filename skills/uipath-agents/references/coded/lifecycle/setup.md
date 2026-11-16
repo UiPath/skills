@@ -4,7 +4,7 @@
 
 ```bash
 python --version                                           # 3.11, 3.12, or 3.13
-which uv  > /dev/null 2>&1 || echo "install uv:  curl -LsSf https://astral.sh/uv/install.sh | sh"
+which uv  > /dev/null 2>&1 || echo "install uv:  python -m pip install uv  (externally-managed Python: pipx install uv)"
 which uip > /dev/null 2>&1 || echo "install uip/runtimes: curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash"
 ```
 

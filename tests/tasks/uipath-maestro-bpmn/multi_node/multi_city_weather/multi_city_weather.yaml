@@ -45,17 +45,19 @@ initial_prompt: |
   implementation. Build the complete local project end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py MultiCityWeatherBpmn"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses a multi-instance loop marker"
-    path: "MultiCityWeatherBpmn/MultiCityWeatherBpmn.bpmn"
-    includes:
-      - "multiInstanceLoopCharacteristics"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py MultiCityWeatherBpmn --contains 'multiInstanceLoopCharacteristics'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

@@ -1,0 +1,77 @@
+                     uip agenthub mcp-user-connections set                      
+Set a user's connection on a remote MCP server, replacing any they have.
+
+The connection must be Enabled. Your own needs Connections.Edit in the
+server's folder; another user's also needs McpServers.Edit there.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-user-connections set [options]                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --mcp <slug>                   Parent MCP server slug, not its display name. │
+│ --connection-id <id>           Integration Service connection, by id, that   │
+│                                the user's calls authenticate with: an OAuth  │
+│                                connection of the UiPath MCP connector, from  │
+│                                `uip is connections list uipath-uipath-mcp    │
+│                                --all-folders`.                               │
+│ --connection-name <name>       The connection by name instead of             │
+│                                --connection-id: one of the UiPath MCP        │
+│                                connector's connections you can see.          │
+│ --me                           Set your own connection.                      │
+│ --user-id <id>                 Set this user's connection. `uip admin users  │
+│                                list` shows each user's id beside their       │
+│                                email.                                        │
+│ --user-email <email>           Set the connection of the organization's user │
+│                                with this email. Looking it up needs          │
+│                                permission to read the organization's users.  │
+│ --user-name <name>             Name `list` shows for the user. Defaults to   │
+│                                the --user-email; your own shows the email of │
+│                                your login when it has one.                   │
+│ --dry-run                      Print the mutation plan without setting it.   │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Override the interactive-login token lifetime │
+│                                for this call.                                │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: info)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Use one of your own connections on a remote server                           │
+│                                                                              │
+│   $ uip agenthub mcp-user-connections set --mcp vendor-mcp --me --connection-id 5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f --folder-path Shared │
+│                                                                              │
+│   slug          vendor-mcp                                                   │
+│   userId        3f6c1d2e-8a4b-4c7d-9e1f-0a2b3c4d5e6f                         │
+│   connectionId  5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f                         │
+│                                                                              │
+│ Preview setting another user's connection (needs McpServers.Edit)            │
+│                                                                              │
+│   $ uip agenthub mcp-user-connections set --mcp vendor-mcp --user-email jane.doe@example.com --connection-name "Vendor MCP (Jane)" --folder-path Shared --dry-run │
+│                                                                              │
+│   plan:                                                                      │
+│     ops:                                                                     │
+│       verb  target                                                           │
+│       ────  ──────────────────────────────────────────────────────────────── │
+│       PUT   /api/servers/vendor-mcp/user-connections/3f6c1d2e-8a4b-4c7d-9e1… │
+│     resolved:                                                                │
+│       slug          vendor-mcp                                               │
+│       userId        3f6c1d2e-8a4b-4c7d-9e1f-0a2b3c4d5e6f                     │
+│       connectionId  5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f                     │
+│       userName      jane.doe@example.com                                     │
+└──────────────────────────────────────────────────────────────────────────────┘

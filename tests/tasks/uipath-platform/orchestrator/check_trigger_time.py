@@ -5,12 +5,28 @@ We don't read any sandbox-emitted files — the agent's CLI choices are
 irrelevant. We query `triggers list` in the seeded folder, find the one with
 the expected name pattern, and assert its cron + enabled flag."""
 
+from __future__ import annotations
+
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-EXPECTED_CRON = "0 30 4 * * ?"
+
+def matches_expected_cron(cron: str | None) -> bool:
+    """Accept the Quartz forms of every day at 04:30, with any year."""
+    if not isinstance(cron, str):
+        return False
+    fields = cron.split()
+    if len(fields) == 7 and fields[-1] == "*":
+        fields = fields[:-1]
+    if len(fields) != 6:
+        return False
+    seconds, minutes, hours, day_of_month, month, day_of_week = fields
+    return (
+        (seconds, minutes, hours, month) == ("0", "30", "4", "*")
+        and (day_of_month, day_of_week) in (("*", "?"), ("?", "*"))
+    )
 
 
 def load_seed() -> dict:
@@ -40,51 +56,58 @@ def uip_json(*args: str, timeout: int = 60) -> dict:
         sys.exit(f"FAIL: uip {' '.join(args)} non-JSON: {e}: {r.stdout[:200]}")
 
 
-seed = load_seed()
-uuid8 = seed.get("uuid8")
-folder_path = seed.get("folder_path")
-if not uuid8 or not folder_path:
-    sys.exit(f"FAIL: seed.json missing uuid8 or folder_path: {seed}")
+def main() -> None:
+    seed = load_seed()
+    uuid8 = seed.get("uuid8")
+    folder_path = seed.get("folder_path")
+    if not uuid8 or not folder_path:
+        sys.exit(f"FAIL: seed.json missing uuid8 or folder_path: {seed}")
 
-expected_name = f"e2e-trigger-time-{uuid8}"
+    expected_name = f"e2e-trigger-time-{uuid8}"
 
-def list_time_triggers(*extra: str) -> list:
-    envelope = uip_json("or", "triggers", "list", "--type", "time",
-                        "--folder-path", folder_path, *extra)
-    if envelope.get("Result") != "Success":
-        sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
-    items = envelope.get("Data")
-    if isinstance(items, dict):
-        items = _pick(items, "Value", "Items", "Results") or []
-    return items or []
+    def list_time_triggers(*extra: str) -> list:
+        envelope = uip_json("or", "triggers", "list", "--type", "time",
+                            "--folder-path", folder_path, *extra)
+        if envelope.get("Result") != "Success":
+            sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
+        items = envelope.get("Data")
+        if isinstance(items, dict):
+            items = _pick(items, "Value", "Items", "Results") or []
+        return items or []
+
+    # Look the trigger up by name server-side (`--name` is an OData
+    # `contains(Name, ...)`), NOT by scanning a page — `triggers list` defaults to
+    # --limit 50 and an unfiltered scan reports "not found" for a trigger that
+    # exists once the folder holds more than that. Same fix as
+    # resources/check_trigger_api.py, where this actually bit.
+    items = list_time_triggers("--name", expected_name)
+
+    match = next((t for t in items if _pick(t, "Name") == expected_name), None)
+    if not match:
+        # Diagnostic only, and labelled as such.
+        sample = [_pick(t, "Name") for t in list_time_triggers("--limit", "200")][:20]
+        sys.exit(
+            f"FAIL: no time trigger named {expected_name!r} in {folder_path!r}. "
+            f"Name-filtered lookup returned {len(items)} row(s). "
+            f"First {len(sample)} time trigger name(s) in the folder: {sample}"
+        )
+
+    enabled = _pick(match, "Enabled")
+    cron = _pick(match, "StartProcessCron", "Cron", "CronExpression")
+    release_key = _pick(match, "ReleaseKey")
+
+    if enabled is not True:
+        sys.exit(f"FAIL: trigger {expected_name!r} Enabled={enabled!r}, expected True")
+    if not matches_expected_cron(cron):
+        sys.exit(
+            f"FAIL: trigger {expected_name!r} cron={cron!r}, "
+            "expected '0 30 4 * * ?' or '0 30 4 ? * *' (optionally followed by ' *')"
+        )
+    if release_key and release_key.lower() != seed.get("process_key", "").lower():
+        sys.exit(f"FAIL: trigger release_key={release_key!r}, expected {seed.get('process_key')!r}")
+
+    print(f"OK: trigger {expected_name!r} exists in {folder_path}, enabled=True, cron={cron!r}")
 
 
-# Look the trigger up by name server-side (`--name` is an OData
-# `contains(Name, ...)`), NOT by scanning a page — `triggers list` defaults to
-# --limit 50 and an unfiltered scan reports "not found" for a trigger that
-# exists once the folder holds more than that. Same fix as
-# resources/check_trigger_api.py, where this actually bit.
-items = list_time_triggers("--name", expected_name)
-
-match = next((t for t in items if _pick(t, "Name") == expected_name), None)
-if not match:
-    # Diagnostic only, and labelled as such.
-    sample = [_pick(t, "Name") for t in list_time_triggers("--limit", "200")][:20]
-    sys.exit(
-        f"FAIL: no time trigger named {expected_name!r} in {folder_path!r}. "
-        f"Name-filtered lookup returned {len(items)} row(s). "
-        f"First {len(sample)} time trigger name(s) in the folder: {sample}"
-    )
-
-enabled = _pick(match, "Enabled")
-cron = _pick(match, "StartProcessCron", "Cron", "CronExpression")
-release_key = _pick(match, "ReleaseKey")
-
-if enabled is not True:
-    sys.exit(f"FAIL: trigger {expected_name!r} Enabled={enabled!r}, expected True")
-if cron != EXPECTED_CRON:
-    sys.exit(f"FAIL: trigger {expected_name!r} cron={cron!r}, expected {EXPECTED_CRON!r}")
-if release_key and release_key.lower() != seed.get("process_key", "").lower():
-    sys.exit(f"FAIL: trigger release_key={release_key!r}, expected {seed.get('process_key')!r}")
-
-print(f"OK: trigger {expected_name!r} exists in {folder_path}, enabled=True, cron={cron!r}")
+if __name__ == "__main__":
+    main()

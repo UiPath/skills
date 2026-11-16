@@ -8,8 +8,8 @@ Ported from Flow
 update, a Get-by-Id wired to the update's own output, and output mapping),
 translated from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4 and
-skills/uipath-maestro-bpmn/references/structural-bpmn.md on public outputs).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4 and
+classic/skills/uipath-maestro-bpmn/references/structural-bpmn.md on public outputs).
 Conventions (``context_value``/``all_node_values``/one ``target="body"``
 input/entity-anywhere) match this batch's sibling ports
 (``check_df_integration_create_get.py``, ``check_df_smoke_create_all_types.py``)

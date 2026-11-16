@@ -16,6 +16,12 @@ description: >
   `--inputs` usage is covered by the mocked debug-workflow task.
 tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
 # turn_timeout must cover the whole agent session (observed: a 902s session was
 # killed by the 900s default, then a 1500s turn timed out while the agent
 # wandered on solution scaffolding + variable scoping under slow Bedrock latency
@@ -123,3 +129,8 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+# The prompt consents to upload and debug, so delete the solution after grading.
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

@@ -78,7 +78,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)"
+    description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/ixp.md: mock() holds the extraction position when no extractor is published)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
     expected_exit_code: 0
     weight: 2.0

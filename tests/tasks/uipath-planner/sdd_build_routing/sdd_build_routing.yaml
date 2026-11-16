@@ -1,0 +1,75 @@
+task_id: skill-planner-smoke-sdd-build-routing
+description: >
+  Verb-choice coverage: an SDD carrying the `## Planner Handoff` marker and no `Genome` row, with a
+  request to implement it, routes to the `author` verb — the planner writes the SDD's genome as the
+  build's input instead of a task list. The fixture's handoff still carries a legacy `Tasks file`
+  row, which is ignored: no `*-tasks.md` is written. The run stops before the build, so the
+  `uipath-genome` hand-off itself is not graded.
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# The skill's check-genome.mjs from its scripts folder, through $REFERENCE_DIR.
+reference:
+  directory: ../../../../skills/uipath-planner/scripts
+
+initial_prompt: |
+  The file `inventory-sync-sdd.md` in this folder is a finished Solution Design
+  Document. Implement it.
+
+  For this run, stop once everything the build starts from is written: do not
+  scaffold, build or run any project, and do not run any `uip` commands. Do not
+  ask follow-up questions — take the defaults.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill to choose the verb (SKILL.md § Choosing the Verb)"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD was routed to `author`: exactly one genome written beside it"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --files 1 --expect "UIPATH-AUTOMATION-GENOME"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's Designed in line names the SDD it was authored from"
+    command: >-
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --expect "Designed in:" inventory-sync-sdd.md
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD gains its Genome handoff row"
+    command: >-
+      node -e "process.exit(require('fs').readFileSync('inventory-sync-sdd.md', 'utf8').includes('**Genome**') ? 0 : 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No task list derived from the SDD — the legacy Tasks file row is ignored (no *-tasks.md)"
+    command: "! find . -name '*-tasks.md' -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Stopped before the build: no project scaffolded, built or run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0

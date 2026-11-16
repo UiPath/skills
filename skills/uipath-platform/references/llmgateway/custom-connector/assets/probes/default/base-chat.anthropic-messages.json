@@ -1,0 +1,40 @@
+{
+  "id": "base-chat",
+  "description": "The basic chat probe every product runs on a chat flavor, unless the product has its own.",
+  "source": "BaseChatCompatibilityProbe",
+  "apiFlavor": "AnthropicMessages",
+  "order": 90,
+  "path": "/v1/messages",
+  "body": {
+    "model": "{{model}}",
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Give me the first capital letter of the english alphabet and this letter only"
+          }
+        ]
+      }
+    ]
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "content is an array of blocks with a string type",
+      "jq": "(.content | type) == \"array\" and all(.content[]; (.type | type) == \"string\")"
+    },
+    {
+      "reason": "MULTIPLE_RESPONSES",
+      "says": "exactly one choice, index 0",
+      "jq": "true"
+    },
+    {
+      "reason": "INCORRECT_RESPONSE",
+      "says": "the assistant answers with text",
+      "jq": ".role == \"assistant\" and (([.content[] | select(.type == \"text\") | .text | select(. != null)] | join(\"\")) | test(\"\\\\S\"))"
+    }
+  ]
+}

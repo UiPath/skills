@@ -131,11 +131,22 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # One criterion per project. Credited when the project is named in the same simple
+  # command, in a `cd` right before it, or in a `for` list that feeds it; a glob loop
+  # (`for d in MySolution/*/`) counts for both. A name elsewhere in the call does not.
   - type: command_executed
-    description: "Agent invoked uip rpa get-errors or validate on each project"
+    description: "Agent invoked uip rpa get-errors or validate on ProjectA"
     tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+(get-errors|validate)'
-    min_count: 2
-    weight: 1.5
+    command_pattern: '\buip\s+rpa\s+(?:get-errors|validate)\b[^;&|\n]*\bProjectA\b|\bcd\s+[^;&|\n]*\bProjectA\b[^;&|\n]*(?:&&|;|\n)\s*\buip\s+rpa\s+(?:get-errors|validate)\b|\bfor\s+\w+\s+in\b[^;\n]*(?:\bProjectA\b|\*)[^;\n]*(?:;|\n)\s*do\b(?:(?!\bdone\b)[\s\S])*?\buip\s+rpa\s+(?:get-errors|validate)\b'
+    min_count: 1
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip rpa get-errors or validate on ProjectB"
+    tool_name: "Bash"
+    command_pattern: '\buip\s+rpa\s+(?:get-errors|validate)\b[^;&|\n]*\bProjectB\b|\bcd\s+[^;&|\n]*\bProjectB\b[^;&|\n]*(?:&&|;|\n)\s*\buip\s+rpa\s+(?:get-errors|validate)\b|\bfor\s+\w+\s+in\b[^;\n]*(?:\bProjectB\b|\*)[^;\n]*(?:;|\n)\s*do\b(?:(?!\bdone\b)[\s\S])*?\buip\s+rpa\s+(?:get-errors|validate)\b'
+    min_count: 1
+    weight: 0.75
     pass_threshold: 1.0
 

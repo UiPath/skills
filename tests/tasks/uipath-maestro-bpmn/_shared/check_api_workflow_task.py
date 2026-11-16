@@ -20,14 +20,17 @@ from _shared.bpmn_assertions import (  # noqa: E402
     one_element,
     variable_ids,
 )
+from _shared.bpmn_check import find_bpmn_file  # noqa: E402
 
-PROJECT = Path("ApiWorkflowDispatch/ApiWorkflowDispatch")
 BPMN_NAME = "ApiWorkflowDispatch.bpmn"
 EXPECTED_TYPE = "Orchestrator.ExecuteApiWorkflowAsync"
 
 
 def main() -> None:
-    root = load_bpmn(str(PROJECT / BPMN_NAME))
+    # The graded file, wherever the project lives: Studio Web's is Process.bpmn.
+    bpmn = Path(find_bpmn_file(Path(BPMN_NAME).stem))
+    project, bpmn_name = bpmn.parent, bpmn.name
+    root = load_bpmn(str(bpmn))
     service_tasks = [
         task for task in elements(root, "serviceTask") if activity_type(task) == EXPECTED_TYPE
     ]
@@ -63,7 +66,7 @@ def main() -> None:
     assert_has_shape(root, task.attrib["id"])
 
     start = one_element(root, "startEvent")
-    assert_package_lifecycle(PROJECT, BPMN_NAME, start.attrib["id"])
+    assert_package_lifecycle(project, bpmn_name, start.attrib["id"])
     print("OK: API workflow serviceTask wrapper and package lifecycle are present")
 
 

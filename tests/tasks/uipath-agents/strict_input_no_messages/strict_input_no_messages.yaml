@@ -7,7 +7,7 @@ description: >
   OpenAI Agents is not a fit — attributing the constraint to the OpenAI Agents
   runner, not to UiPath — and suggest a different framework, without scaffolding
   an OpenAI Agents project or silently falling back to a plain function.
-tags: [uipath-agents, smoke, mode:build, coded, lifecycle:discover, feature:framework-openai-agents]
+tags: [uipath-agents, smoke, mode:build, coded, lifecycle:discover, feature:framework-openai-agents, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 3

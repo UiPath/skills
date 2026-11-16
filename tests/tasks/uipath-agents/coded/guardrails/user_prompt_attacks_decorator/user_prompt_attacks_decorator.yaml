@@ -3,9 +3,11 @@ description: >
   Decorator-style user prompt attacks guardrail for a coded agent. A simple LangGraph
   customer support agent is seeded with no guardrails. The agent already has a
   create_llm() factory function. Use the skill to add a user prompt attacks detection
-  guardrail using the decorator style at LLM scope. Verifies that the @guardrail
-  with UserPromptAttacksValidator is placed above the LLM factory.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+  guardrail using the decorator style at LLM scope that covers the typed question and
+  an uploaded document. Verifies that the @guardrail with UserPromptAttacksValidator is
+  placed above the LLM factory with detection_scope Both, and that the uploaded file is
+  an Attachment input rendered into the user message.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -24,13 +26,14 @@ sandbox:
       path: ../_fixtures/SimpleCodedAgent
 
 reference:
-  directory: .
+  directory: ../../..
 
 initial_prompt: |
   I have a coded UiPath LangGraph agent in graph.py. It handles customer support questions.
-  The LLM is created in a create_llm() factory function. I want to add a UiPath user prompt
-  attacks guardrail using the decorator style at LLM scope — adversarial
-  inputs should be blocked before they reach the LLM.
+  The LLM is created in a create_llm() factory function. Users will also upload a document
+  with their question. I want to add a UiPath user prompt attacks guardrail using the
+  decorator style at LLM scope — adversarial inputs in the user's text and inside the
+  uploaded document should be blocked before they reach the LLM.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation. Complete the entire task
@@ -46,12 +49,12 @@ success_criteria:
 
   - type: run_command
     description: "User prompt attacks decorator guardrail correctly added to graph.py"
-    command: "python3 $REFERENCE_DIR/check_user_prompt_attacks_decorator.py"
+    command: "python3 $REFERENCE_DIR/coded/guardrails/user_prompt_attacks_decorator/check_user_prompt_attacks_decorator.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 11
+  expected_turns: 14
   turn_timeout: 1200

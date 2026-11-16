@@ -36,9 +36,11 @@ initial_prompt: |
     pause for approval or confirmation.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "InvoiceExtractionRpa/InvoiceExtractionRpa.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceExtractionRpa"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

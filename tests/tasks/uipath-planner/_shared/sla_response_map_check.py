@@ -1,4 +1,4 @@
-"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner assets/templates/case/case-sdd-template.md § SLA Response Map).
+"""Deterministic guards for the SDD **SLA Response Map** contract (uipath-planner assets/templates/case-sdd-template.md § SLA Response Map).
 
 The map is the single place SLA breach / at-risk behavior is decided:
 
@@ -143,8 +143,8 @@ def check(text: str) -> list[str]:
             # A start-task response is a TASK-entry rule, and a task entry interrupts
             # nothing — so `—` is the only legal value. `No` is not: it implies the
             # stage-re-entry shape, which re-runs every task in the breached stage whose
-            # shouldRunOnlyOnce is false (the default). See skills/uipath-maestro-case/
-            # references/sla-response-shapes.md section 5, defect 4.
+            # shouldRunOnlyOnce is false (the default). See
+            # classic/skills/uipath-maestro-case/references/sla-response-shapes.md section 5, defect 4.
             if not _is_dash(row.get("interrupting", "")):
                 issues.append(
                     f"SLA Response Map row [{label}] is start-task with Interrupting "

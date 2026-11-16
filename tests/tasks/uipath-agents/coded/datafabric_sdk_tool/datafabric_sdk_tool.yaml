@@ -3,7 +3,7 @@ description: >
   Coded-agent Data Fabric integration via direct SDK. Agent discovers
   entities from the tenant, selects the right one, and builds a
   deterministic @tool-wrapped query with lazy init and correct imports.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities, studio-web-unsupported, studio-web-unsupported:coded-agent]
 sandbox:
   template_sources:
     - type: template_dir

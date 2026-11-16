@@ -6,7 +6,7 @@ scenario (a manual-start process reads one pre-seeded Jira issue by key via
 the Atlassian Jira "Get Issue" connector activity and exposes its summary),
 translated from a JSON node walk + inline `flow debug` payload to an XML walk
 over the registry-driven `Intsvc.ActivityExecution` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
 pattern: ephemeral solution import, `bpmn debug`, `debug-instance
 variables-all`/`incidents`).

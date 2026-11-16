@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from _shared.file_guardrail_assertions import require_detection_scope, require_job_attachment_input
+from _shared.guardrails.file_guardrail_assertions import require_detection_scope, require_job_attachment_input
 
 ROOT = Path(os.getcwd()) / "InjGuardSol" / "InjSafeAgent"
 AGENT = ROOT / "agent.json"

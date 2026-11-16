@@ -191,6 +191,7 @@ def main() -> None:
     # has no schemaVersion and would fail the v2 assertion below).
     intent_files = [f for f in find_files(Path.cwd(), "intent.json") if f.name == "intent.json"]
     check(len(intent_files) >= 1, "intent.json not found — build did not author intent metadata")
+    intent_modules = set()  # module stems the intent's metrics resolve to (build-dashboard.mjs rule)
     for f in intent_files:
         raw = f.read_text(encoding="utf-8", errors="ignore")
         check("fnBody" not in raw,
@@ -201,12 +202,19 @@ def main() -> None:
             fail(f"{f.as_posix()} is not valid JSON: {e}")
         check(data.get("schemaVersion") == 2,
               f"{f.as_posix()} must declare \"schemaVersion\": 2 (found {data.get('schemaVersion')!r})")
+        for m in data.get("metrics") or []:
+            if isinstance(m, dict) and (m.get("module") or m.get("name")):
+                intent_modules.add(Path(m.get("module") or f"{m['name']}.ts").stem)
 
-    # 4. Metric modules — .ts under a metrics/ folder, each exporting fetchData
+    # 4. Metric modules — .ts under a metrics/ folder, each exporting fetchData.
+    # Only files an intent metric resolves to must export it; another .ts there is a
+    # shared helper the metrics import. No named metrics → every file is checked.
     metric_files = [p for p in find_files(cwd, ".ts") if "/metrics/" in p.as_posix()]
     check(len(metric_files) >= args.min_metrics,
           f"Expected >= {args.min_metrics} metric module(s) under a metrics/ folder, found {len(metric_files)}")
     for p in metric_files:
+        if intent_modules and p.stem not in intent_modules:
+            continue
         body = p.read_text(encoding="utf-8", errors="ignore")
         check("fetchData" in body,
               f"Metric module {p.as_posix()} does not export fetchData")

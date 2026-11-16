@@ -14,7 +14,7 @@ the trigger's own output), translated
 from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.EventTrigger`` startEvent shell and the
 ``Intsvc.ActivityExecution`` connector sendTask shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4 on connector
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4 on connector
 enrichment and bindings). Conventions (``context_value``/``all_node_values``/
 entity-anywhere/curated-or-generic objectName) match this batch's sibling
 Data Fabric ports (``check_df_contractregistry_crud_filters.py`` etc.) for

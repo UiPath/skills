@@ -6,7 +6,7 @@ Ported from Flow `_shared/check_simulated_hitl.py`. Flow's schema-carrying
 equivalent: an Actions.HITL `bpmn:userTask` presents context via
 `uipath:context/uipath:input` elements and captures reviewer-entered data via
 `uipath:output` elements (`var=`, `type=`) bound to declared process
-variables (see `skills/uipath-maestro-bpmn/references/registry-workflow.md`
+variables (see `classic/skills/uipath-maestro-bpmn/references/registry-workflow.md`
 and the CI-proven `_shared/check_devcon_expense_approval.py`,
 `_shared/check_quality_schema_design.py`,
 `_shared/check_smoke_completed_wired.py`). Every mode below re-homes the same
@@ -18,8 +18,8 @@ CI run 35500726138 (`e2e/devcon_expense_approval`, same Actions.HITL
 construct) showed the eval agent legitimately following the registry
 template instead of hand-authoring per-field outputs. The
 `Actions.HITL` `xmlTemplate` (`validator/bpmn-spec.json`,
-`extensionTypes["Actions.HITL"]`) has a FIXED context (`appId`, `appVersion`,
-`actions`, `key`, `taskTitle`), exactly ONE
+`extensionTypes["Actions.HITL"]`) has a FIXED context (`name`, `folderPath`,
+`taskTitle`), exactly ONE
 `<uipath:input name="HitlTaskArguments" type="json" target="bodyField">` body
 holding every field's value/expression, and exactly ONE
 `<uipath:output name="Process response" type="Actions.HITL" var="...">`
