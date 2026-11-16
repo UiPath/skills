@@ -372,12 +372,12 @@ async def human_review(self, ctx: Context, ev: ReviewEvent) -> ApprovedEvent:
 ### Process Invocation
 
 ```python
-from uipath_llamaindex.models import InvokeProcessEvent, WaitJobEvent
+from uipath_llamaindex.models import InvokeProcessEvent
 
 @step
-async def invoke_process(self, ev: TriggerEvent) -> WaitJobEvent:
+async def invoke_process(self, ev: TriggerEvent) -> InvokeProcessEvent:
     return InvokeProcessEvent(
-        process_name="MyProcess",
+        name="MyProcess",
         input_arguments={"data": ev.data},
     )
 ```

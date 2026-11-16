@@ -117,7 +117,9 @@ graph = builder.compile()
 Combine context grounding with an LLM for more accurate responses:
 
 ```python
-from langchain.chains import RetrievalQA
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 from uipath_langchain.vectorstores import ContextGroundingVectorStore
 
@@ -125,10 +127,18 @@ llm = UiPathAzureChatOpenAI()
 vector_store = ContextGroundingVectorStore(index_name="company_docs")
 retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 
-rag_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=retriever
+prompt = ChatPromptTemplate.from_template(
+    "Answer using only this context:\n{context}\n\nQuestion: {question}"
+)
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
 )
 
 result = await rag_chain.ainvoke("What are our current policies?")
