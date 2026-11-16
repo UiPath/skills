@@ -9,7 +9,7 @@ get (404, exit 1) and passes a delete that never ran or failed.
 
 Reads seed.json (project_key) and result.json (id), resolves the Test Manager
 connection and project, then gets the record by id. Passes only on the
-provider's 404 itemNotFound; any other failure (auth, missing connection
+provider's 404 itemNotFound for that id; any other failure (auth, missing connection
 instance) fails closed as "could not verify".
 
 Known gameability, accepted deliberately: result.json is written by the agent, so
@@ -81,7 +81,9 @@ def main():
     if got.get("Result") == "Success":
         fail(f"{obj} {rec_id} still exists: the delete did not run or did not succeed")
     detail = f"{got.get('Message') or ''} {got.get('Instructions') or ''}"
-    if (got.get("ErrorCode") == "not_found" or re.search(r'"providerErrorCode"\s*:\s*404\b', detail)) and "itemNotFound" in detail:
+    # The provider's 404 names the id it looked up (`data - {id=...}`): require it, so a 404 for any other lookup fails.
+    if (got.get("ErrorCode") == "not_found" or re.search(r'"providerErrorCode"\s*:\s*404\b', detail)) and "itemNotFound" in detail \
+            and str(rec_id) in detail:
         print(f"OK: {obj} {rec_id} no longer exists")
         return
     fail(f"could not verify the delete: {got.get('ErrorCode')} {(got.get('Message') or '')[:120]}")
