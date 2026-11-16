@@ -28,6 +28,7 @@ def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None
     text = _outside_flavor_blocks((REFS / "gate-reply-template.md").read_text())
     assert "only after `validate` reported `Status: Valid` on the target" in text
     assert "When a turn resumes after an interruption that came after you wrote this reply" in text
+    assert "the two candidates ending in `which one?`" in text
     assert "search the target `.bpmn` for each box's `.task()` id and find `<bpmn:task id=\"<id>\"`" in text
 
 
