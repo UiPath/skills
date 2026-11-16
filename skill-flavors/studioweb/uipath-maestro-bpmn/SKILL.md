@@ -91,12 +91,13 @@ When a reference tells you to run a command that is not available, use the Studi
    report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
    shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
-   is empty.
+   is empty or the edit changes a step's type ([Validation loop](#validation-loop)).
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->
 8. Every change is a targeted edit of the target, so every change goes through
-   the merge pipeline of the [Validation loop](#validation-loop).
+   the merge pipeline of the [Validation loop](#validation-loop), except one
+   that changes a step's type.
 <!--skill-flavor:workflow-merge:end-->
 
 <!--skill-flavor:api-index-location:start-->
@@ -153,10 +154,16 @@ uip maestro bpmn format <Name>.bpmn
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
+- **A type change skips `merge`.** `merge` keeps each element's tag, so a box
+  the edit makes another type, such as a `.task()` that becomes a
+  `.scriptTask()` (every *Build it*), stays `bpmn:task`, and Studio Web drops
+  its payload. When the edit changes a step's type, compile straight over the
+  target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
+  run step 5, then step 4, and tell the user that the canvas layout was reset.
 - **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
-- **The canvas re-renders the open file after each write.** Always finish with
-  the merge into the target; never `uip solution upload`.
+- **The canvas re-renders the open file after each write.** Always finish by
+  writing the target; never `uip solution upload`.
 - **A process with connectors** needs each connection in the solution. After
   step 4, read each `connection` row in `bindings_v2.json`. For each one that
   `uip solution resources list --source local --output json` does not list,
