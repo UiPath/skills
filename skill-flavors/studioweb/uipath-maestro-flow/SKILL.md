@@ -39,7 +39,7 @@ Commands that differ in Studio Web:
 
 | Command | In Studio Web |
 | --- | --- |
-| `uip maestro flow check`, `compile`, `decompile`, `merge` | Work, inside the page. `decompile` writes no pipeline helper. `check` refuses a compiled `.flow`: use `validate`. |
+| `uip maestro flow check`, `compile`, `decompile`, `merge` | Work, inside the page. `decompile` writes no pipeline helper. Pass `merge` only `--original` and `--strict`: `--baseline-from`, `--bindings` and `--library` are rejected here. `check` refuses a compiled `.flow`: use `validate`. |
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
 | `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
@@ -108,7 +108,7 @@ cd /solution/<Project>
 # 1. Fresh source, every turn
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 # 2. Edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320). Then check until clean
-#    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
+#    (refused, or `decompile` stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 # 3. Merge into the target; never without a stamp
 ( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp: NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
@@ -118,7 +118,7 @@ uip maestro flow validate <Name>.flow --output json
 
 **A flow holding an Extract document node skips this round trip** — merge's in-memory baseline compile fails on that node; use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
-Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop the edit, revert it in the source and merge again. A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
+Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop an edit: [undo](references/brownfield.md#dropping-an-edit). A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 
 - **An edit always ends with the merge into the target.** About 400 ms after a write, the canvas reloads the open file. Never run `format` on the merged file: it re-lays out the user's canvas.
 - **A draft node** (a generic operation with no object picked) that you changed stops the merge: [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).

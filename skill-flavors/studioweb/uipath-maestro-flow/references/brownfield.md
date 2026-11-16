@@ -15,8 +15,19 @@ output, not drift to undo. Never move them back. The changes to act on are the
 
 Validate the target `.flow`. A refused merge writes nothing, so there is nothing
 to restore. If validate fails, fix the source, `check` and `merge` again: merge
-restamped it. To drop the edit, revert it in the source and merge again. The
-result is equivalent to the target, not byte-identical.
+restamped it.
+
+### Dropping an edit
+
+To drop an edit that changed or
+added, revert it in the source and merge again: the result is equivalent to the
+target, not byte-identical. An edit that removed a node, agent or resource is
+not restored that way: the source rebuilds it from SDK defaults and the
+canvas-only fields are lost. Before such a merge, copy the target outside the
+project, `mkdir -p /tmp/flow-undo/<Project> && cp <Name>.flow
+/tmp/flow-undo/<Project>/<Name>.flow` (a page reload clears it), and copy it
+back to drop the edit. Merge leaves the agent folders on disk, so the copy
+brings back the agent. Without that copy, ask the user to undo on the canvas.
 
 ### The stamp, and when merge refuses
 
@@ -52,11 +63,52 @@ node and its code to the user.
 <!--skill-flavor:resource-install:start-->
 - `merge` writes an added or changed resource into the project. A changed
   one keeps its original directory.
-- A removed one stays: merge lists each such directory under `remove`
+- A removed one stays (before `@uipath/maestro-builder-sdk` 6.112.0; later merges delete unreferenced directories, unverified on the Studio Web file system): merge lists each such directory under `remove`
   (`Data.Removed` in `--output json`), and Studio Web cannot delete it. Ask the
   user to remove that resource from the agent on the canvas. Otherwise the
   agent keeps that resource.
 <!--skill-flavor:resource-install:end-->
+
+<!--skill-flavor:draft-nodes:start-->
+A canvas-saved flow often holds **draft** nodes: a connector with no connection
+yet, a required input left empty, a generic operation with no object picked, a
+`waitForEvent` with no connection, a Transform with no collection, or a
+decision with no condition (a draft trigger or connector tool still refuses and
+must be finished first). Decompile carries the definition of each draft the
+canvas saved and marks its step `{ draft: true }`, so `compile` writes it with a
+warning (`⚠ [CONNECTOR_INPUT_MISSING] ... Written as a draft`) and the loops on
+this page get past it. For instance a decision saved with no condition
+decompiles as `.branch("decision1", undefined, (t) => ..., (e) => ..., { draft: true })`
+and a Transform with no collection as `transform({ operations: [] })` with
+`{ draft: true }`: leave those as written unless the user asked you to finish
+the node. The `waitForEvent`, Transform and decision drafts need `@uipath/maestro-builder-sdk`
+6.86.5 or later; an older one refuses them (`BINDING_MISSING`,
+`TRANSFORM_COLLECTION_LITERAL`, `EXPR_SYNTAX`). Three cases still stop `compile`: a generic operation with no object
+(`CONNECTOR_OBJECT_REQUIRED`), a draft you wrote yourself (no carried
+definition), and an untouched node the SDK cannot compile (`check --baseline`
+prints it as a probable SDK defect). The [safe project loop](#the-safe-project-loop)
+runs no `compile`: merge compiles the edited source and the baseline it derives
+itself, and both compiles tolerate drafts.
+
+- A draft node you did **not** touch is restored exactly as saved, with
+  `[DRAFT_NODE_KEPT]` on stderr. So is a draft inside a subflow the edit did
+  not change: merge keeps that subflow from the original (6.44.4 or later; an
+  older SDK takes every subflow from the edited source and refuses the draft).
+- A draft node you **changed** gets the refusal a normal compile gives
+  (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
+  `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
+  revert the edit.
+- An untouched node the SDK cannot compile is kept exactly as saved, with
+  `⚠ [LOWERING_NODE_KEPT] "<node>" is untouched, so the original node is kept
+  as is, but the SDK cannot compile it (<CODE>)` on stderr. Tell the user it is
+  a probable SDK defect and that it should be filed at
+  <https://github.com/UiPath/builder-sdk/issues>. The same refusal on a node the
+  edit changed is `✗ [<CODE>] "<node>" is changed or new` and nothing is
+  written: revert the edit to that node, or fix it. An untouched node that
+  fails only because of an edit elsewhere (it reads a step the edit deleted)
+  also stops the write. Needs `@uipath/maestro-builder-sdk` 6.64.0 or later.
+- `--strict` works here too.
+<!--skill-flavor:draft-nodes:end-->
 
 <!--skill-flavor:generated-pipeline:start-->
 Studio Web has no generated pipeline: `decompile` writes no pipeline helper
