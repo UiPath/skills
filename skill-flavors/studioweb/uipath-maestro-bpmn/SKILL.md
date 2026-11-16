@@ -86,7 +86,8 @@ When a reference tells you to run a command that is not available, use the Studi
    `bpmn validate` accepts both. Studio Web ships its own SDK: an older one refuses the
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
-   `refresh` and `validate` — in that order, every time
+   `refresh` and `validate` — in that order, every time but the two
+   compile-over cases at the end of this step
    ([Validation loop](#validation-loop)). Lay out the diagram only when they
    report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
    shapes the target already has. Exactly one `<Name>.bpmn`
@@ -170,7 +171,7 @@ uip maestro bpmn format <Name>.bpmn
   was reset and name each kind of content the search found as removed.
   Any other edit merges, even one that changes a step's tag; `merge` then keeps
   the old tag, so name each such step under the report's `Unverified:` as one
-  Studio Web may still show as a plain task.
+  Studio Web may still show as its old type.
 - **To undo the turn's write**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish by
