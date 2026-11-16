@@ -1,7 +1,7 @@
 <!--skill-flavor:draft-steps:start-->
 1. Draft into the target: the `.bpmn` the user names, else the open one ([Studio Web](../SKILL.md#studio-web)).
    Run `uip maestro bpmn init <Project>` from `/solution` only when the user asks for a new project, then draft into its `.bpmn`.
-2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target: all of its lines in one command, before you write the skeleton.
+2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target: the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton.
    A baseline compiled after the edit is the edited file, and `merge` then writes nothing to the target.
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.

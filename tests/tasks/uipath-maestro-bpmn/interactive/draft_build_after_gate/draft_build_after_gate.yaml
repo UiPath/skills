@@ -74,7 +74,7 @@ success_criteria:
 
   # --- Turn 1: the 3c gate ---------------------------------------------------
   - type: llm_judge
-    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded and the Studio Web link (in Studio Web, the open target's path), one line per box, the fixed question and three options, and nothing else"
+    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded and the Studio Web link (in Studio Web, no `uploaded` and the open target's path), one line per box, the fixed question and three options, and nothing else"
     include_reference: false
     include_dialog: true
     max_file_chars: 60000
