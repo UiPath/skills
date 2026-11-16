@@ -22,6 +22,7 @@
 <!--skill-flavor:draft-cloud-copy:start-->
 The user may have changed the outline on the canvas before answering.
 Each turn starts again at step 1 of the [Validation loop](../SKILL.md#validation-loop), which decompiles the target, so their edits are the base; say so in the reply's one sentence.
+On *Build it* the base is what the source carries (names, boxes, flows): the same sentence also says the layout was reset and names the canvas content the rebuild removed.
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->
@@ -41,5 +42,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  *Build it* changes every box's BPMN tag, which `merge` keeps, so finish as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says: compile over the target, `format`, `refresh` and `validate`, and in the report's one sentence say the canvas layout was reset and name any lanes, notes, colors or other canvas content the rebuild removed.
+  *Build it* changes every box's BPMN tag, which `merge` keeps, so finish as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says: compile over the target, `format`, `refresh` and `validate`, and in the report's one sentence say the canvas layout was reset and name any pools, lanes, notes, colors or other canvas content the rebuild removed.
 <!--skill-flavor:draft-build-merge:end-->

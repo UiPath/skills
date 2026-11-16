@@ -150,8 +150,8 @@ uip maestro bpmn format <Name>.bpmn
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
-  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then, or after a compile over
-  the target, run step 5, run step 4
+  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then, or after *Build it*'s
+  compile over the target, run step 5, run step 4
   again, and, unless step 4 reported `No diagrams found`, tell the user that the
   canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
@@ -161,8 +161,9 @@ uip maestro bpmn format <Name>.bpmn
   BPMN tag, so an outline box that becomes a `.scriptTask()`, `.humanTask()` or
   any other typed step keeps `bpmn:task`, and Studio Web drops its payload.
   This is the one exception to Critical Rule 5's merge rule. Before compiling,
-  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:lane`, `bpmn:textAnnotation`,
-  `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject` and `color:`: the
+  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:participant`, `bpmn:lane`,
+  `bpmn:textAnnotation`, `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject`,
+  `bpmn:dataStoreReference` and `color:`: the
   compile drops them, with the positions of every shape. Then compile straight
   over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
   run step 5, then step 4. In the report's one sentence, say the canvas layout
