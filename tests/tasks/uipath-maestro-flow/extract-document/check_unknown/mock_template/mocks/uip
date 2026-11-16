@@ -23,7 +23,7 @@ if sys.argv[1:5] == ["maestro", "flow", "extraction", "check"]:
             "Reason": "The extraction service answered 403, so availability could not be determined.",
             "Tenant": "DefaultTenant",
         },
-        "Instructions": "The extraction service answered 403, so availability could not be determined. Tell the user, and do not add an Extract document node to the flow.",
+        "Instructions": "The extraction service answered 403, so availability could not be determined. This does not show that the node is unavailable. Tell the user, and ask whether to add an Extract document node anyway.",
     }, indent=2))
     sys.exit(0)
 
