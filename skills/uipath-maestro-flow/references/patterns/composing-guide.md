@@ -33,7 +33,10 @@ pattern's End nodes become `body.continue()`, so the item ends and the loop
 moves on; record the item's outcome in its result. Every step that can fail
 inside the body keeps its own `.onError` continuation if one item must not stop
 the batch. A step inside the body cannot be a `.stepToRef` target from outside
-it (`REF_INTO_LOOP`).
+it (`REF_INTO_LOOP`). Keep the pattern's one shared step inside the body. End
+the reviewer's Approve arm with `.stepToRef('<shared step>')`, so both routes
+reach that one step. Record the item's result in the shared step, not in each
+route.
 
 ### As a subflow
 

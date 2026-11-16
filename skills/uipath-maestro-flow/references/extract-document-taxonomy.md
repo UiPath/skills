@@ -239,7 +239,7 @@ Nothing here is enforced by the CLI, but a taxonomy that ignores it tends to ext
 
 **It checks the document before writing anything.** A document that is not a schema at all, or that breaks a limit, is refused with exit 3 and changes nothing on disk.
 
-**It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away. Pass it only when the user asked for it in this conversation. With no one to ask (headless, CI), leave the node as it is, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to get around the refusal.
+**It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away. Pass it only when the user asked for it in this conversation. With no one to ask (headless, CI), leave the node as it is, report the draft and `DraftIssueMessages`, and stop; the request is not done. Run no `nodes provision` either: it writes `inputs.processorKey` into the node. Report a missing processor instead. Never hand-edit `inputs.schemaDocument` to get around the refusal.
 
 ## Editing a taxonomy that already exists
 
