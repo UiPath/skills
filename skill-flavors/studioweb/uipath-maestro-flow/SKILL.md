@@ -116,7 +116,7 @@ uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```
 
-**A flow holding an Extract document node skips this round trip** — merge's in-memory baseline compile fails on that node; use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
+**An Extract document node** takes this round trip unless merge's in-memory baseline compile fails on it (older SDK); then use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop an edit: [undo](references/brownfield.md#dropping-an-edit). A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 

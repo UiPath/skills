@@ -5,22 +5,18 @@
 Two document steps that need no trained IxP fields: classification
 (`uipath.document.classify`) labels a document, and the Extract document node
 (`uipath.ixp.extract-document-builder`) pulls fields against a taxonomy you
-author INLINE — though the `dynamicExtract()` factory still needs a published
-model's identity ([Two ways to author it](#two-ways-to-author-it)). For a
+author INLINE, with no model behind it
+([Two ways to author it](#two-ways-to-author-it)). For a
 published project's trained fields, use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
-`dynamicExtract({ fileRef, schema, model, pageRange?, modelConfig? })`.
+`dynamicExtract({ fileRef, schema?, pageRange?, modelConfig? })`.
 
 ```ts
 .input({ file: types.file })
 .step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
-.step('extract', dynamicExtract({
-  fileRef: input('file'),
-  schema: invoiceTaxonomy,
-  model: { modelName: 'invoiceixp-cef0d447-ixp',
-    folderKey: 'c4359cde-55f0-4f0e-9322-c6cdce74ab4c' },
-}))
+.step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy }),
+  { label: 'Extract invoice' })
 .step('total', script({ code: 'return $vars.extract.output.result.output;' })) // warns until the SDK typing catches up
 ```
 
@@ -30,32 +26,44 @@ Classify a document (`uipath.document.classify`), or extract fields against an
 INLINE taxonomy (`uipath.ixp.extract-document-builder`) instead of a published
 IxP project's trained fields.
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
-`dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
+`dynamicExtract({ fileRef, schema?, pageRange?, modelConfig? })`.
 
 ```ts
 .step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
-.step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy,
-  model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
+.step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy }),
+  { label: 'Extract invoice' })
 ```
 
 ## Two ways to author it
 
-**The SDK factory**, `dynamicExtract()`, is the call above, and it carries
-limits the node itself does not have. It requires a `model` with a published
-deployment's `modelName` and `folderKey` — copy them from the tenant, never
-construct them — although the node never reads them: it runs the taxonomy it
-carries, through `inputs.processorKey`, which compiling never writes. A flow
-compiled from this factory needs `uip maestro flow nodes provision <file>`
-afterwards; CLI authoring, by contrast, provisions as it goes
-([Making it actually extract](extract-document-node.md#making-it-actually-extract)).
-Decompiling a flow that holds this node and compiling it back also throws on
-the missing `model`. So the factory is usable only where a flow must stay in
-TypeScript source and a published model's identity is to hand; everywhere else,
-use the CLI.
+**The SDK factory**, `dynamicExtract()`, needs no model. Compile gives each
+step its processor, as `uip maestro flow nodes create` does:
 
-**The CLI commands** author the same node with no model deployment, and are the
-route the router row and both guides point at: add it and wire `fileRef` per
-[extract-document-node.md](extract-document-node.md).
+- it writes `inputs.processorKey`, one per step, the same on every recompile;
+- when it compiles the project's main flow inside a local solution (a folder
+  whose `.uipx` lists the project), it writes the processor's resource file
+  (`resources/solution_folder/idpProcessor/extraction/<Label>.json`), keeps
+  it in step with the node on every compile, and declares it in
+  `bindings_v2.json`. A compile with no `.uipx` above it, such as Studio
+  Web's candidates under `/tmp`, writes no file: the designer creates it.
+
+So validate and packing pass with no CLI step after compile, and
+decompile -> compile keeps the node and its key. Give the
+step a `label` that says what it extracts: the processor is named after it.
+
+```ts
+.step('extract', dynamicExtract({ fileRef: input('invoice'), schema: invoiceTaxonomy }),
+  { label: 'Extract invoice' })
+```
+
+An older SDK (one without builder-sdk#2052) shows itself: compile fails
+reading `modelName` when no `model` is given, or the compiled node has no
+`inputs.processorKey`. Use the CLI there.
+
+**The CLI commands** author the same node in a flow that has no TypeScript
+source: add it and wire `fileRef` per
+[extract-document-node.md](extract-document-node.md). Never mix the two on
+one flow: the next compile overwrites what the commands wrote.
 
 Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
