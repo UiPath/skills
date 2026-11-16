@@ -338,6 +338,20 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
   assert.ok(evaluate.includes("**Not available in Studio Web.**"));
 });
 
+// The in-page SDK verbs and `node` reach only /solution and /tmp (coder_eval
+// studio-web run 2026-11-16_09-25-49: `decompile: ENOENT /sandbox/…`, `Node
+// sandbox path is outside /solution and /tmp`). Agents that scaffolded a
+// project for a loose target left a stray template that fails validate and
+// stamped an entryPointId on an untouched start event.
+test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, never via init", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.ok(skill.includes("**A target outside `/solution` and `/tmp`**"));
+  assert.ok(skill.includes("Copy the target to `/tmp/bpmn-work/<Name>/<Name>.bpmn`"));
+  assert.ok(skill.includes("Never run `init` to give a loose file a project."));
+  assert.ok(skill.includes("and the target is in a project, delete that key"));
+});
+
 // `debug-instance` is a terminal-CLI alias of `debug-instances`. The browser
 // snapshot (assets/uip-browser-commands-snapshot.json) lists only the plural,
 // and the studioweb operate page and SKILL.md teach it, so diagnose must too.
