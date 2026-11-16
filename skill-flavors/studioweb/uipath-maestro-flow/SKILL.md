@@ -107,7 +107,7 @@ An empty `new.flow` fails `decompile`, and a rule 4 flow has no file yet: write 
 cd /solution/<Project>
 # 1. Fresh source, every turn
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
-# 2. Edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (merge places them). Then check until clean
+# 2. Edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320). Then check until clean
 #    (refused, or step 1 stopped: references/brownfield.md#check-only-what-you-changed-check---baseline)
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 # 3. Merge into the target; never without a stamp
