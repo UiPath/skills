@@ -52,7 +52,10 @@ success_criteria:
   - type: command_executed
     description: "Complete attach command naming both labels: `uip tm objectlabel add --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-regression eval-smoke`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-)uip\s+tm\s+objectlabel\s+add'
+    # `--project-id <uuid>` is a hidden alias of `--project-key`; gpt-6.1-sol resolves
+    # HEALTH once and passes its id. Pinned to HEALTH's id on codereval/DefaultTenant
+    # (persistent fixture) so another project's id still fails.
+    command_pattern: '(?=.*--project-(?:key\s+HEALTH\b|id\s+["\x27]?2c296aaf-aac3-0300-2a6c-0b49a4a43f50\b))(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-)uip\s+tm\s+objectlabel\s+add'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -60,7 +63,7 @@ success_criteria:
   - type: command_executed
     description: "Complete narrowed-list command: `uip tm objectlabel list --project-key HEALTH --object-type TestCase --filter eval-regression`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)uip\s+tm\s+objectlabel\s+list'
+    command_pattern: '(?=.*--project-(?:key\s+HEALTH\b|id\s+["\x27]?2c296aaf-aac3-0300-2a6c-0b49a4a43f50\b))(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)uip\s+tm\s+objectlabel\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -68,7 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Complete detach command removing only eval-smoke: `uip tm objectlabel remove --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-smoke`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-smoke)uip\s+tm\s+objectlabel\s+remove'
+    command_pattern: '(?=.*--project-(?:key\s+HEALTH\b|id\s+["\x27]?2c296aaf-aac3-0300-2a6c-0b49a4a43f50\b))(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-smoke)uip\s+tm\s+objectlabel\s+remove'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
