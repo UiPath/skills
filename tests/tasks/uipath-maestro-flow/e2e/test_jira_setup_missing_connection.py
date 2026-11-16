@@ -91,3 +91,16 @@ def test_auth_failure_is_not_a_missing_connection(task: Path, monkeypatch: pytes
 
     with pytest.raises(RuntimeError, match="connections list failed.*401"):
         jira_is.require_connection()
+
+
+@pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
+def test_missing_folder_is_not_a_raw_traceback(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load(task)
+    monkeypatch.setattr(
+        jira_is.subprocess,
+        "run",
+        lambda cmd, **kwargs: Result({"Result": "Failure", "Message": "NotFound"}),
+    )
+
+    with pytest.raises(RuntimeError, match="folders get failed.*NotFound"):
+        jira_is.require_connection()

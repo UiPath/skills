@@ -102,7 +102,7 @@ def issuetype_id(conn_id: str) -> str:
 
 
 def connection_id() -> str:
-    folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
+    folder_key = _required_data("or", "folders", "get", FOLDER_PATH)["Key"]
     conns = _required_data("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")
     match = next((c["Id"] for c in conns if c["Name"] == CONNECTION_NAME), None)
     if match is None:
