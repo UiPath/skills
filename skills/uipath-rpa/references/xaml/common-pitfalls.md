@@ -475,6 +475,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
 | `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
 
+## Start Process Before an Application Card
+
+`StartProcess` is for a program the workflow does not drive. An application the workflow then acts in is opened by its Use Application/Browser card, a document passed as its argument where the application takes one, not started with Start Process and then attached.
+
 ## Common Activity Name Confusions
 
 Activity tag names rarely match Studio display names. Guessing the tag from the display name fails at `build` (`Cannot create unknown type '...'`). Two examples:

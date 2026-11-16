@@ -199,7 +199,7 @@ nodes, not patterns.
 
 Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
 
-- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type).
 - `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
 - `types.any` is the untyped declaration: use it only when a value really has no fixed type.
 
@@ -223,9 +223,10 @@ Inputs, outputs and vars take one of the six types the Flow CLI and Workbench of
   own scope; pass values through the `subflow(child, {...})` inputs and read
   them with `input(...)`. `check` does not flag a child script that reads
   `$vars.start.output.*` from the parent — it compiles and resolves to nothing.
-- **Never use `console.log` in a script.** The script runtime has no
-  `console`, and `check` does not flag it. Return the value to inspect:
-  `return { debug: value }`.
+- **Never debug a script with `console.log`.** `console.log` and its
+  siblings exist but do nothing, so the output goes nowhere
+  ([script runtime](script.md#the-javascript-runtime)). Return the value to
+  inspect: `return { debug: value }`.
 - **Never put every `$vars` reference of an expression inside double quotes.**
   An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
   evaluates to null, with no warning. Keep at least one reference outside the

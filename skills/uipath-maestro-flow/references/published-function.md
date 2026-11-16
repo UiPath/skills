@@ -72,6 +72,9 @@ is not published yet, so it has no folder. Write it with
 }))
 ```
 
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `publishedFunction({ location: 'in-solution', project: '<FunctionProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
 <!--skill-flavor:function-sibling-register:start-->
   Register the sibling and refresh resources
@@ -95,11 +98,16 @@ is not published yet, so it has no folder. Write it with
   `spec.entryPoints`
   holds the same schema as a JSON string. The rule in
   [Declaring what it returns](#declaring-what-it-returns) still applies.
-- `check` refuses an in-solution step with no `projectId`
-  (`FUNCTION_LOCAL_NO_PROJECT_ID`), a `projectId` that is not a GUID
-  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`), and a `folderPath` beside
+- `check` warns on an in-solution step with no `projectId`
+  (`FUNCTION_LOCAL_NO_PROJECT_ID`; the call resolves by `key`, so a decompiled
+  step without one is fine as is), and refuses a `projectId` that is not a GUID
+  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
   `location: 'in-solution'` (`FUNCTION_LOCAL_HAS_FOLDER`): the in-solution
   binding's folder is `''`, filled in at deploy.
+  If `check` reports `FUNCTION_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+  add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
 
 Needs `@uipath/maestro-builder-sdk` 6.59.0 or later; an older SDK
 has no `location` on `publishedFunction()` and refuses the step as having no

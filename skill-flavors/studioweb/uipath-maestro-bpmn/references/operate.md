@@ -60,7 +60,9 @@ A debug run is two steps: run it, then read its values.
 2. **Read its values with the `Trace ID` it prints.** The `Trace ID` is the
    debug instance id. The trace lists each element's **status**, never a
    variable's **value**, so read the values right after the run. Report a value
-   from this read, never from the process logic.
+   from this read, never from the process logic. A process output is proven
+   by the end event's `Outputs`, not by `Globals`: a value in `Globals` that
+   the end event does not map reaches the caller as `null`.
 
    ```bash
    uip maestro bpmn debug-instances variables <TRACE_ID> --output json
@@ -84,7 +86,9 @@ Pass no other flags.
 was found, the run logs and the execution trace. Exit 1 means `Faulted` or
 `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in
 Studio Web: do not troubleshoot it, and do not run it again. Tell the user to
-follow the run in Studio Web.
+follow the run in Studio Web. Run debug again only after a fresh consent
+question that says it executes the process again, possibly while the first run
+is still going.
 <!--skill-flavor:debug-run:end-->
 
 <!--skill-flavor:publish-default:start-->
