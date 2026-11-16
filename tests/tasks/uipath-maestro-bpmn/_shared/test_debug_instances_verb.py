@@ -95,10 +95,18 @@ def test_live_inspection_ignores_help_and_other_verbs(command: str) -> None:
     assert not _hits(_pattern(_LIVE, "inspected the debug instance's runtime variables"), command)
 
 
-OPERATIONS = [
-    *(f"{g} {op}" for g in ("instance", "instances") for op in ("retry", "cancel", "continue", "pause", "resume", "migrate", "goto")),
-    *(f"{g} {op}" for g in ("debug-instance", "debug-instances") for op in ("cancel", "continue", "variables-set", "breakpoints", "create")),
-]
+# Every mutating verb in the catalog under each group; reads are listed in the catalog too.
+_MUTATING = {
+    "instances": ("retry", "cancel", "pause", "resume", "migrate", "goto", "variables-set", "elements retry", "elements cancel", "messages send"),
+    "debug-instances": ("cancel", "continue", "variables-set", "breakpoints", "create"),
+}
+OPERATIONS = [f"{g} {op}" for plural, ops in _MUTATING.items() for g in (plural, plural[:-1]) for op in ops]
+
+
+def test_guarded_verbs_exist_in_the_cli_catalog() -> None:
+    catalog = set(json.loads((_SUITE.parents[2] / "assets/uip-catalog-snapshot.json").read_text(encoding="utf-8"))["verbs"])
+    missing = [f"maestro bpmn {g} {op}" for g, ops in _MUTATING.items() for op in ops if f"maestro bpmn {g} {op}" not in catalog]
+    assert not missing, missing
 
 
 @pytest.mark.parametrize("uip", ["uip", "$UIP", "${UIP}"])
