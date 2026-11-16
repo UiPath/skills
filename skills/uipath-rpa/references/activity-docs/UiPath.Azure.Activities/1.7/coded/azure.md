@@ -2,7 +2,7 @@
 
 Reference for the `azure` service from `UiPath.Azure.Activities` package.
 
-**Required package:** `"UiPath.Azure.Activities": "[2.0.0]"`
+**Required package:** `"UiPath.Azure.Activities": "[1.7.5]"`
 
 **Auto-imported namespaces:** `UiPath.Azure.Activities.API`, `UiPath.Azure.Models`, `UiPath.Core`, `UiPath.Azure.Core`
 

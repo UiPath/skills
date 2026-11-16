@@ -2,7 +2,7 @@
 
 Examples using the `azure` service from `UiPath.Azure.Activities` package.
 
-**Required package:** `"UiPath.Azure.Activities": "[2.0.0]"`
+**Required package:** `"UiPath.Azure.Activities": "[1.7.5]"`
 
 ---
 

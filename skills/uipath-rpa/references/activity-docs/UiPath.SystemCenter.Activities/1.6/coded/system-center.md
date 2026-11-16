@@ -2,7 +2,7 @@
 
 Reference for the `systemCenter` service from `UiPath.SystemCenter.Activities` package.
 
-**Required package:** `"UiPath.SystemCenter.Activities": "[1.0.0]"`
+**Required package:** `"UiPath.SystemCenter.Activities": "[1.6.0]"`
 
 **Auto-imported namespaces:** `UiPath.SystemCenter.Core`, `UiPath.Core`, `UiPath.SystemCenter.Models`
 
