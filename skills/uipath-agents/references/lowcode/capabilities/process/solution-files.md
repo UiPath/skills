@@ -26,6 +26,7 @@ It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding ex
 │           │   └── <AgentName>.json     # Agent process (auto-generated when project is registered with solution)
 │           ├── process/                 # ← RPA processes (type: "process")
 │           ├── api/                     # ← API workflows (type: "api")
+│           ├── flow/                    # ← Maestro Flows (type: "flow") — written by refresh, no template here
 │           └── processOrchestration/    # ← Agentic processes (type: "processOrchestration")
 │               └── <ToolName>.json      # External tool process declaration (YOU CREATE THIS)
 └── userProfile/
@@ -34,6 +35,8 @@ It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding ex
 ```
 
 The process declaration directory depends on the tool type. Place the file in the subdirectory matching the `ProcessType` from the Releases API: `process/` for RPA, `agent/` for agents, `api/` for API workflows, `processOrchestration/` for agentic processes.
+
+> **Maestro Flow (`type: "flow"`) is not covered by the templates below.** `uip solution resources refresh` writes its declaration to `process/flow/<Name>.json` — Template B's layout with `resource.type: "flow"`, `spec.type: "Flow"`, and a `spec.runtimeProfile` field. Generate it with refresh; do not hand-author it. See [process.md § Maestro Flow as a Tool](process.md#maestro-flow-as-a-tool).
 
 ## Process Declaration
 
@@ -481,6 +484,7 @@ Returns, for each match:
   - `agent` → `process/agent/`
   - `api` → `process/api/`
   - `processOrchestration` → `process/processOrchestration/`
+  - `Flow` (deployed Maestro Flow; agent resource `type` is `flow`) → `process/flow/` — written by refresh, no template in this file
 - `Folder` — literal Orchestrator folder path (e.g., `"Shared/Sales"`). Use as: agent-level `resource.json` `properties.folderPath`, solution-level `folders[].fullyQualifiedName` (in both process and package declarations), and `folderFullyQualifiedName` in `debug_overwrites.json`.
 - `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
 

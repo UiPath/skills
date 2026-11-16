@@ -193,7 +193,7 @@ Inline-agent resources — `tool`, `context`, `escalation` — share one path co
 `<RES_UUID>` is a fresh UUID. It MUST match (a) the resource node's `inputs.source` in the flow and (b) the `id` field inside `resource.json`. The resource directory name is the UUID — never the human-readable resource name. Human-readable folder names are the standalone-agent convention; inline agents always use UUIDs.
 
 Resource body shape is identical to the standalone-agent docs — only the folder name differs:
-- Tools (`process` / `agent` / `api` / `processOrchestration`): [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resources list` + `uip solution resources get`); subtype is selected by the `type` field.
+- Tools (`process` / `agent` / `api` / `processOrchestration` / `flow`): [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resources list` + `uip solution resources get`); subtype is selected by the `type` field.
 - Context index: [../context/index.md](../context/index.md) § Agent-Level Resource Shape.
 - Escalation: [../escalation/escalation.md](../escalation/escalation.md) § Agent-Level Resource.
 
@@ -252,7 +252,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 
-Resource nodes use the same `inputs.source` pattern as the autonomous agent — no instance `model` block. The `type` follows the per-kind patterns in § Resource nodes below — `uipath.agent.resource.tool.{process|agent|api|processorchestration}.<release-key>`, where `<release-key>` is the resource's release-key GUID returned by `uip solution resources list`:
+Resource nodes use the same `inputs.source` pattern as the autonomous agent — no instance `model` block. The `type` follows the per-kind patterns in § Resource nodes below — `uipath.agent.resource.tool.{process|agent|api|processorchestration|flow}.<release-key>`, where `<release-key>` is the resource's release-key GUID returned by `uip solution resources list`:
 
 ```jsonc
 {
@@ -294,6 +294,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | RPA process | `uipath.agent.resource.tool.process.<release-key>` |
 | Agent-as-tool | `uipath.agent.resource.tool.agent.<release-key>` |
 | API workflow | `uipath.agent.resource.tool.api.<release-key>` |
+| Maestro Flow | `uipath.agent.resource.tool.flow.<release-key>` |
 | Process Orchestration | `uipath.agent.resource.tool.processorchestration.<release-key>` |
 | Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` |
 | IS connector | `uipath.agent.resource.tool.connector` |
@@ -301,7 +302,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Escalation | `uipath.agent.resource.escalation.<variant>` (e.g. `.coded-action-app`; discover with `uip maestro flow registry search "escalation"`) |
 | Memory space | `uipath.agent.resource.memory.*` canvas node, backed by `features/<FeatureName>/feature.json` from `uip agent memory` |
 
-`<release-key>` is the resource's release-key GUID from `uip solution resources list` (the row's `Key` field). The four process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
+`<release-key>` is the resource's release-key GUID from `uip solution resources list` (the row's `Key` field). The five process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
 
 ## Walkthrough — End-to-End
 
@@ -372,6 +373,7 @@ uipath.agent.autonomous                                        ← Inline agent 
 uipath.agent.resource.tool.process.<release-key>               ← Tool: RPA process
 uipath.agent.resource.tool.agent.<release-key>                 ← Tool: agent
 uipath.agent.resource.tool.api.<release-key>                   ← Tool: API workflow
+uipath.agent.resource.tool.flow.<release-key>                  ← Tool: Maestro Flow
 uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process orchestration
 uipath.agent.resource.tool.connector                           ← Tool: IS connector
 uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in

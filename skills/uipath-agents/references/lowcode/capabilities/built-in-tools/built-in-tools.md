@@ -2,7 +2,7 @@
 
 Built-in tools are pre-built agent tools that ship with the platform. They share a wire shape (`$resourceType: "tool"`, `type: "internal"`) and a fixed input/output schema per tool. Unlike process or Integration Service tools, built-in tools are self-contained at the agent level — no solution-level files, no `uip solution resources refresh`.
 
-For process tools (RPA / agent / API / agentic), see [../process/process.md](../process/process.md). For Integration Service tools, see [../integration-service/integration-service.md](../integration-service/integration-service.md).
+For process tools (RPA / agent / API / agentic / Maestro Flow), see [../process/process.md](../process/process.md). For Integration Service tools, see [../integration-service/integration-service.md](../integration-service/integration-service.md).
 
 ## When to Use
 
