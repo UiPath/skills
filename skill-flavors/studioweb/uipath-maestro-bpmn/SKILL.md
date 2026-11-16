@@ -167,7 +167,8 @@ uip maestro bpmn format <Name>.bpmn
   was reset and name each kind of content the search found as removed.
   Any other edit merges, even one that changes a step's tag; `merge` then keeps
   the old tag, so name each such step under the report's `Unverified:` as one
-  Studio Web may still show as its old type.
+  Studio Web may still show as its old type, and a step that became a script
+  task as one whose script Studio Web drops.
 - **To undo the turn's write**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish by
