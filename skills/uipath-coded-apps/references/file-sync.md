@@ -77,6 +77,8 @@ The command uploads the contents of the build directory (default: `dist/`) to St
 
 Alongside the build output, `push` uploads the app's source files from the project root (dotfiles and the build directory itself excepted). Files matched by the app's `.gitignore` or by a `.uipignore` are skipped. `.uipignore` uses the same `.gitignore` syntax (for example `fixtures/` or `*.map`) and is the one ignore file shared with `uip solution upload`; the build directory is always uploaded whole. The older `.uipathignore` name is still read but deprecated — rename it to `.uipignore`.
 
+`.env` files are never pushed. When the project has a `.env.example` (or `.env.template`), push reads it and adds its `UIPATH_APPS_*` names and values to the app resource's environment variables in the solution, so the deploy wizard lists what can be configured; it only adds names the solution does not have yet, and never changes a value set in Studio Web. See [environment-variables.md](environment-variables.md).
+
 The `--ignore-resources` flag skips importing referenced resources (connections, assets) that may be declared in the app.
 
 ## Pull Workflow
@@ -158,6 +160,8 @@ uip codedapp pull --overwrite
 | `UIPATH_PROJECT_ID` | Studio Web project ID (auto-saved on first push) |
 
 Authentication is handled by `uip login` and the coded app CLI. **NEVER** read, print, source, or manually set cached access-token environment variables.
+
+These are CLI settings. The app's own per-deployment values are the `UIPATH_APPS_*` environment variables in [environment-variables.md](environment-variables.md).
 
 ## Troubleshooting
 
