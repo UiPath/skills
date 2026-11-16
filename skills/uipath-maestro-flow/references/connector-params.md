@@ -253,15 +253,17 @@ The compiler emits `multipartParameters`; `uip is resources run` has no multipar
 Lookup fields store ids, not display names. If marked LOOKUP, author its helper and do not guess or manually resolve it:
 
 ```ts
-channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
+channel: lookup(SendMessageToUser, 'channel').byRealName('Ada Lovelace')
 ```
+
+Search by a field the connection returns. Slack omits `profile.email` unless the connection's app may read emails, so `.byEmail(…)` can match no one; prefer `.byRealName(…)` or `.byId(…)`. When prepare says `none carries '<field>'`, the value is not wrong: switch to the other field it names.
 
 | form | when | helpers |
 |---|---|---|
 | `lookup(SendMessageToUser, 'channel')` | prepared descriptor | `.byEmail(v)`, `.byRealName(v)`, … and `.by(name, v)` |
 | `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | generic CRUD/no descriptor | `.by(name, v)` only |
 
-Never use an alias (`.byEmail`, `.byRealName`, generated onto the descriptor) in the second form; it throws. Use `.by('profile.email', …)` there. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
+Never use an alias (`.byEmail`, `.byRealName`, generated onto the descriptor) in the second form; it throws. Use `.by('profile.real_name', …)` there. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
 
 A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top or one level below; deeper paths start at the root picker's top entry, not drive root:
 
@@ -279,7 +281,7 @@ Drop `parentReference` at top level. When source contains unresolved tokens, run
 
 ```bash
 uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
-  --resolve channel:profile.email=dustin@example.com
+  --resolve 'channel:profile.real_name=Ada Lovelace'
 ```
 
 Do not find the connection first: prepare searches `uip is connections list` (own folder then tenant), writes connection id and folder key, and accepts `--connection <name>` only to disambiguate candidates. If a value is absent, it tries other enabled connections and re-runs itself against the one that resolves (which `bindings.json` then names), unless `--connection-id` or `--connection` pinned one; it does not retry transport/permission failures or choose between two resolving connections. When one was pinned or two resolve, the message names alternatives; choose and re-run with the printed `--connection-id`.
