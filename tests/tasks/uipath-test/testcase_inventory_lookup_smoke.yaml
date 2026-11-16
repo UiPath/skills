@@ -140,9 +140,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed covering requirements with `testcases list-requirements`"
+    # SKILL.md teaches two equivalent reads: `testcases list-requirements` and
+    # `requirements list --test-case-id` (gpt-5.6-luna took the second).
+    description: "Agent listed covering requirements with `testcases list-requirements` or `requirements list --test-case-id`"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+list-requirements\b'
+    command_pattern: '(uip|\$UIP)\s+tm\s+(?:testcases\s+list-requirements\b|requirements\s+list(?![-\w])(?=[\s\S]*--test-case-id\s+\S))'
     require_success: true
     min_count: 1
     weight: 1.5
