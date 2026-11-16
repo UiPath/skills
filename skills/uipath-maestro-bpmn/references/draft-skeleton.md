@@ -56,6 +56,7 @@ A skeleton is not a working process and must never be reported as one.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
+   What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`: never draw a box that receives, reads or captures it.
 8. **Mark a step that runs once per item on its own box.**
    When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
