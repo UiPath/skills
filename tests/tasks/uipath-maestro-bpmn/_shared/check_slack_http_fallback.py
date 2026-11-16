@@ -64,11 +64,13 @@ NAME_HINT = "SlackEmojiListTest"
 SLACK_KEY = "uipath-salesforce-slack"
 HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 EMOJI_ENDPOINT = "emoji.list"
-# The request's own url (relative to the connection's base URL,
-# https://slack.com/api), with or without a leading slash or a query string.
+# The request's own url: relative to the connection's base URL
+# (https://slack.com/api), with or without a leading slash or a query string,
+# or absolute on that same host, which Integration Service accepts (it refuses
+# only other hosts, per the builder SDK's MANAGED_HTTP_ABSOLUTE_URL check).
 # Integration Service resource paths such as '/admin_emoji_list' or
 # '/emoji_list' must not match: they reach Slack as written and get its 404.
-EMOJI_ENDPOINT_RE = re.compile(r"^/?emoji\.list(?:\?.*)?$")
+EMOJI_ENDPOINT_RE = re.compile(r"^(?:https://slack\.com/api)?/?emoji\.list(?:\?.*)?$")
 
 LIVE_RUN_DIR = Path("slack-emoji-list-live")
 

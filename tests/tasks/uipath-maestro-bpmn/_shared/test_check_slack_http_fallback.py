@@ -56,9 +56,17 @@ def test_emoji_list_with_query_passes() -> None:
     assert grader.references_emoji_endpoint(node)
 
 
-def test_integration_service_resource_path_fails() -> None:
-    # `uip is resources describe` paths reach Slack as written and get its 404.
-    for url in ("/admin_emoji_list", "/emoji_list", "/admin.emoji.list"):
+def test_same_host_absolute_url_passes() -> None:
+    body = {**CONNECTOR_BODY, "url": "https://slack.com/api/emoji.list"}
+    node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+    assert grader.references_emoji_endpoint(node)
+
+
+def test_other_endpoints_fail() -> None:
+    # Integration Service resource paths (`/admin_emoji_list`, `/emoji_list`) reach Slack as
+    # written and get its 404. `/admin.emoji.list` is a real Enterprise Grid method, but it
+    # is not the team emoji list the task asks for.
+    for url in ("/admin_emoji_list", "/emoji_list", "/admin.emoji.list", "https://evil.example/emoji.list"):
         body = {**CONNECTOR_BODY, "url": url, "path": url}
         node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
         assert not grader.references_emoji_endpoint(node), url
