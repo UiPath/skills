@@ -46,7 +46,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      - `SDD scope`, and the solution rows for a process genome;
      - `Template validation`, as the template check sets it;
      - last, `| **Genome** | <relative path to the genome> · genome-sha256 <fingerprint> |` (item 4). This row tells every reader that the genome is the source.
-   - **Decisions Made:** what the genome decides, one row each, the reason taken from the genome's own words:
+   - **Decisions Made**, whatever the `Execution autonomy` (the template's condition is `design`'s): what the genome decides, one row each, the reason taken from the genome's own words:
      - each component's skill;
      - each `Decided:` split;
      - the delivery model;

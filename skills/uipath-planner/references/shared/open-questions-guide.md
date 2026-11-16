@@ -149,9 +149,7 @@ The source states what each was meant to do, and the rebuild does that. Name any
 - **Answered by:** the environment's owners
 - **Answer:**
 
-### Preferences
-
-<only when the genome names no preferences file; otherwise this group is left out>
+### Preferences <only when the genome names no preferences file; with one named, this heading and its item are not written>
 
 **Which preferences file should the build follow?**
 - **Context:** <the development standards and standing answers the build follows beyond the genome: naming, project structure, logging, error handling, UI automation, code, testing, packaging>
