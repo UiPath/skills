@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assert Build it replaced every outline box and gave each step its element tag.
+"""Assert Build it replaced every outline box and left no script step as bpmn:task.
 
 A draft skeleton validates as well as a built process, so `validate` alone cannot
 tell that *Build it* did anything. Two shapes fail:
@@ -46,16 +46,20 @@ def is_outline_box(task) -> bool:
     return types <= {VARIABLES_ONLY} and task.find(".//uipath:output", NS) is None
 
 
+def findings(root) -> tuple[list[str], list[str]]:
+    """Labels of script steps left as bpmn:task, and of outline boxes."""
+    tasks = list(root.iter(f"{{{NS['bpmn']}}}task"))
+    label = lambda t: t.get("name") or t.get("id")  # noqa: E731
+    return [label(t) for t in tasks if lost_script_type(t)], [label(t) for t in tasks if is_outline_box(t)]
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check_no_outline_boxes.py <Name>")
     path, root = parse_bpmn(sys.argv[1])
-    tasks = list(root.iter(f"{{{NS['bpmn']}}}task"))
-    label = lambda t: t.get("name") or t.get("id")  # noqa: E731
-    lost = [label(t) for t in tasks if lost_script_type(t)]
+    lost, left = findings(root)
     if lost:
         fail(f"{path} has script steps left as bpmn:task (merge kept the outline tag): {', '.join(lost)}")
-    left = [label(t) for t in tasks if is_outline_box(t)]
     if left:
         fail(f"{path} still has outline boxes: {', '.join(left)}")
     print(f"OK: {path} has no outline box left")

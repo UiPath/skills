@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-from _shared.check_no_outline_boxes import is_outline_box, lost_script_type
+from _shared.check_no_outline_boxes import findings, is_outline_box, lost_script_type
 
 _HEAD = '<root xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn">'
 _TYPE = '<uipath:type value="BPMN.Variables" version="v1" />'
@@ -46,6 +46,9 @@ def test_merge_left_a_script_step_as_bpmn_task() -> None:
     assert not is_outline_box(merged)
 
 
-def test_the_canvas_writes_the_same_step_as_bpmn_script_task() -> None:
-    canvas = _el("scriptTask", _SCRIPT_MAPPING, ' scriptFormat="JavaScript"', "<bpmn:script>return 1;</bpmn:script>")
-    assert canvas.tag.endswith("}scriptTask")
+def test_the_canvas_script_task_passes_and_the_merged_one_fails() -> None:
+    body = f'<bpmn:extensionElements>{_SCRIPT_MAPPING}</bpmn:extensionElements><bpmn:script>return 1;</bpmn:script>'
+    canvas = ET.fromstring(f'{_HEAD}<bpmn:scriptTask id="t" scriptFormat="JavaScript">{body}</bpmn:scriptTask></root>')
+    merged = ET.fromstring(f'{_HEAD}<bpmn:task id="t" scriptFormat="JavaScript">{body}</bpmn:task></root>')
+    assert findings(canvas) == ([], [])
+    assert findings(merged) == (["t"], [])
