@@ -44,18 +44,21 @@ success_criteria:
     description: "Agent wrote the payload with a heredoc and passed that same file to --updates-file in one command"
     tool_name: "Bash"
     command_pattern: >-
-      (?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
+      (?s)\A(?=.*my_invoices-f1afa9ef-ixp).*?cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  # The rest grade what the CLI received: the mock logs the passed file's
-  # content right after its path, so a stale or missing file fails here.
-  - type: file_matches_regex
+  # The rest grade what the CLI received. The shared mock writes the argv to
+  # calls.jsonl and the passed file's content after its path in calls.log.
+  - type: cli_called
     description: "CLI received `fields update-prompts --updates-file` with a payloads/ file"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^uip\s+ixp\s+fields\s+update-prompts\s+my_invoices-f1afa9ef-ixp\s(?=[^\r\n]*--updates-file\s+\S*payloads/[^\s/]+\.json\s)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    tool: "uip"
+    verb: "ixp fields update-prompts"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      updates-file: {matches_regex: "/payloads/[^/]+\\.json$"}
     weight: 2.5
     pass_threshold: 1.0
 
