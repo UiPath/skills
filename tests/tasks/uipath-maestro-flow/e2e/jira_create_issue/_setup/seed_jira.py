@@ -17,9 +17,6 @@ seed = {
     "summary": summary,
     "project_key": jira_is.PROJECT_KEY,
     "issuetype_id": jira_is.issuetype_id(conn),
-    # Jira's design-time schema marks fields.reporter.id as required for this
-    # project/issue type; pin it so agents never have to guess or ask.
-    "reporter_id": jira_is.myself(conn),
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2))
 print(f"OK: wrote seed targets (summary={summary!r}, project={jira_is.PROJECT_KEY})")

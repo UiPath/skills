@@ -109,10 +109,10 @@ with `uip maestro flow nodes create` gets none.
 A connector tool needs `connection` and `folder`, `bindings.json` labels
 resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
 is `FLOW_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`
-(`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on an SDK older than 6.88.2). `prepare` does not
-read a tool's labels from the source, so pass them:
-`uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>`
-finds the connection and writes both entries under the tool's labels.
+(`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` on an SDK older than 6.88.2). Write the
+labels on the tool, then run
+`uip maestro registry prepare <connector-key> --action <operation>`: it reads the
+tool's `connection` / `folder` from the source and writes both entries under them.
 `description` overrides the text the model is told the tool does; it defaults
 to the library's operation description.
 

@@ -92,7 +92,7 @@ When the intended target is one of these, tell the user Live Authoring is not su
 ```json
 {
   "Result": "Success",
-  "Code": "ToolResult",
+  "Code": "RemoteStatus",
   "Data": {
     "success": true,
     "target": "UnattendedRobot",

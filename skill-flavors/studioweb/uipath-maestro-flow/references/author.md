@@ -1,3 +1,24 @@
+<!--skill-flavor:author-scope:start-->
+Everything that happens before a flow runs: choose each node, write its source
+in `.flow-sdk/`, and run the loop in
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle) until the target `.flow`
+validates. A new flow in a project whose `new.flow` has no steps is built in
+that file, from `.flow-sdk/new.flow.ts`, never in a second file named after the
+flow. Authoring ends
+at a valid artifact; publishing, running and debugging are
+[`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
+<!--skill-flavor:author-scope:end-->
+
+<!--skill-flavor:source-not-artifact:start-->
+4. **Edit the source, not the artifact.** A new flow: `decompile` the project's
+   `new.flow` into `.flow-sdk/new.flow.ts`, add your steps to that source, and
+   `compile` it `-o new.flow`. Never write a source or a `.flow` named after the
+   flow beside a `new.flow` that has no steps; a second flow in the project gets
+   its own file ([SKILL.md — Project layout](../SKILL.md#project-layout), rule 4).
+   A `.flow` that already has steps is
+   re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+<!--skill-flavor:source-not-artifact:end-->
+
 <!--skill-flavor:solution-lookup:start-->
 10. **Work in the open solution and the open flow.** Studio Web has exactly
     one solution open at `/solution`; never create another. Edit the `.flow`

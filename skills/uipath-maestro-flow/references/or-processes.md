@@ -33,55 +33,58 @@ The *Key* field (GUID) is the unique id for the process.
 
 ## Getting the inputs and outputs
 
-Once you find the process, you must use the `get` command with the *Key* to retrieve more details.
-The inputs and outputs of a published process are buried in the *ArgumentsV2* field that is only exposed when using the `--all-fields` option.
-The *Input* and *Output* parameters inside *ArgumentsV2* are escaped JSON strings.
-The following CLI command can be used to extract inputs and outputs as JSON text:
+Do not copy the key or the argument schema by hand.
+Write the step with `name` and `folderPath` only, and leave `key` and `returns` out.
 
-```shell
-uip or processes get BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D --all-fields --output json 2>/dev/null \
-  | jq '.Data.ArgumentsV2 | {Input, Output} | map_values(if (. // "") == "" then null else fromjson end)'
-```
-
-Here is an example output of this command:
-
-```json
-{
-  "Input": {
-    "type": "object",
-    "properties": {
-      "productId": {
-        "type": "integer",
-        "title": "productId"
-      }
-    },
-    "required": []
-  },
-  "Output": {
-    "type": "object",
-    "properties": {
-      "status": {
-        "type": "boolean",
-        "title": "status"
-      }
-    },
-    "required": []
-  }
-}
-```
-
-The defined inputs and outputs would be represented in an action similar to the following:
+Needs `@uipath/maestro-builder-sdk` 6.109.0 or later: `prepare --kind Process` then prints `Type`, `Inputs` and `Outputs` lines.
+An older SDK records only the catalogue row (no `Type` line), and its `compile` refuses a step with no `key` (`*_NO_KEY`).
+<!--skill-flavor:or-processes-prepare-sdk:start-->
+Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy, else `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:or-processes-prepare-sdk:end-->
 
 ```ts
 .step('intake',
   agenticProcess({
-    key: 'BAADF00D-BAAD-F00D-BAAD-F00DBAADF00D',
     name: 'ProcurementProcess',
-    folderPath: 'Shared',
-    inputs: { productId: 1 }, // input object
-    returns: { status: 'boolean' } // output object
+    folderPath: '<FOLDER_PATH>',
+    inputs: { productId: 1 },
   }))
 ```
+
+`check` reports the missing key with the factory's `*_NO_KEY` code (`RPA_NO_KEY`, `APIWF_NO_KEY`, `FUNCTION_NO_KEY`, `AGENTIC_NO_KEY`, `AGENT_NO_KEY`) and prints the command that records the process.
+Run it:
+
+```shell
+uip maestro registry prepare --kind Process --name ProcurementProcess --folder-path '<FOLDER_PATH>'
+```
+
+If `uip` answers `unknown option '--kind'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --kind Process …`.
+
+`prepare` prints the process's inputs and outputs:
+
+```text
+Type      ProcessOrchestration
+Inputs    productId: integer
+Outputs   status: boolean
+```
+
+Re-run `check` and fix what it reports:
+
+- `PROCESS_INPUT_UNKNOWN`: an input the process does not declare (it names the nearest real one);
+- `PROCESS_INPUT_MISSING`: a required input left out;
+- `PROCESS_INPUT_TYPE`: a literal of the wrong type;
+- `PROCESS_RETURNS_UNKNOWN`: a `returns` field the process does not return;
+- `PROCESS_TYPE_MISMATCH`: the wrong factory for the process type.
+
+Then `compile` writes the key and the output schema (`returns`) from that record.
+Read `out('<step>', '<field>')` with the names `prepare` printed.
+
+Orchestrator often leaves a process's contract blank (common for API workflows and some RPA processes).
+`prepare` then prints `(not recorded …)` for that side, or `Arguments not recorded`.
+`check` does not validate that side, and `compile` still writes the key.
+Keep your `inputs`, and declare `returns` for the fields you read; to see the contract, use `uip maestro flow registry get <node type>` (`inputDefinition`, `outputDefinition`).
+
+A record more than 24 hours old still compiles; `check` warns `PROCESS_RECORD_STALE` and prints the `prepare` that refreshes it.
 
 ## Notes
 

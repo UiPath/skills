@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-"""Unit tests for the two diagram-preservation checks.
-
-The skill ships `scripts/check-diagram-preserved.py` to agents and the evals use
-`edit_check.assert_diagram_preserved`. Each case runs both, so they cannot drift.
-"""
+"""Unit tests for `edit_check.assert_diagram_preserved`, the evals' diagram-preservation grader."""
 
 from __future__ import annotations
 
-import json
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -18,8 +12,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from _shared.edit_check import assert_diagram_preserved  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[4]
-SCRIPT = REPO / "classic" / "skills" / "uipath-maestro-bpmn" / "scripts" / "check-diagram-preserved.py"
 
 BEFORE = """<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
     xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
@@ -47,17 +39,6 @@ BEFORE = """<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/
 """
 
 
-def run_script(tmp_path: Path, after: str, removed: str | None = None) -> tuple[int, list[str]]:
-    before_path, after_path = tmp_path / "before.bpmn", tmp_path / "after.bpmn"
-    before_path.write_text(BEFORE)
-    after_path.write_text(after)
-    args = [sys.executable, str(SCRIPT), str(before_path), str(after_path)]
-    if removed:
-        args += ["--removed", removed]
-    proc = subprocess.run(args, capture_output=True, text=True)
-    return proc.returncode, json.loads(proc.stdout).get("Losses", [])
-
-
 def run_helper(after: str, removed: frozenset[str] = frozenset()) -> str | None:
     try:
         assert_diagram_preserved(ET.fromstring(BEFORE), ET.fromstring(after), removed)
@@ -66,21 +47,17 @@ def run_helper(after: str, removed: frozenset[str] = frozenset()) -> str | None:
     return None
 
 
-def test_unchanged_passes(tmp_path: Path) -> None:
-    assert run_script(tmp_path, BEFORE) == (0, [])
+def test_unchanged_passes() -> None:
     assert run_helper(BEFORE) is None
 
 
-def test_expanded_subprocess_may_widen(tmp_path: Path) -> None:
+def test_expanded_subprocess_may_widen() -> None:
     after = BEFORE.replace('x="300" y="60" width="300"', 'x="300" y="60" width="460"')
-    assert run_script(tmp_path, after) == (0, [])
     assert run_helper(after) is None
 
 
-def test_task_resize_fails(tmp_path: Path) -> None:
+def test_task_resize_fails() -> None:
     after = BEFORE.replace('x="100" y="100" width="100"', 'x="100" y="100" width="140"')
-    code, losses = run_script(tmp_path, after)
-    assert code == 1 and any("resized" in loss for loss in losses)
     assert "resized" in run_helper(after)
 
 
@@ -91,22 +68,10 @@ def test_task_resize_fails(tmp_path: Path) -> None:
         (BEFORE.replace(' bioc:stroke="#2B5D8C"', ""), "edge colors"),
     ],
 )
-def test_edge_loss_fails(tmp_path: Path, after: str, expected: str) -> None:
-    code, losses = run_script(tmp_path, after)
-    assert code == 1 and any(expected in loss for loss in losses)
+def test_edge_loss_fails(after: str, expected: str) -> None:
     assert expected in run_helper(after)
 
 
-def test_shape_without_bounds_reports_a_loss_not_a_traceback(tmp_path: Path) -> None:
+def test_shape_without_bounds_reports_a_loss_not_a_traceback() -> None:
     after = BEFORE.replace('<dc:Bounds x="100" y="100" width="100" height="80" />', "")
-    code, losses = run_script(tmp_path, after)
-    assert code == 1 and any("lost its bounds" in loss for loss in losses)
     assert "lost its bounds" in run_helper(after)
-
-
-def test_removed_id_still_in_model_is_reported(tmp_path: Path) -> None:
-    after = BEFORE.replace(' bioc:fill="#E8F1FB"', "")
-    code, losses = run_script(tmp_path, after, removed="A")
-    assert code == 1
-    assert any("named in --removed but is still in the model" in loss for loss in losses)
-    assert any("colors" in loss for loss in losses)

@@ -1,13 +1,17 @@
+<!--skill-flavor:check-source:start-->
+3. **Check**: `uip maestro flow check .flow-sdk/new.flow.ts --source` (a new flow). It names each
+<!--skill-flavor:check-source:end-->
+
 <!--skill-flavor:not-in-library-pull:start-->
-     If the operation is newer than the library, tell the user: Studio Web
-     cannot refresh the library of the session.
+     If the session has a library and the operation is newer than it, tell the user: Studio Web cannot refresh the library of the session.
+     With no session library (Automation Suite), `check` and `compile` have already asked the tenant through `uip`, and the message's last sentence says what it answered: "does not serve it" means the name is wrong or the connector is not on this tenant; for any other reason, report it to the user and stop.
 <!--skill-flavor:not-in-library-pull:end-->
 
 <!--skill-flavor:library-discovery:start-->
-In Studio Web the connector library comes with the session. There is no local
-cache and no library path: `uip maestro registry pull` writes nothing here, and
-`registry path` is not available. Read the library with three verbs, run from
-the project folder:
+In Studio Web on cloud the connector library comes with the session.
+There is no local cache and no library path: `uip maestro registry pull` writes nothing here, and `registry path` is not available.
+With no session library (Automation Suite), `check` and `compile` fetch a missing operation through `uip`, so re-run `check`, and `registry search` searches the tenant's live catalog.
+Read the library with three verbs, run from the project folder:
 
 ```bash
 uip maestro registry search '<words>' --output json              # the operation and its node type

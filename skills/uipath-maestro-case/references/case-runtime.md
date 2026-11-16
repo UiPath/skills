@@ -58,6 +58,33 @@ make from syntax alone. Exact signatures remain in the generated API.
   `vars.scriptResult.<field>` downstream. The compiled output row is named
   `scriptResponse`.
 
+## HTTP requests
+
+<!-- RULE:case.http.modes -->
+- `.httpRequest({ method, url, ... })` sends one HTTP call. Without `connector`
+  the request goes to `url` unauthenticated. With
+  `connector: { key, connection, folder }` it reuses that connection's auth and
+  `path` replaces `url`. Compile refuses `url` through a connector or `path`
+  without one.
+
+<!-- RULE:case.http.body -->
+- An `=` value inside an object body compiles to the code it reads:
+  `body: { id: '=vars.id' }` sends the variable's value, and so does a
+  `'=js:<expr>'` leaf. Each `=js:` value must be exactly one expression
+  (acorn-parsed); a statement or unparseable text is refused at compile
+  (`HTTP_REQUEST_BODY_EXPRESSION`). Both work nested and in arrays. Other
+  `=` forms (`=vars.a + 1`) are also refused with the same code; write as
+  `'=js:vars.a + 1'`. A string body must be JSON or an `=` expression;
+  other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+
+<!-- RULE:case.http.credentials -->
+- Compile writes literal credential headers and query parameters as authored.
+  Use `=vars.` references for secrets; `check` warns on literals.
+
+<!-- RULE:case.http.outputs -->
+- Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
+  `.outputs({ v: '=response.body' })` maps one to a case variable.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
@@ -165,6 +192,29 @@ make from syntax alone. Exact signatures remain in the generated API.
   are the common case: an `exceptionStage(...)` that gates normal completion is
   almost never what was meant.
 
+## Activation modes
+
+<!-- RULE:case.activation.lane -->
+- For an SDD `Activation Mode` column, use `runs-sequentially` and `lane`.
+  `lane` is the third argument to `.task()`: `.task(name, fn, { lane: N })`.
+  It sets the set index in `data.tasks[][]` (`lane ?? 0` in the SDK).
+  Tasks that share a lane start together after the predecessor set completes.
+
+  | SDD Activation Mode | SDK entry rule | `lane` | Effect |
+  |---|---|---|---|
+  | `parallel` | `rule('current-stage-entered')` | omit | Task starts at stage entry, in its own set. |
+  | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared | Siblings share a set; start together after the predecessor set. The predecessor also uses `runs-sequentially`. |
+  | `sequential` | `rule('runs-sequentially')` | unique per task | Strict chain: each task waits for the previous set. |
+
+  A task without `runs-sequentially` gets its own set regardless of `lane`.
+  See `examples/PermitIssuance.case.ts` for a three-set stage.
+
+<!-- RULE:case.activation.anti-pattern -->
+- Omitting `lane` on all `runs-sequentially` tasks defaults them to set 0 —
+  they start together, losing sequential structure. The same happens when every
+  task gets the same explicit `lane`. Every `runs-sequentially` task needs an
+  explicit `lane`.
+
 ## Design fidelity
 
 <!-- RULE:case.sdd.declared-shapes -->
@@ -231,6 +281,70 @@ make from syntax alone. Exact signatures remain in the generated API.
   checks that task and condition ids match their derived form, so `Valid` from
   either does not prove a hand-edit is complete. Round-tripping the whole plan
   re-derives all of them at once.
+
+### Check only what you changed: `check --baseline`
+
+`check` judges the whole case. In an existing plan it also reports defects the
+plan already had on stages and tasks you never touched, for example
+`TASK_NO_ENTRY` on a task the Designer saved with no entry rule. Those would
+fail every edit. Pass the original plan as `--baseline` and each finding says
+whether your edit caused it.
+
+The baseline must be the plan as it was before your first compile: compile
+writes back into the same plan, so after it the file on disk is your edit.
+Never pass that plan itself as `--baseline`: the edit compared with itself
+reports every finding as pre-existing, so `check` passes with errors in it.
+<!--skill-flavor:check-baseline-original:start-->
+At the start of each editing session, before its first compile, copy it aside
+and check against the copy. Overwrite any copy an earlier session left: an old
+copy would count that session's changes as yours.
+
+```bash
+mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/
+uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<plan>
+```
+<!--skill-flavor:check-baseline-original:end-->
+
+```text
+✗ [TASK_NO_ENTRY] Task "Escalate" in stage "Intake" has no entry rule — ... (edited)
+⚠ [TASK_NO_ENTRY] Task "Archive" in stage "Intake" has no entry rule — ... (pre-existing, not counted)
+check: 1 error(s) in edited parts of the case, 0 pre-existing SDK defect(s), 1 pre-existing warning(s).
+```
+
+- **`(edited)`** (JSON `origin: "edited"`): fix it. The finding is on a stage,
+  task or trigger you added or changed (a renamed task counts as changed), or
+  it is new on one you did not touch, so your edit caused it. The exit code is
+  1 only while one is left.
+- **`(pre-existing, not counted)`**: the original reports the same code on the
+  same unchanged stage, task or trigger. Leave it unless the user asked you to
+  fix it. A finding that names no stage or task (a case-level rule) is
+  pre-existing only when the original reports the same code and message.
+- **`(pre-existing)` worded as a probable SDK defect** (JSON
+  `class: "lowering"`): `compile` refuses that task even though you did not
+  change it, so the compile stops on it. Do not edit the task to get around
+  it. Stop, name the task and the code, and tell the user it is a probable SDK
+  defect to report at <https://github.com/UiPath/builder-sdk/issues>.
+- **`CHECK_INCOMPLETE`**: check stopped before it judged the whole case. Fix
+  the error it names, even if the original has it too, then check again.
+- **`--baseline ... is not the plan this source was decompiled from`** (exit
+  2): the file you passed is not the original, most often the plan after a
+  compile wrote your edit into it. Pass the copy you made before the first
+  compile. If you no longer have it, decompile the current plan again and use
+  that plan as the baseline from now on.
+
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+Needs two releases: `@uipath/maestro-builder-sdk` 6.97.0 or later, and the
+`uip` release that carries UiPath/cli#6081 (`uip` 1.205.0 does not).
+- `unknown option '--baseline'` means `uip` is too old, whatever the SDK
+  version. Upgrade `uip`. Upgrading the SDK alone gives the same error again.
+- `--baseline on case check needs a @uipath/maestro-builder-sdk release that
+  supports it` means `uip` is new enough and the SDK is not. Upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+Until both are upgraded, run `check --source` without `--baseline`. In this
+fallback only, fix only the errors on stages and tasks you changed, even
+though the exit code stays non-zero.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 ## Product boundary
 

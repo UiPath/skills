@@ -189,12 +189,12 @@ A clean `run`, then the same workflow under `debug start`:
 [Information] <PROJECT_NAME> execution started
 [Information] Sum: 10
 [Information] <PROJECT_NAME> execution ended in: 00:00:00
-{ "Result": "Success", "Code": "ToolResult",
+{ "Result": "Success", "Code": "Run",
   "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null, "errorScope": null } }
 ```
 
 ```json
-{ "Result": "Success", "Code": "ToolResult",
+{ "Result": "Success", "Code": "DebugStart",
   "Data": { "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": "Completed", "debugDetails": null, "errorScope": null } }
 ```
 
@@ -240,10 +240,10 @@ Helm examples:
 
 ### Studio Desktop shape
 
-The same clean `run` (or `debug start`) with the project open in Studio Desktop:
+The same clean `run` (or `debug start`, whose `Code` is `DebugStart`) with the project open in Studio Desktop:
 
 ```json
-{ "Result": "Success", "Code": "ToolResult",
+{ "Result": "Success", "Code": "Run",
   "Data": { "output": "Session ended", "errors": [],
             "logEntries": [ { "source": "Compile", "level": "Information", "message": "Restoring nuget packages" },
                             { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
