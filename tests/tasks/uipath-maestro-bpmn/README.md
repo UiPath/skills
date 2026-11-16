@@ -3,7 +3,7 @@
 These tasks exercise the `uipath-maestro-bpmn` skill. Since the promotion,
 `skills/uipath-maestro-bpmn` is the builder-SDK skill (author `<Name>.bpmn.ts`,
 compile to `.bpmn`); the previous registry-driven XML skill lives in
-`classic/skills/uipath-maestro-bpmn` and ships only in the Studio Web flavor.
+`classic/skills/uipath-maestro-bpmn`, kept for these graders; no package ships it.
 Several descriptions below still describe the classic skill's mechanism.
 
 - `smoke/` covers the core registry-driven authoring loop.
@@ -37,6 +37,11 @@ Several descriptions below still describe the classic skill's mechanism.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
   skill retains.
+- `diagnose/` covers single diagnose rules against mocked runs (stuck gateway,
+  root incident, scoped variables, deployed-asset drift, traces last).
+  `next_action_contract/` guards two rules ported from the classic skill:
+  literal reads with no loop, and a next action that names a read-only
+  re-check instead of a lifecycle step.
 - `_shared/` contains small Python helpers for durable XML shape assertions, plus every per-task `check_*.py` grader (reached only via `$REFERENCE_DIR`, never staged into the agent's sandbox).
 
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
@@ -82,7 +87,7 @@ The exception is a task that grades registry usage itself (`smoke/registry_disco
 There the registry IS the subject under test, so naming it is correct.
 
 **3. Never name a `references/*.md` file in a prompt.**
-The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `operate.md` and `patterns/`.
+The two generations name their references differently: the SDK skill's `references/` holds `bpmn-runtime.md`, `connectors.md`, `diagnose.md`, `draft-skeleton.md`, `final-report-template.md`, `operate.md` and `patterns/`.
 `structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `classic/skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
 Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
 

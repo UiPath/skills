@@ -158,9 +158,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed the project's automation packages with `testcases list-packages`"
+    # `testcases list` rows carry `PackageName` too; gpt-5-6-luna read the package
+    # from them and packages.txt was right. The outcome check below grades the answer.
+    description: "Agent read the project's automation packages through the CLI (`testcases list-packages`, or `testcases list` rows' `PackageName`)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+list-packages\b'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+list(?:-packages)?(?![-\w])'
     require_success: true
     min_count: 1
     weight: 1.5

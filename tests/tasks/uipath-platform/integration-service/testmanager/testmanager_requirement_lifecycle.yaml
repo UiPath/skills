@@ -77,7 +77,8 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-    require_success: true
+    # No require_success: it scores the exit code of the whole Bash call (a verify
+    # get that 404s fails it). Whether the delete worked is graded on the tenant below.
   - type: command_executed
     description: "Assign Test Cases to Requirement"
     tool_name: "Bash"
@@ -99,4 +100,11 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: "Tenant: the created requirement no longer exists (the delete ran and succeeded)"
+    command: "python3 $REFERENCE_DIR/check_record_deleted.py Requirement"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0

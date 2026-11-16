@@ -11,6 +11,21 @@
    "credit source",
    "credit bureau",
    "credit data"
+  ],
+  "Credit/compliance sources": [
+   "credit/compliance source"
+  ],
+  "Case workspace": [
+   "case workspace"
+  ],
+  "Document workspace": [
+   "document workspace"
+  ],
+  "Analysis workspace": [
+   "analysis workspace"
+  ],
+  "Decision workspace": [
+   "decision workspace"
   ]
  },
  "allow_other_category": true
