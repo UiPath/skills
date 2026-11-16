@@ -121,7 +121,7 @@ Tiers, in the order the owner reads them, by what a wrong default costs:
 
 The role answering is the process owner for the first two tiers, whoever knows the process for a reading and whoever holds the source for material, unless the point is another owner's (a system's owner, the environment's owners).
 
-Only what nothing else answers is an entry. A point the source, an agreed SDD, the request, the preferences file or the tenant settles is a fact, written where it acts. Every other point is classed before it is written:
+Only what nothing else answers is an entry. A point the source, an agreed SDD, the request, the preferences file or the tenant settles is a fact, written where it acts. A point a flow's split options settle (a unique reference, a lock) is the split question's, asked at build, never an entry of its own. Every other point is classed before it is written:
 - a safe default (a retry count, a timeout, a format the target fixes) is the genome's own value, a fact or a Configuration Question's default;
 - one whose reading changes what is built or a business outcome is an entry with its default (`builds now:`, `recommended:`, `reading:`);
 - one with no reading and no safe default is an entry with `until answered:`, or a Configuration Question whose default the build cannot run with.

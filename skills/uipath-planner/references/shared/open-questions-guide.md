@@ -60,7 +60,7 @@ The section opens with its counts: needed before the build, by group and by role
 ````markdown
 ## Action Required — SME Review Items
 
-<n> questions are open. Needed before the build: <n> — <group>: <n>; <group>: <n>. Every other item has a default the build uses until someone changes it. By role: the process owner <n>; the environment's owners <n>; whoever holds the source <n>.
+<n> questions are open. Needed before the build: <n> — <group>: <n>; <group>: <n>. Every other item has a default the build uses until someone changes it. By role: the process owner <n>; the environment's owners <n>; whoever holds the source <n>. The build's own questions (the split, the libraries, the technology, the setup) are not here: they are asked when the build is prepared or starts.
 
 How to answer:
 1. Write your answer under an item's `Change:` or `Answer:`. To take an item's recommendation or default, write `accept` under its `Change:`. An item left blank stays open.

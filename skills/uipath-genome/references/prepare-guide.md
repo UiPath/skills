@@ -4,8 +4,8 @@
 
 1. **Start as a build starts:** [build-guide.md](build-guide.md) § Start and the reads of § Read Plan, then [execution-guide.md](execution-guide.md) § 1.1 and its § 1.2, the preflight discovery the options are built from.
 2. **Read the answers already given.** That means the SDD beside the genome, and an earlier readiness file, both as the user's files of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rules 4 and 4a). Their genome edits not yet made go to `uipath-planner` first, as at build. A genome with no SDD beside it is read for its open entries and its Configuration Questions directly.
-3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there), and the Subagents question, which the session that builds answers. An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Settings store, when the preferences file places only the constants.
-4. **Ask as the build asks, as far as the user wants** ([configuration-questions-guide.md](configuration-questions-guide.md) rules 2–3b), the first question being how to answer. Each answer is written into its item, after `Change:` or `Answer:`, with its source: `(the user, in prepare, <YYYY-MM-DD>)`. A question the user skips, or is not asked, stays open in the file. An answer that settles another question drops it, as at build.
+3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there), and the Subagents question, which the session that builds answers. An answer that carries a check still to make ("to be checked at build") is kept as a task under Systems and applications, naming its item. An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Settings store, when the preferences file places only the constants.
+4. **Ask as the build asks, as far as the user wants** ([configuration-questions-guide.md](configuration-questions-guide.md) rules 2–3b), in its order whatever section of the file a question lands in, the first question being how to answer. Each answer is written into its item, after `Change:` or `Answer:`, with its source: `(the user, in prepare, <YYYY-MM-DD>)`. A question the user skips, or is not asked, stays open in the file. An answer that settles another question drops it, as at build.
 5. **Write the readiness file**, `<slug>-readiness.md` beside the genome (the genome's file name with `-readiness.md` in place of `-genome.md`). A process genome has one, covering its components. It holds the sections of § The readiness file, in their order, each with its "Usually answered by" line; a section with no item reads "None.".
 6. **Every question is rendered as an item**, worded and optioned as the build would ask it (rules 2–2b), in the item form:
    - its id and the question in bold, `R<n>.`, numbered through the file and kept on a re-run, a new item taking the next number;
@@ -20,8 +20,10 @@
 
 ## The readiness file
 
+The file travels with the genome: no line of it names a signed-in account, a user name or a tenant URL, and a path under the user's profile is written relative to the genome's folder.
+
 The header says, in this order:
-- when and on what machine facts it was prepared, those facts alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found. It never names a signed-in account, a user name or a tenant URL, since the file travels with the genome;
+- when and on what machine facts it was prepared, those facts alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found;
 - how many items are needed before the build, by section;
 - how to answer: fill in an item, `accept` under its `Change:` taking its Recommended option or default, then ask `uipath-planner` to "apply the answers", which writes into the genome what changes it;
 - the Contents, with each section's counts.
@@ -56,7 +58,8 @@ The build's questions that shape what gets built, each with its Recommended opti
 1. **Refactor** — in a refactor, the refactor questions but the rulings, whose source defects are open decisions the SDD holds.
 2. **Processes and their work items** — for each flow of the Transactional Shape without a `Decided:` line, its split questions ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)), each `Context:` naming the flow and the facts of its As-is the answer rests on.
 3. **Libraries and reusable parts** — Source fidelity, Library layout and Library location, the layout's `Context:` naming the libraries and the source units each is built from, as the Source Map names them.
-4. **Technology per capability** — one question per capability, its `Today:` line, in place of `Context:`, saying how the source does it (the application, the client, the protocol), as the genome states it.
+4. **Technology per capability** — one question per independent choice, its `Today:` line, in place of `Context:`, saying how the source does it (the application, the client, the protocol), as the genome states it.
+5. **Genome gaps to rule on** — each gap discovery found that needs someone to choose, with its options, its `Recorded in:` the genome section it changes.
 
 What the genome already shows is named by section where a decision rests on it, never redrawn: its Process Map and Components, Platform Dependencies, the Transactional Shape, Deployment, the Source Map.
 
@@ -64,7 +67,7 @@ What the genome already shows is named by section where a decision rests on it, 
 
 A split option's letter appears only beside its meaning.
 
-**The genome gaps discovery found** ([execution-guide.md](execution-guide.md) § 1.2) are the lines of the section's closing block, `Edits for uipath-planner`, which is left out when there is none. `prepare` edits no genome ([SKILL.md](../SKILL.md) Critical Rule 2): "Apply the answers" makes each line, and a build hands any line not yet applied to `uipath-planner` first.
+**Every other gap discovery found** ([execution-guide.md](execution-guide.md) § 1.2) is a line of the section's closing block, `Edits for uipath-planner`, with its fix; the block is left out when there is none. `prepare` edits no genome ([SKILL.md](../SKILL.md) Critical Rule 2): "Apply the answers" makes each line, and a build hands any line not yet applied to `uipath-planner` first.
 
 ````markdown
 # <Process or component>: build readiness
@@ -128,11 +131,20 @@ Each decision carries the build's proposal: accept it, or change it.
 - **Recorded in:** <the component's Target Applications row>
 - **Change:**
 
+### Genome gaps to rule on
+
+**R<n>. <The two statements, or the source's way and the skill's, as a question>**
+- **Context:** <where the genome states each, and the fact that shows the gap>
+- **Recommended:** <the option, with what it gives>
+- **Instead:** <one alternative per line>
+- **Recorded in:** <the genome section it changes>
+- **Change:**
+
 ### Edits for `uipath-planner`
 
-Gaps found in the genome while preparing; applying the answers fixes each one. Delete a line you disagree with.
+Gaps found in the genome while preparing, each with its fix; applying the answers makes each one. Delete a line you disagree with.
 
-- <where the genome states it>: <what is wrong, and the fact that shows it>
+- <where the genome states it>: <what is wrong, the fact that shows it, and the fix>
 
 ## 2. Build setup
 
