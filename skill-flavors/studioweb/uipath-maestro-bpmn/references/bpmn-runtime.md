@@ -50,3 +50,8 @@
 <!--skill-flavor:business-rule-key:start-->
   `<decisionKey>` is the decision's `OutputArguments` property name (such as `decision1`), not its display name: a display name reads null. Studio Web cannot read a rule's output contract, so read `vars.<id>_businessRuleResponse.<decisionKey>.<column>` downstream, the whole result the builder already maps; ask the user for the decision's output name when a later node needs one column, and whether the rule is decision-keyed when that is not known.
 <!--skill-flavor:business-rule-key:end-->
+
+<!--skill-flavor:in-solution-debug:start-->
+  Debug runs the open solution, so it starts the child project; before reporting that the pair
+  works, read the child's returned values from the parent run (`debug-instances variables-all`).
+<!--skill-flavor:in-solution-debug:end-->
