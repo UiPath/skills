@@ -341,13 +341,14 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
 // The in-page SDK verbs and `node` reach only /solution and /tmp (coder_eval
 // studio-web run 2026-11-16_09-25-49: `decompile: ENOENT /sandbox/…`, `Node
 // sandbox path is outside /solution and /tmp`). Agents that scaffolded a
-// project for a loose target left a stray template that fails validate and
-// stamped an entryPointId on an untouched start event.
+// project for a loose target left a stray template that fails validate, and
+// deleting a seeded `entryPointId: false` stamped an id on an untouched start
+// event (add-node in a project, move-node in /tmp).
 test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, never via init", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.ok(skill.includes("**A target outside `/solution` and `/tmp`**"));
-  assert.ok(skill.includes("Copy the target to `/tmp/bpmn-work/<Name>/<Name>.bpmn`"));
+  assert.ok(skill.includes("**A target outside a `/solution` project**"));
+  assert.ok(skill.includes("run `mkdir -p /tmp/bpmn-work/<Name>`"));
   assert.ok(skill.includes("Never run `init` to give a loose file a project."));
   assert.ok(skill.includes("and the target is in a project, delete that key"));
 });
