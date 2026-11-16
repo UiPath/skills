@@ -273,15 +273,16 @@ Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: 
 
 ### `success_criteria`
 
-Every scenario MUST include exactly TWO criteria, and ONLY these two:
+Every scenario MUST include exactly THREE criteria, and ONLY these three:
 
-1. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
-2. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
+1. **`file_contains` on `.local/.gitignore`** — verify the skill wrote `.local/.gitignore` containing `*` before capturing tenant data (security invariant: raw captures must never be committable). This is the ONE permitted `file_contains`; it grades a security guarantee, not investigation bookkeeping. The file survives the default end-of-investigation deletion of `.local/investigations/`.
+2. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
+3. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
 
 **Do NOT add any other criterion type.** Specifically forbidden across the whole troubleshoot suite:
 
 - ❌ `file_exists` — testing whether `.local/investigations/notes.md` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
-- ❌ `file_contains` — grading the shape of `notes.md` / `raw/` punishes correct skill behavior (multiple playbooks legitimately match; the fast path legitimately skips branches its evidence already rejects).
+- ❌ `file_contains` (other than the `.local/.gitignore` check above) — grading the shape of `notes.md` / `raw/` punishes correct skill behavior (multiple playbooks legitimately match; the fast path legitimately skips branches its evidence already rejects).
 - ❌ `command_executed` — encodes one investigation path; an agent reaching the right answer via a different (still valid) CLI route gets false-failed.
 
 Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
@@ -343,6 +344,14 @@ That is **all** the context the judge gets. The contract: agent's diagnosis (whe
 
 ```yaml
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"
@@ -375,9 +384,10 @@ success_criteria:
 
 ## Anti-patterns
 
-- **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
+- **Do not** add `command_executed` criteria. The lean contract is `.local/.gitignore` check + `skill_triggered` + `llm_judge` only — no `command_executed`, no `file_exists`, no other `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
+- **Keep `.local/investigations/` when authoring a scenario.** The skill deletes it by default at completion; when the `--investigation` input is needed, answer the end-of-investigation prompt by choosing to keep it.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
 - **Do not** keep names that encode the diagnosis. The agent-visible surfaces — process / project / release names, workflow / `.xaml` filenames, `x:Class`, activity `DisplayName`, and the `initial_prompt` — MUST NOT broadcast the failure. Real sessions routinely carry such names (`ERN_O365_MailFolderNotFound`, activity `"Get Mail from nonexistent folder (expect ArgumentNullException)"`); left in, the agent passes by reading the name instead of investigating — or never invokes the skill at all. Neutralize them to realistic business names during generation, exactly like the PII scrub, keeping the fault ONLY in the retrieved log/exception text. A user pasting the *symptom* into the prompt (`faulted with System.IO.FileNotFoundException`) is fine; a *name* that states the cause is not.
 - **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<group>/<scenario>/`.

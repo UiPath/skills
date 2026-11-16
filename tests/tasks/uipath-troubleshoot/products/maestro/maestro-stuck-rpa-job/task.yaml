@@ -39,6 +39,14 @@ initial_prompt: |
   This job 0fbda085-5c96-4dab-a4b3-012c1914845a from my personal workspace is stuck running. why?
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"

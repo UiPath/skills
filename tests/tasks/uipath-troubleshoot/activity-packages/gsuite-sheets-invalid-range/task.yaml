@@ -51,6 +51,14 @@ initial_prompt: |
   (The user is logged in to UiPath alpha cloud via the uip CLI.)
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   # Binary tool-invocation check: confirms the right skill ran at all.
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
