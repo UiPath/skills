@@ -46,7 +46,7 @@ def _stub(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, connections: lis
 
 
 @pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
-def test_missing_connection_is_an_infrastructure_failure(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_connection_is_an_environment_failure(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     jira_is = _load(task)
     _stub(monkeypatch, jira_is, [{"Id": "other", "Name": "someone-else"}])
 

@@ -114,7 +114,7 @@ def require_connection() -> str:
         return connection_id()
     except MissingConnection as exc:
         raise SystemExit(
-            "TENANT NOT READY — this is an infrastructure failure, not an agent failure.\n  "
+            "TENANT NOT READY — this is an environment failure, not an agent failure.\n  "
             f"{exc}\n\nReauthorize the connection or restore it in the named folder, then re-run."
         ) from exc
 
