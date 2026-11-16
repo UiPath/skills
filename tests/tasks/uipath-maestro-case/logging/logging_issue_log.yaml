@@ -158,7 +158,7 @@ success_criteria:
 
   - type: run_command
     description: "build-issues.md carries the issue-log header naming this case (per logging/impl-json.md dump template)"
-    command: "p=$(ls tasks/build-issues.md TimerLogCase/TimerLogCase/tasks/build-issues.md 2>/dev/null | head -1); grep -q Build \"$p\" && grep -q TimerLogCase \"$p\""
+    command: "for p in tasks/build-issues.md TimerLogCase/TimerLogCase/tasks/build-issues.md; do grep -q Build \"$p\" 2>/dev/null && grep -q TimerLogCase \"$p\" && exit 0; done; exit 1"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
