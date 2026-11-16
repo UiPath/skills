@@ -39,7 +39,7 @@ These activities **must** be placed inside a specific parent scope:
 
 ## Use Excel File Outside an Excel Process Scope
 
-`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. `validate` reports it as a warning of the activity, and `build` reports it as analyzer rule `XL-MTD-001`; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
+`Use Excel File` (`ExcelApplicationCard`) with no `ExcelProcessScopeX` or `SequenceX` around it raises `UiPath recommends using “Use Excel File” inside an “Excel Process Scope"`. It is a validation warning of the activity, reported by `validate` and not by `build`, and not a numbered analyzer rule; an enclosing scope clears it whatever its `ProcessMode`. The scope's properties and modes: [ExcelProcessScopeX](../activity-docs/UiPath.Excel.Activities/3.6/activities/ExcelProcessScopeX.md).
 
 Put the Use Excel File activities of one step inside one scope: one Excel process serves them. At its end the scope quits that process if it started it and no workbook is left open; an Excel it reused keeps running.
 
@@ -148,10 +148,6 @@ Alternatives:
 ## UIA `N*` Activities Carry a `Version` — Never Strip It
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
-
-## `InUiElement` on a Use Application/Browser Card Skips Its Wait
-
-A card (`NApplicationCard`) with `InUiElement` set skips its own targeting, so its window selector and `Timeout` are ignored: a card meant to wait for a window never waits, and its not-found error never fires. To wait for a window, use Check App State on an element of it, or leave `InUiElement` unset so the card's selector waits. The general rule (an activity with `InUiElement` skips its targeting) is in the package's `UiElement` shared-type reference, routed from `ui-automation-guide.md` § Documentation.
 
 ## OCR Engine Asks to "install the UiPath.CoreIPC package"
 
@@ -479,6 +475,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `ReplayUserEvent` | `ReplayUserEventV2` | Old version still loads but shouldn't be used |
 | `UiPath.<Vendor>.IntegrationService.Activities` packages | Generic `ConnectorActivity` via IS | Vendor-specific IS packages are deprecated |
 
+## Start Process Before an Application Card
+
+`StartProcess` is for a program the workflow does not drive. An application the workflow then acts in is opened by its Use Application/Browser card, a document passed as its argument where the application takes one, not started with Start Process and then attached.
+
 ## Common Activity Name Confusions
 
 Activity tag names rarely match Studio display names. Guessing the tag from the display name fails at `build` (`Cannot create unknown type '...'`). Two examples:
@@ -490,7 +490,7 @@ Activity tag names rarely match Studio display names. Guessing the tag from the 
 
 ### `InvokeProcess` vs `StartProcess`
 
-To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`. `StartProcess` is for a program the workflow does not drive: an application the workflow then acts in is opened by its Application Card, not started and then attached.
+To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`.
 
 ### Tag Verification Gate
 
