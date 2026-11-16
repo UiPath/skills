@@ -95,7 +95,7 @@ def test_live_inspection_ignores_help_and_other_verbs(command: str) -> None:
     assert not _hits(_pattern(_LIVE, "inspected the debug instance's runtime variables"), command)
 
 
-# Every mutating verb in the catalog under each group; reads are listed in the catalog too.
+# Mutating verbs per group, from the catalog snapshot. The test below fails if one is renamed or dropped; it cannot spot a new one.
 _MUTATING = {
     "instances": ("retry", "cancel", "pause", "resume", "migrate", "goto", "variables-set", "elements retry", "elements cancel", "messages send"),
     "debug-instances": ("cancel", "continue", "variables-set", "breakpoints", "create"),
