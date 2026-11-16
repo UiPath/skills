@@ -52,7 +52,7 @@ Scopes required by `@uipath/ui-widgets-*` React components. The widget's own run
 | Required Scope | Why |
 |----------------|-----|
 | `OR.Buckets` | Widget reads the document and extraction artifacts from a storage bucket and uploads the validated payload during save. Read-only `OR.Buckets.Read` is insufficient — the upload step requires write. |
-| `OR.Tasks` or `OR.Tasks.Write` | Required when the host app calls `task.complete()` in `onSaveComplete` (action apps, and web apps that complete the task on save). |
+| `OR.Tasks` or `OR.Tasks.Write` | Required when the host app completes the task from `onSubmit` (action apps, and web apps that complete the task on submit). |
 
 See [widgets/validation-station.md](widgets/validation-station.md) for the full integration guide.
 
