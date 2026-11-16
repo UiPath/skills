@@ -52,8 +52,7 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 <!--skill-flavor:debug-handle:start-->
 For a **debug** run, the `instanceId` the debug command returned is the handle,
 and the `debug-instances` commands read it (see below). Keep deployed-instance
-reads and debug-session reads separate. `debug-instances` needs uip 1.206 or
-later; on older versions the group is `debug-instance`.
+reads and debug-session reads separate ([`uip` version note](operate.md#debug--a-controlled-studio-web-run)).
 <!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents

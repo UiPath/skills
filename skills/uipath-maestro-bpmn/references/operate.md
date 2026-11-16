@@ -219,6 +219,9 @@ uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
 ```
+
+`debug-instances` needs `uip` 1.206 or later; on older versions the group is
+`debug-instance`.
 <!--skill-flavor:debug-run:end-->
 
 <!--skill-flavor:offline-checks:start-->
