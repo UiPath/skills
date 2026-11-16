@@ -1,0 +1,63 @@
+task_id: skill-feedback-omit-when-irrelevant
+description: >
+  Smoke test: the uipath-feedback skill's `## Sample prompts` section must be
+  omitted (not padded to a quota) when the reported issue is agent-discovered
+  and no prior conversation content bears on it. The agent is asked to build
+  and preview a bug report for an incidental discovery, write the built
+  description to a local file for inspection, and explicitly must NOT invoke
+  `uip feedback send` — this test never attempts a real send, so it stays
+  safe to run against an authenticated tenant in CI.
+tags: [uipath-feedback, smoke, mode:diagnose, lifecycle:generate]
+
+initial_prompt: |
+  Load the uipath-feedback skill and prepare (do not send) a bug report for
+  this scenario: earlier in this session, while building an unrelated Flow,
+  you noticed on your own — the user never asked about it or mentioned it —
+  that `uip is connections list --output json` returns `authType: null` for
+  every OAuth2 connection instead of a string, which broke a filter with
+  `TypeError: Cannot read properties of null (reading 'toLowerCase')`. No
+  prior user prompt in this session relates to this bug.
+
+  Write the full description body you would submit to `./description-preview.md`
+  in the current directory, then show me the confirmation preview. This is a
+  dry run only: do NOT run `uip feedback send` and do not actually send
+  anything — I have not said yes.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-feedback skill"
+    skill_name: "uipath-feedback"
+    expected_skill: "uipath-feedback"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote the built description body to the local preview file"
+    path: "description-preview.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preview contains the real captured error and environment content, not a placeholder"
+    path: "description-preview.md"
+    includes:
+      - "## Error"
+      - "TypeError"
+      - "## Environment"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "## Sample prompts is omitted -- no prior prompt bears on an agent-discovered issue, so nothing should be padded in to fill the section"
+    command: "bash -c '! grep -q \"## Sample prompts\" description-preview.md'"
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never invoked the real send command -- this task is a dry run and must never file a live ticket"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+feedback\s+send\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
