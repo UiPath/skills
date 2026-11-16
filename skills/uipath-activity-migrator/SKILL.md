@@ -1,12 +1,12 @@
 ---
 name: uipath-activity-migrator
-description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and rewrite UiPath's own classic activities into their modern UiPath counterparts with the standalone `UiPath.Upgrade.exe`. Windows only. Third-party or custom packages are not rewritten, only version-moved. Acquires the tool, resolves the target UIAutomation line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Also the post-migration fix for migrated projects whose expression-selector targets fail or silently report not-found. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Post-migration failures with neither marker nor annotation→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
+description: "UiPath Activity Migrator — migrate Windows-Legacy RPA projects (`targetFramework: Legacy`, classic `ui:` activities) to the Windows framework and rewrite UiPath's own classic activities into their modern UiPath counterparts with `uip rpa project migrate`/`UiPath.Upgrade.exe`. Windows only. Third-party or custom packages are not rewritten, only version-moved. Acquires the tool, resolves the target UIAutomation line, runs analyze then upgrade into a sibling folder, verifies with `uip rpa build`, triages the SARIF. Classic UI Automation→modern UIA, Outlook classic→Microsoft 365, GSuite classic→modern, Microsoft.Activities.Extensions→Invoke Code. Also the post-migration fix for migrated projects whose expression-selector targets fail or silently report not-found. Authoring or editing Legacy `.xaml`→uipath-rpa. Migration-readiness review without running the tool→uipath-review. Post-migration failures with neither marker nor annotation→uipath-troubleshoot. Maestro `instance migrate`→the Maestro skills."
 when_to_use: "User says 'migrate activities', 'migrate UiPath activities', 'classic UiPath activities to modern', 'migrate this project', 'upgrade from Windows-Legacy', 'convert classic to modern activities', 'modernize this workflow', 'run the Activity Migrator', 'UiPath.Upgrade.exe', 'legacy to Windows', 'activity migration report', 'post migration fix', 'check always returns false after migration', 'could not find the UI element after migration'. NOT for `uip solution deploy upgrade`."
 ---
 
 # UiPath Activity Migrator
 
-Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites UiPath's classic activities into their modern UiPath equivalents; third-party and custom packages are only moved to a Windows-compatible version by restore, never rewritten. It runs without Studio. It requires Windows and the .NET Desktop Runtime its build targets; Step 0 names it when missing.
+Drive the Activity Migrator end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites UiPath's classic activities into their modern UiPath equivalents; third-party and custom packages are only moved to a Windows-compatible version by restore, never rewritten. It runs without Studio, on Windows only: inside the Helm that `uip` installs (`uip rpa project migrate`), else as the standalone `UiPath.Upgrade.exe` of the public archive, which needs the .NET Desktop Runtime its build targets; Step 0 names it when missing.
 
 <!--skill-flavor:host-availability-extra:start-->
 
@@ -43,7 +43,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 12. **Mark every edit.** Every construct the skill edits or adds outside the tool, in the post-migration fix guide, the build loop, the runtime loop, a plan treatment or an edit delegated to the RPA authoring skill, carries the annotation line `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>` in its `sap2010:Annotation.AnnotationText` attribute, never in an XML comment, which Studio drops on save. It replaces the matching `[PostMigration Action Required]` line when there is one and is added as a new annotation otherwise; when the edit removes a construct, the construct that takes its place carries the line. Write it as part of the edit itself, so an undone fix loses it with the backup restore and a standing fix keeps it whatever happens next. One exception: a construct whose only edit is the fix guide's rewrite of an annotation line to `Verified healthy by uipath-activity-migrator` carries that line as its mark and gets no Remediated line. A later failure at a construct carrying either line is this skill's to diagnose.
 13. **Plan-mode treatments.** When the user asked for a plan (Rule 4), the treatment their go names is the edit, even when it differs from the one proposed, and the go is its yes: it goes through the runtime guide's fix and rerun loop as a `requested` fix, edit 1, applied before the first run when the go names everything it needs ([Step 5a](#step-5a--apply-a-plan-chosen-treatment-before-the-run)) and right after the run that supplies a missing name otherwise. A proposal leaves open any name only a run can reveal, such as the exception an activity actually throws ("retype the Catch to the exception the run reports"); it never guesses one, and a treatment no run informs is reported as a needs-attention item. The plan names the remaining steps as this file names them, upgrade, build, the opt-in runtime check with `uip rpa run`, and never calls any of them a debug run or a debug session.
 14. **Sources.** A name or fact a proposal or an edit needs beyond the two projects' files, the run log and this skill's guides comes from two places only: the packages the latest analyze or upgrade run resolved, read as documentation and file names under `%USERPROFILE%\.nuget\packages\<package>\<version>\` for `<UIA_VERSION>` and the versions in that run's `.local/AllDependencies.json` (`<PROJECT_DIR>/.local/` after analyze, `<OUTPUT_DIR>/.local/` after upgrade); and the one page a `[PostMigration Action Required]` annotation on the construct links, that page alone and nothing it links to. Never another cached version, never the web beyond that page, never the contents of a binary, never a program written to read assembly metadata. Validate and build confirm every name an edit introduces, so a candidate is enough to propose. This holds from the first proposal, a plan treatment included.
-15. **Never download the tool unasked.** The acquisition script fetches `UiPath.Upgrade.exe` only on `--install` (or `--force`), and the skill passes that flag only after the user chose the download in Step 0's install question, asked once per task when the script reports `missing`. An earlier explicit request in the same task to download or install the tool counts as that choice, and so does the user's go to a re-download after a `verify-failed` result; the question is then not asked. Never pass the flag on your own to get past a `missing`, `offline-missing` or `verify-failed` result, and never set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE`, `UIPATH_ACTIVITY_MIGRATOR_URL` or `UIPATH_ACTIVITY_MIGRATOR_DIR` beyond the value the user named: those variables carry a decision of the user or their administrator.
+15. **Never download the tool unasked.** A migrator from `uip` needs no download, so this rule guards only the archive fallback. The acquisition script fetches `UiPath.Upgrade.exe` only on `--install` (or `--force`), and the skill passes that flag only after the user chose the download in Step 0's install question, asked once per task when the script reports `missing`. An earlier explicit request in the same task to download or install the tool counts as that choice, and so does the user's go to a re-download after a `verify-failed` result; the question is then not asked. Never pass the flag on your own to get past a `missing`, `offline-missing` or `verify-failed` result, and never set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE`, `UIPATH_ACTIVITY_MIGRATOR_URL` or `UIPATH_ACTIVITY_MIGRATOR_DIR` beyond the value the user named: those variables carry a decision of the user or their administrator.
 
 ## Workflow
 
@@ -51,7 +51,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ### Step 0 — Preflight and acquire the tool
 
-Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. Without a flag the script locates a cached tool, verifies it starts and answers, and prints one JSON object on its last stdout line; it never downloads (Rule 15). Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
+Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. The script first asks `uip rpa project migrate version`: the migrator ships in the Helm `uip` installs, so nothing is downloaded and no runtime is checked. When `uip` cannot supply it, the script falls back to the standalone `UiPath.Upgrade.exe` of the public archive: without a flag it locates a cached copy and verifies it starts and answers; it never downloads (Rule 15). It prints one JSON object on its last stdout line. Give the command at least 10 minutes: the first `uip` call after a CLI update copies Helm. Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
 
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
@@ -61,24 +61,28 @@ When the user named the tool's folder, set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it 
 
 | `status` | Action |
 |---|---|
-| `ok` | When the user named the tool's folder and `source` is `cached`, the variable was not on the command: rerun the script with it in the same command and apply this table to the new output. Otherwise record `exe` as `<MIGRATOR_EXE>` and `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
-| `missing` | No tool is installed and nobody has approved a download. Ask the install question in [acquisition-guide.md § Install question](references/acquisition-guide.md#install-question), once, and act on the answer as that section says. |
-| `error`, `code: not-windows` | Rule 1. Stop. |
-| `error`, `code: runtime-missing` | Relay the script's message; it names the fix. Stop. |
+| `ok`, the user named the tool's folder, `source` other than `env` | The variable was not on the command: rerun the script with it in the same command and apply this table to the new output. |
+| `ok`, `source: uip` | `<MIGRATOR>` is `env -u UIPATH_STUDIO_PID uip rpa project migrate` (Rule 8; PowerShell: `$env:UIPATH_STUDIO_PID = $null; uip rpa project migrate`, same command). Record `version`. Continue. |
+| `ok`, any other `source` | The archive. `<MIGRATOR>` is `"<exe>"`, the `command` field in double quotes. Record `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
+| `missing` | No migrator from `uip` (any `uipMessage` says why) and no archive copy is installed. Ask the install question in [acquisition-guide.md § Install question](references/acquisition-guide.md#install-question), once, and act on the answer as that section says. |
+| `error`, `code: not-windows` | From `uip` or the script. Rule 1. Stop. |
+| `error`, `code: runtime-missing` | Archive only. Relay the script's message; it names the fix. Stop. |
 | `error`, `code: offline-missing` | The machine is configured never to download. Relay the message and the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement); do not offer a download. Stop. |
 | `error`, `code: download-failed` | Relay the script's message, which names each downloader's error, and give the manual steps from [acquisition-guide.md § Manual placement](references/acquisition-guide.md#manual-placement). Stop. |
-| `error` with an `env` field | Put that assignment, as is, at the start of this script's command and of every `"<MIGRATOR_EXE>"` command from here on, then rerun the script. In PowerShell write it as `$env:<NAME> = '<value>';` in the same command. Never drop or alter the assignment. |
+| `error` with an `env` field | Archive only. Put that assignment, as is, at the start of this script's command and of every `<MIGRATOR>` command from here on, then rerun the script. In PowerShell write it as `$env:<NAME> = '<value>';` in the same command. Never drop or alter the assignment. |
 | any other `error` | Show `message`. Stop. |
+
+Relay a `uipMessage` with any error: fixing `uip` ([acquisition-guide.md § Helm through uip](references/acquisition-guide.md#helm-through-uip)) makes the archive unnecessary.
 
 Then read the flag list of this build once. It is the only authority on which flags exist.
 
 ```bash
-"<MIGRATOR_EXE>" analyze --help
+<MIGRATOR> analyze --help
 ```
 
 Keep the output for Steps 3 and 4. For this run, the flags in that output are the only flags that exist: a guide-named flag is passed only when it appears there, and its absence is not a finding, not a note, and not a report item. A flag the help lists but no guide names may be used only when its help text directly addresses a problem this run has shown (a specific SARIF result or build error); pass it as `--name=value` and say so in the report. Never one that changes what migrates or which extensions run; those are passed only on the user's request. Behavior the help does not state (option binding, exit code, output streams, folders) is in [tool-behavior-guide.md](references/tool-behavior-guide.md).
 
-Summarize to the user in one line: tool version and location.
+Summarize to the user in one line: tool version and where it runs, `uip` (Helm) or the exe path with any `uipMessage`.
 
 ### Step 1 — Discover the project
 
@@ -111,7 +115,7 @@ Assemble `<PACKAGE_FLAGS>` from every package guide read in Step 1 (Hook 1 secti
 
 ```bash
 mkdir -p "<PROJECT_DIR>/.upgrade"
-"<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/analyze-latest.err"
+<MIGRATOR> analyze --project-path "<PROJECT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/analyze-latest.err"
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/analyze-latest.sarif" --out "<PROJECT_DIR>/.upgrade/analyze-latest.md"
 ```
 
@@ -135,7 +139,7 @@ Then apply the stop conditions:
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
-| Summarizer exits 2 (`cannot parse`, `no .sarif files`) | The tool wrote no log: it died or rejected the command line. Read `<PROJECT_DIR>/.upgrade/analyze-latest.err` and the exit code, fix the cause, rerun analyze. A crash is not yours to fix: stop and report it with the `.err` content. |
+| Summarizer exits 2 (`cannot parse`, `no .sarif files`) | The tool wrote no log: it died or rejected the command line. Read `<PROJECT_DIR>/.upgrade/analyze-latest.err` and the exit code, fix the cause, rerun analyze. Through `uip`, a `uip` failure (JSON, `"Result":"Failure"`) may sit in the `.sarif` instead: rerun Step 0. A crash is not yours to fix: stop and report it with the `.err` content. |
 | `status: failed` or `status: unknown` for any other reason | Stop. Show the blockers or the `Reason:` line and the `.upgrade` log path. Never continue to Step 4. |
 
 ### Step 4 — Upgrade
@@ -143,7 +147,7 @@ Then apply the stop conditions:
 Same flags as the analyze run, plus the output path:
 
 ```bash
-"<MIGRATOR_EXE>" upgrade --project-path "<PROJECT_DIR>" --output-path "<OUTPUT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/upgrade-latest.err"
+<MIGRATOR> upgrade --project-path "<PROJECT_DIR>" --output-path "<OUTPUT_DIR>" --uia-package-version=<UIA_VERSION> --output-format sarif <PACKAGE_FLAGS> > "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" 2> "<PROJECT_DIR>/.upgrade/upgrade-latest.err"
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<PROJECT_DIR>/.upgrade/upgrade-latest.sarif" --out "<PROJECT_DIR>/.upgrade/upgrade-latest.md"
 ```
 
@@ -244,7 +248,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 ## Anti-patterns
 
 - Downloading or updating `UiPath.Upgrade.exe` without the user's choice in the install question (Rule 15)
-- Running `UiPath.Upgrade.exe` without `--output-format sarif`, or reading its exit code as a verdict
+- Running `<MIGRATOR>` without `--output-format sarif`, or reading its exit code as a verdict
 - Running `upgrade` without an `analyze` triage first, or pointing `--output-path` at the source project
 - Pasting a PAT or client secret into a command line
 - Hand-converting classic activities in XAML instead of letting the tool do it, or "finishing" activities the tool left classic by rewriting them blind

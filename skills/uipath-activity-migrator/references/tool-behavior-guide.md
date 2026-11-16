@@ -1,9 +1,9 @@
 # Tool Behavior Guide
 
-Facts about `UiPath.Upgrade.exe` that neither `--help` nor the product documentation states, learned from the tool's source and from live runs. For the list of commands and flags, the installed build is the only authority:
+Facts about the Activity Migrator that neither `--help` nor the product documentation states, learned from the tool's source and from live runs. They hold for both forms of `<MIGRATOR>` (Step 0): `uip rpa project migrate`, which runs the migrator inside Helm and hands it its arguments, stdout, stderr and exit code unchanged, and the standalone `UiPath.Upgrade.exe`. For the list of commands and flags, the installed build is the only authority:
 
 ```bash
-"<MIGRATOR_EXE>" analyze --help
+<MIGRATOR> analyze --help
 ```
 
 Core options come first, then one block per active extension. A flag named anywhere in this skill but missing from that output does not exist in this build: do not pass it, and say so in the report.
@@ -15,7 +15,7 @@ Core options come first, then one block per active extension. A flag named anywh
 
 ## Exit code
 
-`0` for success, partial success, and failure alike: every exception inside a step, a crashed core step included, is caught and written into the SARIF as a result (rule `ERROR` or `WARNING`, message `Step failed: <Step> - <exception>`), and the log is still printed. Non-zero only when the command never ran, a rejected command line or a startup crash; then stdout holds no log and the one-line cause is on stderr. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
+`0` for success, partial success, and failure alike: every exception inside a step, a crashed core step included, is caught and written into the SARIF as a result (rule `ERROR` or `WARNING`, message `Step failed: <Step> - <exception>`), and the log is still printed. Non-zero only when the command never ran, a rejected command line or a startup crash; then stdout holds no log and the one-line cause is on stderr. Through `uip`, a failure of `uip` itself (Helm not found) also exits 1, with a JSON object holding `"Result":"Failure"` on stdout or stderr. Status comes from the SARIF results (see [sarif-triage-guide.md](sarif-triage-guide.md)).
 
 ## Output streams
 
@@ -45,7 +45,7 @@ Created inside the source project on every run, `analyze` included. Files per ru
 Secrets never pass through the agent (Critical Rule 6). Hand the user the complete command with placeholders:
 
 ```bash
-"<MIGRATOR_EXE>" analyze --project-path "<PROJECT_DIR>" --output-format sarif --orchestrator-url "https://cloud.uipath.com/<ORG>" --orchestrator-tenant "<TENANT>" --orchestrator-pat "<PAT>" > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+<MIGRATOR> analyze --project-path "<PROJECT_DIR>" --output-format sarif --orchestrator-url "https://cloud.uipath.com/<ORG>" --orchestrator-tenant "<TENANT>" --orchestrator-pat "<PAT>" > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
 ```
 
 ## Extensions
@@ -57,7 +57,7 @@ Secrets never pass through the agent (Critical Rule 6). Hand the user the comple
 ## bulk
 
 ```bash
-"<MIGRATOR_EXE>" bulk --path "<ROOT>" --command analyze
+<MIGRATOR> bulk --path "<ROOT>" --command analyze
 node "<SKILL_DIR>/scripts/summarize-sarif.mjs" "<ROOT>/repository-analyze-results.sarif"
 ```
 
