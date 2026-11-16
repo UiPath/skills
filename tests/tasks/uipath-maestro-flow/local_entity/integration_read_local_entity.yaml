@@ -60,7 +60,11 @@ success_criteria:
 
   - type: run_command
     description: "The flow validates (includes the INLINE_ENTITY_UNBOUND rule)"
-    command: "cd InventorySol && uip maestro flow validate StockReport/StockReport.flow --output json"
+    # StockReport.flow as the CLI names it; Studio Web's main file is new.flow.
+    command: >-
+      cd InventorySol && f=StockReport/StockReport.flow;
+      [ -f "$f" ] || f=StockReport/new.flow;
+      uip maestro flow validate "$f" --output json
     timeout: 120
     expected_exit_code: 0
     weight: 2.0

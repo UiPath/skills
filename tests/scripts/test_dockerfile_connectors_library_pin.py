@@ -38,7 +38,7 @@ def _resolve(version: str | None) -> subprocess.CompletedProcess:
 def test_arg_defaults_to_latest_and_is_persisted_as_env():
     assert "ARG CONNECTORS_LIBRARY_VERSION=latest" in TEXT
     assert "ENV CONNECTORS_LIBRARY_VERSION=${CONNECTORS_LIBRARY_VERSION}" in TEXT
-    assert 'uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"}' in TEXT
+    assert 'uip maestro registry pull ${connectors_library_url:+--url "$connectors_library_url"}' in TEXT
     assert "requestedVersion: $connectorsLibraryVersion" in TEXT
 
 

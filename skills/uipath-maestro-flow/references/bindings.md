@@ -1,14 +1,18 @@
 # Symbolic connector bindings
 
+<!--skill-flavor:bindings-location:start-->
 `bindings.json` maps the short connection and folder names in authored
 TypeScript to tenant resource keys. It lives in the SDK's work directory,
 `.flow-sdk/`, beside the `<Name>.flow.ts` file.
+<!--skill-flavor:bindings-location:end-->
 
 ## Project layout
 
 ```text
 .flow-sdk/
+<!--skill-flavor:source-file-name:start-->
   <Name>.flow.ts
+<!--skill-flavor:source-file-name:end-->
   bindings.json
   connectors/
     <connector-key>.ts

@@ -33,7 +33,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL = "uipath-maestro-case"
 # The numbered Critical Rules are the classic (JSON-authoring) generation's,
-# which Studio Web pins via skill-flavors/studioweb/uipath-maestro-case/.canonical.
+# kept for these graders in classic/ (see its .retained).
 # The builder-SDK skill in skills/ has no numbered rules to cite.
 SKILL_DIR = REPO_ROOT / "classic" / "skills" / SKILL
 FLAVOR_ROOT = REPO_ROOT / "skill-flavors"

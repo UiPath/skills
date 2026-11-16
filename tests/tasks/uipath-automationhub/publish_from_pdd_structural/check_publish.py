@@ -498,6 +498,15 @@ def check_users(calls: list[dict], seed: dict) -> str:
     return f"{len(lookups)} owner lookup(s), each server-side with --invite-status all"
 
 
+def never_sent(call: dict) -> bool:
+    """The CLI could not read the call's --file, so nothing reached the tenant.
+
+    Not an attempt the tenant refused: the agent has yet to try. Any other rejection
+    (the service's own validation included) is an attempt, and a refusal is final.
+    """
+    return call.get("result") == "ValidationError" and str(call.get("message") or "").startswith("File not found")
+
+
 def check_fallback(calls: list[dict], seed: dict) -> str:
     """RPANAV-19120: applications never block the publish.
 
@@ -509,7 +518,7 @@ def check_fallback(calls: list[dict], seed: dict) -> str:
     if seed.get("new_applications_offered"):
         raise CheckFailed("environment: this tenant's schema offers new_applications, so the fallback is unreachable")
     create = the_create(calls)
-    attempts = calls_matching(calls, "ah applications update")
+    attempts = [a for a in calls_matching(calls, "ah applications update") if not never_sent(a)]
     if not attempts:
         raise CheckFailed("the admin applications upsert was never attempted, so the fallback was not exercised")
     create_index = calls.index(create)

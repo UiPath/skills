@@ -100,6 +100,10 @@ For an HTTP fallback authenticated by another connector, set its connector key
 as `targetConnector`. The node remains the managed HTTP wrapper, while the
 proxied request reuses that connector's authentication:
 
+`url` is the vendor's own API path (`/emoji.list`, `/chat.postMessage`), not the
+resource `Path` from `uip is resources list` (`/emoji_list` returns a vendor 404).
+Use the plain method, not an `admin.*` variant, unless asked:
+
 ```ts
 .step('emoji', http({
   managed: true,
