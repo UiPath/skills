@@ -18,13 +18,13 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.bpmn.ts`, the undo copy `original/<Name>.bpmn` and the `registry prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`.
 
-**A target outside a `/solution` project** — a mounted file, for example under `/sandbox`, or a loose file in `/tmp` — has no `project.uiproj`. Outside `/solution` and `/tmp`, your file tools, `cp` and `validate` reach it, but `decompile`, `compile`, `merge` and `node` do not: they answer `ENOENT`, `the builder SDK works only on files under /solution and /tmp` or `path is outside /solution and /tmp`. Ignore the hint to pass a copy under `/solution`. Edit a copy:
+**An existing `.bpmn` outside a `/solution` project** — a mounted file, for example under `/sandbox`, or a loose file in `/tmp` — has no `project.uiproj`. Outside `/solution` and `/tmp`, your file tools, `cp` and `validate` reach it, but `decompile`, `compile`, `merge` and `node` do not: they answer `ENOENT`, `the builder SDK works only on files under /solution and /tmp` or `path is outside /solution and /tmp`. Ignore the hint to pass a copy under `/solution`: the project file system also refuses `cp` into it (`binary writes are not supported`). Edit a copy:
 
-1. From an existing directory, run `mkdir -p /tmp/bpmn-work/<Name>` and copy the target there as `<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Validation loop](#validation-loop), and `<Draft>` is `/tmp/bpmn-draft/<Name>`.
-2. Run the loop there without `refresh`: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event. Skip the loop's **A process with connectors** bullet too: it reads `bindings_v2.json`, which only `refresh` writes.
-3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target.
+1. Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`, then copy the target there as `<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Workflow](#workflow) and the [Validation loop](#validation-loop), and `<Draft>` is `/tmp/bpmn-draft/<Name>`.
+2. Run the loop there without `refresh`, even where the Workflow or the loop says to run it every time: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event. Skip the loop's **A process with connectors** bullet too: it reads `bindings_v2.json`, which only `refresh` writes.
+3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target. To undo, `cp .flow-sdk/original/<Name>.bpmn` from the work folder back over the target the same way.
 
-Never run `init` to give a loose file a project. The user did not ask for one, and its template is a second process that fails `validate`.
+Never run `init` to give an existing file outside `/solution` a project. The user did not ask for one, and its template is a second process that fails `validate`.
 
 **Never delete or rename a file under `/solution`.** The project file system refuses both. Overwrite the file instead. `ls -l` shows every file there as 0 bytes: use `wc -c` for a size.
 

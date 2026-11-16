@@ -347,9 +347,9 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
 test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, never via init", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.ok(skill.includes("**A target outside a `/solution` project**"));
-  assert.ok(skill.includes("run `mkdir -p /tmp/bpmn-work/<Name>`"));
-  assert.ok(skill.includes("Never run `init` to give a loose file a project."));
+  assert.ok(skill.includes("**An existing `.bpmn` outside a `/solution` project**"));
+  assert.ok(skill.includes("Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`"));
+  assert.ok(skill.includes("Never run `init` to give an existing file outside `/solution` a project."));
   assert.ok(skill.includes("and the target is in a project, delete that key"));
 });
 
