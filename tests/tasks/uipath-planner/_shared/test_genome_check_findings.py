@@ -1,44 +1,56 @@
-"""One test per finding check-genome.py reports: each breaks the worked example in one place and asserts the
-message the author sees and the exit code the grader gets.
+"""One test per finding check-genome.mjs reports: each breaks the worked example in one place and asserts the
+message the author sees and the exit code the grader gets. The checker is Node; these tests drive it through
+`node`, so the CI job needs Node >= 20 on the runner.
 
-Run: pytest tests/tasks/uipath-genome/_shared/ -v
+Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check_findings.py -v
 """
 
-import importlib.util
 import json
 import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-SCRIPT = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.py"
-_spec = importlib.util.spec_from_file_location("genome_check_findings", SCRIPT)
-genome_check = importlib.util.module_from_spec(_spec)
-sys.modules["genome_check_findings"] = genome_check
-_bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ inside the shipped skill
-_spec.loader.exec_module(genome_check)
-sys.dont_write_bytecode = _bytecode
+SCRIPT = REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.mjs"
 
-EXAMPLES = REPO / "skills" / "uipath-genome" / "assets" / "examples"
+
+def node(*args):
+    """Runs the checker; returns (exit code, stdout, stderr)."""
+    done = subprocess.run(["node", str(SCRIPT), *map(str, args)], capture_output=True, text=True, encoding="utf-8", check=False)
+    return done.returncode, done.stdout, done.stderr
+
+
+def cli(*args):
+    """Runs the checker; returns (exit code, stdout)."""
+    return node(*args)[:2]
+
+
+def node_call(function, *args):
+    """Calls one of the checker's exported functions with JSON arguments; returns its JSON result."""
+    script = (f"import * as c from {json.dumps(SCRIPT.as_uri())};"
+              f"process.stdout.write(JSON.stringify(c.{function}(...{json.dumps(list(args))})));")
+    done = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, encoding="utf-8", check=True)
+    return json.loads(done.stdout)
+
+
+EXAMPLES = HERE / "genome-examples"  # known-good genomes, kept with the tests
 COMPONENT = (EXAMPLES / "purchase-requisition-entry-genome.md").read_text(encoding="utf-8")
 PROCESS = EXAMPLES / "invoice-processing-genome.md"
 PROCESS_DIR = EXAMPLES / "invoice-processing-genome"
 
 
 @pytest.fixture
-def check(tmp_path, capsys):
+def check(tmp_path):
     """check(text, ...) writes text as a genome, runs the checker, returns (exit code, stdout)."""
 
     def run(text, level="component", profile="core", extra=()):
         target = tmp_path / "sample-genome.md"
         target.write_text(text, encoding="utf-8")
-        rc = genome_check.main([level, str(target), "--profile", profile, *extra])
-        return rc, capsys.readouterr().out
+        return cli(level, target, "--profile", profile, *extra)
 
     return run
 
@@ -54,12 +66,11 @@ def process_tree(tmp_path):
 
 
 @pytest.fixture
-def check_process(process_tree, capsys):
+def check_process(process_tree):
     def run(extra=(), profile="core", transform=None):
         if transform:
             process_tree.write_text(transform(process_tree.read_text(encoding="utf-8")), encoding="utf-8")
-        rc = genome_check.main(["process", str(process_tree), "--profile", profile, *extra])
-        return rc, capsys.readouterr().out
+        return cli("process", process_tree, "--profile", profile, *extra)
 
     return run
 
@@ -107,11 +118,21 @@ def test_blueprint_blockquote_not_worded_as_the_template_fails_strict_only(check
     assert "blueprint blockquote not written as the template words it" in out
 
 
-def test_blockquote_must_name_uipath_genome(check):
-    text = COMPONENT.replace("Build it with the **uipath-genome** skill", "Build it with the build skill", 1)
+BUILDER = "uipath-genome"
+
+
+def test_blockquote_must_name_the_builder(check):
+    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", "Build it with the build skill", 1)
     rc, out = check(text, profile="strict")
     assert rc == 1
-    assert "blueprint blockquote does not name uipath-genome" in out
+    assert f"blueprint blockquote does not name {BUILDER}" in out
+
+
+@pytest.mark.parametrize("legacy", ["uipath-genome", "uipath-genome-builder"])
+def test_blockquote_naming_a_legacy_builder_passes(check, legacy):
+    text = COMPONENT.replace(f"Build it with the **{BUILDER}** skill", f"Build it with the **{legacy}** skill", 1)
+    assert text != COMPONENT
+    assert check(text, profile="strict")[0] == 0
 
 
 def test_retired_skill_name_fails_core(check):
@@ -230,6 +251,32 @@ def test_unit_missing_an_option_fails_strict(check):
     assert "unit 'one requisition line' lacks option(s) ['C']" in out
 
 
+def _decided(text: str, line: str) -> str:
+    return re.sub(r"^(\*\*Evidence:\*\*.*)$", lambda m: m.group(1) + "\n" + line, text, count=1, flags=re.M)
+
+
+def test_a_decided_split_lists_its_option_alone(check):
+    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
+    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
+    text = _decided(text, "**Decided:** B, one requisition line — the SDD §10")
+    rc, out = check(text, profile="strict")
+    assert "lacks option(s)" not in out and "alternative units of work named" not in out, out
+
+
+def test_a_decided_option_needs_its_row(check):
+    text = re.sub(r"^\| one requisition line \| B \|.*$", "", COMPONENT, flags=re.M)
+    text = _decided(text, "**Decided:** B, one requisition line — the request")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "decided option B of 'one requisition line' has no Split options row" in out
+
+
+def test_a_decided_line_names_its_option_first(check):
+    rc, out = check(_decided(COMPONENT, "**Decided:** the SDD chose two projects"), profile="strict")
+    assert rc == 1
+    assert "the 'Decided:' line does not start with the option letter" in out
+
+
 def test_alternative_units_need_split_options_for_each(check):
     text = re.sub(r"^\| one requisition line \|.*$", "", COMPONENT, flags=re.M)
     rc, out = check(text, profile="strict")
@@ -306,7 +353,7 @@ HEADER = "| Step | Source objects | Data sets | Captures | Notes |\n|---|---|---
 
 
 def step_count():
-    return len(genome_check.workflow_steps(COMPONENT))
+    return len(node_call("workflowSteps", COMPONENT))
 
 
 def good_rows():
@@ -517,25 +564,23 @@ def procs_for_rows():
     return [{"id": 100 + k, "name": f"Step_{k}", "calls": []} for k in range(1, step_count() + 1)]
 
 
-def export_run(tmp_path, capsys, rows, procs, rsets):
+def export_run(tmp_path, rows, procs, rsets):
     (tmp_path / "p.json").write_text(json.dumps(procs), encoding="utf-8")
     (tmp_path / "r.json").write_text(json.dumps(rsets), encoding="utf-8")
     target = tmp_path / "sample-genome.md"
     target.write_text(extracted(rows), encoding="utf-8")
-    rc = genome_check.main(["component", str(target), "--processes", str(tmp_path / "p.json"),
-                            "--recordsets", str(tmp_path / "r.json")])
-    return rc, capsys.readouterr().out
+    return cli("component", target, "--processes", tmp_path / "p.json", "--recordsets", tmp_path / "r.json")
 
 
-def test_export_step_without_a_source_object_fails(tmp_path, capsys):
+def test_export_step_without_a_source_object_fails(tmp_path):
     rows = good_rows()
     rows[0] = "| 1 |  | none | 0 | |"
-    rc, out = export_run(tmp_path, capsys, rows, procs_for_rows(), [])
+    rc, out = export_run(tmp_path, rows, procs_for_rows(), [])
     assert rc == 1
     assert "sample-genome.md step 1: no source object" in out
 
 
-def test_export_data_set_problems_are_each_reported(tmp_path, capsys):
+def test_export_data_set_problems_are_each_reported(tmp_path):
     rsets = [{"id": 1, "name": "Order_Rows"}, {"id": 2, "name": "Totals", "drives": False}, {"id": 3, "name": "Sheet::Lines"}]
     cases = {
         "`Order_Rows`": "data set `Order_Rows` has no id",
@@ -547,12 +592,12 @@ def test_export_data_set_problems_are_each_reported(tmp_path, capsys):
     for cell, expected in cases.items():
         rows = good_rows()
         rows[0] = f"| 1 | `Step_1` (101) | {cell} | 0 | |"
-        rc, out = export_run(tmp_path, capsys, rows, procs_for_rows(), rsets)
+        rc, out = export_run(tmp_path, rows, procs_for_rows(), rsets)
         assert rc == 1, cell
         assert expected in out, cell
     rows = good_rows()
     rows[0] = "| 1 | `Step_1` (101) | `Lines` (3) | 0 | |"
-    assert export_run(tmp_path, capsys, rows, procs_for_rows(), rsets)[0] == 0   # a sheet-qualified name matches its tail
+    assert export_run(tmp_path, rows, procs_for_rows(), rsets)[0] == 0   # a sheet-qualified name matches its tail
 
 
 def test_export_notes_a_library_workflow_nothing_calls(tmp_path):
@@ -561,70 +606,88 @@ def test_export_notes_a_library_workflow_nothing_calls(tmp_path):
     lib.write_text(extracted([f"| {k} | `Shared_Util` (500) | none | 0 | |" for k in range(1, step_count() + 1)]), encoding="utf-8")
     root = tmp_path / "root-genome.md"
     root.write_text(extracted(), encoding="utf-8")
-    errors, notes = genome_check.check_export([(root, False), (lib, True)], procs, [])
+    errors, notes = node_call("checkExport", [[str(root), False], [str(lib), True]], procs, [])
     assert errors == []
     assert any("`Shared_Util` (500) is a library workflow no built component calls" in n for n in notes)
 
 
-def test_run_prints_the_export_notes(tmp_path, capsys, monkeypatch):
-    root = tmp_path / "root-genome.md"
-    root.write_text(extracted(), encoding="utf-8")
-    (tmp_path / "p.json").write_text(json.dumps(procs_for_rows()), encoding="utf-8")
+def test_run_prints_the_export_notes(tmp_path, process_tree):
+    # check-genome.py's test replaced check_export in-process; the Node checker runs as a command, so the note
+    # comes from a real export: a component the Components table marks as a library, whose workflow no built
+    # component calls.
+    components = process_tree.parent / PROCESS_DIR.name
+    root = components / "invoice-extraction-genome.md"
+    lib = components / "exception-triage-agent-genome.md"
+    procs = [{"id": 500, "name": "Shared_Util", "calls": []}]
+    for genome in (root, lib):
+        text = genome.read_text(encoding="utf-8")
+        count = len(node_call("workflowSteps", text))
+        if genome == root:
+            procs += [{"id": 100 + k, "name": f"Step_{k}", "calls": []} for k in range(1, count + 1)]
+            rows = [STEP_ROW.format(n=k, pid=100 + k, data="none") for k in range(1, count + 1)]
+        else:
+            rows = [f"| {k} | `Shared_Util` (500) | none | 0 | |" for k in range(1, count + 1)]
+        genome.write_text(text.rstrip() + "\n\n## Source Map\n\n### Steps\n\n" + HEADER + "\n".join(rows) + "\n", encoding="utf-8")
+    process_tree.write_text(process_tree.read_text(encoding="utf-8").replace("| Agent |", "| Agent library |", 1), encoding="utf-8")
+    (tmp_path / "p.json").write_text(json.dumps(procs), encoding="utf-8")
     (tmp_path / "r.json").write_text("[]", encoding="utf-8")
-    monkeypatch.setattr(genome_check, "check_export", lambda genomes, procs, rsets: ([], ["note-text"]))
-    rc = genome_check.main(["component", str(root), "--processes", str(tmp_path / "p.json"),
-                            "--recordsets", str(tmp_path / "r.json")])
-    assert rc == 0
-    assert "NOTE: note-text" in capsys.readouterr().out
+    rc, out = cli("process", process_tree, "--processes", tmp_path / "p.json", "--recordsets", tmp_path / "r.json")
+    assert rc == 0, out
+    assert "NOTE: " in out
+    assert "`Shared_Util` (500) is a library workflow no built component calls" in out
 
 
-def test_export_over_a_process_genome_passes_when_no_component_has_a_step_table(tmp_path, process_tree, capsys):
+def test_export_over_a_process_genome_passes_when_no_component_has_a_step_table(tmp_path, process_tree):
     (tmp_path / "p.json").write_text("[]", encoding="utf-8")
     (tmp_path / "r.json").write_text("[]", encoding="utf-8")
-    rc = genome_check.main(["process", str(process_tree), "--processes", str(tmp_path / "p.json"),
-                            "--recordsets", str(tmp_path / "r.json")])
+    rc, out = cli("process", process_tree, "--processes", tmp_path / "p.json", "--recordsets", tmp_path / "r.json")
     assert rc == 0
-    assert capsys.readouterr().out.startswith("OK (core)")
+    assert out.startswith("OK (core)")
 
 
 # --- inventory files and arguments ---------------------------------------------------------------
 
-def test_inventory_that_is_not_a_list_of_objects_exits_with_a_message(tmp_path, check):
+def test_inventory_that_is_not_a_list_of_objects_fails_with_a_message(tmp_path):
+    # check-genome.py exited through sys.exit(message), printing the FAIL line on stderr. The Node checker reports
+    # every unreadable input as a FAIL line on stdout; the message and the exit code are unchanged.
+    target = tmp_path / "sample-genome.md"
+    target.write_text(COMPONENT, encoding="utf-8")
     (tmp_path / "p.json").write_text(json.dumps({"id": 1}), encoding="utf-8")
     (tmp_path / "r.json").write_text("[]", encoding="utf-8")
-    with pytest.raises(SystemExit) as exc:
-        check(COMPONENT, extra=["--processes", str(tmp_path / "p.json"), "--recordsets", str(tmp_path / "r.json")])
-    assert "the process inventory is a list of objects with 'id' and 'name'" in str(exc.value)
+    rc, out = cli("component", target, "--processes", tmp_path / "p.json", "--recordsets", tmp_path / "r.json")
+    assert rc == 1
+    assert "FAIL: " in out
+    assert "the process inventory is a list of objects with 'id' and 'name'" in out
 
 
-def test_processes_and_recordsets_must_be_given_together(tmp_path, check, capsys):
+def test_processes_and_recordsets_must_be_given_together(tmp_path):
+    target = tmp_path / "sample-genome.md"
+    target.write_text(COMPONENT, encoding="utf-8")
     (tmp_path / "p.json").write_text("[]", encoding="utf-8")
-    with pytest.raises(SystemExit) as exc:
-        check(COMPONENT, extra=["--processes", str(tmp_path / "p.json")])
-    assert exc.value.code == 2
-    assert "--processes and --recordsets go together" in capsys.readouterr().err
+    rc, _, err = node("component", target, "--processes", tmp_path / "p.json")
+    assert rc == 2
+    assert "--processes and --recordsets go together" in err
 
 
-def test_tokens_level_reports_file_count_and_missing_tokens(tmp_path, capsys):
-    (tmp_path / "a.md").write_text("alpha beta", encoding="utf-8")
-    assert genome_check.main(["tokens", str(tmp_path / "a.md"), "--expect", "alpha", "beta"]) == 0
-    assert "OK (tokens)" in capsys.readouterr().out
-    rc = genome_check.main(["tokens", str(tmp_path / "a.md"), "--expect", "alpha", "gamma", "--files", "2"])
-    out = capsys.readouterr().out
+def test_tokens_level_reports_file_count_and_missing_tokens(tmp_path):
+    a = tmp_path / "a.md"
+    a.write_text("alpha beta", encoding="utf-8")
+    rc, out = cli("tokens", a, "--expect", "alpha", "beta")
+    assert rc == 0
+    assert "OK (tokens)" in out
+    rc, out = cli("tokens", a, "--expect", "alpha", "gamma", "--files", "2")
     assert rc == 1
     assert "1 file(s) match, expected 2" in out
     assert "1/2 tokens found, expected >= 100%; missing: gamma" in out
-    assert genome_check.main(["tokens", str(tmp_path / "a.md"), "--expect", "alpha", "gamma", "--min", "0.5"]) == 0
-    capsys.readouterr()
-    rc = genome_check.main(["tokens", str(tmp_path / "none.md"), "--expect", "alpha"])
+    assert cli("tokens", a, "--expect", "alpha", "gamma", "--min", "0.5")[0] == 0
+    rc, out = cli("tokens", tmp_path / "none.md", "--expect", "alpha")
     assert rc == 1
-    assert "no file matches" in capsys.readouterr().out
+    assert "no file matches" in out
 
 
 def test_script_runs_as_a_command(tmp_path):
     genome = tmp_path / "sample-genome.md"
     genome.write_text(COMPONENT, encoding="utf-8")
-    done = subprocess.run([sys.executable, str(SCRIPT), "component", str(genome), "--profile", "strict"],
-                          capture_output=True, text=True, check=False)
-    assert done.returncode == 0
-    assert done.stdout.startswith("OK (strict)")
+    rc, out = cli("component", genome, "--profile", "strict")
+    assert rc == 0
+    assert out.startswith("OK (strict)")

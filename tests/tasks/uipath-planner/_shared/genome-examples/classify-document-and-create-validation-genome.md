@@ -1,7 +1,7 @@
 <!-- UIPATH-AUTOMATION-GENOME: component | This file is a build specification for one UiPath automation project.
-     To build it, invoke the uipath-genome skill (Execute mode): it asks the configuration questions,
+     To build it, invoke the uipath-genome skill: it asks the configuration questions,
      then invokes the skills referenced in Build With. Do NOT execute these steps directly, and do NOT
-     start from a Build With skill. -->
+     start from a Build With skill. To change it, invoke the uipath-planner skill. -->
 
 # Genome: Classify Document and Create Validation
 
@@ -28,7 +28,7 @@ When the classification confidence falls below a configurable threshold, the aut
 | Step | Skill | Rationale |
 |------|-------|-----------|
 | Steps 1-2: load and classify the document | `uipath-rpa` | Document Understanding generative classifier is an activity-based XAML workflow |
-| Steps 3-5: evaluate confidence, create validation task, wait for reviewer | `uipath-rpa` | Conditional logic plus Action Center create/wait activities with process persistence in XAML; consult `uipath-human-in-the-loop` for the validation gate design |
+| Steps 3-5: evaluate confidence, create validation task, wait for reviewer | `uipath-rpa` | Conditional logic plus Action Center create/wait activities with process persistence in XAML; an RPA process authors its own validation gate |
 
 ## Platform Dependencies
 

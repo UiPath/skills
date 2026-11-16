@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks for a genome execution (Execute mode) run, from the sandbox root.
+"""Checks for a genome build (uipath-genome) run, from the sandbox root.
 
 Usage:
   execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)

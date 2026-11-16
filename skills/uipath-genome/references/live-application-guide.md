@@ -1,6 +1,6 @@
-# Live Application Guide — exploration and the live healing pass
+# Live Application Guide — exploration, live capture and the live healing pass
 
-The two live phases of a migration's UI targets ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4) run when the Live application answer names a reachable application — the target application or a comparable instance of it ([execution-guide.md § 1.3](execution-guide.md)): exploration, which walks the application before the targets are derived and ends with a contract probe before the first part that authors, and the live healing pass once every workflow is linked. What each kind of instance lets a verdict say, and the live checks every UI migration writes: [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md).
+The two live phases of a migration's UI targets ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 4) run when the Live application answer names a reachable application — the target application or a comparable instance of it ([configuration-questions-guide.md](configuration-questions-guide.md)): exploration, which walks the application before the targets are derived and ends with a contract probe before the first part that authors, and the live healing pass once every workflow is linked. What each kind of instance lets a verdict say, and the live checks every UI migration writes: [ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md). An authored genome has no targets to migrate: a reachable application is where its targets are captured (§ Authored genomes).
 
 ## Driving the application
 
@@ -12,11 +12,11 @@ The two live phases of a migration's UI targets ([ui-target-migration-guide.md](
 
 ## Exploring — before the targets are derived
 
-Explore once the migration preflight has derived the catalogs and before the target spec is written ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 3a): walk the screens the genome's UI steps reach, in the order the steps reach them, and write one **application notes** file per application, `applications/<application-slug>.md` in the hand-off folder ([execution-guide.md § 3.3](execution-guide.md)). The target spec is derived with the notes, every UI part reads its applications' notes ([execution-parts-guide.md](execution-parts-guide.md) item 6), and so does the engineer who heals the targets later. The notes answer what the offline migration would otherwise go back to the application for; a question they leave open becomes a live-checks row, not a probe. Five sections, the last written by the contract probe:
+Explore once the migration preflight has derived the catalogs and before the target spec is written ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 3a): walk the screens the genome's UI steps reach, in the order the steps reach them, and write one **application notes** file per application, `applications/<application-slug>.md` in the hand-off folder ([completion-report-guide.md](completion-report-guide.md)). The target spec is derived with the notes, every UI part reads its applications' notes ([execution-parts-guide.md § What a Build Adds](execution-parts-guide.md) item 6), and so does the engineer who heals the targets later. The notes answer what the offline migration would otherwise go back to the application for; a question they leave open becomes a live-checks row, not a probe. Five sections, the last written by the contract probe:
 
 1. **Windows and navigation.** Every window, tab and dialog the steps reach: how it is reached (a menu path, a URL, a button), the window selector the driver reports for it, the part of its title that stays the same while the automation works in it and the part that varies ([selector-translation-guide.md](selector-translation-guide.md) rule 9), the windows it owns, the pop-ups that can interrupt it, and the card that reaches it ([ui-target-migration-guide.md § Object Repository identity](ui-target-migration-guide.md) rule 2). Also how the automation starts the application clean: the browser profile or session the card opens it in, the sign-in, and what an earlier session leaves behind for the next one (a cart, a saved filter, a remembered user).
 2. **Input method.** The method each application takes, proven while driving it as the UIA package's input-methods guidance prescribes, and the interactions that need another (special keys, date inputs). Each screen of the application carries the proven method, so every card linked to it runs with it; an application where no method was proven keeps the default.
-3. **Structures.** Per table, tree and list the steps act on: what the driver exposes — one grid cell's table attributes, whether a list or tree exposes `items` and takes Select Item, rows that render only once scrolled into view, how a type-ahead's popup and value display render — and the row of [ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md) this settles.
+3. **Structures.** Per table, tree and list the steps act on: what the driver exposes — one grid cell's table attributes, whether a list or tree exposes `items` and takes Select Item, rows that render only once scrolled into view, how a type-ahead's popup and value display render — and the row of [composite-interactions-guide.md](composite-interactions-guide.md) this settles.
 4. **Selectors.** Per interaction family, the verdict of the procedure below, with what the package's selector-improvement guidance changed in the derived shape: the attributes that hold across instances, the generated ones to drop, and the collisions found.
 5. **Contracts.** Each shape the build repeats across files, how it is built, and what its probe showed (§ Contract probe).
 
@@ -50,7 +50,7 @@ The live healing pass meets the finished build: every UI workflow of the run is 
 Walk the read-only rows of the live checks screen by screen:
 
 1. **Validate each element's strict step** with target validation, the screen in the state the element needs; a parametrised element at two values of each selector variable (two rows, two captions).
-2. **An element that does not resolve, or resolves another node, is captured again** with the owning skill's target-capture procedure, in the scratch project (§ Driving the application, item 5), given its semantic description as the element to find. Take the selector the driver gives for the node found, and put each selector variable of the spec entry back in the attribute that carries the varying part; keep the window's scope unless the live window proves it wrong. Edit the spec entry and let the run's target tool replace the element, then validate again. A fix that shows the family's rule was wrong is applied to the family's other elements, each validated.
+2. **An element that does not resolve, or resolves another node, is captured again** with the owning skill's target-capture procedure, in the scratch project (§ Driving the application, item 5), given its semantic description as the element to find. Take the selector the driver gives for the node found, and put each selector variable of the spec entry back in the attribute that carries the varying part; keep the window's scope unless the live window proves it wrong. Edit the spec entry — the selector, and the description wherever it explains the selector, its variables or the search it makes — and let the run's target tool replace the element, then validate again. A fix that shows the family's rule was wrong is applied to the family's other elements, each validated.
 3. **On a comparable instance only the family samples are checked** (§ Driving the application, item 4), and the family's elements take its label.
 4. **Close each row** with its state, and change the element's label in its description in place ([ui-target-migration-guide.md](ui-target-migration-guide.md) rule 2). The `run` rows, and the elements of a screen only a run reaches, stay open for the runs.
 
@@ -59,15 +59,28 @@ Walk the read-only rows of the live checks screen by screen:
 Where the Healing pass answer allows it, after the read-only check, on the instance and the data the answer named — the runs enter and change data in the systems the automation drives:
 
 1. **Run the workflows and test cases the answer covers,** those the `run` rows name first, through the owning skill's debug-run procedure, with the run's settings pointing at the named instance.
-2. **A target that fails** takes the owning skill's runtime selector-failure recovery; its accepted selector is folded into the spec entry as a recaptured one is (§ Checking every target read-only), and written back through the run's target tool.
-3. **A step that went through can still be a miss**, and a miss is fixed like a failure:
+2. **What the runs need only for the instance and the session they run on goes into a copy of the project, never into the project.** The copy attaches to the session the user opened in place of the automation's own start, sign-in, log-off and process kills of an application the Live application answer says must stay open; runs on an instance the export did not come from use records found there read-only, kept as a set of their own beside the migrated rows, never over them; a delivery to a system the runs must not reach is skipped. Each such change is marked in the copy. A fix for what the migration got wrong goes into the project, a target's through its spec entry, and the copy takes it again. Every change is classified as one or the other before it is applied.
+3. **A target that fails** takes the owning skill's runtime selector-failure recovery; its accepted selector is folded into the spec entry as a recaptured one is (§ Checking every target read-only), and written back through the run's target tool.
+4. **A failure is put down to the instance's data only with evidence:** the element the step reads, on screen in the case's own state, and the step compared with its last passing run. A step that passed before a fix and fails after it is that fix's regression.
+5. **A step that went through can still be a miss**, and a miss is fixed like a failure:
    - a target found only through a semantic step or another fallback, which a target carries only where the user or the owning skill's recovery added one: the run log warns `<target> was found using fallback method '<method>'.`, every lookup first waits out the strict step's timeout, on every item of a loop, and nothing confirms the fallback reached the intended control — a target is healed when its strict selector resolves it;
    - a read or a collection that came back empty while the screen showed something to find;
    - a pick whose verify passed on another entry than the step asked for.
-4. **A fix re-runs every workflow and test that uses what it changed**, as [execution-guide.md § 3.2](execution-guide.md) states for acceptance fixes.
-5. **Every data change the runs made** goes into the completion report's section for it ([execution-guide.md § 3.3](execution-guide.md)).
+6. **A fix re-runs every workflow and test that uses what it changed**, as [execution-guide.md § 3.2](execution-guide.md) states for acceptance fixes.
+7. **Every data change the runs made** goes into the completion report's section for it ([completion-report-guide.md](completion-report-guide.md)).
 
 The runs are the local runs the acceptance verdicts cite ([execution-guide.md § 3.1](execution-guide.md)), and each `run` row closes with what its run showed.
+
+## Authored genomes — capturing targets live
+
+An authored genome has no export, so its targets are captured, not migrated. Where the Live application answer names a reachable application:
+
+1. **Drive it** as § Driving the application items 1–4 state; exploration's notes and the contract probe are a migration's.
+2. **Capture each target in the project of the build** through the owning skill's target-capture procedure, the screen in the state the step needs, so it registers in that project's Object Repository; item 5's scratch project holds probes only.
+3. **Validate each captured target's strict selector** with target validation; one that does not resolve, or resolves another node, is captured again.
+4. **Runs** follow § Runs, on the Healing pass answer.
+
+Where the answer is Neither, each UI activity gets the owning skill's placeholder target, and the report lists every placeholder with the live check it owes.
 
 ## Anti-patterns
 
@@ -76,3 +89,4 @@ The runs are the local runs the acceptance verdicts cite ([execution-guide.md §
 3. **Submitting, saving or confirming outside the runs, or running them when the user did not allow it or on data the user did not name** (§ Driving the application, § Runs).
 4. **Taking a step's success for a healed target** — a fallback, an empty read, a wrong pick — **or a family sample on a comparable instance for a check of every target** (§ Live healing pass).
 5. **Fixing a failing element in the workflow by hand, or with the create command**, instead of in its spec entry through the run's target tool, whose replace keeps the links ([ui-target-migration-guide.md § Object Repository identity](ui-target-migration-guide.md) rule 4).
+6. **Running the automation's own start, sign-in, log-off or process kills against a session the user keeps open, or writing a change only the instance needs into the project** (§ Runs).
