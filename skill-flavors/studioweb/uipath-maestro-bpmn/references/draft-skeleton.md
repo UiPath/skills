@@ -41,5 +41,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  Finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
+  *Build it* changes every box's type, so finish as the [Validation loop](../SKILL.md#validation-loop)'s type-change rule says: compile over the target, `format`, `refresh` and `validate`, and say in the report's one sentence that the canvas layout was reset.
 <!--skill-flavor:draft-build-merge:end-->
