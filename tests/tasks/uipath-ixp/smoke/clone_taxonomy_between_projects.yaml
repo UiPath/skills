@@ -81,7 +81,10 @@ success_criteria:
       import json, os, sys
       want = open("taxonomy-payload.json", "rb").read()
       for line in open("cli_mocks/calls.jsonl"):
-          argv = json.loads(line).get("argv", [])
+          rec = json.loads(line)
+          if rec.get("tool") != "uip":
+              continue
+          argv = rec.get("argv", [])
           args, skip = [], False
           for tok in argv:
               if skip:
