@@ -286,6 +286,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  A value the request leaves open, such as a rate, a threshold or a formula, is not a question either: *Build it* hands it to you, so pick a plausible one, build with it, and name it under `Assumed`.
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
@@ -295,7 +296,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  End the turn with the [final report](final-report-template.md); its first line says `(draft mode)`, because this run stopped at a gate.
+  Read [final-report-template.md](final-report-template.md) in full before the turn's last tool call, then end the turn with that report; its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
