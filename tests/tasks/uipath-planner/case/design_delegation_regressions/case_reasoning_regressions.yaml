@@ -54,8 +54,7 @@ initial_prompt: |
   This is a design-only exercise: do not query tenant registry, connections,
   schemas, or users. Use concrete
   intended resource and system names, leave identities unresolved, and defer
-  authoritative tenant resolution to the later build run. Do not inspect plugin
-  planning docs.
+  authoritative tenant resolution to the later build run.
 
   Primary stages are Intake, Issuing Permit, and Close.
 
