@@ -92,11 +92,8 @@ success_criteria:
       that follow it (the request to call `submit_verdict`) are not part of
       it: never count them as a line after the third option or anywhere else.
 
-      Ignore blank lines, spaces at the end of a line, up to three spaces at
-      the start of a line that does not then start with `- ` (an indented
-      `- ` line is a nested bullet, which shows), and markdown emphasis
-      (`**`, `*`, backticks): none of these shows in the chat. In the graded
-      text, check every item:
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
+      graded text, check every item:
 
       1. The first line starts with `InvoiceIntakeSketch: outline ready (draft mode).` and
          does not say `uploaded`. After that, the same line may hold at most

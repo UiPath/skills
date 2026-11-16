@@ -92,11 +92,8 @@ success_criteria:
       (markdown emphasis around the name allowed) to the end, and ignore what
       comes before it. If the phrase does not occur at all, item 1 fails.
 
-      Ignore blank lines, spaces at the end of a line, up to three spaces at
-      the start of a line that does not then start with `- ` (an indented
-      `- ` line is a nested bullet, which shows), and markdown emphasis
-      (`**`, `*`, backticks): none of these shows in the chat. Check every
-      item:
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). Check
+      every item:
 
       STUDIO WEB. When the second line of the graded text is a plain path
       that starts with `/solution/` and ends in `.bpmn`, the agent runs
@@ -197,10 +194,7 @@ success_criteria:
       allowed) to the end, and ignore what comes before it. If the phrase does
       not occur in Turn 2, item 1 fails.
 
-      Ignore blank lines, spaces at the end of a line, up to three spaces at
-      the start of a line that does not then start with `- ` (an indented
-      `- ` line is a nested bullet, which shows), and markdown emphasis:
-      none of these shows in the chat. Check every item:
+      Ignore blank lines and markdown emphasis. Check every item:
 
       STUDIO WEB. When the second line of the graded report is a plain path
       that starts with `/solution/` and ends in `.bpmn`, the agent runs
