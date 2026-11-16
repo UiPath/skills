@@ -164,6 +164,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `uipath-automationhub checker unit tests` | `test-helpers.yml` |
 | `uipath-rules checker unit tests` | `test-helpers.yml` |
 | `uipath-genome checker unit tests` | `test-helpers.yml` |
+| `testmanager event-trigger grader unit tests` | `test-helpers.yml` |
 | `uipath-admin verify negative controls` | `test-helpers.yml` |
 | `runtime-payload key-casing contract guard` | `test-helpers.yml` |
 | `maestro-bpmn contract guards` | `test-helpers.yml` |
