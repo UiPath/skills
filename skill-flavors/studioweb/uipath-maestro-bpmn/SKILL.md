@@ -149,10 +149,10 @@ uip maestro bpmn format <Name>.bpmn
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
-  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then, or after *Build it*'s
-  compile over the target, run step 5, run step 4
+  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5, run step 4
   again, and, unless step 4 reported `No diagrams found`, tell the user that the
-  canvas layout was reset.
+  canvas layout was reset. *Build it* after a draft gate always runs step 5 and
+  always reports the reset, as its rule below says.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
@@ -167,7 +167,9 @@ uip maestro bpmn format <Name>.bpmn
   over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
   run step 5, then step 4. In the report's one sentence, say the canvas layout
   was reset and name each kind of content the search found as removed.
-  Any other edit merges, even one that changes a step's tag.
+  Any other edit merges, even one that changes a step's tag; `merge` then keeps
+  the old tag, so name each such step under the report's `Unverified:` as one
+  Studio Web may still show as a plain task.
 - **To undo the turn's write**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish by
