@@ -3,7 +3,7 @@
 <!--skill-flavor:gate-first-line:end-->
 
 <!--skill-flavor:gate-path-line:start-->
-<the target path, such as /solution/<Project>/<Name>.bpmn, as plain text, never a link>
+<the target path, such as /solution/<Project>/<Name>.bpmn, as plain text, never a link or in backticks>
 <!--skill-flavor:gate-path-line:end-->
 
 <!--skill-flavor:gate-uploaded-rule:start-->

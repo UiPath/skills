@@ -25,7 +25,7 @@ Reply in this shape, dropping lines that do not apply:
 <Name>: built, validated<, uploaded><, run> (<draft|auto> mode). <One sentence when this file calls for it, or when you kept the user's Studio Web edits.>
 <!--skill-flavor:final-first-line:end-->
 <!--skill-flavor:final-path-line:start-->
-<the Studio Web link (Data.DesignerUrl) on its own line when the upload returned one, else the local <Project>/<Name>.bpmn path as plain text, never a link>
+<the Studio Web link (Data.DesignerUrl) on its own line when the upload returned one, else the local <Project>/<Name>.bpmn path as plain text, never a link or in backticks>
 <!--skill-flavor:final-path-line:end-->
 
 - <what changed, one line each, at most 5 lines in all>
@@ -48,7 +48,7 @@ Drop `Needs:` when nothing is missing.
 <!--skill-flavor:final-path-rule:start-->
 The path line belongs to this final message.
 A Studio Web link shown earlier in the turn, before a tool call, does not count: write it again here, on its own line.
-When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, not a Markdown link with the file name as its text.
+When the path line is the local path, write the plain path, such as InvoiceIntake/InvoiceIntake.bpmn, not a Markdown link with the file name as its text and not in backticks.
 
 <!--skill-flavor:final-path-rule:end-->
 Write every line in the user's words: say what each step now does.

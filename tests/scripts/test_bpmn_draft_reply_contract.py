@@ -66,3 +66,11 @@ def test_skeleton_declares_start_data_as_inputs() -> None:
     text = _outside_flavor_blocks((REFS / "draft-skeleton.md").read_text())
     assert "never draw a box whose only job is to receive, read or capture it" in text
     assert "Data a person supplies after the process has started is a real step" in text
+
+
+def test_path_line_is_bare() -> None:
+    for name in ("gate-reply-template.md", "final-report-template.md"):
+        text = (REFS / name).read_text()
+        assert "as plain text, never a link or in backticks>" in text, name
+        sw = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / name).read_text()
+        assert "as plain text, never a link or in backticks>" in sw, name

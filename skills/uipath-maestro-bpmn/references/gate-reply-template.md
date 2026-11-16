@@ -9,7 +9,7 @@ Reply in this shape and keep every line; only the first line's second sentence i
 <Name>: outline ready<, uploaded> (draft mode). <One sentence if the upload or a lookup failed, the upload to an existing solution waits for the user's go-ahead, you kept the user's Studio Web edits, or you put the project in a new solution because the request named none, or the new solution took another name because its default was taken.>
 <!--skill-flavor:gate-first-line:end-->
 <!--skill-flavor:gate-path-line:start-->
-<the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link>
+<the Studio Web link (Data.DesignerUrl) on its own line when it uploaded, else the local <Project>/<Name>.bpmn path as plain text, never a link or in backticks>
 <!--skill-flavor:gate-path-line:end-->
 
 - <box label exactly as its .task() name spells it>: <resource and folder | which of two | none yet, create it or name one | not checked | no resource needed>
@@ -35,7 +35,7 @@ A progress note belongs in a message before your last tool call; the message aft
 
 ## The path line
 
-When the path line is the local path, write the plain path, such as `InvoiceIntake/InvoiceIntake.bpmn`, never a Markdown link, whatever its text.
+When the path line is the local path, write the plain path, such as InvoiceIntake/InvoiceIntake.bpmn, never a Markdown link, whatever its text, and never in backticks.
 
 ## The box lines
 
