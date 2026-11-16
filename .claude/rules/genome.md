@@ -47,7 +47,7 @@ Paths are relative to the skill folder.
 | Transactional shape at build: split questions, the projects a `Decided:` chain names, REFramework surfaces | `references/transactional-execution-guide.md` |
 | Migration: preflight, catalogs, credentials, source steps | `references/source-migration-guide.md`; source and pack resolution: `references/source-frameworks-guide.md` |
 | UI target migration: three phases, target spec, Object Repository, verification labels | `references/ui-target-migration-guide.md`; composite interaction patterns: `references/composite-interactions-guide.md` |
-| UiPath selector facts: tag chains, tiers, rules 1–16 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
+| UiPath selector facts: tag chains, tiers, rules 1–17 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
 | Live application: exploration, live healing pass | `references/live-application-guide.md` |
 | Where a UI check goes, in every build | `references/ui-verification-guide.md` |
 | Test components at build | `references/test-execution-guide.md` |
