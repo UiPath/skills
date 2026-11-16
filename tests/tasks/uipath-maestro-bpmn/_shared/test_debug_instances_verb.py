@@ -69,10 +69,11 @@ INSPECTIONS = [
 ]
 
 
+@pytest.mark.parametrize("uip", ["uip", "$UIP", "${UIP}"])
 @pytest.mark.parametrize("verb", VERBS)
 @pytest.mark.parametrize(("task", "criterion", "tail"), INSPECTIONS)
-def test_inspection_counts_either_spelling(task: str, criterion: str, tail: str, verb: str) -> None:
-    assert _hits(_pattern(task, criterion), f"uip maestro bpmn {verb} {tail} --output json")
+def test_inspection_counts_either_spelling(task: str, criterion: str, tail: str, verb: str, uip: str) -> None:
+    assert _hits(_pattern(task, criterion), f"{uip} maestro bpmn {verb} {tail} --output json")
 
 
 @pytest.mark.parametrize(
@@ -89,6 +90,7 @@ def test_inspection_counts_either_spelling(task: str, criterion: str, tail: str,
         'uip maestro bpmn debug-instances variables "--help"',
         "uip maestro bpmn debug-instances variables-all --output json > out.json",
         "uip maestro bpmn debug-instances variables-all --output json | jq .",
+        "uip maestro bpmn debug-instances variables-all # --help",
     ],
 )
 def test_live_inspection_ignores_help_and_other_verbs(command: str) -> None:
@@ -126,6 +128,19 @@ def test_no_operate_guard_catches_both_spellings(operation: str, uip: str) -> No
 )
 def test_no_operate_guard_allows_reads(command: str) -> None:
     assert not _hits(_pattern(_INSPECT, "did not operate the debug instance"), command)
+
+
+# `element` and `message` are Commander aliases of the `elements` / `messages` sub-groups.
+@pytest.mark.parametrize("group", ["instance", "instances"])
+@pytest.mark.parametrize("op", ["element retry", "element cancel", "message send"])
+def test_no_operate_guard_catches_singular_sub_group_aliases(group: str, op: str) -> None:
+    guard = _pattern(_INSPECT, "did not operate the debug instance")
+    assert _hits(guard, f"uip maestro bpmn {group} {op} debug-fault-777 --output json")
+
+
+def test_a_help_flag_in_a_shell_comment_does_not_hide_an_operation() -> None:
+    guard = _pattern(_INSPECT, "did not operate the debug instance")
+    assert _hits(guard, "uip maestro bpmn debug-instances cancel debug-fault-777 # --help")
 
 
 def test_no_operate_guard_still_counts_a_chained_operation() -> None:
