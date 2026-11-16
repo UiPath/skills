@@ -109,7 +109,7 @@ Sufficient:
 3. **Validate invoice against purchase order** (input: extracted invoice record; output: validation result with discrepancies):
    a. Match vendor_id to the vendor master
    b. Match PO number to open POs for that vendor
-   c. For each line item verify description, quantity, and unit_price against the PO line
+   c. The line items whose description, quantity or unit_price differ from their PO line
    d. Verify quantity × unit_price sums to the invoice subtotal, and subtotal + tax = total within the configured tolerance (default 1%)
    e. If any mismatch exceeds tolerance, flag the invoice with the field, expected value, and actual value
 ```
@@ -126,7 +126,7 @@ Test: if a builder cannot rebuild the step from the text alone, add detail. Neve
 
 **A loop that only computes, selects or tests is its result.** A loop whose body only computes, filters or tests rows — no read from or action on an application, a file or a queue, no call to another step — is written as what it produces, not as a loop.
 
-**An attach before acting is no step.** A source step that only attaches to an application before other steps act in it is no step: the rebuild reaches the application where those steps act. An attach that falls back to a launch, or a test that chooses between the two, is one step, "open {application} if it is not already open", with no attempt, test or flag of its own. Only an attach whose result the process uses otherwise — reported, or deciding work other than the launch — is a step: a check that the application is open.
+**An attach before acting is no step.** A source step that only attaches to an application before other steps act in it is no step: the rebuild reaches the application where those steps act. An attach that falls back to a launch, or a test that chooses between the two, is one step, "open {application} if it is not already open", with no attempt, test or flag of its own. Only an attach whose result the process uses otherwise — reported, or deciding work other than the launch — is a step: a check that the application is open. A library's public workflow that only attaches, or attaches or launches, stays a step: it is the set-up that returns the application handle its consumer passes to the acting workflows (§ Interface, State kept between calls).
 
 ### Business Rules
 Plain language, no code syntax, specific fields and thresholds kept. Group under `### Step N: {name}` headings for the step where the rule fires; a rule or handler several steps share goes once under a heading naming them (`### Steps 4, 10 and 15: …`); cross-step rules under `### General`.
