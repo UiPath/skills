@@ -38,6 +38,10 @@ Rules:
 
 - Core `uipath.custom` event-log targets: **`Case_ID`**, **`Activity`**,
   **`Event_end`** (datetime). Optional: `Event_start`, `User`.
+- **Every field needs a `DataType`**, one of `text`, `integer`, `number`, `boolean`,
+  `date`, `datetime` (the backend's `MappingDataType`; case does not matter). There is
+  no `string`, `decimal` or `timestamp`. `apps create` and `data-mapping update` refuse
+  a missing or other value before anything is sent, naming each bad field.
 - `DateTimeFormatString` is lowercase, non-strftime: `dd-mm-yyyy hh:mm:ss`
   (`.nnn` for milliseconds).
 - **`IsNotNull` / `IsUnique` now default** per field (the CLI fills
