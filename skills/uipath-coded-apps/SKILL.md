@@ -237,7 +237,7 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
 
-> **Folder identifier names differ across CLI and SDK.** The CLI uses `--folder-path` (path or display name), `--folder-key` / `UIPATH_FOLDER_KEY` (GUID), and both apply only to `uip codedapp deploy` and `uip codedapp delete`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
+> **Folder identifier names differ across CLI and SDK.** The CLI uses `--folder-path` (path or display name), `--folder-key` / `UIPATH_FOLDER_KEY` (GUID), and both apply only to the coded-app `deploy` and `delete` commands. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
 
 ## Completion Output
 
