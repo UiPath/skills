@@ -8,11 +8,11 @@ Use the named first-class node whenever the scenario needs a connector or HTTP f
 
 ## At a glance
 
-Run inline JavaScript for computation that is not a first-class Flow node. Signatures are `script({ code: string })` and `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read results with `out(step, path?)`. Use a first-class action when the scenario names one; otherwise use script for computation.
+Run inline JavaScript for computation that is not a first-class Flow node. Signatures are `script({ code: string })` and `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read results with `out(step, path?)`. Use a first-class action when the scenario names one; use script for computation.
 
 ## What the step publishes
 
-A node TYPE declares only a generic output (`object` on 1.0.0, `any` on 1.1), so the designer would reject mapping a script read into a `string` flow output. The compiler reads the body and declares an evident return type; typing does not enumerate fields, so an object remains open, and nothing is declared unless every `return` agrees. Runtime reads and calls declare nothing; provide `returns`:
+A node TYPE declares only a generic output (`object` on 1.0.0, `any` on 1.1), so the designer would reject mapping a script read into a `string` flow output. The compiler reads the body and declares an evident return type; typing does not enumerate fields, so an object remains open, and nothing is declared unless every `return` agrees. A body returning a runtime read or a call declares nothing; provide `returns`:
 
 ```ts
 .step('policyLimit', script({
@@ -25,7 +25,7 @@ A node TYPE declares only a generic output (`object` on 1.0.0, `any` on 1.1), so
 
 ## Writing the script as a function
 
-For new, multi-line scripts, pass a TypeScript function so the editor and `tsc` check it. The string form remains necessary when a body splices an `out()` reference with `js`` ` or the SDK is older than 6.57.0.
+For new scripts (the examples write every script this way), pass a TypeScript function so the editor and `tsc` check it. The string form remains necessary when a body splices an `out()` reference with `js`` ` or the SDK is older than 6.57.0.
 
 ```ts
 import { script, type FlowVars } from '@uipath/maestro-builder-sdk';
@@ -38,14 +38,14 @@ function normalize($vars: FlowVars) {
 }
 ```
 
-- The function is never called: its body becomes the script exactly as written. Parameter one is runtime `$vars`; parameter two is `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata` to avoid renaming; other names are renamed. Parameters bind by position, so `($metadata) => …` is refused.
+- The function is never called: its body becomes the script exactly as written. Parameter one is runtime `$vars`; parameter two is `$metadata` ([below](#reading-the-instance-metadata)). Name them `$vars` and `$metadata` to avoid renaming; other names are renamed. Parameters bind by position, so take them in that order: a parameter named like the other one (`($metadata) => …`) is refused.
 - Read parameters only with dots (`$vars.start.output.amount`). Destructuring, aliases (`const v = $vars`), `$vars['start']`, `$vars?.start`, and passing `$vars` to a helper are refused because `check` cannot see the step read.
 <!--skill-flavor:script-function-returns-check:start-->
 - `returns` is the `.flow` declaration and is checked against the function return; `returns: { amount: 'string' }` for the example is a type error. `compile` does not type-check. In a workspace copy, run `npm install --save-dev @uipath/maestro-builder-sdk typescript`, then run `npx tsc --noEmit --strict --module nodenext --moduleResolution nodenext --skipLibCheck <file>.flow.ts`; with only the global SDK copy, nothing checks it, so match `returns` fields by hand. Without `returns`, the body's type is inferred as for a string body.
 <!--skill-flavor:script-function-returns-check:end-->
-- The function may read only [the runtime](#the-javascript-runtime). External values, module constants, imports, and module helpers named like runtime globals (such as `parseInt`) are refused; loading can fail with `script(normalize) cannot be a script: it reads LIMIT, …`, and `compile`/`check` refuse unsupported reads. Move values inside the function or declare them with `.var()` and read `$vars.<name>`. Pass the function by name or inline from a `.ts` file; `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`).
+- The function may read only [the runtime](#the-javascript-runtime). External values, module constants, imports, and module helpers named like runtime globals (such as `parseInt`) are refused: each throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and `compile` and `check` also refuse such a helper. Move values inside the function or declare them with `.var()` and read `$vars.<name>`. Pass the function by name or inline from a `.ts` file; `compile` and `check` refuse any other shape (`script(h.check)`, a wrapper around `script`).
 - Refused with a function-naming message: `async`, generators, more than two parameters (more than one on an SDK older than 6.72.0, which lacks [the metadata parameter](#reading-the-instance-metadata)), default or rest parameters, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration reusing a parameter name.
-- With an SDK containing `dist/script-globals.d.ts`, also refuse top-level declaration or assignment of `console`, `uipath`, `aggregate`, `_aggregate`, or `_pipe`, and members the engine lacks (`crypto.getRandomValues`, `console.table`).
+- With an SDK containing `dist/script-globals.d.ts`, these are also refused, each because it fails in the run: top-level declaration or assignment of `console`, `uipath`, `aggregate`, `_aggregate`, or `_pipe`, and a `crypto` or `console` member the engine lacks (`crypto.getRandomValues`, `console.table`).
 - A script function may read `console`, but not `uipath`, `aggregate`, `_aggregate`, or `_pipe`; these undocumented helpers make `compile` refuse the function.
 
 To type-check a function using `randomUUID`, `btoa`, or `atob`, add `/// <reference types="@uipath/maestro-builder-sdk/script-globals" />` when the SDK has `dist/script-globals.d.ts`; older SDKs refuse those names. Do not import an implementation: the engine provides them and `compile` refuses module reads. The reference does not declare `crypto`; `crypto.randomUUID()` requires `@types/node` or the DOM library, or call bare `randomUUID()`.

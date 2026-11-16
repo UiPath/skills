@@ -124,7 +124,7 @@ Operational constraints:
 
 <!--skill-flavor:operate-debug-wait:start-->
 - **Foreground, with a tool timeout of 10 minutes or more.** It takes 1-5 minutes and prints JSON only at exit.
-- **Poll the same process if it reports still running.** Empty output means unfinished, not failed.
+- **Poll the same process if the tool reports it still running.** An empty output file means unfinished, not failed.
 - **Never start a second debug while one is running.** It re-uploads and re-executes.
 - **Re-run only after changing the flow.** Do not rerun to reread or reshape completed output.
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues server-side. Take `instanceId` from stderr and poll `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
@@ -187,7 +187,7 @@ Studio Web URL: <url>
 Instance ID: <instanceId>
 ```
 
-Use `<not returned by CLI>` rather than dropping a missing line. `Data.finalStatus: "Faulted"` means the response contains the cause. `--output-filter` never filters `Message` or `Instructions`; they summarize incidents when PIMS returned any and name `uip maestro flow debug-instance incidents <instanceId>`. If `Data.incidents` is missing or `null` in a projection, run that command. Do not rerun the flow. On the next run, add `incidents:incidents` to the projection, or redirect unfiltered output to a file and search it:
+Emit the label with `<not returned by CLI>` rather than dropping a line. `Data.finalStatus: "Faulted"` means the response contains the cause. `--output-filter` never filters `Message` or `Instructions`; they summarize incidents when PIMS returned any and name `uip maestro flow debug-instance incidents <instanceId>`. If `Data.incidents` is missing or `null` in a projection, run that command. Do not rerun the flow. On the next run, add `incidents:incidents` to the projection, or redirect unfiltered output to a file and search it:
 <!--skill-flavor:operate-debug-report:end-->
 
 <!--skill-flavor:operate-debug-redirect:start-->
@@ -208,7 +208,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 
 Only `process run` lets `--attachment` override `--inputs` on key collision. Its `--validate` accepts pre-uploaded attachment references for file slots and is not a dry run: after validation it starts a real job. Give `types.file` inputs with `flow process run --attachment`, never `uip or jobs start --attachment`.
 
-`--entry-point <triggerNodeId>` starts that root and makes `--validate` check its schema. A wrong id exits 3 and lists process trigger ids. Without it, the job starts at the release's default entry point. `flow pack` or `solution pack` sets that to the first trigger (the SDK-built default root); other packaging may differ. Pass `--entry-point` whenever the root matters. Do not pass `--feed-id`; the CLI reads the release feed.
+`--entry-point <triggerNodeId>` starts that root and makes `--validate` check its schema. A wrong id exits 3 and lists process trigger ids. Without it, the job starts at the release's default entry point. `flow pack` or `solution pack` sets that to the first trigger (the SDK-built default root); other packaging may differ. Pass `--entry-point` whenever the root matters. You do not need `--feed-id`; the CLI reads the release feed.
 
 ## Inspect a job
 

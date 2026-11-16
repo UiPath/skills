@@ -39,7 +39,7 @@ uip maestro registry prepare uipath-microsoft-outlook365 --action email-received
 
 That one command replaces the manual sequence: it discovers the connection; writes both `bindings.json` entries (connection id and folder key, as connector-action prepare does); fetches the connection-scoped event definition; records a generic event's object decision (`--object <name>`, using the same matching ladder as actions); stores `where`/filter vocabulary in `.flow-sdk/connectors-local/` for offline `check`; and records each `--resolve` in `resolutions.json` for `compile`.
 
-`check` validates every `where` key and `filters[].field`. An unknown leaf is an ERROR, `EVENT_FILTER_UNKNOWN_FIELD`, because the platform would silently drop it. Prepare refuses an event object requiring a BYOA (bring-your-own-app) connection and reports usable connections, instead of a runtime fault with an unrelated webhook error. For a `webhooks`-mode event, it prints the URL-registration step; it cannot be tested locally, so deploy to test it.
+`check` validates every `where` key and `filters[].field` against the prepared vocabulary. An unknown filter leaf is an ERROR, `EVENT_FILTER_UNKNOWN_FIELD`, because the platform would silently drop it and the deployed trigger would fire on events the filter should exclude. Prepare refuses an event object requiring a BYOA (bring-your-own-app) connection and reports usable connections, instead of a runtime fault with an unrelated webhook error. For a `webhooks`-mode event, it prints the URL-registration step; it cannot be tested locally, so deploy to test it.
 
 Do not run `uip is triggers objects` / `triggers describe` / `resources run list` manually or paste ids into `where`: prepare performs the same calls deterministically, and pasted ids become invalid after a connection move. Before finishing, inspect `inputs.detail.eventParameters` and confirm it contains the selected id and that connection/folder bindings use the discovery connection.
 
@@ -119,7 +119,7 @@ A filter is `{ field, <operator>: value }` with exactly one operator. The design
 
 `is`/`isNot` are the canvas's "Is"/"Is not" tests and always compare with `true`; `isNot: true` also matches a missing field. For "is false," use `equals: false`. Any other `is`/`isNot` value is refused with `EVENT_FILTER_BAD_VALUE`.
 
-Ordering a plain string is refused with `EVENT_FILTER_BAD_VALUE`: JMESPath compares numbers only. Use a number, an ISO-8601 date, or a text operator. A backslash at the end of a filter or `where` value, or before another `\` or a `'`, is refused with `EVENT_FILTER_BACKSLASH`, because JMESPath engines interpret `\\` differently (the specification as one backslash, reference libraries as two). A backslash before another character, such as `C:\tmp` or `Finance\Q3`, is retained and reads consistently.
+Ordering a plain string is refused with `EVENT_FILTER_BAD_VALUE`: JMESPath compares numbers only, so the subscription would match nothing. Use a number, an ISO-8601 date, or a text operator. A backslash at the end of a filter or `where` value, or before another `\` or a `'`, is refused with `EVENT_FILTER_BACKSLASH`, because JMESPath engines interpret `\\` differently (the specification as one backslash, reference libraries as two), so the subscription could silently never match. A backslash before another character, such as `C:\tmp` or `Finance\Q3`, is retained and reads consistently.
 
 ## Evidence boundary
 
@@ -134,4 +134,4 @@ Unless the request explicitly requires a live subscription witness, a connector-
 
 At most one bounded direct-input debug may be used for a downstream behavior question; stop when answered; it is not subscription proof. Do not poll or sleep on debug instances, create a scratch solution, or upload seed content solely to manufacture a trigger event.
 
-If live delivery is required, cause one real platform event and record that witness once. If the environment cannot provide it, report that boundary instead of repeating debug launches.
+If the stated acceptance bar requires live delivery, cause one real platform event and record that witness once. If the environment cannot provide it, report that boundary instead of repeating debug launches.

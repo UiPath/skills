@@ -15,7 +15,7 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compile
 1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It contains separately numbered critical rules, the scope gate, and the required completion report.
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
 3. Choose every node from a registry search, never a brand name.
-4. Ask whenever a finite decision remains open, including an input, range, or combination without a stated rule; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
 5. Bind every declared output on every path. `check` misses missing outputs; the run returns `undefined`.
 6. Handle an error only when the request specifies what should happen.
 7. Never re-run `flow debug` to inspect a failed run.
@@ -51,7 +51,7 @@ When `<Solution>/<Name>/` existed before this turn, skip `init`; edit its `<Name
 <!--skill-flavor:sdk-connector-discovery:start-->
 For an external service or data (weather, Slack, a REST API), choose the node before writing it: run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector; `"total": 0` means `http()` (not for an external agent: see the table). With none pulled, `registry search` searches the tenant through `uip`. For capabilities outside the connector library (agent/process), run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); use the Extract document node only when named or already present ([`references/extract-document-node.md`](references/extract-document-node.md)). Never replace such a step with fixed-value `script()`; `mock()` only marks a capability the search proved absent.
 
-Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes descriptors to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. If download fails, `pull` fetches through `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptors under `.flow-sdk/connectors-local/descriptors/<key>/`; import them as `./connectors/<key>.ts` or `./connectors-local/<key>.ts`.
+Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes descriptors to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. If download fails, `pull` fetches through `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptors under `.flow-sdk/connectors-local/descriptors/<key>/`; because the source sits in `.flow-sdk/` too, import pulled descriptors as `./connectors/<key>.ts` and prepared modules as `./connectors-local/<key>.ts`.
 
 ### The connector loop: author → check → prepare → check → compile
 
@@ -80,7 +80,7 @@ Choose one loop before any build command; never mix loops or use one as the othe
 - **Product-CLI loop (emit-only):** use when product validate/debug evidence is requested or the workspace is emit-only: a `package.json` with `{ "flowSdk": { "emitOnly": true } }` (product-runtime eval sets it), or `FLOW_SDK_EMIT_ONLY=1`. Scaffold first ([Project layout](#project-layout)).
 - **Packaged-SDK local gates:** otherwise, run source `check`, root `compile`, and `validate` — [`references/CLI-LOOP.md`](references/CLI-LOOP.md#local-authoring-hard-gates).
 
-`uip maestro flow` delegates to the installed SDK. Emit-only is project-scoped: the nearest upward `package.json` declaring `flowSdk.emitOnly` decides it; a nested file without `flowSdk` inherits, and `emitOnly: false` opts out. There, `compile` only serializes source, both `flow check` modes refuse, and product `validate` verifies structure. A new flow's pass is emit, required artifact bindings, then validate:
+`uip maestro flow` delegates to the installed SDK. Emit-only is project-scoped: the nearest upward `package.json` declaring `flowSdk.emitOnly` decides it; a nested file without `flowSdk` inherits, and `emitOnly: false` opts out. In emit-only mode, `compile` only serializes source, both `flow check` modes refuse, and product `validate` verifies structure. A new flow's pass is emit, required artifact bindings, then validate:
 
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
@@ -217,4 +217,4 @@ An inline agent creates no evaluators, eval sets, data points, or simulations; t
 
 Product-resource truth is live evidence: confirm plausible ids, argument names, scenario-named optional inputs, and warnings against the tenant. Static diagnostics own mechanically checkable structure; fix causes rather than copying rules into this router.
 
-Match proof to the request's acceptance bar. For one remaining wiring question, validate-only is complete when product validation is green and its required structural self-check passes; do not debug only for confidence. For each named behavior, plan at most one bounded product debug. If one wiring question remains, run one bounded distinguishing experiment, apply the answer, and stop; do not create scratch-solution families or repeat equivalent variants.
+Match proof to the request's acceptance bar. For one remaining wiring question, validate-only is complete when product validation is green and its required structural self-check passes; do not debug only for confidence. For each behavior claim the bar names, plan at most one bounded product debug that answers it. If one wiring question remains, run one bounded distinguishing experiment, apply the answer, and stop; do not create scratch-solution families or repeat equivalent variants.

@@ -36,7 +36,7 @@ Authoring never waits on `prepare`, and no discovery command precedes the source
    `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` mean the operation itself does not resolve; no prepare fixes them. Edit the source and re-run `check`:
    - `CONNECTOR_NOT_IN_LIBRARY`: no library layer has the operation, connector, or version, and with no library pulled neither does the tenant. The message lists operations and a `Closest:` match. Use the node type slug, not tenant `objectName` (`send-email`, not `send-mail-v2`).
 <!--skill-flavor:not-in-library-pull:start-->
-     With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. "The tenant was asked … and does not serve it" means the name is wrong or unavailable: fix the name or use `http()`. Otherwise run `uip login` only when it says `uip` is not logged in or the session expired; for anything else report `uip`'s reason and stop.
+     With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name or use `http()`. Otherwise the sentence gives `uip`'s reason: run `uip login` only when it says `uip` is not logged in or the session expired; for anything else report `uip`'s reason and stop.
 <!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED`: add `{ object: '<name>' }`; the message lists objects.
    - `CONNECTOR_OBJECT_NOT_GENERIC`: remove `object` from a single, non-generic operation.
@@ -60,7 +60,7 @@ Every prepare command below is the command `check` prints at step 3, documented 
 uip maestro registry pull
 ```
 
-If download fails or none is published (Automation Suite), pull is optional: `pull` fetches referenced connectors through `uip` into `.flow-sdk/connectors-local/` (use `--connector <key>` for a key not yet in source); `registry search` searches the tenant catalog; `check`, `compile`, `decompile`, `merge`, and `registry describe` fetch missing operations through `uip` into `.flow-sdk/connectors-local/` and continue. These require logged-in `uip` and an SDK recent enough to fetch; see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package). Without a library or working `uip`, stop with the stated reason and fix it (`uip login` only for a session problem). `$FLOW_SDK_LIBRARY_JSON`, when set, overrides the cache.
+If download fails or none is published (Automation Suite), pull is optional: `pull` fetches referenced connectors through `uip` into `.flow-sdk/connectors-local/` (use `--connector <key>` for a key not yet in source); `registry search` searches the tenant catalog; `check`, `compile`, `decompile`, `merge`, and `registry describe` fetch missing operations through `uip` into `.flow-sdk/connectors-local/` and continue. These require logged-in `uip` and an SDK recent enough to fetch; see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package). With neither a library nor a working `uip`, connector work stops at a message giving the reason; fix what it names (`uip login` only for a session problem). `$FLOW_SDK_LIBRARY_JSON`, when set, overrides the cache.
 
 Library verbs are `pull`, `search`, `describe`, `path`, and `prepare`; they require prerelease `@uipath/cli` and run the installed `@uipath/maestro-builder-sdk`. `uip` is the entry point and is present here. The package also exposes `flow-sdk`; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
 <!--skill-flavor:library-discovery:end-->
@@ -95,7 +95,7 @@ uip maestro registry prepare <connector-key> --action <action> --object <api-obj
 Results land in `.flow-sdk/connectors-local/`, which compilers union over the library; calls accumulate. `prepare` chooses a connection. Pass `--connection-id <id>` only to pin one; non-`Enabled` connections are refused with enabled alternatives. A `Failed` connection returns an empty schema, so preparing through it would write a no-field overlay and the next compile would reject every input as unknown; the refusal is the only signal that says "connection", not "field".
 
 <!--skill-flavor:descriptor-imports:start-->
-Import descriptors from either tree with the real `.ts` extension; paths are relative to the source in `.flow-sdk/`:
+Import descriptors from either tree with the real `.ts` extension (a `.js` specifier does not resolve); paths are relative to the source in `.flow-sdk/`:
 
 ```ts
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
@@ -165,7 +165,7 @@ rest downstream.
 
 For `loadByDefault`, dependent dropdowns, and `customFieldsRequestDetails`, the static descriptor is insufficient. Run the prepare named by `check`, including every `-f NAME=VALUE`; it creates schema-replay metadata. Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import (lookups do not create that cache), nor `rawNode`, emitted-flow edits, or hand-written `connectors-local/` overlays; each produces a node the platform cannot run. After compile, inspect connector configuration: completion requires non-null `customFieldsRequestDetails` whose parent values match runtime inputs, even though `flow validate` may accept a missing cache.
 
-Field sets depend on parent **values**, not merely connection, and `fields.summary` — *required* — appears in none of the snapshot's static inputs. Parent ids recorded by `--resolve` are exactly the values `-f` needs; combine them:
+Field sets depend on parent **values**, not merely connection, and `fields.summary` — *required* — appears in none of Jira `create-issue`'s static inputs. Parent ids recorded by `--resolve` are exactly the values `-f` needs; combine them:
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -222,7 +222,7 @@ Use the generated descriptor import and `connector(...)` call; it carries connec
 
 Preparation needs a live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not invent fields or use placeholder discovery. If the published list is empty, pass `{}`; offline evidence then proves operation identity/control-flow routing, not provider payload/dispatch.
 
-[`bindings.json`](bindings.md) defines symbolic connection/folder bindings and compile-time resolution; populate resource keys from live connection/folder listings. A plausible GUID is not evidence of existence or tenant membership.
+[`bindings.json`](bindings.md) defines symbolic connection/folder bindings and compile-time resolution; populate resource keys from live connection/folder listings. A plausible GUID is not evidence of existence or tenant membership; resource refresh and product debug are the evidence.
 
 ### File uploads are multipart Flow inputs
 
@@ -259,7 +259,7 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 | `lookup(SendMessageToUser, 'channel')` | prepared descriptor | `.byEmail(v)`, `.byRealName(v)`, … and `.by(name, v)` |
 | `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | generic CRUD/no descriptor | `.by(name, v)` only |
 
-Never use an alias in the second form; use `.by('profile.email', …)`. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
+Never use an alias (`.byEmail`, `.byRealName`, generated onto the descriptor) in the second form; it throws. Use `.by('profile.email', …)` there. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
 
 A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top or one level below; deeper paths start at the root picker's top entry, not drive root:
 
@@ -273,7 +273,7 @@ Expect a walk to take four to six minutes; a wrong first segment fails quickly, 
 uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json
 ```
 
-Drop `parentReference` at top level. When source contains unresolved tokens, run the one prepare command `check` prints; it records lookups, connection, and folder in `bindings.json`:
+Drop `parentReference` at top level. When source contains unresolved tokens, run the one prepare command `check` prints; it records every lookup and writes connection and folder to `bindings.json`; it is the only tenant call the loop needs:
 
 ```bash
 uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
@@ -282,7 +282,7 @@ uip maestro registry prepare uipath-salesforce-slack --action send-message-to-us
 
 Do not find the connection first: prepare searches `uip is connections list` (own folder then tenant), writes connection id and folder key, and accepts `--connection <name>` only to disambiguate candidates. If a value is absent, it tries other enabled connections and re-runs itself against the one that resolves (which `bindings.json` then names), unless `--connection-id` or `--connection` pinned one; it does not retry transport/permission failures or choose between two resolving connections. When one was pinned or two resolve, the message names alternatives; choose and re-run with the printed `--connection-id`.
 
-Do not crawl Integration Service after lookup failure: the message names the connection read and, once every candidate is tried, the one command that shows what the collection holds. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints. Source labels `connection:` and `folder:` [must differ](bindings.md#where-both-values-come-from); no labels default to the connector's last segment (for example `slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a label cannot be traced from source, prepare prints `bindings:` and binds the readable label or default. It refuses multiple labels for one connector or one connection label shared by two connectors, and prints bound names on `next:`. `compile` refuses a label that a `bindings.json` with entries does not declare (`BINDING_UNDECLARED`) and warns unresolved declared entries (`CONNECTION_STUB`).
+Do not crawl Integration Service after lookup failure: the message names the connection read and, once every candidate is tried, the one command that shows what the collection holds. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints. `bindings.json` entries take the source's `connection:` and `folder:` labels, which [must differ](bindings.md#where-both-values-come-from); a source with none gets the connector's last segment (for example `slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a label cannot be traced from source, prepare prints `bindings:` and binds the readable label or default. It refuses multiple labels for one connector or one connection label shared by two connectors, and prints bound names on `next:`. `compile` refuses a label that a `bindings.json` with entries does not declare (`BINDING_UNDECLARED`) and warns unresolved declared entries (`CONNECTION_STUB`).
 
 `check` reports unresolved lookups as `LOOKUP_UNRESOLVED`, warns on literal ids, and warns runtime expressions as `LOOKUP_RUNTIME_VALUE` with the sent id (for example `reporter.accountId`); it errors when an e-mail expression feeds a lookup that neither sends nor searches by e-mail. Resolve a required lookup field you have no value for with its helper, never from a look-alike input. Run `check` before compile so the one expensive prepare call is last.
 

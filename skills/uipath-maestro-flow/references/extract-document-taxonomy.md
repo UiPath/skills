@@ -11,7 +11,7 @@ uip maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json
 
 Both commands edit the `.flow` without login. `--schema` accepts JSON or a file when its value starts with `@`.
 
-**These commands are new.** If an older CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`, tell the user to update `uip`; this is not a bad node or flow.
+**These commands are new.** If the CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`, tell the user to update `uip`; this is not a bad node or flow.
 
 This guide assumes the node exists. For adding it, wiring `fileRef`, when it applies over a published IXP model, and why these commands do not survive a `.flow-sdk/` project (the next compile overwrites the taxonomy), see [extract-document-node.md](extract-document-node.md).
 
@@ -207,7 +207,7 @@ These limits are not CLI-enforced but improve extraction:
 
 ## Editing a taxonomy that already exists
 
-Run `get` first, then send the complete document back. Preserve every existing id, including through renames, because ids connect annotations and evaluator settings; missing ids cause position-based fallback and can repoint annotations. Preserve every existing group and field's `description`, type, and id exactly as returned; add information only in new groups, fields, or `prompt`. Send all groups, `$defs`, and the overall prompt because `set` replaces rather than patches. Never write from scratch over existing content; before a fresh start, tell the user what will be lost.
+Run `get` first, then send the complete document back. Preserve every existing id, including through renames, because ids connect annotations and evaluator settings; missing ids cause position-based fallback and can repoint annotations. Preserve every existing group and field's `description`, type, and id exactly as returned; add information only in new groups, fields, or `prompt`. Send all groups, `$defs`, and the overall prompt because `set` replaces rather than patches. Never write from scratch over existing content; if the user wants a fresh start, first say what will be lost.
 
 ## Reading the output
 
@@ -234,7 +234,7 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. Define `Parent` when using `Parent > Child`; if an existing group was intended as parent, rename one key to match—never add an empty parent. |
+| 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. `Parent > Child` needs `Parent` in the same document; if an existing group was clearly meant as parent, rename one key to match—never add an empty parent. |
 | 3 | `Invalid schema document` | Send `prompt` and `outputSchema`; the document is not a schema. |
 | 3 | `Legacy schema document shape` | Send `{ prompt, outputSchema }`, not `{taxonomy, fieldTypes}`. An existing legacy node document is replaced and reports `ReplacedLegacyDocument: true`. |
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. Headless: stop and report. |

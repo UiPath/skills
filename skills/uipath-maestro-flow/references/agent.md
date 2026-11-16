@@ -20,7 +20,7 @@ See [Orchestrator Processes](or-processes.md) and use the `Agent` process type t
 
 ## At a glance
 
-Reference a published or in-solution sibling agent rather than create one. For a task-created sibling, scaffold and register it before calling it. Verify resource identity and answer quality live. `.onError(...)` is supported.
+`agent()` references a published or in-solution sibling agent; it does not create one. For a task-created sibling, scaffold and register it before calling it. Verify resource identity and answer quality live. `.onError(...)` is supported.
 
 ## General
 

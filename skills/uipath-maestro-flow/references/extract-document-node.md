@@ -14,7 +14,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add `uipath.ixp.extract-document-builder` to a new flow only when requested by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add the Extract document node to a new flow only when the user asks for it by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
 
 | Node | Node type | Where covered |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ Add a descriptive node, wire its file, write taxonomy, bind the result, and vali
 5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
 7. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
-8. **Report** what was added, where it reads its file from, which fields it extracts, and `nodes create`'s processor result: in a solution the resource is under `resources/` and travels with the `.flow`; otherwise it remains to be created ([Making it actually extract](#making-it-actually-extract)). The user takes the flow live.
+8. **Report** what was added, where it reads its file from, which fields it extracts, and `nodes create`'s processor result: in a solution the resource is under `resources/` and travels with the `.flow`; otherwise it remains to be created ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 
 ## Check the tenant can run it
 
@@ -50,7 +50,7 @@ Before adding a new node, run:
 uip maestro flow extraction check --output json
 ```
 
-`Data.Status` is the result and `Data.Reason` explains it:
+The check answers, for the signed-in tenant, whether extraction is on and whether any model exists. `Data.Status` is the result and `Data.Reason` explains it:
 
 | Status | Meaning |
 | --- | --- |
@@ -64,7 +64,7 @@ Continue on `Available`; use [When Extract document is not available](#when-extr
 
 This gates only adding a new node. Local `.flow` and taxonomy edits, `nodes provision`, and validation go ahead whatever the status says; report the status alongside them.
 
-`Available` proves only its two gates. Deploy or run may still refuse the configured model, a cluster-wide switch, model-based attribution, full layout parsing, OCR language packs, or target-folder permissions. Take the fallback in [When Extract document is not available](#when-extract-document-is-not-available) when one arrives. Do not call the node working after such a refusal and do not try folders in turn. If the refusal names the model, say which one the node carries and direct the user to [Switching from one model to another](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#switching-from-one-model-to-another); changing it is the user's step. If the user requested that model by name, say this tenant cannot run it.
+`Available` proves only its two gates. Deploy or run may still refuse the configured model, a cluster-wide switch, model-based attribution, full layout parsing, OCR language packs, or target-folder permissions. Take the fallback in [When Extract document is not available](#when-extract-document-is-not-available) when one arrives. Do not call the node working after such a refusal and do not try folders in turn. If the refusal names the model, say which one the node carries and direct the user to [Switching from one model to another](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#switching-from-one-model-to-another); changing it is the user's step. If the user requested that model by name, say instead that this tenant cannot run it.
 
 No other CLI command answers this question. `registry search` reports `AvailableOnTenant: false` for this node on every tenant because it comes from a builder, not the tenant node catalogue.
 
@@ -111,7 +111,7 @@ uip maestro flow edges create <file> <upstream-id> <extract-id> --output json
 uip maestro flow edges create <file> <extract-id> <downstream-id> --output json
 ```
 
-`edges create` uses the default source port, so outgoing edges use `success`. Graph ports (`success`, `error`) differ from variable outputs (`output`, `error`). Repeating an edge is safe and reports the existing edge.
+`edges create` uses the default source port, so an outgoing edge without a flag leaves on `success`. Graph ports (`success`, `error`) differ from variable outputs (`output`, `error`). Repeating an edge is safe and reports the existing edge.
 
 ## Reading what it extracts
 
@@ -187,7 +187,7 @@ uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label
 
 A read-only node has no resource or taxonomy; it runs the author's processor. `nodes schema set` changes nothing that deploys when run on it.
 
-A package without a processor may fault at runtime:
+A package without a processor faults at runtime:
 
 ```
 errorCode 461008 — Invalid IDP.Extraction node input
@@ -197,7 +197,7 @@ errorCode 461008 — Invalid IDP.Extraction node input
 It may first complete in a fraction of a second and publish an empty object. Treat that as a missing processor, not a taxonomy that matched nothing: provision, then pack or publish again.
 
 <!--skill-flavor:extract-after-save:start-->
-After Studio Web edits a pulled-down flow, pull the solution again before further CLI edits so the designer's saved changes are not overwritten; it saves continuously. The node retains its type, `processorKey`, and resource file. A Studio Web processor variant (`uipath.ixp.processor.<key>`) is a different type: `nodes schema set` refuses it and its taxonomy must be edited in Studio Web.
+After a pulled-down flow has been through Studio Web, pull the solution again before further CLI edits so the designer's saved changes are not overwritten; it saves continuously. The node retains its type, `processorKey`, and resource file. A Studio Web processor variant (`uipath.ixp.processor.<key>`) is a different type: `nodes schema set` refuses it and its taxonomy must be edited in Studio Web.
 <!--skill-flavor:extract-after-save:end-->
 
 ## When Extract document is not available

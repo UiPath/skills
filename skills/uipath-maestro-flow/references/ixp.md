@@ -7,6 +7,12 @@ Run a published Intelligent eXtraction Platform project on a Flow attachment.
 Signature:
 `ixpExtract({ project, modelName, name, folderName, fileRef, pageRange?, versionTag?, folderPath?, description? })`.
 
+```ts
+.step('extract', ixpExtract({ project: ixpNodeType,
+  modelName: 'invoice-model', name: 'Invoice Extractor',
+  folderName: 'Shared', fileRef: out('start', 'invoiceFile') }))
+```
+
 ## At a glance
 
 Copy `project`, `modelName`, `folderName`, `folderPath`, and `versionTag` from the tenant registry; never construct them. For read-only model questions, run one `registry search 'uipath.ixp'`; never fan out `registry get` across hits.
@@ -72,7 +78,7 @@ The SDK emits that `out(...)` handoff in the one envelope the IxP validator acce
 "fileRef": "=js:$vars.start.output.ReferenceID"
 ```
 
-Do not replace it with `{ "type": "jsExpression", ... }` or a hand-built attachment object. Add a download action only when the discovered trigger contract has no file-reference field and runtime behavior requires file bytes.
+Do not replace it with `{ "type": "jsExpression", ... }` or a hand-built attachment object. Add a download action only when the discovered trigger contract has no file-reference field and requested runtime behavior requires file bytes.
 
 ## Joined document-event recipe
 

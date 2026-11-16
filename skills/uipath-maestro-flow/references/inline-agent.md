@@ -23,7 +23,7 @@ Define an autonomous agent with optional resources.
 
 ## Model and answer judgment
 
-`returns` is the typed answer contract: prompts must describe every field ("Return a result conforming to the output schema. `<field>`: `<how to fill it>`.") and must not request JSON text, which makes the model pack its whole answer into one string field. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
+`returns` is the typed answer contract: prompts must make the requested decision explicit and describe every field ("Return a result conforming to the output schema. `<field>`: `<how to fill it>`.") and must not request JSON text, which makes the model pack its whole answer into one string field. Select a tenant-available model; run `uip agent model list`. Static checks validate wiring and output shape, not semantic quality.
 
 ## Context grounding
 
@@ -74,7 +74,7 @@ labels on the tool, then run
 `uip maestro registry prepare <connector-key> --action <operation>`: it reads the
 tool's `connection` / `folder` from the source and writes both entries under them.
 
-`description` overrides model-facing text; otherwise the library's operation description is used.
+A connector tool's `description` overrides the text the model is told the tool does; otherwise the library's operation description is used.
 
 A tool is invoked by the model, not by a control-flow edge. Local execution skips tool resources, proving wiring but not invocation. A live test needs a tool-specific side effect or returned witness.
 

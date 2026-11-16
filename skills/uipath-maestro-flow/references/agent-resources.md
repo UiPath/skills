@@ -40,7 +40,7 @@ For `mcp`, `a2a`, and per-instance resource kinds, the node TYPE is minted from 
 
 ## Escalation
 
-The default app-backed variant is `app: { key, name, folderPath }`, naming the deployed Action Center app that owns the form. `folderPath` is its Orchestrator folder (`'Shared/Approvals'`); omit it for an app shipped in this solution, and compile writes `'solution_folder'`. `variant: 'quick-form'` puts the form INLINE: provide `fields` (the same rows as a human task) and no `app`. `check` refuses either mixed form.
+The default variant is app-backed: `app: { key, name, folderPath }`, naming the deployed Action Center app that owns the form. `folderPath` is its Orchestrator folder (`'Shared/Approvals'`); omit it for an app shipped in this solution, and compile writes `'solution_folder'`. `variant: 'quick-form'` puts the form INLINE: provide `fields` (the same rows as a human task) and no `app`. `check` refuses either mixed form.
 
 ## Memory
 

@@ -33,9 +33,9 @@ Plain `http({ managed: false })` no longer runs: the tenant returns 500 `No hand
 
 A `.loop()` can carry a handler: `.onError()` after `.loop(...)` wires the container error port, and body failure routes there. Its measured container envelope has the body's message in `detail`, the failing body's canvas label in `element`, and the instance completes; read it with `h.err('detail')`. Inside a loop body, end a step handler with `.continue()` to skip the item and continue to the next ([`loops.md`](loops.md#loop-options)).
 
-A sub-flow handler catches failure in any child step. Measured fields are `detail` (inner step's message), `element` (its canvas label), and `message` (the family's generic text, `Error invoking script task`); the instance completes. To give a run one failure path, put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there instead of handling every step.
+A sub-flow handler catches failure in any child step. Measured fields are `detail` (inner step's message), `element` (the failing inner step's canvas label), and `message` (the family's generic text, `Error invoking script task`); the instance completes. To give a run one failure path, put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there instead of handling every step.
 
-A `.doWhile()` can carry a handler like `.loop()`: `.onError()` after `.doWhile(...)` wires the container error port, and body failure reaches it with `detail` as the body's message and `element` as its canvas label. Although `core.logic.dowhile@1.0` lists no `error` handle, it sets `supportsErrorHandling: true`, so the product adds the handle from that flag.
+A `.doWhile()` can carry a handler like `.loop()`: `.onError()` after `.doWhile(...)` wires the container error port, and body failure reaches it with `detail` as the body's message and `element` as the failing body step's canvas label. Although `core.logic.dowhile@1.0` lists no `error` handle, it sets `supportsErrorHandling: true`, so the product adds the handle from that flag.
 
 `.onError(...)` is the `error`-port case of `.stepToList(port, handler)`, which runs a path from any named port. If failure needs no work, name the target directly with `.stepToRef('error', 'refund')`; this is a SIDE EXIT, so success continues and chaining carries on.
 

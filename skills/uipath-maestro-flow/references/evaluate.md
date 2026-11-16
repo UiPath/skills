@@ -49,7 +49,7 @@ uip maestro flow eval set remove <id> --path ./MySolution/MyFlow --output json
 
 Most resources are addressed through their set. `--set` is required on `eval list`, `eval remove`, all three `simulation` commands, and every `run` verb including `status` and `results`; omission fails before execution with `required option '--set <name>' not specified`. Only `set` and evaluator commands omit it.
 
-For `--evaluators`, use the generated evaluator id or filename, not its display name. Omitting it on `eval set add` links all existing evaluators.
+For `--evaluators`, use the generated evaluator id or filename, not its display name. Omitting `--evaluators` on `eval set add` links all existing evaluators.
 
 Data-point input keys must match declared flow inputs. Declare them with `.input({ … })` in source and compile before `eval add`; the command reads the compiled `.flow` and fails with `Input "<name>" is not declared as an input variable in the flow` when missing. Do not use `uip maestro flow variable add`: the next `compile -o` rewrites the `.flow`, making the edit disappear or collide with `Variable '<name>' already exists`. Inspect declarations in the `.flow`; `variable` takes no `--path`:
 
@@ -61,7 +61,7 @@ Build expected outputs from real records; invented keys match no record and scor
 
 ## Simulations — stop an eval from really sending
 
-A simulation stands in for a component, keyed by component id: its source step id, or the tool name for an inline agent's tool. It is scoped to one data point in one set; all three commands require `--set` and `--data-point`. `add` also requires `--strategy`: `Static` returns `--mock-value` verbatim, while `Llm` generates from `--simulation-instructions`. It requires `--component-type` (`connector`, `agent`, `hitl`, or `Node`) unless `--parent <agent-id>` adds a child-tool simulation, which defaults to `Node`.
+A simulation stands in for a component, keyed by component id: its source step id, or the tool name for an inline agent's tool. It is scoped to one data point in one set; all three commands require `--set` and `--data-point`. `add` also requires `--strategy`: `Static` returns `--mock-value` verbatim, while `Llm` generates from `--simulation-instructions`. `add` also requires `--component-type` (`connector`, `agent`, `hitl`, or `Node`) unless `--parent <agent-id>` adds a child-tool simulation, which defaults to `Node`.
 
 ```bash
 uip maestro flow eval simulation add <component-id> \
@@ -104,7 +104,7 @@ uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 `eval run start` needs the solution in Studio Web. If it cannot resolve one, it fails with `solution-id could not be resolved` or a variant; never treat that as permission to upload. `eval run start` itself re-uploads and overwrites the matching Studio Web solution unless `--solution-id` and `--project-id` are passed, so ask before it too. If Studio Web assigns another id, `eval run start` and `flow debug` repoint local `.uipx` `SolutionId` and report `Data.LocalSolutionIdUpdated` (`Path`, `From`, `To`); keep and commit that change, or the next upload creates a second solution.
 
-`uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching local `.uipx` `SolutionId`; it needs no flag and raises no prompt. It can push work in progress to where teammates and triggers pick it up, send partial local state from a `uip solution download` back over whatever else moved, or discard divergent remote state. The overwrite is restorable only through the browser and only if `--no-snapshot` was not passed; recovery is after the fact, by the user, and does not undo published work in progress.
+`uip solution upload` writes to Studio Web, creating or **overwriting** the solution matching local `.uipx` `SolutionId`; it needs no flag and raises no prompt. It can push work in progress to where teammates and triggers pick it up, send partial local state from a `uip solution download` back over whatever else moved, or discard divergent remote state. The overwrite is restorable only through the browser and only if `--no-snapshot` was not passed; recovery is after the fact, by the user, and does not undo work in progress already pushed to teammates and triggers.
 
 Ask and offer either upload now with the user's acknowledgement, or pass `--solution-id` and `--project-id` for an existing Studio Web solution and plumb them through to `eval run start`.
 <!--skill-flavor:eval-no-upload:end-->

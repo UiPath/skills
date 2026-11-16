@@ -9,7 +9,7 @@
   filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
 ```
 
-`resultMode: 'multiple'` publishes matches under `output.results` and selects read 1.4; plain `dataFabricRead()` reads one record on SDK-pinned 1.0. Wrong columns are dropped **SILENTLY**; `validate` proves nothing, so resolve columns with `uip df entities get`. Delete publishes nothing. `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` are never writable. `fromRead` requires a single-record read. Folder-scoped entities use `entity: { name, folder: '<folder path>' }`; `check` prints the `prepare` command that records their keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
+`resultMode: 'multiple'` publishes matches under `output.results` and selects read 1.4; plain `dataFabricRead()` reads one record on SDK-pinned 1.0. Wrong columns are dropped **SILENTLY**; `validate` passing is not evidence, so resolve columns with `uip df entities get` first. Delete publishes nothing. `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` are never writable. `fromRead` requires a single-record read. Folder-scoped entities use `entity: { name, folder: '<folder path>' }`; `check` prints the `prepare` command that records their keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
 
 Still connector-only: get-by-id when the whole long-text value is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events. Use `connector('uipath-uipath-dataservice', …)` plus `registry prepare -f entityName=<Entity>`.
 
@@ -70,7 +70,7 @@ Read potentially long fields with connector `get-entity-record-by-id` ([The conn
 
 A filter is `{ field, operator?, value, or? }`; `operator` defaults to `'='` and must be exactly one of `=` `!=` `>` `>=` `<` `<=` `contains` `starts with` `ends with` `in`. There is no `not in`, `not contains`, or null check; unsupported serialization takes down the whole query. `in` works only with `resultMode: 'multiple'`.
 
-The query is disjunctive: `or: true` starts an alternative (ignored on the first row), each alternative ANDs its rows, and results are `alt1 OR alt2 OR …`. Express `(A OR B) AND C` as `(A AND C) OR (B AND C)`. Filter values cannot be blank or reference `$self`; either makes serialization refuse the whole query, publishes nothing, and strands downstream `$vars` reads; `check` rejects both. Choice-set filters require numeric `numberId`, never the label; labels silently match nothing.
+The query is disjunctive: `or: true` starts an alternative rather than joining one row to the one before it (ignored on the first row), each alternative ANDs its rows, and results are `alt1 OR alt2 OR …`. Express `(A OR B) AND C` as `(A AND C) OR (B AND C)`. Filter values cannot be blank or reference `$self`; either makes serialization refuse the whole query, publishes nothing, and strands downstream `$vars` reads; `check` rejects both. Choice-set filters require numeric `numberId`, never the label; labels silently match nothing.
 
 `record` targets update and delete and takes exactly one of `{ byId: '<record id>' }` (literal or expression) or `{ fromRead: '<step name>' }` (the preceding single-record `dataFabricRead` result). A multiple-record query is refused as a write target as a no-op: validation and run are green, but nothing writes. `check` reports `DATAFABRIC_FROMREAD_UNKNOWN` for a nonexistent read step and `DATAFABRIC_FROMREAD_MULTIPLE` for a multiple read.
 
@@ -142,17 +142,17 @@ Run `prepare` from the directory used for `check` and `compile`, normally `<Solu
 
 `prepare` lists and stops; it never picks:
 
-- **No `folder`:** search every folder. One match records the folder and names it to pin in source. Multiple matches list each `folder:`; write the intended one and run `prepare` again.
+- **No `folder`:** it searches every folder. One match records the folder and names it to pin in source. Multiple matches list each `folder:`; write the intended one and run `prepare` again.
 - **Tenant-level match:** no `prepare`; write `entity: '<Name>'` as output says.
-- **Exact name, case included:** folder paths ignore case and leading/trailing slash. A folder without that entity returns `RESOURCE_NOT_IN_FOLDER` and lists folders containing it.
-- **No match:** it lists near misses and listings to check. If none is intended, ask the user; never create an entity yourself. Creating one in the requested scope follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), then run `prepare` again.
+- **Matching:** a name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash. A folder without that entity returns `RESOURCE_NOT_IN_FOLDER` and lists folders containing it.
+- **No match:** it lists near misses and listings to check. If none is intended, ask the user; never create an entity unless the user asks. Creating one in the requested scope follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), then run `prepare` again.
 - **Recorded row older than a day:** it counts as missing; `check` asks for `prepare` again.
 
 ### An entity the solution authors itself
 
 An entity from `uip df entities create <Name> --local` exists only in the solution until deployment and resolves the same way. Write `{ name: '<Name>' }`; from the Flow project folder, run the `prepare` printed by `check`. It reads the solution, records the entity in placeholder folder `99999999-9999-9999-9999-999999999999` (replaced by `flow debug` and `solution deploy`), and names `folder: 'solution_folder'` to pin.
 
-Do not look it up on the tenant before deploy. Omitting keys makes it tenant-scoped; the run fails with `Entity <Name> does not exist`, naming an entity that does exist, and `flow validate` reports `INLINE_ENTITY_UNBOUND`. Although its message suggests `uip maestro flow node configure` (which edits compiled `.flow`), fix `.flow.ts` in a builder-SDK project or the next `compile` reverts it. Creating and modelling follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
+Do not look it up on the tenant before deploy. Skipping that `prepare` leaves the keys out and makes it tenant-scoped; the run fails with `Entity <Name> does not exist`, naming an entity that does exist, and `flow validate` reports `INLINE_ENTITY_UNBOUND`. Although its message suggests `uip maestro flow node configure` (which edits compiled `.flow`), fix `.flow.ts` in a builder-SDK project or the next `compile` reverts it. Creating and modelling follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
 
 A decompiled flow uses `folderKey` and `resourceKey`; leave that form unless the entity changes.
 
