@@ -124,6 +124,8 @@ elif argv[:4] == ["ixp", "deployments", "create", "--help"]:
         sys.exit(3)
     print("Usage: uip ixp deployments create <project-name> --version --folder-key")
 elif argv[:4] == ["maestro", "flow", "registry", "pull"]:
+    with open(os.path.join(here, "pulls.txt"), "a") as handle:
+        handle.write("x")
     print(json.dumps({"Data": {"NodesCount": 1}}))
 elif argv[:4] == ["maestro", "flow", "registry", "get"]:
     # Reached only from check's served-node probe. Deleting a deployment's
@@ -135,7 +137,11 @@ elif argv[:4] == ["maestro", "flow", "registry", "get"]:
     print(json.dumps({"Data": {"Node": {"type": argv[4]}}}))
 elif argv[:4] == ["maestro", "flow", "registry", "search"]:
     open(os.path.join(here, "searched.txt"), "w").close()
-    print(json.dumps({"Data": payload.get("registry_nodes", [])}))
+    pulls = len(open(os.path.join(here, "pulls.txt")).read())
+    nodes = payload.get("registry_nodes", [])
+    if pulls > 1:
+        nodes = payload.get("registry_nodes_after_repull", nodes)
+    print(json.dumps({"Data": nodes}))
 elif argv[:3] == ["ixp", "deployments", "list"]:
     # Mirrors the real 404 once the project is gone, so the read-before-delete
     # ordering in delete_this_runs_projects is actually exercised. vanished_projects models
@@ -1670,3 +1676,30 @@ def test_seed_stops_the_debug_sweep_when_over_budget(sandbox: pathlib.Path) -> N
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "Debug_ folder sweep stopped" in completed.stdout
     assert f"folder:{DEBUG_FOLDER_KEY}" not in operation_order(sandbox)
+
+
+def test_seed_repulls_the_registry_before_calling_a_node_a_ghost(
+    sandbox: pathlib.Path,
+) -> None:
+    """A sibling's teardown deletes its project, then its run folder. A pull in
+    between serves a node whose project is gone; the next pull does not."""
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+        registry_nodes_after_repull=[],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_still_errors_on_a_ghost_that_survives_the_repull(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+        registry_nodes_after_repull=[registry_node(GHOST_PROJECT)],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert GHOST_PROJECT in completed.stderr

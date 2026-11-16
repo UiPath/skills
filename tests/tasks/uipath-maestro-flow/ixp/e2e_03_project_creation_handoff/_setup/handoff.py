@@ -381,6 +381,13 @@ def ghost_folder_key(node_type: str) -> str:
     return match.group(0) if match else "unknown"
 
 
+def pull_ixp_nodes() -> list[dict]:
+    run_uip_json(["maestro", "flow", "registry", "pull", "--force", "--output", "json"])
+    return run_uip_json(
+        ["maestro", "flow", "registry", "search", IXP_NODE_PREFIX.rstrip("."), "--output", "json"]
+    )["Data"]
+
+
 def require_no_ghost_nodes(projects: list[dict], excluded: set[str]) -> None:
     """Fail pre_run (ERROR, not FAILURE) on a fixture-domain node with no project.
 
@@ -389,17 +396,15 @@ def require_no_ghost_nodes(projects: list[dict], excluded: set[str]) -> None:
     handoff decision into a reuse test it can only fail. The sweeps above cannot
     clear it: deployments have no delete verb, only their folder does.
     """
-    run_uip_json(["maestro", "flow", "registry", "pull", "--force", "--output", "json"])
-    nodes = run_uip_json(
-        ["maestro", "flow", "registry", "search", IXP_NODE_PREFIX.rstrip("."), "--output", "json"]
-    )["Data"]
+    nodes = pull_ixp_nodes()
     listed: dict[str, set[str]] = {}
     ghosts = unbacked_nodes(nodes, projects, listed)
     if ghosts:
-        # A sibling may have created and published a project after `projects`
-        # was listed; judge once more against a fresh listing.
+        # A sibling may have created a project after `projects` was listed, or
+        # deleted its project before its run folder, after our pull. Judge once
+        # more against a fresh listing and a fresh pull.
         fresh = [p for p in list_projects() if str(p["Name"]) not in excluded]
-        ghosts = unbacked_nodes(nodes, fresh, listed)
+        ghosts = unbacked_nodes(pull_ixp_nodes(), fresh, listed)
     if ghosts:
         raise RuntimeError(
             "tenant not ready: published IxP node(s) cover the fixture domain "
