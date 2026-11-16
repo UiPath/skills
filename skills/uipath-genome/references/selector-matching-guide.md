@@ -51,6 +51,7 @@ A throwaway checker has to encode each rule's **scope**, or it reports this guid
 | `SearchSteps` has `FuzzySelector` and `Anchors` is empty; a definition authored without a live capture carries `Anchors` | definition | 12 |
 | `matching:<a>='fuzzy'` without `fuzzylevel:<a>` | attributes | § Matching semantics |
 | A `matching:<a>='regex'` pattern carried from a source regex that searched, without the `[\s\S]*…[\s\S]*` wrap; an exact caption the source compared whitespace-normalised, written verbatim on `aaname` | attributes + the source criterion + one live attribute listing | 2 |
+| A target carrying only the locator's text, where the source's finder skipped hidden elements, entered frames or shadow roots, or chose by place on screen | attributes + the finder | 17 |
 | Any attribute the node does not expose | live selector evaluator (rejects the selector outright) | 15 |
 | Uniqueness, including invisible twins | live selector evaluator | 15 |
 | The node a `<nav>` path lands on | target validation against the live application | 6, 15 |
