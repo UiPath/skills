@@ -147,10 +147,17 @@ def check_fallback() -> None:
 
     fallback_nodes = [n for n in slack_nodes if references_emoji_endpoint(n)]
     if not fallback_nodes:
+        seen_urls = sorted(
+            {
+                str(body_object(n).get("url") or body_object(n).get("path") or "")
+                for n in slack_nodes
+            }
+        )
         fail(
             f"No Slack connector-mode HTTP node targets the {EMOJI_ENDPOINT!r} "
             "endpoint (expected the '/emoji.list' path, which lists a team's "
-            "custom emoji)."
+            "custom emoji, relative to the connection's base URL). "
+            f"url values seen: {seen_urls}"
         )
     print(
         f"OK: {len(fallback_nodes)} Slack connector node(s) target the "
