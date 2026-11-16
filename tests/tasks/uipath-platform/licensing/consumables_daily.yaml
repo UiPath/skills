@@ -28,6 +28,7 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
+  # --end-date is exclusive: "through 2026-04-30" in the prompt means --end-date 2026-05-01.
   - type: run_command
     description: "Agent ran `uip platform licenses consumables get --mode daily` with tenant, unit, and date range (.uip-cmdlog shim log)"
     command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]daily' | grep -E -- '--tenant[= ]default' | grep -E -- '--unit[= ]AIU' | grep -E -- '--start-date[= ]2026-04-01' | grep -Eq -- '--end-date[= ]2026-05-01'"
