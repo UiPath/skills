@@ -48,3 +48,17 @@ def test_manual_unified_http_fails() -> None:
     body = {**CONNECTOR_BODY, "authentication": "manual"}
     node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
     assert not grader.is_slack_connector_node(node)
+
+
+def test_emoji_list_with_query_passes() -> None:
+    body = {**CONNECTOR_BODY, "url": "emoji.list?include_categories=true"}
+    node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+    assert grader.references_emoji_endpoint(node)
+
+
+def test_integration_service_resource_path_fails() -> None:
+    # `uip is resources describe` paths reach Slack as written and get its 404.
+    for url in ("/admin_emoji_list", "/emoji_list", "/admin.emoji.list"):
+        body = {**CONNECTOR_BODY, "url": url, "path": url}
+        node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+        assert not grader.references_emoji_endpoint(node), url
