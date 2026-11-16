@@ -109,7 +109,27 @@ REQUIRED = [
     ("references/connectors.md", "uip is connections ping"),
     ("references/connectors.md", "Always set `saveAsDraft`"),
     ("SKILL.md", "never a drawn loop"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.variables.output-end-mapping"),
+    ("references/bpmn-runtime.md", "A process returns only what its end event maps"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-for-methods"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.hitl.no-completer-identity"),
+    ("references/patterns/high-volume-batch-guide.md", "Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`"),
+    ("references/patterns/high-volume-batch-guide.md", "the inner key stays `item`"),
+    ("SKILL.md", "A process returns only what its end event maps"),
+    ("references/operate.md", "not by `Globals`"),
+    ("references/patterns/high-volume-batch-guide.md", "1-based"),
+    ("references/connectors.md", "A connection is a sender's identity"),
 ]
+
+
+def test_loop_sketches_name_the_iterator_the_way_the_canvas_does() -> None:
+    # Studio Web writes inputElement="iterator[N]" and reads iterator[N].item. With any other
+    # itemVar, `iterator[0]` reads null (debug run, itemVar 'item' and 'invoice').
+    text = _read("references/patterns/high-volume-batch-guide.md") + _read("references/patterns/composing-guide.md")
+    item_vars = re.findall(r"loop: \{[^}]*itemVar: '([^']+)'", text)
+    assert item_vars, "the loop sketches no longer declare an itemVar"
+    assert all(re.fullmatch(r"iterator\[\d+\]", v) for v in item_vars), item_vars
 
 
 @pytest.mark.parametrize("rel,phrase", REQUIRED, ids=[f"{r}:{p}" for r, p in REQUIRED])
