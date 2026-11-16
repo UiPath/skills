@@ -62,9 +62,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not operate the debug instance (retry/cancel/continue) or a deployed instance"
+    description: "Agent did not operate the debug instance or a deployed instance"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(instances?|debug-instances?)\s+(retry|cancel|continue)(?![^;&|\n]*\s(-h|--help)(\s|$))'
+    command_pattern: '(uip|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(instances?\s+(retry|cancel|continue|pause|resume|migrate|goto)|debug-instances?\s+(cancel|continue|variables-set|breakpoints|create))(?![^;&|\n]*\s(-h|--help)(\s|$))'
     weight: 3.0
     pass_threshold: 1.0
 

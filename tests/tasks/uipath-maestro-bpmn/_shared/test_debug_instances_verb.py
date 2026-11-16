@@ -4,8 +4,10 @@ uipcli#5251 (uip 1.206.0) renamed `maestro bpmn debug-instance` to
 `debug-instances` and kept the singular as a Commander alias. Studio Web run
 `2026-11-16_09-25-49` scored agents zero for running the plural: the graders
 matched only the singular, and the mocks answered it with `{}`. Each grader must
-count both spellings, must not count `--help`, and the mocks must return fixture
-data for both.
+count both spellings, the live grader and the no-operate guard must not count
+`--help`, and the mocks must return fixture data for both. Known gap: an id-less
+live call that ends a line still matches (`\\s+` crosses the newline); the
+weight-6 `check_live_debug.py` run is the real gate there.
 """
 
 from __future__ import annotations
@@ -62,6 +64,8 @@ INSPECTIONS = [
     (_LIVE, "inspected the debug instance's runtime variables", 'variables-all "$INSTANCE_ID"'),
     (_LIVE, "inspected the debug instance's runtime variables", "variables 7c1e-instance"),
     (_LIVE, "inspected the debug instance's runtime variables", 'variables-all --output json "$INSTANCE_ID"'),
+    (_LIVE, "inspected the debug instance's runtime variables", 'variables --profile alpha "$INSTANCE_ID"'),
+    (_LIVE, "inspected the debug instance's runtime variables", "variables-all --output=json ${INSTANCE_ID}"),
 ]
 
 
@@ -83,17 +87,25 @@ def test_inspection_counts_either_spelling(task: str, criterion: str, tail: str,
         "uip maestro bpmn debug-instances variables-all 2>&1 | head",
         "uip maestro bpmn debug-instances variables-all ; uip maestro bpmn debug x",
         'uip maestro bpmn debug-instances variables "--help"',
+        "uip maestro bpmn debug-instances variables-all --output json > out.json",
+        "uip maestro bpmn debug-instances variables-all --output json | jq .",
     ],
 )
 def test_live_inspection_ignores_help_and_other_verbs(command: str) -> None:
     assert not _hits(_pattern(_LIVE, "inspected the debug instance's runtime variables"), command)
 
 
-@pytest.mark.parametrize("group", ["instance", "instances", "debug-instance", "debug-instances"])
-@pytest.mark.parametrize("op", ["retry", "cancel", "continue"])
-def test_no_operate_guard_catches_both_spellings(group: str, op: str) -> None:
+OPERATIONS = [
+    *(f"{g} {op}" for g in ("instance", "instances") for op in ("retry", "cancel", "continue", "pause", "resume", "migrate", "goto")),
+    *(f"{g} {op}" for g in ("debug-instance", "debug-instances") for op in ("cancel", "continue", "variables-set", "breakpoints", "create")),
+]
+
+
+@pytest.mark.parametrize("uip", ["uip", "$UIP", "${UIP}"])
+@pytest.mark.parametrize("operation", OPERATIONS)
+def test_no_operate_guard_catches_both_spellings(operation: str, uip: str) -> None:
     guard = _pattern(_INSPECT, "did not operate the debug instance")
-    assert _hits(guard, f"uip maestro bpmn {group} {op} debug-fault-777 --output json")
+    assert _hits(guard, f"{uip} maestro bpmn {operation} debug-fault-777 --output json")
 
 
 @pytest.mark.parametrize(
