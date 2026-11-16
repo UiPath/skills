@@ -68,7 +68,7 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 2. **Roles.** When the items name more than one answerer and the request names none, one multi-select question asks which roles the user answers for. Only their items are asked; the others stay open for their own answerers.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** of at most four structured questions, one per item:
-   - the options come from the item's `Builds now:`, `Recommended:`, `Default:`, `Reading:` and `Instead:` lines, the recommended one first and marked, the default named;
+   - the options come from the item's `Builds now:`, `Recommended:`, `Default:`, `Reading:` and `Instead:` lines, the recommended one first and marked (with none recommended, what the genome builds now first, as the build orders it), the default named;
    - every batch also offers "use the defaults for the rest of this group".
 5. **Stop** when the user says so, takes the defaults for what is left, or no item of the user's roles remains.
 6. **Write, then apply.** Each answer goes under its item, as its `Change:` or `Answer:`. Defaults taken for a whole heading go on its `Confirmed:` line, as "the user, <YYYY-MM-DD>, in an interview". Then apply them as "Apply the answers" does.
