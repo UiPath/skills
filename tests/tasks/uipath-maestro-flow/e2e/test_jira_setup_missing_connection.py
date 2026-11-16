@@ -76,3 +76,18 @@ def test_present_connection_is_returned(task: Path, monkeypatch: pytest.MonkeyPa
     _stub(monkeypatch, jira_is, [{"Id": "abc", "Name": jira_is.CONNECTION_NAME}])
 
     assert jira_is.require_connection() == "abc"
+
+
+@pytest.mark.parametrize("task", TASKS, ids=lambda t: f"{t.parent.parent.name}/{t.name}")
+def test_auth_failure_is_not_a_missing_connection(task: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load(task)
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "or":
+            return Result({"Result": "Success", "Data": {"Key": "folder-key"}})
+        return Result({"Result": "Failure", "StatusCode": 401, "Message": "Unauthorized"})
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError, match="connections list failed.*401"):
+        jira_is.require_connection()
