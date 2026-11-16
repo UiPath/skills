@@ -196,6 +196,8 @@ uip maestro registry prepare uipath-uipath-dataservice --action create-entity-re
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
 
+Do not work around the refusal — not with `rawNode`, not by editing the emitted `.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node the platform cannot run.
+
 Copy parent names exactly from this operation's describe; they are operation-specific (Jira `get-issue` uses `project` and `issuetype`).
 
 **2. Resolve each value outermost first.** Match `Reference.Path`, not `Reference.ObjectName`; find the object whose path covers it when the subcollection is not listable:
