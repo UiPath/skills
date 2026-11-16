@@ -12,7 +12,10 @@
 - `CurrentProject.AbsolutePath` — the open project, for example `/solution/Approval`.
 - `CurrentWorkingDirectory` — the directory of the shell. It can differ from the project, so `cd` to the project first.
 
-The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`. Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
+The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`.
+In a project you create, the target is the main file that `init` reports (`/solution/<Project>/Process.bpmn`), even when the request names another file such as `<Project>.bpmn`.
+The project runs only its entry point, so a `.bpmn` written beside it never runs; write the process into the main file, and say in the reply that the file is `Process.bpmn`.
+Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
 
 **The target `.bpmn` is the single source of truth.** The user can change it on the canvas between your turns. So never use a `.bpmn.ts` from an earlier turn: decompile a fresh one every turn.
 
