@@ -34,7 +34,7 @@ How the selector engine reads what a translation writes — properties of the en
 
 Most of these rules are decidable from a definition file alone; the rest need one live command. Read a batch of definitions back by hand, or with a throwaway script written for the run when there are hundreds. A passing structural check proves shape, not that anything matches the screen.
 
-A throwaway checker has to encode each rule's **scope**, or it reports this guide's own prescribed shapes as violations and the executor "fixes" correct selectors. The two that bite: the content-attribute ban is on the **acting leaf** — an ancestor that scopes by a stable field label or row key is the prescribed shape (rule 4, last sentence) — and the `DIV` ban is on an **assumed** tag, not on one the source recorded or a known node role vouches for (rule 14). A finding count that jumps into the hundreds is the checker being wrong, not the batch.
+A throwaway checker has to encode each rule's **scope**, or it reports this guide's own prescribed shapes as violations and the build "fixes" correct selectors. The two that bite: the content-attribute ban is on the **acting leaf** — an ancestor that scopes by a stable field label or row key is the prescribed shape (rule 4, last sentence) — and the `DIV` ban is on an **assumed** tag, not on one the source recorded or a known node role vouches for (rule 14). A finding count that jumps into the hundreds is the checker being wrong, not the batch.
 
 | Check | Decide by | Rule |
 |---|---|---|

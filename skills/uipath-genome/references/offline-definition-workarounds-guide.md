@@ -109,7 +109,7 @@ The error names the attribute, but the attribute is valid: keep it, because the 
 Linked target after step 4 (C# project):
 
 ```xml
-<uix:TargetAnchorable … Reference="<ELEMENT_REFERENCE_ID>" ScopeSelectorArgument="&lt;wnd app='saplogon.exe' cls='SAP_FRONTEND_SESSION' /&gt;" SearchSteps="Selector" Version="V6">
+<uix:TargetAnchorable … Reference="<ELEMENT_REFERENCE_ID>" ScopeSelectorArgument="&lt;wnd app='saplogon.exe' cls='SAP_FRONTEND_SESSION' title='…' /&gt;" SearchSteps="Selector" Version="V6">
   <uix:TargetAnchorable.FullSelectorArgument>
     <InArgument x:TypeArguments="x:String">
       <CSharpValue x:TypeArguments="x:String">$"&lt;sap id='usr/…/tbl…' tableRow='{Row}' tableCol='1' /&gt;"</CSharpValue>
@@ -126,7 +126,7 @@ Linked target after step 4 (C# project):
 - `target-app update-definition` prints `Target application definition updated.`; confirm the write by reading the definition file back (`--name`, `--description` and `--input-mode` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). What replaces the index, and how an index that stays is decided: [selector-translation-guide.md](selector-translation-guide.md) rule 7; a selector changed that way is written back with `target-anchorable update-definition` → `object-repository replace-elements`.
-- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change. The run uses the replaced selector at once; the activity's copy in the workflow stays as it was until Studio syncs it or the activity is re-linked, and that stale copy is not an error.
+- `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change. The run uses the replaced selector at once; the activity's copy in the workflow stays as it was until Studio syncs it or the activity is re-linked, and that stale copy is not an error unless the element holds an expression the activity's copy lacks: a selector variable (§ Selector variables in number attributes) or a semantic description with one ([package-doc-errata-guide.md](package-doc-errata-guide.md) § Tools).
 - A strict selector with a `<nav>` path passes `update-definition`, `create-elements`, `link-elements`, per-file `validate` and `build`, and resolves at run time. `selector-intelligence evaluate` rejects it (one ref and the attributes per tag), so `target-anchorable validate --step Strict` checks it against the live application, and its screenshot shows the node the path landed on. `fuzzify` keeps the `<nav>` tag and writes `matching:` / `fuzzylevel:` on its count.
 - Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened.
 

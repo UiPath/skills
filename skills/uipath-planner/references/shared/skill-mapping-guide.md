@@ -1,14 +1,14 @@
 # Skill Mapping Guide — populating Build With
 
-Every genome component and every workflow step maps to exactly one UiPath build skill. Use when writing a **Build With** table (authoring, extraction) or planning skill groups (execution).
+Every genome component and every workflow step maps to exactly one UiPath build skill. Use when writing a **Build With** table (authoring, extraction) or planning skill groups (the build).
 
 ## Rules
 
 1. **One skill per row.** A step that mixes concerns (UI interaction plus a long calculation, or an API call plus an LLM decision) is split into two steps, each with its own skill.
-2. **Build skills only.** Build With lists skills that produce a deployable artifact. Skills that operate the platform (queues, assets, connections, folders, jobs) go under **Platform Dependencies**, never in Build With.
-3. **One component = one project — except test components.** In a process genome each non-test component maps to one buildable project and therefore to one primary skill. Steps inside a component may still use a second skill when the project is hybrid (XAML + coded files in one RPA project both map to `uipath-rpa`, so a hybrid RPA project is still one skill). Test components all map to the *same* `uipath-rpa` test project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Producer and consumer are roles of the Transactional Shape, not Type cell words; a split chosen at execution may turn one `uipath-rpa` component into several `uipath-rpa` projects, and the skill does not change ([transactional-shape-guide.md](transactional-shape-guide.md)).
+2. **Build skills only.** Build With lists skills that produce a deployable artifact. Skills that operate the UiPath platform (queues, assets, connections, folders, jobs) go under **Platform Dependencies**, never in Build With.
+3. **One component = one project — except test components.** In a process genome each non-test component maps to one buildable project and therefore to one primary skill. Steps inside a component may still use a second skill when the project is hybrid (XAML + coded files in one RPA project both map to `uipath-rpa`, so a hybrid RPA project is still one skill). Test components all map to the *same* `uipath-rpa` test project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Producer and consumer are roles of the Transactional Shape, not Type cell words; a split chosen at build may turn one `uipath-rpa` component into several `uipath-rpa` projects, and the skill does not change ([transactional-shape-guide.md](transactional-shape-guide.md)).
 4. **Orchestration is a step, not an annotation.** When a process coordinates several automations, the coordinator (Flow, BPMN, or Case plan) is its own component with its own row.
-5. **Do not invent skill names.** Use only the names in the tables below; a name that is not listed will not resolve at execution time — the retired `uipath-rpa-workflows`, `uipath-coded-workflows` and `uipath-coded-agents` included.
+5. **Do not invent skill names.** Use only the names in the tables below; a name that is not listed will not resolve at build time — the retired `uipath-rpa-workflows`, `uipath-coded-workflows` and `uipath-coded-agents` included.
 
 ## Build Skills
 
@@ -57,6 +57,26 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 10. Step is a user-facing screen → `uipath-coded-apps`.
 11. Data several components share is a Data Fabric entity: a Platform Dependency, never a step's skill; the step that reads or writes it takes the skill of the component that runs it.
 12. Still ambiguous between `uipath-rpa` and anything else → `uipath-rpa`.
+
+## Refactor Targets
+
+The Target answer of every extraction ([extract-guide.md](../extract/extract-guide.md) Step 6c) is chosen per component in two moves: type each step with § Decision Tree for Ambiguous Steps, then give the component one host, the simplest product that holds every step. A host keeps as steps the calls it makes and uses within one run — an RPA process calls connectors, document models, an LLM, an agent or a published automation; an API workflow calls connectors and other API workflows; a coordinator calls them all as its nodes.
+
+| The component's steps | Recommended host |
+|---|---|
+| Any step on a screen or on what only a robot's machine reaches | RPA process, Portable unless an activity the steps need exists only for Windows |
+| Connector and HTTP calls only, a short run of few steps | API workflow |
+| Connector and HTTP calls only, a long run, waits, or many steps whose every run must be inspectable step by step | Maestro flow |
+| Items worked one by one, each retried and reported on its own after the reads are batched (rule 2) | an RPA process that consumes the queue, starting each item's connector and HTTP work as an API workflow, so only the queue work needs a robot |
+| Coordination one host cannot hold (Decision Tree item 9) | Maestro flow, BPMN process or case, each automation it calls a component of its own |
+| A threshold or routing table, an extraction model, judgment no rule decides, code several components call | a component of its own — decision table, extraction model, agent, function — only when the business maintains it apart, it is trained, or several components call it; otherwise a step of the host |
+
+1. **A product is chosen for the shape, never as an upgrade.** A coordinator, an agent, a function or a queue is Recommended only when the steps need what it adds. The source's own product is always an option; a Windows project's other option is the same project kind on Portable.
+2. **Batch before counting items.** A per-item fan-out the source built because it read one item at a time is counted again after the reads are batched (one query for all rows, matched in memory, the decision's filters moved into the query). A few writes per run left → the host works them in its own loop and the queue goes; retries across runs, parallel workers or per-item status people read → the queue stays. The result is that flow's `Decided:` line ([transactional-shape-guide.md](transactional-shape-guide.md) rule 8).
+3. **Coordination is replaced, not copied or dropped.** A lock on running jobs, a second pass over the same items or a ledger keeps its protection by the target's own means — a queue item per unit of work with a unique reference, a fresh read of each item before its writes; the source's mechanism stays only when the target's means cannot hold it. A coordinator is judged on what the whole chain needs, never on whether it takes the source's queue items.
+4. **An event trigger stays an event trigger.** The target is one the source's event can start, directly or through a component it starts.
+5. **A target the delivery model cannot run is never offered.** The delivery model is the one the genome records, or the Step 1 answer; the [Constraint Gate](product-selection-guide.md#constraint-gate) filters every option, and a product the matrix leaves unconfirmed is a later option naming the gap.
+6. **Check the target before recommending it.** Each connector operation, trigger and limit the steps rely on is confirmed through the target's owning skill and its discovery commands (`uip is connectors list --output json`); an operation the registry does not list is confirmed when the owning skill documents an HTTP step through the connection and the vendor's API documentation has the call. A tenant or a connection the run cannot reach is no evidence against a target. A capability nothing confirms makes that target a later option, the gap named in its label.
 
 ## Common Combinations
 

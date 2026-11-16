@@ -14,10 +14,10 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# Every check calls uipath-genome's check-genome.mjs with node through $REFERENCE_DIR (its scripts
+# Every check calls the skill's check-genome.mjs with node through $REFERENCE_DIR (its scripts
 # folder). The genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   The UiPath Studio project in `InvoiceIntake/` was inherited from another team.

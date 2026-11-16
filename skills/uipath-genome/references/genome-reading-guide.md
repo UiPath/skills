@@ -1,6 +1,6 @@
 # Genome Reading Guide — what a genome's sections mean at build
 
-The genome is read-only at build: `scripts/check-genome.mjs` validates its shape before any question (SKILL.md § Check), and a gap in it goes back to `uipath-planner` as an edit, never into the file. A section holding its stub line does not apply, and the build makes nothing for it.
+The build reads the genome as written ([SKILL.md](../SKILL.md) Critical Rule 2). A section holding its stub line does not apply, and the build makes nothing for it.
 
 ## Two Levels
 
@@ -12,10 +12,10 @@ The genome is read-only at build: `scripts/check-genome.mjs` validates its shape
 Rules:
 
 1. **One component genome is one buildable project**, except test components: every test component of a process (a group of test cases over data rows for one business area) is built into a *single* test project, `<ProcessName>.Tests`, with one configuration for constants. Each group keeps its own component genome (Interface, rules, criteria) and its own folder in that project; never build one test project per business area. A process genome whose components are the groups of one UiPath test project, plus one shared component for its execution template and helpers, rebuilds that one project.
-2. **A component genome's `Part of:` line links its process genome**: the build takes the component's source framework from that process genome. A component reached through a process genome's links is inside it, with or without the line.
+2. **A component genome's `Part of:` line links its process genome**: the build reads the Source Map rows that describe the whole source — Source framework, Source export, Requested change, Inventory, Not covered, Unused and Related resources — from that process genome, and a standalone component genome carries them itself. A component reached through a process genome's links is inside it, with or without the line.
 3. **Detail lives at the lowest level that owns it.** The build reads a component's steps, rules, error handling and criteria in its component genome, and what spans components (process map, handoffs, shared platform dependencies, the transactional shape, cross-cutting rules, end-to-end criteria, deployment) in the process genome.
-4. **Every section is present**: a section the build cannot find is a check finding, never a section to infer.
-5. **A genome whose preamble names `uipath-genome`** instead of `uipath-genome` builds here; the checker accepts it.
+4. **Every section is present**: a section the build cannot find is an edit for `uipath-planner` ([execution-guide.md § 1.1](execution-guide.md)), never a section to infer.
+5. **An older preamble** — one that asks for this skill's Execute mode, written before genome writing moved to `uipath-planner` — builds the same way.
 6. **Shared behaviour is one library component**: a project of its own, published to a feed and installed in its consumers as a package, never a project of the solution (§ Deployment). The build packs it before its consumers, and each consumer's steps call it as they call any library; only the Library layout answer of execution's configuration questions folds it into a consumer. What one or a few activities do (close an application, append a line to the run's log, send one mail) stays a step of each consumer.
 
 ## File Naming and Location
@@ -41,7 +41,7 @@ Every Orchestrator or Integration Service resource the build declares or reads: 
 
 **Identifiers are not credentials.** A client id, tenant id, service URL or mailbox address is a Text asset (or configuration value), one per value, even when the source stored it in its credential vault: a consumer cannot read a credential asset's secret half back as text without a conversion the workflow analyzer rejects.
 
-**Values the platform keeps per environment are assets** (an environment variable, a global value), of the type their values take — Text, Integer, Bool, Secret, or a credential asset for an account. A component whose type reads no assets keeps such a value in the variable its owning skill provides.
+**Values the source platform keeps per environment are assets** (an environment variable, a global value), of the type their values take — Text, Integer, Bool, Secret, or a credential asset for an account. A component whose type reads no assets keeps such a value in the variable its owning skill provides.
 
 ## Interface
 
@@ -99,7 +99,7 @@ Packaging, entry points, triggers and target folders or environments; the builda
 
 ## Design Links
 
-`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The `context` call returns `designed_in` (the resolved link), `designed_in_fingerprint` and `designed_in_current` (whether the SDD on disk still matches); what the build does with them: [execution-guide.md](execution-guide.md) § 1.1. A `Designed in:` line without a fingerprint is a check finding the report lists; it does not block the build.
+`> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The build does not compare the fingerprint: `uipath-planner` keeps a designed genome current ([execution-guide.md](execution-guide.md) § 1.1).
 
 ## Source Map
 
@@ -112,7 +112,7 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 | 3 | `Submit_Order` (482113, lines 29–40) | `Order_Rows` (1207) | 2 | The confirmation is sent by `Send_Confirmation` (529077), a step of its own; called by the run's root `Order_Main` (310045) |
 
 1. **One row per Workflow step**; a test component's steps are its test cases.
-2. **Source objects** are the objects whose behaviour the step implements, primary first: a rebuild that keeps the source's names names the step's file or workflow after it. A framework source's object is `` `Name` (id) `` or `` `Name` (id, {locator}) `` — the id identifies the copy; a UiPath source's is its project-relative path, a test case with its `testCaseId` ([refactor-guide.md § Provenance](refactor-guide.md)).
+2. **Source objects** are the objects whose behaviour the step implements, primary first: a rebuild that keeps the source's names names the step's file or workflow after it. A framework source's object is `` `Name` (id) `` or `` `Name` (id, {locator}) `` — the id identifies the copy; a UiPath source's is its project-relative path, a test case with its `testCaseId`.
 3. **Data sets** are the data sets the step's own objects read, or `none`.
 4. **Captures** is the number of screen captures the source takes in the step; the build checks the rebuild's evidence against it.
 5. **Notes** is free text no check reads.
@@ -133,25 +133,21 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 ## Source values
 
-A genome is extracted through a rendering of the source and inherits every gap in it: a rendering can hide a typed value and an extraction can paraphrase one. An empty value in a rendering is "not shown", never "not set". The build checks every fact of these kinds the genome cites against the source object before a group builds on it (its migration preflight), and follows the source where the two disagree:
+A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4): comparison literals, operators and case rules, spelled exactly; counts, attempts and loop bounds, and whether the loop tests before or after its body; lengths, positions and occurrences in text operations; waits, pauses and timeouts, in the source's unit; set or typed; flags that change control flow; date and number formats; values bound to a built-in; a parameter's unit, its default, and which of two filled parameters overrides the other; log texts, with their wording and substitutions; the kind of each file read or written, and the date or field a filter, sort or window uses.
 
-1. **Comparison literals, operators and case rules** — contains / equals / starts with, case-sensitive or not, line breaks ignored or not, whitespace normalised or not, a pattern that must match the whole text or one that searches it — spelled exactly, spacing and punctuation included.
-2. **Counts, attempts and loop bounds**, and whether the loop tests before or after its body.
-3. **Lengths, positions and occurrences** in text operations (a cut to 20 characters, the second `|`-field).
-4. **Waits, pauses and timeouts** in the unit the source states, and a check's budget: its own timeout, or, for a check or an action with no timeout of its own, the framework's default budget the source guide names (a source check that waits its framework's default is not an activity waiting the activity's default).
-5. **Set or typed:** whether a field is set (replaced) or typed into (appended, key by key).
-6. **Flags that change control flow** (continue on error, a do-while, a skip switch, a failure the source tolerates or logs as a pass, a call made from a failure route). A check whose failure the source logs as a pass or ignores is a decision or an optional wait, not a hard check, and a check that passes when its target is absent asserts absence.
-7. **Formats** a date or number is typed or compared in (a mask, a pattern, one part of a date per segment): the format is part of the value.
-8. **Values bound to a built-in** (the run date, the user's folder), computed at run time — never the stored default a same-named project variable carries.
-9. **A parameter's unit, its default, and which of two filled parameters overrides the other**, read from the source's own documentation of that parameter before they are called unknown.
-10. **Log texts** of each step, with their literal wording and variable substitutions.
-11. **Which file and which field**: the kind of each file the process reads or writes, by its extension, and which of several dates or fields a filter, sort or window uses.
+Three readings decide what is built:
+
+1. A check or action with no timeout of its own waits the framework's default budget the source guide names, not the activity's default.
+2. A check whose failure the source logs as a pass or ignores is a decision or an optional wait, not a hard check; a check that passes when its target is absent asserts absence.
+3. A value bound to a built-in (the run date, the user's folder) is computed at run time, never taken from a same-named project variable's stored default.
+
+Where the genome and the source disagree, the build follows the source, with the exceptions that step lists. Each disagreement is a genome deviation in the group report — step, source object and line, genome says, source says — and the genome is left to a `uipath-planner` edit.
 
 ## Source Defects
 
 An extracted genome states a source's defect at the step, rule or handler where the behaviour lives, as `**Source defect:** {what the source does} … Evident intent: {what it was meant to do}`. A process genome indexes every component's defects under Error Handling and Recovery (`Defect | Component step | Rebuild follows`), and the defect's Source Map row names the objects and lines that prove it.
 
-- The rebuild follows the evident intent when the source states that intent. When only the step's purpose shows it (the intent marked `*[Inferred]*`), the rebuild carries the source's behaviour unless the user rules otherwise; a `User ruling ({date}): …` at the step, cited by the index row's Rebuild follows cell, decides.
+- The index row's Rebuild follows cell, or the step, decides which behaviour the rebuild follows. Where neither says, the rebuild follows the evident intent when the source states that intent. When only the step's purpose shows it (the intent marked `*[Inferred]*`), the rebuild carries the source's behaviour unless the user rules otherwise; a `User ruling ({date}): …` at the step, cited by the index row's Rebuild follows cell, decides.
 - A defect whose result only the source runtime's internals reproduce cannot be carried: the rebuild follows the evident intent.
 - An open ruling builds the option the genome names, marked `*[Inferred]*`, until the user rules.
 - An **unresolved** behaviour (semantics nobody documents) builds the reading the genome marks `*[Inferred]*`.

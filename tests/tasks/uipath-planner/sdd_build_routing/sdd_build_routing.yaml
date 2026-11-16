@@ -12,9 +12,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# check-genome.mjs from uipath-genome's scripts folder, through $REFERENCE_DIR.
+# The skill's check-genome.mjs from its scripts folder, through $REFERENCE_DIR.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   The file `inventory-sync-sdd.md` in this folder is a finished Solution Design
