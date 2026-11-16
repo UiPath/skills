@@ -8,7 +8,7 @@ user-invocable: true
 
 # UiPath Genome — build automations from their genome
 
-Two verbs: `build`, and `prepare`, which writes a readiness file beside the genome with the architecture decisions the build proposes, every question it would ask and the SDD's questions still open. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it. The genome says *what*; the owning skills know *how*.
+Two verbs: `build`, and `prepare`, which asks the build's questions on the machine that will build, as far as the user answers them, and writes the answers and the rest into a readiness file beside the genome, with the SDD's questions still open. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it. The genome says *what*; the owning skills know *how*.
 
 ## Setup
 
@@ -27,7 +27,7 @@ Two verbs: `build`, and `prepare`, which writes a readiness file beside the geno
 | Verb | Input | Output | Guide |
 |---|---|---|---|
 | `build` | A `*-genome.md` | The projects, built through their owning skills, and the hand-off folder | [build-guide.md](references/build-guide.md) |
-| `prepare` | A `*-genome.md`, on the machine that will build it | `<slug>-readiness.md` beside the genome: the Architecture decisions (each decision that shapes what gets built, with the build's proposal), Build setup (every other question the build would still ask there), the build's tasks and the SDD's questions still open; nothing built | [prepare-guide.md](references/prepare-guide.md) |
+| `prepare` | A `*-genome.md`, on the machine that will build it | The build's questions, asked as far as the user wants, then `<slug>-readiness.md` beside the genome with the answers and the rest: the Architecture decisions (the questions that shape what gets built, each with the build's proposal), Build setup (every other question), the build's tasks and the SDD's questions still open; nothing built | [prepare-guide.md](references/prepare-guide.md) |
 
 ## Choosing the Verb
 

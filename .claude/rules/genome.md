@@ -41,7 +41,7 @@ Paths are relative to the skill folder.
 |---|---|
 | Verb choice | `SKILL.md` |
 | `build` start, verb rules, read plan | `references/build-guide.md` (§ Start, § Verb Rules, § Read Plan) |
-| `prepare`, which writes the readiness file: the build's questions and tasks, and the SDD's questions still open | `references/prepare-guide.md` |
+| `prepare`: the build's questions, asked as far as the user answers them, and the readiness file with the answers, the rest, the build's tasks and the SDD's questions still open | `references/prepare-guide.md` |
 | What each genome section means at build | `references/genome-reading-guide.md` |
 | Execution: phases, target project resolution, skill groups, owning-skill contract, acceptance verdicts | `references/execution-guide.md` |
 | Configuration and scaffolding questions, autonomous runs | `references/configuration-questions-guide.md` |
@@ -126,7 +126,7 @@ One change, every file in its row, same PR.
 | New edit request or edit rule | planner `edit-guide.md` |
 | Rule for verifying suspected source defects | planner `defect-verification-guide.md` |
 | New open question an SDD puts to people | planner `open-questions-guide.md`; its genome form: `genome-format-guide.md` § Open Decisions |
-| New readiness item (a build question or task) | builder `prepare-guide.md` |
+| New readiness task (a system or build-environment task); a new build question goes where the build's questions are, and `prepare` asks it from there | builder `prepare-guide.md` |
 | Rule for extraction in parts | planner `extraction-parts-guide.md` |
 | Fact about reading a UiPath source or its deployed state | planner `uipath-source-guide.md` (or its RPA / non-RPA signals guide); what the build re-reads of the source: builder `source-migration-guide.md` |
 | New scaffolding question | builder `configuration-questions-guide.md` |

@@ -6,7 +6,7 @@ Who writes it:
 - `design` writes it from its own gaps, before a genome exists ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 1.5).
 - Once the genome exists, every write (`author`, `extract`, `edit`) writes it again from the genome, on the design path too ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)).
 
-The build's own questions are `uipath-genome`'s: the split, the libraries, the technology for each capability, scaffolding, existing projects and the build environment. Its `prepare` writes them into a readiness file beside the genome, with this section's items that are still open.
+The build's own questions are `uipath-genome`'s: the split, the libraries, the technology for each capability, scaffolding and the build environment. Its `prepare` writes them into a readiness file beside the genome, with this section's items that are still open.
 
 ## Writing Rules
 
@@ -36,7 +36,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 |---|---|---|
 | Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order | the process owner |
 | Material to supply | open entry of the material tier | whoever holds the source and its documents |
-| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed | the environment's owners, with the engineer |
+| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `accept` takes each, and an environment whose default is `none` makes it needed | the environment's owners, with the engineer |
 | Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice | the delivery lead or the centre of excellence |
 
 Business decisions close with two lists that ask nothing one item at a time:
