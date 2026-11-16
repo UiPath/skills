@@ -45,6 +45,8 @@ When the upload failed, say so in the first line's one sentence.
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
 
+`Assumed:` names each `validate` warning you kept, in the user's words, and why it cannot change the run.
+
 <!--skill-flavor:final-path-rule:start-->
 The path line belongs to this final message.
 A Studio Web link shown earlier in the turn, before a tool call, does not count: write it again here, on its own line.
