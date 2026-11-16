@@ -60,9 +60,9 @@ Before you send it, compare the message with the template line by line and delet
 
 ## End the turn
 
-Send this reply only after `validate` reported `Status: Valid` on the target `.bpmn` in this turn; a file compiled anywhere else, such as a scratch copy, leaves the target unchanged, so finish the loop first.
+Send this reply only after `validate` reported `Status: Valid` on the target `.bpmn` in this turn, or in the interrupted turn it resumes; a file compiled anywhere else, such as a scratch copy, leaves the target unchanged, so finish the loop first.
 Send this reply as your final message and end the turn.
-When a turn resumes after an interruption and the gate is already reached, send this reply again, whole, as that turn's final message.
+When a turn resumes after an interruption that came after you wrote this reply, send that reply again, unchanged and whole, as this turn's final message.
 Ask the gate question in the message, not with a pick-list or question tool: a pending question keeps the turn open, and Studio Web locks the canvas while a turn runs, so the user could not review the shape they are asked to approve.
 The user answers in their next message, with a number, an option name, or the change they want.
 Never leave the outline only in your reasoning: a user who sees only the question cannot judge the shape.

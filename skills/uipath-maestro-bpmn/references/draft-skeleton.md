@@ -296,7 +296,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  Read [final-report-template.md](final-report-template.md) in full before the turn's last tool call, then end the turn with that report; its first line says `(draft mode)`, because this run stopped at a gate.
+  Read [final-report-template.md](final-report-template.md) in full once `validate` passes, before any upload or other closing tool call, then end the turn with that report; its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
