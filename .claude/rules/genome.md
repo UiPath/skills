@@ -27,6 +27,7 @@ Paths are relative to the skill folder.
 | Defect verification | `references/shared/defect-verification-guide.md` |
 | `author`: genome from an idea, PDD, TO-BE or SDD; scenario proposals | `references/author/author-guide.md`; from an agreed SDD: `references/author/genome-from-sdd-guide.md`; scenarios: `references/author/scenario-proposal-guide.md` |
 | `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
+| Interview: the offer, the gap list and its coverage, asking order, where answers go (inside `design`, `author`, `extract`, and the `interview` verb) | `references/interview/interview-guide.md` |
 | Skill mapping: Build With names, Decision Tree, target choice (a refactor's targets included), operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
 | `design`: SDD phases, products, packages, solution composition, caller requests | `references/design/design-guide.md`; Phase 3: `references/design/sdd-writing-guide.md`; the rest of `references/design/` per subject |
 | SDD fingerprint | `scripts/sdd-fingerprint.mjs` |

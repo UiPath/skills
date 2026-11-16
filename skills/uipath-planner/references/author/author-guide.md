@@ -9,7 +9,7 @@ The `author` verb writes a genome — the coding-agent spec `uipath-genome` buil
 The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) and the Critical Rules in [SKILL.md](../../SKILL.md) apply; `author` adds:
 
 1. **Every authored genome rests on the planner's product selection.** Without an SDD, Step 5 runs it: Constraint Gate, platform availability, Maestro disambiguation, Integration Service reuse and tenant library search. An agreed SDD has already made it ([genome-from-sdd-guide.md](genome-from-sdd-guide.md)).
-2. **Follow-ups are bounded** (Step 6): one round for the largest gaps, then write.
+2. **Follow-ups are bounded, unless the user takes the interview** (Step 6): the interview is offered first; declined, one round for the largest gaps, then write.
 
 ## Read Plan
 
@@ -25,6 +25,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | products are selected (Step 5) | no SDD | [product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate and [component-placement-guide.md](../shared/component-placement-guide.md) § Per-task component placement, opened by name (no heading list); [platform-availability-guide.md](../shared/platform-availability-guide.md) (both not re-read when scenario-proposal-guide.md already opened them); § Maestro disambiguation — BPMN vs Flow vs Case only when the genome has two or more components or a coordinator; component-placement-guide.md § Integration Service only when a step acts on a SaaS system |
 | products are selected (Step 5) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
 | the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) |
+| gaps are listed (Step 6) | Step 6 offers the interview: not a picked scenario, not an SDD whose `Execution autonomy` is `autonomous`, not an unattended run | [interview-guide.md](../interview/interview-guide.md) whole |
 
 Each phase's reads go out in at most three turns: turn 1 every file read whole, every section this plan names, and the heading list of every other file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 
@@ -96,7 +97,9 @@ Then add these capabilities even when the user did not name them:
 | Regression or test scenarios, "per release", "verify that", data-driven cases | One `uipath-rpa` test-case-group component per business area with data variations, all folders of the single test project ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 1); Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
 | Approvals performed as another user, "proxy as", "impersonate", "on behalf of" | Library step that switches user and stops the switch afterwards; one credential asset per persona that can be proxied |
 
-## Step 6 — Ask follow-ups (bounded)
+## Step 6 — Interview, or bounded follow-ups
+
+**Offer the interview first** ([interview-guide.md](../interview/interview-guide.md) § The Offer), on the genome entries of its § Coverage and, with no SDD, its SDD entries too. Not offered for a scenario picked from proposals, for an SDD whose `Execution autonomy` is `autonomous`, or in an unattended run. Accepted, the interview replaces the rounds below and its answers are the facts Step 7 writes. Declined or not offered, the rounds below run.
 
 Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 1a) gets none: the agent invented every detail, so no gap is left that only the user can fill, and the values left open are Configuration Questions. An SDD's rounds: [genome-from-sdd-guide.md](genome-from-sdd-guide.md) items 2 and 5. After the last round, generate with defaults and stubs; never loop.
 
