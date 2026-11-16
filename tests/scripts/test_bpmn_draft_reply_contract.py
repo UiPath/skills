@@ -49,11 +49,11 @@ def test_skill_step_9_reads_the_report_template() -> None:
 def test_studio_web_merges_against_the_seeded_baseline() -> None:
     text = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "SKILL.md").read_text()
     assert "**The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**" in text
-    assert "When the gate's outline search finds a box\n  missing, rebuild the baseline the same way and run step 3 again." in text
+    assert "When the gate's outline search finds a box\n  missing, rebuild the baseline the same way and run steps 3 and 4 again." in text
     sw = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md").read_text()
     assert "the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton" in sw
     gate = (ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn" / "references" / "gate-reply-template.md").read_text()
-    assert "rebuild the baseline as the [Validation loop](../SKILL.md#validation-loop) says, run its step 3 into the target once more" in gate
+    assert "rebuild the baseline as the [Validation loop](../SKILL.md#validation-loop) says, run its steps 3 and 4 into the target once more" in gate
 
 
 def test_final_report_survives_a_resume() -> None:
