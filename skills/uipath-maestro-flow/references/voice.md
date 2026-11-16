@@ -60,9 +60,9 @@ code and subscriber number, 7–15 digits in all. `from` must be a number provis
 telephony provider; anything else is rejected when the call is placed, not when
 the flow is validated. `endCall` reads `out('<step>', 'ended')`.
 
-When the request gives no real numbers, pass E.164 string literals:
-`createOutgoingCall({ from: '+15550001000', to: '+15550002000' })`. Bind `from`
-or `to` to `input()` only when the request names a flow input for it.
+When the request gives no real numbers, pass a placeholder E.164 string literal
+for each: a `+`, then 7–15 digits. Bind `from` or `to` to `input()` only when
+the request names a flow input for it.
 
 ## How the agent sounds
 
