@@ -74,7 +74,7 @@ success_criteria:
     description: "The case child SDD is unchanged"
     command: >-
       node -e "const h = require('crypto').createHash('sha256').update(require('fs').readFileSync('supplier-onboarding-case-sdd.md', 'utf8').replace(/\r/g, '')).digest('hex');
-      process.exit(h === '40c0d02b2185dfc32b9b4c449ed96b1e3bb37870ec4985796a7014663d6db160' ? 0 : 1)"
+      process.exit(h === 'c58c5a337f7ae5c1b7d779d8c016bd8a0aa5c92e04df0faaf807aae51446498f' ? 0 : 1)"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

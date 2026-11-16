@@ -315,6 +315,28 @@ def check_sla_reference_closure(sdd: str) -> None:
             )
 
 
+def check_withdrawn_entry(sdd: str) -> None:
+    """Withdrawn is entered by the supplier-portal event, once, on the stage.
+
+    The portal event is either a connector callback (`wait-for-connector`) or a
+    business event the portal sends to the running case (`api-event("<Name>")`,
+    declared under Business Events) — the case SDD template allows both on a
+    stage entry.
+    """
+    withdrawn_section = stage_section(sdd, "Withdrawn")
+    lowered = withdrawn_section.lower()
+    if "wait-for-connector" not in lowered and "api-event(" not in lowered:
+        fail("Withdrawn is not entered by the global supplier-portal event")
+    if not (
+        has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500)
+        # The event source may be declared once in the Triggers table /
+        # Section 4 rollup / Business Events and referenced from the stage by
+        # event title; the entry check above already pins the stage's rule.
+        or has_near(sdd, "Supplier Portal", "Withdraw", 500)
+    ):
+        fail("Withdrawn entry rule does not preserve the supplier-portal withdrawal event")
+
+
 def main() -> None:
     sdd = read_required(Path("sdd.md"))
 
@@ -327,17 +349,7 @@ def main() -> None:
         if not has_near(sdd, stage, "Interrupting", 1200):
             fail(f"{stage!r} is not documented as an interrupting secondary stage")
 
-    withdrawn_section = stage_section(sdd, "Withdrawn")
-    if "wait-for-connector" not in withdrawn_section.lower():
-        fail("Withdrawn is not entered by the global supplier-portal event")
-    if not (
-        has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500)
-        # The connector source may be declared once in the Triggers table /
-        # Section 4 rollup and referenced from the stage by event title; the
-        # wait-for-connector entry check above already pins the stage's rule.
-        or has_near(sdd, "Supplier Portal", "Withdraw", 500)
-    ):
-        fail("Withdrawn connector rule does not preserve the supplier-portal withdrawal event")
+    check_withdrawn_entry(sdd)
 
     # Each of the three Supplier Setup tasks declares sequential activation in its
     # own SDD detail block; sdd_task_activation() below proves every task carries
