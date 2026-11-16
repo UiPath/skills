@@ -41,7 +41,7 @@ uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --descrip
 | `<dist>` | Path to build output directory | **Required** |
 | `-n, --name <name>` | Package name | Prompted |
 | `-v, --version <version>` | Package version | `1.0.0` |
-| `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
+| `--output-dir <dir>` | Output directory for `.nupkg` | `./.uipath` |
 | `--author <author>` | Package author | `UiPath Developer` |
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
