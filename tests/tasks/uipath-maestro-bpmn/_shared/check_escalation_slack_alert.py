@@ -5,7 +5,7 @@ Ported from Flow `e2e/escalation_slack_alert/check_escalation_slack_alert.py`:
 same scenario (a manual-start escalation-triage process classifies severity
 and posts a Slack alert), same seeded Sev1 case, same OUTCOME assertions —
 translated from `uip maestro flow debug`'s inline variables to `uip maestro
-bpmn debug`'s instance-id + `debug-instance variables-all`/`incidents`
+bpmn debug`'s instance-id + `debug-instances variables-all`/`incidents`
 surface (canonical live pattern, see LIVE-ADDENDUM.md; copies the plumbing of
 the CI-proven `e2e/customer_escalation_triage/check_customer_escalation_behavior.py`,
 trimmed to this task's single Slack connector — no Jira, no tenant re-read, no
@@ -40,7 +40,7 @@ Assertion map (Flow → BPMN):
   F flow_check.py:1395-1405                   must_contain: correlationId, severity, nextSteps
       -> assert_outcome(): matched response["message"]["text"] contains all three
   I    locate/parse .bpmn; resolve the project dir; import into an ephemeral solution (sha256-pinned);
-       read runtime evidence via `debug-instance variables-all`/`incidents` — `bpmn debug` returns an
+       read runtime evidence via `debug-instances variables-all`/`incidents` — `bpmn debug` returns an
        instance id rather than inline variables, so this whole sequence stands in for Flow's single
        `flow debug` call (LIVE-ADDENDUM.md "canonical live pattern")
   T    public outputs addressed by declared `<uipath:variables>` id (`vars.<VarId>`) and a node's own

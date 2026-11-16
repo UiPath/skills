@@ -8,7 +8,7 @@ Read `PORTING-BRIEF.md` (Grading contract is mandatory) and `BATCH1-ADDENDUM.md`
 
 1-2. `import_exact(bpmn_path, project_dir, LIVE_RUN_DIR / <Name>)`: ephemeral `uip solution init` under the sandbox CWD (so the standard post_run sweep finds the `.uipx`) + `uip solution projects import`, asserting the imported `.bpmn` bytes equal the submitted ones.
 3. `debug_data, instance_id = run_debug(imported_project_dir, inputs, log_file, timeout=…)` — `bpmn debug` returns an instance id, not inline variables. `--inputs` JSON is honoured (the escalation run seeded correlationId this way and found it in Jira).
-4. `fetch_variables(id)` (`debug-instance variables-all`) → `root_scope(variables_data)` for root variables; `element_output_records(variables_data, element_id)` for a node's `Outputs`; `connector_response_values(outputs, name)` for connector response fields.
+4. `fetch_variables(id)` (`debug-instances variables-all`) → `root_scope(variables_data)` for root variables; `element_output_records(variables_data, element_id)` for a node's `Outputs`; `connector_response_values(outputs, name)` for connector response fields.
 5. Side-effect ids go to a flat journal the moment they are visible, before any status check; post_run replays it (teardown) — mirror the Flow task's `_setup/teardown_*.py`.
 6. `fetch_incidents(id)` then `require_clean_run(debug_data, evidence)`; a completed run with incidents is a failure. `debug_evidence(id)` does 4 and 6 together for a grader with no side effects.
 

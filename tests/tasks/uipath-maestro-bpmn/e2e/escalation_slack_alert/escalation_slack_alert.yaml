@@ -8,7 +8,7 @@ description: >
   mailbox; see the outlook_trigger_inbox and customer_escalation task
   notes). The grader seeds a Sev1 case, imports the exact submitted project
   into an ephemeral solution, runs `uip maestro bpmn debug --inputs`, and
-  verifies the OUTCOME via `debug-instance variables-all`/`incidents`: the
+  verifies the OUTCOME via `debug-instances variables-all`/`incidents`: the
   process completes, classifies Sev1 with engineering needed, preserves the
   correlationId, and — the point of the test — the Slack Send Message
   activity actually posted (its own response ts is exposed as a process
@@ -18,7 +18,7 @@ description: >
   the Script node is a bpmn:scriptTask (BPMN.Variables mapping) and the
   Slack activity is a bpmn:sendTask carrying Intsvc.ActivityExecution; `flow
   debug`'s single-call inline payload becomes an ephemeral-solution import
-  (sha256-pinned) + `bpmn debug` + `debug-instance variables-all`/
+  (sha256-pinned) + `bpmn debug` + `debug-instances variables-all`/
   `incidents`, because `bpmn debug` returns an instance id rather than
   inline variables. No Jira, no tenant re-read, and no Slack teardown — same
   as the ported Flow task, which never re-reads the tenant or deletes the

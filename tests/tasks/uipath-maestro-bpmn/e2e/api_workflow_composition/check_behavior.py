@@ -6,7 +6,7 @@ hard-coded), runs the submitted process live via `uip maestro bpmn debug`,
 and requires `FinalStatus == Completed`. For every row in
 composition.RESOURCES, the token must round-trip through THAT row's own
 invoking node: it must appear in the process's declared output global AND
-in the invoking node's OWN `Outputs` in `debug-instance variables-all` --
+in the invoking node's OWN `Outputs` in `debug-instances variables-all` --
 per-node provenance, so a ScriptTask or an unrelated node cannot cover for
 the resource never having been reached at runtime. This is the anti-cheat core of the suite.
 
@@ -24,7 +24,7 @@ check_shape.py (a structural, offline-checkable rule), not here.
 `assert_row_provenance` is pure (BPMN Element + a variables-all payload in,
 problems raised out) and is unit-tested in test_checks.py with synthetic
 payloads, including the "one node cannot cover for another" case. main()
-below wires the live `uip maestro bpmn debug` / `debug-instance` calls.
+below wires the live `uip maestro bpmn debug` / `debug-instances` calls.
 """
 
 from __future__ import annotations
@@ -216,7 +216,7 @@ def main() -> None:
     incidents_data = None
     if get_ci(debug_data, "FinalStatus") not in COMPLETED_STATUSES:
         incidents = run_cli(
-            ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+            ["uip", "maestro", "bpmn", "debug-instances", "incidents", instance_id],
             timeout=INCIDENTS_TIMEOUT,
         )
         _payload, incidents_data = payload_data(incidents, "incidents", require_success=False)
@@ -227,7 +227,7 @@ def main() -> None:
         raise SystemExit(f"FAIL: {error}") from error
 
     variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instances", "variables-all", instance_id],
         timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, "variables-all")

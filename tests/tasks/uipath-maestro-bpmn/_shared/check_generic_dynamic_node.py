@@ -9,7 +9,7 @@ translated from a JSON node walk + inline `flow debug` payload to an XML walk
 over the registry-driven `Intsvc.ActivityExecution` connector shell (see
 classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3) plus the BPMN
 live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
-pattern: ephemeral solution import, `bpmn debug`, `debug-instance
+pattern: ephemeral solution import, `bpmn debug`, `debug-instances
 variables-all`/`incidents`, cloned from `check_jira_get_issue.py`).
 
 A generic activity encodes only the operation (List) in its registry type; the
@@ -48,7 +48,7 @@ Assertion map (Flow → BPMN):
   F check_generic_dynamic_node.py:203-205  run_debug(...) implicitly requires finalStatus == "Completed"
                                             (flow_check.run_debug raises on a non-Completed status internally;
                                             `bpmn debug` returns only an instance id, so the check is explicit here)
-                                            → FinalStatus in COMPLETED_STATUSES and debug-instance incidents is empty
+                                            → FinalStatus in COMPLETED_STATUSES and debug-instances incidents is empty
   F check_generic_dynamic_node.py:167-200  _assert_array_output(): an array-typed global output (empty allowed),
                                             reporting a flattened sys_id-bearing record if present
                                             → array held by a root Global that is a declared process output

@@ -9,7 +9,7 @@ open-meteo, and decides warm/cold), translated from a JSON node walk + inline
 `Intsvc.ActivityExecution`/`Intsvc.HttpExecution` connector shells (see
 classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
-pattern: ephemeral solution import, `bpmn debug`, `debug-instance
+pattern: ephemeral solution import, `bpmn debug`, `debug-instances
 variables-all`/`incidents`). Mirrors the structure of the CI-passing
 `_shared/check_channel_description.py` and `_shared/check_jira_get_issue.py`
 (same connector tenant, same live sequence and budget arithmetic).
@@ -46,7 +46,7 @@ Assertion map (Flow → BPMN):
                                           finalStatus == 'Completed' (flow_check.run_debug raises on a
                                           non-Completed status internally; `bpmn debug` returns only an
                                           instance id, so the check is explicit here)
-                                          → FinalStatus in COMPLETED_STATUSES and debug-instance
+                                          → FinalStatus in COMPLETED_STATUSES and debug-instances
                                             incidents is empty
   F check_slack_weather_pipeline.py:31  assert_output_nonempty(payload, 'weatherVerdict')
                                           + lines 32-37 exactly one of ALLOWED_VERDICTS found

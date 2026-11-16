@@ -10,8 +10,8 @@ escalation_jira_ticket, adapted to the BPMN CLI surface):
      ephemeral solution under the sandbox CWD — kept there so the repo's
      standard `_setup/cleanup_solutions.py` post_run sweep can find the
      .uipx. Unlike `flow debug`, `bpmn debug` returns an instance id; runtime
-     evidence comes from `debug-instance variables-all` (variables addressed
-     by id, not name) and `debug-instance incidents`.
+     evidence comes from `debug-instances variables-all` (variables addressed
+     by id, not name) and `debug-instances incidents`.
   3. TENANT: re-reading the created Jira key returns an issue whose summary
      carries the seeded correlationId and whose project/issuetype match the
      seed — proof the process created THIS run's ticket, not a fabricated
@@ -501,7 +501,7 @@ def main() -> None:
     # the records exist regardless of the verdict, and post_run replays the
     # journal even if this process is killed mid-assertion.
     variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instances", "variables-all", instance_id],
         timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, "variables-all")
@@ -512,7 +512,7 @@ def main() -> None:
         escalation_is.record_created_id("slack_message", message)
 
     incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instances", "incidents", instance_id],
         timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")

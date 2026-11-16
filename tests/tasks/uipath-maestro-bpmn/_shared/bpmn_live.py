@@ -10,7 +10,7 @@ written three times — here, in the escalation grader, and privately inside
 Cannot reuse `flow_check.py` itself: the CLI surface differs. `uip maestro
 flow debug` returns variables inline and addresses outputs by name, whereas
 `uip maestro bpmn debug` returns an instance id whose evidence must be fetched
-via `debug-instance variables-all` and `debug-instance incidents`, with
+via `debug-instances variables-all` and `debug-instances incidents`, with
 scopes keyed by ParentElementId and variables addressed by id.
 
 Standard library only: the CI job for this suite installs pytest and nothing
@@ -212,7 +212,7 @@ def tail_log(path: Path, limit: int = 5000) -> str:
 
 
 def incident_records(incidents_data: Any) -> list[Any] | None:
-    """Normalise `debug-instance incidents` into a list of records.
+    """Normalise `debug-instances incidents` into a list of records.
 
     The CLI has returned both a bare list and a paged `{"Items": [...]}`
     envelope for this endpoint; either is accepted so a shape change does not
@@ -600,10 +600,10 @@ class DebugEvidence:
 
 
 def fetch_variables(instance_id: str) -> tuple[Any, str]:
-    """`debug-instance variables-all`: (data, raw stdout)."""
+    """`debug-instances variables-all`: (data, raw stdout)."""
 
     variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instances", "variables-all", instance_id],
         timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, "variables-all")
@@ -611,10 +611,10 @@ def fetch_variables(instance_id: str) -> tuple[Any, str]:
 
 
 def fetch_incidents(instance_id: str) -> tuple[list[Any] | None, Any]:
-    """`debug-instance incidents`: (records, raw data)."""
+    """`debug-instances incidents`: (records, raw data)."""
 
     incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instances", "incidents", instance_id],
         timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")

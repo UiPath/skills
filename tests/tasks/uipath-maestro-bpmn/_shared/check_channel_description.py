@@ -8,7 +8,7 @@ translated from a JSON node walk + inline `flow debug` payload to an XML walk
 over the registry-driven `Intsvc.ActivityExecution` connector shell (see
 classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
-pattern: ephemeral solution import, `bpmn debug`, `debug-instance
+pattern: ephemeral solution import, `bpmn debug`, `debug-instances
 variables-all`/`incidents`).
 
 Exits non-zero on the first failure (``FAIL: ...``); prints ``OK: ...`` per
@@ -27,12 +27,12 @@ Assertion map (Flow → BPMN):
                                        "Completed" (flow_check.run_debug raises on a non-Completed
                                        status internally; `bpmn debug` returns only an instance id, so
                                        the check is explicit here)
-                                       → FinalStatus in COMPLETED_STATUSES and debug-instance
+                                       → FinalStatus in COMPLETED_STATUSES and debug-instances
                                          incidents is empty
   F check_channel_description.py:29  assert_outputs_contain(payload, ADDRESS_FRAGMENTS, require_all=True)
                                        → every fragment found among the root scope's variable leaves
                                          AND every element's Outputs (incl. nested connector `response`)
-                                         in `debug-instance variables-all`, minus input echoes
+                                         in `debug-instances variables-all`, minus input echoes
                                          (input_echo_ids; Flow subtracts declared inputs the same way)
                                          (LIVE-ADDENDUM: a root PUBLIC
                                          OUTPUT has read back null even when mapped correctly, so the

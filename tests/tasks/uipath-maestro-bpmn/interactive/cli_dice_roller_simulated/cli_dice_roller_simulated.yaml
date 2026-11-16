@@ -17,7 +17,7 @@ description: >
   `_shared/check_jira_get_issue.py`: a JSON node-type scan + inline `flow
   debug` payload becomes an XML scan for a `bpmn:scriptTask` element plus the
   BPMN live-debug surface (ephemeral solution import, `bpmn debug`,
-  `debug-instance variables-all`/`incidents`, per LIVE-ADDENDUM's canonical
+  `debug-instances variables-all`/`incidents`, per LIVE-ADDENDUM's canonical
   pattern). That surface's worst-case budget (90 solution init + 180 solution
   import + 600 debug + 120 variables-all + 120 incidents + 60s margin = 1170s)
   fits under Flow's own criterion timeout (1320s), so the criterion timeout is

@@ -21,7 +21,7 @@ description: >
   Intsvc.ActivityExecution sendTask graph, `flow debug` becomes a
   `bpmn debug`-per-case run against one ephemeral-solution import of the exact
   submitted project (bpmn debug addresses runtime evidence by instance id via
-  `debug-instance variables-all`, not inline variables), and the criterion timeout
+  `debug-instances variables-all`, not inline variables), and the criterion timeout
   is raised to cover that extra CLI surface (see the grader's own arithmetic
   comment) — the graded behaviors, weights, and thresholds are unchanged.
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation, path-to-ga, outcome-graded]

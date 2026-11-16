@@ -8,7 +8,7 @@ translated from a JSON node walk + inline `flow debug` payload to an XML walk
 over the registry-driven `Intsvc.ActivityExecution` connector shell (see
 classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical
-pattern: ephemeral solution import, `bpmn debug`, `debug-instance
+pattern: ephemeral solution import, `bpmn debug`, `debug-instances
 variables-all`/`incidents`).
 
 Exits non-zero on the first failure (``FAIL: ...``); prints ``OK: ...`` per
@@ -30,12 +30,12 @@ Assertion map (Flow → BPMN):
   F check_jira_get_issue.py:52   run_debug(...) implicitly requires finalStatus == "Completed"
                                   (flow_check.run_debug raises on a non-Completed status internally;
                                   `bpmn debug` returns only an instance id, so the check is explicit here)
-                                  → FinalStatus in COMPLETED_STATUSES and debug-instance incidents is empty
+                                  → FinalStatus in COMPLETED_STATUSES and debug-instances incidents is empty
   ADDED            a Get-Issue node completed in debug ElementExecutions (Flow's payload only carries
                     outputs of nodes that ran)
   F check_jira_get_issue.py:55   assert_outputs_contain(payload, seed["summary"])
                                   → seeded summary found in the Get-Issue node's own Outputs or the root
-                                    Globals minus input echoes in `debug-instance variables-all`
+                                    Globals minus input echoes in `debug-instances variables-all`
                                     (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read back null even when
                                     mapped correctly, so the search is not scoped to a declared output)
   I                locate/parse .bpmn (file exists, well-formed XML, project directory resolved)

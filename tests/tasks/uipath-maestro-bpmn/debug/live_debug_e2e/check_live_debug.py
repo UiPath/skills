@@ -2,14 +2,14 @@
 """Runtime check for the live BPMN debug e2e.
 
 Asserts a real ``uip maestro bpmn debug`` session reached ``finalStatus ==
-Completed``, the agent inspected variables with ``debug-instance variables-all``,
+Completed``, the agent inspected variables with ``debug-instances variables-all``,
 and the authored BPMN computes ``product`` via a script task output mapping.
 
 The key CLI fact this check is built around
 -------------------------------------------
 ``uip maestro bpmn debug`` output carries only element-execution *statuses*
 (``Data.ElementExecutions[].Status``). Current live BPMN debug exposes root
-output definitions in ``debug-instance variables-all`` but has repeatedly read
+output definitions in ``debug-instances variables-all`` but has repeatedly read
 the computed root output value back as ``null`` even for registry-correct script
 task mappings. Therefore this live smoke checks the runtime surfaces that are
 currently observable, while the structural guard proves the authored script
@@ -209,7 +209,7 @@ def _run_uip(args, timeout: int, attempts: int = 2):
 
 def _read_variables_all(instance_id: str):
     return _run_uip(
-        ["maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        ["maestro", "bpmn", "debug-instances", "variables-all", instance_id],
         timeout=120,
     )
 
@@ -386,7 +386,7 @@ def main() -> None:
     #    debug session.
     print(
         "note: no product definition in saved variables evidence — attempting "
-        "live recovery via debug-instance variables-all",
+        "live recovery via debug-instances variables-all",
         file=sys.stderr,
     )
     variables_payload = None

@@ -13,7 +13,7 @@ description: |
   process-level `=bindings.<id>` `resource="Connection"` binding instead of an
   inline `connectionId`/`connectionFolderKey` pair; `flow debug`'s single
   inline-payload call becomes, per malformed input, an ephemeral solution
-  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read
+  import + `bpmn debug` + `debug-instances variables-all`/`incidents` read
   (LIVE-ADDENDUM's canonical live pattern); and the bindings/non-stub-id check
   now packs the project first (`uip maestro bpmn pack`), since BPMN
   materializes `bindings_v2.json` only at pack time, unlike Flow's compiler,

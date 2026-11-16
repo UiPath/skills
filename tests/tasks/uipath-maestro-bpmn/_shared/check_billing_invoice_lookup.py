@@ -22,7 +22,7 @@ Assertion map (Flow -> BPMN):
                                              + assert_output_value() over output_leaves() (lookup)
   I                locate/parse .bpmn; ephemeral solution init + `solution projects
                     import` + sha256 pin; `bpmn debug` returns an instance id, not
-                    inline variables; `debug-instance variables-all`/`incidents` reads
+                    inline variables; `debug-instances variables-all`/`incidents` reads
                     replace the single inline debug payload
                                           -> LIVE-ADDENDUM canonical live pattern
                                              (mirrors e2e/jira_get_issue/_shared/check_jira_get_issue.py) (lookup)

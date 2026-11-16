@@ -11,7 +11,7 @@ description: >
   instead of a Flow connector node, the weather fetch as a bpmn:sendTask
   carrying Intsvc.HttpExecution in manual (connectionless) mode targeting
   open-meteo, `flow debug`'s single-call inline payload becomes an
-  ephemeral-solution import + `bpmn debug` + `debug-instance
+  ephemeral-solution import + `bpmn debug` + `debug-instances
   variables-all`/`incidents` read, and grading of the mapped `weatherVerdict`
   output searches the root scope's variables plus every element's Outputs
   instead of one inline debug payload. The live grading criterion's timeout

@@ -19,7 +19,7 @@ description: >
   uipath-atlassian-jira`: curated objectName `curated_get_issue`, method
   GETBYID) instead of a Flow connector node, `flow debug`'s single-call
   inline payload becomes an ephemeral-solution import + `bpmn debug` +
-  `debug-instance variables-all`/`incidents` read, and grading of the fetched
+  `debug-instances variables-all`/`incidents` read, and grading of the fetched
   summary searches the root scope's variables plus every element's Outputs
   instead of one inline debug payload.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:single-node", connector, outcome-graded]
