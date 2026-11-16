@@ -205,7 +205,8 @@ success_criteria:
          `ShippingQuote: built, validated` and contains `(draft mode).`,
          and does not say `uploaded`; `, run` may follow `validated`. After
          that, the same line may hold at most one more sentence, about
-         changes kept or the canvas layout being reset.
+         changes kept, the canvas layout being reset, or canvas content
+         removed.
       2. The second line is that `/solution/...bpmn` path as plain text, and
          nothing else. A Markdown link (`[label](<path>)`) fails.
       Every other report is graded with items 1 and 2 below.
@@ -240,9 +241,8 @@ success_criteria:
     pass_threshold: 1.0
 
   # A skeleton validates too, so hold Build it to replacing every outline box.
-  # It also fails a script step `merge` left as bpmn:task, which the canvas
-  # cannot read: on Studio Web this fails until Build it stops merging type
-  # changes.
+  # It also fails a script step left as bpmn:task (what `merge` writes for a
+  # type change), which the canvas cannot read.
   - type: run_command
     description: "Build it replaced every outline box with a typed step: no bare bpmn:task, and no script step left as bpmn:task"
     command: "python3 $REFERENCE_DIR/_shared/check_no_outline_boxes.py ShippingQuote"
