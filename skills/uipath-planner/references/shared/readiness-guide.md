@@ -10,8 +10,8 @@ Every genome `author`, `extract` and `edit` write gets a readiness file beside i
 
 1. **Written after the strict check of every write**, before edits are offered — `author` Step 8, `extract` Step 7, `edit` § Review after every edit — attended or unattended, for a documentation request too. The header states the check's result — each `FAIL` left after the third round named there, for a `uipath-planner` fix before the build — what gets built and handed over, and how many items are needed before the build, by section; the Contents under it link every section with its counts.
 2. **Rewritten on every later write, its answers kept.** An item keeps its answer or change, and a section its `Confirmed:` line, matched by what it asks (the defect, the question, the object, the system, the topic), never by its number. An item the genome no longer raises leaves the file, unless it carries an answer or a change, which stays as the record of the decision; a new item comes in blank, and under a filled `Confirmed:` line it opens with `New since confirmed`, which that line does not cover. Architecture decisions and Build setup are `uipath-genome`'s: a rewrite keeps them as they stand.
-3. **Applied answers are marked.** `edit`'s "Apply the readiness answers" adds under each item it writes into the genome — an answer or a change of Material to supply, Business decisions or Architecture decisions, a confirmed recommendation that differs from what the genome builds now, and a line of Architecture decisions' Edits for `uipath-planner` — `Applied <YYYY-MM-DD>`, or `Not applied: <why>` when the edit cannot make it.
-4. **Written for a person filling it in a text editor**, who has read neither the genome nor this skill: plain words; no tables, every item a block of labelled lines as the template lays them out; components by their Components names, source objects by the names their author wrote, never by an id or a line. Each item of Material to supply and Business decisions has a `Where:` line naming its step as `step <N>, <step name>` (the genome section for a point no step holds).
+3. **Applied answers are marked.** `edit`'s "Apply the readiness answers" adds under each item it writes into the genome — an answer or a change of Material to supply, Business decisions or Architecture decisions, a confirmed recommendation that differs from what the genome builds now, and a line of Architecture decisions' Edits for `uipath-planner` — `Applied <YYYY-MM-DD>: <what it wrote>` (`the Recommended option` for an accepted one), or `Not applied: <why>` when the edit cannot make it.
+4. **Written for a person filling it in a text editor**, who has read neither the genome nor this skill: plain words; no tables, every item a block of labelled lines as the template lays them out, each label in bold, one `Context:` line per item, one option per `Instead:` line, every line in short sentences, a pointer into the genome on a line of its own (`Where:`, `See:`, `Recorded in:`); components by their Components names, source objects by the names their author wrote, in plain text, never by an id or a line; backticks only for a name a person types or searches for (a queue, an asset, a file, a package). Each item of Material to supply and Business decisions has a `Where:` line naming its step as `step <N>, <step name>` (the genome section for a point no step holds).
 5. **Every item says what a blank costs**, in one of three forms:
    - **A default:** the item states it — `Recommended:` for the option the build or this guide recommends, `Default:` for a question's default, `Builds now:` for what the genome builds today, `Reading:` for an inferred point — with `Instead:` for each other option, and ends on `Change:`. A filled `Change:` is the item's answer.
    - **Needed:** an item with no default the build can run with — without its answer the build stops or asks, or builds a placeholder or an empty setting the run stops on — ends on `Answer:`, after an `Until answered:` line saying which.
@@ -101,27 +101,27 @@ Usually answered by: each system's owner.
 
 ### <System>
 
-- Reached through: <screens | API or connector | database | files | mail>
-- The build uses it for: <what the build does with it>
-- To arrange: <an instance or endpoint the build may reach; the account of each credential asset that signs in to it; a connection's identity; network access; machine prerequisites>
-- Status:
+- **Reached through:** <screens | API or connector | database | files | mail>
+- **The build uses it for:** <what the build does with it>
+- **To arrange:** <an instance or endpoint the build may reach; the account of each credential asset that signs in to it; a connection's identity; network access; machine prerequisites>
+- **Status:**
 
 ## 3. Existing projects
 
 Usually answered by: the engineer.
 
-Confirmed:
+**Confirmed:**
 
 1. **<Component>: a project of it an earlier build made**
-   - Default: none — the build makes a new project
-   - Change: <its path>
+   - **Default:** none — the build makes a new project
+   - **Change:** <its path>
 
 ## 4. Build environment
 
 Usually answered by: the engineer, with the tenant admin.
 
 1. **<What to make available>** — <what the build needs it for>
-   - Status:
+   - **Status:**
 
 ## 5. Build setup
 
@@ -135,35 +135,35 @@ Usually answered by: the customer's delivery lead or centre of excellence.
 
 The standards the build follows beyond the genome; each defaults to the building skills' own practice. A standards document named in item 1 is read as preferences; the items below then hold only what it leaves out.
 
-Confirmed:
+**Confirmed:**
 
 1. **Standards document**: a path or link to the customer's development standards; default: none.
-   - Change:
+   - **Change:**
 2. **Naming**: projects, workflows, arguments and variables, Object Repository screens and elements, queues and assets.
-   - Change:
+   - **Change:**
 3. **Project structure**: the template projects start from (REFramework, a company template), libraries per application or per module, the folder layout.
-   - Change:
+   - **Change:**
 4. **Logging**: levels, what each workflow logs (its start and end, business milestones), the fields of a log line, what must never be logged.
-   - Change:
+   - **Change:**
 5. **Error handling**: where business and system exceptions are raised, retries, screenshots on failure.
-   - Change:
+   - **Change:**
 6. **UI automation**: application state checks, selector rules, Object Repository use.
-   - Change:
+   - **Change:**
 7. **Code**: XAML or coded workflows, expression language, annotations, the workflow analyzer rule set.
-   - Change:
+   - **Change:**
 8. **Testing**: test cases per workflow, test data, what a test must cover.
-   - Change:
+   - **Change:**
 9. **Packaging and versioning**: the version scheme, release notes, the feed each package goes to.
-   - Change:
+   - **Change:**
 
 ## 7. Material to supply
 
 Usually answered by: whoever holds the source and its documents.
 
 1. **<What to supply>**
-   - Where: <where the genome names it>
-   - Until answered: <what the build does — a placeholder, a stop>
-   - Answer:
+   - **Where:** <where the genome names it>
+   - **Until answered:** <what the build does — a placeholder, a stop>
+   - **Answer:**
 
 ## 8. Configuration values
 
@@ -171,17 +171,17 @@ Usually answered by: the environment's owners, with the engineer.
 
 ### <Process, or the component>
 
-Confirmed:
+**Confirmed:**
 
 <N>. **<the question as the genome writes it, whole>**
-   - Kind: <setting | constant>
-   - Default: <default>
-   - Change:
+   - **Kind:** <setting | constant>
+   - **Default:** <default>
+   - **Change:**
 
 <N>. **<a question whose default the build cannot run with>**
-   - Kind: <setting | constant>
-   - Until answered: <built as an empty setting the run stops on>
-   - Answer:
+   - **Kind:** <setting | constant>
+   - **Until answered:** <built as an empty setting the run stops on>
+   - **Answer:**
 
 ## 9. Business decisions
 
@@ -193,37 +193,37 @@ Usually answered by: the process owner.
 
 #### <Component>
 
-Confirmed:
+**Confirmed:**
 
 1. **<The decision in a few words>**
-   - Where: step <N>, <step name>
-   - Builds now: <what the genome builds, which stays until you rule: the source's behaviour, or the fix the rebuild makes>
-   - Affects: <the business outcome — what is written, sent, to whom, for which item>
-   - Instead: <the other option, with what it gives>
-   - Change:
+   - **Where:** step <N>, <step name>
+   - **Builds now:** <what the genome builds, which stays until you rule: the source's behaviour, or the fix the rebuild makes>
+   - **Affects:** <the business outcome — what is written, sent, to whom, for which item>
+   - **Instead:** <the other option, with what it gives>
+   - **Change:**
 
 ### 9b. How a run behaves
 
 #### <Component>
 
-Confirmed:
+**Confirmed:**
 
 1. **<The point in a few words>**
-   - Where: step <N>, <step name>; step <N>, <step name>
-   - Recommended: <the evident intent, in words — "retries every failure three times", never only "the evident intent">
-   - Builds now: <the source's behaviour, when the genome builds it until you confirm>
-   - Change:
+   - **Where:** step <N>, <step name>; step <N>, <step name>
+   - **Recommended:** <the evident intent, in words — "retries every failure three times", never only "the evident intent">
+   - **Builds now:** <the source's behaviour, when the genome builds it until you confirm>
+   - **Change:**
 
 ### 9c. The genome's readings
 
 #### <Component>
 
-Confirmed:
+**Confirmed:**
 
 1. **<The reading in a few words>**
-   - Where: step <N>, <step name>
-   - Reading: <what the genome takes it to be, and why it is inferred>
-   - Change:
+   - **Where:** step <N>, <step name>
+   - **Reading:** <what the genome takes it to be, and why it is inferred>
+   - **Change:**
 
 Checked against the application at build:
 - <step <N>, <step name>: the reading — a label, a window title, a position>
@@ -233,5 +233,5 @@ Checked against the application at build:
 The source states what each was meant to do, and the rebuild does that. Name any the rebuild should keep as the source does.
 
 - <Component>, step <N>, <step name>: <the defect in a few words> — the rebuild <what it does instead>
-- Change:
+- **Change:**
 ````

@@ -9,7 +9,7 @@
 4a. **Look for libraries earlier work deployed** to the tenant feed, through the owning skill's tenant library search, its keywords the genome's library components and the capabilities of step 4; its candidates are options, never a question. Install each candidate in the scratch project and read its activities: a deployed library that holds a library component's public workflows, or a capability, is an option of the decision that component or capability falls under, by package id and version, with the workflows it lacks and the arguments that differ from the genome's Interface — Recommended for a library component when it lacks no workflow.
 5. **Write the Architecture decisions section**, in place of its "Not prepared yet" line, as § The Architecture decisions section states.
 6. **Write the Build setup section**, in place of its line: every other selected question, grouped by topic (rule 1). A first line names the date and the machine's facts the options rest on, those alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found. An application's prerequisites are the Systems and applications section's, which `prepare` leaves as it stands; the line never names a signed-in account, a user name or a tenant URL, since the file travels with the genome.
-7. **Every question** in both sections is worded as rules 2–2b state, in the readiness file's item form, a block of labelled lines: the question in bold; the `Context:` lines rule 2a gives; `Recommended:` the Recommended option with what it gives; `Instead:` each other option with what it gives; `Change:`. A question with no option the build can recommend (a path only the user knows) ends instead on `Until answered:` — what the build does while it stays open — and `Answer:`. Each section opens with a `Confirmed:` line. These two sections, and the counts the file's header and Contents give for them, are the only parts of the file `prepare` writes.
+7. **Every question** in both sections is worded as rules 2–2b state, in the readiness file's item form, a block of labelled lines, each label in bold and every line in short sentences: the question in bold; one `Context:` line with the facts rule 2a names; `See:` the genome sections they rest on; `Recommended:` the Recommended option with what it gives; `Instead:` one line per other option, with what it gives; `Change:`. Backticks hold only a name a person types or searches for (a queue, an asset, a file, a package); components and source objects are written plain. A question with no option the build can recommend (a path only the user knows) ends instead on `Until answered:` — what the build does while it stays open — and `Answer:`. Each section opens with a `Confirmed:` line. These two sections, and the counts the file's header and Contents give for them, are the only parts of the file `prepare` writes.
 8. **Build nothing:** no project or install but the scratch project of step 4, no tenant write, no question asked. End by naming the file, how many decisions and questions the two sections hold, and how many of them are needed.
 
 ## The Architecture decisions section
@@ -21,7 +21,7 @@ The decisions that shape what gets built, each with the build's proposal: the Re
 3. **Technology per capability** — one decision per capability the automation uses, in the order step 4 lists them: `Today:` how the source does it (the application, the client, the protocol), as the genome states it; `Recommended:` the owning skill's way — the activity package, connector or API by name; `Instead:` each alternative with when it fits (for mail: Microsoft 365 activities over Graph, the desktop Outlook activities, IMAP and SMTP). A migration keeps the source's technology unless an option names a gain the source never had and what it requires (a connection, a licence, an app registration); a choice a Configuration Question already asks is named there, never asked twice.
 4. **Other decisions** — Target framework, Settings store, Workflow type, Source fidelity, Log target and, in a refactor, the refactor questions.
 
-Each decision has a `Recorded in:` line naming the genome section that states its subject — the flow's `Decided:` line, the Target Applications row of the component that uses a capability, Deployment's Runtime and machines or Logging and retention bullet — or `the build` when no section does: `uipath-planner`'s "Apply the readiness answers" writes the answer there. Lines are one or two sentences, names in backticks, a split option's letter only beside its meaning. **A gap preparing finds in the genome** — a requirement of the source's platform written as the target's, a handoff the target runs another way, a fact the build cannot read — is a line of the section's closing block, `Edits for uipath-planner`, which is left out when there is none: where the genome states it, what is wrong, and the fact that shows it. `prepare` edits no genome ([SKILL.md](../SKILL.md) Critical Rule 2): "Apply the readiness answers" makes each line, and a build hands any line not yet applied to `uipath-planner` first.
+Each decision has a `Recorded in:` line naming the genome section that states its subject — the flow's `Decided:` line, the Target Applications row of the component that uses a capability, Deployment's Runtime and machines or Logging and retention bullet — or `the build` when no section does: `uipath-planner`'s "Apply the readiness answers" writes the answer there. A split option's letter appears only beside its meaning. **A gap preparing finds in the genome** — a requirement of the source's platform written as the target's, a handoff the target runs another way, a fact the build cannot read — is a line of the section's closing block, `Edits for uipath-planner`, which is left out when there is none: where the genome states it, what is wrong, and the fact that shows it. `prepare` edits no genome ([SKILL.md](../SKILL.md) Critical Rule 2): "Apply the readiness answers" makes each line, and a build hands any line not yet applied to `uipath-planner` first.
 
 `prepare` run again keeps every change and the `Confirmed:` line; drops each decision whose question the genome now answers ([configuration-questions-guide.md](configuration-questions-guide.md) rule 5, the decided-values table), unless it carries a change, which stays as the record of the decision, and each edit line marked applied; and redraws a decision whose Recommended option rests on an answer since changed (a settings store that names the template a change removed), opening it with `New since confirmed`, which the `Confirmed:` line no longer covers.
 
@@ -32,43 +32,48 @@ Usually answered by: the engineer, with the customer's architect.
 
 Prepared <YYYY-MM-DD> by `uipath-genome` `prepare`. What gets built is the genome's Process Map and Components; what it replaces, the Source Map. Each decision carries the build's proposal: confirm it, or change it.
 
-Confirmed:
+**Confirmed:**
 
 ### Processes and their work items
 
 1. **<The split question in plain words>**
-   - Context: <the flow, and the facts of its As-is the answer rests on>
-   - Recommended: <the option, with what it gives and why it fits this genome>
-   - Instead: <each alternative, with what it gives>
-   - Recorded in: <the flow's `Decided:` line>
-   - Change:
+   - **Context:** <the flow, and the facts of its As-is the answer rests on>
+   - **See:** <the genome sections the context rests on>
+   - **Recommended:** <the option, with what it gives and why it fits this genome>
+   - **Instead:** <one alternative, with what it gives>
+   - **Instead:** <the next alternative, one line each>
+   - **Recorded in:** <the flow's `Decided:` line>
+   - **Change:**
 
 ### Libraries and reusable parts
 
 <n>. **<The Library layout question>**
-   - Context: <the libraries, and the source units each is built from>
-   - Recommended: …
-   - Instead: …
-   - Recorded in: the build
-   - Change:
+   - **Context:** <the libraries, and the source units each is built from>
+   - **See:** <the genome sections the context rests on>
+   - **Recommended:** …
+   - **Instead:** <one alternative per line>
+   - **Recorded in:** the build
+   - **Change:**
 
 ### Technology per capability
 
 <n>. **<Capability>: how should the automation <do it>?**
-   - Today: <how the source does it>
-   - Recommended: <the owning skill's way>
-   - Instead: <an alternative, with when it fits>
-   - Recorded in: <the component's Target Applications row>
-   - Change:
+   - **Today:** <how the source does it>
+   - **Recommended:** <the owning skill's way>
+   - **Instead:** <one alternative per line, with when it fits>
+   - **Recorded in:** <the component's Target Applications row>
+   - **Change:**
 
 ### Other decisions
 
 <n>. **<The question in plain words>**
-   - Context: <the facts the answer rests on>
-   - Recommended: <the option, with what it gives>
-   - Instead: <each alternative, with what it gives>
-   - Recorded in: <the genome section, or the build>
-   - Change:
+   - **Context:** <the facts the answer rests on>
+   - **See:** <the genome sections the context rests on>
+   - **Recommended:** <the option, with what it gives>
+   - **Instead:** <one alternative, with what it gives>
+   - **Instead:** <the next alternative, one line each>
+   - **Recorded in:** <the genome section, or the build>
+   - **Change:**
 
 ### Edits for `uipath-planner`
 
