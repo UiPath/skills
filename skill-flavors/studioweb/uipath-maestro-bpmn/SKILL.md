@@ -86,7 +86,8 @@ When a reference tells you to run a command that is not available, use the Studi
    `bpmn validate` accepts both. Studio Web ships its own SDK: an older one refuses the
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
-   `refresh` and `validate`, in that order ([Validation loop](#validation-loop)).
+   `refresh` and `validate`, in that order ([Validation loop](#validation-loop)),
+   except on *Build it* after a draft gate, which compiles over the target.
    Lay out the diagram only when they report a missing diagram or shape. Exactly
    one `<Name>.bpmn` exists in the project: the target. Only an empty target and
    *Build it* after a draft gate compile straight over it.

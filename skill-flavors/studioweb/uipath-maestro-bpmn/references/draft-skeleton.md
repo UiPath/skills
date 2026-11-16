@@ -42,5 +42,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  Finish by the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule.
+  Do not `merge`: it keeps each box's `bpmn:task` tag. Compile straight over the target, then run `format`, `refresh` and `validate`, as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says.
 <!--skill-flavor:draft-build-merge:end-->
