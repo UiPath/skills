@@ -27,7 +27,7 @@ def _outside_flavor_blocks(text: str) -> str:
 def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None:
     text = _outside_flavor_blocks((REFS / "gate-reply-template.md").read_text())
     assert "`validate` reported `Status: Valid` on the target `.bpmn` and the target contains" in text
-    assert "When a turn resumes after an interruption that came after you wrote this reply" in text
+    assert "When a turn carries no new user instruction and only resumes after an interruption that came after you wrote this reply" in text
     assert "the two candidates ending in `which one?`" in text
     assert "the target contains `<bpmn:task id=\"<id>\"` for every box's `.task()` id; `merge`'s counts cannot show this" in text
     assert "On a *Change it* round, also find each changed box's new `name`." in text
@@ -44,7 +44,7 @@ def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
 def test_skill_step_9_reads_the_report_template() -> None:
     text = _outside_flavor_blocks((REFS.parent / "SKILL.md").read_text())
     assert "read it in full once `validate` passes or fails only that way, before any upload" in text
-    assert "A turn that resumes after an interruption that came after the report or a gate reply was written resends that message unchanged and whole" in text
+    assert "Resume only: when the turn carries no new user instruction and only continues after an interruption that came after the report or a gate reply was written" in text
 
 
 def test_studio_web_merges_against_the_seeded_baseline() -> None:
@@ -59,4 +59,4 @@ def test_studio_web_merges_against_the_seeded_baseline() -> None:
 
 def test_final_report_survives_a_resume() -> None:
     text = _outside_flavor_blocks((REFS / "final-report-template.md").read_text())
-    assert "When a turn resumes after an interruption that came after you wrote this report" in text
+    assert "When a turn carries no new user instruction and only resumes after an interruption that came after you wrote this report" in text

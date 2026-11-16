@@ -66,7 +66,7 @@ On a *Change it* round, also find each changed box's new `name`.
 When a box is missing, run the [Steps](draft-skeleton.md#steps) loop into the target once more (upload again when this turn uploaded) and search again; when one is still missing, send no gate reply and tell the user in one sentence that the outline did not reach the process file.
 <!--skill-flavor:gate-retry:end-->
 Send this reply as your final message and end the turn.
-When a turn resumes after an interruption that came after you wrote this reply, send that reply again, unchanged and whole, as this turn's final message.
+When a turn carries no new user instruction and only resumes after an interruption that came after you wrote this reply, send that reply again, unchanged and whole, as this turn's final message; any new user message is a normal turn.
 Ask the gate question in the message, not with a pick-list or question tool: a pending question keeps the turn open, and Studio Web locks the canvas while a turn runs, so the user could not review the shape they are asked to approve.
 The user answers in their next message, with a number, an option name, or the change they want.
 Never leave the outline only in your reasoning: a user who sees only the question cannot judge the shape.
