@@ -12,7 +12,7 @@ from pathlib import Path
 import jira_is
 
 tag = secrets.token_hex(4)
-conn = jira_is.connection_id()
+conn = jira_is.require_connection()
 keys = [jira_is.create_issue(conn, f"coder-eval jira search-triage {tag} #{n}") for n in (1, 2)]
 seed = {
     "tag": tag,
