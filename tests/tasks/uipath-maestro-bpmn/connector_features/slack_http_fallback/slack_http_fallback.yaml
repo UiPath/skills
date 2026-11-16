@@ -13,7 +13,7 @@ description: >
   (targetConnector uipath-salesforce-slack) targeting the emoji.list endpoint
   (v2-connector-nodes.md "HTTP requests"),
   `flow debug`'s single-call inline payload becomes an ephemeral-solution
-  import + `bpmn debug` + `debug-instances incidents` read, and the check_debug
+  import + `bpmn debug` + `debug-instance incidents` read, and the check_debug
   criterion's timeout is raised from Flow's 720s to 930s to cover the extra
   CLI steps (`solution init`/`solution projects import`, a separate
   `incidents` read) that BPMN's live surface needs beyond Flow's single

@@ -6,7 +6,7 @@ adapted to the BPMN CLI surface the way ``e2e/customer_escalation_triage/``'s
 ``check_customer_escalation_behavior.py`` adapted the sibling Flow live check:
 Flow's ``flow debug`` returns variables inline and addresses outputs by name;
 ``uip maestro bpmn debug`` returns an instance id whose evidence comes from
-``debug-instances variables-all``/``incidents``, with runtime variables
+``debug-instance variables-all``/``incidents``, with runtime variables
 addressed by id. No Slack step here — Flow's ``escalation_jira_ticket`` task
 has none either (unlike ``customer_escalation_triage``, which is a different,
 Jira+Slack scenario); only Flow's Jira assertions are ported.

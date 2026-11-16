@@ -1,6 +1,6 @@
 """The debug tasks accept both spellings of the debug-instance command group.
 
-uipcli#5251 (uip 1.205.0) renamed `maestro bpmn debug-instance` to
+uipcli#5251 (uip 1.206.0) renamed `maestro bpmn debug-instance` to
 `debug-instances` and kept the singular as a Commander alias. Studio Web run
 `2026-11-16_09-25-49` scored agents zero for running the plural: the graders
 matched only the singular, and the mocks answered it with `{}`. Each grader must
@@ -61,6 +61,7 @@ INSPECTIONS = [
     (_WORKFLOW, "inspected the debug instance's runtime variables", "variables-all debug-run-042"),
     (_LIVE, "inspected the debug instance's runtime variables", 'variables-all "$INSTANCE_ID"'),
     (_LIVE, "inspected the debug instance's runtime variables", "variables 7c1e-instance"),
+    (_LIVE, "inspected the debug instance's runtime variables", 'variables-all --output json "$INSTANCE_ID"'),
 ]
 
 
@@ -78,6 +79,10 @@ def test_inspection_counts_either_spelling(task: str, criterion: str, tail: str,
         "uip maestro bpmn debug-instancesX variables-all 7c1e-instance",
         "uip maestro bpmn instances variables 7c1e-instance --folder-key f",
         "uip maestro bpmn debug ProductCalc --output json",
+        "uip maestro bpmn debug-instances variables-all > out.json",
+        "uip maestro bpmn debug-instances variables-all 2>&1 | head",
+        "uip maestro bpmn debug-instances variables-all ; uip maestro bpmn debug x",
+        'uip maestro bpmn debug-instances variables "--help"',
     ],
 )
 def test_live_inspection_ignores_help_and_other_verbs(command: str) -> None:
@@ -91,9 +96,21 @@ def test_no_operate_guard_catches_both_spellings(group: str, op: str) -> None:
     assert _hits(guard, f"uip maestro bpmn {group} {op} debug-fault-777 --output json")
 
 
-def test_no_operate_guard_allows_reads() -> None:
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip maestro bpmn debug-instances variables debug-fault-777 --output json",
+        "uip maestro bpmn instances retry --help",
+        "uip maestro bpmn debug-instances cancel -h",
+    ],
+)
+def test_no_operate_guard_allows_reads(command: str) -> None:
+    assert not _hits(_pattern(_INSPECT, "did not operate the debug instance"), command)
+
+
+def test_no_operate_guard_still_counts_a_chained_operation() -> None:
     guard = _pattern(_INSPECT, "did not operate the debug instance")
-    assert not _hits(guard, "uip maestro bpmn debug-instances variables debug-fault-777 --output json")
+    assert _hits(guard, "uip maestro bpmn debug-instances continue debug-fault-777; uip maestro bpmn debug-instances --help")
 
 
 MOCK_READS = [

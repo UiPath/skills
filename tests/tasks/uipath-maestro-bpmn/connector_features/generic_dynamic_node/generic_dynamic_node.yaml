@@ -26,11 +26,11 @@ description: >
   operation/method — registry-confirmed via `registry get ... --object-name
   acr_user`) instead of a Flow connector node with a node-type slug,
   `flow debug`'s single-call inline payload becomes an ephemeral-solution
-  import + `bpmn debug` + `debug-instances variables-all`/`incidents` read, and
+  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read, and
   the array-output check reads the declared process output's Global, falling
   back to the list node's own Outputs only when every output reads back null. The live-check criterion timeout is raised from Flow's 720s to
   1050s: the BPMN sequence adds ephemeral solution init/import and two
-  separate `debug-instances` reads that flow's single inline `flow debug` call
+  separate `debug-instance` reads that flow's single inline `flow debug` call
   did not need (see check_generic_dynamic_node.py's budget comment) — the one
   sanctioned deviation from "criteria identical" per LIVE-ADDENDUM, since the
   budget is a property of the CLI surface, not of what is graded.

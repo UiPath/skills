@@ -176,7 +176,7 @@ def check_debug() -> None:
     print(f"OK: debug completed (instance {instance_id})")
 
     incidents = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instances", "incidents", instance_id],
+        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
         timeout=INCIDENTS_TIMEOUT,
     )
     _payload, incidents_data = payload_data(incidents, "incidents")

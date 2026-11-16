@@ -13,7 +13,7 @@ debug` payload becomes an XML scan for a `bpmn:scriptTask` element (the
 classic/skills/uipath-maestro-bpmn/references/structural-bpmn.md "Script tasks --
 Jint authoring contract") plus the BPMN live-debug surface
 (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical pattern: ephemeral
-solution import, `bpmn debug`, `debug-instances variables-all`/`incidents`).
+solution import, `bpmn debug`, `debug-instance variables-all`/`incidents`).
 The canonical live grader this file's plumbing is modeled on is
 `_shared/check_jira_get_issue.py`.
 
@@ -39,14 +39,14 @@ Assertion map (Flow -> BPMN):
                                   `bpmn debug` returns only an instance id, so the
                                   check is explicit here)
                                   -> FinalStatus in COMPLETED_STATUSES and
-                                     debug-instances incidents is empty
+                                     debug-instance incidents is empty
   F check_dice_runs_simulated.py:24  assert_output_int_in_range(payload, 1, 6)
                                   -> first whole-integer leaf in [1, 6] (an int,
                                      or a string that is only an integer; Flow's
                                      digit-run regex would read `7.5` as 5) over
                                      the root scope's Globals AND every
                                      element's Outputs in
-                                     `debug-instances variables-all`
+                                     `debug-instance variables-all`
                                      (LIVE-ADDENDUM: a root PUBLIC OUTPUT has read
                                      back null even when mapped correctly, so the
                                      search is not scoped to one declared output

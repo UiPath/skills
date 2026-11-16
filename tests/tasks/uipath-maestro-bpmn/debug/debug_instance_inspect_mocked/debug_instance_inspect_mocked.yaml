@@ -2,7 +2,7 @@ task_id: skill-bpmn-debug-instance-inspect
 description: >
   Skill-guided diagnosis of a FAULTED Maestro BPMN debug instance against a
   mocked `uip` CLI. Given a debug-session instance id, the agent must use the
-  `debug-instances` inspection ladder (incidents, then variables/variables-all)
+  `debug-instance` inspection ladder (incidents, then variables/variables-all)
   rather than the production `instance` verbs, and must not operate (retry /
   cancel) a debug instance. It identifies the faulting element id and the
   offending variable value in a written summary; both are only obtainable from
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not operate the debug instance (retry/cancel/continue) or a deployed instance"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(instances?|debug-instances?)\s+(retry|cancel|continue)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(instances?|debug-instances?)\s+(retry|cancel|continue)(?![^;&|\n]*\s(-h|--help)(\s|$))'
     weight: 3.0
     pass_threshold: 1.0
 

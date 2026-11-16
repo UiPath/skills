@@ -4,12 +4,12 @@
 Ported from Flow `e2e/escalation_orchestrator_paths/check_escalation_orchestrator_paths.py`:
 same seven seeded cases (Sev1/Sev2/Sev3 escalation + four triage reasons), same
 graded behaviours, translated from `flow debug`'s inline-variable payload to
-`bpmn debug`'s instance-id + `debug-instances variables-all` surface (see
+`bpmn debug`'s instance-id + `debug-instance variables-all` surface (see
 `_shared/bpmn_live.py` and the LIVE-tier addendum this port followed).
 
 Outcome-based: for every case the grader runs `uip maestro bpmn debug --inputs`
 against ONE ephemeral-solution import of the exact submitted project, then reads
-`debug-instances variables-all` for the expected values. For cases flagged
+`debug-instance variables-all` for the expected values. For cases flagged
 `expect_slack`, it additionally requires the completed Slack sendTask's OWN
 runtime response to carry a real message timestamp — Slack only returns one
 when a message is really delivered, not merely reached.
@@ -433,7 +433,7 @@ def verify_case(contract: Contract, imported_project: Path, case: dict) -> dict:
         )
 
     variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instances", "variables-all", _instance_id],
+        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", _instance_id],
         timeout=VARIABLES_ALL_TIMEOUT,
     )
     _payload, variables_data = payload_data(variables, f"{case['name']}: variables-all")

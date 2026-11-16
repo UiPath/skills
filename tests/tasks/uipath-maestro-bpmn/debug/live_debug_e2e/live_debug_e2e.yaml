@@ -4,7 +4,7 @@ description: >
   deterministic BPMN project (manual start, one Jint script task that computes
   the product of the constants 6 and 7 into a `product` variable, an end
   event), runs a live `uip maestro bpmn debug` session against Studio Web, and
-  inspects runtime variables via `debug-instances variables-all`. The agent
+  inspects runtime variables via `debug-instance variables-all`. The agent
   saves the raw variables-all output to `debug-evidence/`, and the check asserts
   the debug run reached finalStatus Completed, the variables API exposed the
   `product` output definition, and the authored BPMN computes 42 through a
@@ -81,7 +81,7 @@ initial_prompt: |
   IMPORTANT: the debug command output reports element-execution statuses only —
   it does NOT contain variable values. All elements showing Completed does not
   inspect process variables. Read the runtime variable payload separately using
-  the skill's debug-instances inspection commands (the skill teaches which
+  the skill's debug-instance inspection commands (the skill teaches which
   command and how).
 
   Save the raw CLI output so the result can be verified independently:
@@ -113,7 +113,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inspected the debug instance's runtime variables"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instances?\s+variables(-all)?\s+["'']?(?!-)\S'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instances?\s+variables(-all)?(?![^;&|\n]*\s(-h|--help)(\s|$))(\s+--output\s+\S+)?\s+["'']?(?!\d*[<>])[\w${]'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -6,7 +6,7 @@ description: >
   real Slack alert. The grader imports the exact submitted project (sha256
   pinned) into an ephemeral solution, runs one seeded Sev1 case (unique
   correlationId) via `uip maestro bpmn debug`, reads the runtime evidence via
-  `debug-instances variables-all`/`incidents`, and verifies the OUTCOME by
+  `debug-instance variables-all`/`incidents`, and verifies the OUTCOME by
   re-reading the created key from Jira: the issue exists and its summary
   carries the seeded correlationId — proof the process created THIS run's
   records, not fabricated identifiers. Created records are cleaned up from a

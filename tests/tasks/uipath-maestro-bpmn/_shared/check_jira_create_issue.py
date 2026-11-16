@@ -9,7 +9,7 @@ then exposes the new issue's key), translated from a JSON node walk + inline
 `Intsvc.ActivityExecution` connector shell (see
 classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's
-canonical pattern: ephemeral solution import, `bpmn debug`, `debug-instances
+canonical pattern: ephemeral solution import, `bpmn debug`, `debug-instance
 variables-all`/`incidents`).
 
 Exits non-zero on the first failure (``FAIL: ...``); prints ``OK: ...`` per
@@ -47,14 +47,14 @@ Assertion map (Flow -> BPMN):
                                     debug` returns only an instance id, so the check is
                                     explicit here)
                                     -> FinalStatus in COMPLETED_STATUSES and
-                                       debug-instances incidents is empty
+                                       debug-instance incidents is empty
   F check_jira_create_issue.py:58-61  candidate issue keys: clean output leaves
                                     (`collect_outputs(payload)`) + a project-scoped
                                     regex scan of the raw debug payload
                                     (`get_last_debug_raw()`)
                                     -> collect_candidate_keys(): the same project-scoped
                                        regex, narrowed to the Create-Issue element(s)'
-                                       own Outputs in `debug-instances variables-all`, so
+                                       own Outputs in `debug-instance variables-all`, so
                                        no other CE issue key reaches the journal
   F check_jira_create_issue.py:62-63  no candidate keys -> fail
                                     -> same

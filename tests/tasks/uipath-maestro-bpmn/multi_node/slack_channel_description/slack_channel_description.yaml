@@ -11,7 +11,7 @@ description: >
   `uip is activities list uipath-salesforce-slack`: curated GetConversationInfo,
   objectName ConversationsInfo_GET, method GETBYID) instead of a Flow connector
   node, `flow debug`'s single-call inline payload becomes an ephemeral-solution
-  import + `bpmn debug` + `debug-instances variables-all`/`incidents` read, and
+  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read, and
   grading of the retrieved description searches the root scope's variables
   plus every element's Outputs instead of one inline debug payload. The live
   grading criterion's timeout is raised from Flow's 600s to 1050s to cover the

@@ -215,9 +215,9 @@ end event's `Outputs` in that response, not by `Globals`: a value set in
 `Globals` that the end event does not map reaches the caller as `null`.
 
 ```bash
-uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
-uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 ```
 <!--skill-flavor:debug-run:end-->
 

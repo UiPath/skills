@@ -5,7 +5,7 @@ description: >
   a Maestro BPMN Process Orchestration project, deploys, and wires the BPMN
   to invoke that resource at run time. The grader mints a fresh token,
   drives the deployed process live via `uip maestro bpmn debug`, and
-  verifies per-node provenance in `debug-instances variables-all` -- the
+  verifies per-node provenance in `debug-instance variables-all` -- the
   token must round-trip through the resource's OWN invoking node, not a
   ScriptTask standing in for it. See composition.py/check_shape.py/
   check_behavior.py in this directory for the full anti-cheat rationale.
@@ -99,7 +99,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Behaviour: a freshly minted token round-trips live through the deployed process and specifically through the API workflow's own invoking node (per-node provenance in debug-instances variables-all)"
+    description: "Behaviour: a freshly minted token round-trips live through the deployed process and specifically through the API workflow's own invoking node (per-node provenance in debug-instance variables-all)"
     command: "python3 $REFERENCE_DIR/e2e/api_workflow_composition/check_behavior.py"
     timeout: 900
     expected_exit_code: 0
