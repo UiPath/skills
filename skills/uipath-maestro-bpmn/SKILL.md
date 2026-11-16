@@ -19,7 +19,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 1. Edit the `<Name>.bpmn.ts` source, never the compiled `.bpmn`: the next `compile` overwrites a hand edit, so change the source and rebuild.
 2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (Workflow step 4).
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (Workflow step 4).
-4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (Workflow step 5).
+4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (Workflow step 5). `check` lints the SDK source only; it never replaces `validate`.
 5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (Workflow steps 6–7).
    After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 6. A different target system (Document Understanding → agent, Outlook → Gmail) changes a node's type and binding, not the graph; reshape only when the process differs.
@@ -27,6 +27,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 8. A process given as an image is transcribed 1:1, every item a node and every connector a flow, from a confirmed inventory: read [Authoring from an image](references/image-transcription-guide.md) first.
 9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
 10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
+11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in the `BPMN.Variables` payload of every end event that finishes the process (root scope, not a sub-process body); a task that writes an `.output()` directly returns `null` to the caller, and every check passes ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
 
 <!--skill-flavor:host-setup:start-->
 
@@ -88,6 +89,7 @@ A discovery-only request (discover types or save registry evidence, no authoring
    | `A/B/C.bpmn` (file named apart from its directory) | `A/B` | `uip maestro bpmn init C --path A/B --output json` |
    | nothing named | `Data.Path` | `uip maestro bpmn init <Name> --output json`, as above |
 
+   When `init` answers `error: unknown option '--path'` (an older CLI), run the row's command without `--path` in a new empty directory, move the project files it writes into the project directory, and register it with `uip solution projects add <PROJECT_DIR> --output json` when a solution holds it; never copy them beside an existing `<Name>.bpmn` of the user's, which stays the original to edit.
    `--path` uses the directory as given and creates it, and any missing parents, when it does not exist; `init` writes `<Name>.bpmn` there, named after the project, not after the directory.
    It scaffolds no `<Name>Solution`: the project is registered in a solution only when a parent directory already holds a `.uipx`, and `--skip-solution-registration` stops even that when the project does not belong in it.
    The directory may already hold unrelated files (`package.json`, `.git`, notes), but `init` refuses one that holds a project file (`project.uiproj`, `project.json`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json` or `<Name>.bpmn`, matched case-insensitively).

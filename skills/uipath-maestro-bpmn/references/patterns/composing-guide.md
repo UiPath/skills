@@ -170,7 +170,7 @@ export default bpmn('claims-nightly')
           h.scriptTask('escalateClaim', { name: 'Escalate claim', script: 'return { ok: true };' })
             .task('recordEscalated', { name: 'Record escalation', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "escalated" }])' } })
             .endEvent('claimEscalated', { name: 'Claim escalated' })),
-    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'item', sequential: true } },
+    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'iterator[0]', sequential: true } },
   )
   // Every exit of the body appended to claimResults; sequential, so none was lost.
   .scriptTask('aggregate', { name: 'Total the results', script: 'return vars.claimResults.length;' })
