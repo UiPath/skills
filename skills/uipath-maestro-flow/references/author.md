@@ -1,10 +1,12 @@
 # Author — build and edit a flow with the builder SDK
 
+<!--skill-flavor:author-scope:start-->
 Everything that happens on disk before a flow touches the cloud: scaffold the
 project, choose each node, write `<Name>.flow.ts`, and run the loop in
 [`CLI-LOOP.md`](CLI-LOOP.md) until the emitted `.flow` validates. Authoring ends
 at a valid artifact; publishing, running and debugging are
 [`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
+<!--skill-flavor:author-scope:end-->
 
 The builder owns the `.flow` JSON. `compile` emits every node definition, the
 `variables.nodes[]` entries that make `$vars.<step>.output` resolve, the
@@ -22,10 +24,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    keeps the credential in the flow, outside `uip is connections list`), and an
    RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
-   `uip maestro flow registry search`; it only returns published resources, so
-   `uip maestro flow registry pull --force` first, and check the solution's own
-   projects with `uip maestro flow registry list --local` before concluding a
-   resource is missing. `mock()` marks a capability both searches proved
+   `uip maestro flow registry search`; it only returns published resources.
+   Before concluding a resource is missing, check the solution's own projects
+   with `uip maestro flow registry list --local`, and if it is still missing,
+   run `uip maestro flow registry pull --force` once and search again
+   (registry reads are cached for 30 minutes). `mock()` marks a capability both searches proved
    absent; it is never a stand-in for one they found.
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
@@ -38,9 +41,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    connection exists after its recovery flow, stop and report it as an open
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
+<!--skill-flavor:source-not-artifact:start-->
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
    with `compile -o` for a new flow; a non-empty `.flow` that existed before this
    turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+<!--skill-flavor:source-not-artifact:end-->
    Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
    `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
    regenerates them, and the next compile silently undoes a hand edit.
@@ -194,7 +199,7 @@ nodes, not patterns.
 
 Inputs, outputs and vars take one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`.
 
-- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type) (`date`/`datetime` come back as `types.string`; the others stop merge until you retype them).
+- `float`, `double`, `date`, `datetime` and `jsonSchema` are Case-only. The Flow builder refuses them: a TypeScript error, and `DECLARATION_TYPE_NOT_FLOW` at build. Write a date as `types.string`, a decimal as `types.number`, and a `jsonSchema` as `types.object` or `types.array` with its shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. A decompiled `.flow` that already carries one: [brownfield](brownfield.md#a-case-only-variable-type).
 - `types.integer` builds and packs as an integer, but Workbench does not offer it, so prefer `types.number`.
 - `types.any` is the untyped declaration: use it only when a value really has no fixed type.
 
@@ -218,9 +223,10 @@ Inputs, outputs and vars take one of the six types the Flow CLI and Workbench of
   own scope; pass values through the `subflow(child, {...})` inputs and read
   them with `input(...)`. `check` does not flag a child script that reads
   `$vars.start.output.*` from the parent — it compiles and resolves to nothing.
-- **Never use `console.log` in a script.** The script runtime has no
-  `console`, and `check` does not flag it. Return the value to inspect:
-  `return { debug: value }`.
+- **Never debug a script with `console.log`.** `console.log` and its
+  siblings exist but do nothing, so the output goes nowhere
+  ([script runtime](script.md#the-javascript-runtime)). Return the value to
+  inspect: `return { debug: value }`.
 - **Never put every `$vars` reference of an expression inside double quotes.**
   An End-node `=js:` expression like `'No results for "' + $vars.start.output.topic + '".'`
   evaluates to null, with no warning. Keep at least one reference outside the

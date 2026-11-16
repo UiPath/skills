@@ -44,9 +44,13 @@ the connector instead of mixing.
 
 Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this
-node family: `onEvent(RecordCreated, { object: '<Entity>', … })`, with the
-entity named through `object`. See
-[`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+node family. They are curated events with the object built in, so do not pass
+`object`: the registry serves them as `record-created-preview-` and
+`record-updated-preview-`, and the entity is picked through the `where` lookups
+that `uip maestro registry prepare uipath-uipath-dataservice --action
+record-updated-preview-` prints (`entityScope`, `tenantEntityName`,
+`folderEntityName`). See
+[`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview
 
@@ -187,9 +191,9 @@ rather than emitting an input the 1.0 definition does not declare.
 ## Paging a list query
 
 `limit` is always applied — omitting it resolves to **100** — and **1000 is a
-hard ceiling**: a larger value truncates silently rather than erroring. Cover a
-bigger entity by paging with `skip`, and pair any limit with `sort` or the slice
-is arbitrary.
+hard ceiling**: `check` refuses a larger value (`DATAFABRIC_LIMIT_RANGE`),
+because the run would silently return only 1000. Cover a bigger entity by
+paging with `skip`, and pair any limit with `sort` or the slice is arbitrary.
 
 ```ts
 .step('page1', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
@@ -350,13 +354,11 @@ upstream `out('<step>', '<fileField>')`, or any step whose declared output type
 is a file. The runtime is the file reference, never the bytes.
 
 <!--skill-flavor:operation-doc:start-->
-**Read the operation's own doc before guessing anything.** The connector library
-ships a Markdown page per operation, and an environment that stages a library
-points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md --output plain`
-otherwise):
+**Read the operation's own doc before guessing anything.**
+`registry describe` prints its page, from the pulled library or, with none pulled, from the tenant through `uip`:
 
 ```bash
-sed -n '1,60p' "$FLOW_SDK_LIBRARY_MD/uipath-uipath-dataservice/create-entity-record@1.0.0.md"
+uip maestro registry describe uipath.connector.uipath-uipath-dataservice.create-entity-record
 ```
 
 That page names the connector *UiPath Data Fabric*, gives the HTTP route
