@@ -3,7 +3,7 @@ name: Run Coder Eval
 # Every historical run is titled "Run Coder Eval", so the run list is a wall of
 # identical rows. Keep that prefix (it is how the workflow is recognised) and
 # append the three fields anyone actually scans for.
-run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.agent }}${{ inputs.skills_flavor && format(' · flavor:{0}', inputs.skills_flavor) || '' }} · @${{ github.actor }}
+run-name: Run Coder Eval · ${{ inputs.task_globs }} · ${{ inputs.agent }}${{ inputs.skills_flavor != '' && inputs.skills_flavor != 'none' && format(' · flavor:{0}', inputs.skills_flavor) || '' }} · @${{ github.actor }}
 
 # GH-hosted runner for coder-eval against the skills task tree. Use cases:
 # single task ad-hoc, a folder, or (with explicit confirmation) the full
@@ -100,19 +100,12 @@ on:
         description: 'Model override (blank = default).'
         type: string
         default: ''
-      # Build the composed studioweb skill flavor from the branch and overlay
-      # it over the canonical skills/ directory before the Docker image build.
-      # Without this, the studio-web agent sees canonical skills with flavor
-      # markers rather than the resolved studioweb replacements — a gap the
-      # deployed @uipath/skills-studioweb package fills in production. Set to
-      # 'studioweb' on any studio-web dispatch to close that gap, or leave
-      # blank for the raw canonical skills (the codex/claude default).
+      # Compose a named skill flavor and overlay it onto skills/ before the
+      # Docker image build. studio-web auto-selects 'studioweb' when blank;
+      # set explicitly to override or to 'none' to force raw canonical skills.
       skills_flavor:
-        description: 'Compose a skill flavor over skills/ before build (blank = raw canonical).'
-        type: choice
-        options:
-          - ''
-          - studioweb
+        description: 'Skill flavor (blank = auto from agent; "none" = raw canonical).'
+        type: string
         default: ''
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
@@ -284,32 +277,39 @@ jobs:
 
       # Compose a skill flavor and overlay it onto skills/ so the agent under
       # test sees resolved content rather than raw canonical files with flavor
-      # markers. Without this, a studio-web eval reads canonical skills whose
-      # host-setup blocks still carry the default (codex/claude) guidance, not
-      # the Studio Web replacements the deployed package ships. The overlay is
-      # destructive to the checkout — safe here because the runner is ephemeral
-      # and nothing commits afterward.
+      # markers. studio-web auto-selects 'studioweb' when the input is blank;
+      # 'none' forces raw canonical for any agent.
       - name: Build and overlay skill flavor
-        if: inputs.skills_flavor != ''
         env:
-          FLAVOR: ${{ inputs.skills_flavor }}
+          FLAVOR_INPUT: ${{ inputs.skills_flavor }}
+          AGENT: ${{ inputs.agent }}
         run: |
           set -euo pipefail
-          echo "Building skill flavor: $FLAVOR"
+          # Auto-resolve: studio-web → studioweb unless overridden.
+          flavor="$FLAVOR_INPUT"
+          if [ -z "$flavor" ]; then
+            case "$AGENT" in
+              studio-web) flavor=studioweb ;;
+              *)          flavor=none ;;
+            esac
+          fi
+          if [ "$flavor" = "none" ]; then
+            echo "Skill flavor: none (raw canonical)"
+            exit 0
+          fi
+          echo "Building skill flavor: $flavor"
           node scripts/compose-skill-flavor.mjs build
-          built="build/skills/$FLAVOR"
+          built="build/skills/$flavor"
           if [ ! -d "$built" ]; then
-            echo "::error::flavor '$FLAVOR' not found under build/skills/"
+            echo "::error::flavor '$flavor' not found under build/skills/"
             ls build/skills/
             exit 1
           fi
-          # Count before and after so the log proves the overlay ran.
           before=$(find skills -maxdepth 1 -mindepth 1 -type d | wc -l)
           after=$(find "$built" -maxdepth 1 -mindepth 1 -type d | wc -l)
-          # Replace canonical skills/ with the composed flavor tree.
           rm -rf skills
           cp -a "$built" skills
-          echo "Overlaid $FLAVOR flavor ($after skill dirs) over canonical ($before skill dirs)"
+          echo "Overlaid $flavor flavor ($after skill dirs) over canonical ($before skill dirs)"
 
       # The coder_eval_uipath repo (private): the build context of the delegate
       # docker overlay below, and `eval_runner/`, a separate package
