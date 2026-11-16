@@ -167,7 +167,9 @@ uip maestro bpmn format <Name>.bpmn
   over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
   run step 5, then step 4. The report's one sentence is exactly `The canvas layout
   was reset.`, or `The canvas layout was reset; the rebuild removed <kinds>.`
-  when the search found any.
+  when the search found any; when you also kept the user's canvas edits, end it
+  with `; your canvas edits were kept.` Name each kind in words: pools, lanes,
+  text annotations, groups, documentation, data objects, data stores, colors.
   Any other edit merges, even one that changes a step's tag; `merge` then keeps
   the old tag, so name each such step under the report's `Unverified:` as one
   Studio Web may still show as its old type, and a step that became a script
