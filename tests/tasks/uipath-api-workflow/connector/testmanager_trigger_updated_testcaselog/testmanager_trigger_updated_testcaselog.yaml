@@ -3,7 +3,8 @@
 # (Created/Updated/Finished) — see uipath-maestro-bpmn registry-workflow.md and
 # tests/tasks/uipath-platform/integration-service/testmanager/_tm_events/README.md.
 #   TestCaseLog has no create/update activity in the connector, so the event is driven by
-#   executing the runnable fixture test set in TM_EVAL_EXECUTION_TESTSET.
+#   executing a per-run copy of the runnable fixture test set in TM_EVAL_EXECUTION_TESTSET
+#   (seed.py clones it, so no other run's execution can match this one).
 task_id: skill-api-workflow-testmanager-trigger-updated-testcaselog
 description: >
   E2E (API Workflow, Test Manager connector event): agent builds a workflow that
@@ -22,9 +23,6 @@ sandbox:
     - type: template_dir
       path: ../../../uipath-platform/integration-service/testmanager/_tm_events/_setup
       mount_point: _setup
-    - type: template_dir
-      path: ../../../uipath-maestro-bpmn/_setup
-      mount_point: _setup
 
 reference:
   directory: ../../../uipath-platform/integration-service/testmanager/_tm_events
@@ -39,7 +37,7 @@ pre_run:
   - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-testmanager'
     timeout: 120
   - command: "python3 _setup/seed.py --operation Updated --object-type TestCaseLog"
-    timeout: 30
+    timeout: 180
 
 post_run:
   - command: "python3 _setup/cleanup.py"

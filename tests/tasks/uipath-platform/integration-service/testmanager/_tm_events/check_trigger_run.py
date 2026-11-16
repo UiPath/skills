@@ -27,13 +27,15 @@ import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
 from typing import NoReturn
 
+# subprocess cannot run the Windows uip.cmd shim by bare name; resolve it first.
+UIP = shutil.which("uip") or "uip"
 CONNECTOR = "uipath-uipath-testmanager"
 EVENT_OBJECT = "TestManagerEvents"
 NAMED = ("Requirement", "TestCase", "TestSet")
@@ -45,7 +47,8 @@ PROJECT_PARAM = {"Requirement": "ProjectId", "TestCase": "ProjectId", "TestSet":
                  "TestExecution": "projectId", "TestCaseLog": "projectId"}
 # A TestExecution still in one of these has not changed since it was created.
 INITIAL = {"", "pending", "notstarted", "new", "created", "queued"}
-# Job sources that mean a person or the agent started the job, not the event trigger.
+# Job SourceTypes that mean a person or the agent started the job, not the event trigger.
+# Source is not used: it reads "Manual" even for Flow-started jobs (verified on a tenant).
 MANUAL_SOURCES = {"manual", "assistant", "commandline", "robotapi", "studio", "studioweb", "studiox", "studiopro", "apps"}
 ZERO_GUID = "00000000-0000-0000-0000-000000000000"
 GUID_RE = re.compile(r"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
@@ -85,19 +88,12 @@ def has_token(text, word):
     return re.search(rf"(?<![a-z0-9]){re.escape(word.lower())}(?![a-z0-9])", str(text).lower()) is not None
 
 
-def parse_time(value):
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(timezone.utc)
-    except ValueError:
-        return None
-
-
 def run_uip(*args, timeout=60):
     remaining = BUDGET_END - time.monotonic()
     if remaining < 5:
         fail(f"grader time budget spent before `uip {' '.join(args[:4])}`")
     timeout = min(timeout, remaining)
-    cmd = ["uip", *args, "--output", "json"]
+    cmd = [UIP, *args, "--output", "json"]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -313,37 +309,35 @@ def check_record_is_ours(seed, result):
         if get_ci(data, "name") != seed["marker"]:
             fail(f"{obj} {result['record_id']} is named {get_ci(data, 'name')!r}, not the seeded marker — not this run's record")
         return
-    # Execution-driven: every deployed workflow sees the whole project's executions, so
-    # prove this one ran the seeded fixture test set and started after this run began.
+    # Execution-driven: every deployed workflow sees the whole project's executions, so the
+    # execution must have run this run's own copy of the fixture (seed.py clones it). A
+    # concurrent run executes its own copy, so its execution cannot match.
+    copy_id = str(seed.get("execution_test_set_id") or "")
+    if not copy_id:
+        fail("seed.json has no execution_test_set_id — pre_run did not clone this run's test set")
+    copy_name = str(get_ci(get_record(result, "TestSet", copy_id), "name") or "")
+    if not copy_name.startswith(seed["marker"]):
+        fail(f"test set {copy_id} is named {copy_name!r}, not this run's copy")
     execution_id = result["execution_id"] if obj == "TestCaseLog" else result["record_id"]
     execution = get_record(result, "TestExecution", execution_id)
     if not get_ci(execution, "id"):
         fail(f"TestExecution {execution_id} not found in project {result['project_id']}")
     test_set_id = str(get_ci(execution, "testSetId") or "")
-    wanted = str(seed["execution_test_set"]).lower()
-    if test_set_id.lower() != wanted:
-        test_set = get_record(result, "TestSet", test_set_id) if test_set_id else {}
-        names = {str(get_ci(test_set, k) or "").lower() for k in ("key", "name", "id")}
-        if wanted not in names:
-            fail(f"TestExecution {execution_id} ran test set {test_set_id!r}, not the fixture {seed['execution_test_set']!r}")
-    started = next((parse_time(v) for v in (get_ci(execution, k) for k in
-                    ("executionStarted", "created", "createdOn", "createdAt", "startTime")) if v), None)
-    run_start = parse_time(seed["started_at"])
-    if started is None or run_start is None:
-        fail(f"TestExecution {execution_id} has no readable start or creation time — cannot prove it belongs to this run")
-    if started < run_start:
-        fail(f"TestExecution {execution_id} started {started.isoformat()}, before this run began ({seed['started_at']})")
+    if test_set_id.lower() != copy_id.lower():
+        fail(f"TestExecution {execution_id} ran test set {test_set_id!r}, not this run's copy {copy_id!r}")
 
 
 def list_jobs(seed):
-    common = ("--all-folders", "--created-after", seed["started_at"], "--all-fields", "--limit", str(JOB_PAGE))
-    jobs = items(run_uip("or", "jobs", "list", "--process-name", seed["process_name"], *common))
-    if jobs:
-        return jobs
-    # A solution deploy may prefix the process name, so fall back to a containment match.
-    return [j for j in items(run_uip("or", "jobs", "list", *common))
-            if any(seed["process_name"].lower() in str(get_ci(j, k) or "").lower()
-                   for k in ("ReleaseName", "ProcessName", "ProcessKey"))]
+    """Every job of this run's process; --process-name is a contains match, the name is run-unique."""
+    common = ("--all-folders", "--process-name", seed["process_name"], "--created-after", seed["started_at"],
+              "--all-fields", "--limit", str(JOB_PAGE))
+    jobs, offset = [], 0
+    while True:
+        page = items(run_uip("or", "jobs", "list", *common, "--offset", str(offset)))
+        jobs += page
+        if len(page) < JOB_PAGE:
+            return jobs
+        offset += JOB_PAGE
 
 
 def job_error(job, payload, seed, result):
@@ -351,10 +345,9 @@ def job_error(job, payload, seed, result):
     state = str(get_ci(job, "State") or "")
     if state.lower() != "successful":
         return f"job {get_ci(job, 'Key')} ended {state!r}, not Successful"
-    for field in ("SourceType", "Source"):
-        source = str(get_ci(job, field) or "").replace(" ", "").lower()
-        if source in MANUAL_SOURCES:
-            return f"job {get_ci(job, 'Key')} was started by hand ({field} {get_ci(job, field)!r}), not by the event trigger"
+    source_type = str(get_ci(job, "SourceType") or "").replace(" ", "").lower()
+    if source_type in MANUAL_SOURCES:
+        return f"job {get_ci(job, 'Key')} was started by hand (SourceType {get_ci(job, 'SourceType')!r}), not by the event trigger"
     object_type = str(get_ci(payload, "objectType") or "")
     if object_type.lower() != seed["object_type"].lower():
         return f"payload objectType {object_type!r} != {seed['object_type']!r}"

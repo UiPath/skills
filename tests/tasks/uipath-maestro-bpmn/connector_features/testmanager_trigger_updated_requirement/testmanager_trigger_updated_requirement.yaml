@@ -20,9 +20,6 @@ sandbox:
     - type: template_dir
       path: ../../../uipath-platform/integration-service/testmanager/_tm_events/_setup
       mount_point: _setup
-    - type: template_dir
-      path: ../../../uipath-maestro-bpmn/_setup
-      mount_point: _setup
 
 reference:
   directory: ../../../uipath-platform/integration-service/testmanager/_tm_events
