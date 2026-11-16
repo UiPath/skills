@@ -35,3 +35,8 @@ def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:
     assert "A value the request leaves open" in text
     assert "name it under `Assumed`" in text
     assert "Read [final-report-template.md](final-report-template.md) in full" in text
+
+
+def test_skill_step_9_reads_the_report_template() -> None:
+    text = _outside_flavor_blocks((REFS.parent / "SKILL.md").read_text())
+    assert "read it in full once `validate` passes or fails only that way, before any upload" in text
