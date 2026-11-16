@@ -66,6 +66,7 @@ INSPECTIONS = [
     (_LIVE, "inspected the debug instance's runtime variables", 'variables-all --output json "$INSTANCE_ID"'),
     (_LIVE, "inspected the debug instance's runtime variables", 'variables --profile alpha "$INSTANCE_ID"'),
     (_LIVE, "inspected the debug instance's runtime variables", "variables-all --output=json ${INSTANCE_ID}"),
+    (_LIVE, "inspected the debug instance's runtime variables", 'variables-all "$INSTANCE_ID" # --help'),
 ]
 
 
