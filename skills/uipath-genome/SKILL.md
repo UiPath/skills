@@ -8,7 +8,7 @@ user-invocable: true
 
 # UiPath Genome — build automations from their genome
 
-Two verbs: `build`, and `prepare`, which writes into the genome's readiness file the architecture decisions the build proposes and every question it would ask. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it. The genome says *what*; the owning skills know *how*.
+Two verbs: `build`, and `prepare`, which writes a readiness file beside the genome with the architecture decisions the build proposes, every question it would ask and the SDD's questions still open. A genome is the markdown specification of an automation — what it does, its business rules, the data between its parts, platform resources, transactional shape, verification, and the skill that builds each part. `uipath-planner` writes every genome; this skill builds it. The genome says *what*; the owning skills know *how*.
 
 ## Setup
 
@@ -27,13 +27,13 @@ Two verbs: `build`, and `prepare`, which writes into the genome's readiness file
 | Verb | Input | Output | Guide |
 |---|---|---|---|
 | `build` | A `*-genome.md` | The projects, built through their owning skills, and the hand-off folder | [build-guide.md](references/build-guide.md) |
-| `prepare` | A `*-genome.md`, on the machine that will build it | Its readiness file's Architecture decisions (each decision that shapes what gets built, with the build's proposal) and Build setup (every other question the build would still ask there); nothing built | [prepare-guide.md](references/prepare-guide.md) |
+| `prepare` | A `*-genome.md`, on the machine that will build it | `<slug>-readiness.md` beside the genome: the Architecture decisions (each decision that shapes what gets built, with the build's proposal), Build setup (every other question the build would still ask there), the build's tasks and the SDD's questions still open; nothing built | [prepare-guide.md](references/prepare-guide.md) |
 
 ## Choosing the Verb
 
 Checked in order; the first match decides.
 
-1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export; editing one, partial re-extraction and applying the answers of its readiness file included — even when the request names the exact change. Make no change to the genome file here. When `uipath-planner` is not installed, say that writing or changing the genome needs it and stop.
+1. **A request that writes or changes a genome → invoke `uipath-planner` with the request, then stop.** Authoring one from an idea, a description, an SOP, a PDD, a TO-BE or an SDD; proposing scenarios for a goal; extracting one from a UiPath project or solution or another framework's export; editing one, partial re-extraction and applying the answers of its SDD or readiness file included — even when the request names the exact change. Make no change to the genome file here. When `uipath-planner` is not installed, say that writing or changing the genome needs it and stop.
 2. **The user named a verb** → that verb.
 3. **A genome plus a request to get it ready** ("prepare the build", "what will the build ask", "list the build questions") → `prepare`.
 4. **A genome plus build intent** ("build", "execute", "implement", "follow", "run the migration", "execute the refactor") → `build`. A genome extracted from a UiPath source builds as a refactor; one from another framework as a migration, or a refactor when the request asks for one.

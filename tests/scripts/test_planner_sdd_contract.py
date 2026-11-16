@@ -63,14 +63,14 @@ def test_body_marker_separates_front_matter_from_the_body(template: Path) -> Non
 
 def test_caller_guide_declares_every_signal_the_templates_carry() -> None:
     guide = CALLER_GUIDE.read_text(encoding="utf-8")
-    for signal in ("planner-design-request: v1", "planner-design-result: v1", HANDOFF_MARKER, BODY_MARKER):
+    for signal in ("planner-design-request: v2", "planner-design-result: v2", HANDOFF_MARKER, BODY_MARKER):
         assert signal in guide, signal
     assert "**Template validation**" in guide and "**Status**" in guide
 
 
 def test_caller_guide_documents_every_request_key_it_shows() -> None:
     guide = CALLER_GUIDE.read_text(encoding="utf-8")
-    block = re.search(r"```text\nplanner-design-request: v1\n(.*?)```", guide, re.S)
+    block = re.search(r"```text\nplanner-design-request: v2\n(.*?)```", guide, re.S)
     assert block, "the request example block"
     keys = {line.split(":", 1)[0] for line in block.group(1).splitlines() if line.strip()}
     documented = set(re.findall(r"^\| `([a-z-]+)`(?:, `([a-z-]+)`)? \|", guide, re.M))

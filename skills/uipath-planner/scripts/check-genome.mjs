@@ -27,10 +27,14 @@
 //           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
 //           complete for every unit and alternative unit, a `Decided:` project chain on option B only and naming two
 //           or more projects, retry and consecutive-failure stop; step table cells
-//           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
+//           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
+//           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
+//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; no H2 heading twice; no
+//           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
-//           lists) and still has that fingerprint.
+//           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
+//           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -52,7 +56,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
-import { sddFingerprint } from "./sdd-fingerprint.mjs";
+import { genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
 
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
@@ -73,15 +77,24 @@ const routesToBuilder = (s) => /\buipath-genome(?![\w-])/.test(s);
 
 export const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
-  "Configuration Questions", "Workflow", "Business Rules", "Error Handling",
+  "Configuration Questions", "Open Decisions", "Workflow", "Business Rules", "Error Handling",
   "Transactional Shape", "Acceptance Criteria", "Complexity", "Tags",
 ];
 export const PROCESS_SECTIONS = [
   "Overview", "Actors and Systems", "Components", "Process Map", "Handoffs",
-  "Platform Dependencies", "Configuration Questions", "Business Rules",
+  "Platform Dependencies", "Configuration Questions", "Open Decisions", "Business Rules",
   "Error Handling and Recovery", "Transactional Shape", "Acceptance Criteria", "Deployment",
   "Complexity", "Tags",
 ];
+// an Open Decisions entry is open (its tier and who answers it), decided or withdrawn; it is never removed
+export const DECISION_TIERS = ["business outcome", "run behaviour", "reading", "material"];
+const OPEN_ENTRY = new RegExp(`\\((?:${DECISION_TIERS.join("|")}); answered by: `);
+const DECIDED_ENTRY = /\(decided \d{4}-\d{2}-\d{2}: /;
+const WITHDRAWN_ENTRY = /\(withdrawn: /;
+const NO_DECISIONS = "No open decisions";
+// `*[Inferred]*`, `*[Inferred: D3]*`, `*[Inferred: process D3]*`, `*[Inferred: CQ2]*`
+const INFERRED_MARK = /\*\[Inferred(?::\s*([^\]]*))?\]\*/g;
+const MARK_TARGET = /^(process\s+)?(D|CQ)(\d+)\b/;
 // Code-level tokens that must not appear in the genome body (Source Map excluded).
 const BANNED_BODY_TOKENS = [
   "InvokeWorkflowFile", "RetryScope", "TryCatch", "ReadRange", "AppendRange", "WriteRange",
@@ -342,7 +355,63 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
   }
   for (const [, num, question] of sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. (.*)$/gm)) {
     const pointer = !question.includes("?") && /Configuration Question \d+/.test(question); // a question the process genome asks
-    if (!pointer && !/\((setting|constant); default:/.test(question)) r.strict(`configuration question ${num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'`);
+    const withdrawn = /^Withdrawn: /.test(question); // kept so later questions keep their numbers
+    if (!pointer && !withdrawn && !/\((setting|constant); default:/.test(question)) r.strict(`configuration question ${num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'`);
+  }
+}
+
+/** Map of entry number → 'open' | 'decided' | 'withdrawn' | 'malformed' for a genome's Open Decisions. */
+export function openDecisions(text) {
+  const entries = new Map();
+  for (const [, num, entry] of sectionBody(text, "Open Decisions").matchAll(/^(\d+)\. (.*)$/gm)) {
+    const status = DECIDED_ENTRY.test(entry) ? "decided" : WITHDRAWN_ENTRY.test(entry) ? "withdrawn" : OPEN_ENTRY.test(entry) ? "open" : "malformed";
+    entries.set(Number(num), status);
+  }
+  return entries;
+}
+
+/** strict: Open Decisions entries in one of their forms, numbered without a gap, and every `*[Inferred]*` mark
+ * naming an open entry or a Configuration Question that exists. A `process D<n>` mark is checked only when the
+ * process genome's entries are known (the component is checked through its process genome). */
+/** The entry numbers a genome's text names outside its Open Decisions section: its own (`D3`), or with
+ * processScope the process genome's (`process D3`). */
+export function namedEntries(text, processScope = false) {
+  const rest = text.replace(sectionBody(text, "Open Decisions"), "");
+  const pattern = processScope ? /\bprocess\s+D(\d+)\b/g : /(?<!process\s)\bD(\d+)\b/g;
+  return new Set([...rest.matchAll(pattern)].map((m) => Number(m[1])));
+}
+
+function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new Set()) {
+  const section = sectionBody(text, "Open Decisions");
+  const entries = openDecisions(text);
+  if (section.trim() && !entries.size && !section.includes(NO_DECISIONS)) r.strict("Open Decisions: neither numbered entries nor the stub line");
+  [...entries.keys()].forEach((num, i) => {
+    if (num !== i + 1) r.strict(`Open Decisions: entry ${num} follows entry ${i}; an entry stays when decided or withdrawn, so the numbers never skip`);
+  });
+  for (const [num, status] of entries) {
+    if (status === "malformed") r.strict(`Open Decisions entry ${num} is none of '({tier}; answered by: …', '(decided YYYY-MM-DD: …' or '(withdrawn: …' — tiers: ${DECISION_TIERS.join(", ")}`);
+  }
+  const questions = new Set([...sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1])));
+  const unnamed = [];
+  for (const [mark, target] of text.matchAll(INFERRED_MARK)) {
+    const m = (target ?? "").trim().match(MARK_TARGET);
+    if (!m) { unnamed.push(mark); continue; }
+    const [, processScope, kind, n] = m;
+    const num = Number(n);
+    if (kind === "CQ") {
+      if (!processScope && !questions.has(num)) r.strict(`${mark} names Configuration Question ${num}, which this genome does not have`);
+      continue;
+    }
+    const pool = processScope ? processEntries : entries;
+    if (!pool) continue;
+    const where = processScope ? "the process genome's Open Decisions" : "Open Decisions";
+    if (!pool.has(num)) r.strict(`${mark} names entry ${num}, which ${where} does not have`);
+    else if (pool.get(num) !== "open") r.strict(`${mark} names entry ${num} of ${where}, which is ${pool.get(num)}: a settled point keeps no marker`);
+  }
+  if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
+  const named = namedEntries(text);
+  for (const [num, status] of entries) {
+    if (status === "open" && !named.has(num) && !namedElsewhere.has(num)) r.strict(`Open Decisions entry ${num} is named nowhere in the genome: mark the line that states its point (*[Inferred: D${num}]*), or name it at its defect, row or step`);
   }
 }
 
@@ -353,6 +422,22 @@ function checkDesignedIn(path, text, r) {
   let current;
   try { current = sddFingerprint(resolvePath(dirname(path), m[1])); } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
   if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+}
+
+const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;
+
+/** strict: the SDD written from this genome — `<slug>-sdd.md` beside it, a process genome's `<slug>-solution-sdd.md` —
+ * still carries the genome's fingerprint. A genome with a `Designed in:` line has its SDD as the source instead. */
+function checkWrittenSdd(path, text, level, r) {
+  if (DESIGNED_IN.test(text)) return;
+  const slug = baseName(path).replace(/-genome\.md$/i, "");
+  const sdd = join(dirname(path), `${slug}${level === "process" ? "-solution" : ""}-sdd.md`);
+  if (!existsSync(sdd)) return;
+  const row = read(sdd).match(GENOME_ROW);
+  if (!row) { r.strict(`${baseName(sdd)} beside the genome has no 'Genome' handoff row carrying its genome-sha256 fingerprint`); return; }
+  let current;
+  try { current = genomeFingerprint(path); } catch { r.strict(`${baseName(sdd)}: a component genome the genome links cannot be read for its genome-sha256`); return; }
+  if (current !== row[1]) r.strict(`${baseName(sdd)}: genome-sha256 does not match the genome; the genome changed since the SDD was written from it`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -505,7 +590,7 @@ export function componentLinks(path, text) {
   return out;
 }
 
-function checkComponent(path, a, partOf, shape = true, library = false) {
+function checkComponent(path, a, partOf, shape = true, library = false, processEntries = null) {
   const text = read(path);
   // a library is named so in its process genome's Components table, or in its own Transactional Shape stub
   library = library || /^Not transactional:[^\n]*\blibrar(y|ies)\b/i.test(sectionBody(text, "Transactional Shape").trim());
@@ -528,13 +613,14 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
   const questions = cq.match(/^\d+\. /gm) ?? [];
   if (!cq.trim()) r.core("Configuration Questions section is empty");
   else if (!questions.length && !cq.includes("no configuration needed")) r.strict("Configuration Questions: neither a numbered list of questions nor the stub line");
+  checkOpenDecisions(text, r, processEntries);
   if (a.sourceMap.length) {
     const sm = sectionBody(text, "Source Map");
     if (!sm.trim()) r.core("missing or empty '## Source Map' section");
     for (const tok of a.sourceMap) if (!sm.includes(tok)) r.core(`Source Map does not mention '${tok}'`);
   }
   checkStepsTable(text, r);
-  if (!partOf && !text.includes("Part of:")) checkSourceFramework(text, r);
+  if (!partOf && !text.includes("Part of:")) { checkSourceFramework(text, r); checkWrittenSdd(path, text, "component", r); }
   if (partOf && !text.includes("Part of:")) r.strict("component inside a process genome lacks the 'Part of:' line");
   checkTransactional(text, "component", r, partOf);
   if (a.shape && shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
@@ -561,12 +647,21 @@ function checkProcess(path, a) {
   const first = (i) => targets.indexOf(targets[i]) === i;
   for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
   checkSourceFramework(text, r);
+  checkWrittenSdd(path, text, "process", r);
+  // the process genome's entries are named in its own text or in a component's (`process D3`)
+  const namedByComponents = new Set();
+  for (const [, target] of links) {
+    if (!existsSync(target)) continue;
+    try { for (const n of namedEntries(read(target), true)) namedByComponents.add(n); } catch (e) { if (!(e instanceof InputError)) throw e; }
+  }
+  checkOpenDecisions(text, r, null, namedByComponents);
+  const processEntries = openDecisions(text);
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
     if (!existsSync(target)) r.core(`linked component genome missing on disk: ${link}`);
     else {
       // one unreadable component file is one finding; the process genome and its other components are still checked
-      try { componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary)); }
+      try { componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary, processEntries)); }
       catch (e) { if (!(e instanceof InputError)) throw e; r.core(e.message); }
     }
   }

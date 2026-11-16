@@ -60,6 +60,18 @@ Every other value is a fact, built where the genome writes it (the Workflow subs
 
 A grouped question names every key it holds, and execution maps each key. A question saying "required: empty ends the run" marks a value whose emptiness changes the flow instead of failing, and execution guards it. Execution asks its own questions (scaffolding, and the split questions when the Transactional Shape is not the stub); the genome holds none of them.
 
+A question keeps its number for as long as the genome lives: one the genome no longer needs reads `N. Withdrawn: {why}.` and is not asked.
+
+## Open Decisions
+
+Every point the genome leaves to a person, one numbered entry each: a component's points in its genome, those spanning components in the process genome. An entry is open — `({tier}; answered by: {role}; …)` — or settled — `(decided {date}: {answer})`, `(withdrawn: {why})` — and keeps its number either way. The tiers:
+- **business outcome:** what is written to a system of record, sent and to whom, which item is worked, skipped, charged or paid, an amount;
+- **run behaviour:** how a run counts, retries, recovers, stops, logs or reports;
+- **reading:** an inferred point with no outcome of its own;
+- **material:** an object or file the build needs that nobody has supplied.
+
+An open entry builds what it says the genome `builds now`, or its `reading`, until someone answers it; the build asks the business outcomes and the material ([configuration-questions-guide.md](configuration-questions-guide.md), Open decisions) and lists the others in the report as unconfirmed. A marked line names its entry: `*[Inferred: D3]*`, `*[Inferred: process D3]*`, or `*[Inferred: CQ2]*` for a value a Configuration Question asks.
+
 ## Workflow
 
 Each step `N. **{Step name}**` keys its row in the Source Map's step table by number and heads its Business Rules and Error Handling entries by name. A `###` heading is one entry point; a shared step under its own heading is built once, and each entry point continues into the step its last step names. A step that calls an automation the source does not hold calls a Platform Dependency the rebuild does not build. Substeps carry the fields, conditions, validations and transformations.
@@ -84,7 +96,7 @@ The execution report's verdicts and a comparison of two runs cite each criterion
 
 ## Ambiguity Marker
 
-A line ending `*[Inferred]*` is the writer's best interpretation where the source or the description was unclear. The build builds the line as written and lists every `*[Inferred]*` line it relied on in the report.
+A line ending `*[Inferred: D<n>]*` is the writer's best interpretation where the source or the description was unclear, its Open Decisions entry the question about it. The build builds the line as written and lists every marked line it relied on in the report.
 
 ## Process Genome Sections
 
@@ -97,6 +109,10 @@ One row per edge between components — mechanism, data schema passed, and what 
 The delivery model, packaging and route, entry points, runtime and machines, robots, folders and environments, and logging and retention — the build creates the projects the packaging names, honours the runtime, and hands the rest over in the open items; the buildable projects are named explicitly. A library is listed with the feed it is published to, apart from the solution's projects. With test components, Deployment names exactly one test project and one Test Manager test set per test component.
 
 ## Design Links
+
+`> Preferences: [{title}]({relative path})` names the preferences file the genome was written to: the build reads it before the first question as a file of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rule 4).
+
+An SDD beside a genome with no `Designed in:` line is written from the genome for people; the build reads only its Action Required section, as answers (rule 4a).
 
 `> Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT}` ties the genome to the SDD it derives from. The build reads no SDD content for it: the SDD's decisions are already in the sections that hold them and are read as answered. The build does not compare the fingerprint: `uipath-planner` keeps a designed genome current ([execution-guide.md](execution-guide.md) § 1.1).
 

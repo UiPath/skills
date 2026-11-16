@@ -12,6 +12,8 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
+> Preferences: [{title}]({relative path to the preferences file}) *(Only when the user named one; omit otherwise.)*
+
 ## Overview
 
 {2-4 paragraphs: business process, why it is automated, who owns it, volumes and cadence, what "done" means end to end.}
@@ -117,6 +119,14 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 {Process-wide questions. Component-specific questions live in the component genomes.}
 
 1. {Question}? ({setting | constant}; default: {value})
+
+## Open Decisions
+
+{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (format guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
+
+1. {The decision as a question}? ({business outcome | run behaviour | reading | material}; answered by: {role}; {builds now | recommended | reading | until answered}: {…}; instead: {the other option}) — {the components and steps it spans}
+
+*Stub when the genome has never had one: "No open decisions."*
 
 ## Business Rules
 

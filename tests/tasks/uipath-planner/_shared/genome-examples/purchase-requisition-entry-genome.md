@@ -64,18 +64,18 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 | Trigger | Starts | Kind | When | Runners |
 |---------|--------|------|------|---------|
-| PR_DispatchSchedule | entry point A | Time | every business day at 06:00; time zone *[Inferred]* | 1 *[Inferred]* |
+| PR_DispatchSchedule | entry point A | Time | every business day at 06:00; time zone *[Inferred: D1]* | 1 *[Inferred: D2]* |
 | PR_RequisitionsQueueTrigger | entry point B | Queue | `PR_Requisitions`, from 06:30 | up to 3 |
 
 ### Runtime and deployment
 
-- **Delivery model:** Automation Cloud *[Inferred]*
+- **Delivery model:** Automation Cloud *[Inferred: D3]*
 - **Packaging and route:** one package with two entry points
 - **Entry points:** entry point A, the dispatch, and entry point B, the requisitions; how each starts: Triggers above
-- **Runtime and machines:** Windows *[Inferred]*; unattended; each machine reaches the finance share and the Coupa portal *[Inferred]*
-- **Robots:** the purchasing robot account, on each of the three machines *[Inferred]*
-- **Folders and environments:** one Orchestrator folder *[Inferred]*; the production Coupa tenant is the one whose UI targets the genome describes
-- **Logging and retention:** the job log, and the run summary row on the finance share (step 13); retention not stated *[Inferred]*
+- **Runtime and machines:** Windows *[Inferred: D3]*; unattended; each machine reaches the finance share and the Coupa portal *[Inferred: D3]*
+- **Robots:** the purchasing robot account, on each of the three machines *[Inferred: D3]*
+- **Folders and environments:** one Orchestrator folder *[Inferred: D3]*; the production Coupa tenant is the one whose UI targets the genome describes
+- **Logging and retention:** the job log, and the run summary row on the finance share (step 13); retention not stated *[Inferred: D4]*
 
 ## Interface
 
@@ -96,6 +96,13 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 9. Where is the supplier checked? (setting; default: the approved-supplier sheet; alternative: the portal's supplier search)
 10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (constant; default: 60 seconds)
 11. Is a delivery date equal to the run date accepted? (constant; default: yes — only a date earlier than the run date is rejected)
+
+## Open Decisions
+
+1. In which time zone does the 06:00 dispatch run? (reading; answered by: whoever knows the process; reading: the finance team's local time zone, since the description gives a time but no zone) — Platform Dependencies, Triggers
+2. How many runners does the dispatch schedule use? (reading; answered by: whoever knows the process; reading: one runner, since the dispatch is a single daily run; the description does not state it) — Platform Dependencies, Triggers
+3. Where does the automation run: which delivery model, machine type, robot account and Orchestrator folder, and can each machine reach the finance share and the Coupa portal? (reading; answered by: the environment's owners; reading: Automation Cloud, Windows machines that reach both, the purchasing robot account on each of the three machines and one folder, since the description names none) — Platform Dependencies, Runtime and deployment
+4. How long are the job logs kept? (reading; answered by: whoever knows the process; reading: no retention beyond the platform default, since none is stated) — Platform Dependencies, Runtime and deployment
 
 ## Workflow
 

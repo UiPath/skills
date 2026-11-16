@@ -35,7 +35,7 @@ Each queue item on the intake queue starts one instance of this process. The ins
 
 | Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
 |-------|-------------|-------------|------------------|---------|----------|-----------|
-| AP_InvoiceIntake | one invoice, one process instance each | as in the process genome's Handoffs row 1 | *[Inferred]* | *[Inferred]* | component 2 | steps 1–8 |
+| AP_InvoiceIntake | one invoice, one process instance each | as in the process genome's Handoffs row 1 | *[Inferred: process D1]* | *[Inferred: process D2]* | component 2 | steps 1–8 |
 
 ### Storage buckets
 
@@ -61,6 +61,10 @@ Each queue item on the intake queue starts one instance of this process. The ins
 2. After how long is a stuck instance terminated as stale? (constant; default: 5 business days)
 3. How many ERP rejections before the invoice is rejected outright? (constant; default: 2)
 4. Which app renders the human review task? (constant; default: AP Invoice Review)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 

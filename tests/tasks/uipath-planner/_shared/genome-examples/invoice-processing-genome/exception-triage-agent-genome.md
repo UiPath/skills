@@ -48,6 +48,10 @@ Given an invoice record, its discrepancies, and the PO summary, the agent decide
 2. Above which price variance is a mismatch treated as a commercial dispute rather than a data error? (constant; default: 10%)
 3. Should the agent read the full extraction JSON from the bucket, or only the discrepancies passed in? (constant; default: discrepancies only; bucket read on `unmatched-line`)
 
+## Open Decisions
+
+No open decisions.
+
 ## Workflow
 
 1. **Receive** (input: record, discrepancies, PO summary).

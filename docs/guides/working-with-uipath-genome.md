@@ -1,8 +1,8 @@
 # Working with UiPath genomes
 
-A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process, with a readiness file beside it: everything to settle before the build. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
+A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process, with an SDD beside it: the same automation written for people, opening with every question still open. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
 
-That leaves you three things to focus on: the review of the genome, the answers in its readiness file, and the yes before anything runs on a real application.
+That leaves you three things to focus on: the review of the design, the answers to its open questions, and the yes before anything runs on a real application.
 
 Use a genome to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
 
@@ -162,7 +162,7 @@ What that run produced:
 
 *Who does what · the five steps below*
 
-Blue boxes are your turns. With the readiness file filled in and confirmed, or "take the defaults" in the build request, the build asks nothing.
+Blue boxes are your turns. With the questions answered ahead, the SDD's and the readiness file's when you prepare, or "take the defaults" in the build request, the build asks nothing.
 
 ## Use cases
 
@@ -178,11 +178,13 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 | Rebuild an existing automation as it is | "Extract a genome from `<folder>`" | Steps 2 to 5; the build asks how closely to follow the source ([Rebuilding an existing automation](#rebuilding-an-existing-automation)) |
 | Rebuild an existing test suite | "Extract a genome from `<folder>`" | Steps 2 to 5: a test project whose cases assert each checkpoint the source checked, or list it as not asserted, with the reason |
 | Refactor a UiPath project | "Refactor `<folder>`" | Steps 2 to 5, with the plan, the tests written first and the cutover ([As a refactor](#rebuilding-an-existing-automation)) |
-| Change an automation built from a genome | The change, in plain words: "step 4 should also …" | The genome and its readiness file are updated, your answers kept. The build (step 3) changes the projects it made before, or those you name in the readiness file, and the report lists every change made to them |
-| Change answers after the build was prepared | Edit the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again and marked `New since confirmed` |
+| Change an automation built from a genome | The change, in plain words: "step 4 should also …" | The genome and its SDD are updated, your answers kept. The build (step 3) changes the projects it made before, or those you name in the readiness file, and the report lists every change made to them |
+| Get the questions answered by other people | Share the SDD, or say "Interview me on the open questions" with the person beside you | "Apply the answers" writes them into the genome and the SDD |
+| Get the build's own questions answered ahead | "Prepare the build of `<name>-genome.md`" on the machine that will build, then share the readiness file | "Apply the answers", then build: it asks nothing the files answer |
+| Change answers after the build was prepared | Edit the SDD or the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again and marked `New since confirmed` |
 | Build on another machine than the one prepared | "Build `<name>-genome.md`" on that machine | The file's answers hold; a question whose options are not the same there (other packages installed) is asked again |
 | Build with nobody to answer | "Build `<name>-genome.md`, take the defaults" | The build asks nothing and takes each recommended option or default; the report lists each one it took |
-| Use a genome that has no readiness file | "Write the readiness file for `<name>-genome.md`" | Steps 2 to 5 |
+| Use a genome that has no SDD | "Write the SDD for `<name>-genome.md`" | Steps 2 to 5 |
 | Check a genome you were given | "Check `<name>-genome.md`" | One line per problem found; the genome is not changed. Ask for the fixes as changes |
 | Publish what was built | "Publish the solution", after the build | Publishing and deploying happen only when you ask, never as part of the build |
 
@@ -195,45 +197,55 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 
 ## 1 · Get a genome
 
-Say what you have. The agent writes the genome with `uipath-planner`, checks it, writes its readiness file and asks what to change. Already have a genome? Go to step 2.
+Say what you have. The agent writes the genome with `uipath-planner`, checks it, writes its SDD and asks what to change. Already have a genome? Go to step 2.
 
 | You have | Say | The agent |
 | --- | --- | --- |
 | A PDD or another process document | "Design a solution from `<document>`" | Asks whether to decide on its own or pause at checkpoints for your review, and where the automation will run. Writes a solution design (SDD), then the genome of that design |
-| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions |
-| A project or solution | "Extract a genome from `<folder>`" | Asks for related documents (PDD, SOP), where the rebuild will run and whether to keep the parts nothing uses; for a UiPath project, also the Orchestrator folder it runs in. States its reading plan (in parts for a large project) and reads every file. Before it writes, it asks per part whether to fold it into another and which UiPath product it runs on; for a UiPath project, also whether to retire it |
+| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions, the first also for your preferences file |
+| A project or solution | "Extract a genome from `<folder>`" | Asks for related documents (PDD, SOP) and your preferences file, where the rebuild will run and whether to keep the parts nothing uses; for a UiPath project, also the Orchestrator folder it runs in. States its reading plan (in parts for a large project) and reads every file. Before it writes, it asks per part whether to fold it into another and which UiPath product it runs on; for a UiPath project, also whether to retire it |
 | A UiPath project to refactor | "Refactor `<folder>`" | Extracts the genome with your refactor answers in it, waits for your edits, then builds |
 
 A request can name its skill: "Use the `uipath-planner` skill to extract a genome from `<folder>`".
 
-You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several, and one readiness file, `<name>-readiness.md`, beside the genome. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file. Only this skill changes a genome: the build never does. Every edit rewrites the readiness file and keeps what you wrote in it.
+**A preferences file** holds your team's standing answers and development standards: naming, project structure, logging, the template, where settings live. Give it once, and every genome and build follows it. Start one from the planner's `preferences-template.md`.
+
+You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Beside them is an SDD: `<name>-sdd.md`, or `<name>-solution-sdd.md` with one SDD per project when there are several. It holds the same automation in the solution-design form people review, opening with every question still open. Ask for changes in plain words ("step 4 is wrong") and the agent edits the genome and writes the SDD again, keeping the answers you wrote in it. Only this skill changes a genome: the build never does.
 
 ## 2 · Review it and settle what is open
 
-This is your main decision point. The build follows the genome, and the agent never changes it while building. Read these parts, in this order:
+This is your main decision point. The build follows the genome, and the agent never changes it while building. Read the SDD: the questions come first, then the design. Read these parts, in this order:
 
-1. **Acceptance criteria** — the definition of done. Check that each one is testable on your data.
-2. **Lines marked *[Inferred]*** — the agent's best reading where the source is silent. The readiness file lists each one as a reading to confirm or correct.
-3. **Source defects** — bugs the agent found and verified in the source. By default the rebuild keeps the source's behaviour, bugs included, unless a comment or log text in the source says what was meant, or you decide otherwise. The readiness file lists each one you have not ruled on, those that change a business outcome first.
-4. **Configuration questions** — the values the build needs, such as URLs, accounts and settings, each copied into the readiness file with its default.
-5. **Not covered** — parts of the source that no step rebuilds. Ask now if you want them.
+1. **Acceptance criteria** — the definition of done, in the SDD's Testing Strategy. Check that each one is testable on your data.
+2. **Business decisions** — the SDD's first questions: the choices the source or the description leaves open, each with what the genome builds until someone decides.
+   - Business outcomes come first. Among them are source defects you have not ruled on: bugs the agent found and verified in the source. By default the rebuild keeps the source's behaviour, bugs included, unless a comment or log text in the source says what was meant, or you decide otherwise.
+   - Then how a run behaves.
+   - Then the agent's readings where the source is silent, each marked *[Inferred]* in the genome.
+3. **Configuration values** — the values the build needs, such as URLs, accounts and settings, each with its default.
+4. **Not covered** — parts of the source that no step rebuilds, under Out of Scope. Ask now if you want them.
 
-To check a step against the original, the Source Map names the part of the source each step came from. When the rebuild merges, splits or drops parts of the source, its as-is process map shows the source as a whole, beside the Process Map.
+To check a step against the original, the genome's Source Map names the part of the source each step came from. When the rebuild merges, splits or drops parts of the source, its as-is process map shows the source as a whole, beside the Process Map.
 
-**Prepare the build.** On the machine that will build, say "Prepare the build of `<name>-genome.md`". The agent starts a build with `uipath-genome` (what is installed, which templates exist, where the source is) and asks each UiPath skill how it would build each capability the genome uses: mail, documents, spreadsheets, databases, applications, connectors. It reads the docs of the packages it would use, in a throwaway project, and looks on your tenant's feed for libraries earlier work published. It writes two sections into the readiness file and builds nothing:
+**Answer the questions** with the people each item names: the process owner for the business decisions, whoever holds the source for missing material, the environment owners for the configuration values.
+- **In the SDD:** share it. Most items carry a default, so write a change only under what is wrong, then your name and the date on a `Confirmed:` line.
+- **In the chat:** say "Interview me on the open questions", or add a role ("the process owner's"). It asks first how you want to answer, as the build does: every item, only what needs a decision, or the defaults.
+
+Then say "Apply the answers": the agent writes into the genome what the answers change, writes the SDD again, and keeps each configuration value for the build. If you skip it, preparing or building does it first.
+
+**Prepare the build (optional)** when someone else should answer the build's own questions, or you want to review the architecture before anything is built. On the machine that will build, say "Prepare the build of `<name>-genome.md`". The agent starts a build with `uipath-genome` (what is installed, which templates exist, where the source is) and asks each UiPath skill how it would build each capability the genome uses: mail, documents, spreadsheets, databases, applications, connectors. It reads the docs of the packages it would use, in a throwaway project, and looks on your tenant's feed for libraries earlier work published. It writes `<name>-readiness.md` beside the genome and builds nothing:
 
 - **Architecture decisions**, each with its recommended option: how work done item by item is split, whether each library stays a package of its own, the technology for each capability (for mail: Microsoft 365 over Graph, or the desktop Outlook activities), the framework, where settings live. Gaps it finds in the genome are listed after them, and applying the answers fixes them.
 - **Build setup:** every other question the build would ask on that machine.
+- **Existing projects, the systems to make reachable and the build environment**, each with a `Status:` line. Start these first: access takes the longest.
+- **Still open in the SDD:** the SDD's questions nobody has answered yet, so one file goes round.
 
-**Fill in the readiness file** with the people each section names: the engineer and your architect for the architecture, the systems to make reachable, existing projects, the build environment and your development standards; the environment owners for the configuration values; the process owner for the business decisions. Most items carry a default (the recommended option, the question's default, or what the genome builds now), so you write a change only under what is wrong, then your name and the date on the section's `Confirmed:` line. The header counts the items with no default, which the build needs. Start with the systems and the build environment: access takes the longest.
-
-Then say "Apply the readiness answers": the agent writes into the genome what the answers change (a ruling at its step, the split, a technology) and marks each item applied. Answers given in a reply instead of the file are applied the same way. Skip it and preparing or building does it first.
+Fill it in the same way, then say "Apply the answers" again.
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent builds with `uipath-genome` and reads the readiness file as your answers. It asks first what the file leaves open, in batches of up to four, each with a recommended answer; with every needed item answered and every section confirmed, it asks nothing, and a question whose options changed since the file was prepared (another machine, other packages) is asked again. The questions cover the genome's open values, how to split work done item by item, the project location, XAML or C#, the .NET version, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)).
+Say "Build `<name>-genome.md`". The agent builds with `uipath-genome` and reads the SDD's answers, and the readiness file when you prepared, as your answers. It asks first what they leave open, in batches of up to four, each with a recommended answer; with every needed item answered and every section confirmed, it asks nothing, and a question whose options changed since the file was prepared (another machine, other packages) is asked again. The questions cover the genome's open values, how to split work done item by item, the project location, XAML or C#, the .NET version, where settings live, package versions, and whether it can reach the application and how far it may go there ([step 4](#4--check-run-and-fix)). A rebuild as it is also asks how closely to follow the source; a refactor adds its own build questions ([Rebuilding an existing automation](#rebuilding-an-existing-automation)).
 
-A source defect that needs your ruling and that the readiness file leaves open comes back as a question, with where it is in the source and what it affects. The build also looks for projects that already exist, so a library built for an earlier process is reused instead of built twice, and asks whether each library becomes a package of its own.
+A business decision nobody has answered comes back as a question, with where it is in the source and what it affects, and your answer goes into the genome before anything is built. How a run behaves, and the agent's readings, are built as the genome states them; the report lists those nobody confirmed. The build also looks for projects that already exist, so a library built for an earlier process is reused instead of built twice, and asks whether each library becomes a package of its own.
 
 For a genome extracted from a project, you can take the source's value wherever the genome has one, so only the values the source lacks, the choices it never had and the build setup are asked: pick that answer to the first question, or say "take the source's values" in the build request.
 

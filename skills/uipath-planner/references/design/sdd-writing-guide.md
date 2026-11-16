@@ -84,7 +84,7 @@ Before finalizing the SDD (the skeleton is already on disk from Step 0), collect
 2. Update the SDD sections with the user's answers.
 3. If the user partially answers or asks follow-ups, do one more round (max 2 rounds total). After 2 rounds, keep remaining unresolved items as `[SME REVIEW]`, apply each item's recorded default in its section, and proceed to Step 2.
 4. Any items the user explicitly skips remain as `[SME REVIEW]` in the final file with their defaults applied.
-5. **Classify every surviving item:** `default-carried` (a recorded default is applied in its section — the normal case) or `blocking` — only when no defensible default exists AND the answer changes the architecture: the source says the platform is self-hosted but not which one (Automation Suite or standalone) while a selected product's availability differs between them — an unknown delivery model with no such signal is `unspecified — assumed cloud`, default-carried ([product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate); an in-scope system has no access route the source or a default can supply (no API, no UI and no file interface known); the source's scope statements contradict each other and Level 0/1 could not resolve them; the user rejected the Level 1 recommendation without choosing an alternative. An access *detail* that is unknown (a mail protocol, an API version) takes its default and is default-carried. An item answered with "use defaults" stays `[SME REVIEW]`, default-carried: a default nobody with business knowledge confirmed is still a gap. Record the class in the Action Required table (Step 2 item 4). Blocking items keep the SDD at `Status: draft` (Step 2 item 8 rule 4).
+5. **Classify every surviving item:** `default-carried` (a recorded default is applied in its section — the normal case) or `blocking` — only when no defensible default exists AND the answer changes the architecture: the source says the platform is self-hosted but not which one (Automation Suite or standalone) while a selected product's availability differs between them — an unknown delivery model with no such signal is `unspecified — assumed cloud`, default-carried ([product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate); an in-scope system has no access route the source or a default can supply (no API, no UI and no file interface known); the source's scope statements contradict each other and Level 0/1 could not resolve them; the user rejected the Level 1 recommendation without choosing an alternative. An access *detail* that is unknown (a mail protocol, an API version) takes its default and is default-carried. An item answered with "use defaults" stays `[SME REVIEW]`, default-carried: a default nobody with business knowledge confirmed is still a gap. Record the class in the Action Required section (Step 2 item 4). Blocking items keep the SDD at `Status: draft` (Step 2 item 8 rule 4).
 6. If there are zero `[SME REVIEW]` items, skip this step entirely.
 
 This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD. A caller's design request asks nothing here: every item keeps its default and class, and `blocking` items go to the caller in the result ([caller-request-guide.md](caller-request-guide.md) § The Run).
@@ -121,17 +121,13 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
 
-4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body. This sits before the Table of Contents in every template:
+4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
+   - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
+   - its marker in the body names it (`[SME REVIEW] D2: <note>`);
+   - a `default-carried` item states its default and ends on `Change:`;
+   - a `blocking` item has no default: it ends on `Answer:`, after `Until answered:`.
 
-```markdown
-## Action Required — SME Review Items
-
-| # | Section | Item | Question | Default applied | Blocking |
-|---|---|---|---|---|---|
-| 1 | <SECTION> | <ITEM> | <QUESTION> | <DEFAULT> | <yes/no> |
-
-> These items are marked `[SME REVIEW]` in the document. Default-carried items (Blocking = no) do not block the genome or the build — the automation is built on the recorded defaults, which must be verified before production sign-off. Any Blocking = yes item keeps the handoff at `Status: draft`.
-```
+   The genome keeps each id for the entry it carries the item into, and writes the section again from the genome once it exists ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6). A Case Management SDD keeps its review-item table instead ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
 
 5. **Length follows content, never padding.** Every step, rule, exception, application and example the source states is kept — business rules all of them ([business-rules-guide.md](business-rules-guide.md) § 4). What is cut is restatement: a fact lives in one section and others name it; no template instruction, placeholder or empty example row survives; a table row replaces prose that says the same; a section the template makes conditional and whose condition does not hold is omitted.
 6. **Re-run handling — already resolved at Step 0.** This check runs BEFORE the Step 0 skeleton write (that is the write that can clobber an existing file); by the time you reach here the answer is already applied, so do not re-ask. The question, for reference and for the Step 0 gate: if `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user with a structured question:
@@ -177,7 +173,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
-9. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result: v1` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
+9. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
 ```markdown
 ## SDD Generated
@@ -189,7 +185,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
 
 **Next — branch on the handoff `Status`:**
-- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as `*[Inferred]*` assumptions — confirm them before production. A design a build skill handed over gets no genome.
+- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries under their ids, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
 - `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written until then.
 ```
 

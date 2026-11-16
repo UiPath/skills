@@ -13,6 +13,8 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
+> Preferences: [{title}]({relative path to the preferences file}) *(Only when the user named one; omit otherwise. A component of a process genome omits it: the process genome's line holds.)*
+
 ## Overview
 
 {1-3 paragraphs: purpose, business problem, who it is for, what triggers it.}
@@ -107,6 +109,18 @@
 2. {Question}? ({setting | constant}; default: {value})
 
 *Stub when none: "No open values — no configuration needed."*
+
+## Open Decisions
+
+{Every point left to a person, numbered once and never renumbered: an entry stays when decided or withdrawn (format guide § Open Decisions). Each marked line names its entry: `*[Inferred: D1]*`.}
+
+1. {The decision as a question}? ({business outcome}; answered by: {the process owner}; builds now: {what the genome builds}; instead: {the other option}) — step {N}, {step name}
+2. {The point as a question}? ({run behaviour}; answered by: {the process owner}; recommended: {the evident intent, in words}; builds now: {the source's behaviour}) — step {N}, {step name}
+3. {The reading as a question}? ({reading}; answered by: {whoever knows the process}; reading: {what the genome takes it to be, and why it is inferred}) — step {N}, {step name}
+4. {What to supply}? ({material}; answered by: {whoever holds the source}; until answered: {a placeholder, a stop}) — step {N}, {step name}
+5. {A decided question}? (decided {YYYY-MM-DD}: {the answer})
+
+*Stub when the genome has never had one: "No open decisions."*
 
 ## Workflow
 

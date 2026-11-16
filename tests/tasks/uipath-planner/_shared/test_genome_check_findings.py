@@ -547,14 +547,14 @@ def test_steps_without_bold_names_fail_strict_only(check):
 
 
 def test_empty_configuration_questions_fail_core(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
     rc, out = check(COMPONENT.replace(cq, "## Configuration Questions\n\n"))
     assert rc == 1
     assert "Configuration Questions section is empty" in out
 
 
 def test_configuration_questions_without_list_or_stub_fail_strict_only(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
     text = COMPONENT.replace(cq, "## Configuration Questions\n\nAsk the owner.\n\n")
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
@@ -791,3 +791,77 @@ def test_script_runs_as_a_command(tmp_path):
     rc, out = cli("component", genome, "--profile", "strict")
     assert rc == 0
     assert out.startswith("OK (strict)")
+
+
+def open_decisions(text):
+    return section(text, "## Open Decisions", "## Workflow")
+
+
+def test_a_mark_naming_no_entry_fails_strict_only(check):
+    text = COMPONENT.replace("*[Inferred: D1]*", "*[Inferred]*", 1)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "mark(s) name no Open Decisions entry or Configuration Question" in out
+
+
+def test_a_mark_naming_a_missing_entry_fails_strict(check):
+    rc, out = check(COMPONENT.replace("*[Inferred: D1]*", "*[Inferred: D9]*", 1), profile="strict")
+    assert rc == 1
+    assert "names entry 9, which Open Decisions does not have" in out
+
+
+def test_a_decided_entry_keeps_no_marker(check):
+    od = open_decisions(COMPONENT)
+    first = re.search(r"^1\. [^\n]*$", od, re.M).group(0)
+    decided = first.split("? (", 1)[0] + "? (decided 2026-11-16: the robot machines' local time zone)"
+    rc, out = check(COMPONENT.replace(first, decided), profile="strict")
+    assert rc == 1
+    assert "which is decided: a settled point keeps no marker" in out
+
+
+def test_open_decisions_never_skip_a_number(check):
+    od = open_decisions(COMPONENT)
+    rc, out = check(COMPONENT.replace(od, od.replace("\n2. ", "\n3. ", 1)), profile="strict")
+    assert rc == 1
+    assert "entry 3 follows entry 1" in out
+
+
+def test_an_entry_in_no_known_form_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    first = re.search(r"^1\. [^\n]*$", od, re.M).group(0)
+    rc, out = check(COMPONENT.replace(first, "1. Which time zone? (maybe the local one)"), profile="strict")
+    assert rc == 1
+    assert "Open Decisions entry 1 is none of" in out
+
+
+def test_a_withdrawn_configuration_question_keeps_its_number(check):
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
+    first = re.search(r"^1\. [^\n]*$", cq, re.M).group(0)
+    rc, out = check(COMPONENT.replace(first, "1. Withdrawn: the requisitions no longer arrive by mail."), profile="strict")
+    assert "configuration question 1 does not name its kind" not in out
+
+
+def test_an_sdd_written_from_the_genome_goes_stale_when_the_genome_changes(tmp_path):
+    genome = tmp_path / "sample-genome.md"
+    genome.write_text(COMPONENT, encoding="utf-8")
+    fingerprint = subprocess.run(["node", str(FINGERPRINT), "--genome", str(genome)], capture_output=True, text=True, check=True).stdout.strip()
+    sdd = tmp_path / "sample-sdd.md"
+    sdd.write_text(f"# SDD\n\n## Planner Handoff\n\n| Field | Value |\n|---|---|\n| **Genome** | `sample-genome.md` · genome-sha256 {fingerprint} |\n", encoding="utf-8")
+    assert cli("component", genome, "--profile", "strict")[0] == 0
+    genome.write_text(COMPONENT.replace("## Tags\n", "## Tags\n\nchanged\n", 1), encoding="utf-8")
+    rc, out = cli("component", genome, "--profile", "strict")
+    assert rc == 1
+    assert "sample-sdd.md: genome-sha256 does not match the genome" in out
+    sdd.write_text("# SDD\n\n| **Genome** | `sample-genome.md` |\n", encoding="utf-8")
+    assert "has no 'Genome' handoff row carrying its genome-sha256 fingerprint" in cli("component", genome, "--profile", "strict")[1]
+
+
+def test_an_open_entry_the_genome_never_names_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    last = int(re.findall(r"^(\d+)\. ", od, re.M)[-1])
+    extra = f"{last + 1}. Who reads the run summary? (reading; answered by: whoever knows the process; reading: the finance team) — step 13\n"
+    text = COMPONENT.replace(od, od.rstrip("\n") + "\n" + extra + "\n", 1)
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"Open Decisions entry {last + 1} is named nowhere in the genome" in out

@@ -10,11 +10,12 @@ Content rules for every genome, however produced — `author`, `extract` and `ed
 2. **Infer complexity, never ask for it** — § Complexity.
 3. **Replication-grade detail in behavioural wording**, with no activity names, variable names, file paths or code syntax in the body (a case component's build input excepted — § Interface) — § Workflow and § Provenance.
 4. **Configuration Questions carry only the values left open** — § Configuration Questions.
+4a. **Every point left to a person is an Open Decisions entry**, named where the genome marks it — § Open Decisions.
 5. **Every section present, always**, with a stub line where one does not apply — § Stub Lines.
 6. **One skill per Build With row, from the mapping guide only**; operate-only skills belong under Platform Dependencies — [skill-mapping-guide.md](skill-mapping-guide.md).
 7. **The preamble and the blueprint blockquote name `uipath-genome` as the skill that builds the genome, and the comment names `uipath-planner` as the skill that changes it**, and Build With (or Components) precedes Workflow (or Process Map) — § Two Levels rule 5.
 8. **Acceptance criteria are specific and testable** — § Acceptance Criteria.
-9. **Flag ambiguity, never leave gaps**: the best interpretation plus `*[Inferred]*` — § Ambiguity Marker.
+9. **Flag ambiguity, never leave gaps**: the best interpretation plus `*[Inferred: D<n>]*`, naming the entry that asks it — § Ambiguity Marker.
 10. **Write immediately, offer edits after**; edits are in place, never a regeneration — § Write, Then Offer Edits; [edit-guide.md](../edit/edit-guide.md).
 11. **Composite source actions are contracts in the genome** — § Workflow; `uipath-genome` turns them into patterns.
 12. **The transactional shape is described; a split is recorded only when it was already decided**: the genome asserts no split, store, template or unit of its own. A flow's `Decided:` line records the split the agreed SDD, the user's request or the refactor answers chose ([transactional-shape-guide.md](transactional-shape-guide.md) rule 8); for every other flow `uipath-genome` asks the split questions.
@@ -100,7 +101,7 @@ Inputs, outputs, side effects. Mandatory content for a component inside a proces
 **Test components** (a group of test cases over data rows in the single test project) list the row schema per test case: the fields that vary per scenario, separately from the constants in the project's configuration. Credentials appear as the name of a credential asset per row, never as values. Each case names its data set — a single row included — with its row count and where the source keeps it, since the rebuild keeps it there: a data set kept in a store is the case's data source, the project's test-data entity filtered on the data set's name; one shipped with the project is a variation file in the owning skill's format, named after the case, whose fields stay within the analyzer's argument cap (above). A case with no data set takes its values from configuration constants.
 
 ### Configuration Questions
-Format: `N. {Question}? ({setting | constant}; default: {value})` — every question names its kind (below) before its default.
+Format: `N. {Question}? ({setting | constant}; default: {value})` — every question names its kind (below) before its default. A question keeps its number, since business rules, the SDD and answers cite it (`CQ3`): a new question goes at the end, and one the genome no longer needs stays as `N. Withdrawn: {why}.`
 
 **Authored genomes** ask every value the description gives or leaves open: paths, URLs, addresses, server names, credential and queue names, thresholds, column names, and the application choice itself ("Which email provider? (constant; default: Outlook)").
 
@@ -116,6 +117,30 @@ Every other value is a fact, written once where its reader looks: a value typed,
 **A setting depends on the environment.** Every Orchestrator connection the automation is deployed to is its own environment — dev, UAT, prod — and the build is often made on another machine and tenant than the one it runs on. Mark each Configuration Question as a *setting* when its answer differs between environments (hosts and URLs, mailboxes and recipients, shares and paths, credential, queue, bucket, asset and Data Fabric entity names, schedules, language models) or must change without a new version (a key the source reads from its configuration store, item 4 above), and as a *constant* when it is the same in every environment and a change to it is a change to the automation (thresholds, limits, retry counts, message texts). The kind is written in the question's parenthesis, before the default: `(setting; default: …)` or `(constant; default: …)`. A configuration key is not by itself one setting: several keys that always carry the same value (one recipient list repeated per notification type) are one setting, and a key whose value only names another resource (a vault alias, a table name fixed by the setup) is a fact. A source's own configuration store (a config table, a properties file, a workbook) is not a Platform Dependency of the rebuild: its keys become questions or facts, and where the rebuild's settings and constants live is decided by execution's configuration questions.
 
 Both modes: when the open values run to dozens (a configuration table or procedure), group them by theme into one question per theme and name every key inside its question, before the question mark, so the list stays readable and the build can still map each key: `4. Which folders does the run use — the drive letter (row 5) and the in-process, processed and invalid folders (rows 6–8)? (setting; default: not in the export)`. A grouped question holds values of one kind; a theme whose values are settings and constants is two questions. When an empty value would change the flow instead of failing (an end time that compares as reached, a list matched by containment), the question says so — "required: empty ends the run" — so the build guards it. Questions the build asks itself are not written into the genome: the scaffolding choices (project location, target framework, expression language, installed package versions), and the split questions (unit, split, store, template, triggers and runners) when the Transactional Shape is not the stub.
+
+### Open Decisions
+Every point the genome leaves to a person, one numbered entry each, in the file that owns it: a component's point in its component genome, a point spanning components in the process genome. The SDD lists the open entries for the people who answer them ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)), and the build reads the same list. Format: `N. {The decision as a question}? ({tier}; answered by: {role}; {Builds now | Recommended | Reading | Until answered}: {…}; instead: {an option}) — {step <N>, <step name>, or the section}`, one `instead:` per other option, and `Builds now:` after `Recommended:` when the genome builds something other than the recommendation.
+
+Tiers, in the order the owner reads them, by what a wrong default costs:
+1. **business outcome** — what is written to a system of record, what the business is sent and who receives it, which item is worked, skipped, charged or paid, an amount. No option is recommended: the owner rules, and `Builds now:` stands until then. An inferred point that decides an outcome is this tier too, with `Reading:` beside its options.
+2. **run behaviour** — how a run counts, retries, recovers, stops, logs or reports: the reason, message or comment it records for an item, a failure notice and what it carries, never its outcome. `Recommended:` the evident intent, in words ("retries every failure three times").
+3. **reading** — an inferred point with no outcome of its own: a purpose, a caller, a name, a format. `Reading:` what the genome takes it to be, and why it is inferred.
+4. **material** — an object or file the build needs that nobody has supplied: an automation the source calls that the export does not hold, a file from outside the export whose content a step rests on (a template it fills, a workbook whose sheets and columns it reads). `Until answered:` what the build does without it — a placeholder, a stop.
+
+The role answering is the process owner for the first two tiers, whoever knows the process for a reading and whoever holds the source for material, unless the point is another owner's (a system's owner, the environment's owners).
+
+Only what nothing else answers is an entry. A point the source, an agreed SDD, the request, the preferences file or the tenant settles is a fact, written where it acts. Every other point is classed before it is written:
+- a safe default (a retry count, a timeout, a format the target fixes) is the genome's own value, a fact or a Configuration Question's default;
+- one whose reading changes what is built or a business outcome is an entry with its default (`builds now:`, `recommended:`, `reading:`);
+- one with no reading and no safe default is an entry with `until answered:`, or a Configuration Question whose default the build cannot run with.
+
+Each of these is an entry: every `*[Inferred]*` point; every source defect with no `User ruling`, except one whose rebuild follows an intent the source states and that changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)); a detail an evident intent leaves open, with the options the step lists; each `Not covered` or `Unused` object of the Source Map, a business outcome since it decides what is built (`Builds now:` left out; `instead:` translate it now) and each `Resource discrepancies` row (`Builds now:` the source; `instead:` the resource); material. A value a Configuration Question asks is that question, never an entry. Points one answer settles — one defect repeated, one reading applied throughout — are one entry whose location names every place.
+
+Every open entry is named where the genome states its point: a marked line (`*[Inferred: D3]*`), a defect's `(ruling open: D3)`, a defect index row or a Source Map row (`(D3)`), or, for a process genome's entry, a component's `process D3`. An entry nothing in the genome names is no question about it, and is not written.
+
+An entry is never removed, so its number stays the one every SDD and answer cites (`D3`), and a new entry goes at the end:
+- **decided**, once the genome states the answer: `N. {Question}? (decided {YYYY-MM-DD}: {the answer})`;
+- **withdrawn**, once the genome no longer raises it: `N. {Question}? (withdrawn: {why})`.
 
 ### Workflow (component) / Process Map (process)
 Numbered steps in execution order, each `N. **{Step name}** (input: …; output: …)`: the number keys the step's row in the Source Map's step table, the bold name heads its Business Rules and Error Handling entries. Steps may be grouped under `###` headings (one per entry point), each step keeping that form. Steps several entry points share are written once, under a heading of their own, and each entry point's last step names the step it continues into. A step that calls an automation the source does not hold (another project's process, a workflow outside the export) names it by what it does, states what the step passes to it and what it uses of the result, and flags `*[Inferred]*` what the caller does not show; the callee is a Platform Dependency the rebuild calls but does not build, and the Source Map's unresolved-invocation row names it. A step involving several fields, a condition, validation, or a transformation gets substeps (a, b, c) and a data annotation `(input: …; output: …)`.
@@ -195,7 +220,7 @@ Where every part of an extracted genome came from — its contract rows, the ste
 | Section | Simple | Medium | Complex |
 |---|---|---|---|
 | Overview | 1 paragraph | 2-3 paragraphs | 2-3 paragraphs |
-| Target Applications, Build With, Platform Dependencies, Interface, Configuration Questions, Complexity, Tags | Full | Full | Full |
+| Target Applications, Build With, Platform Dependencies, Interface, Configuration Questions, Open Decisions, Complexity, Tags | Full | Full | Full |
 | Workflow | 3-5 steps minimum | 5+ steps, substeps where detailed | 8+ steps, substeps where detailed |
 | Business Rules | Stub allowed | Step-associated | Step-associated |
 | Error Handling | Stub allowed | Per step where applicable | Per step where applicable |
@@ -211,13 +236,14 @@ Minimums, not ceilings. Fifteen distinct steps in the source or description mean
 | Platform Dependencies | No Orchestrator or Integration Service resources required. |
 | Interface | Runs unattended with no arguments; outputs are the side effects listed in Workflow. |
 | Configuration Questions | No open values — no configuration needed. |
+| Open Decisions | No open decisions. |
 | Business Rules | No business rules beyond the Workflow substeps. |
 | Error Handling | No error handling: a failure stops the run. |
 | Transactional Shape | Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}. |
 
 ## Ambiguity Marker
 
-When intent is unclear from the source, write the best interpretation, append `*[Inferred]*` to that line, and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Users remove markers once they confirm the content ("Remove the inferred flags").
+When intent is unclear from the source, write the best interpretation, append `*[Inferred: D<n>]*` to that line, naming the Open Decisions entry that asks it — `process D<n>` for an entry of the process genome, `CQ<n>` when a Configuration Question asks the value — and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Wherever these rules say a line or a value is `*[Inferred]*`, the mark takes this form. A confirmed reading loses its marker, and its entry reads decided ("Remove the inferred flags" confirms every reading).
 
 ## Write, Then Offer Edits
 
@@ -248,6 +274,9 @@ The Runtime and deployment bullets of § Platform Dependencies, for the whole pr
 
 ## Design Links
 
-One optional blockquote line after the blueprint blockquote (the process genome's, or a standalone component's) ties a genome to the document it derives from. It is written only when that document exists; it is never invented.
+Optional blockquote lines after the blueprint blockquote (the process genome's, or a standalone component's) tie a genome to the documents it derives from or was written to. Each is written only when that document exists; none is invented.
+
+- **`> Preferences: [<title>](<relative path>)`** — the preferences file the user named when the genome was written. It answers the questions it covers, and its rules apply wherever they shape the genome: the component layout, the names of projects and resources, the template. `uipath-genome` reads the same file as standing answers. A preference that conflicts with a rule of this skill is put to the user with both statements, and the genome follows the ruling.
+- **The SDD written from the genome** — `<slug>-sdd.md` beside a component genome with no `Designed in:` line, or `<slug>-solution-sdd.md` with one SDD per project beside a process genome, its handoff's `Genome` row carrying the genome's fingerprint ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)). The genome is the source and the SDD its rendering for people; the strict check fails an SDD whose fingerprint no longer matches the genome, so a stale SDD never passes.
 
 - **`> Designed in: [<SDD title>](<relative path to the SDD>) · sdd-sha256 <SDD_FINGERPRINT>`** — the genome was authored from that agreed SDD. The fingerprint is required on every `Designed in:` line. `<SDD_FINGERPRINT>` is what `node "<SKILL_DIR>/scripts/sdd-fingerprint.mjs" "<SDD_PATH>"` prints once the genome's content is final (`<SKILL_DIR>` is the folder holding this skill's `SKILL.md`); for a solution `<SDD_PATH>` is the root SDD, and the fingerprint covers the root and every child SDD it lists. The SDD's `Genome` row, and an older SDD's `Tasks file` row, do not change it. The build builds the genome as written and hands a case component's SDD to `uipath-maestro-case`. `uipath-planner` keeps the genome current: an SDD change ends with `edit`'s "The SDD was revised" ([edit-guide.md](../edit/edit-guide.md)) and a new fingerprint ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current). The strict check fails a `Designed in:` line whose fingerprint no longer matches its SDD (root plus every child for a solution) or whose SDD cannot be read, so a stale genome never passes. The SDD's decisions — the split and queue design, the implementation mode, the package pins, the refactor answers — are recorded in the sections that hold them (a flow's `Decided:` line, Configuration Questions defaults, a process genome's Deployment). The genome restates the SDD's products and projects and never contradicts them; which changes to a designed genome go to `design` first: [edit-guide.md](../edit/edit-guide.md) § Any genome.

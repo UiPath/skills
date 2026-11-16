@@ -43,17 +43,17 @@ The automation maintains a lightweight state file tracking the last known missio
 
 | Trigger | Starts | Kind | When | Runners |
 |---------|--------|------|------|---------|
-| ArtemisMonitor-Schedule | this process | Time | every 3 minutes | 1 *[Inferred]* |
+| ArtemisMonitor-Schedule | this process | Time | every 3 minutes | 1 *[Inferred: D1]* |
 
 ### Runtime and deployment
 
-- **Delivery model:** Automation Cloud *[Inferred]*
+- **Delivery model:** Automation Cloud *[Inferred: D2]*
 - **Packaging and route:** one package
 - **Entry points:** the main workflow; how it starts: Triggers above
-- **Runtime and machines:** Windows *[Inferred]*; unattended; the machine keeps the local state file between runs (Configuration Question 4)
-- **Robots:** one unattended robot account *[Inferred]*
-- **Folders and environments:** one Orchestrator folder *[Inferred]*; the status page the fallback scrape reads is public, the same in every environment
-- **Logging and retention:** the job log, one summary line per run (step 10); retention not stated *[Inferred]*
+- **Runtime and machines:** Windows *[Inferred: D2]*; unattended; the machine keeps the local state file between runs (Configuration Question 4)
+- **Robots:** one unattended robot account *[Inferred: D2]*
+- **Folders and environments:** one Orchestrator folder *[Inferred: D2]*; the status page the fallback scrape reads is public, the same in every environment
+- **Logging and retention:** the job log, one summary line per run (step 10); retention not stated *[Inferred: D3]*
 
 ## Interface
 
@@ -68,6 +68,12 @@ The automation maintains a lightweight state file tracking the last known missio
 3. How far back should the first poll look for events, to avoid flooding the inbox on first run? (constant; default: 1 hour)
 4. Should the state file persist across Orchestrator restarts? (constant; default: yes — avoids duplicate notifications)
 5. Which email format? (constant; default: HTML with mission phase icons; alternative: plain text)
+
+## Open Decisions
+
+1. How many runners does the 3-minute schedule use? (reading; answered by: whoever knows the process; reading: one runner, since each run is one poll and one decision; the description does not state it) — Platform Dependencies, Triggers
+2. Where does the automation run: which delivery model, machine type, robot account and Orchestrator folder? (reading; answered by: the environment's owners; reading: Automation Cloud, a Windows machine, one unattended robot account and one folder, since the description names none) — Platform Dependencies, Runtime and deployment
+3. How long are the job logs kept? (reading; answered by: whoever knows the process; reading: no retention beyond the platform default, since none is stated) — Platform Dependencies, Runtime and deployment
 
 ## Workflow
 

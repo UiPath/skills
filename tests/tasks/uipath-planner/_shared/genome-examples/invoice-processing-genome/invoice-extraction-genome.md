@@ -38,7 +38,7 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 
 | Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
 |-------|-------------|-------------|------------------|---------|----------|-----------|
-| AP_InvoiceIntake | one invoice | as in the process genome's Handoffs row 1 | *[Inferred]* | *[Inferred]* | step 3 | component 1 |
+| AP_InvoiceIntake | one invoice | as in the process genome's Handoffs row 1 | *[Inferred: process D1]* | *[Inferred: process D2]* | step 3 | component 1 |
 
 ### Storage buckets
 
@@ -71,6 +71,10 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 3. What tolerance applies to line and total mismatches? (constant; default: 1% or €5, whichever is greater)
 4. Which SAP company codes are in scope? (setting; default: 1000, 2000)
 5. Which SAP transaction posts incoming invoices? (constant; default: the standard incoming-invoice transaction)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 

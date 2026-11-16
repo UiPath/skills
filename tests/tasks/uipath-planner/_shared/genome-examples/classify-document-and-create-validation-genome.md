@@ -46,13 +46,13 @@ When the classification confidence falls below a configurable threshold, the aut
 
 ### Runtime and deployment
 
-- **Delivery model:** Automation Cloud *[Inferred]*
+- **Delivery model:** Automation Cloud *[Inferred: D1]*
 - **Packaging and route:** one package
-- **Entry points:** the main workflow, called with `DocumentPath` (Interface); it has no trigger of its own *[Inferred]*
-- **Runtime and machines:** Windows *[Inferred]*; unattended, the process persisted while its validation task is open
-- **Robots:** one unattended robot account *[Inferred]*
-- **Folders and environments:** the process's own folder, which receives the Action Center tasks (Configuration Question 5); test and production not stated *[Inferred]*
-- **Logging and retention:** the job log *[Inferred]*; retention not stated
+- **Entry points:** the main workflow, called with `DocumentPath` (Interface); it has no trigger of its own *[Inferred: D2]*
+- **Runtime and machines:** Windows *[Inferred: D1]*; unattended, the process persisted while its validation task is open
+- **Robots:** one unattended robot account *[Inferred: D1]*
+- **Folders and environments:** the process's own folder, which receives the Action Center tasks (Configuration Question 5); test and production not stated *[Inferred: D1]*
+- **Logging and retention:** the job log *[Inferred: D3]*; retention not stated
 
 ## Interface
 
@@ -68,6 +68,12 @@ When the classification confidence falls below a configurable threshold, the aut
 4. Which Orchestrator storage bucket holds documents during validation? (setting; default: du_storage_bucket)
 5. Which Orchestrator folder receives the Action Center tasks? (setting; default: the process's own folder)
 6. What task priority for validation tasks? (constant; default: Medium)
+
+## Open Decisions
+
+1. Where does the automation run: which delivery model, machine type, robot account and Orchestrator folder? (reading; answered by: the environment's owners; reading: Automation Cloud, a Windows machine, one unattended robot account and the process's own folder, since the description names none) — Platform Dependencies, Runtime and deployment
+2. How is the main workflow started? (reading; answered by: whoever knows the process; reading: another automation or a person calls it with a document path, since it has no trigger of its own and none is described) — Platform Dependencies, Runtime and deployment
+3. How long are the job logs kept? (reading; answered by: whoever knows the process; reading: no retention beyond the platform default, since none is stated) — Platform Dependencies, Runtime and deployment
 
 ## Workflow
 

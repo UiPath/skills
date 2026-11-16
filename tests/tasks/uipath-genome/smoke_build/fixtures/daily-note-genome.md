@@ -39,6 +39,10 @@ Runs unattended with no arguments; the output is the note file Workflow step 3 w
 
 1. Which folder receives the note? (constant; default: `Notes`, relative to the process folder)
 
+## Open Decisions
+
+No open decisions.
+
 ## Workflow
 
 1. **Take the business date** (input: none; output: business date): take today's date as the business date, formatted `yyyy-MM-dd`.

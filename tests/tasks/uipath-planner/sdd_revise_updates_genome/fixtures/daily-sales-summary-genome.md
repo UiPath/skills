@@ -52,6 +52,10 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 4. Below which amount is a sales line left out of the totals? (constant; default: 10.00)
 5. What is the summary sheet called? (constant; default: Summary)
 
+## Open Decisions
+
+No open decisions.
+
 ## Workflow
 
 1. **Start the evening run** (input: none; output: business date, folder locations): take today's date as the business date and read the input, output and archive folder locations.

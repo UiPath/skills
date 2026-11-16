@@ -1,6 +1,6 @@
 # Caller Request Guide — `design` run for a calling skill
 
-Read this when the request carries a `planner-design-request: v1` block. Another skill has already held the business conversation (a business-analysis skill that wrote the PDD) and settled with the user what the block states. Take those answers as given, run `design` with the changes below, and end with one result block. Ask the user nothing the block answers, and expose none of this skill's guides, phases or templates in what you show them. A change to a field, to the result or to the SDD signals below bumps the version.
+Read this when the request carries a `planner-design-request` block, `v2` or `v1` (a v1 request has neither `stop-after: genome` nor `answers`). Another skill has already held the business conversation (a business-analysis skill that wrote the PDD) and settled with the user what the block states. Take those answers as given, run `design` with the changes below, and end with one result block. Ask the user nothing the block answers, and expose none of this skill's guides, phases or templates in what you show them. A change to a field, to the result or to the SDD signals below bumps the version.
 
 A build skill that hands over a request with no SDD to build from is a different case: [sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill.
 
@@ -9,7 +9,7 @@ A build skill that hands over a request with no SDD to build from is a different
 Read the block one `key: value` per line:
 
 ```text
-planner-design-request: v1
+planner-design-request: v2
 source: <PDD_PATH>
 facts: <PATH>, <PATH>
 output: <SDD_PATH>
@@ -19,7 +19,8 @@ language: <LANGUAGE>
 audience: business
 open-item-marker: <LITERAL_PREFIX>
 existing-output: replace
-stop-after: sdd
+stop-after: sdd | genome
+answers: <ANSWERS_PATH>
 traceability: required
 frames: <FRAMES_FOLDER>
 diagram: <DIAGRAM_FILE>
@@ -39,7 +40,8 @@ revise: <SECTION_HEADING> — <CHANGE>
 | `audience` | no | `business` → word every question, the review and the result's prose in the user's business terms: no verb, guide, file path, template, `[SME REVIEW]`, `[DEFAULT]`, genome or handoff field names. Default `technical`. |
 | `open-item-marker` | no | The literal prefix the source uses for an open item (`==TBD:`). Turn each occurrence into one `[SME REVIEW]` item and put the source's reason after the closing bracket (`[SME REVIEW] retention period not confirmed`). Never copy the source's marker into the SDD. This is the one exception to Critical Rule 6's byte-for-byte carry-over: the gap is kept, only its vocabulary changes. |
 | `existing-output` | no | `replace` → regenerate without the sdd-writing-guide.md Step 2 item 6 question; the user already chose to. Without it, ask that question as usual. |
-| `stop-after` | no | `sdd` → end the run at the result: no genome, no build, no Step 3 turn boundary, no genome progress task. Without it, § Chaining in [SKILL.md](../../SKILL.md) applies. |
+| `stop-after` | no | `sdd` → end the run at the result: no genome, no build, no Step 3 turn boundary, no genome progress task. `genome` → write the genome from the `ready` SDD on the next turn, as sdd-writing-guide.md Step 3 item 3 states, with its Action Required written again from it, and end at the result after it: no build. Without it, § Chaining in [SKILL.md](../../SKILL.md) applies. |
+| `answers` | no | A file of answers to the SDD's open items, by id (`D3`, `CQ2`), that the people the host asked gave. Apply them before the result, as `edit`'s "Apply the answers" does ([edit-guide.md](../edit/edit-guide.md)): to the SDD by `revise` for a design item, to the genome when one exists. An id the run does not have is listed in the result's `reason`. |
 | `traceability` | no | `required` → add two sections after Testing Strategy (extra sections; the template-superset check allows them). `## Alternatives Considered`: every solution alternative `facts` records, with its stable ID, fit, risks, tradeoffs and status; a rejected one keeps its rejection reason. `## Requirements Traceability`: one row per requirement or business rule — its stable ID linked to the exact source heading it comes from, the source section, then the technical decision, interface or data contract, NFR and acceptance criterion it leads to, and any open gap. Cite IDs and links exactly as the source gives them; never invent an ID, and write a missing link as an open gap. |
 | `frames` | no | The folder holding the source's screen frames. Every UI step a robot drives gets its frame beside the step's specification, where the SDD specifies that step (RPA: its `#### Step` block under Step Details; a BPMN or Case design: the RPA process it invokes): a bold step line, the specification as bullets, then the frame at full width, no caption. Reuse the image reference the source already embeds for that screen, unchanged, so it resolves from the SDD's own folder; embed the `annotated/` copy whenever one exists beside a frame; never re-annotate. No frame for a screen → a `[SME REVIEW]` screenshot item. API, agent and orchestration steps get no frames. |
 | `diagram` | no | A file whose fenced ```mermaid block is the agreed process map. Use that block verbatim as the SDD's process map (RPA §2 Process Map, Flow §2 Flow Diagram and their equivalents) instead of drawing one; every other diagram is yours to draw. |
@@ -55,7 +57,7 @@ The user is present in this session: ask in the host's own question tool, and do
 1. **Phase 1 Step 0.** Take the execution mode from `execution`; ask it only when the key is missing. Ask the delivery model only when its skip rule cannot resolve it from `source` and `facts`.
 2. **Phase 1 Step 6.** Present the scope recommendation only when no `product` was given and the choice is genuinely ambiguous (product-selection-guide.md); otherwise take the recommendation and record it in Decisions Made.
 3. **Phase 2 Step 5 — the one review, interactive only.** `interactive`: present the architecture review and wait for approval, in its own structure (a case: case-review-and-conformance-guide.md § Presenting the Case Design); it is the run's only checkpoint. `autonomous`: present nothing and wait for nothing.
-4. **Phase 3 Step 1.5.** Ask nothing. Keep every item's default and class in the Action Required table; a `blocking` item keeps `Status: draft` — name it in the result, where the user's answer comes back through a later request.
+4. **Phase 3 Step 1.5.** Ask nothing. Keep every item's default and class in the Action Required section; a `blocking` item keeps `Status: draft` — name it in the result, where the user's answer comes back through a later request.
 5. **Decisions Made.** Write the block (sdd-writing-guide.md Step 2 item 3) in both modes: the decisions you took without a question must stay scannable.
 6. **End.** Write the result below. With `stop-after: sdd`, end the run there, in the same turn; otherwise § Chaining applies.
 
@@ -66,11 +68,13 @@ Still ask the Agent / Coded App gap question (Phase 1 Step 5): never fill a prod
 Make your last message one fenced block, after any prose the audience needs:
 
 ```text
-planner-design-result: v1
+planner-design-result: v2
 status: ready | draft | failed
 complete: yes | no
 documents: <PRIMARY_SDD_PATH>, <PER_PROJECT_SDD_PATH>, ...
+genome: <GENOME_PATH> | none
 blocking: <ITEM>; <ITEM> | none
+open: <COUNT> (<COUNT_NEEDED> needed before the build) — <ROLE>: <COUNT>; <ROLE>: <COUNT> | none
 client-document: <CLIENT_DOCX_PATH> | none | unavailable — <REASON>
 reason: <WHY_IT_FAILED>
 ```
@@ -78,7 +82,9 @@ reason: <WHY_IT_FAILED>
 - Write `complete: yes` only when `Template validation: passed` — every required section is present. A `draft` can be complete: it waits on `blocking`.
 - List the overview first in `documents`; a single-product SDD has one path.
 - Word `blocking` in the audience's terms.
-- Write `reason` only with `status: failed`.
+- Write `open` from the SDD's Action Required: every open item, then the count per role.
+- Answer a v1 request with a v1 result, without `genome` and `open`.
+- Write `reason` with `status: failed`, or for answers the run could not apply.
 
 ## SDD Signals a Caller's Host May Read
 

@@ -78,7 +78,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 | Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
 |-------|-------------|-------------|------------------|---------|----------|-----------|
-| AP_InvoiceIntake | one received invoice | as in Handoffs row 1: `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | *[Inferred]* | *[Inferred]* | component 2 | component 1, one instance per item |
+| AP_InvoiceIntake | one received invoice | as in Handoffs row 1: `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | *[Inferred: D1]* | *[Inferred: D2]* | component 2 | component 1, one instance per item |
 
 ### Storage buckets
 
@@ -102,8 +102,8 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 | Trigger | Starts | Kind | When | Runners |
 |---------|--------|------|------|---------|
-| AP intake schedule *[Inferred]* | component 2's intake entry point | Time | every 15 minutes | 1 *[Inferred]* |
-| AP intake queue trigger *[Inferred]* | component 1 | Queue | `AP_InvoiceIntake` | *[Inferred]* |
+| AP intake schedule *[Inferred: D3]* | component 2's intake entry point | Time | every 15 minutes | 1 *[Inferred: D4]* |
+| AP intake queue trigger *[Inferred: D3]* | component 1 | Queue | `AP_InvoiceIntake` | *[Inferred: D4]* |
 
 ### Action Center
 
@@ -119,6 +119,15 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 4. Below which agent confidence does the proposal skip straight to human review as `manual`? (constant; default: 0.4)
 5. Who receives the daily failure digest? (setting; default: ap-lead@contoso.com)
 6. Which SAP company codes are in scope? (setting; default: 1000, 2000)
+
+## Open Decisions
+
+1. What makes an invoice unique in the intake queue? (reading; answered by: whoever knows the process; reading: the mail ID, since every item carries `MailId` and a failed item cites it, and no other reference is given) — Platform Dependencies, Queues, and the `AP_InvoiceIntake` rows of components 1 and 2
+2. How many times does Orchestrator retry a failed intake queue item? (run behaviour; answered by: the process owner; recommended: retries every failed item twice, as Handoffs row 1 states; builds now: two retries) — Platform Dependencies, Queues, and the `AP_InvoiceIntake` rows of components 1 and 2
+3. What are the two intake triggers called, and does intake run on a schedule as well as a queue trigger? (reading; answered by: whoever knows the process; reading: a 15-minute schedule named AP intake schedule and a queue trigger named AP intake queue trigger, since the description names neither) — Platform Dependencies, Triggers
+4. How many runners do the two intake triggers use? (reading; answered by: whoever knows the process; reading: one runner for the schedule and the platform default for the queue trigger, since none is stated) — Platform Dependencies, Triggers
+5. Where does the automation run: which delivery model, machines, robot account, folders and environments? (reading; answered by: the environment's owners; reading: Automation Cloud, component 2 on a Windows machine with SAP GUI and components 1 and 3 serverless, the robot account signing in to SAP as `SAP_AP_Robot`, folder `Finance/AP` with `Finance/AP-Test` for UAT, since the description names none) — Deployment
+6. How long are the job logs kept? (reading; answered by: whoever knows the process; reading: no retention beyond the platform default, since none is stated) — Deployment
 
 ## Business Rules
 
@@ -152,13 +161,13 @@ Not transactional: a coordinator whose per-item lifecycle is the orchestration's
 
 ## Deployment
 
-- **Delivery model:** Automation Cloud *[Inferred]*
+- **Delivery model:** Automation Cloud *[Inferred: D5]*
 - **Packaging and route:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; the queue, bucket, asset and connection declared as solution resources.
 - **Entry points:** component 2's intake entry point and component 1; components 2 (matching, posting) and 3 started only by component 1; how each starts: Platform Dependencies, Triggers.
-- **Runtime and machines:** component 2 on Windows, unattended, with SAP GUI installed *[Inferred]*; components 1 and 3 serverless *[Inferred]*
-- **Robots:** the unattended robot account component 2 runs as, signing in to SAP as `SAP_AP_Robot` *[Inferred]*
-- **Folders and environments:** folder `Finance/AP` in tenant `Finance`, the home of every resource and process; `Finance/AP-Test` with the same resources for UAT; the production SAP is the one whose UI targets the genome describes *[Inferred]*
-- **Logging and retention:** the job logs; retention not stated *[Inferred]*
+- **Runtime and machines:** component 2 on Windows, unattended, with SAP GUI installed *[Inferred: D5]*; components 1 and 3 serverless *[Inferred: D5]*
+- **Robots:** the unattended robot account component 2 runs as, signing in to SAP as `SAP_AP_Robot` *[Inferred: D5]*
+- **Folders and environments:** folder `Finance/AP` in tenant `Finance`, the home of every resource and process; `Finance/AP-Test` with the same resources for UAT; the production SAP is the one whose UI targets the genome describes *[Inferred: D5]*
+- **Logging and retention:** the job logs; retention not stated *[Inferred: D6]*
 
 ## Complexity
 
