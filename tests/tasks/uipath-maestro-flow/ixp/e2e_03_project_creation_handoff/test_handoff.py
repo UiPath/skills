@@ -13,8 +13,10 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -35,6 +37,7 @@ from handoff_tenant import SNAPSHOT, project_digest  # noqa: E402
 # the real one observed on the CI tenant, and built from the sweep's own first
 # marker so rotating the fixture domain re-points these tests automatically.
 LEAKED_DOMAIN_PROJECT = f"{DOMAIN_MARKERS[0]}_licences-7607b890-ixp"
+LEAKED_DOMAIN_DEPLOYMENT = f"{DOMAIN_MARKERS[0]}_licences-08963f00-ixp"
 
 
 def iso_ago(seconds: float) -> str:
@@ -279,7 +282,8 @@ def deployment(
 
 def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     """The real registry shape: uipath.ixp.{deploymentName}.{modelId}-{folderKey}."""
-    return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
+    segment = re.sub(r"[^a-z0-9]+", "-", deployment_name.lower())
+    return f"uipath.ixp.{segment}.{MODEL_ID}-{folder_key}"
 
 
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
@@ -313,6 +317,7 @@ def write_snapshot(
     sandbox: pathlib.Path,
     project_names: list[str],
     scope: str = RUN_FOLDER_KEY,
+    held: Sequence[str] | None = (),
 ) -> None:
     """Baseline in the same opaque form seed writes (digests + run folder key)."""
     (sandbox / SNAPSHOT).write_text(
@@ -320,6 +325,7 @@ def write_snapshot(
             {
                 "names": sorted(project_digest(name) for name in project_names),
                 "scope": scope,
+                "held": held,
             }
         ),
         encoding="utf-8",
@@ -915,6 +921,7 @@ def test_seed_snapshots_existing_projects_and_records_the_run_folder(
     expected = {
         "names": sorted(project_digest(name) for name in PRE_EXISTING),
         "scope": RUN_FOLDER_KEY,
+        "held": [],
     }
     assert json.loads((sandbox / SNAPSHOT).read_text()) == expected
 
@@ -1282,11 +1289,14 @@ def test_seed_proceeds_while_a_published_extractor_covers_the_domain(
     right for the task consuming this grader is the task's business, not the
     grader's.
     """
-    siblings_node = ixp_node_type(LEAKED_DOMAIN_PROJECT, folder_key=CONCURRENT_FOLDER_KEY)
+    siblings_node = ixp_node_type(
+        LEAKED_DOMAIN_DEPLOYMENT, folder_key=CONCURRENT_FOLDER_KEY
+    )
     env = install_fake_uip(
         sandbox,
         projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
         project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
         registry_nodes=[{"NodeType": siblings_node, "DisplayName": LEAKED_DOMAIN_PROJECT}],
     )
 
@@ -1608,3 +1618,83 @@ def test_seed_ignores_a_foreign_node_with_no_project(sandbox: pathlib.Path) -> N
     env = install_fake_uip(sandbox, registry_nodes=[registry_node("shared-other-1234abcd-ixp")])
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_accepts_a_live_projects_node_served_under_its_deployment_name(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[registry_node("falconry-licences-08963f00-ixp")],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_accepts_a_live_projects_node_served_under_its_sanitized_name(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        registry_nodes=[registry_node("falconry-licences-7607b890-ixp")],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_errors_on_a_ghost_node_beside_a_live_deployed_project(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[
+            registry_node("falconry-licences-08963f00-ixp"),
+            registry_node(GHOST_PROJECT),
+        ],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert GHOST_PROJECT in completed.stderr
+    assert "08963f00" not in completed.stderr
+
+
+# ── Debug_ ownership: only folders that appeared after seed ──────────────────
+
+def test_teardown_keeps_a_debug_folder_that_existed_at_seed(
+    sandbox: pathlib.Path,
+) -> None:
+    wired_flow(sandbox)
+    env = debug_tenant(sandbox)
+    write_snapshot(sandbox, PRE_EXISTING, held=[DEBUG_FOLDER_KEY])
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert operation_order(sandbox) == [f"folder:{RUN_FOLDER_KEY}"]
+
+
+def test_teardown_deletes_no_debug_folder_without_a_baseline(
+    sandbox: pathlib.Path,
+) -> None:
+    wired_flow(sandbox)
+    env = debug_tenant(sandbox)
+    write_snapshot(sandbox, PRE_EXISTING, held=None)
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"folder:{DEBUG_FOLDER_KEY}" not in operation_order(sandbox)
+
+
+def test_seed_records_the_debug_folders_that_exist(sandbox: pathlib.Path) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(600)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert json.loads((sandbox / SNAPSHOT).read_text())["held"] == [DEBUG_FOLDER_KEY]
