@@ -38,8 +38,7 @@ initial_prompt: |
   the SDD — do not create a case plan. This is a design-only exercise: do not
   query tenant registry, connections, schemas, or users. Use concrete intended
   resource and system names, leave identities unresolved, and defer
-  authoritative tenant resolution to the later build run. Do not inspect plugin
-  planning docs.
+  authoritative tenant resolution to the later build run.
 
   The primary stages are Intake, Supplier Setup, Compliance Review, Decision,
   and Close. In Supplier Setup, Verify Supplier Identity, then Set Supplier
