@@ -20,15 +20,15 @@ For a plain **native** entity (columns stored in UiPath, no connector) → [`ent
 | You provide (per source) | The CLI derives from IS |
 |---|---|
 | `connectionId` (connector) **or** `entityId` (native) | connection metadata: `elementInstanceId`, `connectorKey`, `connectorName`, `connectionName`, connection `folderKey` |
-| `object` (connector — the table/object name) | `primaryKey`, the operations `method` catalog, per-field types, `searchable` + `searchableOperators` |
+| `object` (connector — the table/object name) | `primaryKey` (empty when IS flags none — see [Rule 14](#critical-rules)), the operations `method` catalog, per-field types, `searchable` + `searchableOperators` |
 | `fields` (external field **names**) | internal column names (camelCase; reserved names like `Id` renamed to `IdField`), internal `type` (UI-safe mapping), `directionType` (`ReadOnly`), `isRequiredForRead`, `sortable`, `searchable` + `searchableOperators` (per-field, from the IS object's List-op metadata — override with `searchable` / `searchableOperators` on the field; non-searchable fields are indexed as `searchable: false`) |
 | `joins` (`{source,relatedSource,sourceField,relatedField}` — names) | both join connection ids, `joinType` (`LeftJoin`), and auto-maps a join field onto a source that doesn't map it yet |
 
-So the create/update body is small. The CLI also **validates client-side** before the API call — unknown field, missing primary key, reserved name, ambiguous source, non-array delta — and surfaces backend errors in the failure envelope's `Instructions`.
+So the create/update body is small. The CLI also **validates client-side** before the API call — unknown field, unknown `primaryKey` column, reserved name, ambiguous source, non-array delta — and surfaces backend errors in the failure envelope's `Instructions`.
 
 ## Critical rules
 
-1. **Minimal body.** Each source is `{ connectionId, object, fields }` (connector) or `{ entityId, fields }` (native). Optional top-level `joins`, `displayName`, `description`, `isRbacEnabled`. `entityClass` is inferred from a non-empty `externalFields` — don't set it (and never set it to anything but `Federated` when `externalFields` is present, or the CLI rejects it). **`isAnalyticsEnabled` is not valid for federated entities** — never include it in a federated create or update body.
+1. **Minimal body.** Each source is `{ connectionId, object, fields }` (connector) or `{ entityId, fields }` (native). Don't add `primaryKey` unless the user names one ([Rule 14](#critical-rules)). Optional top-level `joins`, `displayName`, `description`, `isRbacEnabled`. `entityClass` is inferred from a non-empty `externalFields` — don't set it (and never set it to anything but `Federated` when `externalFields` is present, or the CLI rejects it). **`isAnalyticsEnabled` is not valid for federated entities** — never include it in a federated create or update body.
    - **Primary source:** you don't set it. The backend derives it from the joins: it is the one source every join starts from. A multi-source entity needs `joins` ([Rule 7](#critical-rules)); the backend rejects one without them.
 2. **`fields` entries are external field names**, or an object to override one column: `{ "source": "<external name>", "name"?, "type"?, "direction"?, "searchable"?, "sortable"?, "requiredForRead"? }` — only `source` is required. Override only when you must (e.g. force a `type`); otherwise pass the bare name and let the CLI derive everything.
 3. **The mapped field set is the user's choice — ask; never default it.** When the user names a source but not its columns (e.g. "add a Salesforce Contact"), you MUST ask which fields to map *before* building the body: present that object's fields (`uip is resources describe <connectorKey> <Object> --connection-id <id> --operation List --output json` → `ResponseFields[].Name`; for a native source, its `Fields` minus system fields) and let the user pick. Use `AskUserQuestion` (dropdown) when your runtime offers it; otherwise print the numbered options and wait on a reply — never infer a "sensible" set. Repeat per source. Skip the ask only when the user enumerated columns or said "all"/"you choose".
@@ -52,6 +52,9 @@ So the create/update body is small. The CLI also **validates client-side** befor
     - **Inspect a federated entity before update:** `uip df entities get <id> [--folder-key <key>] --output-filter "{name:Name, sources:ExternalFields[].ExternalObjectDetail.ExternalObjectName, fields:ExternalFields[].Fields[].{internal:FieldMetaData.Name, external:ExternalFieldMappingDetail.ExternalFieldName}, joins:SourceJoinCriterias}" --output json`
 12. **Folder scope is the new entity's own choice — never inferred from a source.** Follow [`data-fabric.md` Rule 19](data-fabric.md#critical-rules) *Mandatory scope-prompt flow* verbatim: first ask **only** `Tenant level (no --folder-key)` vs `Folder-scoped`; only then, if folder-scoped, ask which folder (offer `List accessible folders` → `uip or folders list --output json`, once). A source's folder (connection `FolderKey` or a native source's `folderKey`) scopes the *source*, not the new entity. The chosen `Key` becomes `--folder-key` on `create` and every follow-up `get`/`records list`.
 13. **Check for a duplicate before create** (Rule 12 of data-fabric): projected list `uip df entities list [--folder-key <key>] --output-filter "[?Name=='<Name>'].{Id:Id}" --output json`. If it returns a row, stop — offer to update it or pick another name.
+14. **Primary key — don't set `primaryKey` unless the user names one; never ask for it.** The CLI takes a connector source's key from the IS describe field flagged `primaryKey`. Database connectors (`uipath-uipath-jdbc`, `uipath-snowflake-snowflake`) flag none, so the CLI stores an empty key. That is fine: federated entities are read-only (Rule 9), and reads and joins never use the source key.
+    - If the user names a key, set it on the source as the **external** field name: `"primaryKey": "<key column>"`; for a composite key, join the columns with commas: `"<col1>,<col2>"`. It need not be in `fields`.
+    - The CLI rejects a `primaryKey` when any part of it is not a field on the object, or when it differs from the key IS flags. A native source's key is always `Id`; don't set `primaryKey` there. `addExternalSources` entries on update work the same way.
 
 ## End-to-end flow
 
@@ -84,7 +87,7 @@ Connector-agnostic — same shape for any IS connector. Replace `<…>` with val
 
 - **Native source** entry: `{ "entityId": "<df-entity-id>", "fields": ["<col1>"] }` (add `"folderKey": "<key>"` if that entity is folder-scoped).
 - **Per-field override** (only when needed): replace a field name string with `{ "source": "<external name>", "name": "<internal>", "type": "DECIMAL", "direction": "ReadAndWrite", "searchable": true, "sortable": false, "requiredForRead": true }`. Every key but `source` is optional and overrides the CLI's derived value.
-- The CLI derives the primary key, operations catalog, connection metadata, internal names (renaming reserved ones), types, and searchability. You don't supply any of it.
+- The CLI derives the operations catalog, connection metadata, internal names (renaming reserved ones), types, searchability, and the primary key when IS flags one. You don't supply any of it.
 
 ### Multi-source join — worked example (connector ⋈ native entity)
 
