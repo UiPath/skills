@@ -5,9 +5,10 @@
 Two document steps that need no trained IxP fields: classification
 (`uipath.document.classify`) labels a document, and the Extract document node
 (`uipath.ixp.extract-document-builder`) pulls fields against a taxonomy you
-author INLINE, with no model behind it
-([Two ways to author it](#two-ways-to-author-it)). For a
-published project's trained fields, use `ixpExtract` ([ixp.md](ixp.md)) instead.
+author INLINE ([Two ways to author it](#two-ways-to-author-it)). It is
+opt-in: add it only when the user names the Extract document node. Any other
+extraction request, one with no trained model included, goes to a published
+IXP model or an IXP project ([ixp.md](ixp.md)), never to this node.
 
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
 `dynamicExtract({ fileRef, schema?, pageRange?, modelConfig? })`.
@@ -36,8 +37,8 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 
 ## Two ways to author it
 
-**The SDK factory**, `dynamicExtract()`, needs no model. Compile gives each
-step its processor, as `uip maestro flow nodes create` does:
+**The SDK factory**, `dynamicExtract()`, takes no `model` argument. Compile
+gives each step its processor, as `uip maestro flow nodes create` does:
 
 - it writes `inputs.processorKey`, one per step, the same on every recompile;
 - when it compiles the project's main flow inside a local solution (a folder

@@ -6,7 +6,7 @@
  * node) extracts against the taxonomy it carries instead of a published IxP
  * project's trained fields.
  *
- * It takes no model: compile gives the step its IDP processor, named after the
+ * It takes no `model` argument: compile gives the step its IDP processor, named after the
  * step's label, and writes the processor's resource file into the solution
  * (references/document-pipeline.md). The taxonomy's stable ids are written by
  * hand here, because an SDK without builder-sdk#2054 emits `schema` verbatim.
