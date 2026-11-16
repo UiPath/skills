@@ -63,17 +63,6 @@ A verb hands its output to the next one only along these edges:
 When the request asks to publish, deploy or go live, the publish follows the build's hand-off: through `uipath-solution`, or per package to Orchestrator through `uipath-platform` when Solutions (`.uipx`) are blocked for the SDD's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion ([platform-availability-guide.md](references/shared/platform-availability-guide.md)).
 <!--skill-flavor:deploy-after-build:end-->
 
-## Check
-
-```bash
-node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict
-```
-
-`<SKILL_DIR>` is the folder holding this `SKILL.md`; the level argument is the one the genome's first-line marker names. A process genome's check covers every component genome its Components table links. An extracted genome checked against its source export adds `--processes "<INVENTORY_JSON>" --recordsets "<RECORDSETS_JSON>"` (both together; the two files the framework migration pack's `data` command writes). Exit 0 passes; exit 1 prints one `FAIL:` line per finding; exit 2 is a usage error — fix the command, never the genome. A hand-run check whose level argument is not the marker's level reports the marker as missing: run it again with the marker's level — that `FAIL` is not a genome finding. `node` missing → say the check did not run.
-
-- **`check`** runs it and reports each `FAIL` with the section it names; it changes nothing. A fix the user then asks for is an `edit`.
-- **`author`, `extract` and `edit`** run it on every genome they wrote or changed, fix every `FAIL` and run it again — at most three rounds; a `FAIL` left after the third is named in the closing summary.
-
 ## Critical Rules
 
 Every verb obeys these; each verb's guide adds its own under § Verb Rules.
@@ -91,6 +80,17 @@ they NEVER write automation code (XAML, C#, Python) or project or scaffold files
 7. **Never invent selectors or UI targets.** Selectors need the application inspected at development time; an SDD, a plan and an authored genome leave them to the specialist. A target carried over from the source is not invented: `extract` records where the source's targets live (objects, ids, counts) in the Source Map, and `uipath-genome` migrates them at build.
 8. **Gate every product by the platform.** The delivery model (Automation Cloud, Automation Suite, standalone Orchestrator) blocks unavailable products through [platform-availability-guide.md](references/shared/platform-availability-guide.md), in every verb that chooses a product (`design`, `decompose`, `author` without an SDD, `extract` for its targets); a product the user excluded is never offered again in the session.
 9. **Prompt budget.** `design` runs its own checkpoint model ([design-guide.md](references/design/design-guide.md)); `decompose` caps at **5 structured questions**. Ask execution autonomy **exactly once**, at `design` entry — never when a caller's request carries `execution` — and write it into the handoff header; `author` on an SDD reads it and never asks again. Scope and UI answers resolved in `design` flow forward through the SDD.
+
+## Check
+
+```bash
+node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict
+```
+
+`<SKILL_DIR>` is the folder holding this `SKILL.md`; the level argument is the one the genome's first-line marker names. A process genome's check covers every component genome its Components table links. An extracted genome checked against its source export adds `--processes "<INVENTORY_JSON>" --recordsets "<RECORDSETS_JSON>"` (both together; the two files the framework migration pack's `data` command writes). Exit 0 passes; exit 1 prints one `FAIL:` line per finding; exit 2 is a usage error — fix the command, never the genome. A hand-run check whose level argument is not the marker's level reports the marker as missing: run it again with the marker's level — that `FAIL` is not a genome finding. `node` missing → say the check did not run.
+
+- **`check`** runs it and reports each `FAIL` with the section it names; it changes nothing. A fix the user then asks for is an `edit`.
+- **`author`, `extract` and `edit`** run it on every genome they wrote or changed, fix every `FAIL` and run it again — at most three rounds; a `FAIL` left after the third is named in the closing summary.
 
 ## Reference Navigation
 
