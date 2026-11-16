@@ -28,7 +28,7 @@ When the genome carries a design link ([genome-reading-guide.md § Design Links]
 
 Gather facts the 1.3 scaffolding questions are built from before asking anything. Discovery is silent; it never replaces the questions.
 
-1. Run the UiPath login status check (`uip login status --output json`); record what an expired session blocks (resource refresh, publish, deploy, Test Manager attachments — local init, validate, build, pack and run still work).
+1. Run the UiPath login status check (`uip login status --output json`) and take the session's state from `Data.Status`, never from `ExpirationDate`, which is the current access token's; record what an expired session blocks (resource refresh, publish, deploy, Test Manager attachments — local init, validate, build, pack and run still work).
 2. Confirm runtime host and edit surface; record which target frameworks and expression languages they support.
 3. For every skill named in Build With / Components, run that skill's discovery commands for installed packages; record activity packages and versions available to the authoring host. When a project already exists in the build location, also record its declared dependencies and versions from its manifest.
 4. Determine candidate build location: the folder containing the genome file, never the current working directory when that is a different repository.

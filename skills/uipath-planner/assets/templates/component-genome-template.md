@@ -90,7 +90,7 @@
 
 ### Flow 1 — {unit of work}: {producer} → {consumer}
 
-**Role:** {producer | consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
+**Role:** {producer | consumer | producer and consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
 
 **Unit of work:** one {item}; reference {identifying field(s)}; fields as in {Interface / Handoffs row}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
 **Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
