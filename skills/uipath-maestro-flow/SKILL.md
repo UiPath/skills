@@ -85,8 +85,6 @@ Choose one loop before any build command; never mix loops or use one as the othe
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
-# Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
-uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 # Stated runtime claim; ask per references/operate.md
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
 ( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \

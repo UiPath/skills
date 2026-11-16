@@ -93,7 +93,12 @@ uip maestro flow validate <Name>.flow --output json
 
 Review warnings deliberately; task or release policy determines whether one blocks release.
 
-Do not include layout in this gate. `uip maestro flow format` is not an authoring gate: `validate` passes without it and nothing upstream reads positions. For a greenfield file (a `compile` wrote it from scratch), run it before `solution upload`, `flow debug`, or a person opens the project in a designer. Do not run it on a merged brownfield file or one whose source sets `.layout()`: `format` re-lays every node and discards chosen positions. See [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+Layout is not a step in this sequence. `compile` lays out a source with no
+`.layout()` the way `uip maestro flow format` does, so the file is ready for
+`solution upload`, `flow debug`, or a designer. Do not run `format` on a merged
+brownfield file, or on one whose source sets `.layout()`: `format` re-lays out
+every node, so it discards the positions the author chose. See
+[`operate.md`](operate.md#layout-of-the-emitted-flow).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 <!--skill-flavor:local-gates:end-->

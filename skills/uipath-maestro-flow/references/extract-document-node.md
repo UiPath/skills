@@ -35,7 +35,7 @@ Add a descriptive node, wire its file, write taxonomy, bind the result, and vali
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant:** run `uip maestro flow extraction check --output json`. Any settled answer other than `Available` stops the loop; an unsettled check is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the input if absent:** run `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is `<trigger>` in `$vars.<trigger>.output.invoice`.
-3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#lay-out-the-emitted-flow-first).
+3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#layout-of-the-emitted-flow).
 4. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
