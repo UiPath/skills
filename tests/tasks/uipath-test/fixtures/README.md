@@ -82,13 +82,28 @@ and therefore exact for this scheme.
 | `prompts_library_setup_integration` | its own throwaway project | the `EVFX-PROMPTSET-*` namespace | Same hooks as `prompts_create_smoke` (`EVFX-PROMPTSET-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`); `pre_run` also seeds the user-defined prompt `Checkout edge cases` (GenerateTestsFromRequirement) and writes `release-audit.md` |
 | `perf_scenario_history_integration` | its own project per run (`EVFX-PERFHIST-*`, key `EVPH<4 hex>`) | `EVFX-PERFHIST-TC1` + a per-run scenario | As `perf_scenario_setup_integration`, but `pre_run` also creates the scenario (name in `scenario-name.txt`) with one load group for `EVFX-PERFHIST-TC1`. The legacy `link-automation` link leaves no `AutomationId`, so `list-dry-run-reports` cannot resolve the scenario. Nothing is executed and no licence units are spent; the agent only reads. `post_run` deletes the project |
 
+The `defect_*` tasks gate on one tenant state: Automation Suite answers 403
+`permission_denied` to `uip tm defects create` for the eval login while every
+other Test Manager verb works. `defect_lifecycle_smoke` and
+`defect_full_lifecycle_e2e` run [`../_setup/defect_fixture.py`](../_setup/defect_fixture.py)
+`probe --stamped-prefix <own EVFX- prefix>` in `pre_run`: it raises one defect
+in a throwaway `<prefix><YYYYMMDD-HHMMSS>-probe<hex>` project (key `EVDP<4 hex>`),
+deletes the project, and exits `TENANT NOT READY` only on that 403. Any other
+probe failure is logged and the task runs. `defect_traceability_integration`
+raises a defect in its own fixture, so it maps the 403 there. A probe project a
+crashed run strands carries the stamp layout the owning task's orphan sweep
+already removes.
+
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
 on the command line, so they stay in the task YAML where `check-collisions.py`
 sees them.
 `seed --require-access <verb>` first calls that AI verb on a requirement id
 that does not exist: an allowed login gets HTTP 404 before any job starts, a
-refused one gets 403, and `seed` then exits `TENANT NOT READY`. The PR smoke
+refused one gets 403, and `seed` then exits `TENANT NOT READY`. A tenant whose
+AI Trust Layer has no model for Test Manager (Automation Suite) answers HTTP
+400 `missing model configurations in AI Trust layer` instead; `seed` exits
+`TENANT NOT READY` on that answer too. The PR smoke
 gate (smoke-skills.yml) drops such a task from its pass rate; the nightly has
 no such filter and records it as ERROR (tagged infra on the evalboard) until
 the tenant is fixed. `find-obsolete-testcases` is the refused one on the eval

@@ -221,3 +221,75 @@ def test_no_rerun_ignores_a_help_probe(command):
 def test_no_rerun_still_catches_a_real_retrigger(command):
     # A genuine re-run must still match either side of a help probe.
     assert _hits(NO_RERUN, command) == {True}
+
+
+# --- uipath-test: a throwaway project named through shell variables -------------
+
+DEFFLOW = "uipath-test/defect_full_lifecycle_e2e.yaml"
+PROJECT_CREATE = _pattern(DEFFLOW, "Agent created its throwaway project with --name and --project-key")
+PROJECT_DELETE = _pattern(DEFFLOW, "Agent deleted its throwaway project with --yes (Critical Rule #6)")
+
+# Recorded from gpt-6.1-sol (nightlies 2026-11-10 and 2026-11-12), trimmed.
+SOL_CREATE = (
+    "/bin/bash -lc 'set -e\nSTAMP=$(date -u +%Y%m%d-%H%M%S)\nTAG=$(openssl rand -hex 3)\n"
+    'PROJECT_KEY="EVDE$(openssl rand -hex 2 | tr \'[:lower:]\' \'[:upper:]\')"\n'
+    'PROJECT_NAME="EVFX-DEFFLOW-${STAMP}-${TAG}"\n'
+    'uip tm project create --name "$PROJECT_NAME" --project-key "$PROJECT_KEY" '
+    "--description 'Throwaway rehearsal' --output json | tee \"$STATE_DIR/project.json\"'"
+)
+SOL_DELETE = (
+    "/bin/bash -lc 'set -e\nsource /tmp/evfx-defflow-session.env\n"
+    'uip tm project delete --project-key "$PROJECT_KEY" --yes --output json | tee "$STATE_DIR/project-delete.json"\''
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        SOL_CREATE,
+        'uip tm project create --name "EVFX-DEFFLOW-20261116-101500-a1b2c3" --project-key EVDE1A2B --output json',
+        "uip tm project create --project-key 'EVDE1A2B' --name 'EVFX-DEFFLOW-20261116-101500-a1b2c3' --output json",
+    ],
+)
+def test_defflow_create_accepts_literals_and_variables(command):
+    assert _hits(PROJECT_CREATE, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # Another project: neither literal anywhere in the call.
+        'uip tm project create --name "Scratch" --project-key HEALTH --output json',
+        # Variables, but the key the prompt asks for is never built.
+        'KEY=HEALTH; NAME="EVFX-DEFFLOW-x"; uip tm project create --name "$NAME" --project-key "$KEY"',
+        # The literals appear, but the flags carry other literal values.
+        "echo EVFX-DEFFLOW- EVDE; uip tm project create --name Scratch --project-key HEALTH",
+        'PROJECT_KEY="EVDE1A2B"; PROJECT_NAME="EVFX-DEFFLOW-x"; uip tm project create --help --output json',
+    ],
+)
+def test_defflow_create_rejects_other_projects(command):
+    assert _hits(PROJECT_CREATE, command) == {False}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        SOL_DELETE,
+        "uip tm project delete --project-key EVDE1A2B --yes --output json",
+        'uip tm project delete --project-key "$(cat key.txt)" -y --output json',
+    ],
+)
+def test_defflow_delete_accepts_literals_and_variables(command):
+    assert _hits(PROJECT_DELETE, command) == {True}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip tm project delete --project-key HEALTH --yes --output json",
+        'uip tm project delete --project-key "$PROJECT_KEY" --output json',
+        'uip tm defects delete --project-key "$PROJECT_KEY" --defect-id "$DEFECT_ID" --yes --output json',
+    ],
+)
+def test_defflow_delete_rejects_other_keys_and_unconfirmed_deletes(command):
+    assert _hits(PROJECT_DELETE, command) == {False}

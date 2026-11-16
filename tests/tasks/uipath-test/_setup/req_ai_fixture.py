@@ -130,6 +130,9 @@ def activity_id(env):
 # No requirement has this id, so a caller allowed to use the route gets
 # HTTP 404 before any job starts; a caller who is not gets 403.
 PROBE_REQUIREMENT_ID = "00000000-0000-4000-8000-0000000000ad"
+# HTTP 400 from a tenant whose AI Trust Layer has no model for Test Manager
+# (Automation Suite): the route is allowed, but no AI job can ever start.
+AI_NOT_CONFIGURED = "missing model configurations in AI Trust layer"
 
 
 def require_access(project, verb):
@@ -152,6 +155,13 @@ def require_access(project, verb):
               "on Cloud, give the eval user a Test Cloud licence or enable "
               "A4TMasterFFEnabled on the org; otherwise enable the route's feature flag "
               "and AI Trust Layer policy for the eval user.",
+              file=sys.stderr, flush=True)
+        sys.exit(1)
+    if AI_NOT_CONFIGURED in (env.get("Message") or ""):
+        print("TENANT NOT READY — this is an environment failure, not an agent failure: "
+              f"`uip tm requirements {verb}` answers that the AI feature is disabled on "
+              f"project {project} ({env.get('Message', '')[:160]}). Configure a model "
+              "for Test Manager in the AI Trust Layer (Automation Suite ships none).",
               file=sys.stderr, flush=True)
         sys.exit(1)
     if (env.get("Data") or {}).get("ActivityId"):

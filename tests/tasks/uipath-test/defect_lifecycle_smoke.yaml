@@ -23,7 +23,17 @@ run_limits:
   turn_timeout: 1500
   task_timeout: 1800
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
 pre_run:
+  # Tenant gate: see _setup/defect_fixture.py. Exits TENANT NOT READY only when
+  # `defects create` answers 403 (Automation Suite); otherwise the task runs.
+  - command: python3 _setup/defect_fixture.py probe --stamped-prefix EVFX-DEFECT-
+    timeout: 280
   - command: |
       python3 - <<'PYEOF'
       import datetime, json, secrets, subprocess, sys

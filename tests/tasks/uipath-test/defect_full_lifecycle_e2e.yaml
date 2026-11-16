@@ -26,6 +26,12 @@ run_limits:
   turn_timeout: 1500
   task_timeout: 1800
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
 # Self-contained: the agent creates and deletes its own project, so the task
 # reads and writes nothing in CLAIM/HEALTH/BANK. pre_run only sweeps projects
 # a crashed run left behind on an EARLIER day (today's are graded below).
@@ -56,6 +62,10 @@ pre_run:
       print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
       PYEOF
     timeout: 240
+  # Tenant gate: see _setup/defect_fixture.py. Exits TENANT NOT READY only when
+  # `defects create` answers 403 (Automation Suite); otherwise the task runs.
+  - command: python3 _setup/defect_fixture.py probe --stamped-prefix EVFX-DEFFLOW-
+    timeout: 280
 
 initial_prompt: |
   I want to rehearse our whole defect workflow in Test Manager before we roll it
@@ -95,7 +105,11 @@ success_criteria:
   - type: command_executed
     description: "Agent created its throwaway project with --name and --project-key"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-DEFFLOW-)(?=[\s\S]*--project-key\s+["\x27]?EVDE)uip\s+tm\s+project\s+create\b'
+    # The name and key literals are checked from the START of the command, not
+    # after their flags: agents set them in shell variables first
+    # (PROJECT_KEY="EVDE$(...)"; ... --project-key "$PROJECT_KEY"), as
+    # gpt-6.1-sol did. The flag value itself must be the literal or a variable.
+    command_pattern: '^(?=[\s\S]*EVFX-DEFFLOW-)(?=[\s\S]*\bEVDE)[\s\S]*?(?=[\s\S]*--name\s+["\x27]?(?:EVFX-DEFFLOW-|\$))(?=[\s\S]*--project-key\s+["\x27]?(?:EVDE|\$))uip\s+tm\s+project\s+create\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -183,7 +197,10 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted its throwaway project with --yes (Critical Rule #6)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+["\x27]?EVDE)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    # A later shell call holds only the variable (source session.env; ...
+    # --project-key "$PROJECT_KEY"), so the key literal cannot be required here.
+    # The outcome check below proves the project this run created is gone.
+    command_pattern: '(?=[\s\S]*--project-key\s+["\x27]?(?:EVDE|\$))(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
