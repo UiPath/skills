@@ -14,5 +14,5 @@ Write `not checked` only for a box whose lookup ran and failed; a box you have n
 <!--skill-flavor:gate-not-checked-rule:end-->
 
 <!--skill-flavor:gate-retry:start-->
-When a box is missing, rebuild the baseline as the [Validation loop](../SKILL.md#validation-loop) says, run its steps 3 and 4 into the target once more and search again; when one is still missing, send no gate reply and tell the user in one sentence that the outline did not reach the process file.
+When a box is missing, rebuild the baseline as the [Validation loop](../SKILL.md#validation-loop) says, run its steps 3 and 4 once more and search again; when one is still missing, send no gate reply and tell the user in one sentence that the outline did not reach the process file.
 <!--skill-flavor:gate-retry:end-->
