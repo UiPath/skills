@@ -48,7 +48,7 @@
 | `guardrail.policies` | `[]` |
 | `referenceKey` | `null` (non-null identifies an external tool) |
 | `isEnabled` | truthy |
-| `properties.toolType` | `"batch-transform"` (others: `analyze-attachments`, `load-attachments`, `deep-rag`) |
+| `properties.toolType` | `"batch-transform"` (other built-in tools: [../built-in-tools.md § Tool Registry](../built-in-tools.md#tool-registry)) |
 | `properties.settings` | Tool config — see [Tool Configuration](#tool-configuration) |
 
 Validator scans `<agent>/resources/**/resource.json`; each `resource.json`'s parent folder must equal its `name`.

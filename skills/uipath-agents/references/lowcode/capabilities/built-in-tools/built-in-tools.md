@@ -7,6 +7,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 ## When to Use
 
 - Agent needs file content analysis at runtime → pair a `job-attachment` input field with `analyze-attachments`
+- Inline agent in a Flow needs to call a public web API with no connection → `http-request` (inline agents only — never on a standalone agent)
 - Agent needs a platform capability that ships pre-built and does not require deployment
 
 ## Critical Rules
@@ -14,8 +15,8 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 1. **Built-in tools are not implicit.** Add them as `resources/{Name}/resource.json` with `type: "internal"` to make them callable. Without the resource file, the tool is unavailable.
 2. **`properties.toolType` is the discriminator** — fixed per built-in, kebab-lowercase. Copy from the per-tool walkthrough; do not invent.
 3. **No solution-level files.** Built-in tools need no `uip solution resources refresh`. Validate the agent and bundle.
-4. **Input/output schemas are fixed.** Do not edit them. Each tool's walkthrough lists the canonical schema.
-5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire a `uipath.agent.resource.tool.builtin.<toolType>` flow node to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16). Without the flow node the tool is never reachable at runtime. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+4. **Input/output schemas are canonical.** Copy them from the tool's walkthrough and change only what that walkthrough allows.
+5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire the tool's flow node (`uipath.agent.resource.tool.builtin.<name>`, exact type in [§ Tool Registry](#tool-registry) — the suffix is not the `toolType`) to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill ([Critical Rule 15](../../critical-rules/critical-rules.md)). Without the flow node the tool is never reachable at runtime. **Builder-SDK Flow project (`.flow.ts`):** do not author the `resource.json`. Hand the tool to the `uipath-maestro-flow` skill — it declares the tool on the `inlineAgent` step, and `compile` writes the resource and deletes a hand-written one. A tool the Flow SDK cannot declare is not available to that inline agent — stop and tell the user. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ## Resource Shape
 
@@ -28,11 +29,11 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
   "type": "internal",
   "description": "<TOOL_DESCRIPTION>",
   "isEnabled": true,
-  "inputSchema":  { /* fixed per tool */ },
-  "outputSchema": { /* fixed per tool */ },
+  "inputSchema":  { /* canonical per tool */ },
+  "outputSchema": { /* canonical per tool */ },
   "settings": {},
   "guardrail": { "policies": [] },
-  "argumentProperties": {},
+  "argumentProperties": {},     // see § Argument Sources
   "properties": {
     "toolType": "<kebab-lowercase-id>"
   }
@@ -43,10 +44,29 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 |---|---|
 | `type` | Always `"internal"` for built-in tools |
 | `properties.toolType` | Fixed discriminator (e.g. `"analyze-attachments"`) |
-| `inputSchema` / `outputSchema` | Fixed per tool — copy from walkthrough |
+| `properties.settings` | Tool-specific configuration, only on the tools whose walkthrough shows it (Deep RAG, Batch Transform). Top-level `settings` stays `{}` |
+| `inputSchema` / `outputSchema` | Canonical per tool — copy from walkthrough |
+| `argumentProperties` | `{}` unless an argument is pinned — [§ Argument Sources](#argument-sources-argumentproperties) |
 | `referenceKey` | Always `null` (no Orchestrator binding) |
 | `guardrail.policies` | Always `[]` — required for backward compatibility |
 | `id` | Fresh UUID per resource — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 9 |
+
+## Argument Sources (`argumentProperties`)
+
+The model fills every tool argument unless `argumentProperties` pins it. Keys are JSONPath into the tool input: `$['<ARGUMENT>']`.
+
+| `variant` | Entry | Effect |
+|---|---|---|
+| *(no entry)* | — | Model fills the argument on each call, guided by its `description` in `inputSchema` |
+| `static` | `{ "variant": "static", "value": <VALUE>, "isSensitive": false }` | Fixed value. `<VALUE>` has the argument's JSON type (string, number, array, object) |
+| `argument` | `{ "variant": "argument", "argumentPath": "$['<AGENT_INPUT_FIELD>']", "isSensitive": false }` | Value read from the agent's input at run time. The field must exist in `agent.json` → `inputSchema` |
+
+1. **`isSensitive` is required** on `static` and `argument` entries. `uip agent validate` does not check it; an entry without it stops the agent from loading at run time.
+2. **`isSensitive: true` only hides a pinned value from the model.** The value is still plain text in `resource.json` — never pin a secret.
+3. **`uip agent validate` does not check keys or paths.** A misspelled key pins nothing; an `argument` entry whose agent input is absent at run time leaves the argument to the model.
+4. **Leave other variants alone.** `textBuilder` and `objectBuilder` entries are written by Agent Builder and the Flow canvas; keep them as found when editing an existing resource.
+
+Worked example: [http-request.md § Pin Arguments](http-request.md#pin-arguments).
 
 ## Lifecycle
 
@@ -57,12 +77,15 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 ## Tool Registry
 
-| Tool | `toolType` | Walkthrough |
-|---|---|---|
-| Analyze Files | `analyze-attachments` | [analyze-attachments.md](analyze-attachments.md) |
-| Create File | `create-file` | [create-file.md](create-file.md) |
-| Deep RAG | `deep-rag` | [deeprag/impl-json.md](deeprag/impl-json.md) |
-| Batch Transform | `batch-transform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
+| Tool | `toolType` | Flow node (inline agents) | Walkthrough |
+|---|---|---|---|
+| Analyze Files | `analyze-attachments` | `uipath.agent.resource.tool.builtin.analyzefiles` | [analyze-attachments.md](analyze-attachments.md) |
+| Create File | `create-file` | `uipath.agent.resource.tool.builtin.createfile` | [create-file.md](create-file.md) |
+| Deep RAG | `deep-rag` | `uipath.agent.resource.tool.builtin.summarize` | [deeprag/impl-json.md](deeprag/impl-json.md) |
+| Batch Transform | `batch-transform` | `uipath.agent.resource.tool.builtin.batchtransform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
+| HTTP Request — inline agents only | `http-request` | `uipath.agent.resource.tool.builtin.httprequest` | [http-request.md](http-request.md) |
+
+Not every tool is available to every agent: HTTP Request is for inline agents in a Flow only. Each walkthrough states where its tool works — read it before adding the tool.
 
 ## Gotchas
 
@@ -72,5 +95,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 ## References
 
 - [analyze-attachments.md](analyze-attachments.md) — Analyze Files walkthrough
+- [create-file.md](create-file.md) — Create File walkthrough
+- [http-request.md](http-request.md) — HTTP Request walkthrough
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema
 - [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical rules

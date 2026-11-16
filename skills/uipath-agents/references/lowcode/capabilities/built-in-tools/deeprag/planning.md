@@ -26,7 +26,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/deeprag
 
 Built-in tools are declared in `resources/<name>/resource.json` with `$resourceType: "tool"`, `type: "internal"`, `referenceKey: null`, and `properties.toolType: "deep-rag"`. See [impl-json.md](impl-json.md) for the exact JSON.
 
-Built-in tools accept these `toolType` values: `analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`. Anything else fails `uip agent validate`.
+Built-in tools accept the `toolType` values in [../built-in-tools.md § Tool Registry](../built-in-tools.md#tool-registry). Anything else fails `uip agent validate` — except `load-attachments`, which passes validation but has no runtime implementation: the agent fails to load. Never use it.
 
 ### Tool resource vs context-index resource
 
@@ -37,7 +37,6 @@ Two valid shapes for enabling DeepRAG on a low-code agent. This skill documents 
 | Decision | Rule |
 |---|---|
 | `deep-rag` vs `analyze-attachments` | Prefer `deep-rag`. It handles larger files, returns citations (with optional bounding-box anchors), and produces denser output. `analyze-attachments` is one-shot synthesis with lower page limits — reach for it only when the document is small and the task is a single-shot extraction. |
-| `deep-rag` vs `load-attachments` | `load-attachments` only makes attachment text available to the agent; `deep-rag` runs an iterative synthesis pass. Use `load-attachments` when the agent will reason directly over short contents; use `deep-rag` for long / multiple docs. |
 | Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
 
 ## Bindings / Permissions
