@@ -9,7 +9,7 @@ description: >
   `uip agent validate`, and an LLM judge on the system prompt. Text between
   the helper markers is lower-tier guidance (see experiments/use-case-tiers.yaml)
   and is not graded.
-tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:eval]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:eval, autopilot-sw-ga]
 
 run_limits:
   expected_turns: 30
