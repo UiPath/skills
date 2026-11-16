@@ -86,13 +86,10 @@ When a reference tells you to run a command that is not available, use the Studi
    `bpmn validate` accepts both. Studio Web ships its own SDK: an older one refuses the
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
-   `refresh` and `validate` — in that order, every time but the two
-   compile-over cases at the end of this step
-   ([Validation loop](#validation-loop)). Lay out the diagram only when they
-   report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
-   shapes the target already has. Exactly one `<Name>.bpmn`
-   exists in the project: the target. Compile straight over it only when it
-   is empty, or for *Build it* after a draft gate ([Validation loop](#validation-loop)).
+   `refresh` and `validate`, in that order ([Validation loop](#validation-loop)).
+   Lay out the diagram only when they report a missing diagram or shape. Exactly
+   one `<Name>.bpmn` exists in the project: the target. Only an empty target and
+   *Build it* after a draft gate compile straight over it.
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->
@@ -152,8 +149,7 @@ uip maestro bpmn format <Name>.bpmn
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
   `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5, run step 4
   again, and, unless step 4 reported `No diagrams found`, tell the user that the
-  canvas layout was reset. *Build it* after a draft gate always runs step 5 and
-  always reports the reset, as its rule below says.
+  canvas layout was reset.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
@@ -161,10 +157,10 @@ uip maestro bpmn format <Name>.bpmn
   BPMN tag, so an outline box that becomes a `.scriptTask()`, `.humanTask()` or
   any other typed step keeps `bpmn:task`, not the tag Studio Web writes for that
   step; a script task then loses its script when Studio Web loads the file.
-  This is the one exception to Critical Rule 5's merge rule. Before compiling,
-  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:participant`, `bpmn:lane`,
+  Before compiling,
+  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:participant`, `<bpmn:lane `,
   `bpmn:textAnnotation`, `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject`,
-  `bpmn:dataStoreReference` and `color:`: the
+  `bpmn:dataStoreReference` and `color:background-color`: the
   compile drops them, with the positions of every shape. Then compile straight
   over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
   run step 5, then step 4. In the report's one sentence, say the canvas layout
