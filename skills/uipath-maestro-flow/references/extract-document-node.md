@@ -14,7 +14,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-In a new flow, use a published IXP model, covered in [ixp.md](ixp.md), after building and deploying its project, even when none exists yet. Add `uipath.ixp.extract-document-builder` to a new flow only when requested by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add `uipath.ixp.extract-document-builder` to a new flow only when requested by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
 
 | Node | Node type | Where covered |
 | --- | --- | --- |
