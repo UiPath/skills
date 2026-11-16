@@ -1578,6 +1578,7 @@ def test_seed_errors_on_a_domain_node_with_no_project(sandbox: pathlib.Path) -> 
     assert completed.returncode != 0
     assert "tenant not ready" in completed.stderr
     assert GHOST_PROJECT in completed.stderr
+    assert f"(folder {FOLDER_KEY})" in completed.stderr
     assert not (sandbox / SNAPSHOT).exists()
 
 
@@ -1659,3 +1660,13 @@ def test_seed_relists_projects_before_calling_a_node_a_ghost(
     )
     completed = run_script("seed", sandbox, env)
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_stops_the_debug_sweep_when_over_budget(sandbox: pathlib.Path) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(86400)})
+    env["HANDOFF_SWEEP_BUDGET_SECONDS"] = "-1"
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Debug_ folder sweep stopped" in completed.stdout
+    assert f"folder:{DEBUG_FOLDER_KEY}" not in operation_order(sandbox)

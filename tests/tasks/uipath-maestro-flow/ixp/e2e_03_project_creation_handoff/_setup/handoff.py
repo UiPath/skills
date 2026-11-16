@@ -73,7 +73,9 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import sys
+import time
 import traceback
 import uuid
 
@@ -169,6 +171,15 @@ LEAKED_PROJECT_AGE_SECONDS = 7200.0
 DEBUG_FOLDER_PREFIX = "Debug_"
 DEBUG_FOLDER_TYPE = "DebugSolution"
 FOLDER_LIST_LIMIT = "500"
+
+# The hooks cap seed at 300s. The Debug_ sweep costs one `or processes list` per
+# Debug_ folder on the tenant, so it stops at this age and leaves the rest for
+# the next seed; the ghost check and the run folder keep the remainder.
+SWEEP_BUDGET_SECONDS = float(os.environ.get("HANDOFF_SWEEP_BUDGET_SECONDS", "120"))
+SEED_STARTED = time.monotonic()
+
+# A NodeType ends with `-<folder key>`.
+NODE_FOLDER_KEY = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
 
 
 def sweep_domain_projects(projects: list[dict]) -> list[str]:
@@ -289,6 +300,9 @@ def sweep_debug_folders() -> list[str]:
     for folder in folders:
         folder_key = str(folder["Key"])
         name = str(folder["Name"])
+        if time.monotonic() - SEED_STARTED > SWEEP_BUDGET_SECONDS:
+            print(f"WARN: Debug_ folder sweep stopped at '{name}': over {SWEEP_BUDGET_SECONDS:g}s.")
+            break
         try:
             package_keys = list_folder_process_packages(folder_key)
         except Exception as exc:  # noqa: BLE001
@@ -321,13 +335,20 @@ def ghost_node_project(node: dict) -> str | None:
     return node_type[len(IXP_NODE_PREFIX):].split(".", 1)[0]
 
 
-def unbacked_nodes(nodes: list[dict], projects: list[dict]) -> list[str]:
+def unbacked_nodes(
+    nodes: list[dict],
+    projects: list[dict],
+    listed: dict[str, set[str]] | None = None,
+) -> list[str]:
     """NodeTypes of fixture-domain nodes whose segment no live project owns.
 
     A segment is owned when it is a project Name or one of its deployments'
     DeploymentName, both registry-sanitized. Deployments are listed lazily,
     fixture-domain projects first, and only while a node is still unmatched.
+    `listed` caches each project's segments across calls: the worst case is one
+    `deployments list` per project, once.
     """
+    listed = {} if listed is None else listed
     segments = {sanitize_registry_segment(str(project["Name"])) for project in projects}
     pending = {
         str(node["NodeType"]): segment
@@ -343,11 +364,21 @@ def unbacked_nodes(nodes: list[dict], projects: list[dict]) -> list[str]:
     for project in ordered:
         if all(segment in segments for segment in pending.values()):
             break
-        for deployment in list_deployments_if_present(str(project["Name"])):
-            segments.add(sanitize_registry_segment(str(deployment["DeploymentName"])))
+        name = str(project["Name"])
+        if name not in listed:
+            listed[name] = {
+                sanitize_registry_segment(str(deployment["DeploymentName"]))
+                for deployment in list_deployments_if_present(name)
+            }
+        segments |= listed[name]
     return sorted(
         node_type for node_type, segment in pending.items() if segment not in segments
     )
+
+
+def ghost_folder_key(node_type: str) -> str:
+    match = NODE_FOLDER_KEY.search(node_type)
+    return match.group(0) if match else "unknown"
 
 
 def require_no_ghost_nodes(projects: list[dict], excluded: set[str]) -> None:
@@ -362,18 +393,20 @@ def require_no_ghost_nodes(projects: list[dict], excluded: set[str]) -> None:
     nodes = run_uip_json(
         ["maestro", "flow", "registry", "search", IXP_NODE_PREFIX.rstrip("."), "--output", "json"]
     )["Data"]
-    ghosts = unbacked_nodes(nodes, projects)
+    listed: dict[str, set[str]] = {}
+    ghosts = unbacked_nodes(nodes, projects, listed)
     if ghosts:
         # A sibling may have created and published a project after `projects`
         # was listed; judge once more against a fresh listing.
         fresh = [p for p in list_projects() if str(p["Name"]) not in excluded]
-        ghosts = unbacked_nodes(nodes, fresh)
+        ghosts = unbacked_nodes(nodes, fresh, listed)
     if ghosts:
         raise RuntimeError(
             "tenant not ready: published IxP node(s) cover the fixture domain "
             "but have no backing project, so the agent would reuse them instead "
             "of handing off. Delete the Orchestrator folder holding the "
-            "deployment, then re-run: " + ", ".join(ghosts)
+            "deployment (the folder key ends each NodeType), then re-run: "
+            + ", ".join(f"{node_type} (folder {ghost_folder_key(node_type)})" for node_type in ghosts)
         )
     print("OK: no fixture-domain IxP node without a project")
 
