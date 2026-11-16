@@ -12,7 +12,7 @@
 - `CurrentProject.AbsolutePath` — the open project, for example `/solution/Approval`.
 - `CurrentWorkingDirectory` — the directory of the shell. It can differ from the project, so `cd` to the project first.
 
-The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`. A named `.bpmn` the project does not hold is not a new file to write: Studio Web runs a project from its main file (`Process.bpmn` in a project Studio Web created, and the file `init` names); a second `.bpmn` beside it is packaged only as a non-default entry point, so the run never reaches it. That main file is then the target: build into it, and say so on the final report's `Assumed:` line. Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
+The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`. A named `.bpmn` the project does not hold is not a new file to write: Studio Web runs a project from its main file (the `.bpmn` the project already holds, `Process.bpmn` in a project Studio Web created); a second `.bpmn` beside it is packaged only as a non-default entry point, so the run never reaches it. That main file is then the target: build into it, and say so on the final report's `Assumed:` line. Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
 
 **The target `.bpmn` is the single source of truth.** The user can change it on the canvas between your turns. So never use a `.bpmn.ts` from an earlier turn: decompile a fresh one every turn.
 
