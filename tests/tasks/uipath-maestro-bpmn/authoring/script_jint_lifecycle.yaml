@@ -12,11 +12,8 @@ reference:
   directory: ..
 
 initial_prompt: |
-  Create a UiPath Maestro BPMN Process Orchestration project at:
-    ScriptNormalizer/ScriptNormalizer
-
-  The main BPMN file must be:
-    ScriptNormalizer/ScriptNormalizer/ScriptNormalizer.bpmn
+  Create a UiPath Maestro BPMN Process Orchestration project named
+  ScriptNormalizer.
 
   Model a public-safe request normalizer:
   - Manual start with a rawRequest JSON/string input.
@@ -29,7 +26,7 @@ initial_prompt: |
     declared output variable.
   - End with a success end event and include BPMN DI for visible elements.
 
-  Also create the standard local package files next to the BPMN:
+  Also create the standard package files next to the BPMN:
     project.uiproj, operate.json, entry-points.json, bindings_v2.json,
     package-descriptor.json
 
