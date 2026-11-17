@@ -50,7 +50,7 @@
       "codedagent deploy": 30,
       "codedagent dev": 18,
       "codedagent eval": 17,
-      "codedagent init": 65,
+      "codedagent init": 66,
       "codedagent invoke": 6,
       "codedagent list-models": 4,
       "codedagent new": 22,
