@@ -839,3 +839,39 @@ def test_sticky_note_moves_only_with_the_node_it_covers(tmp_path: Path, note_x: 
     # placeAddedNodes' own output on UiPath/builder-sdk#1501 8a0fedc2: the loop grows, z moves 192 and its note with it.
     final = flow({"classify": at(144), "dedupe": at(336), "record": at(528)}, 752, 1292, note_x)
     assert layout_of(tmp_path, original, final) == expected
+
+
+def add_end_output(flow: dict) -> None:
+    node(flow, "returnResolution")["outputs"]["extracted"] = {"source": "=js:$vars.extract.output"}
+
+
+def test_grown_node_may_gain_an_output(project: Path) -> None:
+    mutate(project, add_end_output)
+
+    assert graph(project) == 1
+    assert graph(project, "--grown-node", "returnResolution") == 0
+
+
+def test_grown_node_may_move(project: Path) -> None:
+    mutate(project, lambda flow: node(flow, "returnResolution").update(ui={"position": {"x": 999, "y": 0}}))
+
+    assert graph(project, "--grown-node", "returnResolution") == 0
+
+
+@pytest.mark.parametrize(
+    "change, what",
+    [
+        pytest.param(lambda n: n["outputs"]["determination"].update(source="=js:1"), "outputs.determination", id="output-rewired"),
+        pytest.param(lambda n: n["outputs"].pop("determination"), "outputs.determination", id="output-dropped"),
+        pytest.param(lambda n: n.update(display={"label": "Renamed"}), "display", id="other-key"),
+    ],
+)
+def test_grown_node_keeps_everything_but_added_outputs(project: Path, capsys, change, what: str) -> None:
+    def edit(flow: dict) -> None:
+        add_end_output(flow)
+        change(node(flow, "returnResolution"))
+
+    mutate(project, edit)
+
+    assert graph(project, "--grown-node", "returnResolution") == 1
+    assert capsys.readouterr().out.strip() == f"FAIL: node 'returnResolution' changed beyond added outputs ({what})"
