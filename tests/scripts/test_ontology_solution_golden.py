@@ -278,7 +278,7 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         self.assertEqual((choice_set["kind"], customer["type"], sales_order["type"], directory["type"]),
                          ("choiceSet", "native", "native", "federated"))
 
-        # The CLI writes an entity's dependency kinds as Entity/ChoiceSet and the ontology's as entity.
+        # The CLI writes dependency kinds as the export does (Entity, ChoiceSet); readers ignore case, so compare lowercased.
         deps = lambda r: sorted((d["kind"].lower(), d["name"]) for d in r["dependencies"])
         self.assertEqual(deps(sales_order), [("choiceset", CHOICE_SET), ("entity", "Customer")])
         self.assertEqual(deps(directory), [("entity", "Customer")])
