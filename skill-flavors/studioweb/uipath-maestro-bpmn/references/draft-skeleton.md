@@ -1,6 +1,6 @@
 <!--skill-flavor:draft-steps:start-->
 1. Draft into the target that [Studio Web](../SKILL.md#studio-web) defines: the `.bpmn` the user names, else the open one; a named `.bpmn` that does not exist yet means the project's main file, unless that file already holds a process ([Critical Rule 12](../SKILL.md#critical-rules)).
-   Run `uip maestro bpmn init <Project>` from `/solution` only when the user asks for a new project or Rule 12 needs one, then draft into its `.bpmn`.
+   Run `uip maestro bpmn init <Project>` from `/solution` only when the user asks for a new project or Rule 12 needs one, then draft into its main file.
 2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target.
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
