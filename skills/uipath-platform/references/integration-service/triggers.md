@@ -258,17 +258,18 @@ An IS event trigger is an Orchestrator trigger bound to a connection and an even
 
 | Verb | How | CLI |
 |---|---|---|
-| **Create** | Publish and deploy the automation that holds the trigger (Maestro Flow / Case trigger node, or an RPA process with an IS trigger). Deploying creates the trigger, enabled. | Owned by the authoring skill (`uipath-maestro-flow`, `uipath-maestro-case`, `uipath-rpa`) |
+| **Create** | Publish and deploy the automation that holds the trigger (Maestro Flow / Case trigger node, or an RPA process with an IS trigger). A CLI deploy (`uip solution deploy run`) creates the trigger **disabled**: its deploy config defaults the trigger to `enabled: false`. Set `uip solution deploy config set <config-file> "<trigger-name>" enabled true` before `deploy run`, or enable it in Orchestrator afterwards. | Owned by the authoring skill (`uipath-maestro-flow`, `uipath-maestro-case`, `uipath-rpa`) |
 | **Fire** | Make the source event happen in the external system. For CREATED / UPDATED / DELETED triggers, run the matching record operation (`create`, `update` or `delete`) on the watched object through the same connection. For webhook triggers, register the URL first ([Webhook URL Retrieval](#webhook-url-retrieval)). | `uip is resources run create "<connector-key>" "<object-name>" --connection-id "<id>" --body '<json>' --output json` |
 | **Confirm it fired** | A fire starts a job for the trigger's process. | `uip or jobs list --process-name "<process>" --folder-path "<folder>" --output json` |
 | **Diagnose a miss** | Failed fire attempts (license, no machine, disabled) are logged per trigger. An empty log does not mean the trigger ran. | `uip or triggers history <trigger-key> --folder-path "<folder>" --output json` |
 | **Enable / Disable** | Orchestrator → folder → **Triggers** → **Event triggers** → toggle. | **None.** See rule below |
 | **Delete** | Remove the trigger in Orchestrator, or remove the trigger node and redeploy. | **None** |
 
-- **Do NOT use `uip or triggers update --type api --enabled|--disabled` or `uip or triggers delete --type api` on an IS event trigger.** `--type api` targets HTTP API triggers only; event triggers are stored separately and the call returns not found. Tell the user to toggle it in Orchestrator.
-- **`uip or triggers list` does not list event triggers.** Get the trigger key from the Orchestrator Triggers page (or the deployed process) before calling `triggers history`.
+- **Do NOT use `uip or triggers update` / `uip or triggers delete` on an IS event trigger, with any `--type` (`time`, `queue`, `api`, or the default).** Those verbs reach time, queue and HTTP API triggers only; event triggers are stored separately and the call returns not found. Tell the user to toggle or delete it in Orchestrator.
+- **`uip or triggers list` does not list event triggers.** No CLI command returns an event trigger's key; ask the user for it or have them copy it from Orchestrator → folder → **Triggers** → **Event triggers** before calling `triggers history`.
 - **Fire uses the trigger's own connection and object.** A record created through a different connection, or on a different object than the one passed to `triggers describe`, does not fire the trigger.
-- **Polling triggers fire on the next poll**, not immediately (`eventMode: "polling"`). Wait one interval before reading `jobs list`.
+- **A record that misses the trigger's folder or filter is skipped silently.** No job starts and nothing is logged in `triggers history`. If both are empty after a fire, check the record against the trigger's parameters (e.g. mail folder) and filter before blaming the trigger.
+- **Polling triggers fire on the next poll**, not immediately (`eventMode: "polling"`). An empty `jobs list` right after the fire is not a miss; re-check after the trigger's polling interval (set on the trigger in Orchestrator).
 
 ```bash
 # Fire a Salesforce Contact CREATED trigger, then confirm the job started

@@ -18,7 +18,8 @@ initial_prompt: |
   11111111-2222-3333-4444-555555555555.
 
   1. Fire the trigger once and check that it started a job.
-  2. If no job started, show me why the trigger did not fire.
+  2. Then show me the trigger's failed fire attempts, so I can see why it
+     might not have fired.
   3. Then disable the trigger, and finally delete it.
 
   Important:
@@ -31,7 +32,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fired the trigger by creating a Contact through the trigger's connection"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+run\s+create\s+.*uipath-salesforce-sfdc.*Contact'
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+run\s+create[\s\S]*uipath-salesforce-sfdc[\s\S]*Contact[\s\S]*--connection-id[\s="'']+placeholder-connection-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -47,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the trigger's failed fire attempts"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+history\s+11111111-2222-3333-4444-555555555555'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+history\s+11111111-2222-3333-4444-555555555555[\s\S]*--folder-path[\s="'']+Shared'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -56,7 +57,7 @@ success_criteria:
     description: "Agent did not disable/delete the IS event trigger through the HTTP API-trigger verbs — there is no CLI path; toggle/delete it in Orchestrator"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+(update|delete)\b'
-    weight: 3.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
