@@ -97,16 +97,21 @@ def configure(profile: str) -> None:
 
 configure("full")
 
-LEDGER_STATES = ("not yet effective", "not yet in effect", "not in effect", "not applied", "after the as-of", "future")
+LEDGER_STATES = ("not yet effective", "not yet in effect", "not in effect", "not effective", "not in force",
+                 "not applied", "not apply", "not been applied", "after the as of", "future")
 
 
 def ledger_ok(text: str) -> str | None:
-    """None when the notes record both amendments and say Amendment 2 was not applied, else the reason."""
-    text = text.lower()
-    if "amendment 1" not in text or "amendment 2" not in text:
+    """None when the notes record both amendments and say Amendment 2 was not applied, else the reason.
+
+    Hyphens, underscores and runs of spaces count as one space, so "Amendment-2", "03-amendment-2.md" and
+    "amendment  2" all name Amendment 2; the not-applied wording may be any of LEDGER_STATES.
+    """
+    text = re.sub(r"[\s_-]+", " ", text.lower().replace("as-of", "as of"))
+    if not re.search(r"amendment 1(?!\d)", text) or not re.search(r"amendment 2(?!\d)", text):
         return "review-notes.md does not mention both amendments"
     window = 160  # the not-applied wording must sit next to a mention of Amendment 2
-    for match in re.finditer("amendment 2", text):
+    for match in re.finditer(r"amendment 2(?!\d)", text):
         near = text[max(0, match.start() - window): match.end() + window]
         if any(state in near for state in LEDGER_STATES):
             return None

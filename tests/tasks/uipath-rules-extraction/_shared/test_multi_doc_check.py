@@ -136,3 +136,11 @@ def test_ledger_needs_both_amendments_and_the_not_applied_wording_near_amendment
     assert mdc.ledger_ok("Amendment 1 and amendment 2 are listed.") is not None
     far = "Amendment 2 is listed. " + "x " * 200 + "Some other item is not yet effective."
     assert mdc.ledger_ok("Amendment 1 applied. " + far) is not None
+
+
+def test_ledger_accepts_filenames_hyphens_and_other_not_applied_wording():
+    assert mdc.ledger_ok("Applied 02-amendment-1.md. 03-amendment-2.md is not yet effective at the as-of date.") is None
+    assert mdc.ledger_ok("Amendment-1 applied; Amendment_2 was not applied.") is None
+    assert mdc.ledger_ok("Amendment 1 applied; Amendment 2 does not apply as of 2026-10-30.") is None
+    assert mdc.ledger_ok("Amendment 1 applied. Amendment 2 is in the register.") is not None
+    assert mdc.ledger_ok("Amendment 1 and Amendment 10 not applied.") is not None
