@@ -699,6 +699,36 @@
         "file": "references/llmgateway/custom-connector/connections-guide.md",
         "command": "login refresh",
         "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login status",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login tenant list",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login tenant set",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/user-usage-topups.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites and error rows keep them, and Studio Web runs the `uip platform` commands as written."
+      },
+      {
+        "file": "references/licensing/user-usage-topups.md",
+        "command": "login status",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites and error rows keep them, and Studio Web runs the `uip platform` commands as written."
       }
     ],
     "ceiling": {
