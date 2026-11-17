@@ -42,7 +42,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - **Planner Handoff:**
      - `Status: ready`: the genome exists, and its open entries are Action Required items, not a gate;
      - `Execution autonomy`: `interactive` when someone answers the run's questions, otherwise `autonomous`;
-     - `Delivery model`: `unspecified` unless the request names it, since a genome describes no deployment;
+     - `Delivery model`: `unspecified` unless the request, or the run's own delivery-model answer, names it, since a genome names no platform;
      - `SDD scope`, and the solution rows for a process genome;
      - `Template validation`, as the template check sets it;
      - last, `| **Genome** | <relative path to the genome> · genome-sha256 <fingerprint> |` (item 4). This row tells every reader that the genome is the source.

@@ -61,12 +61,12 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 "Apply the answers" takes each item answered whose answer alters the genome, matched by its id:
 - the SDD's Business decisions, Material to supply and Preferences;
 - the readiness file's Genome edits: each gap ruled on, and each line of its Edits for `uipath-planner`;
-- the items the readiness file lists under Decisions still open;
+- the items the readiness file lists under Decisions still open, its configuration values excepted;
 - on a genome with no SDD beside it, its open entries answered in a reply or an interview, matched by the genome's ids.
 
 The readiness file's Architecture decisions and Build setup are the build's: none changes the genome.
 
-A reply's id is checked against what its item asks. Two answers to one id go to the user with both, and so does a readiness answer whose `Context:` line no longer matches the genome section it rests on, since an edit changed that section after `prepare` wrote it.
+A reply's id is checked against what its item asks. Two answers to one id go to the user with both, and so does a readiness answer whose `Context:` line no longer matches the genome section it rests on, since an edit changed that section after `prepare` wrote it. A readiness item of the build's that rests on a section this edit changes is named in the summary, for `prepare` to draw again.
 
 Each is applied as the row of § Edits it is:
 - a ruling, a defect named under Defects the rebuild fixes, and a recommended option chosen that the genome does not build yet, as "Fix this defect in the rebuild" / "keep the source's behaviour";
