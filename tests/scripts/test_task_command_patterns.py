@@ -180,3 +180,44 @@ def test_sibling_clone_patterns_skip_a_quoted_semicolon(task, noun, new_name):
     command = f"uip tm {noun} clone --key {SUBSTITUTED_KEY} {new_name}"
     assert _hits(pattern, command) == {True}
     assert _hits(pattern, f"uip tm {noun} clone --key 'K:1'; echo {new_name}") == {False}
+
+
+# --- uipath-test: a `run --help` triage probe is not a re-trigger --------------
+
+NO_RERUN = _pattern(
+    "uipath-test/project_permissions_access_integration.yaml",
+    "Triaged rather than blindly re-triggering: did NOT re-run the execution this turn",
+)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip tm testsets run --help",
+        "uip tm testcases run -h",
+        "uip tm executions run --help --output json",
+        "uip tm testsets run --help && echo done",
+        # help flag anywhere in the run's segment, not only leading:
+        "uip tm testsets run --test-set-key X --help",
+        "uip tm executions run --execution-id abc --help --output json",
+        "uip tm testsets run \\\n  --help",
+    ],
+)
+def test_no_rerun_ignores_a_help_probe(command):
+    # Reading a run command's help while triaging the 403 is not a re-trigger;
+    # the criterion (max_count 0) must not match it.
+    assert _hits(NO_RERUN, command) == {False}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uip tm testsets run --test-set-key EVFXPERMAT:1 --output json",
+        "uip tm executions run --execution-id abc --execution-type manual",
+        "uip tm testcases run --test-case-id uuid --execution-type automated",
+        "uip tm testsets run --help && uip tm testsets run --test-set-key X",
+    ],
+)
+def test_no_rerun_still_catches_a_real_retrigger(command):
+    # A genuine re-run must still match either side of a help probe.
+    assert _hits(NO_RERUN, command) == {True}

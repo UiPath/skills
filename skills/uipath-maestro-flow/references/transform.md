@@ -36,3 +36,9 @@ items and assert the resulting values, not merely that the node ran.
 
 Omit `variant` for the generic node. Set `variant: 'map' | 'filter' | 'group-by'`
 for a single-purpose node; `operations` must then contain exactly one entry.
+
+Use `transform()` for every Transform node. To use a newer registry version,
+pass it on the step: `.step('g', transform({ ... }), { version: '1.1' })`. The
+factory writes `collection` as a plain `$vars` path and puts each operation's
+settings under `config`. A `rawNode` copy of the manifest keeps `v()` as an
+expression object, and the runtime reads that as an empty collection.

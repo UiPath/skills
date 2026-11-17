@@ -3,36 +3,34 @@ name: uipath-maestro-flow
 description: "UiPath Maestro Flow, UiPath Flow and Maestro Automate (`.flow` / `.flow.ts` files): build, edit, run, debug, fix, or evaluate a flow. Author with the TypeScript builder SDK (`@uipath/maestro-builder-sdk`): nodes, triggers, schedules, connectors, document extraction (published IXP models, or the Extract document node with an inline taxonomy), inline agents, HITL, chat/voice flows, bindings, brownfield edits, and the check/compile/validate loop. Operate: upload, publish, deploy, debug a real run, trigger a process, job status/traces, pause/resume/cancel/retry an instance. Diagnose: faulted runs, incidents, runtime variables, why validate passed but the run failed. Evaluate: eval sets, evaluators, simulations, eval runs. Case plans (`caseplan.case` / `caseplan.json`)→uipath-maestro-case; BPMN (`.bpmn`, `.bpmn.ts`)→uipath-maestro-bpmn. For raw IXP labelling or prompt tuning outside a Flow→uipath-ixp; standalone agents→uipath-agents; C#/XAML→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
+
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
 
 # UiPath Flow — TypeScript Builder SDK
 
-UiPath Flow orchestrations can be authored in TypeScript using the `@uipath/maestro-builder-sdk` package. The SDK provides a builder API to construct a Flow graph, allowing developers to define inputs, outputs, steps, and control flow in a type-safe manner. The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform. An existing Flow JSON can also be decompiled back into TypeScript for editing.
+UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compiled to executable Flow JSON; existing Flow JSON can be decompiled for editing.
 
 ## Critical Rules
 
-1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the separately numbered critical rules this list summarizes, the scope gate, and the completion report the final response must follow.
-2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types): the signature, a worked example and the node's hazards live there.
-3. Choose each node from a registry search, never a brand name.
-4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**.
-5. Bind every declared output on every path. `check` misses a missing one, and the run returns `undefined`.
-6. Handle an error only when the request says what should happen.
-7. Never re-run `flow debug` to look again at a failed run.
-8. Simulate every side-effecting component before running an eval set, and never `solution upload` as part of an eval workflow without asking.
-9. Run the final pass with the loop [Lifecycle](#lifecycle) picks for this workspace, after the last edit.
+1. **Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It contains separately numbered critical rules, the scope gate, and the required completion report.
+2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
+3. Choose every node from a registry search, never a brand name.
+4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
+5. Handle an error only when the request specifies what should happen.
+6. Never re-run `flow debug` to inspect a failed run.
+7. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
+8. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
 
 ## Project layout
 
 <!--skill-flavor:sdk-project-layout:start-->
-`@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
-A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Solution>/<Name>/`, and it imports the package directly.
+Install `@uipath/maestro-builder-sdk` globally (`npm install -g`), unless present. Examples are in `examples/`; routed details are in `references/`.
 
-**Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
-`.flow-sdk/` is the SDK's own work directory: the source, `bindings.json`, `connectors/` and `connectors-local/` all go there by default, relative to the directory you run `uip` from. Each Flow project keeps its own, so a solution can hold several flows; Studio Web never reads it, and `uip solution pack`/`upload` and `flow debug` leave it out.
-**Run the SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`) from the project folder `<Solution>/<Name>/`**, as `( cd "<Solution>/<Name>" && … )` when your shell does not keep its directory between commands; every `.flow-sdk/` path in this guide and its references is relative to that folder. Everything else runs from the workspace root.
-Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
-`<Solution>` and `<Name>` come from the request's own names; one name given for both ("inside a solution of the same name"), or only the Flow's, serves both. `<Solution>` keeps it as written, spaces included; `<Name>` keeps only letters, numbers, `_` and `-` (`Headcount report form` → `HeadcountReportForm`).
-**Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
+A Flow source is `.flow-sdk/<Name>.flow.ts` under `<Solution>/<Name>/`; compiled `<Name>.flow` is not in `.flow-sdk/`. The SDK work directory contains source, `bindings.json`, `connectors/`, and `connectors-local/`, relative to the directory running `uip`; each project has its own. Studio Web does not read it, and `uip solution pack`/`upload` and `flow debug` omit it. Run SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`) from `<Solution>/<Name>/`, using `( cd "<Solution>/<Name>" && … )` when your shell does not keep its directory between commands; other commands run from the workspace root. Every `.flow-sdk/` path is project-relative.
+
+Scaffold first, seed from the scaffold, and emit into it; `compile -o` determines the emitted file. `<Solution>` and `<Name>` come from the request: one name given for both ("inside a solution of the same name"), or only the Flow's, serves both. Preserve `<Solution>` exactly, including spaces; normalize `<Name>` to letters, numbers, `_`, and `-` (`Headcount report form` → `HeadcountReportForm`).
+
+Before `uip solution init`, run `find . -maxdepth 2 -name '*.uipx'`. If solutions exist and a user can answer, ask which one (one option per solution, then "Create a new solution", then "Something else") and scaffold only after the answer; never silently create another. Headless: use the named solution, otherwise the only existing one, otherwise create one named above, and record the choice in the final response.
 
 ```bash
 uip solution init "<Solution>"
@@ -40,40 +38,27 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton.
-`--sdk-source` decompiles the trigger-only artifact `flow init` writes into the project's `.flow-sdk/<Name>.flow.ts`, creating the folder; the source carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
-So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
-`init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. Drop `--sdk-source` for a flow that will hold an Extract document node — it is CLI-authored throughout ([`references/extract-document-node.md`](references/extract-document-node.md)).
-**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; the bare verb ("automate invoice intake") asks for a plain Flow.
-Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker, and `compile -o` rewrites only the `.flow`, so both survive.
+Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. An Extract document node is `dynamicExtract()` ([`references/document-pipeline.md`](references/document-pipeline.md)); it needs SDK 6.118.0 or later, else use the CLI.
 
-When `<Solution>/<Name>/` existed before this turn, skip `init`: edit its `<Name>.flow` through [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it.
-The three names stay aligned: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and `<Name>.flow` inside it.
-Exactly one emitted `<Name>.flow` may exist, at `<Solution>/<Name>/<Name>.flow`, and never a second copy at the workspace root.
-Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([Lifecycle](#lifecycle)) and do not mix the two.
+When the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; bare "automate invoice intake" means a plain Flow. Nothing after `init` changes: it writes `runtimeOptions.profile` to `operate.json` and a `.maestro_automate` marker; `compile -o` rewrites only `.flow`, so both survive.
+
+When `<Solution>/<Name>/` existed before this turn, skip `init`; edit its `<Name>.flow` via [Editing an existing flow](#editing-an-existing-flow), never by compiling an earlier turn's source over it. Keep `.flow-sdk/<Name>.flow.ts`, the `<Name>` directory, and `<Name>.flow` aligned. Exactly one `<Name>.flow` may exist at `<Solution>/<Name>/<Name>.flow`, never at the workspace root. Root emission is only for packaged-SDK local gates, which do not scaffold; choose [Lifecycle](#lifecycle) first and do not mix loops.
 
 **Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
 <!--skill-flavor:sdk-project-layout:end-->
 
 <!--skill-flavor:sdk-connector-discovery:start-->
-Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table). With none pulled it searches the tenant through `uip`. For another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); the Extract document node only when asked for by name or already in the flow ([`references/extract-document-node.md`](references/extract-document-node.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
-Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
-`uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project.
-If the library cannot be downloaded, `pull` fetches referenced connectors via `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`.
-Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`, their descriptor data under `.flow-sdk/connectors-local/descriptors/<key>/`.
-Because the source sits in `.flow-sdk/` too, it imports them as `./connectors/<key>.ts` and `./connectors-local/<key>.ts`.
+For an external service or data (weather, Slack, a REST API), choose the node before writing it: run `uip maestro registry search '<brand or service name>'`, unless the request names the transport itself ("over HTTP, not a connector" means `http()`). A hit is a connector; `"total": 0` means `http()` (not for an external agent: see the table). With none pulled, `registry search` searches the tenant through `uip`. For capabilities outside the connector library (agent/process), run the family's `uip maestro flow registry search` ([`references/agent.md`](references/agent.md)). For document extraction, default to a published IXP model ([`references/ixp.md`](references/ixp.md)); use the Extract document node only when named or already present ([`references/extract-document-node.md`](references/extract-document-node.md)). Never replace such a step with fixed-value `script()`; `mock()` only marks a capability the search proved absent.
+
+Connectors require [`.flow-sdk/bindings.json`](references/bindings.md). `uip maestro registry pull` writes descriptors to `.flow-sdk/connectors/<key>.ts` and caches the library outside the project. If download fails, `pull` fetches through `uip` into `connectors-local/`; with none pulled, so do `check` and `compile`. Prepared modules are `.flow-sdk/connectors-local/<key>.ts`, with descriptors under `.flow-sdk/connectors-local/descriptors/<key>/`; because the source sits in `.flow-sdk/` too, import pulled descriptors as `./connectors/<key>.ts` and prepared modules as `./connectors-local/<key>.ts`.
 
 ### The connector loop: author → check → prepare → check → compile
 
-Authoring never waits on `prepare`: once the search above has chosen the node, no further discovery command precedes the source.
-Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`.
-Check names every prepare you owe, with the exact command:
-`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> --action <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `.flow-sdk/bindings.json`, and repoints your import at the generated `./connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
-Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
-What `prepare` binds or refuses: [bindings.md](references/bindings.md#where-both-values-come-from).
-`CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED` and `CONNECTOR_OBJECT_NOT_GENERIC` are source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe).
+Authoring never waits on `prepare`: after search selects the node, no further discovery command precedes the source; write from the task's words: intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for a generic operation. Then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`.
 
-Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) need the prepare `check` names with every required `-f`, and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
+`check` names every prepare you owe, with the exact command: `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> --action <action>`; `--object`, `--resolve`, and `-f` compose in one invocation. It finds the connection, writes `.flow-sdk/bindings.json`, and repoints the import to `./connectors-local/<key>.ts`; then re-run `check` and compile. Where two flows import the same connector, `prepare` names them instead of guessing and asks for `--source`.
+
+What `prepare` binds or refuses: [bindings.md](references/bindings.md#where-both-values-come-from). `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` require source fixes, not prepares: [connector-params.md](references/connector-params.md#author-first--check-names-every-prepare-you-owe). Schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`) need the prepare `check` names with every required `-f`, and a post-compile cache check: [`references/connector-params.md`](references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 <!--skill-flavor:sdk-connector-discovery:end-->
 
 ### Hello world Flow
@@ -86,19 +71,15 @@ export default flow('hello').name('Hello')
   .return({ greeting: out('greet') }).build();
 ```
 
-A script is a first-class Flow node; it runs inline JavaScript and returns a value.
-The `start` step is the default name for a "manual trigger", which carries the flow's inputs.
-A Flow can have outputs, which are returned to the caller when the flow completes successfully.
-
 ## Lifecycle
 
 <!--skill-flavor:sdk-lifecycle:start-->
-Pick one loop before any build command; never mix them in one workspace or use one as a probe for the other:
+Choose one loop before any build command; never mix loops or use one as the other's probe:
 
-- **Product-CLI loop (emit-only)** when the task asks for product validate/debug evidence, or the workspace is emit-only: a `package.json` with `{ "flowSdk": { "emitOnly": true } }` (the product-runtime eval sets it), or `FLOW_SDK_EMIT_ONLY=1`. Scaffold first ([Project layout](#project-layout)), then run the block below.
-- **Packaged-SDK local gates** otherwise: source `check`, `compile` to the root, `validate` — [`references/CLI-LOOP.md`](references/CLI-LOOP.md#local-authoring-hard-gates).
+- **Product-CLI loop (emit-only):** use when product validate/debug evidence is requested or the workspace is emit-only: a `package.json` with `{ "flowSdk": { "emitOnly": true } }` (product-runtime eval sets it), or `FLOW_SDK_EMIT_ONLY=1`. Scaffold first ([Project layout](#project-layout)).
+- **Packaged-SDK local gates:** otherwise, run source `check`, root `compile`, and `validate` — [`references/CLI-LOOP.md`](references/CLI-LOOP.md#local-authoring-hard-gates).
 
-The `uip maestro flow` commands delegate their semantics to the installed `@uipath/maestro-builder-sdk`. Emit-only belongs to the project, not the directory you run from: the nearest `package.json` up the tree that declares `flowSdk.emitOnly` decides it, a nested one that does not mention `flowSdk` inherits, and `emitOnly: false` opts out. In that mode `compile` only serializes source, both `flow check` modes refuse, and product `validate` owns structural verification. A new flow's pass is emit, any required artifact bindings, then validate:
+`uip maestro flow` delegates to the installed SDK. Emit-only is project-scoped: the nearest upward `package.json` declaring `flowSdk.emitOnly` decides it; a nested file without `flowSdk` inherits, and `emitOnly: false` opts out. In emit-only mode, `compile` only serializes source, both `flow check` modes refuse, and product `validate` verifies structure. A new flow's pass is emit, required artifact bindings, then validate:
 
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
@@ -110,13 +91,13 @@ uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
   --output json )
 ```
 
-`<Out>`: each declared `out` variable, never all of `variables.globals`. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+`<Out>` means each declared `out` variable, never all of `variables.globals`. Re-run from `compile` after the last source or binding edit. Valid means top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. Runtime evidence requires `Completed`, expected globals, and empty `failed`; an exit code alone is insufficient. Debug inputs, attachments, other projections, and incidents per [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
 <!--skill-flavor:sdk-lifecycle:end-->
 
 ## Editing an existing flow
 
 <!--skill-flavor:sdk-editing:start-->
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless the task supplied source, decompile the `.flow` fresh, edit narrowly, and merge the edited source back into the original. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
+Preserve supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. Unless source was supplied, freshly decompile the `.flow`, edit narrowly, and merge back. Decompiling overwrites a supplied source: use [its loop](references/brownfield.md#a-supplied-source).
 
 `decompile` stamps the source's first line; `merge` reads it, derives the baseline from the original, and writes over it:
 
@@ -124,7 +105,7 @@ In brownfield work, preserve the supplied source, step names, and unaffected wir
 ( cd "<Solution>/<Name>" && [ ! -d .flow-sdk ] || find .flow-sdk -maxdepth 1 \( -name '<Name>.baseline' -o -name '<Name>.edited' -o -name '<Name>.merged.flow' -o -name baseline -o -name edited -o -name '????????-????-????-????-????????????' \) -exec rm -rf {} + )
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 # edit .flow-sdk/<Name>.flow.ts narrowly; keep its first line; no .layout() for added steps (builder-sdk#1320)
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # the gate: fix each (edited) error; `unknown option`: brownfield.md
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow   # fix each (edited) error; `unknown option`: brownfield.md
 ( head -n 1 .flow-sdk/<Name>.flow.ts | grep -q '^// @decompiled-from ' || { echo 'no stamp (SDK<6.96.0): NOT merged' >&2; exit 1; }; uip maestro flow merge .flow-sdk/<Name>.flow.ts --original <Name>.flow )
 ```
 
@@ -134,65 +115,53 @@ Only `merge` writes the `.flow`; a refusal writes nothing. Validate as in [Lifec
 
 ## Builder frame
 
-The quick start above shows the shape — `flow(id)`, declarations, nodes, `.return(...)`, `.build()`. Three things it does not show:
+Use `flow(id)`, declarations, nodes, `.return(...)`, and `.build()`. The `start` step is the manual trigger's default name and carries the flow's inputs; outputs return to the caller only on success.
 
-- **`.var(name, types.*, default?)`** declares a flow VARIABLE: a value more than one step writes or reads. `.input` and `.output` are the flow's contract with its caller; a var is the state in between. A step writes one with `{ updates: { name: <expr> } }`. Inputs, outputs and vars use one of the six types the Flow CLI and Workbench offer: `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, `types.file`. `float`, `double`, `date`, `datetime` and `jsonSchema` are refused: [variable types](references/author.md#variable-types). The builder has no node that reads an Orchestrator asset: keep a setting as a var default or an input.
-- **`.return(...)` ends a PATH. `.terminate(...)` ends the RUN.** They look interchangeable on a straight chain and are not: inside a `.parallel` arm a terminate aborts the sibling arms mid-flight, where a return leaves them going.
-- **Expressions are how a step names something that is not a literal.** There is one per kind of thing you can refer to:
-
-  | | refers to |
-  | --- | --- |
-  | `input(name)` | a flow input |
-  | `v(name)` | a flow variable |
-  | `out(step, path?)` | a step's result, whole or one field |
-  | `err(step, field?)` | a FAILED step's error envelope — only inside its handler |
-  | `ran(step)` | whether a step ran at all, as a boolean |
-  | `lit(value)` | a constant, where a raw value would be ambiguous |
-  | ``js`…` `` / ``tmpl`…` `` | an expression, or a string, you write yourself |
-
-  `ran(step)` earns an early mention: when arms converge, one shared continuation usually reads better than the same work duplicated per arm, and `ran` is how that continuation asks whether the value it wants was produced.
+- `.var(name, types.*, default?)` declares state written/read by multiple steps; `.input` and `.output` are the caller contract. A step writes a var with `{ updates: { name: <expr> } }`. Inputs, outputs and vars allow only `types.string`, `types.number`, `types.boolean`, `types.object`, `types.array`, and `types.file`; `float`, `double`, `date`, `datetime`, and `jsonSchema` are refused: [variable types](references/author.md#variable-types). There is no node for an Orchestrator asset; use a var default or input.
+- `.return(...)` ends a PATH; `.terminate(...)` ends the RUN. In a `.parallel` arm, terminate aborts sibling arms, while return lets them continue.
+- **Expressions are how a step names something that is not a literal:** `input(name)` flow input; `v(name)` flow variable; `out(step, path?)` whole or field result; `err(step, field?)` failed-step error envelope only inside its handler; `ran(step)` whether a step ran; `lit(value)` a constant, where a raw value would be ambiguous; ``js`…` `` / ``tmpl`…` `` an authored expression/string. When arms converge, prefer one shared continuation over duplicating work per arm; `ran` tells it whether the value it wants was produced.
 
 ## API index
 
 <!--skill-flavor:sdk-api-index:start-->
-**Every signature, option shape and field is indexed in the installed `@uipath/maestro-builder-sdk` package**, not in this guide; a row's path is relative to the package root:
+**Every signature, option shape and field is indexed in the installed `@uipath/maestro-builder-sdk` package**, not this guide; paths are relative to the package root:
 
-| you have | look in | a row gives you |
-| --- | --- | --- |
-| a field or method — `outcomePorts`, `stepToList` (the usual case) | `dist/api-members.md` | the shape that declares it, and the lines that do |
-| an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
+| you have | look in | a row gives |
+|---|---|---|
+| a field or method — `outcomePorts`, `stepToList` | `dist/api-members.md` | declaring shape and declaration lines |
+| an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | kind, area, and declaration lines |
 
-**Match one name; do not read either file end to end.** Then read the span (e.g. `dist/core/actions.d.ts:583-597`): the whole declaration with its doc comment, so one read answers the question. Read the `.d.ts`, never `dist/*.js` (no types, no comments). A name in neither index is probably a RUNTIME output key, which the node references carry. Why the index ships in the package, and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
+Match one name; do not read either file end to end. Read the whole declaration and doc comment at the indicated span (for example, `dist/core/actions.d.ts:583-597`) from `.d.ts`, never `dist/*.js`. A name in neither index is probably a RUNTIME output key covered by node references. More rules: [`references/author.md`](references/author.md#api-index-lookups).
 <!--skill-flavor:sdk-api-index:end-->
 
 ## Supported node types
 
-The table is the authoritative router; read a node's `Reference` before writing it ([Critical Rule 2](#critical-rules)). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
+This table is authoritative; read each node's `Reference` before writing it ([Critical Rule 2](#critical-rules)). `Example` names the one complete flow to copy from; paths under `examples/` resolve inside this skill folder.
 
 | Node or surface | Emitted node type | Builder | Reference | Example |
 |---|---|---|---|---|
 | Manual trigger | `core.trigger.manual` | omit `.trigger(...)` | [manual-trigger.md](references/manual-trigger.md) | `examples/GreenhouseWatering.flow.ts` |
-| Entry points (multiple triggers) | one trigger node per extra root | `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)`; one var across roots: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) | — |
+| Entry points (multiple triggers) | one trigger per extra root | `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)`; shared var: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) | — |
 | Scheduled trigger | `core.trigger.scheduled` | `scheduled(...)` | [scheduled-trigger.md](references/scheduled-trigger.md) | `examples/HerbariumDispatch.flow.ts` |
-| Connector event trigger; a start by an HTTP call | `uipath.connector.trigger.<key>.<event>` | `onEvent(...)` | [event-trigger.md](references/event-trigger.md), [HTTP call](references/event-trigger.md#started-by-an-http-call) | `examples/DoorbellLog.flow.ts` |
+| Connector event trigger; HTTP start | `uipath.connector.trigger.<key>.<event>` | `onEvent(...)` | [event-trigger.md](references/event-trigger.md), [HTTP call](references/event-trigger.md#started-by-an-http-call) | `examples/DoorbellLog.flow.ts` |
 | Connector event wait | `uipath.connector.event.<key>.<event>` | `waitForEvent(...)` | [event-trigger.md](references/event-trigger.md) | `examples/PlanetariumConfirmation.flow.ts` |
 | Form trigger | `core.trigger.form` | `formTrigger(...)` | [form-trigger.md](references/form-trigger.md) | `examples/BakeOffEntryForm.flow.ts` |
 | Conversation trigger | `core.trigger.conversation` | `conversationTrigger(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Voice trigger | `core.trigger.voice` | `voiceTrigger(...)` | [voice.md](references/voice.md) | `examples/HarbourRadioLine.flow.ts` |
 | HTTP (`managed: false` no longer runs) | `core.action.http.v2` | `http({ managed: true, ... })` | [http.md](references/http.md) | `examples/ObservatorySeeing.flow.ts` |
-| Script | `core.action.script` | `script(fn)`, SDK ≥ 6.57.0 (`$metadata` parameter ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
+| Script | `core.action.script` | `script(fn)` SDK ≥ 6.57.0 (`$metadata` ≥ 6.72.0); `script({ code })` | [script.md](references/script.md) | `examples/GreenhouseWatering.flow.ts` |
 | Transform | `core.action.transform` | `transform(...)` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Filter | `core.action.transform.filter` | `transform({ variant: 'filter', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Map | `core.action.transform.map` | `transform({ variant: 'map', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
 | Group by | `core.action.transform.group-by` | `transform({ variant: 'group-by', ... })` | [transform.md](references/transform.md) | `examples/TrailLogSummary.flow.ts` |
-| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric / Data Service — the ops the native family lacks: file record fields, events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
-| Data Fabric read | `core.datafabric.read` (`resultMode: 'multiple'` selects its 1.4 definition; `limit` caps at 1000) | `dataFabricRead(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Integration Service action | `uipath.connector.<key>.<action>` (Data Fabric/Data Service native-family gaps include file fields/events: `uipath.connector.uipath-uipath-dataservice.*`) | `connector(...)` | [connector-params.md](references/connector-params.md) | `examples/ClubDirectory.flow.ts` |
+| Data Fabric read | `core.datafabric.read` (`resultMode: 'multiple'` selects 1.4; `limit` max 1000) | `dataFabricRead(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Data Fabric create | `core.datafabric.create` | `dataFabricCreate(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Data Fabric update | `core.datafabric.update` | `dataFabricUpdate(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
-| Data Fabric delete | `core.datafabric.delete` (declares NO outputs) | `dataFabricDelete(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
+| Data Fabric delete | `core.datafabric.delete` (NO outputs) | `dataFabricDelete(...)` | [data-fabric.md](references/data-fabric.md) | `examples/BeeHiveLedger.flow.ts` |
 | Subflow | `core.subflow` | `subflow(...)` | [subflow.md](references/subflow.md) | `examples/RecipeScaler.flow.ts` |
 | Human task | `uipath.human-in-the-loop` | `hitl(...)` | [hitl.md](references/hitl.md) | `examples/GallerySubmission.flow.ts` |
-| Human quick form | `uipath.human-in-the-loop.quick-form` (one exit per outcome: `.stepSwitch` routes them, a plain `.step()` continues every outcome) | `hitl({ variant: 'quick-form', ... })` | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
+| Human quick form | `uipath.human-in-the-loop.quick-form` (one exit per outcome: `.stepSwitch` routes them; a plain `.step()` continues every outcome) | `hitl({ variant: 'quick-form', ... })` | [hitl.md](references/hitl.md) | `examples/FieldTripQuickForm.flow.ts` |
 | Human action app | `uipath.human-in-the-loop.coded-action-app` | `hitl({ variant: 'action-app', ... })` | [hitl.md](references/hitl.md) | `examples/KilnReview.flow.ts` |
 | RPA workflow | `uipath.core.rpa-workflow.<key>` | `rpaWorkflow(...)` | [rpa-workflow.md](references/rpa-workflow.md) | `examples/WorkshopInventory.flow.ts` |
 | Queue item | `core.action.queue.create*` | `queueItem(...)` | [queue.md](references/queue.md) | `examples/HerbariumDispatch.flow.ts` |
@@ -206,17 +175,17 @@ The table is the authoritative router; read a node's `Reference` before writing 
 | Return / End | `core.control.end` | `.return(...)` | [return.md](references/return.md) | `examples/GreenhouseWatering.flow.ts` |
 | Terminate | `core.logic.terminate` | `.terminate(...)` | [terminate.md](references/terminate.md) | `examples/AquariumSafetyStop.flow.ts` |
 | Placeholder | `core.logic.mock` | `mock()` | [placeholder.md](references/placeholder.md) | `examples/FestivalMapScaffold.flow.ts` |
-| Unknown node type | the registry's `nodeType` verbatim (never `uipath.connector.*`) | `rawNode(...)` | [placeholder.md](references/placeholder.md#unknown-node-types) | — |
-| Error handler | `error` handle on an action node | `.onError(...)` | [error-handling.md](references/error-handling.md) | `examples/ObservatorySeeing.flow.ts` |
+| Unknown node type | registry `nodeType` verbatim (never `uipath.connector.*`) | `rawNode(...)` | [placeholder.md](references/placeholder.md#unknown-node-types) | — |
+| Error handler | `error` handle on action | `.onError(...)` | [error-handling.md](references/error-handling.md) | `examples/ObservatorySeeing.flow.ts` |
 | Delay | `core.logic.delay` | `delay(...)` | [delay.md](references/delay.md) | `examples/LighthouseSignal.flow.ts` |
 | API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) | `examples/BirdCountLookup.flow.ts` |
 | Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) | `examples/NeighborhoodWalkPlanner.flow.ts` |
 | Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) | `examples/PlantNameAdvisor.flow.ts` |
-| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or the CLI when the library lacks it | [external-agent.md](references/external-agent.md) | — |
+| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`; `registry prepare` first when absent from library | [external-agent.md](references/external-agent.md) | — |
 | Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
 | IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
 | Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
-| Extract document | `uipath.ixp.extract-document-builder` | — (CLI only) | [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
+| Extract document | `uipath.ixp.extract-document-builder` | `dynamicExtract(...)` | [document-pipeline.md](references/document-pipeline.md), [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
 | Published function | `uipath.core.function.<key>` | `publishedFunction(...)` | [published-function.md](references/published-function.md) | `examples/TideTableConverter.flow.ts` |
 | Conversation message wait | `uipath.conversational.wait-for-message` | `waitForMessage(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Conversational agent | `uipath.agent.conversational` | `conversationalAgent(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
@@ -227,44 +196,24 @@ The table is the authoritative router; read a node's `Reference` before writing 
 
 ## Authoring a flow
 
-[Critical Rules](#critical-rules) govern node choice, open decisions, outputs and errors. The rest is in
-**[`references/author.md`](references/author.md)**.
-A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
+[Critical Rules](#critical-rules) govern node choice, open decisions, and errors; details are in **[`references/author.md`](references/author.md)**. A requested canvas arrangement uses `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 
 <!--skill-flavor:sdk-operate:start-->
-Upload, deploy, debug, trigger, inspect a job, and drive an instance's
-lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
-comes before every upload, publish or debug. `flow debug` is a REAL run, not a
-validation step: ask first, as it says. Read
-**[`references/operate.md`](references/operate.md)**.
+Upload, deploy, debug, trigger, inspect jobs, and drive instance lifecycle only with `uip login`; run `uip solution resources refresh` before every upload, publish, or debug. `flow debug` is a REAL run, not a validation step: ask first, as it says. Read **[`references/operate.md`](references/operate.md)**.
 <!--skill-flavor:sdk-operate:end-->
 
 ## Diagnosing a failed run
 
-Triage in order — the debug response you already have, then incidents, runtime
-variables, the deployed artifact, and traces last. The builder removes several classic `.flow` defects and leaves
-others, including an expression that is really a literal. Read
-**[`references/diagnose.md`](references/diagnose.md)**.
+Triage in order: existing debug response, incidents, runtime variables, deployed artifact, then traces. The builder removes some classic `.flow` defects but can leave expressions that are actually literals. Read [`references/diagnose.md`](references/diagnose.md).
 
 ## Evaluating a flow
 
-An inline agent does not create evaluators, eval sets, data points or
-simulations — the Flow eval CLI manages them as project files. Read
-**[`references/evaluate.md`](references/evaluate.md)**.
+An inline agent creates no evaluators, eval sets, data points, or simulations; the Flow eval CLI manages them as project files. Read [`references/evaluate.md`](references/evaluate.md).
 
 ## Final evidence
 
-Product-resource truth is live evidence: confirm plausible ids,
-argument names, scenario-named optional inputs, and warnings against the tenant.
-Static diagnostics own all mechanically checkable structure; fix their cause
-rather than copying rules back into this router.
+Product-resource truth is live evidence: confirm plausible ids, argument names, scenario-named optional inputs, and warnings against the tenant. Static diagnostics own mechanically checkable structure; fix causes rather than copying rules into this router.
 
-Match proof to the request's acceptance bar. If one wiring question remains,
-a validate-only bar is complete when product validation is green and its
-required structural self-check passes; do not add debug only for confidence.
-For each behavior claim the bar names, plan at most one bounded product debug
-that answers it. If one wiring question remains, run one bounded experiment
-that distinguishes it, apply the answer, and stop; do not grow a family of
-scratch solutions or repeat equivalent variants.
+Match proof to the request's acceptance bar. For one remaining wiring question, validate-only is complete when product validation is green and its required structural self-check passes; do not debug only for confidence. For each behavior claim the bar names, plan at most one bounded product debug that answers it. If one wiring question remains, run one bounded distinguishing experiment, apply the answer, and stop; do not create scratch-solution families or repeat equivalent variants.

@@ -17,7 +17,7 @@ Read after [uipath-source-guide.md](uipath-source-guide.md); read the § Signals
 | `<ForEach>`, `<While>`, `<DoWhile>`, `<ForEachRow>`, `<ui:ForEachUiElement>` | body | Iteration over items, rows, elements | |
 | `<InvokeWorkflowFile FileName>` + `<Argument>` children | body | Call-graph edge and data passed | `FileName="ProcessInvoice.xaml"` |
 | `ConnectionId` attribute, `<isactr:ConnectorActivity UiPathActivityTypeId>` | body | Integration Service connector call; resolve service from namespace or type id | `uipath-salesforce-sfdc` |
-| Queue activities (`AddQueueItem`, `GetTransactionItem`, `SetTransactionStatus`), asset activities (`GetAsset`, `GetCredential`), `StartJob`, `CreateFormTask` / `WaitForFormTaskAndResume`, `Persistence` activities | body | Platform resources and HITL waits | queue name attribute |
+| Queue activities (`AddQueueItem`, `GetTransactionItem`, `SetTransactionStatus`), asset activities (`GetAsset`, `GetCredential`), `InvokeProcess` / `StartJob` / `RunJob`, `CreateFormTask` / `WaitForFormTaskAndResume`, `Persistence` activities | body | Platform resources and HITL waits | queue name attribute |
 | `<Variable x:TypeArguments Name>` | `.Variables` blocks | Data flow hints only — never in genome body | |
 | Object Repository references (`uix:TargetAnchorable`, `uix:TargetApp`, `Descriptor` elements) | body | UI targets; name screen and application, never selector. `TargetApp Url` / `ScopeSelectorArgument url=` give target system's base URL → Configuration Question | `Url="https://<org>.lightning.force.com/…"` |
 | `uix:NApplicationCard` / `ui:OpenBrowser` / `ui:OpenApplication` | body | Application scope: browser type, attach vs launch, one scope per application session | `BrowserType="Chrome" AttachMode="ByInstance"` |

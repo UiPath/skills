@@ -13,7 +13,7 @@ description: >
   mirroring the drafter's schemas, read-only `uip agent validate`, and an LLM
   judge on the system prompt. Cloud auth required — the tenant must have the
   index in Shared/uipath-agents.
-tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding, feature:conversational]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding, feature:conversational, autopilot-sw-ga]
 
 run_limits:
   expected_turns: 40

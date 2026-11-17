@@ -210,7 +210,7 @@
     ],
     "ceiling": {
       "codedapp": 13,
-      "codedapp deploy": 36,
+      "codedapp deploy": 34,
       "codedapp init": 2,
       "codedapp pack": 19,
       "codedapp publish": 25,
@@ -349,7 +349,7 @@
       "codedapp pack": 1,
       "login": 3,
       "maestro flow hitl": 2,
-      "traces": 1
+      "traces decisions": 1
     }
   },
   "uipath-insights": {
@@ -419,7 +419,7 @@
       "maestro flow eval": 16,
       "maestro flow extraction check": 5,
       "maestro flow nodes": 1,
-      "maestro flow nodes provision": 2,
+      "maestro flow nodes provision": 1,
       "solution pack": 2
     }
   },
