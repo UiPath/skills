@@ -24,7 +24,7 @@ Resolve the organization from the active login; no `--organization` flag exists.
 - All `*list*`, `get`, `regions list`, and `services list-available` commands are synchronous.
 - The organization surface is read/update only: `get`, `update`, `regions list`, `services list / list-available`, and `operation get`. There is no CLI `organizations create` or `organizations delete`; use the UiPath Portal / support flow.
 - Organization commands use the caller's organization, not a login-tenant default.
-- Region is required for tenant create. Run `regions list`, then pass `--region` to `tenants create`; see [tenants-commands.md](tenants-commands.md).
+- Region is required for tenant create. Run `regions list`, then pass `--region` to `tenants create`; see [tenants-commands.md](tenants-commands.md). Automation Suite has no region list: [use the organization's `Region`](#regions-list).
 
 ## Organization — `uip admin organizations`
 
@@ -95,6 +95,8 @@ This lists provisioning regions in which Portal can stand up tenants and orgs.
 
 **Output code:** `OmsRegionsList`
 
+**Automation Suite:** there is no region list, so the command fails with `ErrorCode: not_supported`; older CLIs report the same thing as `HTTP 404: Not Found` (`ErrorCode: not_found`). Don't retry or re-login. The organization and its tenants share one region, so report the organization's own `Region` from `organizations get --output json` (not the `Unknown` on its `OrganizationServiceInstances`) and pass that value to `--region`.
+
 ## Org-Level Services — `uip admin organizations services`
 
 This surface is read-only: only `list` and `list-available` exist. Do not use org-level `add`, `enable`, `disable`, or `remove`; mutate services on a tenant with [`tenants services` →](tenants-commands.md#tenant-level-services--uip-admin-tenants-services).
@@ -134,7 +136,7 @@ uip admin organizations services list-available --output json
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `region not allowed` | `--region` is not available; relevant via `tenants create` | Run `regions list` and use a returned value |
+| `region not allowed` | `--region` is not available; relevant via `tenants create` | Run `regions list` and use a returned value; on Automation Suite, [use the organization's `Region`](#regions-list) |
 | Operation never completes | Async operation is stuck or failed | Inspect `Data` from `operation get <OPERATION_ID>`; retry or escalate |
 | Empty service list | Client-side filter mismatch | Drop a filter or try another value |
 | Auth error | Login expired | Run `uip login status`, then run `uip login` |

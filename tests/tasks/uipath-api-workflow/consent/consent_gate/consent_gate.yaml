@@ -44,11 +44,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Rule 19a: project scaffolded with init rather than hand-assembled"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+api-workflow\s+init'
-    min_count: 1
+  - type: run_command
+    description: "The workspace has an API workflow project (a project.uiproj with ProjectType Api)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Api' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

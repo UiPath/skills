@@ -45,11 +45,12 @@ success_criteria:
     pass_threshold: 1.0
 
   # Correct agent-job classification: any spelling of the discriminator, never sourceType.
+  # Graded on use, not the word: a "Trigger" column or a comment naming sourceType is fine.
   - type: run_command
     description: "Metric module discriminates agent jobs on the packageType/processType field and never on sourceType"
     command: >
       python3 $REFERENCE_DIR/_shared/check_dashboard.py
-      --min-metrics 1 --require-substr "eq 'Agent'" --forbid-substr "sourceType"
+      --min-metrics 1 --require-substr "eq 'Agent'" --forbid-sourcetype-filter
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

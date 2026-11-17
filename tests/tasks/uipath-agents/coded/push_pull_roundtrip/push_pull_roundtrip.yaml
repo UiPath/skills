@@ -3,7 +3,7 @@ description: >
   Verifies the agent knows to use uip codedagent push and pull when
   UIPATH_PROJECT_ID is already wired in .env. Project is pre-seeded;
   tests command selection, not cloud connectivity.
-tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
+tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 20

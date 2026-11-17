@@ -3,7 +3,7 @@ description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
   a uipath:errorMapping block whose condition branches on the runtime error
   object via `=vars.Error.code == "..."` after a failed activity. Grades the
-  error-mapping expression shape from references/expression-authoring.md.
+  error-mapping expression shape (`=vars.Error.code`).
   Authoring only — no cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
 
@@ -45,17 +45,19 @@ initial_prompt: |
     build the complete local project end to end in one pass.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was authored"
-    path: "ErrorMappingBpmn/ErrorMappingBpmn.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ErrorMappingBpmn"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN carries a uipath:errorMapping block"
-    path: "ErrorMappingBpmn/ErrorMappingBpmn.bpmn"
-    includes:
-      - "uipath:errorMapping"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ErrorMappingBpmn --contains 'uipath:errorMapping'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

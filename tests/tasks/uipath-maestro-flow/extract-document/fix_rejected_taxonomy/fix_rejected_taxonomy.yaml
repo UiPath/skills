@@ -39,7 +39,7 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "The node holds the user's seven fields and no others, each with the user's type and instructions; the over-long year-of-hatch field is kept under a shorter name"
+    description: "The node holds the user's seven fields and no others, each with the user's type and instructions; the over-long year-of-hatch field is kept under a shorter name, its instructions starting with the user's and free to carry the words cut from the name"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields --only
       '[{"name": "Licence Number", "type": "ft-exact-text", "instructions": "The licence number exactly as printed in the licence number box."},
@@ -48,7 +48,7 @@ success_criteria:
       {"name": "Licence Status", "type": "ft-inferred-text", "instructions": "The status printed on the licence, such as ACTIVE."},
       {"name": "Ring Number", "type": "ft-exact-text", "instructions": "The ring number fitted to the bird."},
       {"name": "Species", "type": "ft-inferred-text", "instructions": "The species of the bird, as printed."},
-      {"name_matches": "hatch", "type": "ft-number", "instructions": "The year the bird hatched."}]'
+      {"name_matches": "hatch", "type": "ft-number", "instructions_matches": "^The year the bird hatched"}]'
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

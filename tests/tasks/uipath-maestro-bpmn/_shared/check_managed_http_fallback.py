@@ -5,7 +5,7 @@ Ported from Flow `connector_features/check_managed_http_fallback.py`: same
 three scenarios (Jira Get Issue path params, Google Tasks query params, Gmail
 Send Mail enum), translated from a whole-flow JSON blob search to an XML walk
 over the registry-driven ``Intsvc.*`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3 "Connector
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3 "Connector
 enrichment" and §"Connectionless vs connector HTTP"). One shared grader
 serves all three ports (`path_params.yaml`, `query_params.yaml`, `enum.yaml`)
 per _porting/BATCH1-ADDENDUM.md, mirroring Flow's own single shared script.

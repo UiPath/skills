@@ -11,6 +11,11 @@ run_limits:
   expected_turns: 16
   max_turns: 40
 
+# The call-log graders run `$REFERENCE_DIR/_shared/check_mock_calls.py`, and
+# coder-eval skips a task whose criteria read $REFERENCE_DIR without this block.
+reference:
+  directory: ../..
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -42,27 +47,70 @@ initial_prompt: |
   upload, publish, or deploy anything.
 
 success_criteria:
-  - type: command_executed
+  # Graded from the mock's own call log (mocks/.calls.jsonl), not the transcript:
+  # the dispatcher records each call after the shell expands it, so a read issued
+  # from a `for c in element-executions cursors; do uip ... $c ...` loop or through
+  # a variable counts like a literal one. A transcript regex failed exactly that
+  # (R14 v2, builder-sdk#1882). Only a call the manifest answered counts.
+  - type: run_command
     description: "Agent read element executions with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+element-executions\s+inst-triage-001\b.*folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance element-executions inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent read cursors with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+cursors\s+inst-triage-001\b.*folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance cursors inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Diagnosis names the stuck gateway and the missing-default root cause"
     path: "diagnosis.md"
     includes:
       - "STUCK_ELEMENT: Gw_ApprovalRoute"
-      - "default"
+    patterns:
+      # The STUCK_REASON line itself must say both halves of the fixture's answer
+      # (cursors.json: "No outgoing sequence-flow condition evaluated true and no
+      # default flow is defined"): a condition that did not match or evaluate
+      # true, and a default flow that is missing. A bare "default" anywhere in
+      # the file matched almost any prose. The negation must bind to the
+      # condition ("no ... condition ... matched", "condition ... did not match",
+      # "conditions evaluated false") and never reach across a "default", so the
+      # "no" of "no default flow" cannot stand in for it. Cases in
+      # _shared/test_grader_command_patterns.py.
+      - pattern: '(?i)STUCK_REASON:(?=[^\n]*(?:\b(?:no|none|neither)\b(?:(?!default)[^\n]){0,40}?\bconditions?\b(?:(?!default)[^\n]){0,40}?(?:match|\btrue\b|satisf|\bpass|\bhold)|\bconditions?\b(?:(?!default)[^\n]){0,60}?(?:(?:\bnot|\bnever|n''t|\bfailed\s+to)\s+(?:\w+\s+)?(?:match|evaluat|satisf|pass|hold|true)|\b(?:evaluated|evaluates|evaluate|were|was|are|is|returned|returns)\s+(?:to\s+)?false\b|\b(?:unmatched|unsatisfied)\b)))(?=[^\n]*(?:\b(?:no|without|missing|lacks?|lacking|absent)\b[^\n]{0,24}\bdefault\b|\bdefault\b[^\n]{0,40}\b(?:missing|absent|undefined|not\s+(?:defined|set|configured|present)|none)\b))'
     weight: 3.0
+    pass_threshold: 1.0
+
+  # Ported from operate-diagnose/minimal_fault_triage.yaml (same mock template,
+  # same prompt rule): the prompt forbids reading `mocks/` or `fixtures/`
+  # directly, and the call-log checks above prove the CLI reads happened but not
+  # that diagnosis.md was not copied from the fixtures. Keep the two patterns
+  # identical; _shared/test_fault_triage_mock_read_pattern.py exercises it.
+  - type: command_executed
+    description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
+    command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The call-log rows above grade mocks/.calls.jsonl, which the agent's shell can
+  # write: the read guard covers reads and the Write tool, not `echo >>`, `printf >`,
+  # `tee` or `touch`. One forged line would satisfy every call-log row, so any mention
+  # of the log, and any shell write into mocks/, fails here. Identical in
+  # diagnose/stuck_gateway and operate-diagnose/minimal_fault_triage; cases in
+  # _shared/test_grader_command_patterns.py.
+  - type: command_executed
+    description: "Agent did not write to the mock call log or into mocks/"
+    tool_name: "Bash"
+    command_pattern: '\.calls\.jsonl|(?:>>?|>\|)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\b(?:tee|touch|truncate|mv|ln|install|rsync)\b[^\n;&|]*\s[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\bdd\b[^\n;&|]*\bof=[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0

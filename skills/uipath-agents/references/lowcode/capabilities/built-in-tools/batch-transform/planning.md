@@ -19,7 +19,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/batch-t
 |---|---|---|
 | Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
 | Tool resource configuration | Top-level prompt + per-column descriptions + web-grounding default | Author / Studio Web tool config |
-| Attachment ingress | The `batch-transform` tool consumes runtime-uploaded CSV attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
+| Attachment ingress | The `batch-transform` tool consumes a runtime CSV attachment. Autonomous: declare a `job-attachment` input and template it into the user message. Conversational Studio Web chat: chat uploads reach the tool without schema wiring. See [impl-json.md](impl-json.md) § Attachment Ingress | `agent.json` → `inputSchema` / `entry-points.json` |
 | Output destination | Bucket + path where the augmented CSV is written | User config; include unique suffix per run to avoid overwrites |
 | Web grounding default | Whether to enable web search per row by default | User flag; default off (turn on only when the task needs fresh external data) |
 | System prompt | Tells the agent when to invoke `batch-transform` and how to frame the row prompt | Author / Studio Web |

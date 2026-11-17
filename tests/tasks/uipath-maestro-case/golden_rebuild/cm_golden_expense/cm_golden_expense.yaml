@@ -96,7 +96,7 @@ success_criteria:
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
     command: >-
       p=$(ls CMGoldenExpense/CMGoldenExpense/caseplan.case CMGoldenExpense/CMGoldenExpense/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
-      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+      --strict --sdd ./sdd.md --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

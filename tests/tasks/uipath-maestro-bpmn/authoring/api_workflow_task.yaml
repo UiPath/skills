@@ -41,9 +41,11 @@ initial_prompt: |
   cloud-side UiPath commands. Do not ask for approval or pause for feedback.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "API workflow BPMN file was created"
-    path: "ApiWorkflowDispatch/ApiWorkflowDispatch/ApiWorkflowDispatch.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ApiWorkflowDispatch"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

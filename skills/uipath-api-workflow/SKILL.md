@@ -45,7 +45,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 2. **WorkflowStart.** It is first in the root sequence, hydrates variable defaults into `$context.variables`, forwards inputs to `$input`, and must not be removed, renamed, or modified. Only it uses `isTransparent: true`.
 
-3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, and `#Body`.
+3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, `#Body`, and `#Retry`.
 
 4. **Exports.** Every activity except Log Message should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
@@ -133,6 +133,8 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:file-run-cli:end-->
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
 
+24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Some `validate` releases reject a string `retry.when` and the wrapper; before treating those errors as real, read [references/http-retry-config.md](references/http-retry-config.md#validation-gap), which also holds the shapes and defaults.
+
 ## Workflow Phases
 
 ### Phase 0: Discovery
@@ -206,7 +208,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | File | Use |
 |---|---|
 | [references/workflow-file-format.md](references/workflow-file-format.md) | JSON skeleton, schemas, variables, `WorkflowStart`, Studio Web structure |
-| [references/http-retry-config.md](references/http-retry-config.md) | Workflow-level HTTP retry/backoff |
+| [references/http-retry-config.md](references/http-retry-config.md) | Retries: task-level `catch.retry` (Try/Catch and HTTP Request `#Retry`), workflow-level `httpRetryConfig`, precedence, backoff |
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, paging, multipart |
@@ -235,6 +237,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
+- [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried by a Try/Catch with `catch.retry` (Studio Web defaults, no status filter), recording the final status in `catch.do` (rule 24).
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
 <!--skill-flavor:solution-resource-template:start-->
 - [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) — Solutions-mode IntSvc connection resource.
@@ -248,6 +251,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not read later workflow inputs from `$input.<name>`.
 - **Do NOT** treat a file input or a File to Base64 result as a string — both are `JobAttachment` references. Inline a file's content only with `<ref>.serializeData()` inside an HTTP body / Response, never in an Assign or script — and inside a JSON body field only on the File to Base64 output (`$workflow.input.document.serializeData()` nested in a body fails with "Raw bytes cannot be embedded in JSON"). See rule 23.
 - **Do NOT** write `$helpers.fileToBase64(...)` / `$helpers.base64ToFile(...)` — the helpers live under `$helpers.file.`; `validate` rejects the task and the runtime says `is not a function`. See rule 23.
+- **Do NOT** wrap an HTTP Request JSON body in `JSON.stringify` — the activity encodes `body` itself; pass the object. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md#http-kind).
 <!--skill-flavor:runtime-execution-antipattern:start-->
 - Do not run autonomously or authenticated vendor calls without consent.
 <!--skill-flavor:runtime-execution-antipattern:end-->

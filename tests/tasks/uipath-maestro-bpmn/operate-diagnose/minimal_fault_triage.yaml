@@ -10,6 +10,11 @@ run_limits:
   expected_turns: 16
   max_turns: 20
 
+# The call-log graders run `$REFERENCE_DIR/_shared/check_mock_calls.py`, and
+# coder-eval skips a task whose criteria read $REFERENCE_DIR without this block.
+reference:
+  directory: ..
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -44,35 +49,41 @@ initial_prompt: |
   your own file and reading it back is fine.
 
 success_criteria:
-  - type: command_executed
+  # The diagnostic reads are graded from the mock's own call log
+  # (mocks/.calls.jsonl), not the transcript: the dispatcher records each call
+  # after the shell expands it, so reads issued from a `for c in ...; do uip
+  # maestro bpmn $c ...` loop or through `F=folder-public; ... -f $F` count like
+  # literal ones. A transcript regex failed exactly that (R14 v2,
+  # builder-sdk#1882). Only a call the manifest answered counts.
+  - type: run_command
     description: "Advisory: agent checked the BPMN job status"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+["'']?job-triage-001'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn job status job-triage-001( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent read instance incidents with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance incidents inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent inspected runtime variables with folder context"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance variables inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent fetched the deployed BPMN asset"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+["'']?inst-triage-001["'']?\s+(-f|--folder-key)\s+["'']?folder-public'
-    min_count: 1
+    command: "python3 $REFERENCE_DIR/_shared/check_mock_calls.py '^maestro bpmn instance asset inst-triage-001 (.* )?(-f|--folder-key)[ =]folder-public( |$)'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -94,6 +105,21 @@ success_criteria:
   - type: command_executed
     description: "Agent did not read the mocked inputs under mocks/ or fixtures/ directly"
     command_pattern: '(?:(?:^|[\s;&|(`$"''])(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<![\w.=!-])(?<!exclude=")(?<!exclude='')(?<!exclude ")(?<!exclude '')(?<!exclude )(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/[\w.*?\[-])|(?:(?:^|[\s;&(`$"''])(?<!\|\s)(?<!\|)(?:cat|head|tail|less|more|sed|awk|grep|rg|jq|python3?|node|xxd|strings|bat|cp|diff|source)\s(?:(?!\n|&&|\|\||;|\||<<|(?<=[\s='';\x22])!).)*?(?<=\s)(?<!exclude-dir )(?:\./)?(?:mocks|fixtures)/?(?=\s*(?:$|\||;|&|\n|\d*>|-|["'')])))|(?:"(?:file_path|path|file|filePath)":\s*"(?:[^"]*/)?(?:mocks|fixtures)(?:/|"))'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The call-log rows above grade mocks/.calls.jsonl, which the agent's shell can
+  # write: the read guard covers reads and the Write tool, not `echo >>`, `printf >`,
+  # `tee` or `touch`. One forged line would satisfy every call-log row, so any mention
+  # of the log, and any shell write into mocks/, fails here. Identical in
+  # diagnose/stuck_gateway and operate-diagnose/minimal_fault_triage; cases in
+  # _shared/test_grader_command_patterns.py.
+  - type: command_executed
+    description: "Agent did not write to the mock call log or into mocks/"
+    tool_name: "Bash"
+    command_pattern: '\.calls\.jsonl|(?:>>?|>\|)\s*[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\b(?:tee|touch|truncate|mv|ln|install|rsync)\b[^\n;&|]*\s[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/|\bdd\b[^\n;&|]*\bof=[\x22'']?(?:[^\s;&|<>\x22'']*/)?mocks/'
     min_count: 0
     max_count: 0
     weight: 1.0

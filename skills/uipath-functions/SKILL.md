@@ -1,6 +1,6 @@
 ---
 name: uipath-functions
-description: "UiPath Coded Functions — deterministic Python or TypeScript/JavaScript units built with the `uip function` CLI (`new -l py|ts|js`, `init`, `serve`, `run`, `pack`, `publish`); the `functions` map in `uipath.json` marks the project. Python: Pydantic Input/Output models, lazy `UiPath()` SDK singleton. JS/TS: `defineFunction` + `defineSchema<T>()` contracts, HTTP endpoints for Coded App backends or run-as-job, `FunctionError`. Rule-based logic, data transforms, ERP/Integration Service calls — invoked as Maestro Service Tasks, from agents, via Orchestrator `POST /Jobs/StartJobs`, or HTTP triggers; no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents. For the Coded App frontend itself (React app code, PKCE setup, app deploy)→uipath-coded-apps."
+description: "UiPath Coded Functions — deterministic Python or TypeScript/JavaScript units built with the `uip function` CLI (`new -l py|ts|js`, `init`, `serve`, `run`, `pack`, `publish`); the `functions` map in `uipath.json` marks the project. Python: Pydantic Input/Output models, lazy `UiPath()` SDK singleton. JS/TS: `defineFunction` + `defineSchema()` contracts typed by a TS interface, HTTP endpoints for Coded App backends or run-as-job, `FunctionError`. Rule-based logic, data transforms, ERP/Integration Service calls — invoked as Maestro Service Tasks, from agents, via Orchestrator `POST /Jobs/StartJobs`, or HTTP triggers; no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents. For the Coded App frontend itself (React app code, PKCE setup, app deploy)→uipath-coded-apps."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -88,6 +88,10 @@ uip function init                # generate entry-points.json / project.uiproj; 
 uip function run <ENTRYPOINT> '{"document_id": "42"}'
 uip function pack && uip function publish
 ```
+
+<!--skill-flavor:python-scaffold-location:start-->
+From a solution root (directory holding a `.uipx`), `new` creates `<NAME>/` — `cd <NAME>` before `init`. Elsewhere it scaffolds into the current directory. `init`, `run` and `pack` run through the Python environment `uip function setup` bound: that environment needs `uipath` installed; re-run `uip function setup --force` after switching venv.
+<!--skill-flavor:python-scaffold-location:end-->
 
 Full workflow (schema, template, `uipath.json` registration, `pyproject.toml`, SDK capabilities, attachments, packOptions): [references/python/workflow-guide.md](references/python/workflow-guide.md).
 

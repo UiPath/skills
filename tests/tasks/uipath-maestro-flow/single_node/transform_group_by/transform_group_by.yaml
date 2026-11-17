@@ -42,8 +42,6 @@ initial_prompt: |
       `average`) and a non-empty `alias` for the output field.
     - The node's `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` from the authoritative definition for
-      `core.action.transform.group-by`.
 
   Validate the flow.
 
@@ -66,6 +64,14 @@ success_criteria:
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The project holds one .flow, with the flow built in it"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   # -- Structural checks (node type, collection path, groupBy op shape, ports) --

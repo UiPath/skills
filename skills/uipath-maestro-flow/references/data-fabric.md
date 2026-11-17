@@ -1,6 +1,6 @@
 # Data Fabric
 
-*Exact signatures, fields, and defaults: `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()` and `dataFabricDelete()` for native CRUD, and `connector()` for the operations the native family still does not cover.*
+*Exact signatures, fields, and defaults: `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()` and `dataFabricDelete()` for native CRUD, and `connector()` for operations the native family does not cover.*
 
 ## At a glance
 
@@ -9,58 +9,41 @@
   filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
 ```
 
-`resultMode: 'multiple'` publishes matches under `output.results` and selects the read node's 1.4 definition; plain `dataFabricRead()` stays on 1.0 and reads one record.
-**Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
-Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity is `entity: { name, folder: '<folder path>' }`, and `check` prints the one `prepare` that records its keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
+`resultMode: 'multiple'` publishes matches under `output.results` and selects read 1.4; plain `dataFabricRead()` reads one record on SDK-pinned 1.0. Wrong columns are dropped **SILENTLY**; `validate` passing is not evidence, so resolve columns with `uip df entities get` first. Delete publishes nothing. `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` are never writable. `fromRead` requires a single-record read. Folder-scoped entities use `entity: { name, folder: '<folder path>' }`; `check` prints the `prepare` command that records their keys ([below](#a-folder-scoped-entity-name-it-and-its-folder)).
 
-**Still connector-only**: get-by-id when the whole value of a long-text field is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
+Still connector-only: get-by-id when the whole long-text value is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events. Use `connector('uipath-uipath-dataservice', …)` plus `registry prepare -f entityName=<Entity>`.
 
 ## One product, two surfaces
 
-"Data Fabric" and "Data Service" are **the same product under two names**: the
-tenant lists connector key `uipath-uipath-dataservice` with the display name
-**UiPath Data Fabric**, and `uip df entities` manages the entities both surfaces
-read.
-
-The native `core.datafabric.*` family covers all four CRUD verbs, so **CRUD on
-one entity is native work** — one surface, no connection binding, no `prepare`
-step.
-Reach for the connector when the flow needs something the family does not have.
+"Data Fabric" and "Data Service" are the same product: the tenant lists connector key `uipath-uipath-dataservice` as **UiPath Data Fabric**, and `uip df entities` manages both. Native `core.datafabric.*` covers all four CRUD verbs and needs neither connection binding nor `prepare`; use the connector only for unsupported operations.
 
 | Operation | Surface |
 | --- | --- |
-| Query records, with filters, limit, paging and sort | `dataFabricRead({ entity, filters, resultMode, limit, skip, sort, fields })` |
-| Create a record | `dataFabricCreate({ entity, values })` |
-| Update a record | `dataFabricUpdate({ entity, record, set })` |
-| Delete a record | `dataFabricDelete({ entity, record })` |
-| Get a record by id, whole field values | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` (see [Long text](#long-text-queries-return-a-10000-character-preview)) |
-| Upload / download / delete a file record field | `connector('uipath-uipath-dataservice', 'upload-file-to-record-field' / 'download-file-from-record-field' / 'delete-file-from-record-field', …)` ([example](#a-file-field-connector-example)) |
-| Record Created / Record Updated events | `onEvent(…)` on the same connector |
+| Query records, filters, limit, paging, sort | `dataFabricRead({ entity, filters, resultMode, limit, skip, sort, fields })` |
+| Create | `dataFabricCreate({ entity, values })` |
+| Update | `dataFabricUpdate({ entity, record, set })` |
+| Delete | `dataFabricDelete({ entity, record })` |
+| Get by id, whole field values | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` ([Long text](#long-text-queries-return-a-10000-character-preview)) |
+| File record field upload/download/delete | `connector('uipath-uipath-dataservice', 'upload-file-to-record-field' / 'download-file-from-record-field' / 'delete-file-from-record-field', …)` ([example](#a-file-field-connector-example)) |
+| Record Created/Updated events | `onEvent(…)` on the same connector |
 
-Only the bottom three are connector work. A flow that needs one of them straddles
-both surfaces — a connection binding, a second payload shape, two things to
-debug — so when that is the shape of the work, route the whole entity through
-the connector instead of mixing.
+Only the bottom three are connector work. Route an entity needing one through the connector rather than mixing surfaces: mixing requires connection binding, a second payload shape, and separate debugging.
 
 Data Fabric **events** (Record Created / Record Updated on an entity) are
 Integration Service connector events on `uipath-uipath-dataservice`, not this
-node family: `onEvent(RecordCreated, { object: '<Entity>', … })`, with the
-entity named through `object`. See
-[`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+node family. They are curated events with the object built in, so do not pass
+`object`: the registry serves them as `record-created-preview-` and
+`record-updated-preview-`, and the entity is picked through the `where` lookups
+that `uip maestro registry prepare uipath-uipath-dataservice --action
+record-updated-preview-` prints (`entityScope`, `tenantEntityName`,
+`folderEntityName`). See
+[`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview
 
-`dataFabricRead` is a **query**, including a read-one with an `Id` filter. A
-Data Service query returns a *preview* of a long-text (`MULTILINE_MAX`) field:
-the first 10,000 characters with `...[Truncated]` appended. Nothing flags it.
-`check`, `validate` and the run all pass, and the next step works on the cut
-text. `dataFabricCreate`'s `output` is the same preview, not the value you gave
-it. Never write a preview back through `dataFabricUpdate`: the record then
-stores the cut text, `...[Truncated]` included, and the rest is lost. Leave that
-field out of `set`.
+`dataFabricRead` is a query, including read-one with an `Id` filter. For `MULTILINE_MAX`, it returns the first 10,000 characters plus `...[Truncated]`; nothing flags this, and `check`, `validate`, the run, and downstream steps succeed on cut text. `dataFabricCreate`'s `output` is also the preview. Never write that preview through `dataFabricUpdate`; omit the field from `set`, or the stored value becomes truncated and includes `...[Truncated]`.
 
-For example, a 15,551-character value written by `dataFabricCreate` reads back
-as 10,014 characters from all three native paths:
+For a 15,551-character value:
 
 | Read path | Characters |
 | --- | --- |
@@ -69,127 +52,59 @@ as 10,014 characters from all three native paths:
 | `dataFabricRead({ filters: [{ field: 'Id', value: … }] })` → `output.<field>` | 10,014 (preview) |
 | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` → `output.<field>` | 15,551 (whole) |
 
-So when a field may hold more than 10,000 characters, read it with the
-connector's `get-entity-record-by-id` (see
-[The connector path](#the-connector-path-end-to-end)). Short fields are
-returned whole by every path, so ordinary CRUD stays native.
+Read potentially long fields with connector `get-entity-record-by-id` ([The connector path](#the-connector-path-end-to-end)); short fields are whole through every path.
 
 ## The four verbs
 
 ```ts
-.step('lookup', dataFabricRead({ entity: 'Invoices',
-  filters: [
-    { field: 'InvoiceId', value: input('invoiceId') },
-    { field: 'Status', operator: '!=', value: 'Paid', or: true },
-  ] }))
+.step('lookup', dataFabricRead({ entity: 'Invoices', filters: [
+  { field: 'InvoiceId', value: input('invoiceId') },
+  { field: 'Status', operator: '!=', value: 'Paid', or: true }, ] }))
 .step('markPaid', dataFabricUpdate({ entity: 'Invoices',
-  record: { fromRead: 'lookup' },
-  set: { Status: 'Paid', PaidBy: js`$vars.lookup.output.Approver` } }))
-.step('logIt', dataFabricCreate({ entity: 'PaymentLog',
-  values: { InvoiceId: input('invoiceId'), PaidOn: js`new Date().toISOString()` } }))
+  record: { fromRead: 'lookup' }, set: { Status: 'Paid', PaidBy: js`$vars.lookup.output.Approver` } }))
+.step('logIt', dataFabricCreate({ entity: 'PaymentLog', values: { InvoiceId: input('invoiceId'), PaidOn: js`new Date().toISOString()` } }))
 .step('purge', dataFabricDelete({ entity: 'Drafts', record: { byId: input('draftId') } }))
 ```
 
 ## Filters and targeting
 
-A filter row is `{ field, operator?, value, or? }`. `operator` defaults to `'='`
-and is one of exactly ten spellings — `=` `!=` `>` `>=` `<` `<=` `contains`
-`starts with` `ends with` `in`. There is deliberately no `not in`, no
-`not contains`, and no null check: the serializer cannot emit them, and a filter
-it cannot emit takes the WHOLE query down rather than dropping one row.
-`in` is honoured only when `resultMode` is `'multiple'`.
+A filter is `{ field, operator?, value, or? }`; `operator` defaults to `'='` and must be exactly one of `=` `!=` `>` `>=` `<` `<=` `contains` `starts with` `ends with` `in`. There is no `not in`, `not contains`, or null check; unsupported serialization takes down the whole query. `in` works only with `resultMode: 'multiple'`.
 
-**The query model is disjunctive**, so `or: true` SPLITS the list rather than
-joining one row to the one before it. The whole query is `alt1 OR alt2 OR …`,
-and each alternative is an AND of its own rows; `or: true` opens a new
-alternative (and is ignored on the first row, which has nothing to split from):
+The query is disjunctive: `or: true` starts an alternative rather than joining one row to the one before it (ignored on the first row), each alternative ANDs its rows, and results are `alt1 OR alt2 OR …`. Express `(A OR B) AND C` as `(A AND C) OR (B AND C)`. Filter values cannot be blank or reference `$self`; either makes serialization refuse the whole query, publishes nothing, and strands downstream `$vars` reads; `check` rejects both. Choice-set filters require numeric `numberId`, never the label; labels silently match nothing.
 
-```ts
-filters: [
-  { field: 'Status', value: 'Open' },
-  { field: 'Priority', value: 'High', or: true },   // Status
-  { field: 'Region', value: 'EU' },                 //   OR (Priority AND Region)
-]
-```
+`record` targets update and delete and takes exactly one of `{ byId: '<record id>' }` (literal or expression) or `{ fromRead: '<step name>' }` (the preceding single-record `dataFabricRead` result). A multiple-record query is refused as a write target as a no-op: validation and run are green, but nothing writes. `check` reports `DATAFABRIC_FROMREAD_UNKNOWN` for a nonexistent read step and `DATAFABRIC_FROMREAD_MULTIPLE` for a multiple read.
 
-To express `(A OR B) AND C`, write it out as `(A AND C) OR (B AND C)` — the
-model has no other way to say it.
+`set` and `values` map fields to literals or expressions and are rejected when empty. `values` is also rejected when every value is BLANK. Blank create values are omitted so defaults apply; an all-blank create writes nothing and runs green. Use a real value, not a placeholder.
 
-A filter value must not be blank and must not reference `$self`: either one makes
-the serializer refuse the entire query, which leaves the step publishing nothing
-and strands every downstream `$vars` read of it. `check` rejects both.
-
-A filter on a choice-set column compares against the choice's numeric
-`numberId`, never its label — a label matches nothing, silently.
-
-`record` names the target row on **update and delete alike**, and takes exactly
-ONE of:
-
-- `{ byId: '<record id>' }` — a known record id, literal or expression;
-- `{ fromRead: '<step name>' }` — the record a preceding `dataFabricRead`
-  step returned. It must be a genuinely SINGLE-record read: a multi-record query
-  is refused as a write target, and the refusal is a no-op task, not an error —
-  the flow validates, runs green, and writes nothing. `check` rejects a
-  `fromRead` that names no read step (`DATAFABRIC_FROMREAD_UNKNOWN`) or names a
-  `resultMode: 'multiple'` one (`DATAFABRIC_FROMREAD_MULTIPLE`).
-
-`set` (update) and `values` (create) map field names to values, literals or
-expressions.
-Both are rejected when empty, and `values` is rejected when every value is BLANK:
-a blank is omitted from an insert so the column default applies, so an all-blank
-create writes nothing and runs green. Fix that with a real value, never a
-placeholder to satisfy the rule.
-
-**Type each flow input by the field it fills.** `uip df entities get <id>
---output json` gives each field's type at `Data.Fields[].FieldDataType.Name`; a
-value that arrives as a flow input takes the Flow type below, and reaches the
-step as `input('<name>')`:
+Type each flow input by its destination field. Run `uip df entities get <id> --output json`; types are at `Data.Fields[].FieldDataType.Name`, and use `input('<name>')`:
 
 | Field type | Flow input |
 | --- | --- |
 | `STRING`, `MULTILINE_TEXT`, `UUID`, `DATE`, `DATETIME` | `types.string` |
 | `DECIMAL`, `INTEGER` | `types.number` |
 | `BOOLEAN` | `types.boolean` |
-| `FILE` | none — declare `types.file` on the flow, upload it with the connector's `upload-file-to-record-field` operation ([example](#a-file-field-connector-example)) |
+| `FILE` | none — declare `types.file` and upload with connector `upload-file-to-record-field` ([example](#a-file-field-connector-example)) |
 
-**System columns are never writable.** `Id`, `CreateTime`, `CreatedBy`,
-`UpdateTime`, `UpdatedBy` are assigned by Data Fabric; a write to one is rejected
-and the rejection is only logged, so the row comes back unchanged and the run
-goes green. `check` refuses them (`DATAFABRIC_SYSTEM_COLUMN`).
-
-A blank value means different things by verb: on create it is omitted so the
-default applies; on update it writes an explicit `null`, which a non-nullable
-column rejects. Check nullability with `uip df entities get`.
+System columns `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, and `UpdatedBy` are never writable. Writes to them are rejected, logged only, leave the row unchanged, and run green; `check` reports `DATAFABRIC_SYSTEM_COLUMN`. Blank create values are omitted; blank update values write explicit `null`, which non-nullable columns reject. Check nullability with `uip df entities get`.
 
 ## Query-many needs `resultMode`, and `resultMode` needs 1.4
 
-`core.datafabric.read` started as read-ONE ("Read entity") and became
-read-one-or-query-many at **1.4** ("Query entity records").
-`resultMode: 'single'` publishes one record as the step's `output`;
-`resultMode: 'multiple'` publishes the matching records under `output.results`.
-
-The SDK still pins **1.0** as the version a plain `dataFabricRead()` emits, the
-same way every family here keeps its older default — so passing `resultMode` is
-what selects 1.4, exactly as a Quartz `every` selects the scheduled trigger's
-1.2. Nothing else changes, and a read that wants one record can ignore all of
-this.
+`core.datafabric.read` began as read-one ("Read entity") and became read-one-or-many at **1.4** ("Query entity records"). `resultMode: 'single'` publishes one record under `output`; `resultMode: 'multiple'` publishes records under `output.results`. Plain `dataFabricRead()` emits SDK-pinned 1.0; passing `resultMode` selects 1.4. `dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time.
 
 ```ts
-.step('open', dataFabricRead({ entity: 'Invoices',
-  filters: [{ field: 'Status', value: 'Open' }],
-  resultMode: 'multiple' }))          // → core.datafabric.read@1.4
+.step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
+  filters: [{ field: 'Status', value: 'Open' }] })) // → core.datafabric.read@1.4
 .loop('each', js`$vars.open.output.results`, (b) => b./* … */)
 ```
-
-`dataFabricRead({ resultMode }, { version: '1.0' })` is refused at compile time
-rather than emitting an input the 1.0 definition does not declare.
 
 ## Paging a list query
 
 `limit` is always applied — omitting it resolves to **100** — and **1000 is a
-hard ceiling**: a larger value truncates silently rather than erroring. Cover a
-bigger entity by paging with `skip`, and pair any limit with `sort` or the slice
-is arbitrary.
+hard ceiling**: `check` refuses a larger value (`DATAFABRIC_LIMIT_RANGE`),
+because the run would silently return only 1000. Cover a bigger entity by
+paging with `skip`, and pair any limit with `sort` or the slice is arbitrary.
+
+`limit`, `skip`, `sort`, and `fields` are list-query options; `check` refuses them on single-record reads.
 
 ```ts
 .step('page1', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
@@ -197,29 +112,23 @@ is arbitrary.
   fields: ['Id', 'Status'] }))
 ```
 
-The real audit columns are `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`,
-`UpdatedBy` — there is no `CreatedAt`, and a sort on a column that does not exist
-is not caught by `validate`.
-`limit`, `skip`, `sort` and `fields` are list-query options: `check` refuses them
-on a single-record read.
+Audit columns are `Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`; there is no `CreatedAt`. `validate` does not catch a nonexistent sort column.
 
 ## A folder-scoped entity: name it and its folder
 
-A **tenant-scoped** entity needs nothing but `entity: '<Name>'`.
-
-A **folder-scoped** one is named by its name and the Orchestrator folder **path** it lives in, never by keys:
+Tenant-scoped entities use `entity: '<Name>'`; folder-scoped entities use the Orchestrator folder **path**, never keys:
 
 ```ts
 .step('read', dataFabricRead({ entity: { name: 'Orders', folder: 'Finance/Prod' }, resultMode: 'multiple' }))
 ```
 
-Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; an older SDK refuses `{ name, folder }` and has no key-less `prepare`,
+SDK 6.73.0 or later is required. An older SDK refuses `{ name, folder }` and has no key-less `prepare`,
 <!--skill-flavor:data-fabric-entity-ref-sdk:start-->
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-If `uip maestro registry prepare --entity …` answers `missing required argument 'connector-key'`, the `uip` in use predates key-less `prepare`: run the same command as `npx flow-sdk registry prepare --entity …`.
+If `uip maestro registry prepare --entity …` says `missing required argument 'connector-key'`, run the same command as `npx flow-sdk registry prepare --entity …`.
 <!--skill-flavor:data-fabric-entity-ref-sdk:end-->
 
-`check` reports it as `RESOURCE_UNRESOLVED` and prints the command that records its keys; run that command, then `check` again:
+`check` reports `RESOURCE_UNRESOLVED` and prints the command recording keys. Run it, then run `check` again:
 
 ```bash
 uip maestro registry prepare --entity Orders --folder-path Finance/Prod
@@ -227,56 +136,35 @@ uip maestro registry prepare --entity Orders --folder-path Finance/Prod
 # Recorded  ./.flow-sdk/resources.json
 ```
 
-`compile` then writes the entity's folder key and resource key, the two `resource: 'Entity'` binding rows, and the entity's row in the project's `bindings_v2.json`, so `uip solution resources refresh` declares it in the solution.
-Nothing is typed by hand, and `compile` refuses the step while the entity is unrecorded.
+`compile` writes the folder key, resource key, two `resource: 'Entity'` binding rows, and the entity row in `bindings_v2.json`; `uip solution resources refresh` then declares it in the solution. Do not type keys; compile refuses an unrecorded entity.
 
-Run `prepare` in the directory you run `check` and `compile` from, normally the Flow project folder (`<Solution>/<Name>/`): it records into `./.flow-sdk/resources.json` there, which is where `check` and `compile` read it.
-Inside a solution (a `.uipx` in that folder or one above it) it looks in the solution before the tenant.
+Run `prepare` from the directory used for `check` and `compile`, normally `<Solution>/<Name>/`; it records `./.flow-sdk/resources.json`. Within a solution (a `.uipx` in that folder or above), it searches the solution before the tenant.
 
 `prepare` lists and stops; it never picks:
 
-- **No `folder`:** it searches every folder.
-  One match in a folder is recorded, and the output names the folder to pin in the source.
-  Several matches are listed with the `folder:` to write for each; write the one the user meant and run `prepare` again.
-- **A tenant-level match** needs no `prepare`: write it as `entity: '<Name>'`, as the output says.
-- **A name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash.** A `folder` that holds no entity of that name is `RESOURCE_NOT_IN_FOLDER`, listing the folders that do.
-- **No match:** it lists near misses and the listings to check.
-  When none of them is the entity meant, ask the user how to resolve it; do not create an entity on your own.
-  Creating one, in the scope the user asks for, follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), and then `prepare` runs again.
-- **A recorded row older than a day** counts as missing, so `check` asks for `prepare` again.
+- **No `folder`:** it searches every folder. One match records the folder and names it to pin in source. Multiple matches list each `folder:`; write the intended one and run `prepare` again.
+- **Tenant-level match:** no `prepare`; write `entity: '<Name>'` as output says.
+- **Matching:** a name matches exactly, case included; a `folder` path ignores case and a leading or trailing slash. A folder without that entity returns `RESOURCE_NOT_IN_FOLDER` and lists folders containing it.
+- **No match:** it lists near misses and listings to check. If none is intended, ask the user; never create an entity unless the user asks. Creating one in the requested scope follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md), then run `prepare` again.
+- **Recorded row older than a day:** it counts as missing; `check` asks for `prepare` again.
 
 ### An entity the solution authors itself
 
-An entity created with `uip df entities create <Name> --local` lives only in the solution until it is deployed, and resolves the same way.
-Write it as `{ name: '<Name>' }` and run the `prepare` that `check` prints, from the Flow project folder: `prepare` reads the solution as well as the tenant, records the entity in the solution's placeholder folder (`99999999-9999-9999-9999-999999999999`, which `flow debug` and `solution deploy` replace with the folder they provision), and names the folder to pin, `folder: 'solution_folder'`.
-Do not look the entity up on the tenant yourself: it is not there until deploy.
-Leaving the keys out instead makes the node tenant-scoped, and the run fails with `Entity <Name> does not exist`, naming an entity that does exist; `flow validate` reports such a node as `INLINE_ENTITY_UNBOUND`.
-Its message suggests `uip maestro flow node configure`, which edits the compiled `.flow`; in a builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
-Creating and modelling the entity belongs to [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
+An entity from `uip df entities create <Name> --local` exists only in the solution until deployment and resolves the same way. Write `{ name: '<Name>' }`; from the Flow project folder, run the `prepare` printed by `check`. It reads the solution, records the entity in placeholder folder `99999999-9999-9999-9999-999999999999` (replaced by `flow debug` and `solution deploy`), and names `folder: 'solution_folder'` to pin.
 
-A decompiled flow names a folder-scoped entity with `folderKey` and `resourceKey`.
-That form compiles as it is; leave it unless the entity itself changes.
+Do not look it up on the tenant before deploy. Skipping that `prepare` leaves the keys out and makes it tenant-scoped; the run fails with `Entity <Name> does not exist`, naming an entity that does exist, and `flow validate` reports `INLINE_ENTITY_UNBOUND`. Although its message suggests `uip maestro flow node configure` (which edits compiled `.flow`), fix `.flow.ts` in a builder-SDK project or the next `compile` reverts it. Creating and modelling follows [/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
 
-**Debugging:** `uip maestro flow debug` works the first time for a solution with
-a local entity and fails from the second run on — each later run overwrites the
-same Studio Web solution, which Studio Web cannot do for one holding an Entity
-project. Tell the user up front and recommend the UiPath extension for VS Code
-for repeated debugging. `pack` / `publish` / `deploy run` are unaffected.
+A decompiled flow uses `folderKey` and `resourceKey`; leave that form unless the entity changes.
+
+**Debugging:** `uip maestro flow debug` works once for a solution with a local entity and fails from the second run because each later run overwrites the same Studio Web solution, which Studio Web cannot do for one holding an Entity project. Tell the user up front and recommend the UiPath extension for VS Code for repeated debugging. `pack` / `publish` / `deploy run` are unaffected.
 
 ## A delete publishes nothing
 
-`core.datafabric.delete` is the one verb of the family whose definition declares
-no outputs — the record is gone, so there is nothing to hand downstream.
-`$vars.<delete>.output` is undefined at run time, and `check` rejects the read
-(`DATAFABRIC_DELETE_HAS_NO_OUTPUT`).
-Take what the flow needs off the `dataFabricRead` step that FOUND the record,
-before the delete runs.
+`core.datafabric.delete` declares no outputs. `$vars.<delete>.output` is undefined, and `check` rejects that read with `DATAFABRIC_DELETE_HAS_NO_OUTPUT`. Take needed data from the `dataFabricRead` step that found the record, before deletion.
 
 ## The connector path, end to end
 
-For the operations still on the connector, an entity operation's body fields come
-from the entity, so the static library cannot carry them — `compile` refuses them
-as unknown inputs until you resolve the schema once:
+Connector entity-operation body fields come from the entity, so the static library cannot carry them. Resolve the schema once; otherwise `compile` refuses unknown inputs:
 
 ```bash
 uip maestro registry prepare uipath-uipath-dataservice --action get-entity-record-by-id \
@@ -290,13 +178,11 @@ uip maestro registry prepare uipath-uipath-dataservice --action get-entity-recor
   { connection: 'dataservice', folder: 'shared' }))
 ```
 
-Full rules, including the parent-field (`GenerateSchema` over `entityName`)
-shape these operations use: [`connector-params.md`](connector-params.md).
+Full rules, including parent-field (`GenerateSchema` over `entityName`) shapes: [`connector-params.md`](connector-params.md).
 
 ### A file field: connector example
 
-File-record-field operations take the file as a Flow input — the shared pattern
-for every connector file field ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
+File-record-field operations take a Flow file input ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
 
 ```bash
 uip maestro registry prepare uipath-uipath-dataservice \
@@ -313,85 +199,47 @@ const BIND = { connection: 'dataservice', folder: 'shared' } as const;
 .input({ recordId: types.string, doc: types.file })
 .step('attach', connector(UploadFileToRecordField, {
   entityName: lookup(UploadFileToRecordField, 'entityName').byDisplayName('LoanApplication'),
-  recordId: input('recordId'),
-  _fieldName: 'Contract',   // the FILE column on the entity — note the leading underscore
-  file: input('doc'),
+  recordId: input('recordId'), _fieldName: 'Contract', file: input('doc'),
 }, BIND))
 .step('fetch', connector(DownloadFileFromRecordField, {
   entityName: lookup(DownloadFileFromRecordField, 'entityName').byDisplayName('LoanApplication'),
-  recordId: input('recordId'),
-  _fieldName: 'Contract',
+  recordId: input('recordId'), _fieldName: 'Contract',
 }, BIND))
 ```
 
-`entityName` is a LOOKUP (go through `lookup(...).byDisplayName(...)`, don't paste
-a system name). The FILE column is `_fieldName` — the leading underscore is
-intentional and `fieldName` fails `check`. The debug CLI uploads the local file
-with `--attachment doc=<path>` ([`operate.md` § types.file](operate.md)); download
-publishes the file reference under `output.Response`. Delete follows the same
-shape — only the action name changes.
+`entityName` is a LOOKUP through `lookup(...).byDisplayName(...)`; do not paste a system name. The FILE column is `_fieldName` (leading underscore required); `fieldName` fails `check`. Debug CLI uploads with `--attachment doc=<path>` ([`operate.md` § types.file](operate.md)); download publishes the file reference under `output.Response`. Delete has the same shape with only the action name changed.
 
-`file:` accepts ANY upstream file reference, not just `input('doc')`. Chain the
-download's `output.Response` straight into another upload — same shape as the
-Slack upload example ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
+`file:` accepts any upstream file reference, including `out('fetch', 'Response')`:
 
 ```ts
 .step('mirror', connector(UploadFileToRecordField, {
   entityName: lookup(UploadFileToRecordField, 'entityName').byDisplayName('LoanApplication'),
-  recordId: input('mirrorId'),
-  _fieldName: 'Contract',
-  file: out('fetch', 'Response'),   // from the download step above
+  recordId: input('mirrorId'), _fieldName: 'Contract', file: out('fetch', 'Response'),
 }, BIND))
 ```
 
-Same source rule for `documentClassify`, `dynamicExtract`, `ixpExtract`,
-`summarize`, `batchTransform`: the file field reads a `types.file` input, an
-upstream `out('<step>', '<fileField>')`, or any step whose declared output type
-is a file. The runtime is the file reference, never the bytes.
+The same source rule applies to `documentClassify`, `dynamicExtract`, `ixpExtract`, `summarize`, and `batchTransform`: the file field accepts a `types.file` input, `out('<step>', '<fileField>')`, or any step whose declared output is a file. Runtime values are file references, never bytes.
 
 <!--skill-flavor:operation-doc:start-->
-**Read the operation's own doc before guessing anything.** The connector library
-ships a Markdown page per operation, and an environment that stages a library
-points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md --output plain`
-otherwise):
-
+**Read the operation's own doc before guessing anything.**
+Run:
 ```bash
-sed -n '1,60p' "$FLOW_SDK_LIBRARY_MD/uipath-uipath-dataservice/create-entity-record@1.0.0.md"
+uip maestro registry describe uipath.connector.uipath-uipath-dataservice.create-entity-record
 ```
-
-That page names the connector *UiPath Data Fabric*, gives the HTTP route
-(`POST /v2/{entityName}/CreateEntityRecord`), and prints the exact
-`prepare-connector … -f entityName=<value>` line to run — before any of it has to
-be inferred.
+It prints the connector page (UiPath Data Fabric), HTTP route `POST /v2/{entityName}/CreateEntityRecord`, and exact `prepare-connector … -f entityName=<value>` line before anything is inferred.
 <!--skill-flavor:operation-doc:end-->
 
 ## Evidence boundary
 
-The entity name and field names are tenant data — copy them from the scenario
-or the tenant, never invent them.
-
-**Entity and column names are case-sensitive, and an unmatched column is dropped
-rather than rejected** — a wrong name yields a node that validates green and
-writes nothing. Nothing offline can tell a real column from a typo, so resolve
-them first:
+Entity and field names are tenant data: copy them from the scenario or tenant, never invent them. Names are case-sensitive; unmatched columns are dropped rather than rejected, so a wrong name validates green and writes nothing. Resolve first:
 
 ```bash
 uip df entities list --native-only --include-folders --output json  # writes need a NATIVE entity
 uip df entities get <entity-id> --output json                       # exact column names and types
 ```
 
-Two query options are documented by the platform but not applied by the
-converter the local engine runs: `limit`/`skip`/`sort` reach the file as
-`_recordLimit`/`_skip`/`_sort` and are read at run time, so `flow-debug` is not
-evidence either way for them.
+The platform documents `limit`/`skip`/`sort`, but the local engine's converter does not apply them; they reach the file as `_recordLimit`/`_skip`/`_sort` and are read at run time, so `flow-debug` is not evidence either way.
 
-Offline `validate` proves only the emitted `entityConfig` SHAPE. It does not
-check whether a column exists, is writable, or has the type the value implies;
-whether the entity is native or federated; or whether a `byId` id matches
-anything. Every one of those validates clean and fails silently at run time, so
-green is not evidence here — the tenant is.
+Offline `validate` proves only emitted `entityConfig` shape. It does not verify column existence, writability, value type, native versus federated entity, or whether a `byId` id matches; all validate clean and can fail silently at runtime. The tenant is evidence.
 
-A typed column also needs the canvas's `_outputSchema` snapshot to coerce
-values, and a dotted related path needs `_entityFields`. The SDK authors neither,
-so keep from-scratch nodes on the entity's own columns with string or expression
-values, and let the designer fill the snapshots in on first open.
+Typed columns also need the canvas `_outputSchema` snapshot for coercion, and dotted related paths need `_entityFields`. SDK authors provide neither: keep from-scratch nodes to the entity's own columns with string or expression values, and let the designer populate snapshots on first open.

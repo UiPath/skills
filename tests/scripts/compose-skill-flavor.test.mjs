@@ -144,6 +144,10 @@ function addPackageManifest(repo, version = "1.2.3", overrides = {}) {
   );
   mkdirSync(join(repo, "assets"));
   writeFileSync(join(repo, "assets", "shared.txt"), "default-only payload\n");
+  writeFileSync(
+    join(repo, "assets", "skill-status.json"),
+    `${JSON.stringify({ skills: { "uipath-changed": { status: "preview" } } })}\n`,
+  );
   mkdirSync(join(repo, "hooks"));
   writeFileSync(join(repo, "hooks", "tool.sh"), "#!/bin/sh\necho fixture\n");
   chmodSync(join(repo, "hooks", "tool.sh"), 0o755);
@@ -705,6 +709,11 @@ test("invalid pins and unpinned classic trees are rejected", (t) => {
 
   rmSync(join(studio, "uipath-flow", ".canonical"));
   expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
+
+  writeFileSync(join(repo, "classic", "skills", "uipath-flow", ".retained"), "\n");
+  expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
+  writeFileSync(join(repo, "classic", "skills", "uipath-flow", ".retained"), "Graders still read it.\n");
+  assert.doesNotThrow(() => createAllVariants(repo));
 });
 
 function addPreviewSkill(repo, name, body = "Preview guidance.\n") {
@@ -1343,7 +1352,11 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     readFileSync(join(studioDir, "skills", "uipath-changed", "SKILL.md"), "utf8"),
     /Studio Web project tool/,
   );
-  assert.ok(!existsSync(join(studioDir, "assets")));
+  assert.deepEqual(
+    readFileSync(join(studioDir, "assets", "skill-status.json")),
+    readFileSync(join(repo, "assets", "skill-status.json")),
+  );
+  assert.ok(!existsSync(join(studioDir, "assets", "shared.txt")));
   assert.ok(!existsSync(join(studioDir, "hooks")));
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "assets", "shared.txt")));
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "hooks", "tool.sh")));
@@ -1377,6 +1390,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     assert.ok(existsSync(item.tarball));
     const entries = readTarballEntries(item.tarball);
     assert.ok(entries.has("package/package.json"));
+    assert.ok(entries.has("package/assets/skill-status.json"));
     assert.ok(![...entries.keys()].some((name) => name.startsWith("package/skill-flavors/")));
     assert.ok(!entries.has("package/scripts/compose-skill-flavor.mjs"));
     assert.equal(

@@ -128,8 +128,28 @@ class KindTests(unittest.TestCase):
                 (Path(d) / "P" / "P.bpmn").write_text(bpmn.replace("[Action app]", "[Create action app task]"))
                 self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 1)
 
+    def test_cli_entry_point_on_a_studio_web_project(self):
+        # Studio Web names every BPMN project's main file Process.bpmn.
+        bpmn = """<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1">
+    <bpmn:task id="A" name="Record invoice [Execute script]" />
+  </bpmn:process>
+</bpmn:definitions>"""
+        with tempfile.TemporaryDirectory() as d:
+            project = Path(d) / "P" / "P"
+            project.mkdir(parents=True)
+            (project / "Process.bpmn").write_text(bpmn)
+            (project / "project.uiproj").write_text("{}")
+            other = Path(d) / "P" / "Other"
+            other.mkdir()
+            (other / "Process.bpmn").write_text(bpmn.replace("[Execute script]", ""))
+            (Path(d) / "reg.json").write_text(json.dumps(REGISTRY))
+            with _cwd(d):
+                self.assertEqual(kinds.main(["P", "--registry-json", "reg.json"]), 0)
 
-SKILL_DIR = HERE.parents[3] / "skills" / "uipath-maestro-bpmn"
+
+SKILL_DIR = HERE.parents[3] / "classic" / "skills" / "uipath-maestro-bpmn"
 GUIDE = SKILL_DIR / "references" / "phase-2-skeleton-guide.md"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 
@@ -174,7 +194,7 @@ class DriftTests(unittest.TestCase):
         self.assertEqual(exact, kinds.CASE_ONLY_EXACT | kinds.OTHER_DROPPED_EXACT)
 
 
-V2_GUIDE = HERE.parents[3] / "preview" / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
+V2_GUIDE = HERE.parents[3] / "skills" / "uipath-maestro-bpmn" / "references" / "draft-skeleton.md"
 
 
 class GuideTests(unittest.TestCase):

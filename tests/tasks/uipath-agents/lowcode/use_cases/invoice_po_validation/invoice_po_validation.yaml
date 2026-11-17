@@ -11,7 +11,7 @@ description: >
   existing solution (_fixtures/), and the checker requires the agent to be
   built inside it. Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
-tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, autopilot-sw-ga]
 
 run_limits:
   expected_turns: 30

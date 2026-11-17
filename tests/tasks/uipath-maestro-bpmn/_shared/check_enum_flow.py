@@ -6,7 +6,7 @@ Ported from Flow `connector_features/check_enum_flow.py`: only the
 never call Flow's `control` mode -- that mode grades enhanced_enum's
 Decision/Terminate control-flow shape, not enum.yaml's), translated from a
 JSON `inputs.detail.bodyParameters` walk to an XML walk over the
-registry-driven `Intsvc.*` connector shell (see skills/uipath-maestro-bpmn/
+registry-driven `Intsvc.*` connector shell (see classic/skills/uipath-maestro-bpmn/
 references/registry-workflow.md §3 "Body shape").
 
 registry-workflow.md documents the only body shape the runtime consumes:

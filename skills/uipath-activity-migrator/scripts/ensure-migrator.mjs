@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-// ensure-migrator.mjs — locate, download, and verify the UiPath Activity Migrator (UiPath.Upgrade.exe).
+// ensure-migrator.mjs — locate and verify the UiPath Activity Migrator (UiPath.Upgrade.exe); install it only when asked.
 //
-// Usage: node ensure-migrator.mjs [--check-only] [--force]
-//   --check-only  report what is cached without downloading; exit 3 with status "missing" when nothing is
-//   --force       re-download and re-extract even when cached
+// Usage: node ensure-migrator.mjs [--install] [--force]
+//   (no flag)  locate a cached tool, verify it, and report whether UiPath published a newer archive; never download.
+//              Exit 3 with status "missing" when nothing is cached: the caller asks the user before installing.
+//   --install  download and extract when nothing is cached; replace the cache when the archive changed
+//   --force    re-download and re-extract even when cached (implies --install)
 // Env:   UIPATH_ACTIVITY_MIGRATOR_DIR      install/cache root (default %LOCALAPPDATA%\UiPath\ActivityMigrator)
 //        UIPATH_ACTIVITY_MIGRATOR_URL      archive URL (default https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip)
-//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network
+//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network; wins over --install and --force
 //        UIPATH_TELEMETRY_DISABLED         read only: a value other than true/false that crashes the tool is reported
 // Output: the last stdout line is one JSON object; see references/acquisition-guide.md § Script output contract.
-// Exit:  0 ok, 1 error, 3 missing (check-only). No dependencies. Node 18+.
+// Exit:  0 ok, 1 error, 3 missing. No dependencies. Node 18+.
 //
 // Node runs the whole flow so no .ps1 or .sh file is executed: script execution policies and hosts that gate
 // PowerShell script invocations never apply. Network and archive work is delegated to the Windows tools that
@@ -23,8 +25,10 @@ const DEFAULT_URL = 'https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip'
 const ARCHIVE_URL = process.env.UIPATH_ACTIVITY_MIGRATOR_URL || DEFAULT_URL;
 const OFFLINE = process.env.UIPATH_ACTIVITY_MIGRATOR_OFFLINE === '1';
 const args = process.argv.slice(2);
-const CHECK_ONLY = args.includes('--check-only');
-const FORCE = args.includes('--force');
+// Downloading an executable is opt-in: the flag comes from a caller that holds the user's consent. Offline wins over
+// it; nothing else makes the script touch the archive.
+const FORCE = args.includes('--force') && !OFFLINE;
+const INSTALL = !OFFLINE && (FORCE || args.includes('--install'));
 
 const emit = (obj, code) => {
   process.stdout.write(JSON.stringify(obj) + '\n');
@@ -81,17 +85,17 @@ if (isFile(join(root, 'UiPath.Upgrade.exe'))) exe = join(root, 'UiPath.Upgrade.e
 else if (isFile(join(current, 'UiPath.Upgrade.exe'))) exe = join(current, 'UiPath.Upgrade.exe');
 if (!source) source = 'cached';
 
-if (!exe && CHECK_ONLY) emit({ status: 'missing', dir: root }, 3);
 if (!exe && OFFLINE) {
   fail('offline-missing', `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1 and no tool found under ${root}. Place the extracted archive there; see references/acquisition-guide.md § Manual placement.`);
 }
+// Nothing cached and nobody consented to a download: report, so the caller can ask the user.
+if (!exe && !INSTALL) emit({ status: 'missing', dir: root, url: ARCHIVE_URL }, 3);
 
 // --- 3. Decide whether to download ----------------------------------------
-let needDownload = false;
+let needDownload = !exe || FORCE;
 let isUpdate = false;
-if (!exe || FORCE) {
-  needDownload = true;
-} else if (source !== 'env' && !OFFLINE && !CHECK_ONLY) {
+let updateAvailable = false;
+if (!needDownload && source !== 'env' && !OFFLINE) {
   const head = run('curl', ['-sSIL', '--max-time', '20', ARCHIVE_URL], { timeout: 30000 });
   let remoteLm = head.ok ? lastModified(head.out) : '';
   // Behind a system proxy curl's HEAD fails every time; without this retry the cache would never update and nothing would say so.
@@ -105,9 +109,14 @@ if (!exe || FORCE) {
   }
   // A stamp written by hand may carry a UTF-8 BOM; strip it or every run looks like an update.
   const localLm = existsSync(stamp) ? readFileSync(stamp, 'utf8').replace(/^\uFEFF/, '').replace(/[\r\n]/g, '').trim() : '';
+  // A changed archive is replaced only on an install run; a plain run reports it and keeps the cached tool.
   if (remoteLm && localLm && remoteLm !== localLm) {
-    needDownload = true;
-    isUpdate = true;
+    if (INSTALL) {
+      needDownload = true;
+      isUpdate = true;
+    } else {
+      updateAvailable = true;
+    }
   }
   if (remoteLm && !localLm) writeFileSync(stamp, remoteLm, 'ascii');
 }
@@ -234,4 +243,6 @@ if (!ver.ok || !version) {
   fail('verify-failed', `${exe} did not print a version (${detail}). When that names a missing runtime or framework, fix it as it says; otherwise the install may be incomplete: rerun with --force.`);
 }
 
-emit({ status: 'ok', exe, version, source, runtime }, 0);
+const result = { status: 'ok', exe, version, source, runtime };
+if (updateAvailable) result.update = true;
+emit(result, 0);

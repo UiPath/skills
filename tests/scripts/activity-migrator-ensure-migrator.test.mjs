@@ -19,6 +19,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const realPlatform = process.platform;
 Object.defineProperty(process, 'platform', { value: 'win32' });
+// node.exe needs the real SystemRoot to start (Winsock, CSPRNG), so the fake one arrives in its own variable and is
+// applied here, before the script reads it.
+if (process.env.FAKE_SYSTEMROOT) process.env.SystemRoot = process.env.FAKE_SYSTEMROOT;
 const norm = (p) => (typeof p === 'string' && realPlatform !== 'win32' ? p.replace(/\\/g, '/') : p);
 for (const name of ['existsSync', 'mkdirSync', 'readFileSync', 'renameSync', 'rmSync', 'statSync', 'writeFileSync']) {
   const orig = fs[name];
@@ -122,7 +125,7 @@ function run(ctx, scenario, { args = [], env = {}, useEnvDir = true } = {}) {
   const calls = join(ctx.dir, `calls${n++}.json`);
   const childEnv = {
     ...process.env,
-    SystemRoot: ctx.sysRoot,
+    FAKE_SYSTEMROOT: ctx.sysRoot,
     DOTNET_ROOT_X64: ctx.dotnetRoot,
     FAKE_SCENARIO: JSON.stringify(scenario),
     FAKE_CALLS: calls,
@@ -177,13 +180,15 @@ test("a tool under current/ is found", () => {
   assert.match(fwd(r.json.exe), /\/root\/current\/UiPath\.Upgrade\.exe$/);
 });
 
-test("--check-only with nothing cached exits 3 with status missing", () => {
+test("a plain run with nothing cached reports missing with the dir and url, and downloads nothing", () => {
   const ctx = setup();
-  const r = run(ctx, {}, { args: ["--check-only"] });
+  const r = run(ctx, { curl: { ok: true }, expand: "ok", runtimes: DOTNET_OK });
   assert.equal(r.status, 3);
   assert.equal(r.json.status, "missing");
   assert.match(fwd(r.json.dir), /\/root$/);
+  assert.equal(r.json.url, "http://example.invalid/UiPath.Upgrade.Cli.zip");
   assert.deepEqual(r.calls, []);
+  assert.ok(!existsSync(join(ctx.root, "current")));
 });
 
 test("offline mode with nothing cached is an offline-missing error", () => {
@@ -192,6 +197,23 @@ test("offline mode with nothing cached is an offline-missing error", () => {
   assert.equal(r.status, 1);
   assert.equal(r.json.code, "offline-missing");
   assert.match(r.json.message, /Manual placement/);
+});
+
+test("offline wins over --install: nothing cached stays an offline-missing error with no network call", () => {
+  const ctx = setup();
+  const r = run(ctx, { curl: { ok: true }, expand: "ok" }, { args: ["--install"], env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.code, "offline-missing");
+  assert.deepEqual(r.calls, []);
+});
+
+test("offline wins over --force: the cached tool is kept and no network call is made", () => {
+  const ctx = setup({ cached: "current" });
+  writeFileSync(join(ctx.root, "current", "stale.txt"), "old");
+  const r = run(ctx, { curl: { ok: true }, expand: "ok", runtimes: DOTNET_OK }, { args: ["--force"], env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "env");
+  assert.ok(existsSync(join(ctx.root, "current", "stale.txt")));
+  assert.ok(!r.calls.some((c) => c.startsWith("curl") || c.startsWith("powershell.exe")));
 });
 
 test("LOCALAPPDATA is required when no install dir is given", () => {
@@ -213,13 +235,17 @@ test("without an install dir the cache lives under LOCALAPPDATA and counts as ca
   assert.equal(r.json.source, "cached");
 });
 
-test("downloads with curl, extracts with Expand-Archive, stamps Last-Modified and reports downloaded", () => {
+test("--install downloads with curl, extracts with Expand-Archive, stamps Last-Modified and reports downloaded", () => {
   const ctx = setup();
-  const r = run(ctx, {
-    curl: { ok: true, headers: "HTTP/1.1 301\r\nLast-Modified: old\r\n\r\nHTTP/1.1 200\r\nLast-Modified: Tue, 01 Oct 2025 10:00:00 GMT\r\n" },
-    expand: "ok",
-    runtimes: DOTNET_OK,
-  });
+  const r = run(
+    ctx,
+    {
+      curl: { ok: true, headers: "HTTP/1.1 301\r\nLast-Modified: old\r\n\r\nHTTP/1.1 200\r\nLast-Modified: Tue, 01 Oct 2025 10:00:00 GMT\r\n" },
+      expand: "ok",
+      runtimes: DOTNET_OK,
+    },
+    { args: ["--install"] },
+  );
   assert.equal(r.status, 0);
   assert.equal(r.json.source, "downloaded");
   assert.match(fwd(r.json.exe), /\/root\/current\/UiPath\.Upgrade\.exe$/);
@@ -240,7 +266,7 @@ test("--force re-downloads even when the tool is cached and replaces current/", 
 
 test("falls back to PowerShell WebClient when curl fails and records its Last-Modified", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: {}, psDownload: { ok: true, stdout: " Wed, 02 Oct 2025 GMT " }, expand: "ok", runtimes: DOTNET_OK });
+  const r = run(ctx, { curl: {}, psDownload: { ok: true, stdout: " Wed, 02 Oct 2025 GMT " }, expand: "ok", runtimes: DOTNET_OK }, { args: ["--install"] });
   assert.equal(r.json.status, "ok");
   assert.equal(r.json.source, "downloaded");
   assert.equal(readFileSync(join(ctx.root, ".last-modified"), "utf8"), "Wed, 02 Oct 2025 GMT");
@@ -248,7 +274,7 @@ test("falls back to PowerShell WebClient when curl fails and records its Last-Mo
 
 test("download failure names both attempts and tells the user how to place the tool manually", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: {}, psDownload: {} });
+  const r = run(ctx, { curl: {}, psDownload: {} }, { args: ["--install"] });
   assert.equal(r.status, 1);
   assert.equal(r.json.code, "download-failed");
   assert.match(r.json.message, /curl: 22\)? ?the last line|curl: \(22\) the last line/);
@@ -259,7 +285,7 @@ test("download failure names both attempts and tells the user how to place the t
 
 test("download failure reports missing curl and missing PowerShell", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: { missing: true }, psDownload: { missing: true } });
+  const r = run(ctx, { curl: { missing: true }, psDownload: { missing: true } }, { args: ["--install"] });
   assert.equal(r.json.code, "download-failed");
   assert.match(r.json.message, /curl: not found/);
   assert.match(r.json.message, /PowerShell WebClient: not found/);
@@ -267,7 +293,7 @@ test("download failure reports missing curl and missing PowerShell", () => {
 
 test("extraction falls back to unzip when PowerShell and tar cannot extract", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: { ok: true }, unzip: "ok", runtimes: DOTNET_OK });
+  const r = run(ctx, { curl: { ok: true }, unzip: "ok", runtimes: DOTNET_OK }, { args: ["--install"] });
   assert.equal(r.json.status, "ok");
   assert.ok(r.calls.some((c) => c.startsWith("unzip")));
 });
@@ -276,7 +302,7 @@ test("extraction falls back to the system tar.exe when it exists", () => {
   const ctx = setup();
   mkdirSync(join(ctx.sysRoot, "System32"), { recursive: true });
   writeFileSync(join(ctx.sysRoot, "System32", "tar.exe"), "");
-  const r = run(ctx, { curl: { ok: true }, tar: "ok", runtimes: DOTNET_OK });
+  const r = run(ctx, { curl: { ok: true }, tar: "ok", runtimes: DOTNET_OK }, { args: ["--install"] });
   assert.equal(r.json.status, "ok");
   assert.ok(r.calls.some((c) => c.startsWith("tar.exe")));
   assert.ok(!r.calls.some((c) => c.startsWith("unzip")));
@@ -284,7 +310,7 @@ test("extraction falls back to the system tar.exe when it exists", () => {
 
 test("an archive no tool can extract is an extract-failed error", () => {
   const ctx = setup();
-  const r = run(ctx, { curl: { ok: true } });
+  const r = run(ctx, { curl: { ok: true } }, { args: ["--install"] });
   assert.equal(r.status, 1);
   assert.equal(r.json.code, "extract-failed");
   assert.match(r.json.message, /Could not extract/);
@@ -294,48 +320,58 @@ test("an archive no tool can extract is an extract-failed error", () => {
 test("an archive missing the exe or Extensions folder is rejected as an unexpected layout", () => {
   for (const layout of ["no-exe", "no-extensions"]) {
     const ctx = setup();
-    const r = run(ctx, { curl: { ok: true }, expand: layout });
+    const r = run(ctx, { curl: { ok: true }, expand: layout }, { args: ["--install"] });
     assert.equal(r.json.code, "extract-failed", layout);
     assert.match(r.json.message, /Archive layout unexpected/);
     assert.ok(!existsSync(join(ctx.root, "current")));
   }
 });
 
-test("a cached non-env install is updated when the remote Last-Modified differs from the stamp", () => {
-  const ctx = setup();
+const CHANGED_REMOTE = { head: { stdout: "HTTP/1.1 200\r\nLast-Modified: new stamp\r\n" }, curl: { ok: true, headers: "Last-Modified: new stamp\r\n" }, expand: "ok", runtimes: DOTNET_OK };
+
+function cachedUnderLocalAppData(ctx, stamp) {
   const local = join(ctx.dir, "local");
   const cacheRoot = join(local, "UiPath", "ActivityMigrator");
   mkdirSync(cacheRoot, { recursive: true });
   writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
-  writeFileSync(join(cacheRoot, ".last-modified"), "\uFEFFold stamp\r\n");
-  const r = run(
-    ctx,
-    { head: { stdout: "HTTP/1.1 200\r\nLast-Modified: new stamp\r\n" }, curl: { ok: true, headers: "Last-Modified: new stamp\r\n" }, expand: "ok", runtimes: DOTNET_OK },
-    { useEnvDir: false, env: { LOCALAPPDATA: local } },
-  );
+  if (stamp !== undefined) writeFileSync(join(cacheRoot, ".last-modified"), stamp);
+  return { local, cacheRoot };
+}
+
+test("a plain run reports a changed remote Last-Modified as update: true and keeps the cached tool", () => {
+  const ctx = setup();
+  const { local, cacheRoot } = cachedUnderLocalAppData(ctx, "\uFEFFold stamp\r\n");
+  const r = run(ctx, CHANGED_REMOTE, { useEnvDir: false, env: { LOCALAPPDATA: local } });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "cached");
+  assert.equal(r.json.update, true);
+  assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "\uFEFFold stamp\r\n", "stamp untouched so the next install run still sees the change");
+  assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")), "no download");
+  assert.ok(!existsSync(join(cacheRoot, "current")));
+});
+
+test("--install replaces a cached non-env install when the remote Last-Modified differs from the stamp", () => {
+  const ctx = setup();
+  const { local, cacheRoot } = cachedUnderLocalAppData(ctx, "\uFEFFold stamp\r\n");
+  const r = run(ctx, CHANGED_REMOTE, { args: ["--install"], useEnvDir: false, env: { LOCALAPPDATA: local } });
   assert.equal(r.json.status, "ok");
   assert.equal(r.json.source, "updated");
+  assert.equal(r.json.update, undefined);
   assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "new stamp");
 });
 
-test("an unchanged remote Last-Modified (BOM in the stamp ignored) keeps the cached tool", () => {
+test("an unchanged remote Last-Modified (BOM in the stamp ignored) keeps the cached tool without an update flag", () => {
   const ctx = setup();
-  const local = join(ctx.dir, "local");
-  const cacheRoot = join(local, "UiPath", "ActivityMigrator");
-  mkdirSync(cacheRoot, { recursive: true });
-  writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
-  writeFileSync(join(cacheRoot, ".last-modified"), "\uFEFFsame\r\n");
+  const { local } = cachedUnderLocalAppData(ctx, "\uFEFFsame\r\n");
   const r = run(ctx, { head: { stdout: "Last-Modified: same\n" }, runtimes: DOTNET_OK }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
   assert.equal(r.json.source, "cached");
+  assert.equal(r.json.update, undefined);
   assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")));
 });
 
 test("the HEAD request falls back to PowerShell and a missing stamp is written from it", () => {
   const ctx = setup();
-  const local = join(ctx.dir, "local");
-  const cacheRoot = join(local, "UiPath", "ActivityMigrator");
-  mkdirSync(cacheRoot, { recursive: true });
-  writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
+  const { local, cacheRoot } = cachedUnderLocalAppData(ctx);
   const r = run(ctx, { head: { status: 1 }, psHead: { stdout: " ps stamp " }, runtimes: DOTNET_OK }, { useEnvDir: false, env: { LOCALAPPDATA: local } });
   assert.equal(r.json.source, "cached");
   assert.equal(readFileSync(join(cacheRoot, ".last-modified"), "utf8"), "ps stamp");

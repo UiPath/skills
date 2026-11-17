@@ -1,9 +1,8 @@
 /**
- * CAPABILITY: a standalone HTTP call followed by a delay.
+ * CAPABILITY: an HTTP call followed by a delay.
  *
- * `managed: false` emits the plain HTTP node, where response status and body
- * remain ordinary outputs. A delay publishes nothing; the next step reads the
- * HTTP result, not the timer.
+ * A delay publishes nothing; the next step reads the HTTP result, not the
+ * timer.
  *
  * Generic scenario: read a lighthouse signal and pause before recording it.
  */
@@ -17,7 +16,7 @@ export default flow('lighthouse-signal')
   .step('readSignal', http({
     method: 'GET',
     url: tmpl`https://signals.example.com/stations/${input('station')}`,
-    managed: false,
+    managed: true,
     returns: { signal: 'string' },
   }))
   .step('cooldown', delay({ duration: 'PT2S' }))

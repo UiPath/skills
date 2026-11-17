@@ -1,0 +1,59 @@
+{
+  "id": "autopilot_anthropic_messages_stream_roundtrip_probe",
+  "description": "Autopilot tool-result round trip, two streamed calls. Turn 1 must stream calls to lookup_order / lookup_customer carrying the order and customer ids drawn for this run; turn 2 sends those calls back with their results and must stream an answer that quotes the codes only the results hold.",
+  "source": "AutopilotStreamRoundTripProbeValidator, ProductDefinedProbes/Payloads/autopilot_anthropic_messages_stream_roundtrip_probe.json (UiPath/Arima#3418)",
+  "apiFlavor": "AnthropicMessages",
+  "optIn": true,
+  "order": 10,
+  "roundTrip": true,
+  "path": "/v1/messages",
+  "body": {
+    "stream": true,
+    "max_tokens": 4096,
+    "system": "You are the tool-calling test harness of an AI agent platform. Follow the user's instructions exactly.",
+    "tool_choice": {
+      "type": "auto"
+    },
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Returns the status code of an order.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": {
+              "type": "string",
+              "description": "The order id, exactly as the user wrote it."
+            }
+          },
+          "required": [
+            "order_id"
+          ]
+        }
+      },
+      {
+        "name": "lookup_customer",
+        "description": "Returns the account tier code of a customer.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string",
+              "description": "The customer id, exactly as the user wrote it."
+            }
+          },
+          "required": [
+            "customer_id"
+          ]
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Look up order {{order_id}} and customer {{customer_id}}. Call lookup_order and lookup_customer in parallel, both in this same turn, and wait for their results. When you have the results, reply in one short sentence that quotes the status_code and the tier_code exactly as returned, and do not call any tool again."
+      }
+    ],
+    "model": "{{model}}"
+  }
+}

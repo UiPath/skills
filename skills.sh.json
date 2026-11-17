@@ -36,7 +36,7 @@
       "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, source control and CI/CD pipelines, governance, testing, tasks, analytics, and MCP servers.",
       "skills": [
         "uipath-platform",
-        "uipath-knowledge-bundles",
+        "uipath-bundles",
         "uipath-admin",
         "uipath-aops",
         "uipath-test",

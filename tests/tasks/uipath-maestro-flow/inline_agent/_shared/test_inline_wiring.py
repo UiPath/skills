@@ -253,3 +253,33 @@ def test_is_connector_missing_binding_fails(tmp_path):
     build_is_solution(tmp_path, CONNECTION_ID, with_binding=False)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode != 0
+
+
+def _load_inline_wiring():
+    """The module itself, loaded by path: `_shared` names a package in several task trees."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("inline_wiring", Path(__file__).with_name("inline_wiring.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+inline_wiring = _load_inline_wiring()
+
+
+def test_main_flow_path_takes_studio_webs_new_flow_when_the_named_file_is_absent(tmp_path):
+    project = tmp_path / "Sol" / "OrchestratorFlow"
+    project.mkdir(parents=True)
+    (project / "new.flow").write_text("{}", encoding="utf-8")
+
+    assert inline_wiring.main_flow_path(project / "OrchestratorFlow.flow") == project / "new.flow"
+
+
+def test_main_flow_path_keeps_the_named_file_when_it_exists(tmp_path):
+    project = tmp_path / "Sol" / "OrchestratorFlow"
+    project.mkdir(parents=True)
+    (project / "OrchestratorFlow.flow").write_text("{}", encoding="utf-8")
+    (project / "new.flow").write_text("{}", encoding="utf-8")
+
+    assert inline_wiring.main_flow_path(project / "OrchestratorFlow.flow") == project / "OrchestratorFlow.flow"

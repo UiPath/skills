@@ -30,7 +30,8 @@ reference:
 
 initial_prompt: |
   Migrate the UiPath project in ./VendorFeedSync with the Activity Migrator.
-  Do not run the migrated project.
+  Do not run the migrated project. Download the Activity Migrator if it is not
+  installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 

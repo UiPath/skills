@@ -7,13 +7,12 @@ description: >
   available from a Maestro flow. Read-only Q&A, not a build task.
 
   Observes the live-v1 registry-search command as report-only telemetry (per
-  references/plugins/ixp/impl.md — Listing Published Models). The gating check
+  references/ixp.md — Listing published models). The gating check
   asserts that the agent did NOT take the build path: no .flow file should be
   created for a listing question.
 
-  Failure here is signal about the IxP plugin's Listing Published Models /
-  Listing Available Models sections — do NOT relax assertions, tighten the
-  copy.
+  Failure here is signal about references/ixp.md (Listing published
+  models) — do NOT relax assertions, tighten the copy.
 
 tags: [uipath-maestro-flow, integration, mode:operate, lifecycle:discover, node:ixp]
 

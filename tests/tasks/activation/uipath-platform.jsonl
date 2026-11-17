@@ -134,3 +134,18 @@
 {"id": "uipath-data-fabric-048", "prompt": "Insert this loan application record from loan.json", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-049", "prompt": "Find all SystemUser records where Email endswith '@uipath.com'", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-050", "prompt": "Wipe all test records from my Sandbox entity (query then bulk delete)", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-051", "prompt": "Build a custom connector so UiPath Agents can call our internal LLM gateway", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-052", "prompt": "Our model endpoint has its own JSON format; make a BYO LLM connector that translates OpenAI chat completions to it", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-053", "prompt": "Create a BYO LLM custom connector with pre-request and post-request hooks for our model server", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-054", "prompt": "The BYO LLM validation of my custom connector fails with MALFORMED_RESPONSE, fix the connector hooks", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-055", "prompt": "My custom LLM connector probe returns VendorModelNotFound, what is wrong with the connector", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-056", "prompt": "Bridge Bedrock Converse requests to our in-house model server with an Integration Service custom connector for AI Trust Layer", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-057", "prompt": "Turn this AI Gateway connector zip into a custom connector for our vendor and publish it to the tenant", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-058", "prompt": "Publish my BYO LLM connector, create the test connection, and run the product compatibility probes", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-059", "prompt": "Write the connector hooks that map Gemini generateContent to our company's model API for bring your own LLM", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-060", "prompt": "We need a custom LLM connector for the AI Trust Layer; our model takes an API key in the x-api-key header", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-061", "prompt": "Register my published custom connector as a BYO LLM configuration with connector type Custom and run the probes", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-062", "prompt": "Re-publish the BYO custom connector after fixing the post-request hook and re-probe the configuration", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-063", "prompt": "Create the runtime Integration Service connection for our custom LLM connector and point the BYO config at it", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-064", "prompt": "Make an Anthropic Messages compatible BYO connector in front of our proxy that needs a custom token exchange", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-065", "prompt": "Bring our own LLM that is not OpenAI-compatible to UiPath Autopilot through a custom connector", "expected_skill": "uipath-platform"}

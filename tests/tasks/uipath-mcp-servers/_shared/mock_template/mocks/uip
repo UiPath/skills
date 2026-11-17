@@ -34,6 +34,11 @@ Each rule has one of:
       first run; subsequent runs replay the cache. Cache files are
       committed alongside fixtures so tests stay reproducible offline.
 
+A rule may also carry `after: <file>`: it applies only once an earlier call
+was answered from responses/<file>. Put it before a rule with the same
+`match` to change the answer after a step, e.g. a lookup that fails until
+the agent ran the command that makes the item visible.
+
 Dispatch precedence:
     1. First matching rule (substring; first match wins).
     2. `unmocked_default` — if set, return its `response` + `exit_code`.
@@ -165,6 +170,19 @@ def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
     return proc.returncode
 
 
+def _answered_before(fixture: str) -> bool:
+    """Whether an earlier call was answered from responses/<fixture>."""
+    if not CALL_LOG_PATH.is_file():
+        return False
+    for line in CALL_LOG_PATH.read_text(encoding="utf-8").splitlines():
+        try:
+            if json.loads(line).get("fixture") == fixture:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def main(argv: list[str]) -> int:
     args = " ".join(argv[1:])
 
@@ -178,6 +196,9 @@ def main(argv: list[str]) -> int:
     for rule in manifest.get("rules", []):
         match = rule.get("match", "")
         if not match or match not in args:
+            continue
+        after = rule.get("after")
+        if after and not _answered_before(after):
             continue
         if rule.get("passthrough"):
             return _passthrough(args, argv, rule)
