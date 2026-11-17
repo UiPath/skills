@@ -1,8 +1,8 @@
 # Checkpoint Formats
 
-Keep each checkpoint short. Start each one with its phase name in bold (Framing, Intake, Understanding, Inputs and structure, Extraction, Finish), never a number. Tables are Markdown; every question is one AskUserQuestion with the options listed. The first option of every question is your proposed answer, labelled with `(Recommended)` at the end, with a short description of why; the labels below show where it goes. Names, outcomes, and values below are illustrations; take phase 1 framing from the request and phase 3 outcomes from the policy.
+Keep each checkpoint short. Start each one with its phase name in bold (Framing, Intake, Understanding, Inputs and structure, Extraction, Finish), never a number. Tables are Markdown; every question is one AskUserQuestion with the options listed. The first option of every question is your proposed answer, labelled with `(Recommended)` at the end, with a short description of why; the labels below show where it goes. Names, outcomes, and values below are illustrations; take Framing framing from the request and Understanding outcomes from the policy.
 
-## Phase 1: Framing
+## Framing
 
 ```markdown
 **Decision question:** Is this employee device reimbursement claim approved?
@@ -25,7 +25,7 @@ One question set (outcomes, score bands when scored, folder); its answers start 
 
 Outcomes options: `<LABEL>:positive, <LABEL>:negative, <LABEL>:neutral (Recommended)` | a variant. Folder options: `Personal workspace (Recommended)` | a `Standard` folder by path.
 
-## Phase 2: Intake
+## Intake
 
 ```markdown
 **Readable source:** document.md (temporary copy), pages 1-3 (tables on p.2 readable)
@@ -44,7 +44,7 @@ Outcomes options: `<LABEL>:positive, <LABEL>:negative, <LABEL>:neutral (Recommen
 
 Options: `Confirm source, register, and as-of date (Recommended)` | `Change scope` | `Add or correct a document`.
 
-## Phase 3: Understanding
+## Understanding
 
 ```markdown
 **Summary:** <SUMMARY>
@@ -82,7 +82,7 @@ Options: `Confirm source, register, and as-of date (Recommended)` | `Change scop
 
 Options: `Confirm profile and sections (Recommended)` | `Change profile or sections`. Each question under **Needs your input** is its own AskUserQuestion question whose options are `<PROPOSED_ANSWER> (Recommended)` | `<ALTERNATIVE>` | `<ALTERNATIVE>`.
 
-## Phase 4: Inputs and structure
+## Inputs and structure
 
 ```markdown
 **Hit policy:** FIRST
@@ -112,7 +112,7 @@ For several decisions, repeat this block per decision, each with its own hit pol
 
 Options: `Approve (Recommended)` | `Rename or change`.
 
-### Inputs, more than 8 (phase 4)
+### Inputs, more than 8 (Inputs and structure)
 
 ```markdown
 **Inputs:** 14, in 3 groups. Judgments shown in full; the rest by name and type.
@@ -128,7 +128,7 @@ Options: `Approve (Recommended)` | `Rename or change`.
 
 Options: `Approve all (Recommended)` | `Change some`.
 
-## Phase 5: Extraction
+## Extraction
 
 Show only the section's rows, then the diff line.
 
@@ -146,9 +146,9 @@ With several decisions, add the decision to the heading (`**Section: Eligibility
 
 A row with many citations shows its count instead of every quote (`p.1 - 13 quotes, see cites.json`); list the quotes under the table on request.
 
-Options: `Approve section (Recommended)` | `Change rows`. Blocking questions are listed under the table and asked as their own questions. Whether a section asks at all follows the review level (phase guide, phase 5).
+Options: `Approve section (Recommended)` | `Change rows`. Blocking questions are listed under the table and asked as their own questions. Whether a section asks at all follows the review level (phase guide, Extraction).
 
-## Phase 6: Finish
+## Finish
 
 ```markdown
 **Citations:** 14 resolved, 1 unresolved (row 7), 0 ambiguous

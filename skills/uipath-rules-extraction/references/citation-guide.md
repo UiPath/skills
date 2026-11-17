@@ -2,7 +2,7 @@
 
 A row's position in the policy comes from a verbatim quote that code resolves to a box. The model never produces coordinates (critical rule 6).
 
-## Record a citation (phase 5)
+## Record a citation (Extraction)
 
 Append one entry per place a row was read to `<TEMP_DIR>/cites.json`:
 
@@ -18,13 +18,13 @@ Append one entry per place a row was read to `<TEMP_DIR>/cites.json`:
 
 ## Supporting-document citations
 
-Only the base document has a `dom.json` and `cites.json` entries. A row built from an amendment, higher-authority source, guidance, or reference data names the source in its annotation as `<DOCUMENT_NAME> p.<N> "<verbatim quote>"`, copied from that document's text. Add no `cites.json` entry and no `uipdm:sourceRef`: `resolve-refs.mjs` reads one `dom.json`, and a page number from another document would resolve to the wrong box. List these citations in the phase 6 summary as carrying no box. A row that combines a base clause and a supporting clause cites the base clause normally and the supporting one in the annotation.
+Only the base document has a `dom.json` and `cites.json` entries. A row built from an amendment, higher-authority source, guidance, or reference data names the source in its annotation as `<DOCUMENT_NAME> p.<N> "<verbatim quote>"`, copied from that document's text. Add no `cites.json` entry and no `uipdm:sourceRef`: `resolve-refs.mjs` reads one `dom.json`, and a page number from another document would resolve to the wrong box. List these citations in the Finish summary as carrying no box. A row that combines a base clause and a supporting clause cites the base clause normally and the supporting one in the annotation.
 
 ## Rules with no quote (user-stated)
 
-A rule that comes from a user's answer or a call, not from the document, has no clause to quote. Do not invent a quote and do not add a `cites.json` entry. Write a `uipdm:qualityWarning` on the row (`conditionId` or `field` set when known) with text starting `User-stated, not in document:` followed by the rule and who stated it. Ask the user to get it confirmed in writing, and list it in the phase 6 summary.
+A rule that comes from a user's answer or a call, not from the document, has no clause to quote. Do not invent a quote and do not add a `cites.json` entry. Write a `uipdm:qualityWarning` on the row (`conditionId` or `field` set when known) with text starting `User-stated, not in document:` followed by the rule and who stated it. Ask the user to get it confirmed in writing, and list it in the Finish summary.
 
-## Resolve (phase 6)
+## Resolve (Finish)
 
 ```bash
 node "<SKILL_DIR>/scripts/resolve-refs.mjs" --dom <DOM_JSON> --cites <TEMP_DIR>/cites.json
@@ -50,6 +50,6 @@ Declare `xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model"` on `
 | `<uipdm:sourceRefs><uipdm:sourceRef page box [blockId]/></uipdm:sourceRefs>` | `rule/extensionElements`, before the first `<inputEntry>`; in a multi-decision file, also the decision's `extensionElements` | A row or decision whose citation resolved. One `sourceRef` per resolved citation; with no `dom.json`, one page-only `sourceRef` (`box` omitted) per cited page. |
 | `<uipdm:qualityWarning [conditionId] [field]>text</uipdm:qualityWarning>` | `definitions/extensionElements`, repeated | An unresolved citation, an ambiguity resolved by assumption, a cell that could not be translated. |
 
-`box` is four plain decimals `left,top,width,height` in the digitizer's page units, no spaces. With no digitizer positions (open-source PDF path), write `inputVariable` and `qualityWarning`, and write each cited page as a page-only `<uipdm:sourceRef page="<N>"/>` (no `box`, no `blockId`; one per distinct page the row cites). Do not put the quote in the file. Add one `uipdm:qualityWarning` saying the citations carry a page and no source box, and list them in the phase 6 summary as carrying no box.
+`box` is four plain decimals `left,top,width,height` in the digitizer's page units, no spaces. With no digitizer positions (open-source PDF path), write `inputVariable` and `qualityWarning`, and write each cited page as a page-only `<uipdm:sourceRef page="<N>"/>` (no `box`, no `blockId`; one per distinct page the row cites). Do not put the quote in the file. Add one `uipdm:qualityWarning` saying the citations carry a page and no source box, and list them in the Finish summary as carrying no box.
 
-The schema check belongs to the uipath-rules skill (critical rule 10).
+The uipdm schema check runs through the uipath-rules skill when it documents one (critical rule 10); `validate` accepts these elements without checking them against the schema.

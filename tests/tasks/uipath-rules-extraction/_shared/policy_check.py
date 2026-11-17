@@ -12,7 +12,8 @@ policy) into a BusinessRules project named ReimbursementRules. Modes:
             answer key; it lives here and is never staged into the sandbox).
   norefs    no uipdm:sourceRef with a box or blockId (no digitizer positions were supplied);
             a page-only sourceRef is allowed.
-  notes     review-notes.md exists and records the assumptions made.
+  notes     review-notes.md exists and records the Finish items (review level, validate result,
+            not evaluated against cases, assumptions) and the clause this fixture plants.
   refs      every uipdm:sourceRef box is exactly the box of a contiguous run of
             words in _setup/policy_digitized/dom.json, on the page it names.
 
@@ -186,11 +187,28 @@ def find_one(name: str) -> Path:
     return found[0]
 
 
+# What Finish tells the agent to write to review-notes.md (phase guide, "State the limits"), as (label, regex).
+NOTES_REQUIRED = [
+    ("the review level", r"review level"),
+    ("that the rule was not evaluated against cases", r"not (?:yet )?(?:been )?evaluated"),
+    ("the validate result", r"validate"),
+    ("the assumptions made", r"assum"),
+]
+# One item per fixture, tied to a clause the fixture plants. multi_doc_check.configure replaces it.
+NOTES_FIXTURE = [("the permissive receipts sentence, listed as not a rule", r"receipt")]
+
+
+def notes_missing(text: str) -> list[str]:
+    """Labels of the required items the notes lack. A generic phrase alone ("assumptions") is not enough."""
+    text = text.lower()
+    return [label for label, pattern in NOTES_REQUIRED + NOTES_FIXTURE if not re.search(pattern, text)]
+
+
 def grade_notes() -> None:
-    text = find_one("review-notes.md").read_text(encoding="utf-8").lower()
-    if "assum" not in text:
-        fail("review-notes.md does not record the assumptions made")
-    print("OK: review-notes.md records the assumptions made")
+    missing = notes_missing(find_one("review-notes.md").read_text(encoding="utf-8"))
+    if missing:
+        fail("review-notes.md does not record: " + "; ".join(missing))
+    print("OK: review-notes.md records the review level, the validate result, that no cases were run, the assumptions, and the fixture's trap")
 
 
 def word_run_texts(dom: dict) -> dict[int, dict[str, str]]:

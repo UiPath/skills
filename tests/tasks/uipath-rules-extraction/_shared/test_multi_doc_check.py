@@ -144,3 +144,13 @@ def test_ledger_accepts_filenames_hyphens_and_other_not_applied_wording():
     assert mdc.ledger_ok("Amendment 1 applied; Amendment 2 does not apply as of 2026-10-30.") is None
     assert mdc.ledger_ok("Amendment 1 applied. Amendment 2 is in the register.") is not None
     assert mdc.ledger_ok("Amendment 1 and Amendment 10 not applied.") is not None
+
+
+def test_notes_need_the_fixture_trap_for_each_profile():
+    base = "Review level headless. validate passed. Not evaluated against cases. Assumptions listed. "
+    mdc.configure("light")
+    assert pc.notes_missing(base) != [] and pc.notes_missing(base + "The FAQ verbal approval was not applied.") == []
+    mdc.configure("full")
+    assert pc.notes_missing(base + "FAQ not applied.") != []
+    assert pc.notes_missing(base + "FAQ not applied. SOP practice not applied.") == []
+    mdc.configure("full")

@@ -87,12 +87,20 @@ PROFILES = {
 }
 
 
+NOTES_FIXTURE = {
+    "full": [("the SOP's high-cost-city practice, not applied", r"\bsop\b"),
+             ("the FAQ's verbal approval, not applied", r"faq|verbal")],
+    "light": [("the FAQ's verbal approval, not applied", r"faq|verbal")],
+}
+
+
 def configure(profile: str) -> None:
     inputs, scenarios = PROFILES[profile]
     pc.PROJECT_NAME = "TravelExpenseRules"
     pc.INPUTS = inputs
     pc.OUTPUT = "outcome"
     pc.SCENARIOS = scenarios
+    pc.NOTES_FIXTURE = NOTES_FIXTURE[profile]
 
 
 configure("full")

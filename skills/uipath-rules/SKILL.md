@@ -10,7 +10,7 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 
 ## When to Use This Skill
 
-- Create a business rule (decision table) from a policy, spreadsheet, or description
+- Create a business rule (decision table) from a spreadsheet or description
 - Edit the rows, columns, or hit policy of a `.dmn` in a BusinessRules project
 - Validate or debug a rule that returns the wrong output
 - List deployed rules or read a deployed rule's inputs and outputs

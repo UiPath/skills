@@ -112,3 +112,21 @@ def test_page_only_source_refs_are_allowed_without_digitizer_positions():
     block = ET.fromstring('<sourceRef page="3" blockId="7"/>')
     assert pc.positioned_refs([page_only]) == []
     assert pc.positioned_refs([page_only, boxed, block]) == [boxed, block]
+
+
+REAL_NOTES = """# Finish
+**Review level:** Headless. **validate:** Passed. The rule has not been evaluated against cases.
+**Assumptions:** none. **Uncovered clauses:** receipts may be a PDF or a photo, not a rule."""
+
+
+def test_notes_pass_for_a_real_finish_summary():
+    assert pc.notes_missing(REAL_NOTES) == []
+
+
+def test_the_word_assumptions_alone_no_longer_passes():
+    assert pc.notes_missing("Assumptions: none.") != []
+
+
+@pytest.mark.parametrize("cut", ["review level", "validate", "not been evaluated", "receipts"])
+def test_notes_name_each_missing_item(cut):
+    assert pc.notes_missing(REAL_NOTES.replace(cut, "x").replace(cut.capitalize(), "x")) != []
