@@ -2,10 +2,11 @@
 """Grade how an Extract document node sits in its flow, from the ``.flow`` JSON.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name <NAME> [--node-id ID] <CHECK> [--only] [VALUE ...]
+    python3 $REFERENCE_DIR/_shared/check_extract_document.py (--flow-name <NAME> | --flow <PATH>) [--node-id ID] <CHECK> [--only] [VALUE ...]
 
 ``--flow-name NAME`` selects the discovered ``NAME.flow``, as in
-``flow_contains.py``. The node under test is the
+``flow_contains.py``. ``--flow PATH`` reads that file and discovers nothing:
+use it when the task seeds the project at a known path. The node under test is the
 ``uipath.ixp.extract-document-builder`` node ``--node-id`` names, or the first
 one in the flow. Its taxonomy is its ``inputs.schemaDocument``, the document
 ``nodes schema get`` prints. ``unchanged`` and ``extends`` compare it with the
@@ -458,7 +459,9 @@ def _find_usage_error(args: argparse.Namespace) -> str | None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--flow-name", required=True, help="flow name, without .flow")
+    which = parser.add_mutually_exclusive_group(required=True)
+    which.add_argument("--flow-name", help="flow name, without .flow")
+    which.add_argument("--flow", help="path to the .flow file; skips discovery")
     parser.add_argument("--node-id", help="the Extract document node under test; the first one when omitted")
     parser.add_argument("--only", action="store_true", help="fields, defs: and nothing else")
     parser.add_argument("check", choices=sorted(CHECKS))
@@ -470,7 +473,12 @@ def main(argv: list[str]) -> int:
         print(f"FAIL: {usage}", file=sys.stderr)
         return 2
     try:
-        paths = [p for p in find_flow_files() if flow_file_is_named(p, args.flow_name)]
+        if args.flow:
+            if not os.path.isfile(args.flow):
+                raise SystemExit(f"FAIL: no .flow file at {args.flow}")
+            paths = [args.flow]
+        else:
+            paths = [p for p in find_flow_files() if flow_file_is_named(p, args.flow_name)]
         if not paths:
             raise SystemExit(f"FAIL: no discovered .flow file is named {args.flow_name}.flow")
         args.flow_path = paths[0]
