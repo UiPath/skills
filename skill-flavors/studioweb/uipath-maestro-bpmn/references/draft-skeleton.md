@@ -22,7 +22,7 @@
 <!--skill-flavor:draft-cloud-copy:start-->
 The user may have changed the outline on the canvas before answering.
 Each turn starts again at step 1 of the [Validation loop](../SKILL.md#validation-loop), which decompiles the target, so their edits are the base; say so in the reply's one sentence.
-On *Build it* the base is what the source carries (names, boxes, flows), as the Validation loop's *Build it* rule says.
+On *Build it*, a compile over the target keeps only what the source carries (names, boxes, flows); the Validation loop's *Build it* check merges instead when the target holds more.
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->
@@ -42,5 +42,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  Do not `merge`: it keeps each box's `bpmn:task` tag. Compile straight over the target, then run `format`, `refresh` and `validate`, as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says.
+  Run the [Validation loop](../SKILL.md#validation-loop)'s *Build it* check first. When it prints `none`, do not `merge` (it keeps each box's `bpmn:task` tag): compile straight over the target, then run `format`, `refresh` and `validate`. When it prints anything else, `merge` so that content survives, and name each retyped step under the report's `Unverified:`.
 <!--skill-flavor:draft-build-merge:end-->

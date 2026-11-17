@@ -205,8 +205,7 @@ success_criteria:
          `ShippingQuote: built, validated` and contains `(draft mode).`,
          and does not say `uploaded`; `, run` may follow `validated`. After
          that, the same line may hold at most one more sentence, about
-         changes kept, the canvas layout being reset, or canvas content
-         removed.
+         changes kept or the canvas layout being reset.
       2. The second line is that `/solution/...bpmn` path as plain text, and
          nothing else. A Markdown link (`[label](<path>)`) fails.
       Every other report is graded with items 1 and 2 below.

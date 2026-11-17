@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" name="InvoiceIntakeSketch" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="invoiceAmount" name="invoiceAmount" type="number" elementId="Process_1" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Incoming invoice">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="e2e00000-0000-4000-8000-000000000001" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Event_start_recordInvoice</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="recordInvoice" name="Record invoice in ledger [RPA workflow] → invoiceAmount">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Event_start_recordInvoice</bpmn:incoming>
+      <bpmn:outgoing>Flow_recordInvoice_amountThreshold</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="amountThreshold" default="Flow_amountThreshold_automaticApproval">
+      <bpmn:incoming>Flow_recordInvoice_amountThreshold</bpmn:incoming>
+      <bpmn:outgoing>Flow_amountThreshold_managerReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_amountThreshold_automaticApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="managerReview" name="Manager review [Action app]">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_amountThreshold_managerReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_managerReview_amountThreshold_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="automaticApproval" name="Automatic approval [Execute script]">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_amountThreshold_automaticApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_automaticApproval_amountThreshold_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="amountThreshold_join">
+      <bpmn:incoming>Flow_managerReview_amountThreshold_join</bpmn:incoming>
+      <bpmn:incoming>Flow_automaticApproval_amountThreshold_join</bpmn:incoming>
+      <bpmn:outgoing>Flow_amountThreshold_join_invoiceProcessed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="invoiceProcessed" name="Invoice processed">
+      <bpmn:incoming>Flow_amountThreshold_join_invoiceProcessed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Event_start_recordInvoice" sourceRef="Event_start" targetRef="recordInvoice" />
+    <bpmn:sequenceFlow id="Flow_recordInvoice_amountThreshold" sourceRef="recordInvoice" targetRef="amountThreshold" />
+    <bpmn:sequenceFlow id="Flow_amountThreshold_managerReview" name="1000 or more" sourceRef="amountThreshold" targetRef="managerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.invoiceAmount &gt;= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_amountThreshold_automaticApproval" name="Under 1000" sourceRef="amountThreshold" targetRef="automaticApproval" />
+    <bpmn:sequenceFlow id="Flow_managerReview_amountThreshold_join" sourceRef="managerReview" targetRef="amountThreshold_join" />
+    <bpmn:sequenceFlow id="Flow_automaticApproval_amountThreshold_join" sourceRef="automaticApproval" targetRef="amountThreshold_join" />
+    <bpmn:sequenceFlow id="Flow_amountThreshold_join_invoiceProcessed" sourceRef="amountThreshold_join" targetRef="invoiceProcessed" />
+  </bpmn:process>
+</bpmn:definitions>

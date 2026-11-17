@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.200.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="Process_1" name="InvoiceIntakeSketch">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="invoiceAmount" name="invoiceAmount" type="number" elementId="Process_1" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Incoming invoice">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="e2e00000-0000-4000-8000-000000000001" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Event_start_recordInvoice</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="recordInvoice" name="Record invoice in ledger [RPA workflow] → invoiceAmount">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Event_start_recordInvoice</bpmn:incoming>
+      <bpmn:outgoing>Flow_recordInvoice_amountThreshold</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="amountThreshold" default="Flow_amountThreshold_automaticApproval">
+      <bpmn:incoming>Flow_recordInvoice_amountThreshold</bpmn:incoming>
+      <bpmn:outgoing>Flow_amountThreshold_managerReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_amountThreshold_automaticApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="managerReview" name="Manager review [Action app]">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_amountThreshold_managerReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_managerReview_amountThreshold_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="automaticApproval" name="Automatic approval [Execute script]">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_amountThreshold_automaticApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_automaticApproval_amountThreshold_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="amountThreshold_join">
+      <bpmn:incoming>Flow_managerReview_amountThreshold_join</bpmn:incoming>
+      <bpmn:incoming>Flow_automaticApproval_amountThreshold_join</bpmn:incoming>
+      <bpmn:outgoing>Flow_amountThreshold_join_invoiceProcessed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="invoiceProcessed" name="Invoice processed">
+      <bpmn:incoming>Flow_amountThreshold_join_invoiceProcessed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Event_start_recordInvoice" sourceRef="Event_start" targetRef="recordInvoice" />
+    <bpmn:sequenceFlow id="Flow_recordInvoice_amountThreshold" sourceRef="recordInvoice" targetRef="amountThreshold" />
+    <bpmn:sequenceFlow id="Flow_amountThreshold_managerReview" name="1000 or more" sourceRef="amountThreshold" targetRef="managerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.invoiceAmount &gt;= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_amountThreshold_automaticApproval" name="Under 1000" sourceRef="amountThreshold" targetRef="automaticApproval" />
+    <bpmn:sequenceFlow id="Flow_managerReview_amountThreshold_join" sourceRef="managerReview" targetRef="amountThreshold_join" />
+    <bpmn:sequenceFlow id="Flow_automaticApproval_amountThreshold_join" sourceRef="automaticApproval" targetRef="amountThreshold_join" />
+    <bpmn:sequenceFlow id="Flow_amountThreshold_join_invoiceProcessed" sourceRef="amountThreshold_join" targetRef="invoiceProcessed" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="256" y="144" width="96" height="96" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="245" width="96" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_recordInvoice" bpmnElement="recordInvoice">
+        <dc:Bounds x="402" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_amountThreshold" bpmnElement="amountThreshold">
+        <dc:Bounds x="552" y="167" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_automaticApproval" bpmnElement="automaticApproval">
+        <dc:Bounds x="652" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_managerReview" bpmnElement="managerReview">
+        <dc:Bounds x="652" y="262" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_amountThreshold_join" bpmnElement="amountThreshold_join">
+        <dc:Bounds x="802" y="167" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_invoiceProcessed" bpmnElement="invoiceProcessed">
+        <dc:Bounds x="902" y="174" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="S_Flow_Event_start_recordInvoice" bpmnElement="Flow_Event_start_recordInvoice">
+        <di:waypoint x="352" y="192" />
+        <di:waypoint x="402" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_recordInvoice_amountThreshold" bpmnElement="Flow_recordInvoice_amountThreshold">
+        <di:waypoint x="502" y="192" />
+        <di:waypoint x="552" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_amountThreshold_managerReview" bpmnElement="Flow_amountThreshold_managerReview">
+        <di:waypoint x="577" y="217" />
+        <di:waypoint x="577" y="302" />
+        <di:waypoint x="652" y="302" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_amountThreshold_automaticApproval" bpmnElement="Flow_amountThreshold_automaticApproval">
+        <di:waypoint x="602" y="192" />
+        <di:waypoint x="652" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_managerReview_amountThreshold_join" bpmnElement="Flow_managerReview_amountThreshold_join">
+        <di:waypoint x="752" y="302" />
+        <di:waypoint x="827" y="302" />
+        <di:waypoint x="827" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_automaticApproval_amountThreshold_join" bpmnElement="Flow_automaticApproval_amountThreshold_join">
+        <di:waypoint x="752" y="192" />
+        <di:waypoint x="802" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_amountThreshold_join_invoiceProcessed" bpmnElement="Flow_amountThreshold_join_invoiceProcessed">
+        <di:waypoint x="852" y="192" />
+        <di:waypoint x="902" y="192" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
