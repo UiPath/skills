@@ -646,6 +646,21 @@
         "file": "references/develop-solution.md",
         "command": "login tenant set",
         "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "solution",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "codedapp push",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "solution pack",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
       }
     ],
     "ceiling": {

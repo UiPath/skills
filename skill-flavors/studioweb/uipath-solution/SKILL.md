@@ -57,3 +57,7 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 
 <!--skill-flavor:existing-solution:start-->
 <!--skill-flavor:existing-solution:end-->
+
+<!--skill-flavor:git-studioweb-rule:start-->
+13. **Leave `.git` and `.git-studioweb` entries alone.** Studio Web manages the solution's local repository itself, in a `.git-studioweb` folder when the browser cannot create `.git`. Never create, edit or delete a `.git` or `.git-studioweb` entry with file tools. For desktop git or VS Code on that folder, tell the user to link it from a terminal on their own machine: see [Git Studio Web Layout](references/git-studioweb-guide.md).
+<!--skill-flavor:git-studioweb-rule:end-->

@@ -1,0 +1,123 @@
+# `.git-studioweb` Repository Layout
+
+How to run git, VS Code, or any local tool against a solution folder whose repository Studio Web keeps in a `.git-studioweb` folder instead of a `.git` folder.
+
+<!--skill-flavor:git-studioweb-host-extra:start-->
+<!--skill-flavor:git-studioweb-host-extra:end-->
+
+## What and Why
+
+Chrome 159 and later refuse to let a web page create any entry named `.git` (folder or file) in a folder opened through the File System Access API. Studio Web therefore creates a new local repository in a `.git-studioweb` folder at the solution root. An existing `.git` folder keeps working and always wins.
+
+Three different things, never interchangeable:
+
+| Term | What it is |
+|---|---|
+| the `.git` folder | A normal git repository. |
+| the `.git` file | A one-line text file at the solution root containing exactly `gitdir: .git-studioweb` plus a line ending (LF, CRLF, or none). Native git, VS Code, and GitHub Desktop follow it into `.git-studioweb` (the mechanism submodules and worktrees use). Only a tool outside the browser can create it. |
+| the `.git-studioweb` folder | Holds what a `.git` folder holds (`HEAD`, `objects/`, `refs/`, `index`, `info/exclude`). Studio Web adds `.git-studioweb/` to `.git-studioweb/info/exclude`, so `git add .` skips it. |
+
+Without the `.git` file, native git and VS Code see no repository in the folder. Creating the `.git` file is called **linking**.
+
+## Detect the State
+
+Check the solution root (the folder holding the `.uipx`):
+
+| On disk | State | Action |
+|---|---|---|
+| `.git` folder only | Native repository | Nothing to do. |
+| `.git-studioweb` folder, no `.git` entry | Unlinked: git reports `not a git repository` | Link (next section); for read-only work see [Read Without Linking](#read-without-linking). |
+| `.git-studioweb` folder + `.git` file containing exactly `gitdir: .git-studioweb` | Linked | Nothing to do. |
+| `.git-studioweb` folder + `.git` file with any other content | Broken: native git fails or opens another repository; Studio Web refuses it (`GitPointerError`) | Show the user the file content. Rewrite it only with their consent (`--force`). |
+| `.git` folder AND `.git-studioweb` folder | `.git` folder wins in git, VS Code and Studio Web; `.git-studioweb` is ignored | Leave both alone. Warn the user that the two histories are separate. |
+| `.git-studioweb` is a symlink, not a real folder | Unsupported | Do not link. Tell the user. |
+
+```bash
+ls -la <SOLUTION_DIR>
+uip solution git-link --check <SOLUTION_DIR>
+```
+
+`ls -la` lists the `.git` entry and shows whether it is a folder (`d`) or a file; in PowerShell use `Get-ChildItem -Force <SOLUTION_DIR>`. `--check` is read-only and exits non-zero unless the folder is linked or holds a `.git` folder.
+
+## Link With the CLI
+
+```bash
+uip solution git-link <SOLUTION_DIR>
+```
+
+| Flag | Purpose |
+|---|---|
+| `[folder]` | Solution root. Optional; defaults to the current folder. |
+| `--check` | Report the state only; write nothing. Non-zero exit unless linked or native. |
+| `--force` | Rewrite an invalid `.git` file. Use only after the user agreed. Never replaces a `.git` folder. |
+
+`git-link` writes the `.git` file only when no `.git` entry exists. If the CLI answers `unknown command 'git-link'`, the installed `uip` predates it: use the manual fallback below, or update the CLI.
+
+## Manual Fallback
+
+Run in the solution root, and only when there is no `.git` entry at all. The file must contain exactly `gitdir: .git-studioweb` — ASCII, no trailing space, no BOM, optional line ending.
+
+| OS / shell | Command |
+|---|---|
+| macOS / Linux (sh, bash, zsh) | `printf 'gitdir: .git-studioweb\n' > .git` |
+| Windows cmd | `echo gitdir: .git-studioweb>.git` (no space before `>`) |
+| Windows PowerShell (5.1 and 7) | `Set-Content -Path .git -Value 'gitdir: .git-studioweb' -Encoding ascii` |
+
+Broken forms — never use:
+
+| Form | Why it breaks |
+|---|---|
+| cmd `echo gitdir: .git-studioweb >.git` (space before `>`) | Writes a trailing space; git cannot find `.git-studioweb ` |
+| PowerShell `echo gitdir: .git-studioweb > .git`, or `Out-File` with default encoding | PowerShell 5.1 writes UTF-16 with BOM; git cannot parse it |
+| `git init --separate-git-dir=.git-studioweb` | Writes an absolute path into the `.git` file; Studio Web cannot follow it, and it re-initializes the repository |
+
+## Read Without Linking
+
+A read-only task (review, report, `git status` for a summary) must not write the `.git` file. Point git at the folder explicitly instead; this writes nothing:
+
+```bash
+git --git-dir=<SOLUTION_DIR>/.git-studioweb --work-tree=<SOLUTION_DIR> status --short
+```
+
+## Verify
+
+```bash
+git rev-parse --git-dir
+git status
+```
+
+- `git rev-parse --git-dir` prints a path ending in `.git-studioweb` (git prints it absolute).
+- `git status` lists the solution's files with the expected branch; `.git-studioweb/` does not appear as untracked.
+- `fatal: not a git repository` → the `.git` file is missing or malformed. Read it byte for byte (`od -c .git` on macOS/Linux, `Format-Hex .git` in PowerShell) and compare with the exact content above.
+
+## Hazards
+
+1. **Never `git init` or `git clone` into a folder that has `.git-studioweb` and no `.git`.** It creates a `.git` folder that then wins everywhere, splitting history from what Studio Web sees. Link instead.
+2. **Never delete, move, or replace a `.git` folder**, even when `.git-studioweb` also exists.
+3. **Never overwrite an existing `.git` file without the user's consent.** Show its content first; rewrite with `uip solution git-link --force` or the manual fallback only after they agree.
+4. **Do not write into `.git-studioweb` beyond what git itself does** — no hand-added hooks, no `config` edits, no deleting it to "clean up".
+5. **Do not link through a symlinked `.git-studioweb`.** It must be a real folder.
+
+## Packaging and Sync
+
+Treat the `.git-studioweb` folder and the `.git` file like the `.git` folder: they never belong in a package or upload.
+
+- `uip solution upload` and `uip codedapp push` leave out the `.git/` folder on their own. On a CLI that does not also leave out `.git-studioweb/` and the `.git` file, add both to the solution-root `.uipignore`:
+
+  ```gitignore
+  .git-studioweb/
+  .git
+  ```
+
+- `uip solution pack` does not read `.uipignore`. If a packed `.zip` contains `.git-studioweb` entries, report it as a CLI defect instead of working around it.
+
+## VS Code (Optional)
+
+To hide the folder and stop the file watcher from scanning it, add to `.vscode/settings.json` (or user settings):
+
+```json
+{
+  "files.exclude": { "**/.git-studioweb": true },
+  "files.watcherExclude": { "**/.git-studioweb/**": true }
+}
+```
