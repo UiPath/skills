@@ -113,7 +113,7 @@ Collect only what is missing: the domain or source files, any entity definitions
 
 Show one reviewable model: classes with grain, entity name and domain (the business area the viewer groups the class under, 3–7 per ontology; see [owl-patterns-guide.md](references/owl-patterns-guide.md#domain-annotation)) (never `Order` or `Group`, which the CLI refuses: propose `SalesOrder`-style names, see [entity-guide.md](references/entity-guide.md)), data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names.
 
-After confirmation, run `mkdir -p "<WORKDIR>/input/entities"` and write one entity definition per entity to `<WORKDIR>/input/entities/<Entity>.json` (Files mode derives them from the supplied mapping), with names in place of ids.
+After confirmation, run `mkdir -p "<WORKDIR>/input/entities"` and write one entity definition per entity to `<WORKDIR>/input/entities/<Entity>.json` (Files mode derives them from the supplied mapping), with names in place of ids. Stage 4 creates each entity from its file, so write every file, Delegated mode included.
 
 ### Stage 3 — Init the solution and import connections
 
@@ -149,7 +149,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
    ```
 3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Delegated mode the handoff is the confirmation: create without a preview, and ask only when a create changes a confirmed name or type (`NAME_RESERVED`, a refused type):
    ```bash
-   uip df entities create <E> --local --body '<BODY>' --output json
+   cd "<SOLUTION_DIR>" && uip df entities create <E> --local --body "$(cat "<WORKDIR>/input/entities/<E>.json")" --output json
    ```
 4. Federated entities last, after their connections and native sources. Logged in when a source is a connector source; a federated entity over local native sources only needs no login:
    ```bash
