@@ -18,7 +18,9 @@
         "uipath-human-in-the-loop",
         "uipath-ixp",
         "uipath-connector-builder",
-        "uipath-functions"
+        "uipath-functions",
+        "uipath-ontology-authoring",
+        "uipath-ontology-modeler"
       ]
     },
     {
