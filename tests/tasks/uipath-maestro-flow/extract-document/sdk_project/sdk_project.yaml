@@ -11,7 +11,7 @@ description: >
 
   No `flow debug`: extraction needs the IDP service.
 
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document, studio-web-unsupported, studio-web-unsupported:sdk-source-project]
 
 sandbox:
   template_sources:
