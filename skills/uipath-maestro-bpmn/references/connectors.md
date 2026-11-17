@@ -45,8 +45,8 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 <!--skill-flavor:field-reference:end-->
 
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
-A connector-mode `http()` (one with `connection`) takes a `url` that is the vendor API's own endpoint, relative to the connection's base URL, never an Integration Service resource `Path` from `uip is resources describe` ([HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work)).
-When several resources match the request, describe each and pick the one that does what the user asked.
+A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
+When several Integration Service resources match an `http()` request, describe each and pick the one that does what the user asked.
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
 A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.

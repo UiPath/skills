@@ -113,7 +113,7 @@ def references_emoji_endpoint(el: ET.Element) -> bool:
         body = body_object(el)
     except BodyShapeError:
         return False
-    url = str(body.get("url") or body.get("path") or "").strip()
+    url = str(body.get("url") or "").strip()
     return EMOJI_ENDPOINT_RE.match(url) is not None
 
 
@@ -149,7 +149,7 @@ def check_fallback() -> None:
     if not fallback_nodes:
         seen_urls = sorted(
             {
-                str(body_object(n).get("url") or body_object(n).get("path") or "")
+                str(body_object(n).get("url") or "")
                 for n in slack_nodes
             }
         )

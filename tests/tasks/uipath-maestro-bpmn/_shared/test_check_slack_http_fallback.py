@@ -64,3 +64,10 @@ def test_other_endpoints_fail() -> None:
         body = {**CONNECTOR_BODY, "url": url, "path": url}
         node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
         assert not grader.references_emoji_endpoint(node), url
+
+
+def test_path_without_url_fails() -> None:
+    # Compiled bodies carry `url` and `path` with the same value; the skill teaches `url`, so only `url` counts.
+    body = {k: v for k, v in CONNECTOR_BODY.items() if k != "url"} | {"path": "/emoji.list"}
+    node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+    assert not grader.references_emoji_endpoint(node)
