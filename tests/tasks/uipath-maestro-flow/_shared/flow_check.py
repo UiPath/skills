@@ -2113,9 +2113,10 @@ def _find_project(pattern: str) -> str:
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
 
-    Two Flow projects can also mean byte-identical copies, or one build plus one
-    abandoned scaffold — see :func:`_dedupe_flow_projects` and
-    :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
+    Two Flow projects can also mean byte-identical copies, one build plus one
+    abandoned scaffold, or the solution plus a backup the agent copied into the
+    sandbox — see :func:`_dedupe_flow_projects`, :func:`_split_off_scaffold_husks`
+    and :func:`_split_off_nested_copies`. Anything else stays a refusal.
     """
     candidates = _rglob_pruned(pattern)
     if not candidates:
@@ -2142,6 +2143,14 @@ def _find_project(pattern: str) -> str:
         if selected is not None:
             listed = ", ".join(_describe_candidate(p, n) for p, n in husks)
             print(f"note: ignoring {len(husks)} abandoned scaffold(s): {listed}")
+            return os.path.dirname(selected)
+        selected, copies = _split_off_nested_copies(flow_projects)
+        if selected is not None:
+            listed = ", ".join(os.path.dirname(p) for p in copies)
+            print(
+                f"note: grading {os.path.dirname(selected)}, ignoring "
+                f"{len(copies)} nested copy(ies) of it: {listed}"
+            )
             return os.path.dirname(selected)
         joined = "\n  - ".join(_describe_candidate(p, n) for p, n in counts)
         _fail(
@@ -2170,6 +2179,34 @@ def _split_off_scaffold_husks(
     if len(substantive) != 1 or substantive[0][1] is None:
         return None, []
     return substantive[0][0], husks
+
+
+def _split_off_nested_copies(project_uiprojs: list[str]) -> tuple[str | None, list[str]]:
+    """Separate the solution from backups of it nested elsewhere in the sandbox.
+
+    An agent that backs up before editing (`cp -a InvoiceReader
+    .local/InvoiceReader-before-repair.X/`) leaves a second, now different,
+    `InvoiceReader/InvoiceReader/project.uiproj` under another directory. The
+    one to grade is the shallowest `<Solution>/<Project>`; each backup repeats
+    that same pair at a deeper path.
+
+    Returns ``(selected, copies)`` only when exactly one candidate is shallowest,
+    it has a solution directory above the project, and every other candidate's
+    path ends with its `<Solution>/<Project>`. A copy under a new solution name
+    (`InvoiceReader-fixed/InvoiceReader`) does not match, so the caller keeps
+    refusing: that is a second deliverable, not a backup.
+    """
+    def parts(path: str) -> list[str]:
+        return [p for p in re.split(r"[\\/]", os.path.dirname(path)) if p not in ("", ".")]
+
+    by_depth = sorted(project_uiprojs, key=lambda p: len(parts(p)))
+    shallow, rest = by_depth[0], by_depth[1:]
+    tail = parts(shallow)
+    if len(tail) < 2 or any(len(parts(p)) == len(tail) for p in rest):
+        return None, []
+    if not all(parts(p)[-len(tail):] == tail for p in rest):
+        return None, []
+    return shallow, rest
 
 
 def _flow_node_count(project_dir: str) -> int | None:

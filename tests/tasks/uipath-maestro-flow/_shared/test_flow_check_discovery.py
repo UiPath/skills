@@ -92,6 +92,47 @@ def test_refuses_when_two_candidates_are_substantive(tmp_path, monkeypatch):
         _find_project(PATTERN)
 
 
+@pytest.mark.parametrize(
+    "backup",
+    [
+        ".local/InvoiceReader-before-repair.2qsvNn",
+        "invoice-backup.zpWOwc",
+    ],
+)
+def test_grades_the_solution_over_a_backup_nested_elsewhere(
+    tmp_path, monkeypatch, capsys, backup
+):
+    """The agent copied the solution before editing it, so the backup differs."""
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 3)
+    _make_flow_project(tmp_path, f"{backup}/InvoiceReader", "InvoiceReader", 2)
+
+    found = os.path.normpath(_find_project(PATTERN))
+    assert found == os.path.join("InvoiceReader", "InvoiceReader")
+    note = capsys.readouterr().out
+    assert "ignoring 1 nested copy(ies)" in note
+    assert "FAIL" not in note
+
+
+def test_refuses_a_copy_under_a_new_solution_name(tmp_path, monkeypatch):
+    """`InvoiceReader-fixed/InvoiceReader` is a second deliverable, not a backup."""
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 2)
+    _make_flow_project(tmp_path, "InvoiceReader-fixed", "InvoiceReader", 3)
+
+    with pytest.raises(SystemExit, match="Multiple Flow projects match"):
+        _find_project(PATTERN)
+
+
+def test_refuses_two_nested_copies_with_no_shallow_solution(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _make_flow_project(tmp_path, "a/InvoiceReader", "InvoiceReader", 2)
+    _make_flow_project(tmp_path, "b/InvoiceReader", "InvoiceReader", 3)
+
+    with pytest.raises(SystemExit, match="Multiple Flow projects match"):
+        _find_project(PATTERN)
+
+
 def test_collapses_byte_identical_substantive_projects(
     tmp_path, monkeypatch, capsys
 ):
