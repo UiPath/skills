@@ -18,7 +18,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 .step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
 .step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy }),
   { label: 'Extract invoice' })
-.step('total', script({ code: 'return $vars.extract.output.result.output;' })) // warns until the SDK typing catches up
+.step('total', script({ code: 'return $vars.extract.output.result.output;' }))
 ```
 
 ## At a glance
@@ -93,14 +93,17 @@ with `properties` alone for you — the format, with a worked example, is in
 
 Classification lands at `out('classify', ...)`. What the node emits at run time
 is a processed document, with the extracted values at `result.output`, one
-property per taxonomy field, and their page provenance under
+property per field group holding its fields, and their page provenance under
 `result.attribution` ([Reading what it extracts](extract-document-node.md#reading-what-it-extracts)).
-The two routes embed different typings for it, though: `nodes create` embeds
-that current shape, while the SDK factory still embeds the older
-`ExtractionResult` shape — so on a factory-built flow, a read of
-`result.output` validates with an `EXPRESSION_DIAGNOSTIC` warning until the SDK
-catches up. `ExtractionResult` as a runtime shape belongs to the
-published-model node ([ixp.md](ixp.md)), not this one.
+Read a value with `out('extract', 'result.output.<group>.<field>')`. `check`
+verifies the processed document's fixed keys (`version`, `type`, `result`,
+`taxonomy`, `metadata` and the keys under them): a read of a key the document
+does not have is `EXTRACT_READ_UNKNOWN_FIELD`, with the spelling to use.
+`ExtractionResult` is one of those keys: it is the published-model node's
+shape ([ixp.md](ixp.md)), not this one. Group and field names under
+`result.output` are not checked against the taxonomy, so a misspelt one
+(`result.output.Invoice.Totl`) still passes `check`. Copy them from the
+taxonomy.
 
 ## Evidence boundary
 
