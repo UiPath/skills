@@ -7,7 +7,7 @@ description: >
   solution, so the flow validates with no CLI step afterwards. The rest of the
   flow is kept, apart from the edge the new step splits and the `end` node,
   which may gain the flow output that returns the extraction (step 6 of the
-  skill's Extract document loop). Needs `@uipath/maestro-builder-sdk` 6.118.0 or later.
+  skill's Extract document loop).
 
   No `flow debug`: extraction needs the IDP service.
 
