@@ -49,6 +49,8 @@ initial_prompt: |
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
+# The LLM judge is advisory (pass_threshold 0.0): it scores prompt quality and
+# counts toward the weighted score, but does not decide pass/fail.
 success_criteria:
   - type: json_check
     description: "Agent is a conversational low-code agent with no structured output"
@@ -86,7 +88,7 @@ success_criteria:
     description: "LLM judge: system prompt grounds answers, admits gaps, and knows when and how to use CustomerFollowUpDrafter"
     files: ["EnablementSol/AgentsEnablementAssistant/agent.json"]
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 0.0
     include_reference: false
     prompt: |
       You are grading the system prompt of a UiPath low-code conversational

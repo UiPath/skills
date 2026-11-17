@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-platform skill to fetch a day-by-day
   consumables breakdown with a custom date range. Verifies the agent calls
   `uip platform licenses consumables get --mode daily --tenant <name>
-  --unit <code> --start-date <iso> --end-date <iso> --output json`.
+  --unit <code> --start-date <iso> --end-date <iso> --output json` (the end date is exclusive).
   CLI auth failure is expected offline.
 tags: [uipath-platform, smoke, licensing, consumables, mode:operate, lifecycle:discover]
 
@@ -28,9 +28,10 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
+  # --end-date is exclusive: "through 2026-04-30" in the prompt means --end-date 2026-05-01.
   - type: run_command
     description: "Agent ran `uip platform licenses consumables get --mode daily` with tenant, unit, and date range (.uip-cmdlog shim log)"
-    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]daily' | grep -E -- '--tenant[= ]default' | grep -E -- '--unit[= ]AIU' | grep -E -- '--start-date[= ]2026-04-01' | grep -Eq -- '--end-date[= ]2026-04-30'"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -E -- '--mode[= ]daily' | grep -E -- '--tenant[= ]default' | grep -E -- '--unit[= ]AIU' | grep -E -- '--start-date[= ]2026-04-01' | grep -Eq -- '--end-date[= ]2026-05-01'"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
