@@ -49,7 +49,7 @@ initial_prompt: |
     preserve-only and keep all payloads synthetic.
   - `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`; mark it
     preserve-only and keep all payloads synthetic.
-  - `bpmn:task` with `Maestro.CaseRulesEvaluator`; mark it preserve-only
+  - `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only
     and keep all payloads synthetic.
   - Carry a synthetic, preserve-only `uipath:caseManagement` payload, on the
     process or on a case-management call activity.

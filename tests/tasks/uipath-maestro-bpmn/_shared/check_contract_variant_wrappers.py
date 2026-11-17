@@ -20,27 +20,15 @@ from _shared.bpmn_check import (  # noqa: E402
 TYPE_VERSIONS = {"Orchestrator.StartAgentJob": "v2"}
 
 
-# Types whose wrapper element has more than one legitimate producer.
-# Maestro.CaseRulesEvaluator: the tenant registry (`uip maestro bpmn registry get`)
-# gives `bpmn:task` -- "the case converter ... always emits it as bpmn:Task" -- and
-# the builder-SDK skill follows the registry; the classic skill's bpmn-spec.json
-# templates it as `bpmn:serviceTask`. Either is accepted (coder-eval
-# 2026-11-16_09-25-49 failed a registry-correct `<bpmn:task>`).
-ALTERNATE_WRAPPERS = {"Maestro.CaseRulesEvaluator": ("task",)}
-
-
 def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_value: str) -> None:
     version = TYPE_VERSIONS.get(type_value)
-    wrappers = (wrapper, *ALTERNATE_WRAPPERS.get(type_value, ()))
     matches = [
         elem
-        for name in wrappers
-        for elem in elements(root, name)
+        for elem in elements(root, wrapper)
         if has_typed_uipath_extension(elem, extension_name, type_value, version=version)
     ]
     if not matches:
-        shells = " or ".join(f"bpmn:{name}" for name in wrappers)
-        fail(f"missing {shells} with {type_value} uipath:{extension_name} shell")
+        fail(f"missing bpmn:{wrapper} with {type_value} uipath:{extension_name} shell")
 
 
 def require_uipath_element(root: ET.Element, local_name: str, description: str) -> None:

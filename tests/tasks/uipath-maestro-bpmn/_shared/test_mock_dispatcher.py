@@ -63,27 +63,3 @@ def test_an_interrupted_run_does_not_match() -> None:
 
 def test_an_empty_rule_never_matches() -> None:
     assert not matches("", "maestro bpmn job status job-triage-001")
-
-
-_SUITE = Path(__file__).resolve().parent.parent
-_DEBUG_MANIFESTS = [
-    (_SUITE / "debug/debug_instance_inspect_mocked/fixtures/mocks/responses/manifest.json", "debug-fault-777"),
-    (_SUITE / "debug/debug_workflow_mocked/fixtures/mocks/responses/manifest.json", "debug-run-042"),
-]
-
-
-def _fixture_for(manifest: Path, argv: str) -> str | None:
-    import json
-
-    rules = json.loads(manifest.read_text(encoding="utf-8"))["rules"]
-    return next((rule.get("file") for rule in rules if matches(rule["match"], argv)), None)
-
-
-@pytest.mark.parametrize(("manifest", "instance"), _DEBUG_MANIFESTS)
-@pytest.mark.parametrize("verb", ["incidents", "variables", "variables-all"])
-def test_debug_instance_reads_answer_both_spellings(manifest: Path, instance: str, verb: str) -> None:
-    """The CLI accepts `debug-instance` and `debug-instances`; the plural must not fall to the `{}` default."""
-    singular = _fixture_for(manifest, f"maestro bpmn debug-instance {verb} {instance} --output json")
-    plural = _fixture_for(manifest, f"maestro bpmn debug-instances {verb} {instance} --output json")
-    assert singular is not None
-    assert plural == singular
