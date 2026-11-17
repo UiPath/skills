@@ -1,7 +1,7 @@
 <!--skill-flavor:critical-rules-extra:start-->
 12. A new process goes into a project's main file in `/solution`: the `.bpmn` its `entry-points.json` names, `Process.bpmn` in a project Studio Web created (`uip maestro bpmn init` included). Studio Web packages any other `.bpmn` only as a non-default entry point and shows nothing outside `/solution`. Before you write a `.bpmn`:
     1. Pick the project: the one the request names (`B`, or `A/B`, names `/solution/B`), else the open one. When it does not exist, run `uip maestro bpmn init B` from `/solution`.
-    2. When its main file already holds a process (after `decompile`, `check --graph` lists any node besides one start event and one end event, which is all an `init` template has), never build over it. If the request named this project, ask the user whether to replace its process or use a new project. If nobody will answer, or the project is only the open one, use a new project.
+    2. When its main file already holds a process (it is not empty, and after `decompile`, `check --graph` lists any node besides one start event and one end event, which is all an `init` template has), never build over it unasked. If the request named this project, ask the user whether to replace its process or use a new project. On *replace*, build into its main file through the [Validation loop](#validation-loop). On *new project*, go to step 3. When the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking.
     3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn`, else a short name for the process, never a folder `/solution` already holds. Never pass `--force`.
 
     A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
@@ -12,7 +12,7 @@
 
 **The builder SDK is built in.** `uip maestro bpmn check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm`, no Node process and no Python here.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Critical Rule 12 says where a new process goes. Each project is a folder `/solution/<Project>/` with its `.bpmn`, `project.uiproj` and package files. Create a BPMN project only when the user asks for a new project, or when [Critical Rule 12](#critical-rules) needs one: run `uip maestro bpmn init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its `.bpmn`, `project.uiproj` and package files. Create a BPMN project only when the user asks for a new project, or when [Critical Rule 12](#critical-rules) needs one: run `uip maestro bpmn init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
 
 **Edit the open process.** The context of each turn gives these values:
 
@@ -71,8 +71,7 @@ When a reference tells you to run a command that is not available, use the Studi
 
 <!--skill-flavor:workflow-scaffold:start-->
 1. Find the project and its main file before you write a `.bpmn`
-   ([Critical Rule 12](#critical-rules)). Run `uip maestro bpmn init <Project>`
-   from `/solution` only for a new project the user asks for or Rule 12 needs.
+   ([Critical Rule 12](#critical-rules)).
 2. Keep the source at `/solution/<Project>/.flow-sdk/<Name>.bpmn.ts`, and run
    every command from `/solution/<Project>`.
 <!--skill-flavor:workflow-scaffold:end-->

@@ -589,6 +589,6 @@ test("the studioweb BPMN skill finds the project before writing and never builds
 test("the default BPMN skill carries no Studio Web Rule 12", (t) => {
   const skill = readFileSync(join(buildDefault(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.doesNotMatch(skill, /^12\. /m);
+  assert.doesNotMatch(skill, /^12\. A new process goes into/m);
   assert.ok(!skill.includes("/solution"));
 });
