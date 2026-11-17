@@ -16,8 +16,8 @@ description: >
   skill as it stands (2026-10-09, one run each with and without #3817's
   brownfield commit): the guard is against regressions in edits to Designer
   plans, not a test of that commit. Pre-run copies the fixture into /solution/
-  so the builder SDK can reach it (the SDK restricts check/compile/decompile to
-  /solution/ and /tmp/).
+  so Studio Web's in-page SDK can reach it (it restricts check/compile/decompile
+  to /solution/ and /tmp/).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
@@ -35,11 +35,11 @@ sandbox:
       path: fixtures
 
 # Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs,
-# then copies the fixture into /solution/ where the builder SDK can reach it.
+# then copies the fixture into /solution/ where Studio Web's sandbox can reach it.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
     timeout: 300
-  - command: "cp -a ExpenseDesignerSaved /solution/ExpenseDesignerSaved"
+  - command: "mkdir -p /solution && cp -a ExpenseDesignerSaved /solution/ExpenseDesignerSaved"
     timeout: 30
 
 initial_prompt: |
