@@ -82,7 +82,7 @@ In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Ask only what blocks the design: the unresolved Step 0 questions, the Agent/Coded App gap question (Step 5), and one SME prompt holding the items with no defensible default ([sdd-writing-guide.md](sdd-writing-guide.md) Step 1.5). Every other confirmation a reference describes — the RPA sub-type, the scope, a tenant library pick, a revision round — is an interactive checkpoint: take its recommended option and record the pick in Decisions Made
-- Never offer the interview (Step 6): every gap keeps its marker and default, and the Step 2 item 9 summary names the open counts and `interview <SDD>` in one line ([interview-guide.md](../interview/interview-guide.md) Verb Rule 1)
+- Never offer the interview (Step 6): every gap keeps its marker and default, and the [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 9 summary names the open counts and `interview <SDD>` in one line ([interview-guide.md](../interview/interview-guide.md) Verb Rule 1)
 - **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3 for the exact block format. Do **NOT** ask a structured question — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
@@ -236,7 +236,7 @@ scope-recommendation-guide.md → Presenting the Recommendation:
 Recommended Scope + Project List + Queue Architecture>
 
 ### Clarifying Questions
-<NUMBERED_QUESTIONS_IF_ANY — omitted when the interview ran>
+<NUMBERED_QUESTIONS_IF_ANY — left out when the interview is offered; a decline asks them then>
 ```
 
 **The confirmation.** Ask a structured question with the confirmation question from scope-recommendation-guide.md § Presenting the Recommendation (recommendation as option 1, single-product alternatives, then "Solution (customize)").
@@ -245,7 +245,7 @@ Recommended Scope + Project List + Queue Architecture>
 
 **If the user picks a single-product alternative:** re-run Step 4 with the user's choice as the forced primary (including Level 1.5 if it's RPA).
 
-**Without the interview**, ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker and default, and Phase 3 Step 1.5 asks only what Phases 2–3 found after it ([sdd-writing-guide.md](sdd-writing-guide.md)).
+**Without the interview**, ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 1.5 asks the items the interview did not ([sdd-writing-guide.md](sdd-writing-guide.md)).
 
 ## Phase 2 — Architecture Review
 

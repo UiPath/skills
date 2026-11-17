@@ -1,6 +1,6 @@
 # Prepare Guide — the `prepare` verb
 
-`prepare` runs the start of a build and its questions on the machine that will build, as far as the user answers them, and stops before anything is built. It writes the answers and every question still open into a readiness file beside the genome, together with the decisions still open for the people who own them, so they who answer the rest can do so ahead of the build. The questions, their options and the discovery they rest on are the build's own ([configuration-questions-guide.md](configuration-questions-guide.md), [execution-guide.md](execution-guide.md) § 1.2).
+`prepare` runs the start of a build and its questions on the machine that will build, as far as the user answers them, and stops before anything is built. It writes the answers and every question still open into a readiness file beside the genome, together with the decisions still open, so the people who answer the rest can do so ahead of the build. The questions, their options and the discovery they rest on are the build's own ([configuration-questions-guide.md](configuration-questions-guide.md), [execution-guide.md](execution-guide.md) § 1.2).
 
 1. **Start as a build starts:** [build-guide.md](build-guide.md) § Start and the reads of § Read Plan, then [execution-guide.md](execution-guide.md) § 1.1 and its § 1.2, the preflight discovery the options are built from.
 2. **Read the answers already given.** That means the SDD beside the genome, and an earlier readiness file, both as the user's files of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rules 4 and 4a). `prepare` offers their genome edits not yet made, and those its own questions bring (rule 4b), once, at its end (step 7), and reads the genome as it stands until then. A genome with no SDD beside it is read for its open entries and its Configuration Questions directly.
@@ -24,7 +24,7 @@ The file travels with the genome: no line of it names a signed-in account, a use
 The header says, in this order:
 - when and on what machine facts it was prepared, those facts alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found;
 - how many items are needed before the build, by section;
-- how to answer: write an option's letter, or your own words, after an item's `Answer:`, then ask `uipath-planner` to "apply the answers", which writes the Genome edits and the SDD's answers into the genome;
+- how to answer: write an option's letter, or your own words, after an item's `Answer:`, then ask `uipath-planner` to "apply the answers", which writes the Genome edits and the answered decisions into the genome;
 - the Contents, with each section's counts.
 
 The sections:
@@ -55,7 +55,7 @@ It draws again a decision whose Recommended option rests on an answer since chan
 ## The Architecture decisions section
 
 The build's questions that shape what gets built, each with its Recommended option. Each answer is the build's, and none changes the genome ([configuration-questions-guide.md](configuration-questions-guide.md) rule 4b). In the build's order, a group with no question left out:
-1. **Refactor** — in a refactor, the refactor questions but the rulings, whose source defects are open decisions the SDD holds.
+1. **Refactor** — in a refactor, the refactor questions but the rulings, whose source defects are open decisions, kept under Decisions still open.
 2. **Processes and their work items** — for each flow of the Transactional Shape without a `Decided:` line, its split questions ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)), each `Context:` naming the flow and the facts of its As-is the answer rests on.
 3. **Libraries and reusable parts** — Source fidelity, Library layout and Library location, the layout's `Context:` naming the libraries and the source units each is built from, as the Source Map names them.
 4. **Technology per capability** — one question per independent choice, its `Context:` saying how the source does it today (the application, the client, the protocol), as the genome states it.
