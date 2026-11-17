@@ -30,7 +30,8 @@ def test_gate_reply_waits_for_a_validated_target_and_survives_a_resume() -> None
     assert "When a turn carries no new user instruction and only resumes after an interruption that came after you wrote this reply" in text
     assert "the two candidates ending in `which one?`" in text
     assert "the target contains `<bpmn:task id=\"<id>\"` for every box's `.task()` id; `merge`'s counts cannot show this" in text
-    assert "On a *Change it* round, also find each changed box's new `name`." in text
+    assert "read the `name` attribute on each changed box's `<bpmn:task id=\"<id>\"` element" in text
+    assert "once its XML escapes are decoded (`&amp;` is `&`, `&lt;` is `<`, `&gt;` is `>`, `&quot;` is `\"`)" in text
 
 
 def test_build_it_assumes_open_values_and_reads_the_report_template() -> None:

@@ -61,7 +61,7 @@ Before you send it, compare the message with the template line by line and delet
 ## End the turn
 
 Send this reply only when, in this turn or the interrupted turn it resumes, `validate` reported `Status: Valid` on the target `.bpmn` and the target contains `<bpmn:task id="<id>"` for every box's `.task()` id; `merge`'s counts cannot show this.
-On a *Change it* round, also find each changed box's new `name`.
+On a *Change it* round, also read the `name` attribute on each changed box's `<bpmn:task id="<id>"` element and check that it equals the box's new `.task()` name once its XML escapes are decoded (`&amp;` is `&`, `&lt;` is `<`, `&gt;` is `>`, `&quot;` is `"`); `compile` escapes those characters, so a search for the raw name misses them.
 <!--skill-flavor:gate-retry:start-->
 When a box is missing, run the [Steps](draft-skeleton.md#steps) loop into the target once more (upload again when this turn uploaded) and search again; when one is still missing, send no gate reply and tell the user in one sentence that the outline did not reach the process file.
 <!--skill-flavor:gate-retry:end-->
