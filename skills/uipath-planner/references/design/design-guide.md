@@ -25,14 +25,14 @@ Exception: when the Constraint Gate blocks Solutions for the delivery model — 
 11. **When sources conflict, the higher one wins:** platform constraints (the delivery model, a product's schema) → a regulatory or compliance constraint the source states or implies → tenant evidence (a deployed resource matching the described work) → what the user said → the source documents → the template's and product guide's defaults. A lower source overridden is a Decisions Made row (autonomous) or a line of the Step 5 review.
 12. **A product the user names is the primary**, unless the Constraint Gate blocks it or Level 0 finds the work should not be automated: Level 1 confirms it instead of selecting, and Levels 1.5–3 still run inside it.
 13. **Every key the automation builds is stable across retries.** A file name, sequence number, message ID or queue reference written for an output is built from the item's own identity (its reference, GUID or source ID), never the clock or a counter at write time — so a retry finds what the first attempt wrote instead of writing it twice.
-14. **A caller's design request changes only the steps its guide names.** A `planner-design-request` block carries the execution mode (`execution`), holds an interactive run to one checkpoint (the Phase 2 Step 5 review), lets an autonomous one stop only for a hard blocker, and ends the run with a `planner-design-result: v1` block: [caller-request-guide.md](caller-request-guide.md).
+14. **A caller's design request changes only the steps its guide names.** A `planner-design-request: v1` block carries the execution mode (`execution`), holds an interactive run to one checkpoint (the Phase 2 Step 5 review), lets an autonomous one stop only for a hard blocker, and ends the run with a `planner-design-result: v1` block: [caller-request-guide.md](caller-request-guide.md).
 
 ## Read Plan
 
 | Phase | Condition | Read |
 |---|---|---|
 | start | — | this guide whole |
-| start | the request carries a `planner-design-request` block (v1 or v2) | [caller-request-guide.md](caller-request-guide.md) whole |
+| start | the request carries a `planner-design-request: v1` block | [caller-request-guide.md](caller-request-guide.md) whole |
 | Phase 1 Step 0 | — | [platform-availability-guide.md](../shared/platform-availability-guide.md) § Resolving the Delivery Model |
 | Phase 1 Step 1 | — | [pdd-analysis-guide.md](../shared/pdd-analysis-guide.md) whole |
 | Phase 1 Step 2.5 | the source describes RPA-bearing work (UI, Excel or Office, files, desktop or on-prem systems) and the prompt allows `uip` commands | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
