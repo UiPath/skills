@@ -12,7 +12,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 
 1. **Written from the genome on every write, its answers kept**; the strict check run after the write verifies its fingerprint.
    - An item keeps its answer, matched by its id (`D3`, `CQ2`, under its component's heading), or by what it asks when the id no longer fits.
-   - An item the answers made into a genome edit leaves the section on the rewrite after that edit; the genome's decided entry keeps the record. One the edit could not make stays, marked `Not applied: <why>`.
+   - An item leaves the section on the rewrite once its entry reads decided, whether the answer changed the genome or kept what it builds; the decided entry keeps the record. One the edit could not make stays, marked `Not applied: <why>`.
    - A configuration value's answer stays as it is: it is the build's answer.
    - A new item comes in blank.
 2. **Written for a person filling it in a text editor**, who has read neither the genome nor this skill:
@@ -38,11 +38,11 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 | Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order | the process owner |
 | Material to supply | open entry of the material tier | whoever holds the source and its documents |
 | Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed | the environment's owners for a setting, the process owner for a constant |
-| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice | the delivery lead or the centre of excellence |
+| Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice. A "none" the request or the user's reply gave is its answer, written with who gave it | the delivery lead or the centre of excellence |
 
-Business decisions close with two lists that ask nothing one item at a time:
+Business decisions close with two lists that ask nothing one item at a time and are not counted as items:
 - **Checked against the application at build:** each reading entry that only the live application shows (a screen label, a window title, a control's position), one line each, with no answer line.
-- **Defects the rebuild fixes:** each defect that has no entry because its rebuild follows an intent the source states and changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)). One line each, with its component, step and what the rebuild does. The block's one answer line names any the rebuild should keep as the source does.
+- **Defects the rebuild fixes:** each defect that has no entry because its rebuild follows an intent the source states and changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)). One line each, with its component, step and what the rebuild does. The block's one answer line names any the rebuild should keep as the source does. A defect named there takes its ruling and leaves the list; the block has no entry, so it stays, with its answer, while the genome fixes such a defect.
 
 **A process genome's items** sit only in the solution overview's Action Required, under one heading per component, the process genome's own under the process's name. Each keeps its own genome file's id: ids repeat across components and are never renumbered into one series, so an item is named by its component and id (`Portal.Library D1`, `process D1`). A per-project SDD has no Action Required section, and its body's markers name the item with its component.
 
