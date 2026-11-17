@@ -277,6 +277,8 @@ uip is typecache activities "<connector-key>" --output json
 
 `uip is typecache activities` calls the same Agent Builder typecache endpoints the frontend uses. It returns exactly the activities the UI shows for low-code agents — the curated subset from the Studio NuGet package for the connector. It defaults to `--project-type Agent`. Activities with an empty `objectName` (deprecated stubs) are filtered out. File operation and HTTP activities appear in the UI with a "Preview" chip but are fully selectable — they are included in the output. Connectors not in the typecache are absent from the UI and return empty here. Present the activities to the user and note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
 
+Build the tool on that activity's `ObjectName` (Jira's Create Issue is `curated_create_issue`). Do not switch to another object that `uip is resources list` shows for the same entity (such as the raw `issue`), even when its metadata lists more fields: the Agent Builder offers only the catalog activity. If the activity's metadata lacks fields the task needs, see Step 6, "Fields that load after a selection".
+
 ### Step 5 — Get connector details (for iconUrl)
 
 ```bash
@@ -299,6 +301,12 @@ The response includes a `metadataFile` path. Read that cached JSON file to get:
 - `path` → `properties.toolPath`
 - `method` → `properties.method`
 - `description` → tool description
+
+**Fields that load after a selection.** Some activities show request fields only after the reference fields they depend on have values. For example, Jira's Create Issue lists `summary`, `description` and the other issue fields only once `fields.project.key` and `fields.issuetype.id` are set. When the first describe lacks fields the task needs:
+
+1. Pick each such reference field's value from the field's own `Reference.Path`, with the values chosen so far filled in. List the options with `uip is resources run list "<connector-key>" "<path without the leading slash>" --connection-id "<connection-id>" --output json`. For example, use `project/AB/issuetypes` for the issue types of project `AB`. Do not use the tenant-wide `issuetype` list: its types may not belong to that project, and then no further fields load.
+2. Describe again, passing each chosen value with `-f <field>=<value>` (repeatable), for example `-f fields.project.key=AB -f fields.issuetype.id=10048`.
+3. In the tool, set those reference fields as `static` parameters with the chosen values, and build the remaining fields from this second describe.
 
 If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned. To verify a connection's health beforehand, run `uip is connections ping "<connection-id>" --output json`.
 
