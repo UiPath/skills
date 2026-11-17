@@ -32,7 +32,7 @@
 <!--skill-flavor:sdk-http-manual:end-->
 
 <!--skill-flavor:brownfield-merge-form:start-->
-  In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`. *Build it* after a draft gate is the one exception: when the Validation loop's *Build it* check prints `none`, it compiles over the target and runs `format` before `refresh` and `validate`, as the Validation loop's *Build it* rule says; the rest of this rule is for the merge.
+  In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`. *Build it* after a draft gate is the one exception: it writes the target with the Validation loop's *Build it* block, which compiles over the target and runs `format` unless that would drop canvas content, as the Validation loop's *Build it* rule says; the rest of this rule is for the merge.
 <!--skill-flavor:brownfield-merge-form:end-->
 
 <!--skill-flavor:sibling-deploy:start-->
