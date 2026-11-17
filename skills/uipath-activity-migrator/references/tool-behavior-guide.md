@@ -39,6 +39,9 @@ Created inside the source project on every run, `analyze` included. Files per ru
 - Every other dependency that is not Windows-compatible moves to the smallest compatible `major.minor` above its current version, highest patch. The tool does not chase the newest line.
 - A pinned version that no reachable feed serves surfaces as `RESTORE-MISSING-PACKAGE`.
 - Tenant feeds: without `--orchestrator-url`, `uip rpa project migrate` uses the tenant library feeds of the `uip login` session, for `analyze`, `upgrade` and `bulk` alike; the token travels in the environment, never on the command line. The standalone tool, or a run with no `uip login` session, falls back to the local Studio or Robot connection. With the URL, it needs a PAT or a confidential external application with `OR.Execution.Read`.
+- The feeds are resolved once per command. `bulk` resolves them before its first project and hands them to every per-project run, so credentials are exchanged once and never reach a per-project command line; explicit credentials that fail stop `bulk` before the first project.
+- Not logged in under `uip rpa project migrate`: the tool warns once, and every `RESTORE-MISSING-PACKAGE` note says the user is not logged in and should run `uip login`. Ask the user to run `uip login` themselves, then rerun the same command; never collect credentials for them.
+- A NuGet feed that does not answer (unreachable, 401, 403) is reported once as a warning naming it, and is not searched again. `bulk` checks the configured feeds once, before its first project, and its projects search only the ones that answered.
 
 ## Orchestrator hand-off template
 
@@ -46,6 +49,13 @@ Secrets never pass through the agent (Critical Rule 6). Hand the user the comple
 
 ```bash
 <MIGRATOR> analyze --project-path "<PROJECT_DIR>" --output-format sarif --orchestrator-url "https://cloud.uipath.com/<ORG>" --orchestrator-tenant "<TENANT>" --orchestrator-pat "<PAT>" > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
+```
+
+When `<MIGRATOR>` is `uip rpa project migrate`, prefer the form that keeps the PAT off the command line, the shell history and the process list: each `--orchestrator-*` option it is not given is read from an environment variable.
+
+```powershell
+$env:UIPATH_ORCHESTRATOR_URL = "https://cloud.uipath.com/<ORG>"; $env:UIPATH_ORCHESTRATOR_TENANT = "<TENANT>"; $env:UIPATH_ORCHESTRATOR_PAT = "<PAT>"
+<MIGRATOR> analyze --project-path "<PROJECT_DIR>" --output-format sarif > "<PROJECT_DIR>/.upgrade/analyze-latest.sarif"
 ```
 
 ## Extensions
