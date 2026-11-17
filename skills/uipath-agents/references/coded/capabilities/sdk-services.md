@@ -121,7 +121,7 @@ sdk.context_grounding.delete_index(index=index)
 ```python
 extraction = sdk.documents.extract(project_name="InvoiceExtraction", tag="invoice", file_path="/path/to/invoice.pdf")
 validation = sdk.documents.create_validate_extraction_action(
-    action_title="Validate Invoice", action_priority="Normal", action_catalog="InvoiceValidation",
+    action_title="Validate Invoice", action_priority="Medium", action_catalog="InvoiceValidation",
     action_folder="Invoices", storage_bucket_name="doc-storage",
     storage_bucket_directory_path="validations/", extraction_response=extraction
 )
