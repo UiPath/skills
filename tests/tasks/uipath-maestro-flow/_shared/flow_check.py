@@ -44,7 +44,6 @@ import subprocess
 import sys
 import time
 from enum import Enum
-from pathlib import PurePath
 from typing import Any, Iterable, Sequence
 
 
@@ -2114,10 +2113,9 @@ def _find_project(pattern: str) -> str:
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
 
-    Two Flow projects can also mean byte-identical copies, one build plus one
-    abandoned scaffold, or one project plus backups of it — see
-    :func:`_dedupe_flow_projects`, :func:`_split_off_scaffold_husks` and
-    :func:`_split_off_backups`. Anything else stays a refusal.
+    Two Flow projects can also mean byte-identical copies, or one build plus one
+    abandoned scaffold — see :func:`_dedupe_flow_projects` and
+    :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
     candidates = _rglob_pruned(pattern)
     if not candidates:
@@ -2144,11 +2142,6 @@ def _find_project(pattern: str) -> str:
         if selected is not None:
             listed = ", ".join(_describe_candidate(p, n) for p, n in husks)
             print(f"note: ignoring {len(husks)} abandoned scaffold(s): {listed}")
-            return os.path.dirname(selected)
-        selected, backups = _split_off_backups(flow_projects)
-        if selected is not None:
-            listed = ", ".join(os.path.dirname(p) for p in backups)
-            print(f"note: ignoring {len(backups)} backup(s) of {os.path.dirname(selected)}: {listed}")
             return os.path.dirname(selected)
         joined = "\n  - ".join(_describe_candidate(p, n) for p, n in counts)
         _fail(
@@ -2177,29 +2170,6 @@ def _split_off_scaffold_husks(
     if len(substantive) != 1 or substantive[0][1] is None:
         return None, []
     return substantive[0][0], husks
-
-
-def _split_off_backups(project_uiprojs: list[str]) -> tuple[str | None, list[str]]:
-    """Find the project at the sandbox root and the backups of it.
-
-    The project is the only `<Solution>/<Project>` at the root, e.g.
-    `InvoiceReader/InvoiceReader`. A backup is a copy of it under another folder,
-    e.g. `.local/backup/InvoiceReader/InvoiceReader`.
-
-    Returns ``(project, backups)``, or ``(None, [])`` if any other project is not
-    such a copy (for example `InvoiceReader-fixed/InvoiceReader`).
-    """
-    def folders(uiproj: str) -> tuple[str, ...]:
-        return PurePath(os.path.dirname(uiproj)).parts
-
-    at_root = [p for p in project_uiprojs if len(folders(p)) == 2]
-    if len(at_root) != 1:
-        return None, []
-    project = at_root[0]
-    backups = [p for p in project_uiprojs if p != project]
-    if not all(folders(p)[-2:] == folders(project) for p in backups):
-        return None, []
-    return project, backups
 
 
 def _flow_node_count(project_dir: str) -> int | None:

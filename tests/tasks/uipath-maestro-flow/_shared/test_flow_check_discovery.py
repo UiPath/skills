@@ -92,36 +92,6 @@ def test_refuses_when_two_candidates_are_substantive(tmp_path, monkeypatch):
         _find_project(PATTERN)
 
 
-@pytest.mark.parametrize("backup_folder", [".local/backup", "backup"])
-def test_ignores_a_backup_of_the_project(tmp_path, monkeypatch, capsys, backup_folder):
-    monkeypatch.chdir(tmp_path)
-    _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 3)
-    _make_flow_project(tmp_path, f"{backup_folder}/InvoiceReader", "InvoiceReader", 2)
-
-    found = _find_project(PATTERN)
-
-    assert os.path.normpath(found) == os.path.join("InvoiceReader", "InvoiceReader")
-    assert "note: ignoring 1 backup(s)" in capsys.readouterr().out
-
-
-def test_refuses_a_renamed_copy(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 2)
-    _make_flow_project(tmp_path, "InvoiceReader-fixed", "InvoiceReader", 3)
-
-    with pytest.raises(SystemExit, match="Multiple Flow projects match"):
-        _find_project(PATTERN)
-
-
-def test_refuses_backups_with_no_project_at_the_root(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    _make_flow_project(tmp_path, "a/InvoiceReader", "InvoiceReader", 2)
-    _make_flow_project(tmp_path, "b/InvoiceReader", "InvoiceReader", 3)
-
-    with pytest.raises(SystemExit, match="Multiple Flow projects match"):
-        _find_project(PATTERN)
-
-
 def test_collapses_byte_identical_substantive_projects(
     tmp_path, monkeypatch, capsys
 ):
