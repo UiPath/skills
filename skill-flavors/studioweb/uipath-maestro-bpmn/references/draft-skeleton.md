@@ -1,12 +1,12 @@
 <!--skill-flavor:draft-steps:start-->
 1. Draft into the target that [Studio Web](../SKILL.md#studio-web) defines: the `.bpmn` the user names, else the open one; a named `.bpmn` that does not exist yet means the project's main file, unless that file already holds a process ([Critical Rule 12](../SKILL.md#critical-rules)).
    Run `uip maestro bpmn init <Project>` from `/solution` only when the user asks for a new project or Rule 12 needs one, then draft into its main file.
-2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target.
+2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target: the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton.
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 5 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
-   Merge keeps the shapes the user already has on the canvas. An empty target is the one exception: compile straight over it, then lay it out with `format`.
+   Merge keeps the shapes the user already has on the canvas. An empty target is the one exception at the gate: compile straight over it, then lay it out with `format` (*Build it* is the other, below).
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
 
@@ -22,6 +22,7 @@
 <!--skill-flavor:draft-cloud-copy:start-->
 The user may have changed the outline on the canvas before answering.
 Each turn starts again at step 1 of the [Validation loop](../SKILL.md#validation-loop), which decompiles the target, so their edits are the base; say so in the reply's one sentence.
+On *Build it* the base is what the source carries (names, boxes, flows), as the Validation loop's *Build it* rule says.
 <!--skill-flavor:draft-cloud-copy:end-->
 
 <!--skill-flavor:draft-change-it:start-->
@@ -41,5 +42,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  Finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
+  Do not `merge`: it keeps each box's `bpmn:task` tag. Compile straight over the target, then run `format`, `refresh` and `validate`, as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says.
 <!--skill-flavor:draft-build-merge:end-->

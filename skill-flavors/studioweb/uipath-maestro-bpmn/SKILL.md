@@ -91,17 +91,17 @@ When a reference tells you to run a command that is not available, use the Studi
    `bpmn validate` accepts both. Studio Web ships its own SDK: an older one refuses the
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
-   `refresh` and `validate` — in that order, every time
-   ([Validation loop](#validation-loop)). Lay out the diagram only when they
-   report a missing diagram or shape. `compile` writes no diagram, and `merge` keeps the
-   shapes the target already has. Exactly one `<Name>.bpmn`
-   exists in the project: the target. Compile straight over it only when it
-   is empty.
+   `refresh` and `validate`, in that order ([Validation loop](#validation-loop)),
+   except on *Build it* after a draft gate, which compiles over the target.
+   Lay out the diagram only when they report a missing diagram or shape. Exactly
+   one `<Name>.bpmn` exists in the project: the target. Only an empty target and
+   *Build it* after a draft gate compile straight over it.
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->
 8. Every change is a targeted edit of the target, so every change goes through
-   the merge pipeline of the [Validation loop](#validation-loop).
+   the merge pipeline of the [Validation loop](#validation-loop), except
+   *Build it* after a draft gate.
 <!--skill-flavor:workflow-merge:end-->
 
 <!--skill-flavor:api-index-location:start-->
@@ -115,8 +115,9 @@ the whole declaration, doc comment included.
 
 <!--skill-flavor:validation-loop:start-->
 Every change is the same round trip through the target `.bpmn`. Merge keeps
-what the SDK does not model (layout, extension rows). Run it from the project
-folder:
+what the SDK does not model (layout, lanes, annotations, extension rows); only
+an empty target and *Build it* after a draft gate compile over it instead. Run
+it from the project folder:
 
 ```bash
 cd /solution/<Project>
@@ -139,15 +140,16 @@ uip maestro bpmn format <Name>.bpmn
 ```
 
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
-  start again at step 2. Step 1 again would copy the merged file over the undo
-  copy and the baseline.
+  start again at step 2. Step 1 again would copy the written target over the
+  undo copy and the baseline.
 - **The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
   them; the edited file shows `merge` no change, so it writes the target back as it was.
   When `merge` cannot open the baseline, run `mkdir -p <Draft>/baseline`, decompile `.flow-sdk/original/<Name>.bpmn`
   to `<Draft>/<Name>.baseline.bpmn.ts`, compile that to `<Draft>/baseline/<Name>.bpmn`,
-  and run step 3's `merge` again.
+  and run step 3's `merge` again. When the gate's outline search finds a box
+  missing, rebuild the baseline the same way and run steps 3 and 4 again.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
@@ -158,10 +160,29 @@ uip maestro bpmn format <Name>.bpmn
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
-- **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
+- ***Build it* after a draft gate skips `merge`.** `merge` keeps each element's
+  BPMN tag, so an outline box that becomes a `.scriptTask()`, `.humanTask()` or
+  any other typed step keeps `bpmn:task`, not the tag Studio Web writes for that
+  step; a script task then loses its script when Studio Web loads the file.
+  Before compiling,
+  search `.flow-sdk/original/<Name>.bpmn` for `bpmn:participant`, `<bpmn:lane `,
+  `bpmn:textAnnotation`, `bpmn:group`, `bpmn:documentation`, `bpmn:dataObject`,
+  `bpmn:dataStoreReference` and `color:background-color`: the
+  compile drops them, with the positions of every shape. Then compile straight
+  over the target (`uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn`),
+  run step 5, then step 4. The report's one sentence is exactly `The canvas layout
+  was reset.`, or `The canvas layout was reset; the rebuild removed <kinds>.`
+  when the search found any; when you also kept the user's canvas edits, end it
+  with `; your canvas edits were kept.` Name each kind in words: pools, lanes,
+  text annotations, groups, documentation, data objects, data stores, colors.
+  Any other edit merges, even one that changes a step's tag; `merge` then keeps
+  the old tag, so name each such step under the report's `Unverified:` as one
+  Studio Web may still show as its old type, and a step that became a script
+  task as one whose script Studio Web drops.
+- **To undo the turn's write**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
-- **The canvas re-renders the open file after each write.** Always finish with
-  the merge into the target; never `uip solution upload`.
+- **The canvas re-renders the open file after each write.** Always finish by
+  writing the target; never `uip solution upload`.
 - **A process with connectors** needs each connection in the solution. After
   step 4, read each `connection` row in `bindings_v2.json`. For each one that
   `uip solution resources list --source local --output json` does not list,

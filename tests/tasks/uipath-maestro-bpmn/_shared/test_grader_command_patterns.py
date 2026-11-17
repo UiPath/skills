@@ -795,3 +795,44 @@ def test_recheck_accepts_a_named_read(text: str) -> None:
 )
 def test_recheck_rejects_anything_else(text: str) -> None:
     assert not _recheck().search(text), text
+
+
+# --- draft_build_after_gate: an upload, or Studio Web's write to the open target ---
+
+_AFTER_GATE = "interactive/draft_build_after_gate/draft_build_after_gate.yaml"
+
+SHOWN_ON_STUDIO_WEB = [
+    "uip solution upload ShippingQuoteSolution --output json",
+    # Studio Web, verbatim shapes from run 2026-11-16_09-25-49: merge into, or
+    # compile over, the open target `Process.bpmn`.
+    "uip maestro bpmn merge /tmp/bpmn-draft/ShippingQuote/edited/Process.bpmn --original "
+    ".flow-sdk/original/Process.bpmn --baseline /tmp/bpmn-draft/ShippingQuote/baseline/Process.bpmn "
+    "-o Process.bpmn",
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o Process.bpmn && uip maestro bpmn format Process.bpmn",
+    "uip maestro bpmn merge /tmp/d/edited/Process.bpmn \\\n  --original .flow-sdk/original/Process.bpmn \\\n"
+    "  --baseline /tmp/d/baseline/Process.bpmn \\\n  -o Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts --output-file /solution/ShippingQuote/Process.bpmn",
+    "uip maestro bpmn compile x.bpmn.ts -o ./Process.bpmn",
+    "uip maestro bpmn compile x.bpmn.ts --output-file=Process.bpmn",
+]
+
+NOT_SHOWN = [
+    # A scratch compile leaves the canvas target unchanged (the 11-16 timer run).
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/bpmn-draft/ShippingQuote/edited/Process.bpmn",
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/bpmn-draft/ShippingQuote/baseline/Process.bpmn",
+    # The CLI's target is `<Name>.bpmn`: a CLI arm still needs real uploads.
+    "uip maestro bpmn compile ShippingQuote.bpmn.ts -o ShippingQuoteSolution/ShippingQuote/ShippingQuote.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o Process.bpmn.bak",
+    "uip maestro bpmn validate Process.bpmn --output json",
+    "uip maestro bpmn merge e.bpmn --original Process.bpmn --baseline b.bpmn -o /tmp/merged.bpmn",
+]
+
+
+@pytest.mark.parametrize("command", SHOWN_ON_STUDIO_WEB)
+def test_after_gate_counts_an_upload_or_a_studio_web_target_write(command: str) -> None:
+    assert _hits(_pattern(_AFTER_GATE, "both uploaded"), command), command
+
+
+@pytest.mark.parametrize("command", NOT_SHOWN)
+def test_after_gate_ignores_scratch_and_cli_target_writes(command: str) -> None:
+    assert not _hits(_pattern(_AFTER_GATE, "both uploaded"), command), command
