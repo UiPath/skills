@@ -1,0 +1,53 @@
+task_id: skill-platform-licensing-folder-outcome-billing-set
+description: >
+  Smoke test: agent uses the uipath-platform skill to enable outcome billing
+  (Fully Loaded Transactions) on one folder. Verifies the agent calls
+  `uip platform tenants folder-outcome-billing set <tenant-id> <folder-key>
+  --enabled true` with the two GUIDs in that order, and records whether it
+  re-read the setting afterwards as the workflow asks. CLI auth failure is
+  expected; this validates command shape only — no live write.
+tags: [uipath-platform, smoke, licensing, tenants, mode:operate, lifecycle:setup]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Enable outcome billing (Fully Loaded Transactions) for folder
+  `8c144c85-de47-40b7-bfb9-c87dbbe338d4` in tenant
+  `5f322473-4d62-4bc9-9257-c4b50e78344b`, and make sure it took effect.
+
+  Use the `uipath-platform` skill and its Folder Outcome Billing workflow for
+  this request.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: run_command
+    description: "Agent ran `uip platform tenants folder-outcome-billing set <tenant-id> <folder-key> --enabled true` in that argument order (.uip-cmdlog shim log)"
+    command: "grep -E 'uip platform tenants folder-outcome-billing set 5f322473-4d62-4bc9-9257-c4b50e78344b 8c144c85-de47-40b7-bfb9-c87dbbe338d4' .uip-cmdlog | grep -Eiq -- '--enabled[= ]true'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+  # Advisory: the workflow says to verify with a `get` after the write.
+  # Offline the `set` itself fails with an auth error, so a careful agent may
+  # reasonably skip the verification; record the convention, do not gate on it.
+  - type: run_command
+    description: "Agent re-read the setting after writing it (a `get` after the `set`)"
+    command: "test \"$(grep -nE 'uip platform tenants folder-outcome-billing get' .uip-cmdlog | tail -1 | cut -d: -f1)\" -gt \"$(grep -nE 'uip platform tenants folder-outcome-billing set' .uip-cmdlog | head -1 | cut -d: -f1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

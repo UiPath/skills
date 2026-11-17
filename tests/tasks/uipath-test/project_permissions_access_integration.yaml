@@ -83,7 +83,13 @@ success_criteria:
   - type: command_executed
     description: "Triaged rather than blindly re-triggering: did NOT re-run the execution this turn"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(testsets|testcases|executions)\s+run\b'
+    # A `run --help` / `-h` probe prints help and executes nothing, so it is
+    # triage, not a re-trigger (gemini-3.8-flash read the help while diagnosing).
+    # Exclude it wherever the help flag sits in the run's own argument segment
+    # (bounded to the next `uip`/separator, so a real re-run chained after a help
+    # probe is still caught). A genuine execution never carries a help flag, so
+    # this only drops false positives and never admits a real re-run.
+    command_pattern: 'uip\s+tm\s+(testsets|testcases|executions)\s+run\b(?!(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*\s--?(?:help|h)\b)'
     min_count: 0
     max_count: 0
     weight: 2.0
