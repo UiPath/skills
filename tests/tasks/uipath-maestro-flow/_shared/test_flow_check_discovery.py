@@ -92,30 +92,19 @@ def test_refuses_when_two_candidates_are_substantive(tmp_path, monkeypatch):
         _find_project(PATTERN)
 
 
-@pytest.mark.parametrize(
-    "backup",
-    [
-        ".local/InvoiceReader-before-repair.2qsvNn",
-        "invoice-backup.zpWOwc",
-    ],
-)
-def test_grades_the_solution_over_a_backup_nested_elsewhere(
-    tmp_path, monkeypatch, capsys, backup
-):
-    """The agent copied the solution before editing it, so the backup differs."""
+@pytest.mark.parametrize("backup_folder", [".local/backup", "backup"])
+def test_ignores_a_backup_of_the_project(tmp_path, monkeypatch, capsys, backup_folder):
     monkeypatch.chdir(tmp_path)
     _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 3)
-    _make_flow_project(tmp_path, f"{backup}/InvoiceReader", "InvoiceReader", 2)
+    _make_flow_project(tmp_path, f"{backup_folder}/InvoiceReader", "InvoiceReader", 2)
 
-    found = os.path.normpath(_find_project(PATTERN))
-    assert found == os.path.join("InvoiceReader", "InvoiceReader")
-    note = capsys.readouterr().out
-    assert "ignoring 1 nested copy(ies)" in note
-    assert "FAIL" not in note
+    found = _find_project(PATTERN)
+
+    assert os.path.normpath(found) == os.path.join("InvoiceReader", "InvoiceReader")
+    assert "note: ignoring 1 backup(s)" in capsys.readouterr().out
 
 
-def test_refuses_a_copy_under_a_new_solution_name(tmp_path, monkeypatch):
-    """`InvoiceReader-fixed/InvoiceReader` is a second deliverable, not a backup."""
+def test_refuses_a_renamed_copy(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _make_flow_project(tmp_path, "InvoiceReader", "InvoiceReader", 2)
     _make_flow_project(tmp_path, "InvoiceReader-fixed", "InvoiceReader", 3)
@@ -124,7 +113,7 @@ def test_refuses_a_copy_under_a_new_solution_name(tmp_path, monkeypatch):
         _find_project(PATTERN)
 
 
-def test_refuses_two_nested_copies_with_no_shallow_solution(tmp_path, monkeypatch):
+def test_refuses_backups_with_no_project_at_the_root(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _make_flow_project(tmp_path, "a/InvoiceReader", "InvoiceReader", 2)
     _make_flow_project(tmp_path, "b/InvoiceReader", "InvoiceReader", 3)

@@ -44,6 +44,7 @@ import subprocess
 import sys
 import time
 from enum import Enum
+from pathlib import PurePath
 from typing import Any, Iterable, Sequence
 
 
@@ -2114,9 +2115,9 @@ def _find_project(pattern: str) -> str:
     MST-9734.
 
     Two Flow projects can also mean byte-identical copies, one build plus one
-    abandoned scaffold, or the solution plus a backup the agent copied into the
-    sandbox — see :func:`_dedupe_flow_projects`, :func:`_split_off_scaffold_husks`
-    and :func:`_split_off_nested_copies`. Anything else stays a refusal.
+    abandoned scaffold, or one project plus backups of it — see
+    :func:`_dedupe_flow_projects`, :func:`_split_off_scaffold_husks` and
+    :func:`_split_off_backups`. Anything else stays a refusal.
     """
     candidates = _rglob_pruned(pattern)
     if not candidates:
@@ -2144,13 +2145,10 @@ def _find_project(pattern: str) -> str:
             listed = ", ".join(_describe_candidate(p, n) for p, n in husks)
             print(f"note: ignoring {len(husks)} abandoned scaffold(s): {listed}")
             return os.path.dirname(selected)
-        selected, copies = _split_off_nested_copies(flow_projects)
+        selected, backups = _split_off_backups(flow_projects)
         if selected is not None:
-            listed = ", ".join(os.path.dirname(p) for p in copies)
-            print(
-                f"note: grading {os.path.dirname(selected)}, ignoring "
-                f"{len(copies)} nested copy(ies) of it: {listed}"
-            )
+            listed = ", ".join(os.path.dirname(p) for p in backups)
+            print(f"note: ignoring {len(backups)} backup(s) of {os.path.dirname(selected)}: {listed}")
             return os.path.dirname(selected)
         joined = "\n  - ".join(_describe_candidate(p, n) for p, n in counts)
         _fail(
@@ -2181,32 +2179,27 @@ def _split_off_scaffold_husks(
     return substantive[0][0], husks
 
 
-def _split_off_nested_copies(project_uiprojs: list[str]) -> tuple[str | None, list[str]]:
-    """Separate the solution from backups of it nested elsewhere in the sandbox.
+def _split_off_backups(project_uiprojs: list[str]) -> tuple[str | None, list[str]]:
+    """Find the project at the sandbox root and the backups of it.
 
-    An agent that backs up before editing (`cp -a InvoiceReader
-    .local/InvoiceReader-before-repair.X/`) leaves a second, now different,
-    `InvoiceReader/InvoiceReader/project.uiproj` under another directory. The
-    one to grade is the shallowest `<Solution>/<Project>`; each backup repeats
-    that same pair at a deeper path.
+    The project is the only `<Solution>/<Project>` at the root, e.g.
+    `InvoiceReader/InvoiceReader`. A backup is a copy of it under another folder,
+    e.g. `.local/backup/InvoiceReader/InvoiceReader`.
 
-    Returns ``(selected, copies)`` only when exactly one candidate is shallowest,
-    it has a solution directory above the project, and every other candidate's
-    path ends with its `<Solution>/<Project>`. A copy under a new solution name
-    (`InvoiceReader-fixed/InvoiceReader`) does not match, so the caller keeps
-    refusing: that is a second deliverable, not a backup.
+    Returns ``(project, backups)``, or ``(None, [])`` if any other project is not
+    such a copy (for example `InvoiceReader-fixed/InvoiceReader`).
     """
-    def parts(path: str) -> list[str]:
-        return [p for p in re.split(r"[\\/]", os.path.dirname(path)) if p not in ("", ".")]
+    def folders(uiproj: str) -> tuple[str, ...]:
+        return PurePath(os.path.dirname(uiproj)).parts
 
-    by_depth = sorted(project_uiprojs, key=lambda p: len(parts(p)))
-    shallow, rest = by_depth[0], by_depth[1:]
-    tail = parts(shallow)
-    if len(tail) < 2 or any(len(parts(p)) == len(tail) for p in rest):
+    at_root = [p for p in project_uiprojs if len(folders(p)) == 2]
+    if len(at_root) != 1:
         return None, []
-    if not all(parts(p)[-len(tail):] == tail for p in rest):
+    project = at_root[0]
+    backups = [p for p in project_uiprojs if p != project]
+    if not all(folders(p)[-2:] == folders(project) for p in backups):
         return None, []
-    return shallow, rest
+    return project, backups
 
 
 def _flow_node_count(project_dir: str) -> int | None:
