@@ -119,7 +119,7 @@ uip codedapp pack <dist> [options]
 | `<dist>` | Path to build output directory | **Required** |
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
-| `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
+| `--output-dir <dir>` | Output directory for `.nupkg` | `./.uipath` |
 | `--author <author>` | Package author | `UiPath Developer` |
 | `--description <text>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
@@ -136,7 +136,7 @@ uip codedapp pack dist
 uip codedapp pack dist -n my-webapp --version 2.0.0
 
 # Pack to a custom output directory
-uip codedapp pack dist -o ./packages
+uip codedapp pack dist --output-dir ./packages
 
 # Preview packaging without creating the file
 uip codedapp pack dist --dry-run
