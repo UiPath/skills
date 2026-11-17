@@ -41,7 +41,6 @@ from _shared.bpmn_check import (  # noqa: E402
     BodyShapeError,
     NS,
     body_object,
-    context_inputs,
     fail,
     find_bpmn_file,
     has_type,
@@ -64,9 +63,12 @@ from _shared.bpmn_live import (  # noqa: E402
 NAME_HINT = "SlackEmojiListTest"
 SLACK_KEY = "uipath-salesforce-slack"
 HTTP_CONNECTOR_KEY = "uipath-uipath-http"
-# Bare token, so both '/emoji.list' and 'emoji.list' satisfy the check.
 EMOJI_ENDPOINT = "emoji.list"
-EMOJI_ENDPOINT_RE = re.compile(r"emoji[._]list")
+# The request's own url, relative to the connection's base URL
+# (https://slack.com/api), with or without a leading slash or a query string.
+# Integration Service resource paths such as '/admin_emoji_list' or
+# '/emoji_list' must not match: they reach Slack as written and get its 404.
+EMOJI_ENDPOINT_RE = re.compile(r"^/?emoji\.list(?:\?.*)?$")
 
 LIVE_RUN_DIR = Path("slack-emoji-list-live")
 
@@ -83,15 +85,6 @@ LIVE_RUN_DIR = Path("slack-emoji-list-live")
 # live grade needs (solution init/import, a separate incidents read), so it
 # is raised to 930 -- the one sanctioned deviation from "criteria identical"
 # (LIVE-ADDENDUM: a property of the CLI surface, not of what is graded).
-
-
-def node_blob(el: ET.Element) -> str:
-    parts = [ET.tostring(el, encoding="unicode")]
-    for inp in context_inputs(el):
-        parts.append(inp.attrib.get("name") or "")
-        parts.append(inp.attrib.get("value") or "")
-        parts.append(inp.text or "")
-    return "\n".join(parts).lower()
 
 
 def is_slack_connector_node(el: ET.Element) -> bool:
@@ -116,7 +109,12 @@ def is_slack_connector_node(el: ET.Element) -> bool:
 
 
 def references_emoji_endpoint(el: ET.Element) -> bool:
-    return EMOJI_ENDPOINT_RE.search(node_blob(el)) is not None
+    try:
+        body = body_object(el)
+    except BodyShapeError:
+        return False
+    url = str(body.get("url") or "").strip()
+    return EMOJI_ENDPOINT_RE.match(url) is not None
 
 
 def find_slack_connector_nodes(root: ET.Element) -> list[ET.Element]:
@@ -149,10 +147,17 @@ def check_fallback() -> None:
 
     fallback_nodes = [n for n in slack_nodes if references_emoji_endpoint(n)]
     if not fallback_nodes:
+        seen_urls = sorted(
+            {
+                str(body_object(n).get("url") or "")
+                for n in slack_nodes
+            }
+        )
         fail(
             f"No Slack connector-mode HTTP node targets the {EMOJI_ENDPOINT!r} "
             "endpoint (expected the '/emoji.list' path, which lists a team's "
-            "custom emoji)."
+            "custom emoji, relative to the connection's base URL). "
+            f"url values seen: {seen_urls}"
         )
     print(
         f"OK: {len(fallback_nodes)} Slack connector node(s) target the "
