@@ -41,7 +41,7 @@ Then append the remaining Phase 3 sections to that file with follow-up file edit
 Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. Section assignments per phase:
 
 **Phase 1 produces (for all templates):**
-- Header & Document History (process name, today's date, version 1.0). The Case template's title heading is `# SDD — {Case Name}`.
+- Header & Document History (process name, today's date, version 1.0). The Case template's title heading is `# SDD — {Case Name}`. When the Phase 1 Step 6 interview ran, a second Document History row: `Interview: <N> points answered by <ROLES>; <N> left open` ([interview-guide.md](../interview/interview-guide.md) § Where Answers Go).
 - Overview section (§1)
 - Process/Flow/Lifecycle diagram (§2 for most templates)
 - Detailed steps / nodes description where applicable
@@ -69,7 +69,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 ### Step 1.5: Resolve SME Review Items
 
-Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one prompt; every other item stays in the Action Required table with its default applied. If there are any to ask:
+Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 6 interview ran, ask only the items Phases 2–3 marked after it: an item the interview put to the user and left open keeps its default and is not asked again. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one prompt; every other item stays in the Action Required table with its default applied. If there are any to ask:
 
 > **Batching rule — 4-option cap per structured question.** Give each structured question at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single structured prompt with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one structured prompt per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — hosts that cap options reject it.
 
@@ -185,6 +185,8 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ...
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
+<AUTONOMOUS ONLY, when items are open: "`interview <SDD_PATH>` asks them, by priority and by who answers them.">
+<INTERVIEW RAN, when items are open: the open items grouped by answerer, each with its default ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
 - `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
@@ -209,7 +211,7 @@ Then continue:
 
 1. **`Status: draft`** (a blocking SME item) → no genome and no build. The item 9 summary names the blocking items. The turn that receives the user's answers patches them into the SDD, reruns the superset check and flips it to `ready` as its last write, then ends; the genome (item 3) runs on the following turn.
 2. **A design a build skill handed over** → no genome and no build: § Design Handed Over by a Build Skill returns it to the caller.
-3. **Next turn — the genome.** When the next message asks for an SDD change, apply it to the SDD first (`revise`: change only the sections the request touches, then rerun Step 2 items 8 and 9); the genome follows the revised SDD. Run the `author` verb on the `ready` SDD only when no genome exists yet — its `Genome` handoff row is missing or names no file on disk ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md)); an existing genome is updated through [§ Keeping the Genome Current](#keeping-the-genome-current) (`edit`), never rewritten by `author`. That guide's items 2 and 7 set the follow-up rounds, the genome's name and the `Genome` handoff row. Write the genome even when `uipath-genome` is not installed, and say that building from it needs `uipath-genome`. The genome write is a turn boundary too: end the turn after `author`'s summary.
+3. **Next turn — the genome.** When the next message asks for an SDD change, apply it to the SDD first (`revise`: change only the sections the request touches, then rerun Step 2 items 8 and 9); the genome follows the revised SDD. Run the `author` verb on the `ready` SDD only when no genome exists yet — its `Genome` handoff row is missing or names no file on disk ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md)); an existing genome is updated through [§ Keeping the Genome Current](#keeping-the-genome-current) (`edit`), never rewritten by `author`. That guide's items 2 and 7 set the follow-up rounds — the interview for the genome entries, in an interactive run — the genome's name and the `Genome` handoff row. Write the genome even when `uipath-genome` is not installed, and say that building from it needs `uipath-genome`. The genome write is a turn boundary too: end the turn after `author`'s summary.
 4. **Turn after — the build, or stop.** The request's intent decides, never the execution mode — in both modes:
    - The intent implies implementation ("create / build / implement / set up / make", "so we can build it", "ready to build") → invoke `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim on the turn after the genome, without asking — do not add a "shall I build?" question here. It asks its own configuration questions, builds every component through its owning skill and ends with the hand-off folder. A request that also asks to publish or deploy follows [SKILL.md](../../SKILL.md) § Chaining. `uipath-genome` not installed → stop after the genome; `author`'s summary says the build needs it.
    - The user only asked to "design / architect / generate an SDD", or the intent is unclear → stop after the genome in either mode; the SDD and the genome are the deliverable. Offer the build in one line of `author`'s summary.

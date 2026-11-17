@@ -40,6 +40,7 @@ Exception: when the Constraint Gate blocks Solutions for the delivery model — 
 | Phase 1 Steps 4–6 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 5 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 6 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |
+| Phase 1 Step 6 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole |
 | Phase 1 Step 3.5 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | component-placement-guide.md § Level 3 — Capability Add-ons |
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping |
 | Phase 1 Step 4 | whenever the Constraint Gate runs — every delivery model: Cloud is not uniform, and its variants (Public Sector, Dedicated, Test Cloud) and per-tenant entitlements can block products inside the Cloud column | [platform-availability-guide.md](../shared/platform-availability-guide.md) |
@@ -81,6 +82,7 @@ In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Ask only what blocks the design: the unresolved Step 0 questions, the Agent/Coded App gap question (Step 5), and one SME prompt holding the items with no defensible default ([sdd-writing-guide.md](sdd-writing-guide.md) Step 1.5). Every other confirmation a reference describes — the RPA sub-type, the scope, a tenant library pick, a revision round — is an interactive checkpoint: take its recommended option and record the pick in Decisions Made
+- Never offer the interview (Step 6): every gap keeps its marker and default, and the Step 2 item 9 summary names the open counts and `interview <SDD>` in one line ([interview-guide.md](../interview/interview-guide.md) Verb Rule 1)
 - **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3 for the exact block format. Do **NOT** ask a structured question — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
@@ -204,9 +206,18 @@ This step's output goes into the Phase 1 summary at Step 6 and drives the Phase 
 
 If the primary product is **Agents** or **Coded Apps** AND required product-specific information is missing from the PDD, run [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App. Never auto-fallback: the user chooses explicitly.
 
-### Step 6: Present Summary + Scope Recommendation
+### Step 6: Summary, Interview, Scope Confirmation
 
-Emit the summary block described in [scope-recommendation-guide.md](scope-recommendation-guide.md) § Presenting the Recommendation. The **recommended scope appears first**; single-product alternatives and "Solution (customize)" follow as alternatives in the confirmation structured question.
+Step 6 runs four moves in this order; autonomous mode skips it (Step 0), and a caller's request runs only move 4, and only when the choice is genuinely ambiguous (Verb Rule 14):
+
+1. **Summary.** Emit the summary block below.
+2. **Interview offer.** Build the gap list and make the offer of [interview-guide.md](../interview/interview-guide.md); it is not made when the list holds no entry to ask.
+   - **Accepted:** run the interview on the SDD entries. Its answers replace the Clarifying Questions block.
+   - **Declined, or not offered:** the Clarifying Questions block and its limit (end of this step).
+3. **Product again on a P0 change.** An answer that changes a need-profile factor (Step 3.5) reruns Step 4, then Step 5 when its condition now holds, and the summary's Recommended Scope block is emitted again.
+4. **Scope confirmation**, on the answered facts — the structured question below.
+
+**The summary.** Emit the summary block described in [scope-recommendation-guide.md](scope-recommendation-guide.md) § Presenting the Recommendation. The **recommended scope appears first**; single-product alternatives and "Solution (customize)" follow as alternatives in the confirmation structured question.
 
 ```markdown
 ## PDD Analysis Summary
@@ -225,16 +236,16 @@ scope-recommendation-guide.md → Presenting the Recommendation:
 Recommended Scope + Project List + Queue Architecture>
 
 ### Clarifying Questions
-<NUMBERED_QUESTIONS_IF_ANY>
+<NUMBERED_QUESTIONS_IF_ANY — omitted when the interview ran>
 ```
 
-Then ask a structured question with the confirmation question from scope-recommendation-guide.md § Presenting the Recommendation (recommendation as option 1, single-product alternatives, then "Solution (customize)"). A caller's request skips this step unless the choice is genuinely ambiguous (Verb Rule 14).
+**The confirmation.** Ask a structured question with the confirmation question from scope-recommendation-guide.md § Presenting the Recommendation (recommendation as option 1, single-product alternatives, then "Solution (customize)").
 
 **If the user picks "Solution (customize)":** re-run Level 1.75 per the customize branch in the guide, then re-emit this summary with the customized project list, then re-ask the confirmation question. Max 3 revisions — after that, proceed with the latest composition.
 
 **If the user picks a single-product alternative:** re-run Step 4 with the user's choice as the forced primary (including Level 1.5 if it's RPA).
 
-Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed.
+**Without the interview**, ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker and default, and Phase 3 Step 1.5 asks only what Phases 2–3 found after it ([sdd-writing-guide.md](sdd-writing-guide.md)).
 
 ## Phase 2 — Architecture Review
 
