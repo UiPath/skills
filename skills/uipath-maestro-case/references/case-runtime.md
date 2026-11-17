@@ -43,13 +43,18 @@ make from syntax alone. Exact signatures remain in the generated API.
   recipient in the source and republishing the case.
 
   When a request names a person or test mailbox as the recipient, wire it
-  through a case **input** with a placeholder default instead of a literal:
+  through a case **input** with a placeholder default instead of a literal.
+  Declare the input, reference it in the `recipient` field, and verify with
+  `case check --source` that the expression resolves:
 
   ```ts
-  .input({ approver: types.string })   // caller supplies the real address
+  .input({ approver: types.string })
   // ...
   .action({ ..., recipient: '=vars.start.output.approver' })
   ```
+
+  If `check` reports the expression as a literal, use a script task to read
+  the input into a variable and pass that variable's value instead.
 
   Tell the user before publishing:
   1. The input default is a **test** value. It routes every action to that
