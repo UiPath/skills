@@ -12,7 +12,7 @@ Help the user add a curated allowlist of safe `uip` subcommands to their Claude 
 ## Steps
 
 1. **Ask which variant to install** using `AskUserQuestion`:
-   - **Full — with safety rails** (default, recommended) — writes both `allow` and `ask`. Cloud-side-effect commands (`debug` / `upload` / `publish` / `pack` / `login`) still prompt, even under `defaultMode: bypassPermissions` or `--dangerously-skip-permissions`. Prevents accidental prod publishes in YOLO mode.
+   - **Full — with safety rails** (default, recommended) — writes both `allow` and `ask`. Cloud-side-effect commands (`debug` / `upload` / `publish` / `pack` / `eval` / `projects resync` / `login`) still prompt, even under `defaultMode: bypassPermissions` or `--dangerously-skip-permissions`. Prevents accidental prod publishes in YOLO mode.
    - **Allow-only — no safety rails** — writes only the `allow` block. Power users who explicitly want zero prompts under `--dangerously-skip-permissions` pick this. Accept that a stray `uip solution publish` will execute without confirmation.
 
 2. **Ask where to install the allowlist** using a second `AskUserQuestion`:
@@ -50,6 +50,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 
       // discovery — registry + Integration Service + Orchestrator list ops (all read-only)
       "Bash(uip maestro flow registry *)",
+      "Bash(uip maestro registry *)",  // connector library shared by Flow, Case and BPMN; reads the tenant, writes only project-local files
       "Bash(uip is *)",               // Integration Service (connections, connectors, resources, triggers)
       "Bash(uip or folders *)",       // Orchestrator folders
 
@@ -66,11 +67,27 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip maestro flow edges *)",
       "Bash(uip maestro flow variables *)",
       "Bash(uip maestro flow bindings *)",
+      // the singular group names are live aliases, and several skills still write them
+      "Bash(uip maestro flow node *)",
+      "Bash(uip maestro flow edge *)",
+      "Bash(uip maestro flow variable *)",
+      "Bash(uip maestro flow binding *)",
       "Bash(uip maestro flow hitl *)",
       "Bash(uip maestro flow extraction check)",
       "Bash(uip maestro flow extraction check *)",
       "Bash(uip solution init *)",
-      "Bash(uip solution projects *)",
+      "Bash(uip solution new *)",      // retired verb, kept for agents on a CLI that predates the rename
+      // per verb, because `projects publish` and `projects resync` reach the tenant — both are in `ask`
+      "Bash(uip solution projects add *)",
+      "Bash(uip solution projects import *)",
+      "Bash(uip solution projects list)",
+      "Bash(uip solution projects list *)",
+      "Bash(uip solution projects remove *)",
+      "Bash(uip solution project add *)",
+      "Bash(uip solution project import *)",
+      "Bash(uip solution project list)",
+      "Bash(uip solution project list *)",
+      "Bash(uip solution project remove *)",
       "Bash(uip solution resources *)",
       "Bash(uip agent init)",
       "Bash(uip agent init *)",
@@ -128,7 +145,12 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip maestro flow pack *)",
       "Bash(uip maestro flow publish)",
       "Bash(uip maestro flow publish *)",
+      "Bash(uip maestro flow eval)",
       "Bash(uip maestro flow eval *)",
+      "Bash(uip solution projects publish *)",
+      "Bash(uip solution projects resync *)",
+      "Bash(uip solution project publish *)",
+      "Bash(uip solution project resync *)",
       "Bash(uip solution upload)",
       "Bash(uip solution upload *)",
       "Bash(uip solution publish)",
@@ -145,7 +167,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 - Rule precedence in Claude Code is `deny > ask > allow`, and rules are evaluated **before** `defaultMode` / `--dangerously-skip-permissions`. So the `ask` list in the full variant still forces a prompt under YOLO mode — that is the point of it, and it is the difference between the two variants offered in step 1.
 - If the user has existing `permissions.deny` rules mentioning `uip`, do not remove them — respect explicit denials even if they conflict with the recommended allowlist. Surface the conflict in chat and ask.
 - Never modify `~/.claude/settings.json` without explicit consent — that file often contains secrets (tokens, env vars) and should not be edited casually. If the user picks the global option, re-confirm before writing.
-- The full variant's `ask` block intentionally guards `uip solution upload`, `uip maestro flow debug`, `uip maestro flow pack`, `uip maestro flow publish`, `uip maestro flow eval`, `uip solution publish`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
+- The full variant's `ask` block intentionally guards `uip solution upload`, `uip maestro flow debug`, `uip maestro flow pack`, `uip maestro flow publish`, `uip maestro flow eval`, `uip solution publish`, `uip solution projects publish`, `uip solution projects resync`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). `uip solution projects` is therefore allowlisted per verb rather than as a group, so its two tenant verbs keep prompting. The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
 - `uip agent init` is in `allow` (scaffolding — same as `uip maestro flow init`). It does not publish to the cloud; it creates local agent project files.
 - `uip rpa *` covers the full RPA subcommand tree (`build`, `get-errors`, `create-project`, `find-activities`, `inspect-package`, `focus-activity`, etc.). None of these publish to the cloud — RPA deployment flows through `uip solution upload` / `publish` (already guarded in `ask`).
 - The `uipath-troubleshoot` skill is read-only — it inspects jobs, assets, queue-items, traces, and Maestro instances but never mutates them. Its verbs are allowlisted **per read verb** (e.g. `uip or jobs get *`, not `uip or jobs *`) so mutating siblings keep prompting: `or jobs stop/start/restart/resume`, `or assets create/delete/update/share`, `or licenses toggle`, `resource … delete/upload/add/update`, and `maestro bpmn instance cancel/retry/goto/pause/resume/migrate/message send/variables-set`. This fails closed — a newly shipped CLI verb is never auto-allowed.
