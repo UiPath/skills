@@ -22,10 +22,10 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 
 **Drafts live in two places.** `/solution/<Project>/.flow-sdk/` keeps `<Name>.bpmn.ts`, the undo copy `original/<Name>.bpmn` and the `registry prepare` output. `<Draft>/baseline/` and `<Draft>/edited/` hold throw-away copies: each turn rebuilds them, and a page reload clears `/tmp`.
 
-**An existing `.bpmn` outside a `/solution` project** — a mounted file, for example under `/sandbox`, or a loose file in `/tmp` — has no `project.uiproj`. Outside `/solution` and `/tmp`, your file tools, `cp` and `validate` reach it, but `decompile`, `compile`, `merge` and `node` do not: they answer `ENOENT`, `the builder SDK works only on files under /solution and /tmp` or `path is outside /solution and /tmp`. Ignore the hint to pass a copy under `/solution`: the project file system also refuses `cp` into it (`binary writes are not supported`). Edit a copy:
+**An existing `.bpmn` outside a `/solution` project** — a mounted file, for example under `/sandbox`, or a loose file in `/tmp` — has no `project.uiproj`. Outside `/solution` and `/tmp`, your file tools, `cp` and `validate` reach it, but `decompile`, `compile`, `merge` and `node` do not: they answer `ENOENT`, `the builder SDK works only on files under /solution and /tmp` or `path is outside /solution and /tmp`. Ignore the hint to pass a copy under `/solution`: copying the file from outside into a project there fails (`binary writes are not supported`). Edit a copy:
 
 1. Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`, then copy the target there as `<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Workflow](#workflow) and the [Validation loop](#validation-loop), and `<Draft>` is `/tmp/bpmn-draft/<Name>`.
-2. Run the loop there without `refresh`, even where the Workflow or the loop says to run it every time: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event. Skip the loop's **A process with connectors** bullet too: it reads `bindings_v2.json`, which only `refresh` writes.
+2. Run the loop there without `refresh`, even where the Critical Rules, the Workflow or the loop say to run it every time: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event. Skip the loop's **A process with connectors** bullet too: it reads `bindings_v2.json`, which only `refresh` writes.
 3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target. To undo, `cp .flow-sdk/original/<Name>.bpmn` from the work folder back over the target the same way.
 
 Never run `init` to give an existing file outside `/solution` a project. The user did not ask for one, and its template is a second process that fails `validate`.
@@ -141,6 +141,13 @@ uip maestro bpmn format <Name>.bpmn
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
   start again at step 2. Step 1 again would copy the merged file over the undo
   copy and the baseline.
+- **The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**
+  `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
+  target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
+  them; the edited file shows `merge` no change, so it writes the target back as it was.
+  When `merge` cannot open the baseline, run `mkdir -p <Draft>/baseline`, decompile `.flow-sdk/original/<Name>.bpmn`
+  to `<Draft>/<Name>.baseline.bpmn.ts`, compile that to `<Draft>/baseline/<Name>.bpmn`,
+  and run step 3's `merge` again.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
