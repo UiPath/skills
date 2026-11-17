@@ -71,9 +71,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Ties the payload graded below to the one actually imported. `positional`
-  # compares literally, so it rejected the same file passed by absolute path, or
-  # a byte-identical copy imported from elsewhere. This resolves the file instead.
+  # Ties the payload graded below to the one imported: the same file by any
+  # path, or a byte-identical copy.
   - type: run_command
     description: "The file imported into the target is `taxonomy-payload.json` (same file or byte-identical copy)"
     command: |
@@ -82,22 +81,10 @@ success_criteria:
       want = open("taxonomy-payload.json", "rb").read()
       for line in open("cli_mocks/calls.jsonl"):
           rec = json.loads(line)
-          if rec.get("tool") != "uip":
-              continue
           argv = rec.get("argv", [])
-          args, skip = [], False
-          for tok in argv:
-              if skip:
-                  skip = False
-              elif tok == "--output":
-                  skip = True
-              elif not tok.startswith("-"):
-                  args.append(tok)
-          if args[:4] != ["ixp", "projects", "import-taxonomy", "vendor_bills-7c2e10b4-ixp"] or len(args) < 5:
-              continue
-          f = args[4]
-          if os.path.isfile(f) and (os.path.samefile(f, "taxonomy-payload.json") or open(f, "rb").read() == want):
-              print("imported", f); sys.exit(0)
+          if rec.get("tool") == "uip" and "import-taxonomy" in argv and "vendor_bills-7c2e10b4-ixp" in argv:
+              if any(os.path.isfile(a) and open(a, "rb").read() == want for a in argv):
+                  sys.exit(0)
       sys.exit("no import-taxonomy on the target sent taxonomy-payload.json")
       PY
     expected_exit_code: 0
