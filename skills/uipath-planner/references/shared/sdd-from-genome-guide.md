@@ -1,6 +1,6 @@
 # SDD From Genome Guide — the SDD written from a genome
 
-`author` and `extract` write an SDD from the genome once the genome passes its strict check, a documentation request included, and `edit` writes it again after every edit. It is the people's rendering of the genome: it opens with every open question ([open-questions-guide.md](open-questions-guide.md)), followed by the design in the template people know. Whoever answers the questions reads it, without the genome.
+An SDD is written from a genome once the genome passes its strict check: by `extract` for a documentation request, by `extract` or `edit` when the user or a caller asks for it ("Write the SDD"), and by `edit` again after every edit of a genome that has one. A genome with no SDD keeps its open questions in its Open Decisions, which the interview asks ([interview-guide.md](../interview/interview-guide.md)). It is the people's rendering of the genome: it opens with every open question ([open-questions-guide.md](open-questions-guide.md)), followed by the design in the template people know. Whoever answers the questions reads it, without the genome.
 
 **The genome is the source.** An answer, a change or a correction goes into the genome first, and the SDD is written again from it.
 

@@ -8,7 +8,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 
 | Phase | Condition | Read |
 |---|---|---|
-| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` or `Preferences:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) and [open-questions-guide.md](../shared/open-questions-guide.md) whole |
+| start | — | this guide whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Design Links for a process genome and every section before § Process Genome Sections for a component genome (the level in the genome's first-line marker), plus § Design Links when the genome has a `Designed in:` or `Preferences:` line; [extracted-genome-guide.md](../shared/extracted-genome-guide.md) when the genome has a Source Map with a step table; [transactional-shape-guide.md](../shared/transactional-shape-guide.md) when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose Transactional Shape is not the stub; [open-questions-guide.md](../shared/open-questions-guide.md) whole; [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) whole when an SDD is beside the genome or the request asks for one |
 | a related resource is given | the genome is extracted and the user hands over a PDD, SOP, runbook or other resource beside the source | [extract-guide.md](../extract/extract-guide.md) Step 1 (the related-resources question) and Step 3's **Related resources** paragraph |
 | "The SDD was revised: update the genome" | — | [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) whole, plus the rows of its own Read Plan |
 | "Findings from `uipath-genome`" | a finding names a Build With skill (a retired name) | [skill-mapping-guide.md](../shared/skill-mapping-guide.md) |
@@ -27,9 +27,8 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 | "The SDD was revised: update the genome" (after a `design` revise, or from the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). A run that follows a `design` revise, or an unattended request, applies the edit without offering it; the closing summary names the sections changed |
 | "Findings from `uipath-genome`" (from the build's completion report, or the user forwarding it) | Apply each finding where it points: a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md) |
 | "Write the SDD" (a genome with no SDD beside it, or one whose SDD the user wants written again) | The SDD from the genome ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md)); nothing in the genome changes |
-| "Apply the answers" (the user filled in the SDD's Action Required or the readiness file, answered in a reply or an interview (§ Interview), or `uipath-genome` sent them back) | [§ Applying the Answers](#applying-the-answers) |
+| "Apply the answers" (the user filled in the SDD's Action Required or the readiness file, answered in a reply or an interview ([interview-guide.md](../interview/interview-guide.md)), or `uipath-genome` sent them back) | [§ Applying the Answers](#applying-the-answers) |
 | "The SDD was edited: update the genome" (the user changed a section other than Action Required, of an SDD written from the genome) | Read each changed section against the genome, and apply each change as the row of this guide it is (a step, a rule, an application, a component). In a migration, a change that departs from the source goes to the user first. The SDD is then written again from the genome |
-| Answers from the interview, or answers to the open items pasted later | Each answer by the row its subject has here: a ruling, a step's detail, an application, a persona, a `Not covered` or `Unused` object; a Configuration Question's answer replaces its default. The marker the answer settles is removed. An answer to a point the linked SDD holds goes to that SDD, as this section's first paragraph states ([interview-guide.md](../interview/interview-guide.md) § Where Answers Go) |
 | "Add detail to step X" | Workflow step X; add acceptance criteria if detail is testable |
 | "Change complexity" / "complexity should be higher or lower" | Complexity section, then section depth per population matrix |
 | "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
@@ -57,29 +56,13 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 | "Also translate what is not covered", or an unused part | [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md) with the objects of the Source Map's `Not covered` or `Unused` row the user names |
 | "The source changed" / "finish the unread parts" | [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md) with the changed or unread objects. Rerun extraction from its Step 1 ([extract-guide.md](../extract/extract-guide.md)) only when the components themselves changed (projects or root processes added, removed or regrouped); preserve user edits the source does not contradict and say which were kept |
 
-## Interview
-
-`interview` asks the open items of the SDD's Action Required, and of the readiness file when one exists beside the genome, then applies the answers. It asks only what nothing else answers: an item the request, an answers file, the preferences file or its own answer already settles is never asked.
-
-1. **How to answer.** One structured question comes first, skipped when the request already says. Its options:
-   - every item, a batch at a time (Recommended when an item has no default);
-   - only what needs a decision: the items with no default and the business outcomes, the rest keeping their defaults;
-   - the defaults: every item takes its default;
-   - the defaults, with the overrides the user names.
-2. **Roles.** When the items name more than one answerer and the request names none, one multi-select question asks which roles the user answers for. Only their items are asked; the others stay open for their own answerers.
-3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
-4. **Batches** of at most four structured questions, each with at most four options: one question per item, and, while the group has more items, the fourth offering "use the defaults for the rest of this group":
-   - the options come from the item's `Options:`, the recommended one first and marked (with none recommended, the one built now first, as the build orders it), and a value item's `Default:` named;
-5. **Stop** when the user says so, takes the defaults for what is left, or no item of the user's roles remains.
-6. **Write, then apply.** Each answer goes after its item's `Answer`: the option's letter, a value, or `default`, alone or for the rest of a group. Then apply them (§ Applying the Answers).
-7. **What remains.** The closing summary lists the items still open by role. With them it names the document to send to each: the SDD, or the readiness file for the build's own questions.
-
 ## Applying the Answers
 
 "Apply the answers" takes each item answered whose answer alters the genome, matched by its id:
 - the SDD's Business decisions, Material to supply and Preferences;
 - the readiness file's Genome edits: each gap ruled on, and each line of its Edits for `uipath-planner`;
-- the SDD items the readiness file lists as still open.
+- the items the readiness file lists under Decisions still open;
+- on a genome with no SDD beside it, its open entries answered in a reply or an interview, matched by the genome's ids.
 
 The readiness file's Architecture decisions and Build setup are the build's: none changes the genome.
 
@@ -94,13 +77,13 @@ Each is applied as the row of § Edits it is:
 - a gap ruled on in the sections its `See:` line names, as the row of what the option chosen changes;
 - a line of Edits for `uipath-planner` as the row of what it finds wrong, once the genome and the source confirm it, otherwise marked `Not applied:` with what they show.
 
-On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome kept as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the recommended option` when that was chosen); configuration values stay as answered, for the build.
+On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome kept as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the recommended option` when that was chosen); configuration values stay as answered, for the build, and on a genome with no SDD the build asks them.
 
 ## Review after every edit
 
 After every edit, review what changed, and every component genome a process genome links that the edit touched, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) before answering. An extracted genome also takes the Source Map checks [extract-guide.md](../extract/extract-guide.md) Step 6b runs against its source. Fix what breaks a rule.
 
-Then write the SDD again ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 5; for a genome with a `Designed in:` line, its Action Required section, item 6). Then run the strict check on the edited genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict`, adding `--processes` and `--recordsets` when a partial re-extraction wrote the inventory files. The check also checks the SDD's fingerprint. Fix every `FAIL` and run it again, at most three rounds; a fix to the genome writes again the SDD sections it changes, then the fingerprint. When answering, name every `FAIL` left, and how many questions the SDD's Action Required still holds and how many are needed before the build.
+Then write the SDD beside the genome again, when there is one ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 5; for a genome with a `Designed in:` line, its Action Required section, item 6). Then run the strict check on the edited genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict`, adding `--processes` and `--recordsets` when a partial re-extraction wrote the inventory files. The check also checks an SDD's fingerprint. Fix every `FAIL` and run it again, at most three rounds; a fix to the genome writes again the SDD sections it changes, then the fingerprint. When answering, name every `FAIL` left, and how many questions are still open — the SDD's Action Required, or the genome's open entries when it has no SDD — and how many are needed before the build.
 
 ## Back to the Build
 

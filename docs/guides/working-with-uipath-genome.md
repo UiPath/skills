@@ -1,6 +1,6 @@
 # Working with UiPath genomes
 
-A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process, with an SDD beside it: the same automation written for people, opening with every question still open. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
+A genome is a plain-language blueprint of an automation, in markdown. Two skills work with it. `uipath-planner` writes it from what you have about your process. An SDD, the same automation written for people and opening with every question still open, comes first when you design from a process document, and sits beside an extracted genome when you ask for one. `uipath-genome` runs the build: it asks what is still open, hands each part to the UiPath skill that builds it, and gives every acceptance criterion a verdict. The genome says what to build; each product's own skill knows how, and validates, builds and packs with the `uip` command line. Where the build can reach the real applications, it checks itself against them and fixes what fails.
 
 That leaves you three things to focus on: the review of the design, the answers to its open questions, and the yes before anything runs on a real application.
 
@@ -179,7 +179,7 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 | Rebuild an existing test suite | "Extract a genome from `<folder>`" | Steps 2 to 5: a test project whose cases assert each checkpoint the source checked, or list it as not asserted, with the reason |
 | Refactor a UiPath project | "Refactor `<folder>`" | Steps 2 to 5, with the plan, the tests written first and the cutover ([As a refactor](#rebuilding-an-existing-automation)) |
 | Change an automation built from a genome | The change, in plain words: "step 4 should also …" | The genome and its SDD are updated, your answers kept. The build (step 3) changes the projects it made before, or those you name in the readiness file, and the report lists every change made to them |
-| Get the questions answered by other people | Share the SDD, or say "Interview me on the open questions" with the person beside you | "Apply the answers" writes them into the genome and the SDD |
+| Get the questions answered by other people | Share the SDD (no SDD yet: "Write the SDD for `<name>-genome.md`" first), or say "Interview me on the open questions" with the person beside you | "Apply the answers" writes them into the genome and the SDD |
 | Get the build's own questions answered ahead | "Prepare the build of `<name>-genome.md`" on the machine that will build, then share the readiness file | "Apply the answers", then build: it asks nothing the files answer |
 | Change answers after the build was prepared | Edit the SDD or the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again, and the answer you gave it is cleared |
 | Build on another machine than the one prepared | "Build `<name>-genome.md`" on that machine | The file's answers hold; a question whose options are not the same there (other packages installed) is asked again |
@@ -197,12 +197,12 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 
 ## 1 · Get a genome
 
-Say what you have. The agent writes the genome with `uipath-planner`, checks it, writes its SDD and asks what to change. Already have a genome? Go to step 2.
+Say what you have. The agent writes the genome with `uipath-planner`, checks it, names the questions still open and asks what to change. Already have a genome? Go to step 2.
 
 | You have | Say | The agent |
 | --- | --- | --- |
 | A PDD or another process document | "Design a solution from `<document>`" | Asks whether to decide on its own or pause at checkpoints for your review, and where the automation will run. Writes a solution design (SDD), then the genome of that design |
-| An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions, the first also for your preferences file |
+| An idea, SOP or transcript | "Write a genome for `<idea>`" | Offers to interview you first on what decides the design (the product, the scope), or asks up to three rounds of questions; either way also asks for your preferences file |
 | A project or solution | "Extract a genome from `<folder>`" | Asks for related documents (PDD, SOP) and your preferences file, where the rebuild will run and whether to keep the parts nothing uses; for a UiPath project, also the Orchestrator folder it runs in. States its reading plan (in parts for a large project) and reads every file. Before it writes, it asks per part whether to fold it into another and which UiPath product it runs on; for a UiPath project, also whether to retire it |
 | A UiPath project to refactor | "Refactor `<folder>`" | Extracts the genome with your refactor answers in it, waits for your edits, then builds |
 
@@ -210,11 +210,11 @@ A request can name its skill: "Use the `uipath-planner` skill to extract a genom
 
 **A preferences file** holds your team's standing answers and development standards: naming, project structure, logging, the template, where settings live. Give it once, and every genome and build follows it. Start one from the planner's `preferences-template.md`.
 
-You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Beside them is an SDD: `<name>-sdd.md`, or `<name>-solution-sdd.md` with one SDD per project when there are several. It holds the same automation in the solution-design form people review, opening with every question still open. Ask for changes in plain words ("step 4 is wrong") and the agent edits the genome and writes the SDD again, keeping the answers you wrote in it. Only this skill changes a genome: the build never does.
+You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. When you designed from a document, or asked for it ("Write the SDD for `<name>-genome.md`"), an SDD sits beside them: `<name>-sdd.md`, or `<name>-solution-sdd.md` with one SDD per project when there are several. It holds the same automation in the solution-design form people review, opening with every question still open. Without one, the genome holds the questions, and "Interview me on the open questions" asks them. Ask for changes in plain words ("step 4 is wrong") and the agent edits the genome and writes any SDD again, keeping the answers you wrote in it. Only this skill changes a genome: the build never does.
 
 ## 2 · Review it and settle what is open
 
-This is your main decision point. The build follows the genome, and the agent never changes it while building. Read the SDD: the questions come first, then the design. Read these parts, in this order:
+This is your main decision point. The build follows the genome, and the agent never changes it while building. Read the SDD, or ask for one, or for the interview: the questions come first, then the design. Read these parts, in this order:
 
 1. **Acceptance criteria** — the definition of done, in the SDD's Testing Strategy. Check that each one is testable on your data.
 2. **Business decisions** — the SDD's first questions: the choices the source or the description leaves open, each with what the genome builds until someone decides.
@@ -230,7 +230,7 @@ To check a step against the original, the genome's Source Map names the part of 
 - **In the SDD:** share it. Each item lists its options by letter, the one built until someone answers marked `(built now)`: write the letter you choose, or your own words, after its `Answer`. An item left blank stays open.
 - **In the chat:** say "Interview me on the open questions", or add a role ("the process owner's"). It asks first how you want to answer, as the build does: every item, only what needs a decision, or the defaults.
 
-Then say "Apply the answers": the agent writes into the genome what the answers change, writes the SDD again, and keeps each configuration value for the build. If you skip it, the build offers to do it first.
+Then say "Apply the answers": the agent writes into the genome what the answers change, writes any SDD again, and keeps each configuration value for the build. If you skip it, the build offers to do it first.
 
 **Prepare the build (optional)** when someone else should answer the build's own questions, or you want to review the architecture before anything is built. On the machine that will build, say "Prepare the build of `<name>-genome.md`". The agent starts a build with `uipath-genome` (what is installed, which templates exist, where the source is) and asks each UiPath skill how it would build each capability the genome uses: mail, documents, spreadsheets, databases, applications, connectors. It reads the docs of the packages it would use, in a throwaway project, and looks on your tenant's feed for libraries earlier work published. It then asks you the build's questions, as many as you want to answer now, and writes `<name>-readiness.md` beside the genome with your answers and the rest, building nothing:
 
@@ -238,7 +238,7 @@ Then say "Apply the answers": the agent writes into the genome what the answers 
 - **Genome edits:** the gaps it finds in the genome, each with its fix or its options. Applying the answers fixes them.
 - **Build setup:** every other question the build would ask on that machine.
 - **The systems to make reachable and the build environment**, each with a `Status:` line. Start these first: access takes the longest.
-- **Still open in the SDD:** the SDD's questions nobody has answered yet, so one file goes round.
+- **Decisions still open:** the questions nobody has answered yet, the SDD's, or the genome's when it has no SDD, so one file goes round.
 
 Fill it in the same way, then say "Apply the answers" again.
 

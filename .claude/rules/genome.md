@@ -25,7 +25,7 @@ Paths are relative to the skill folder.
 | Transactional Shape, the `Decided:` line and its project chain | `references/shared/transactional-shape-guide.md` |
 | Extraction pipeline, its questions (the refactor questions Retire, Fold and Target: § Step 6c), sizing, reading plan | `references/extract/extract-guide.md`; UiPath source facts: `references/extract/uipath-source-guide.md` with `uipath-rpa-signals-guide.md` and `uipath-non-rpa-signals-guide.md`; framework pack resolution: `references/extract/source-frameworks-guide.md`; extraction in parts: `references/shared/extraction-parts-guide.md` |
 | Defect verification | `references/shared/defect-verification-guide.md` |
-| The open questions an SDD puts to people (its Action Required): the item form, the groups, where the answers go | `references/shared/open-questions-guide.md`; the SDD written from a genome: `references/shared/sdd-from-genome-guide.md`; applying the answers and the `interview` verb: `references/edit/edit-guide.md` (§ Interview) |
+| The open questions an SDD puts to people (its Action Required): the item form, the groups, where the answers go | `references/shared/open-questions-guide.md`; the SDD written from a genome: `references/shared/sdd-from-genome-guide.md`; applying the answers: `references/edit/edit-guide.md` (§ Applying the Answers) |
 | `author`: genome from an idea, PDD, TO-BE or SDD; scenario proposals | `references/author/author-guide.md`; from an agreed SDD: `references/author/genome-from-sdd-guide.md`; scenarios: `references/author/scenario-proposal-guide.md` |
 | `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
 | Interview: the offer, the gap list and its coverage, asking order, where answers go (inside `design`, `author`, `extract`, and the `interview` verb) | `references/interview/interview-guide.md` |
@@ -42,7 +42,7 @@ Paths are relative to the skill folder.
 |---|---|
 | Verb choice | `SKILL.md` |
 | `build` start, verb rules, read plan | `references/build-guide.md` (§ Start, § Verb Rules, § Read Plan) |
-| `prepare`: the build's questions, asked as far as the user answers them, and the readiness file with the answers, the rest, the build's tasks and the SDD's questions still open | `references/prepare-guide.md` |
+| `prepare`: the build's questions, asked as far as the user answers them, and the readiness file with the answers, the rest, the build's tasks and the decisions still open | `references/prepare-guide.md` |
 | What each genome section means at build | `references/genome-reading-guide.md` |
 | Execution: phases, target project resolution, skill groups, owning-skill contract, acceptance verdicts | `references/execution-guide.md` |
 | Configuration and scaffolding questions, autonomous runs | `references/configuration-questions-guide.md` |

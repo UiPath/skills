@@ -1,10 +1,10 @@
 # Prepare Guide — the `prepare` verb
 
-`prepare` runs the start of a build and its questions on the machine that will build, as far as the user answers them, and stops before anything is built. It writes the answers and every question still open into a readiness file beside the genome, together with the questions the SDD still holds open, so the people who answer the rest can do so ahead of the build. The questions, their options and the discovery they rest on are the build's own ([configuration-questions-guide.md](configuration-questions-guide.md), [execution-guide.md](execution-guide.md) § 1.2).
+`prepare` runs the start of a build and its questions on the machine that will build, as far as the user answers them, and stops before anything is built. It writes the answers and every question still open into a readiness file beside the genome, together with the decisions still open for the people who own them, so they who answer the rest can do so ahead of the build. The questions, their options and the discovery they rest on are the build's own ([configuration-questions-guide.md](configuration-questions-guide.md), [execution-guide.md](execution-guide.md) § 1.2).
 
 1. **Start as a build starts:** [build-guide.md](build-guide.md) § Start and the reads of § Read Plan, then [execution-guide.md](execution-guide.md) § 1.1 and its § 1.2, the preflight discovery the options are built from.
 2. **Read the answers already given.** That means the SDD beside the genome, and an earlier readiness file, both as the user's files of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rules 4 and 4a). `prepare` offers their genome edits not yet made, and those its own questions bring (rule 4b), once, at its end (step 7), and reads the genome as it stands until then. A genome with no SDD beside it is read for its open entries and its Configuration Questions directly.
-3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there), and the Subagents question, which the session that builds answers. An answer that carries a check still to make ("to be checked at build") is kept as a task under Systems and applications, naming its item. An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Settings store, when the preferences file places only the constants.
+3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there), and the Subagents question, which the session that builds answers. An answer that carries a check still to make ("to be checked at build") is kept as a task under Systems and applications, naming its item. An SDD item still open is kept under its id, in Decisions still open; with no SDD beside the genome, so is each open entry of its Open Decisions and each of its Configuration Questions, under the genome's id (`D<n>`, `CQ<n>`, a component's with its component). A question an answer settles only in part is kept for the rest alone, worded for it: Settings store, when the preferences file places only the constants.
 4. **Ask as the build asks, as far as the user wants** ([configuration-questions-guide.md](configuration-questions-guide.md) rules 2–3b), in its order whatever section of the file a question lands in, the first question being how to answer. Each answer is written after its item's `Answer:`, with its source: `b (the user, in prepare, <YYYY-MM-DD>)`. A question the user skips, or is not asked, stays open in the file. An answer that settles another question drops it, as at build.
 5. **Write the readiness file**, `<slug>-readiness.md` beside the genome (the genome's file name with `-readiness.md` in place of `-genome.md`). A process genome has one, covering its components. It holds the sections of § The readiness file, in their order, each with its "Usually answered by" line; a section with no item reads "None.".
 6. **Every question is rendered as an item**, worded and optioned as the build would ask it (rules 2–2b), in the item form:
@@ -44,7 +44,7 @@ The sections:
    - data the build's test runs may change, or none.
 
    Each ends on `Status:`. Usually answered by: the engineer, with the tenant admin.
-6. **Still open in the SDD** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form. An answer given here is the same item's: it reaches the genome as the SDD's would. Usually answered by: as each item names.
+6. **Decisions still open** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form; with no SDD, the genome's open entries and Configuration Questions, in the item form under their genome ids and groups. An answer given here is the same item's: it reaches the genome as the SDD's, or the entry's, would. Usually answered by: as each item names.
 
 `prepare` run again keeps every answer and every `Status:`. It drops:
 - each item whose question is now answered elsewhere (the genome, by the decided-values table of [configuration-questions-guide.md](configuration-questions-guide.md) rule 5; the SDD; the preferences file), unless it carries an answer, which stays as the record of the decision;
@@ -80,7 +80,7 @@ Write the letter of the option you choose, or your own words, after each `Answer
 3. [Build setup](#3-build-setup) — <n> needed, <n> to confirm
 4. [Systems and applications](#4-systems-and-applications) — <n> to arrange
 5. [Build environment](#5-build-environment) — <n> to arrange
-6. [Still open in the SDD](#6-still-open-in-the-sdd) — <n> items
+6. [Decisions still open](#6-decisions-still-open) — <n> items
 
 ## 1. Architecture decisions
 
@@ -177,11 +177,11 @@ Usually answered by: the engineer, with the tenant admin.
 **R<n>. <What to make available>** — <what the build needs it for>
 - **Status:**
 
-## 6. Still open in the SDD
+## 6. Decisions still open
 
 Usually answered by: as each item names.
 
-<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it>
+<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it; with no SDD, each open entry and Configuration Question of the genome, in the item form under its id>
 ````
 
 ## Read Plan

@@ -4,7 +4,7 @@ Every SDD the planner writes opens with every question still open about what get
 
 Who writes it:
 - `design` writes it from its own gaps, before a genome exists ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 1.5).
-- Once the genome exists, every write (`author`, `extract`, `edit`) writes it again from the genome, on the design path too ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)).
+- Once the genome exists, it is written from the genome: in the agreed SDD, by `author` on the design path; in an SDD written from the genome, when there is one ([sdd-from-genome-guide.md](sdd-from-genome-guide.md)). A genome with no SDD holds its questions in its Open Decisions and Configuration Questions alone.
 
 The build's own questions are `uipath-genome`'s: the split, the libraries, the technology for each capability, scaffolding and the build environment. Its `prepare` writes them into a readiness file beside the genome, with this section's items that are still open.
 

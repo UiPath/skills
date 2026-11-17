@@ -212,7 +212,7 @@ Step 6 runs four moves in this order; autonomous mode skips it (Step 0), and a c
 
 1. **Summary.** Emit the summary block below.
 2. **Interview offer.** Build the gap list and make the offer of [interview-guide.md](../interview/interview-guide.md); it is not made when the list holds no entry to ask.
-   - **Accepted:** run the interview on the SDD entries. Its answers replace the Clarifying Questions block.
+   - **Accepted:** run the interview on the P0 SDD entries. Its answers replace the Clarifying Questions block; every other entry is written as an SDD item.
    - **Declined, or not offered:** the Clarifying Questions block and its limit (end of this step).
 3. **Product again on a P0 change.** An answer that changes a need-profile factor (Step 3.5) reruns Step 4, then Step 5 when its condition now holds, and the summary's Recommended Scope block is emitted again.
 4. **Scope confirmation**, on the answered facts — the structured question below.
