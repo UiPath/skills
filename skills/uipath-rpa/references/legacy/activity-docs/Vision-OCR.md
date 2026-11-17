@@ -1,7 +1,7 @@
 # UiPath Vision/OCR Activities - Legacy Reference
 
 ## Overview
-OCR and document recognition with multiple engine support. Package: `UiPath.OCR.Activities`.
+OCR and document recognition with multiple engine support. Package: `UiPath.Vision`.
 
 ---
 
