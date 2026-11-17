@@ -3,10 +3,12 @@
 
 The final `.bpmn` is what the agent shipped, so every warning listed is one it
 kept. The next criterion, a judge, reads the file and checks the final
-report names each one on `Assumed:` or `Unverified:`.
+report names each one on `Needs:`, `Assumed:` or `Unverified:`.
 
 The file holds `none`, the warnings, or a first line starting with `unknown`
 when a warning list could not be read; the judge scores `unknown` 0.
+`[(xml)] unknown attribute` lines are left out: the skill tells the agent
+to ignore that parser note on compiled output.
 
 Usage: write_validate_warnings.py <output file>
 Exits 0 whenever the file is written: this criterion only records.
@@ -16,28 +18,35 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.validate_bpmn import _bpmn_files  # noqa: E402
 
-TIMEOUT_SECONDS = 60
+BUDGET_SECONDS = 170
 NO_WARNINGS = "none"
 UNKNOWN = "unknown"
 WARNING_LINE = "[warning]"
+PARSER_NOTE = "[(xml)] unknown attribute"
 
 
 class Unreadable(Exception):
     pass
 
 
-def warnings_of(path: Path) -> str:
+def _kept(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip().startswith("-")]
+    return "\n".join(line for line in lines if PARSER_NOTE not in line)
+
+
+def warnings_of(path: Path, timeout: float) -> str:
     try:
         proc = subprocess.run(
             ["uip", "maestro", "bpmn", "validate", str(path), "--output", "json"],
             capture_output=True,
             text=True,
-            timeout=TIMEOUT_SECONDS,
+            timeout=max(1, timeout),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise Unreadable(f"validate did not run: {exc}") from exc
@@ -49,20 +58,23 @@ def warnings_of(path: Path) -> str:
 
     data = out.get("Data") or {}
     if "Warnings" in data or out.get("Result") == "Success":
-        return str(data.get("Warnings") or "").strip()
+        return _kept(str(data.get("Warnings") or ""))
 
     instructions = out.get("Instructions")
     if not isinstance(instructions, str):
         raise Unreadable(f"validate failed with no Instructions (exit {proc.returncode})")
-    return "\n".join(line for line in instructions.splitlines() if WARNING_LINE in line).strip()
+    return _kept("\n".join(line for line in instructions.splitlines() if WARNING_LINE in line))
 
 
 def main() -> int:
     out = Path(sys.argv[1])
-    found, unknown = [], []
-    for path in _bpmn_files():
+    deadline = time.monotonic() + BUDGET_SECONDS
+    files = _bpmn_files()
+    found = []
+    unknown = [] if files else ["no .bpmn file found"]
+    for path in files:
         try:
-            text = warnings_of(path)
+            text = warnings_of(path, deadline - time.monotonic())
         except Unreadable as exc:
             unknown.append(f"{path.name}: {exc}")
             continue

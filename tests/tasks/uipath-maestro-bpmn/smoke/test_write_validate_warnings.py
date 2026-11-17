@@ -40,7 +40,7 @@ def test_lists_the_warnings_of_each_built_process(tmp_path: Path, monkeypatch: p
     (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
     _validate_prints(monkeypatch, json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": WARNINGS}}))
 
-    assert _write(tmp_path, monkeypatch) == f"LoyaltyDiscount.bpmn:\n{WARNINGS}"
+    assert _write(tmp_path, monkeypatch) == f"LoyaltyDiscount.bpmn:\n{WARNINGS.splitlines()[1].strip()}"
 
 
 def test_writes_none_when_validate_reports_no_warning(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -78,4 +78,16 @@ def test_validate_that_cannot_run_is_unknown(
 
     monkeypatch.setattr(writer.subprocess, "run", raising_run)
 
+    assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)
+
+
+def test_parser_note_on_compiled_output_is_left_out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "ScriptDemo.bpmn").write_text("<bpmn:definitions/>")
+    warnings = "1 warning(s):\n  - [(xml)] unknown attribute <type>"
+    _validate_prints(monkeypatch, json.dumps({"Result": "Success", "Data": {"Warnings": warnings}}))
+
+    assert _write(tmp_path, monkeypatch) == writer.NO_WARNINGS
+
+
+def test_no_built_process_is_unknown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)
