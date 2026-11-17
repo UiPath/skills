@@ -582,7 +582,13 @@ test("the studioweb BPMN skill finds the project before writing and never builds
   assert.ok(skill.includes("12. Before you write any file, find the project."));
   assert.ok(skill.includes("Check a named `.bpmn` with `ls <path>`. When `ls` finds no such file, this is a new process"));
   assert.ok(skill.includes("When that main file already holds a process"));
-  assert.ok(skill.includes("never build over it: run `uip maestro bpmn init <Name>` from `/solution`"));
+  assert.ok(skill.includes("never build over it: run `uip maestro bpmn init <NewProject>` from `/solution`"));
+  assert.ok(skill.includes("never a folder `/solution` already holds. Never pass `--force`."));
+  assert.ok(skill.includes("only when the user asks for a new project, or when [Critical Rule 12](#critical-rules) needs one"));
+  assert.ok(skill.includes("only for a new\n   project the user asks for or [Critical Rule 12](#critical-rules) needs"));
+  const draft = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "references", "draft-skeleton.md"), "utf8");
+  assert.ok(draft.includes("unless that file already holds a process ([Critical Rule 12](../SKILL.md#critical-rules))"));
+  assert.ok(draft.includes("only when the user asks for a new project or Rule 12 needs one"));
 });
 
 test("the default BPMN skill carries no Studio Web Rule 12", (t) => {
