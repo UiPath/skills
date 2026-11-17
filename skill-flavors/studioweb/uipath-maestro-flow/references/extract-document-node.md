@@ -3,7 +3,7 @@
 <!--skill-flavor:extract-find-flow:end-->
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**A flow that holds this node skips the decompile round trip.** The baseline compile of the [Lifecycle](../SKILL.md#lifecycle) fails on this node, so for such a flow do not decompile at all: make every change with the direct commands on the target `.flow` — `nodes`, `edges`, `variables`, `nodes schema` — and finish with `validate`.
+**A flow that holds this node takes the decompile round trip** of the [Lifecycle](../SKILL.md#lifecycle): the node decompiles to `dynamicExtract()`, its `processorKey` with it. When merge's in-memory baseline compile fails on this node (an SDK copy before 6.118.0), do not decompile such a flow at all: make every change with the direct commands on the target `.flow` — `nodes`, `edges`, `variables`, `nodes schema` — and finish with `validate`.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
