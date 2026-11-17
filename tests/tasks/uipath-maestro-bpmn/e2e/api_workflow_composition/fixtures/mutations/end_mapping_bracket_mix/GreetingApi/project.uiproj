@@ -1,5 +1,0 @@
-{
-  "ProjectType": "Api",
-  "Name": "GreetingApi",
-  "MainFile": "Workflow.json"
-}

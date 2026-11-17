@@ -1,6 +1,0 @@
-{
-  "Name": "PyScoreModel",
-  "ProjectType": "Process",
-  "Description": "PyScoreModel automation project.",
-  "MainFile": "Main.xaml"
-}

@@ -1,6 +1,0 @@
-{
-  "Name": "JiraCommentBot",
-  "ProjectType": "Process",
-  "Description": "JiraCommentBot automation project.",
-  "MainFile": "Main.xaml"
-}

@@ -1,6 +1,0 @@
-{
-  "Name": "ReportRefresher",
-  "ProjectType": "Process",
-  "Description": "Runs the RefreshSheets VBA macro against the WeeklyKPI workbook via Invoke VBA inside an Excel Process Scope.",
-  "MainFile": "Main.xaml"
-}

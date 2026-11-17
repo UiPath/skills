@@ -1,6 +1,0 @@
-{
-  "ProjectType": "Process",
-  "Name": "DownloadVendorInvoice",
-  "Description": null,
-  "MainFile": "Main.xaml"
-}

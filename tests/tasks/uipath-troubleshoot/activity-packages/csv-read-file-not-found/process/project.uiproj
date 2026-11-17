@@ -1,6 +1,0 @@
-{
-  "Name": "CsvFetcher",
-  "ProjectType": "Process",
-  "Description": "CsvFetcher automation project.",
-  "MainFile": "Main.xaml"
-}

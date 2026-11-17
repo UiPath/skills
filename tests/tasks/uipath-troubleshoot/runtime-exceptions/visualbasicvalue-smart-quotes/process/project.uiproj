@@ -1,6 +1,0 @@
-{
-  "Name": "InvoiceNotifier",
-  "ProjectType": "Process",
-  "Description": "Sends invoice notification messages to customers.",
-  "MainFile": "Main.xaml"
-}

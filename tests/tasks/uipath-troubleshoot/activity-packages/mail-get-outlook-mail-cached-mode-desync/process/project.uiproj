@@ -1,6 +1,0 @@
-{
-  "Name": "ComplianceMailExport",
-  "ProjectType": "Process",
-  "Description": "Reads the Inbox via Get Outlook Mail Messages and exports it.",
-  "MainFile": "Main.xaml"
-}
