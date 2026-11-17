@@ -12,6 +12,7 @@ requires. Cell rules are complete where they stand, as in the main template. -->
 **actionType:** <dispatch code or —>
 **Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; none known → drop the cell + high review item>
 **Priority:** <Low \| Medium \| High \| Critical> · **Task Title:** <one-line Action Center prompt> · **Labels:** <csv or —>
+**Decision Capture:** <only for a task with a decision capture spec from the PDD; otherwise drop the line. The spec field by field, verbatim: Surface, Reviewer, Proposed by, Context, Parts (Part \| Proposal \| Evidence), Outcomes (Outcome \| Recommended when \| Reason required), Reasons, Close call, Next time, Stakes triggers, Second review, Stored, Never stored, Usage statement>
 
 **Input Schema:**
 
