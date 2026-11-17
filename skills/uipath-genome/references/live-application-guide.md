@@ -7,7 +7,7 @@ The two live phases of a migration's UI targets ([ui-target-migration-guide.md](
 1. **Drive it yourself, read-only, outside the healing pass's runs.** Open pages, menus and lists, type into a field to make a popup appear, and cancel out; never submit, save or confirm. Where a step the run does not take blocks the way — a sign-in, since the run never types a password, or a page reached only through a step that writes — ask the user to get past that step, then carry on.
 2. **Leave the machine as it was.** Record the window baseline before driving and close only the windows the build opened, as the owning skill's run procedure prescribes; never close what the Live application answer says must stay open.
 3. **Use the UIA package's live capabilities** — driver default, attribute listing, selector evaluator, target validation, snapshot reload, element-interaction probes ([selector-translation-guide.md](selector-translation-guide.md) rule 15) — with their syntax routed from the package guide. Stale refs are normal: every capture re-mints them, a driver-default call can invalidate the refs of the capture it read from, and a click that re-renders a widget (a search box or prompt moving into a popup) invalidates its refs too; re-capture rather than retry.
-4. **A comparable instance is checked through copies.** Copy the definition to a scratch file, substitute the selector variables with values present on that screen and the scope with that instance's, and run the validator against the copy — the project's own definitions and scope are never pointed at the other instance.
+4. **A comparable instance is checked through copies.** Copy the definition to a scratch file, give the copy that instance's scope, and run the validator against the copy with values present on that screen for its selector variables — the project's own definitions and scope are never pointed at the other instance.
 5. **Captures and probes work in a scratch project in the working folder**, on the build's package versions, never in a project of the build — exploration's, the contract probe's and the healing pass's recaptures alike: every live command that captures names the scratch project, because a definition generated from a capture stores the capture's screenshot, whatever the screen showed, in that project's `.screenshots/` folder, and the owning skill's target-capture procedure registers what it finds in that project's Object Repository. Probe workflows are written there too; what a probe settles goes into the notes, so no part of the offline migration runs one.
 
 ## Exploring — before the targets are derived
@@ -29,8 +29,6 @@ Explore once the migration preflight has derived the catalogs and before the tar
 5. **Probe capability where the pattern depends on it**: the control's `items` for a list (Select Item or open-and-click), one grid cell's attribute listing for `tableRow`/`colName`/`rowName` (table attributes or text-pinned rows).
 6. **Fix the rule before the family is derived**, then re-run steps 2–4 on a second instance of the family.
 7. **Record in the notes**: the driver's default, the shape the family ships with, the collisions found, and the label the family carries — `verified` or `shape-verified` — and why. A family left unexercised is recorded as such, and a *partly* exercised one says which part — an editable grid cell whose row and column matched but whose input was never reached is not the same as a cell that was never seen.
-
-**Seeds.** During the walk, exploration resolves the seed definitions the contract probe and the offline migration copy — a screen seed from the first page's window and an element seed from one element on it, with the driver's defaults and before any sign-in — into the working folder ([offline-definition-workarounds-guide.md § Starting-point definition file](offline-definition-workarounds-guide.md)).
 
 ### Contract probe — before the first part that authors
 
@@ -84,7 +82,7 @@ Where the answer is Neither, each UI activity gets the owning skill's placeholde
 
 ## Anti-patterns
 
-1. **Deriving the target spec before exploring a reachable application, or exploring it without writing the notes and the seeds.** The offline migration then goes back to the application for the windows, the clean start, the input method and the grid shapes, and the spec ships the rules the driver would have corrected (§ Exploring).
+1. **Deriving the target spec before exploring a reachable application, or exploring it without writing the notes.** The offline migration then goes back to the application for the windows, the clean start, the input method and the grid shapes, and the spec ships the rules the driver would have corrected (§ Exploring).
 2. **Starting the offline migration on a reachable application without a contract probe.** A wrong contract then validates and builds in every file it reaches, and only the healing pass finds it (§ Contract probe).
 3. **Submitting, saving or confirming outside the runs, or running them when the user did not allow it or on data the user did not name** (§ Driving the application, § Runs).
 4. **Taking a step's success for a healed target** — a fallback, an empty read, a wrong pick — **or a family sample on a comparable instance for a check of every target** (§ Live healing pass).
