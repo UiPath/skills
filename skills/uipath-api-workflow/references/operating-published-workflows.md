@@ -33,7 +33,7 @@ uip is connections ping <connection-uuid> --output json # health — Code: "Conn
 uip is connections edit <connection-uuid>               # re-authenticate (opens OAuth browser flow)
 ```
 
-A workflow authored against a connection that does not `ping` 401s in cloud regardless of how correct the JSON is. See [connector-activity-discovery.md](connector-activity-discovery.md) for the author-time discovery+verify flow and [troubleshooting.md](troubleshooting.md) for the stale-listing / `ConnectionNotEnabled` failure modes.
+A workflow authored against a connection that does not `ping` 401s in cloud regardless of how correct the JSON is. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first. See [connector-activity-discovery.md](connector-activity-discovery.md) for the author-time discovery+verify flow and [troubleshooting.md](troubleshooting.md) for the stale-listing / `ConnectionNotEnabled` failure modes.
 
 ## Run / manage the deployed process
 

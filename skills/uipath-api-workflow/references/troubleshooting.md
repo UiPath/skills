@@ -550,7 +550,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
 <!--skill-flavor:connection-auth-diagnostics:start-->
-  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
+  - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
 <!--skill-flavor:connection-auth-diagnostics:end-->
 
 <!--skill-flavor:connection-health-prevention:start-->
