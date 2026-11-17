@@ -570,3 +570,24 @@ test("the default Case skill keeps its terminal commands (the guard is not vacuo
   const hits = caseLinesNaming(join(REPO_ROOT, "skills", "uipath-maestro-case"));
   assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...CASE_TERMINAL_ONLY].sort());
 });
+
+// Studio Web runs a project from its main file (PO.Frontend PackagingUtil.ts
+// `project.mainFileId`), so a new process written as a second `<Name>.bpmn`,
+// a nested project or under the eval harness's `/sandbox` never runs (coder_eval
+// studio-web runs 2026-11-16, PR #4808). Rule 12 states the precondition up
+// front; the default flavor, where `init` writes `<Name>.bpmn`, must not carry it.
+test("the studioweb BPMN skill finds the project before writing and never builds over an existing process", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.ok(skill.includes("12. Before you write any file, find the project."));
+  assert.ok(skill.includes("Check a named `.bpmn` with `ls <path>`. When `ls` finds no such file, this is a new process"));
+  assert.ok(skill.includes("When that main file already holds a process"));
+  assert.ok(skill.includes("never build over it: run `uip maestro bpmn init <Name>` from `/solution`"));
+});
+
+test("the default BPMN skill carries no Studio Web Rule 12", (t) => {
+  const skill = readFileSync(join(buildDefault(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.ok(!skill.includes("12. Before you write any file, find the project."));
+  assert.ok(!skill.includes("/solution"));
+});
