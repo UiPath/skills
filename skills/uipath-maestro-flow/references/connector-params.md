@@ -256,11 +256,11 @@ Lookup fields store ids, not display names. If marked LOOKUP, author its helper 
 channel: lookup(SendMessageToUser, 'channel').byRealName('Ada Lovelace')
 ```
 
-Search by a field the connection returns. Slack omits `profile.email` unless the connection's app may read emails, so `.byEmail(…)` can match no one; prefer `.byRealName(…)` or `.byId(…)`. When prepare says `none carries '<field>'`, the value is not wrong: search by a field the message lists after `Search by`. A real name need not be unique, and prepare takes the first exact match without warning (builder-sdk#2103); when two users may share the name, use `.byId(…)`.
+Slack omits `profile.email` unless the connection's app may read emails, so `.byEmail(…)` can match no one; prefer `.byRealName(…)` or `.byId(…)`. When prepare says `none carries '<field>'` (an SDK with builder-sdk#2096), the value is not wrong: search by a field the message lists after `Search by`. A real name need not be unique; prepare takes the first exact match without warning, so use `.byId(…)` when two users may share it.
 
 | form | when | helpers |
 |---|---|---|
-| `lookup(SendMessageToUser, 'channel')` | prepared descriptor | `.byRealName(v)`, `.byId(v)`, `.byEmail(v)` and `.by(name, v)` |
+| `lookup(SendMessageToUser, 'channel')` | prepared descriptor | `.byEmail(v)`, `.byRealName(v)`, … (as the descriptor's `LOOKUP:` header lists them) and `.by(name, v)` |
 | `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | generic CRUD/no descriptor | `.by(name, v)` only |
 
 Never use an alias (`.byEmail`, `.byRealName`, generated onto the descriptor) in the second form; it throws. Use `.by('profile.real_name', …)` there. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
