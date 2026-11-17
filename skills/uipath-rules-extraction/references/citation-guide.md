@@ -47,9 +47,9 @@ Declare `xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model"` on `
 | Element | Where | When |
 |---|---|---|
 | `<uipdm:inputVariable source sourceType [sourceMapping] [dataType]>` with `<uipdm:constraint>` children | `inputData/extensionElements`, before `<variable>` | Every input. `sourceType` is `document` or `system`. `constraint` lists the values the policy names for a categorical input. |
-| `<uipdm:sourceRefs><uipdm:sourceRef page box [blockId]/></uipdm:sourceRefs>` | `rule/extensionElements`, before the first `<inputEntry>`; in a multi-decision file, also the decision's `extensionElements` | A row or decision whose citation resolved. One `sourceRef` per resolved citation. |
+| `<uipdm:sourceRefs><uipdm:sourceRef page box [blockId]/></uipdm:sourceRefs>` | `rule/extensionElements`, before the first `<inputEntry>`; in a multi-decision file, also the decision's `extensionElements` | A row or decision whose citation resolved. One `sourceRef` per resolved citation; with no `dom.json`, one page-only `sourceRef` (`box` omitted) per cited page. |
 | `<uipdm:qualityWarning [conditionId] [field]>text</uipdm:qualityWarning>` | `definitions/extensionElements`, repeated | An unresolved citation, an ambiguity resolved by assumption, a cell that could not be translated. |
 
-`box` is four plain decimals `left,top,width,height` in the digitizer's page units, no spaces. With no digitizer positions (open-source PDF path), write `inputVariable` and `qualityWarning` only.
+`box` is four plain decimals `left,top,width,height` in the digitizer's page units, no spaces. With no digitizer positions (open-source PDF path), write `inputVariable` and `qualityWarning`, and write each cited page as a page-only `<uipdm:sourceRef page="<N>"/>` (no `box`, no `blockId`; one per distinct page the row cites). Do not put the quote in the file. Add one `uipdm:qualityWarning` saying the citations carry a page and no source box, and list them in the phase 6 summary as carrying no box.
 
 The schema check belongs to the uipath-rules skill (critical rule 10).

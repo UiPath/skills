@@ -10,7 +10,8 @@ policy) into a BusinessRules project named ReimbursementRules. Modes:
             permissive "may submit receipts" sentence.
   outcomes  the table returns the expected outcome for every SCENARIO (the
             answer key; it lives here and is never staged into the sandbox).
-  norefs    no uipdm:sourceRef anywhere (no digitizer positions were supplied).
+  norefs    no uipdm:sourceRef with a box or blockId (no digitizer positions were supplied);
+            a page-only sourceRef is allowed.
   notes     review-notes.md exists and records the assumptions made.
   refs      every uipdm:sourceRef box is exactly the box of a contiguous run of
             words in _setup/policy_digitized/dom.json, on the page it names.
@@ -164,12 +165,18 @@ def grade_profile() -> None:
     print(f"OK: inputs, output, contract and uipdm inputVariables hold ({len(declared)} sources)")
 
 
+def positioned_refs(refs) -> list:
+    """sourceRef elements that carry a box or blockId; a page-only ref needs no digitizer positions."""
+    return [ref for ref in refs if ref.get("box") or ref.get("blockId")]
+
+
 def grade_norefs() -> None:
     _, _, root = load()
     found = uipdm_elements(root, "sourceRef")
-    if found:
-        fail(f"{len(found)} uipdm:sourceRef elements written although no digitizer positions were supplied")
-    print("OK: no sourceRef without digitizer positions")
+    positioned = positioned_refs(found)
+    if positioned:
+        fail(f"{len(positioned)} uipdm:sourceRef elements carry a box or blockId although no digitizer positions were supplied")
+    print(f"OK: no positioned sourceRef without digitizer positions ({len(found)} page-only)")
 
 
 def find_one(name: str) -> Path:

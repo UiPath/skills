@@ -8,6 +8,7 @@ real word-run boxes and rejects invented ones.
 
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -103,3 +104,11 @@ def test_a_rule_with_fewer_entries_than_columns_is_rejected():
     table = support.table("FIRST", [(("-", "-"), "Deny")])   # 2 entries for 4 columns
     with pytest.raises(SystemExit):
         pc.evaluate(table, dict(zip(pc.INPUTS, (1, 1, False, False))))
+
+
+def test_page_only_source_refs_are_allowed_without_digitizer_positions():
+    page_only = ET.fromstring('<sourceRef page="3"/>')
+    boxed = ET.fromstring('<sourceRef page="3" box="1,2,3,4"/>')
+    block = ET.fromstring('<sourceRef page="3" blockId="7"/>')
+    assert pc.positioned_refs([page_only]) == []
+    assert pc.positioned_refs([page_only, boxed, block]) == [boxed, block]

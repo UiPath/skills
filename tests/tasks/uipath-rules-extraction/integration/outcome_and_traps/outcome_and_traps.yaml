@@ -87,7 +87,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No uipdm:sourceRef written when no digitizer positions exist"
+    description: "No uipdm:sourceRef carries a box when no digitizer positions exist (page-only refs are allowed)"
     command: "python3 $REFERENCE_DIR/_shared/policy_check.py norefs"
     timeout: 30
     expected_exit_code: 0
