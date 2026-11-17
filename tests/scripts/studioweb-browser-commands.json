@@ -53,7 +53,7 @@
       "codedagent init": 66,
       "codedagent invoke": 6,
       "codedagent list-models": 4,
-      "codedagent new": 22,
+      "codedagent new": 25,
       "codedagent pack": 1,
       "codedagent publish": 1,
       "codedagent pull": 8,
