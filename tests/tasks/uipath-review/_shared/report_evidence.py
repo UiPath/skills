@@ -7,6 +7,9 @@ as `python3 $REFERENCE_DIR/check_*.py` -- so this directory is already
 `sys.path[0]` and a plain import works.
 """
 
+from __future__ import annotations
+
+import json
 import re
 import shutil
 import subprocess
@@ -14,6 +17,8 @@ import subprocess
 # agent-review-guide.md Critical Rule 3 / rule-catalog-workflow.md 2.5a: when a required
 # input genuinely cannot be obtained, the report must say so HERE and not just
 # anywhere in prose ("the CLI was unavailable, so I guessed" must not count).
+FINAL_GRADE = re.compile(r"(?m)^\*\*Final grade: ([ABCDF])\*\*\Z")
+
 SKIPPED_HEADING = re.compile(r"^#+\s*Rules Skipped\s*$", re.MULTILINE)
 
 # Phrasing varies a lot between agents; observed forms include "unavailable",
@@ -31,6 +36,12 @@ _UNAVAILABLE = (
     r"|does\s+not\s+(provide|support|have)|unknown\s+command"
     r"|(?:is|was|are|were|be)\s+missing|missing\s+from|unsupported)"
 )
+
+
+def parse_final_grade(text: str) -> str | None:
+    """Letter of the `**Final grade: X**` footer, which must be the report's last line."""
+    m = FINAL_GRADE.search(text.rstrip())
+    return m.group(1) if m else None
 
 
 def declares_unavailable(text: str, subject: str) -> bool:
@@ -69,3 +80,24 @@ def cli_identity(uip: str) -> str:
     except (OSError, subprocess.SubprocessError, IndexError):
         version = "unknown"
     return f"{path} (v{version})"
+
+
+def run_review_cli(uip: str, verb: list[str], project: str) -> tuple[bool, dict, str]:
+    """Run the review CLI on `project`; return (ok, parsed Data, diagnostic)."""
+    argv = [uip, *verb, project, "--output", "json"]
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=180)
+    except FileNotFoundError:
+        return False, {}, f"{uip} not on PATH"
+    except subprocess.TimeoutExpired:
+        return False, {}, f"{' '.join(argv)} timed out after 180s"
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip()[-400:]
+        return False, {}, f"exit {proc.returncode}: {tail}"
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        return False, {}, f"non-JSON output ({e}): {proc.stdout.strip()[:400]}"
+    if payload.get("Result") != "Success":
+        return False, {}, f"Result={payload.get('Result')}: {payload.get('Message', '')[:400]}"
+    return True, payload.get("Data") or {}, ""

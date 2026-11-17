@@ -1,0 +1,30 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_extractor_prompt.py",
+  "expected": [
+    {"ids": ["LC_PROMPT_INSTRUCTION_CONFLICTS"], "category": "general"},
+    {"ids": ["LC_OUTPUT_FORMAT_PROMPT_DRIFT"], "category": "schema"},
+    {"ids": ["LC_PROMPT_OUTPUT_FORMAT"], "category": "general"},
+    {"ids": ["LC_PROMPT_FEW_SHOT_MISSING"], "category": "general"},
+    {"ids": ["LC_PROMPT_NEGATIVE_HEAVY"], "category": "general"},
+    {"ids": ["LC_PROMPT_OVERSPECIFICATION"], "category": "general"},
+    {"ids": ["LC_PROMPT_DEPLOYMENT_SPECIFIC_LOGIC"], "category": "general"},
+    {"ids": ["LC_INPUT_SCHEMA_OVERLAP"], "category": "schema"},
+    {"ids": ["SCHEMA_NO_DESCRIPTIONS"], "category": "schema"}
+  ],
+  "min_recall": 0.7,
+  "decoys": [
+    {"id": "LC_SETTINGS_TEMPERATURE_FIT", "reason": "temperature 0 fits extraction"},
+    {"id": "LC_OUTPUT_CLASSIFIER_NO_ENUM", "reason": "not classifier-shaped"},
+    {"id": "LC_ESCALATION_OVERBROAD", "reason": "no escalations"}
+  ],
+  "min_categories": 2,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": ["ORPHAN_PLACEHOLDER", "SCHEMA_PLACEHOLDER_COVERAGE"],
+  "cli_only_expected": false,
+  "validate_must_pass": false
+}

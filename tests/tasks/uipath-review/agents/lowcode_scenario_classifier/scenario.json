@@ -1,0 +1,27 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_classifier.py",
+  "expected": [
+    {"ids": ["LC_OUTPUT_ENUM_VS_PROMPT_DRIFT", "LC_OUTPUT_CLASSIFIER_NO_ENUM"], "category": "schema"},
+    {"ids": ["LC_OUTPUT_DECISION_NO_RATIONALE"], "category": "schema"},
+    {"ids": ["LC_SETTINGS_TEMPERATURE_FIT"], "category": "general"},
+    {"ids": ["LC_SETTINGS_MAXTOKENS_FIT"], "category": "general"},
+    {"ids": ["LC_USER_PROMPT_BIASED_EXAMPLE"], "category": "general"},
+    {"ids": ["LC_EVAL_JUDGE_FOR_CLOSED_CLASS"], "category": "evals"},
+    {"ids": ["LC_EVAL_GROUND_TRUTH_SWAPPED"], "category": "evals"}
+  ],
+  "min_recall": 0.7,
+  "decoys": [
+    {"id": "LC_PROMPT_FEW_SHOT_MISSING", "reason": "output schema has one flat field"},
+    {"id": "LC_INPUT_SCHEMA_OVERLAP", "reason": "subject and body are distinct and described"},
+    {"id": "LC_OUTPUT_CONSUMER_DRIFT", "reason": "no in-scope consumer"}
+  ],
+  "min_categories": 3,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["B", "C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": ["LOWCODE_EVAL_ENUM_COVERAGE", "TOO_FEW_EVALS"],
+  "cli_only_expected": false
+}

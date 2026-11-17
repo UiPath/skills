@@ -34,14 +34,12 @@ Exit 0 on PASS; sys.exit(str) on failure.
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
 
-from report_evidence import cli_identity
+from report_evidence import cli_identity, parse_final_grade
 
-FINAL_GRADE = re.compile(r"(?m)^\*\*Final grade: ([ABCDF])\*\*\Z")
 GRADES = frozenset("ABCDF")
 
 
@@ -79,13 +77,12 @@ def main() -> None:
     if not report_path.is_file():
         sys.exit(f"FAIL: {report_path} not found")
     report = report_path.read_text(encoding="utf-8", errors="replace")
-    footer = FINAL_GRADE.search(report.rstrip())
-    if not footer:
+    final_grade = parse_final_grade(report)
+    if not final_grade:
         sys.exit(
             "FAIL: report does not end with '**Final grade: <A-F>**' -- without it there "
             "is no ground truth for the grade Step 6 must record."
         )
-    final_grade = footer.group(1)
 
     history_path = Path(os.getcwd()) / args.project / "review-history.json"
     if not history_path.is_file():
