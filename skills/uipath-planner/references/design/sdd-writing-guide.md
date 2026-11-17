@@ -71,7 +71,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 6 interview ran, a point it put to the user is not asked again: left open, it keeps its default, or is `blocking` when it has none (rule 5). Every other item is asked. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one prompt; every other item stays in the Action Required table with its default applied. If there are any to ask:
 
-> **Batching rule — 4-option cap per structured question.** Give each structured question at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single structured prompt with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one structured prompt per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — hosts that cap options reject it.
+> **Batching rule.** One structured prompt holds at most 4 questions, one item each, with the item's own options (at most 4, the default applied first) or its default named. More than 4 items take further prompts, grouped by SDD section, waiting for answers between them. Never drop an item to fit a prompt.
 
 1. Batch them into one or more structured questions using numbered-choice format. Example for 1-4 items:
 

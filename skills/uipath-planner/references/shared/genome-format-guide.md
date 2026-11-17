@@ -241,7 +241,7 @@ Minimums, not ceilings. Fifteen distinct steps in the source or description mean
 
 ## Ambiguity Marker
 
-When intent is unclear from the source, write the best interpretation, append `*[Inferred: D<n>]*` to that line, naming the Open Decisions entry that asks it — `process D<n>` for an entry of the process genome, `CQ<n>` when a Configuration Question asks the value — and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Wherever these rules say a line or a value is `*[Inferred]*`, the mark takes this form. A confirmed reading loses its marker, and its entry reads decided ("Remove the inferred flags" confirms every reading).
+When intent is unclear from the source, write the best interpretation, append `*[Inferred: D<n>]*` to that line, naming the Open Decisions entry that asks it — `process D<n>`, in a component genome, for an entry of the process genome, `CQ<n>` when a Configuration Question asks the value — and record the uncertainty in the Source Map. Never leave a section empty because the source is ambiguous. Wherever these rules say a line or a value is `*[Inferred]*`, the mark takes this form. A confirmed reading loses its marker, and its entry reads decided ("Remove the inferred flags" confirms every reading).
 
 ## Write, Then Offer Edits
 

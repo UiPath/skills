@@ -30,7 +30,7 @@ These add to the Critical Rules in [SKILL.md](../../SKILL.md).
 3. **Before writing, an answer is content, never a record.** It is written as the fact in the section that owns it, with no marker and no attribution. One exception: an SDD gets one Document History row per interview (§ Where Answers Go). After writing, an answer is to an item that has an id: its entry reads decided, so the genome keeps what was decided and when ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)).
 4. **Later steps never ask again.** An answered point has no marker, so no later step finds it. A point the interview put to the user and left open — skipped, defaulted, or held for an absent role — is written as an item and not asked again in the run: `design` Phase 3 Step 1.5 asks the other items ([sdd-writing-guide.md](../design/sdd-writing-guide.md)), and `author` Step 8 and `extract`'s close name the open items without asking them.
 5. **No round cap.** The user accepted the interview, so its rounds do not count against any verb's budget ([SKILL.md](../../SKILL.md) Critical Rule 9). It ends only on § Asking rule 6.
-6. **Only what changes the design is asked before writing.** The P0 entries: the product, the scope and the architecture follow from them, so a later answer would mean writing again. A P1 or P2 point is asked once its step is written, where its item can point at that step and go to whoever answers it. Each entry is asked where its answer is written: `design`'s interview asks SDD entries only, since a genome entry asked before the genome turn has nowhere to live.
+6. **Only what changes the design is asked before writing.** The P0 entries: the product, the scope and the architecture follow from them, so a later answer would mean writing again. A P1 or P2 point is asked once its step is written, where its item can point at that step and go to whoever answers it, even when it concerns the same step as a P0 point. Each entry is asked where its answer is written: `design`'s interview asks SDD entries only, since a genome entry asked before the genome turn has nowhere to live.
 
 ## The Gap List
 
@@ -39,7 +39,7 @@ Before writing, build it from § Coverage against the source after the verb's ex
 | State | Means | Asked before writing |
 |---|---|---|
 | **known** | the source, the SDD or the tenant states it | never |
-| **assumption** | a default from a guide or the template is safe | never: written with its default |
+| **assumption** | a default from a guide or the template is safe, and no P0 row of § Coverage holds | never: written with its default |
 | **needs confirmation** | the planner has a reading, and it changes what is built or what a business outcome is | when it is P0 |
 | **missing** | no reading and no safe default | when it is P0, first |
 
@@ -79,7 +79,7 @@ SDD homes use the RPA template's numbers; another product's template holds the s
 | Not covered and unused objects | the Source Map has a `Not covered` or `Unused` row | P1 | the process owner | — | partial re-extraction ([edit-guide.md](../edit/edit-guide.md)) | migration |
 | Values not in the export | a Configuration Question's default is "not in the export" | P2 | the environment's owners | — | the question's default | migration |
 
-An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Gap Handling for Agent / Coded App, asked in `design` Step 5; a Case design adds the entries [case-product-guide.md](../design/case-product-guide.md) sends to Step 6.
+An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Gap Handling for Agent / Coded App, asked in `design` Step 5; a Case design adds the entries [case-product-guide.md](../design/case-product-guide.md) sends to Step 6, as P0.
 
 ## The Offer
 
@@ -88,7 +88,7 @@ Before writing, one structured question, with the counts from the gap list:
 > The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
-> 2. **Use defaults** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>.
+> 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
 
 Option 1 is Recommended. After writing, the offer is § After Writing's first question.
 

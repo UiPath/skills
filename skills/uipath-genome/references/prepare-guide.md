@@ -30,7 +30,7 @@ The header says, in this order:
 The sections:
 1. **Architecture decisions** (§ The Architecture decisions section). Usually answered by: the engineer, with the architect.
 2. **Genome edits** — what discovery found wrong in the genome (the genome gaps of [execution-guide.md](execution-guide.md) § 1.2): under **Genome gaps to rule on**, each gap that needs someone to choose, as an item with its options; under **Edits for `uipath-planner`**, every other gap, as a line with its fix. "Apply the answers" makes them; `prepare` edits no genome ([SKILL.md](../SKILL.md) Critical Rule 2). A part with nothing to hold is left out. Usually answered by: the engineer, with the architect.
-3. **Build setup** — every other selected question, in the build's order. Usually answered by: the engineer.
+3. **Build setup** — every other selected question but the genome's Configuration Questions (section 6), in the build's order. Usually answered by: the engineer.
 4. **Systems and applications** — a task per system the automation acts on: each row of Target Applications, each system row of Actors and Systems (never a person, nor an automation that calls this one), each connection of Platform Dependencies. Each task holds:
    - how it is reached: screens, API or connector, database, files, mail;
    - what the build uses it for: exploring screens and checking their targets live, when reachable; the connection a connector's calls are written against; test runs;
@@ -44,7 +44,7 @@ The sections:
    - data the build's test runs may change, or none.
 
    Each ends on `Status:`. Usually answered by: the engineer, with the tenant admin.
-6. **Decisions still open** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form; with no SDD, the genome's open entries and Configuration Questions, in the item form under their genome ids and groups. An answer given here is the same item's: it reaches the genome as the SDD's, or the entry's, would. Usually answered by: as each item names.
+6. **Decisions still open** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form; with no SDD, each open entry of the genome under Business decisions (a material entry under Material to supply) and each Configuration Question under Configuration values, in the item form, its heading naming the genome's id (`D6`, `CQ2`) and its `Context:` who answers it. An answer given here is the same item's: it reaches the genome as the SDD's, or the entry's, would. Usually answered by: as each item names.
 
 `prepare` run again keeps every answer and every `Status:`. It drops:
 - each item whose question is now answered elsewhere (the genome, by the decided-values table of [configuration-questions-guide.md](configuration-questions-guide.md) rule 5; the SDD; the preferences file), unless it carries an answer, which stays as the record of the decision;
@@ -181,7 +181,7 @@ Usually answered by: the engineer, with the tenant admin.
 
 Usually answered by: as each item names.
 
-<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it; with no SDD, each open entry and Configuration Question of the genome, in the item form under its id>
+<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it; with no SDD, each open entry and Configuration Question of the genome, in the item form under the same group headings, naming its id and who answers it>
 ````
 
 ## Read Plan

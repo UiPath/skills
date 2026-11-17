@@ -174,7 +174,7 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 | Build from a solution design already agreed | "Write a genome from `<sdd>`" | Steps 2 to 5 |
 | Build from an idea, an SOP or a transcript | "Write a genome for `<idea>`" | Steps 2 to 5 |
 | Try a product on a scenario of its own, for a demo or a workshop | "Propose a demo scenario with `<product>`" | Pick a scenario; its genome is reviewed and built like any other |
-| Document an automation you run | "Extract a genome from `<folder>`" | Review it (step 2); nothing is built. When the automation changes, say "The source changed": the agent reads again the parts that changed |
+| Document an automation you run | "Document `<folder>`: extract its genome" | A genome and its SDD. Review it (step 2); nothing is built. When the automation changes, say "The source changed": the agent reads again the parts that changed |
 | Rebuild an existing automation as it is | "Extract a genome from `<folder>`" | Steps 2 to 5; the build asks how closely to follow the source ([Rebuilding an existing automation](#rebuilding-an-existing-automation)) |
 | Rebuild an existing test suite | "Extract a genome from `<folder>`" | Steps 2 to 5: a test project whose cases assert each checkpoint the source checked, or list it as not asserted, with the reason |
 | Refactor a UiPath project | "Refactor `<folder>`" | Steps 2 to 5, with the plan, the tests written first and the cutover ([As a refactor](#rebuilding-an-existing-automation)) |

@@ -209,7 +209,7 @@ flowchart LR
 
 <!-- references/design/business-rules-guide.md → Decision tables. Each decision runs in a businessRuleTask (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
 
-#### D1 — <DECISION_NAME>
+#### DT1 — <DECISION_NAME>
 **Hit policy:** <UNIQUE / FIRST / COLLECT>
 **Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
 **Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)

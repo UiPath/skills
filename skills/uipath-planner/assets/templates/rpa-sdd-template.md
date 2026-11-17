@@ -223,7 +223,7 @@ flowchart TD
 
 <!-- references/design/business-rules-guide.md → Decision tables. Runs in: the step and its coded logic or lookup. Empty: `None. No rule decides an outcome.` -->
 
-#### D1 — <DECISION_NAME>
+#### DT1 — <DECISION_NAME>
 **Hit policy:** <UNIQUE / FIRST / COLLECT>
 **Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
 **Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
@@ -671,7 +671,7 @@ Sub-type reference:
 
 ## 16. Deployment Environment
 
-> **Operational / infrastructure details.** These fields typically come from the deployment team, not the PDD — never invent values. A subsection whose facts the source does not give holds one line instead of a table of gaps: `[SME REVIEW] pending deployment-team input — Action Required #<N>`, one Action Required item per subsection whose Question names what to confirm (robot type, VM size, Studio and Robot versions…). This section drives robot provisioning, pre-production checks, and version compatibility.
+> **Operational / infrastructure details.** These fields typically come from the deployment team, not the PDD — never invent values. A subsection whose facts the source does not give holds one line instead of a table of gaps: `[SME REVIEW] D<n>: pending deployment-team input`, one Action Required item per subsection whose Question names what to confirm (robot type, VM size, Studio and Robot versions…). This section drives robot provisioning, pre-production checks, and version compatibility.
 
 ### Robot & Runtime
 
