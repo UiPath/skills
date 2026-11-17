@@ -101,7 +101,7 @@ export const BUILD_TOPICS = new Set([
 export const BUILD_SOURCES = new Set(["SDD", "request", "interview", "refactor answers", "source", "default"]);
 export const BUILD_STUB = "As the process genome.";
 export const OUTCOME_ROWS = new Set(["Success", "Business exception", "System exception", "Postponed"]);
-// the genome format's minimum Workflow steps and Acceptance Criteria per complexity.
+// the genome format's minimum Workflow steps and Acceptance Criteria per complexity, a component genome's.
 // core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
 const CORE_FLOOR = 3;
 const MIN_STEPS_BY_COMPLEXITY = { simple: 3, medium: 5, complex: 8 };
@@ -124,7 +124,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{unit of work}",
   ": {producer}",
   "→ {consumer}",
-  "{producer | consumer | consumer of Flow {M}",
+  "{producer | consumer | producer and consumer | consumer of Flow {M}",
   "{one sentence}",
   "one {item}",
   "{identifying field(s)}",
@@ -530,7 +530,7 @@ function checkStepsTable(text, r) {
     if (!sources.length) r.strict(`step table, step ${row[0]}: no source object`);
     const [data, dataProse] = references(row[2]);
     for (const part of [...prose, ...dataProse]) r.strict(`step table, step ${row[0]}: '${part.slice(0, 60)}' is not a reference — move it to Notes`);
-    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when the step reads no data set`);
+    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when no data set drives the step`);
     if (!/^\d+$/.test(row[3])) r.strict(`step table, step ${row[0]}: Captures '${row[3]}' is not a count`);
   }
 }
@@ -588,7 +588,8 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
 function checkProcess(path, a) {
   const text = read(path);
   const r = new Report(a.profile, a.shapeChecks === "gate");
-  checkCommon(path, text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[complexityOf(text)] ?? a.minCriteria);
+  // the population matrix's criteria floors are a component genome's; a process genome holds only end-to-end criteria
+  checkCommon(path, text, "process", PROCESS_SECTIONS, r, CORE_FLOOR);
   const pos = h2Positions(text);
   const cp = sectionPos(pos, "Components"), pm = sectionPos(pos, "Process Map");
   if (cp !== null && pm !== null && cp > pm) r.core("Components must precede Process Map");
@@ -614,7 +615,7 @@ function checkProcess(path, a) {
     }
   }
   const handoffs = lines(sectionBody(text, "Handoffs")).filter((l) => l.startsWith("|"));
-  if (handoffs.length < 4) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 2`); // header + separator + >= 2 rows
+  if (handoffs.length < 3) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 1`); // header + separator + >= 1 row: two components share at least one edge
   checkTransactional(text, "process", r);
   checkBuildDecisions(text, "process", r);
   if (a.shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);

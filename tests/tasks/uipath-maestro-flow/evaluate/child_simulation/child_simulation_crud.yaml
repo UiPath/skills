@@ -14,6 +14,8 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval,
 run_limits:
   expected_turns: 25
   max_turns: 90
+  turn_timeout: 1200
+  task_timeout: 1500
 
 reference:
   directory: .

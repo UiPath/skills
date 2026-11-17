@@ -642,13 +642,31 @@ def test_component_without_part_of_line_fails_strict_only(process_tree, check_pr
     assert "invoice-extraction-genome.md: component inside a process genome lacks the 'Part of:' line" in out
 
 
-def test_handoffs_table_needs_two_rows(check_process):
-    def one_row(text):
-        return re.sub(r"(## Handoffs\n)(.*?)(?=^## )", r"\1\n| From | To |\n|---|---|\n| a | b |\n\n", text, flags=re.S | re.M)
+def handoff_rows(rows):
+    table = "| From | To |\n|---|---|\n" + "".join(f"| a{i} | b{i} |\n" for i in range(rows))
+    return lambda text: re.sub(r"(## Handoffs\n)(.*?)(?=^## )", rf"\1\n{table}\n", text, flags=re.S | re.M)
 
-    rc, out = check_process(transform=one_row)
+
+def test_handoffs_table_needs_a_row(check_process):
+    rc, out = check_process(transform=handoff_rows(0))
     assert rc == 1
-    assert "Handoffs table: 1 rows, expected >= 2" in out
+    assert "Handoffs table: 0 rows, expected >= 1" in out
+
+
+def test_one_handoff_row_is_enough(check_process):
+    _, out = check_process(transform=handoff_rows(1))
+    assert "Handoffs table" not in out
+
+
+def test_process_criteria_floor_is_the_core_floor(check_process):
+    def three_criteria(text):
+        head, body = text.split("## Acceptance Criteria\n", 1)
+        crit, rest = body.split("\n## ", 1)
+        kept = [l for l in crit.splitlines() if not re.match(r"[4-9]\. ", l)]
+        return head + "## Acceptance Criteria\n" + "\n".join(kept) + "\n\n## " + rest
+
+    _, out = check_process(profile="strict", transform=three_criteria)
+    assert "acceptance criteria" not in out
 
 
 def test_process_shape_and_tokens_are_asserted(check_process):

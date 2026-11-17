@@ -61,7 +61,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 | From | To | Mechanism | Data passed | Failure behaviour |
 |------|----|-----------|-------------|-------------------|
-| {Component 1} | {Component 2} | {Queue item / Start job / Flow invoke / Event / File / Action Center task / Shared store} | {fields, schema, file type} | {retry, dead-letter, escalation} |
+| {Component 1} | {Component 2} | {Queue item / Library workflow call / Invoke Process / Start job, waited for or not / Flow invoke / Event / File / Action Center task / Shared store} | {fields, schema, file type} | {retry, dead-letter, escalation} |
 
 ## Platform Dependencies
 

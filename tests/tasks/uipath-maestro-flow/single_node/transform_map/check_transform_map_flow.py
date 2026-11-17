@@ -16,9 +16,8 @@ Generation-only — does not run `uip maestro flow debug`. Verifies:
      each having a non-empty `field` and a non-empty `transformation`.
   4. `outputs.output.source == "=result.response"` and
      `outputs.error.source == "=Error"`.
-  5. `typeVersion` is present and non-empty (the exact value is copied from
-     `uip maestro flow registry get core.action.transform.map`, so we do NOT
-     pin a specific version string here).
+  5. `typeVersion` is present and non-empty. Any value passes; typed
+     `transform()` stamps it.
 """
 
 import json
@@ -122,8 +121,7 @@ def _check_type_version(node: dict) -> None:
     tv = node.get("typeVersion")
     if not isinstance(tv, str) or not tv.strip():
         _fail(
-            "typeVersion missing or empty — copy it from "
-            "`uip maestro flow registry get core.action.transform.map`."
+            "typeVersion missing or empty — use typed `transform()`, which stamps it."
         )
 
 

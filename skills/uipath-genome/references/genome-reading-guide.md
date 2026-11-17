@@ -20,7 +20,7 @@ Rules:
 
 ## File Naming and Location
 
-- Slug: split CamelCase on capitals, lowercase, hyphens for spaces, strip other characters. "Invoice Processing" → `invoice-processing`; "InvoiceIntake" → `invoice-intake`; "Email Triage & Routing" → `email-triage-routing`.
+- Slug: split CamelCase on capitals, lowercase, hyphens for spaces and underscores, strip other characters. "Invoice Processing" → `invoice-processing`; "InvoiceIntake" → `invoice-intake`; "Email Triage & Routing" → `email-triage-routing`.
 - A process genome's components are at `<process-slug>-genome/<component-slug>-genome.md`.
 
 ## Build With and Components
@@ -117,8 +117,8 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 1. **One row per Workflow step**; a test component's steps are its test cases.
 2. **Source objects** are the objects whose behaviour the step implements, primary first: a rebuild that keeps the source's names names the step's file or workflow after it. A framework source's object is `` `Name` (id) `` or `` `Name` (id, {locator}) `` — the id identifies the copy; a UiPath source's is its project-relative path, a test case with its `testCaseId`.
-3. **Data sets** are the data sets the step's own objects read, or `none`.
-4. **Captures** is the number of screen captures the source takes in the step; the build checks the rebuild's evidence against it.
+3. **Data sets** are the data sets that drive the step — the rows or items it is run over — or `none`; a configuration table, a file the step writes or a URL is in Notes.
+4. **Captures** is the number of screenshots the source takes in the step, never a count of recorded UI actions; the build checks the rebuild's evidence against it.
 5. **Notes** is free text no check reads.
 
 **Unused parts.** A kept workflow nothing invokes is built like any other step. Parts in the `Not covered` or `Unused` row are left out of the build unless translated first.

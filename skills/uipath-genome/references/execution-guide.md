@@ -28,7 +28,7 @@ When the genome carries a design link ([genome-reading-guide.md § Design Links]
 
 Gather the machine facts 1.3 records and checks the genome's answers against. Discovery is silent; it never replaces an answer the genome gives.
 
-1. Run the UiPath login status check (`uip login status --output json`); record what an expired session blocks (resource refresh, publish, deploy, Test Manager attachments — local init, validate, build, pack and run still work).
+1. Run the UiPath login status check (`uip login status --output json`) and take the session's state from `Data.Status`, never from `ExpirationDate`, which is the current access token's; record what an expired session blocks (resource refresh, publish, deploy, Test Manager attachments — local init, validate, build, pack and run still work).
 2. Confirm runtime host and edit surface; record which target frameworks and expression languages they support.
 3. For every skill named in Build With / Components, run that skill's discovery commands for installed packages; record activity packages and versions available to the authoring host. When a project already exists in the build location, also record its declared dependencies and versions from its manifest.
 4. Determine candidate build location: the folder containing the genome file, never the current working directory when that is a different repository.
@@ -145,7 +145,7 @@ After the test project exists, migrate each data set from the derived data catal
 
 Component genome: after all groups, connect steps built by different skills (a coded workflow invoking a XAML workflow, a shared state file, a main entry point calling the others). Edit, then re-validate touched files.
 
-Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), start job, Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes.
+Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), library workflow call (the library consumed as a package), Invoke Process of a sibling process, start job (waited for with its outputs read, or left, as the row says), Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes.
 
 <!--skill-flavor:process-genome-pack:start-->
 Then refresh the solution's resources and pack it per the `uipath-solution` skill; on failure follow that skill's diagnosis. Without a tenant login, resource refresh, publish and deploy are out of reach; that skill's pack dry run, resolving packages from the local feed when libraries come from it, still proves the solution packs and is the last local gate, and a failure there takes the same diagnosis as pack.
