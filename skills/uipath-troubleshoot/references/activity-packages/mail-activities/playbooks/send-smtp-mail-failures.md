@@ -6,7 +6,7 @@ confidence: medium
 
 ## Context
 
-A `UiPath.Mail.SMTP.Activities` `Send SMTP Mail Message` (`SmtpSendMail`) activity talks to a mail
+A `UiPath.Mail.SMTP.Activities` `Send SMTP Mail Message` (`SendMail`) activity talks to a mail
 server **directly over SMTP** — it does NOT drive a desktop Outlook client (that is
 `send-outlook-mail-failures.md`) and does NOT call Microsoft Graph (that is the o365-activities
 surface). It opens a socket to `Server:Port`, negotiates transport security (`SecureConnection` —
