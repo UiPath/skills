@@ -87,8 +87,9 @@ When a reference tells you to run a command that is not available, use the Studi
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
    `refresh` and `validate`, in that order ([Validation loop](#validation-loop)),
-   except on *Build it* after a draft gate, which writes the target with the
-   Validation loop's *Build it* block.
+   except on *Build it* after a draft gate: there, do not `merge` (it keeps each
+   outline box's `bpmn:task` tag); write the target with the Validation loop's
+   *Build it* block, which compiles over the target.
    Lay out the diagram only when they report a missing diagram or shape. Exactly
    one `<Name>.bpmn` exists in the project: the target. Only an empty target and
    *Build it* after a draft gate (through its block, when nothing would be

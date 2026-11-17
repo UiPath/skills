@@ -42,5 +42,15 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  Do not run the loop's plain step 3: write the target with the [Validation loop](../SKILL.md#validation-loop)'s *Build it* block, which compiles over the target (`merge` would keep each box's `bpmn:task` tag) unless that would drop canvas content, then run `refresh` and `validate`, and report as that rule says.
+  Do not `merge`: it keeps each box's `bpmn:task` tag, so a script step loses its script on the canvas. Write the target with this block in place of the loop's step 3 (it compiles over the target, and merges only when that would drop canvas content), then run `refresh` and `validate`, and report as the [Validation loop](../SKILL.md#validation-loop)'s *Build it* rule says:
+
+  ```bash
+  drop=$(node -e "const fs=require('fs');const c=f=>{const m={};for(const t of fs.readFileSync(f,'utf8').matchAll(/<((?:bpmn|uipath):[A-Za-z]+)([^>]*?)(\/?)>|(color:background-color)/g)){const k=t[1]||t[4];if(k==='bpmn:extensionElements'||(t[3]&&/^\s*version=\"[^\"]*\"\s*$/.test(t[2])))continue;m[k]=(m[k]||0)+1}return m};const o=c(process.argv[1]),b=c(process.argv[2]);console.log(Object.keys(o).filter(k=>o[k]>(b[k]||0)).join(' ')||'none')" .flow-sdk/original/<Name>.bpmn <Draft>/baseline/<Name>.bpmn) && echo "drops: $drop" &&
+  if [ "$drop" = none ]; then
+    uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Name>.bpmn && uip maestro bpmn format <Name>.bpmn
+  else
+    uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Draft>/edited/<Name>.bpmn && uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn
+  fi
+  ```
+
 <!--skill-flavor:draft-build-merge:end-->
