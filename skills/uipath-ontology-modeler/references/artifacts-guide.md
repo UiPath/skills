@@ -5,12 +5,14 @@ The modeler writes the ontology's artifact files into `WORKDIR` and attaches the
 | File | Artifact type | Media type | Count |
 |---|---|---|---|
 | `{name}.ofn` | `schema` | `text/owl-functional` | exactly 1 |
-| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 1+ |
+| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 0+ (optional) |
 | `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | exactly 1 |
 | `{name}-summary.json` | `summary` | `application/json` | 0..1 |
 | `{name}-context.json` | `context` | `application/json` | 0..1 |
 
 `{name}` is the Ontology resource name, verbatim, in every file name and every IRI.
+
+Constraints are optional. The ontology service stores a SHACL file without using it, so write one only when the user supplies one or asks for it. Required, range and value-list rules go in the schema's `rdfs:comment` text.
 
 Per-file format rules:
 
@@ -21,14 +23,14 @@ Per-file format rules:
 | `mapping` | [mapping-yarrrml-guide.md](mapping-yarrrml-guide.md) |
 | `summary`, `context` | [summary-context-guide.md](summary-context-guide.md) |
 
-Check one file at a time with `uip ont artifacts check <FILE_NAME> --content-type <MEDIA_TYPE> --type <ARTIFACT_TYPE> --file <PATH>`. That check is offline. Whole-ontology validation (`uip ont validate --local`) calls the ontology service and needs `uip login`.
+Check one file at a time with `uip ont artifacts check <PATH>`. The file name decides the type, as in `uip ont files add`; pass `--type` only for a `.json` name that ends in neither `-summary` nor `-context`. That check is offline. Whole-ontology validation (`uip ont validate --local`) calls the ontology service and needs `uip login`.
 
 ## Write order
 
 1. Schema (`{name}.ofn`): classes, properties, labels and comments.
-2. Constraints (`{name}-constraints.ttl`): one shape per rule, over terms the schema declares.
-3. Mapping (`{name}-mapping.yarrrml.yml`): one block per class over the local entity, using the entity and field names exactly as created.
-4. Summary and context, only when they add value.
+2. Mapping (`{name}-mapping.yarrrml.yml`): one block per class over the local entity, using the entity and field names exactly as created.
+3. Summary and context, only when they add value.
+4. Constraints (`{name}-constraints.ttl`), only when supplied or asked for: one shape per rule, over terms the schema declares.
 
 Every term in a later file must exist in the schema.
 
@@ -42,7 +44,7 @@ Every term in a later file must exist in the schema.
 - The mapping links a class to its entity by name only (`table: <EntityName>`). The service resolves the name in the deployment folder at install.
 - System fields are `Id`, `CreateTime`, `UpdateTime`, `CreatedBy` and `UpdatedBy`. Never model them as domain properties. `$(Id)` is the subject key.
 - A relationship is one `RELATIONSHIP` field on the referencing entity. The mapping joins it with `equal(str1=$(customer), str2=$(Id))`.
-- A choice-set field is mapped by value name (`xsd:string`) and listed in the constraints with `sh:in`.
+- A choice-set field is mapped by value name (`xsd:string`), and the schema comment lists its values (a constraints file, when written, lists them with `sh:in`).
 
 ## Do not
 

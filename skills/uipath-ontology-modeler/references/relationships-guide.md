@@ -8,7 +8,7 @@ A relationship between two classes has three parts, and all three must exist.
 | Schema (`{name}.ofn`) | an `ObjectProperty` with `ObjectPropertyDomain` (the class holding the field) and `ObjectPropertyRange` (the class it points to) |
 | Mapping (`{name}-mapping.yarrrml.yml`) | a join in the domain class's mapping block, on the field and the target's `Id` |
 
-Where a shape constrains the relationship, the constraints file adds `sh:class` on the object property path.
+When a constraints file is written and a shape constrains the relationship, it adds `sh:class` on the object property path.
 
 ## Worked example: SalesOrder to Customer
 

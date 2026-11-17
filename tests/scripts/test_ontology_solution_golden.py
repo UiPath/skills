@@ -7,6 +7,9 @@ a federated entity over a local native entity, entities validate, artifacts chec
 files add, validate (with the XF-019 fix loop), pack, files list --package, then the packed
 resources and their dependencies[].
 
+The fixture supplies a SHACL constraints file, as a user can in Files mode (constraints are optional and
+the skill writes none unless asked), so the XF-019 fix loop has a value list to break.
+
 Set UIP_CLI to a uip build that has the local `ont` and `uip df … --local` commands: either an
 executable or a JS entry point (run with node).
 
@@ -187,9 +190,10 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         self.assertIn('sh:in ( "Open" "Shipped" "Cancelled" )', (workdir / "orders-constraints.ttl").read_text())
 
         # Stage 5: offline per-file check of every artifact; no ERROR and no WARNING.
-        for file_name, (media_type, artifact_type) in ARTIFACTS.items():
-            checked = self.run_cli("ont", "artifacts", "check", file_name, "--content-type", media_type, "--type",
-                                   artifact_type, "--file", str(workdir / file_name), cwd=self.base)
+        # The file name decides the type, as in `files add`.
+        for file_name, (_, artifact_type) in ARTIFACTS.items():
+            checked = self.run_cli("ont", "artifacts", "check", str(workdir / file_name), cwd=self.base)
+            self.assertEqual(checked["Data"]["Type"], artifact_type, file_name)
             self.assertEqual(checked["Data"]["Violations"], [], file_name)
 
         # Stage 6: the ontology resource over its entities, then its files; every file is Added.
@@ -235,7 +239,7 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         self.assertEqual(failed["Code"], "ValidationFailed")
         rules = [(v["rule"], v.get("file")) for v in errors(failed["Data"][0]["violations"])]
         self.assertEqual(rules, [("XF-019", "orders-constraints.ttl")], failed["Data"])
-        self.assertEqual(failed["Data"][0]["ServiceValidation"], "Skipped")  # no service call over a local ERROR
+        self.assertEqual(failed["Data"][0]["serviceValidation"], "Skipped")  # no service call over a local ERROR
         replaced = self.run_cli("ont", "files", "add", NAME, str(workdir / "orders-constraints.ttl"), "--local",
                                 *folder, cwd=self.base)
         self.assertEqual([entry["Status"] for entry in replaced["Data"]["Files"]], ["Replaced"])
@@ -246,7 +250,7 @@ class OntologySolutionGoldenTest(unittest.TestCase):
         service_unavailable = None
         if payload["Result"] == "Success":
             self.assertIs(key(entries[0], "valid"), True, detail)
-            self.assertEqual(key(entries[0], "ServiceValidation"), "Done", detail)
+            self.assertEqual(key(entries[0], "serviceValidation"), "Done", detail)
         else:
             self.assertIn(payload.get("Code"), SERVICE_UNAVAILABLE, detail)
             service_unavailable = f"{payload['Code']}: {payload.get('Message')} ({payload.get('Instructions')})"

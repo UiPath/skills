@@ -6,7 +6,7 @@ description: >
   and packs. Grades the outcome: the SDD's entities and choice set are local
   resources, the mapping types the decimal and Yes/No fields, `uip ont
   validate --local` is clean with the service verdict Done, the package lists
-  schema, constraints and mapping, and nothing was published or deployed.
+  schema and mapping, and nothing was published or deployed.
   Needs a CLI that ships `uip ont` (cli#5710, cli#5798) and a login whose
   tenant serves ontology validation.
 tags: [uipath-ontology-authoring, e2e, mode:build, lifecycle:generate, feature:entities, feature:conversational, outcome-graded]
@@ -90,13 +90,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Priority is constrained to the SDD's three values"
-    path: "maintenance/maintenance-constraints.ttl"
+    description: "The schema comment lists the SDD's three priority values"
+    path: "maintenance/maintenance.ofn"
     includes:
-      - "sh:in"
-      - '"Low"'
-      - '"Medium"'
-      - '"High"'
+      - "'Low'"
+      - "'Medium'"
+      - "'High'"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -117,7 +116,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "One package in MaintenanceModel/out; `uip ont files list --package` lists schema, constraints and mapping"
+    description: "One package in MaintenanceModel/out; `uip ont files list --package` lists schema and mapping"
     command: "python3 $REFERENCE_DIR/_shared/check_ontology.py package MaintenanceModel maintenance"
     timeout: 300
     expected_exit_code: 0

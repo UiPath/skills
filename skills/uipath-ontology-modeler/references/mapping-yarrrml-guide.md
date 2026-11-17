@@ -2,7 +2,7 @@
 
 Artifact type: `mapping` | Media type: `application/yaml` | File: `{name}-mapping.yarrrml.yml`
 
-The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries an entity or folder identifier (rule `MAP-012`). It is an `application/yaml` artifact: check it with `uip ont artifacts check {name}-mapping.yarrrml.yml --content-type application/yaml --type mapping --file <path>`, and the CLI sends it to the service as YAML.
+The mapping binds each class to a local entity **by name**. The ontology service resolves `table:` to the entity in the deployment folder at install. The mapping never carries an entity or folder identifier (rule `MAP-012`). It is an `application/yaml` artifact: check it with `uip ont artifacts check <path>/{name}-mapping.yarrrml.yml`, and the CLI sends it to the service as YAML.
 
 Write the mapping after every entity exists in the solution. It uses the entity and field names exactly as they were created.
 
@@ -163,7 +163,7 @@ A choice-set field is mapped by its **value name**, as a literal `xsd:string`. N
 - [ont:SalesOrder.status, $(status), xsd:string]
 ```
 
-- The value names in the column are the ones the constraints list with `sh:in` (see [shacl-patterns-guide.md](shacl-patterns-guide.md#value-list-from-a-choice-set)) and the schema comment lists.
+- The value names in the column are the ones the schema comment lists (and a constraints file, when written, lists with `sh:in`; see [shacl-patterns-guide.md](shacl-patterns-guide.md#value-list-from-a-choice-set)).
 - `CHOICE_SET_MULTIPLE` column: one triple per selected value; the service splits it. Write the same single line. Do not split or join values in the mapping.
 
 ---
@@ -211,7 +211,7 @@ Fill in only the sections that apply. The join graph and routing sections matter
 - **Object property not in the schema.** Read the IRI from `{name}.ofn` before writing the `p:` line.
 - **Missing `mapping:` target.** Check every target against the top-level keys of this file.
 - **Join on an inverse property.** Only the property whose entity holds the field gets a join.
-- **Mapping out of sync with the schema.** Every `ont:` term must exist in the schema. Write schema and constraints first, then the mapping.
+- **Mapping out of sync with the schema.** Every `ont:` term must exist in the schema. Write the schema first, then the mapping.
 - **Identifiers in the mapping.** Never write `entityId` or `folderId`. `table: <EntityName>` is the only link.
 - **Verbose YARRRML.** Never use `subjects:`, `predicateobjects:`, `predicate:`, `object:`, or inline `~iri` relationships. Use the compact `s:`/`po:`/`p:`/`o:` form with `table:` and `referenceFormulation: rr:SQL2008` in every source block.
 

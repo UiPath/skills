@@ -248,10 +248,10 @@ When the return falls short:
 | Modeler reports `XF-012`/`XF-013` | A class has no matching entity, or a mapped column is not a field of its entity | Fix the class-to-entity map or the entity fields in the handoff; delegate again |
 | Modeler reports `XF-014`/`XF-015` | A relationship has no join, or a join has no relationship | Add or fix `relationshipField` and the join in `RELATIONSHIPS`; delegate again |
 | Modeler reports `XF-017` | The `RELATIONSHIP` fields form a cycle: an inverse modeled as a second field, or a longer loop (A → B → C → A) | Keep one `relationshipField` per relationship and note the inverse in the schema only; for a longer loop, ask the user which relationship drops its field; delegate again |
-| Modeler reports `XF-019` | Choice-set values differ from the constraints | Fix the value names in `CHOICE_SETS` and the Step 4 comment; delegate again |
+| Modeler reports `XF-019` | Choice-set values differ from a supplied constraints file | Fix the value names in `CHOICE_SETS` and the Step 4 comment; delegate again |
 | Modeler returns `BLOCKED_AMBIGUITY` | A class, field, join column, choice-set value or identifier has no unique answer | Ask the user for the listed decision; delegate again |
 | The document names an external system without a connection | A federated source needs a `connectionName` | Ask for the connection name and the folder that holds it |
-| The document asks for query functions, write actions or business rules | Not produced by this skill | Say so; business constraints go to SHACL |
+| The document asks for query functions, write actions or business rules | Not produced by this skill | Say so; record business constraints in `DOMAIN_MODEL` constraints, which the modeler writes as schema comments |
 
 ## Anti-patterns
 

@@ -175,7 +175,7 @@ def test_no_retired_rules_or_formats():
 def test_artifacts_guide_matches_zip_contract():
     t = read(MODELER_DIR / "references/artifacts-guide.md")
     for row in ("| `{name}.ofn` | `schema` | `text/owl-functional` | exactly 1 |",
-                "| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 1+ |",
+                "| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 0+ (optional) |",
                 "| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | exactly 1 |",
                 "| `{name}-summary.json` | `summary` | `application/json` | 0..1 |",
                 "| `{name}-context.json` | `context` | `application/json` | 0..1 |",
@@ -274,8 +274,8 @@ RETURN_FIELDS = ("SOLUTION_DIR", "PACKAGE_PATH", "ONTOLOGY_NAME", "ENTITIES", "C
 # (MAP-012 replaces it); XF-016/XF-018 don't exist; the folder-scope and suffixed-name rules have no meaning
 # for local entities and are not listed.
 PER_FILE_RULES = ("OFN-001", "OFN-002", "OFN-004", "OFN-005", "OFN-009", "SHC-002", "SHC-003", "SHC-004",
-    "SHC-006", "SHC-007", "SHC-008", "SHC-009", "SHC-010", "MAP-002", "MAP-004", "MAP-005", "MAP-006",
-    "CTX-001", "CTX-002", "CTX-003", "CTX-005", "CTX-006", "CTX-007", "SUM-001", "SUM-002")
+    "SHC-006", "SHC-007", "SHC-008", "SHC-009", "SHC-010", "SHC-011", "MAP-002", "MAP-004", "MAP-005", "MAP-006",
+    "CTX-001", "CTX-002", "CTX-003", "CTX-005", "CTX-006", "CTX-007", "SUM-001", "SUM-002", "SUM-003")
 C1_CODES = ("NoParentSolution", "OntologyNotFound", "OntologyNameTaken", "InvalidOntologyName", "EntityNotFound",
     "LocalFlagRequired", "LocalAndFolderConflict", "FolderKeyAndPathConflict",
     "InvalidFolderKey", "InvalidFolderPath",

@@ -3,7 +3,7 @@
 
     check_ontology.py artifacts <WORKDIR> <NAME>       every artifact passes `uip ont artifacts check`, no GUID
     check_ontology.py validate  <SOLUTION_DIR> <NAME>  `uip ont validate --local` is clean and the service ran
-    check_ontology.py package   <SOLUTION_DIR> <NAME>  one packed zip; it holds the schema, constraints and mapping
+    check_ontology.py package   <SOLUTION_DIR> <NAME>  one packed zip; it holds the schema and mapping
     check_ontology.py classes   <WORKDIR> <NAME> [CLASS…] [--count N]
                                                        offline: each CLASS is declared in <NAME>.ofn, and every
                                                        declared class has rdfs:label, rdfs:comment and a property
@@ -26,14 +26,15 @@ import sys
 from pathlib import Path
 
 GUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-# file-name suffix -> (media type, artifact type); `{name}` prefixes each
+# file-name suffix -> artifact type; `{name}` prefixes each. The CLI resolves the type from the name too.
 ARTIFACTS = {
-    ".ofn": ("text/owl-functional", "schema"),
-    "-mapping.yarrrml.yml": ("application/yaml", "mapping"),
-    "-summary.json": ("application/json", "summary"),
-    "-context.json": ("application/json", "context"),
+    ".ofn": "schema",
+    "-mapping.yarrrml.yml": "mapping",
+    "-summary.json": "summary",
+    "-context.json": "context",
 }
-REQUIRED_TYPES = {"schema", "constraints", "mapping"}
+# Constraints are optional: the ontology service stores them without using them.
+REQUIRED_TYPES = {"schema", "mapping"}
 
 
 def uip(*args: str, cwd: Path | None = None) -> dict:
@@ -64,26 +65,27 @@ def errors(violations) -> list:
     return [v for v in violations or [] if field(v, "severity") == "ERROR"]
 
 
-def artifact_files(workdir: Path, name: str) -> list[tuple[Path, str, str]]:
+def artifact_files(workdir: Path, name: str) -> list[tuple[Path, str]]:
     files = []
-    for suffix, (media, kind) in ARTIFACTS.items():
+    for suffix, kind in ARTIFACTS.items():
         path = workdir / f"{name}{suffix}"
         if path.is_file():
-            files.append((path, media, kind))
-    files += [(p, "text/turtle", "constraints") for p in sorted(workdir.glob(f"{name}-constraints*.ttl"))]
+            files.append((path, kind))
+    files += [(p, "constraints") for p in sorted(workdir.glob(f"{name}-constraints*.ttl"))]
     return files
 
 
 def check_artifacts(workdir: Path, name: str):
     files = artifact_files(workdir, name)
-    kinds = {kind for _, _, kind in files}
+    kinds = {kind for _, kind in files}
     if not REQUIRED_TYPES <= kinds:
         fail(f"{workdir} is missing {sorted(REQUIRED_TYPES - kinds)}")
-    for path, media, kind in files:
+    for path, kind in files:
         if GUID.search(path.read_text()):
             fail(f"{path.name} holds a GUID; artifacts reference entities by name")
-        checked = uip("ont", "artifacts", "check", path.name, "--content-type", media, "--type", kind,
-                      "--file", str(path))
+        checked = uip("ont", "artifacts", "check", str(path))
+        if field(checked.get("Data") or {}, "type") not in (None, kind):
+            fail(f"artifacts check resolved {path.name} as {field(checked.get('Data') or {}, 'type')}, not {kind}")
         if checked.get("Result") != "Success" or errors(field(checked.get("Data") or {}, "violations")):
             fail(f"artifacts check {path.name}: {json.dumps(checked)[:2000]}")
     print(f"OK: {len(files)} artifacts pass `uip ont artifacts check`")
@@ -94,7 +96,7 @@ def check_validate(solution: Path, name: str):
     entries = [e for e in payload.get("Data") or [] if isinstance(e, dict) and field(e, "name") == name]
     if payload.get("Result") != "Success" or len(entries) != 1:
         fail(f"validate: {json.dumps(payload)[:2000]}")
-    if errors(field(entries[0], "violations")) or field(entries[0], "ServiceValidation") != "Done":
+    if errors(field(entries[0], "violations")) or field(entries[0], "serviceValidation") != "Done":
         fail(f"validate not clean: {json.dumps(entries[0])[:2000]}")
     print("OK: validate is clean and the service validated")
 

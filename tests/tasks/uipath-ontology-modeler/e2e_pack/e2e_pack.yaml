@@ -5,7 +5,7 @@ description: >
   (choice set, two native entities, ontology resource and its files),
   validates with the ontology service until clean, and packs. Grades the
   outcome: the local resources exist, `uip ont validate --local` is clean with
-  the service verdict Done, the package lists schema, constraints and mapping,
+  the service verdict Done, the package lists schema and mapping,
   and nothing was published or deployed. Needs a CLI that ships `uip ont`
   (cli#5710, cli#5798) and a login whose tenant serves ontology validation.
 tags: [uipath-ontology-modeler, e2e, mode:build, lifecycle:generate, feature:entities, outcome-graded]
@@ -111,7 +111,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "One package in OrdersModel/out; `uip ont files list --package` lists schema, constraints and mapping"
+    description: "One package in OrdersModel/out; `uip ont files list --package` lists schema and mapping"
     command: "python3 $REFERENCE_DIR/_shared/check_ontology.py package OrdersModel orders"
     timeout: 300
     expected_exit_code: 0

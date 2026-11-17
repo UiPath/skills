@@ -8,10 +8,12 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 |---|---|---|
 | `OFN-001`, `OFN-002`, `OFN-004`, `OFN-005`, `OFN-009` | local | Fix `{name}.ofn` per [owl-patterns-guide.md](owl-patterns-guide.md); `artifacts check`, `files add`, validate |
 | `SHC-002`, `SHC-003`, `SHC-004`, `SHC-006`, `SHC-007`, `SHC-008`, `SHC-009`, `SHC-010` | local | Fix the constraints file per [shacl-patterns-guide.md](shacl-patterns-guide.md); same loop |
+| `SHC-011` | local | WARNING: the `.ttl` declares no SHACL shape, so it is probably another artifact type under the wrong extension. Rename it to its real type's extension, or drop it with `uip ont files remove` (constraints are optional) |
 | `MAP-002`, `MAP-004`, `MAP-005`, `MAP-006` | local | Fix the mapping per [mapping-yarrrml-guide.md](mapping-yarrrml-guide.md); same loop |
+| `SUM-003` | local | The summary has a root `@context`, so it is the context file: rename it `{name}-context.json` (or `--type context`), or remove `@context` from the summary; same loop |
 | `CTX-001`, `CTX-002`, `CTX-003`, `CTX-005`, `CTX-006`, `CTX-007`, `SUM-001`, `SUM-002` | local | Fix the context or summary per [summary-context-guide.md](summary-context-guide.md), or drop it with `uip ont files remove`; same loop |
 | `MAP-012` | local | Remove every Data Fabric id from the mapping; keep `table: <Entity>` |
-| `XF-001` | local | Exactly one schema, one or more constraints, one mapping, at most one summary and one context; `files add` / `files remove` |
+| `XF-001` | local | Exactly one schema, one mapping, any number of constraints (optional), at most one summary and one context; `files add` / `files remove` |
 | `XF-002` | local | WARNING: re-run `uip ont files add` to rebuild the zip. ERROR: rebuild it with `files add` for every artifact |
 | `XF-003`, `XF-004` | local | Use `https://ontology.uipath.com/<name>#` and `https://ontology.uipath.com/shapes#` for `shape:` |
 | `XF-005` | local | Remove the construct outside OWL 2 QL; record the rule in `rdfs:comment` or SHACL |

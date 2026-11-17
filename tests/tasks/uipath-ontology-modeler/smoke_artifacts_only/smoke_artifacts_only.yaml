@@ -1,11 +1,12 @@
 task_id: skill-ontology-modeler-artifacts-only
 description: >
   Smoke (Artifacts-only mode): from a confirmed plain-language orders domain,
-  the agent writes the ontology schema, SHACL constraints and YARRRML mapping
-  and checks each with `uip ont artifacts check`, without a solution or
-  entities. Grades the files on disk: every artifact passes the offline check,
-  the mapping carries an xsd range on typed properties, the value list is an
-  `sh:in` with `sh:maxCount 1`, no GUIDs, and no solution or Data Fabric write
+  the agent writes the ontology schema and YARRRML mapping (no SHACL
+  constraints: they are optional and nobody asked for them) and checks each
+  with `uip ont artifacts check`, without a solution or entities. Grades the
+  files on disk: every artifact passes the offline check, the mapping carries
+  an xsd range on typed properties, the schema comment lists the choice-set
+  values, no constraints file, no GUIDs, and no solution or Data Fabric write
   ran. Needs a CLI that ships `uip ont` (cli#5710); no login.
 tags: [uipath-ontology-modeler, smoke, mode:build, lifecycle:generate]
 
@@ -40,11 +41,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Constraints written to the ontology's artifact folder"
-    path: "orders/orders-constraints.ttl"
-    weight: 1.0
-    pass_threshold: 1.0
 
   - type: file_exists
     description: "Mapping written to the ontology's artifact folder"
@@ -64,15 +60,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Status is a single value from the choice set (sh:in + sh:maxCount 1)"
-    path: "orders/orders-constraints.ttl"
+    description: "The schema comment lists the status choice-set values"
+    path: "orders/orders.ofn"
     includes:
-      - "sh:in"
-      - '"Open"'
-      - '"Shipped"'
-      - '"Cancelled"'
-      - "sh:maxCount 1"
+      - "OrderStatus"
+      - "'Open'"
+      - "'Shipped'"
+      - "'Cancelled'"
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No constraints file: constraints are optional and were not asked for"
+    command: "test ! -e orders/orders-constraints.ttl"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains

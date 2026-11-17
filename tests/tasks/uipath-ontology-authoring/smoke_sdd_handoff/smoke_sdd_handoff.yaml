@@ -38,7 +38,7 @@ simulation:
     - "Answer in one short sentence, or pick the recommended / first option. Never bounce the decision back."
     - "Approve each table that matches the SDD. If one contradicts the SDD, name the single correction."
     - "Accept the folder names the assistant proposes. There is no external data source."
-    - "When asked to confirm the ontology artifact files (schema, constraints, mapping), say: stop here, I'll review the model first. Then end the conversation."
+    - "When asked to confirm the ontology artifact files (schema, mapping), say: stop here, I'll review the model first. Then end the conversation."
   max_turns: 25
 
 success_criteria:

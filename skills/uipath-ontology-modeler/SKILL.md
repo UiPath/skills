@@ -1,6 +1,6 @@
 ---
 name: uipath-ontology-modeler
-description: "UiPath Ontology modeler (.ofn, SHACL .ttl, .yarrrml.yml, optional summary/context .json). Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: plain-language domain, existing artifact files to clone or rebuild, or an authoring handoff. For SDD/PDD/design documents→uipath-ontology-authoring. For publish/deploy/activate of the packed solution→uipath-solution. For Data Fabric entity or record work outside an ontology→uipath-platform."
+description: "UiPath Ontology modeler (.ofn, .yarrrml.yml, optional summary/context .json and SHACL .ttl). Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: plain-language domain, existing artifact files to clone or rebuild, or an authoring handoff. For SDD/PDD/design documents→uipath-ontology-authoring. For publish/deploy/activate of the packed solution→uipath-solution. For Data Fabric entity or record work outside an ontology→uipath-platform."
 when_to_use: "User describes classes, fields, and relationships and wants an ontology; supplies .ofn/.ttl/.yarrrml.yml files to clone or turn into a solution; or uipath-ontology-authoring delegates a confirmed handoff. Also: 'list the ontologies in folder X', 'show the deployed ontology Y'."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
@@ -39,14 +39,15 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 5. **The only remote import is a federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path "<CONNECTION_FOLDER>"`. No entity or choice-set import, re-import or refresh.
 6. **`uip login status` runs first, except in Artifacts-only mode** (offline; see Stage 1). The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
 7. **A relationship is one `RELATIONSHIP` field on the referencing entity**; its inverse lives only in the schema (`InverseObjectProperties`). A federated target means a plain-column join. See [relationships-guide.md](references/relationships-guide.md).
-8. **Choice sets are mapped by value name** (`xsd:string`, `sh:in`); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
+8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
 9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the handoff, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
 10. **An entity change is a local edit** (`uip df entities update <E> --local`), followed by validate.
 11. **Validation needs `uip login`.** `uip ont validate --local` always calls the ontology service; stop if it can't be reached. `uip ont artifacts check` is the offline per-file check.
 12. **Stop after pack.** The modeler ends with `uip solution pack` and `uip ont files list --package`; publish and deploy belong to `uipath-solution`.
 13. **The handoff block is identical in this skill and `uipath-ontology-authoring`.**
 14. **Ontology names are unique per folder.** Never rename the ontology resource while authoring; a new name means a new resource. Change its display name, description and entities only with `uip ont update --local`, and its files only with `uip ont files add|remove`.
-15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce only schema, constraints, mapping and optional summary and context; no business rules, functions or actions.
+15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
+16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
 
 ## Paths
 
@@ -158,7 +159,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
 
 ### Stage 5 — Write the artifacts against the created entities
 
-Write the schema, constraints, mapping and optional summary and context into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md), after one batch confirmation (Delegated mode: none; the handoff confirmed the model). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
+Write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md), after one batch confirmation (Delegated mode: none; the handoff confirmed the model). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
 
 Two annotations the ontology viewer reads, written in every ontology:
 
@@ -168,10 +169,12 @@ Two annotations the ontology viewer reads, written in every ontology:
 Check each file (in Files mode, the supplied files):
 
 ```bash
-uip ont artifacts check <FILE> --content-type <MIME> --type <T> --file "<PATH>" --output json
+uip ont artifacts check "<PATH>" --output json
 ```
 
-Fix every ERROR; show WARNINGs and fix them when the fix is mechanical. `SHC-006` on a `CHOICE_SET_MULTIPLE` property is expected: never add `sh:maxCount 1` to it ([shacl-patterns-guide.md](references/shacl-patterns-guide.md#every-property-block-carries-shname-and-shmaxcount)). After 3 rounds on the same file with ERRORs left, stop and show them to the user. Artifacts-only mode stops here.
+The file name decides the type, the same way `files add` decides it. Pass `--type summary` or `--type context` only for a `.json` name that ends in neither `-summary` nor `-context`.
+
+Fix every ERROR; show WARNINGs and fix them when the fix is mechanical. In a constraints file, `SHC-006` on a `CHOICE_SET_MULTIPLE` property is expected: never add `sh:maxCount 1` to it ([shacl-patterns-guide.md](references/shacl-patterns-guide.md#every-property-block-carries-shname-and-shmaxcount)). After 3 rounds on the same file with ERRORs left, stop and show them to the user. Artifacts-only mode stops here.
 
 ### Stage 6 — Create the ontology resource and add its files
 
@@ -188,7 +191,7 @@ uip ont files add <Name> <FILES…> --local --solution-folder "<SOLUTION_DIR>" -
 uip ont validate --local --solution-folder "<SOLUTION_DIR>" --output json
 ```
 
-Clean means no ERROR and `ServiceValidation` is `"Done"`. Validation always calls the service; logged out it fails `ServiceValidationUnavailable`. A local ERROR skips the service call (`ServiceValidation` is `"Skipped"`). When the service fails or cannot validate, `Data` still holds the local results.
+Clean means no ERROR and `ServiceValidation` is `"Done"`. Validation always calls the service; logged out it fails `ServiceValidationUnavailable`. A local ERROR skips the service call (`serviceValidation` is `"Skipped"` in the failure's `Data`). When the service fails or cannot validate, `Data` still holds the local results.
 
 - An entity fix is a local edit: `uip df entities update <E> --local --body '<CHANGE>' --output json`, then validate. A federated entity: `uip df entities delete <F> --local --yes`, then create it again. A choice-set fix: `uip df choice-set-values create <C> <VALUE> --local --output json`.
 - An artifact fix: edit the file in `WORKDIR`, `artifacts check`, `files add`, then validate.
@@ -269,7 +272,7 @@ uip ont get <Name> --folder-path "<FOLDER_PATH>" --output json
 | Entity bodies, field types, reserved names, choice sets, federated bodies, create order | [entity-guide.md](references/entity-guide.md) |
 | Which entity holds a relationship, inverses, cycles, federated targets, many-to-many | [relationships-guide.md](references/relationships-guide.md) |
 | `{name}.ofn` schema patterns and OWL 2 QL limits | [owl-patterns-guide.md](references/owl-patterns-guide.md) |
-| SHACL constraint shapes | [shacl-patterns-guide.md](references/shacl-patterns-guide.md) |
+| SHACL constraint shapes, only when the user supplies or asks for constraints | [shacl-patterns-guide.md](references/shacl-patterns-guide.md) |
 | YARRRML mapping, joins, typed literals, USAGE POLICY | [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md) |
 | Optional summary and context files | [summary-context-guide.md](references/summary-context-guide.md) |
 | Every rule and error code, and its recovery | [errors-guide.md](references/errors-guide.md) |

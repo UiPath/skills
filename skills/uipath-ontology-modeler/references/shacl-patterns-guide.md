@@ -1,8 +1,10 @@
 # SHACL Patterns Reference — Constraints Artifact
 
-Artifact type: `constraints` | Media type: `text/turtle` | File: `{name}-constraints.ttl` (or `{name}-constraints-{area}.ttl` when split by area; at least one file)
+Artifact type: `constraints` | Media type: `text/turtle` | File: `{name}-constraints.ttl` (or `{name}-constraints-{area}.ttl` when split by area)
 
-Check each file with `uip ont artifacts check`, attach it with `uip ont files add`, and let `uip ont validate --local` confirm it against the schema and mapping. Every `sh:targetClass`, `sh:path` and `sh:class` must name a term declared in `{name}.ofn`, and every class needs a shape.
+**Optional.** The ontology service stores a constraints file without parsing or using it. Write one only when the user supplies one or asks for it; otherwise record the rules in the schema's `rdfs:comment` text. The rest of this guide applies when a constraints file is written.
+
+Check each file with `uip ont artifacts check`, attach it with `uip ont files add`, and let `uip ont validate --local` confirm it against the schema and mapping. Every `sh:targetClass`, `sh:path` and `sh:class` must name a term declared in `{name}.ofn`, and every class needs a shape. A `.ttl` that declares no SHACL shape gets `SHC-011` (WARNING): it is probably another artifact type saved under the wrong extension.
 
 ---
 
