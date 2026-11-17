@@ -6,6 +6,9 @@ Adds AI-generated columns to a CSV and returns a new file attachment.
 
 Signature: `batchTransform({ attachment, prompt, outputColumns, enableWebSearchGrounding? })`
 
+`attachment` and `prompt` are both required. `check` reports a missing or blank one as
+`PATTERN_NO_ATTACHMENT` / `PATTERN_NO_PROMPT`, and `flow validate` refuses the node (`REQUIRED_FIELD`).
+
 ```ts
  .step('categorizeRows',
    batchTransform({

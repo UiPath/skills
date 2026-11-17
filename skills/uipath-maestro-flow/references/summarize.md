@@ -6,6 +6,9 @@ Reads an attachment and produces a summary given a prompt.
 
 Signature: `summarize({ attachment, prompt, returnCitations? })`
 
+`attachment` and `prompt` are both required. `check` reports a missing or blank one as
+`PATTERN_NO_ATTACHMENT` / `PATTERN_NO_PROMPT`, and `flow validate` refuses the node (`REQUIRED_FIELD`).
+
 ```ts
 .step('digest',
   summarize({
