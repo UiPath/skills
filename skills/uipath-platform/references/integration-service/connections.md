@@ -48,6 +48,7 @@ Connector keys are prefixed by source — `uipath-<vendor>-<service>` for catalo
 
 ---
 
+<!--skill-flavor:headless-sign-in:start-->
 ## Create or re-authenticate with no browser
 
 Use this for connectors with basic, API key, personal access token or custom auth. OAuth connectors still need the browser flow.
@@ -87,6 +88,7 @@ On every failure, tell the person `SessionId` and `TraceId`.
 
 ---
 
+<!--skill-flavor:headless-sign-in:end-->
 ## Selecting a Connection
 
 ### Connector-Specific Overrides
@@ -148,14 +150,18 @@ Match `connection.FolderKey` against the personal workspace's `Key`. If the call
 
    If ping fails or reports not Enabled, follow step 5.
 
+<!--skill-flavor:headless-reauth-pointer:start-->
 5. If not enabled (from list `State` or ping result) → prompt user to re-authenticate via `is connections edit <id>`, then re-ping. For basic, API key, personal access token or custom auth, add `--field` options as in [Create or re-authenticate with no browser](#create-or-re-authenticate-with-no-browser).
+<!--skill-flavor:headless-reauth-pointer:end-->
 
 6. **No connections in step 1 — bypass the cache before concluding none exist:**
    1. Retry with `--refresh`:
       ```bash
       uip is connections list "<connector-key>" --all-folders --refresh --output json
       ```
+<!--skill-flavor:headless-create-pointer:start-->
    2. If still empty, prompt user to create one via `uip is connections create "<connector-key>"`. For basic, API key, personal access token or custom auth, add `--auth-type` and `--field` options as in [Create or re-authenticate with no browser](#create-or-re-authenticate-with-no-browser).
+<!--skill-flavor:headless-create-pointer:end-->
 
 ### For BYOA Connections (Webhook Triggers)
 
