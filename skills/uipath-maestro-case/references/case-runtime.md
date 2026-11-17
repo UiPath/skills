@@ -35,6 +35,33 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Action recipients and the go-live trap
+
+<!-- RULE:case.recipient.externalize -->
+- An action task's `recipient` bakes the email address into the plan. Safe for
+  testing; a trap for go-live. Going live requires editing every action's
+  recipient in the source and republishing the case.
+
+  When a request names a person or test mailbox as the recipient, wire it
+  through a case **input** with a placeholder default instead of a literal:
+
+  ```ts
+  .input({ approver: types.string })   // caller supplies the real address
+  // ...
+  .action({ ..., recipient: '=vars.start.output.approver' })
+  ```
+
+  Tell the user before publishing:
+  1. The input default is a **test** value. It routes every action to that
+     address until someone edits the case input defaults and republishes.
+  2. Going live means changing the defaults in the source (or removing them so
+     the caller must supply real addresses) and publishing a new version.
+
+<!-- RULE:case.recipient.no-silent-default -->
+- Do not set a recipient default to the user's own email without saying so.
+  State what the default is, that it is baked into the plan, and what
+  changing it requires. The user decides whether to publish with that default.
+
 ## Script tasks
 
 <!-- RULE:case.script.positional-rename -->
