@@ -349,7 +349,7 @@ Canonical discriminator, scope-casing, resource-policy, and UUID rules are in [.
 7. Do not use `filter` with built-ins; built-ins support only `block`, `log`, `escalate`.
 8. `harmfulContentEntityThresholds` accepts only `0`, `2`, `4`, `6`; reject odd numbers and floats such as `3` or `2.5`.
 9. Do not add a built-in without first running `uip agent guardrails list --output json` and confirming existence and `Status: "Available"`.
-10. Do not use Action Center `Type: "VB Action"` or `Type: "Coded"`; escalation requires `Type: "Workflow Action"` after filtering `uip solution resources list --kind App`.
+10. Do not use Action Center `Type: "VB Action"` or `Type: "Coded"`; only `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resources list --kind App` results by this type.
 11. Do not use `--kind Process` (`Type: "webApp"`) to find escalation apps; use `--kind App` with `Type: "Workflow Action"`.
 12. Never put `"solution_folder"` in `app.folderName`; use literal `Folder` from `uip solution resources list --kind App` (for example `"Shared/Approvals"`), omit `app.folderId`, and do not use `FolderKey` in `app.*`. `uip agent refresh` translates `folderName` to `folderPath` in `bindings_v2.json`; `FolderKey` belongs in `debug_overwrites.json`.
 13. Do not add a Tool guardrail before its tool exists. Run `uip agent tool list` first; every name must match `<AGENT_NAME>/resources/<ToolName>/resource.json`.
