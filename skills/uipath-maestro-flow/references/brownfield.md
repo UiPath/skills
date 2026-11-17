@@ -140,6 +140,9 @@ flow-merge: wrote Deployed.flow (12 nodes, 13 edges)
 flow-merge: wrote <source-uuid>/agent.json (carries messages[0].content)
 ```
 
+To add an instruction to a prompt, write it as a new line. Keep every existing
+line exactly as it is: add no words to it, and do not re-wrap it.
+
 <!--skill-flavor:install-agent-files:start-->
 Merge writes the `.flow` and every agent file it carried into the project;
 there is nothing to copy. Fields the round trip does not reproduce (such as
