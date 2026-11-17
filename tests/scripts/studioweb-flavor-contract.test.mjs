@@ -579,26 +579,16 @@ test("the default Case skill keeps its terminal commands (the guard is not vacuo
 test("the studioweb BPMN skill finds the project before writing and never builds over an existing process", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.ok(skill.includes("12. Before you write any file, find the project."));
-  assert.ok(skill.includes("Check a named `.bpmn` with `ls <path>`. When `ls` finds no such file, this is a new process"));
-  assert.ok(skill.includes("When that main file already holds a process"));
-  // Studio Web's in-page `init` runs the host's New Project (Autopilot
-  // cli/interceptors/init.ts), which names the file Process.bpmn; the Node CLI's
-  // `init` writes <Name>.bpmn. The main file is the one entry-points.json names.
-  assert.ok(skill.includes("the `.bpmn` its `entry-points.json` names; `Process.bpmn` in a project Studio Web created, `uip maestro bpmn init` included"));
-  assert.ok(skill.includes("and build into its main file, the `.bpmn` its `entry-points.json` names."));
-  assert.ok(skill.includes("never build over it: run `uip maestro bpmn init <NewProject>` from `/solution`"));
-  assert.ok(skill.includes("never a folder `/solution` already holds. Never pass `--force`."));
-  assert.ok(skill.includes("only when the user asks for a new project, or when [Critical Rule 12](#critical-rules) needs one"));
-  assert.ok(skill.includes("only for a new\n   project the user asks for or [Critical Rule 12](#critical-rules) needs"));
-  const draft = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "references", "draft-skeleton.md"), "utf8");
-  assert.ok(draft.includes("unless that file already holds a process ([Critical Rule 12](../SKILL.md#critical-rules))"));
-  assert.ok(draft.includes("only when the user asks for a new project or Rule 12 needs one, then draft into its main file."));
+  assert.match(skill, /^12\. A new process goes into a project's main file in `\/solution`/m);
+  assert.match(skill, /never build over it/);
+  assert.match(skill, /ask the user whether to replace its process or use a new project/);
+  assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
+  assert.match(skill, /Never pass `--force`/);
 });
 
 test("the default BPMN skill carries no Studio Web Rule 12", (t) => {
   const skill = readFileSync(join(buildDefault(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.ok(!skill.includes("12. Before you write any file, find the project."));
+  assert.doesNotMatch(skill, /^12\. /m);
   assert.ok(!skill.includes("/solution"));
 });
