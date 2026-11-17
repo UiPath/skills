@@ -16,11 +16,12 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for whi
 | `sc`                   | `aops`               | uip 1.201.0|
 | `cicd`                 | `aops`               | uip 1.201.0|
 | `or eval`              | `eval`               | uip 1.202.0|
+| `maestro bpmn debug-instance` | `maestro bpmn debug-instances?` | uip 1.206.0 (singular kept as alias; skill teaches singular — accept both)|
 
 
 ## When to add an entry
 
-Add a row when the CLI renames or removes a verb that was previously documented in this repo (skill examples or task YAMLs). Drop the row once `grep -r '<retired verb>' tests/ skills/` returns nothing — the registry is for verbs still referenced somewhere in the repo.
+Add a row when the CLI renames or removes a verb that was previously documented in this repo (skill examples or task YAMLs). Drop the row once `grep -r '<retired verb>' tests/ skills/` returns nothing — the registry is for verbs still referenced somewhere in the repo. When the canonical verb only appends to the retired one (`debug-instance` → `debug-instances`), grep so the plural and hyphenated ids don't count: `grep -rE 'debug-instance($|[^s-])' tests/ skills/`.
 
 ## How it's used
 

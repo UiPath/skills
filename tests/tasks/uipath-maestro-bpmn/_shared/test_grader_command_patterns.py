@@ -747,6 +747,7 @@ NEXT_ACTION_MUTATIONS = [
 NEXT_ACTION_READS = [
     f"{_R} get inst-triage-001 -f folder-public --output json",
     f"{_R} variables inst-triage-001 -f folder-public --output json",
+    "uip maestro bpmn debug-instances variables dbg-1 --output json",
     "uip maestro bpmn debug-instance variables dbg-1 --output json",
     "uip maestro bpmn debug --help",
     f"{_R} retry --help",
