@@ -304,7 +304,7 @@ def main() -> None:
                     _fail(
                         f"{path}: script output maps product from source=\"=result\". "
                         "Studio Web completes this shape but reads product back empty; "
-                        "return 6 * 7; and map source=\"=result.response\"."
+                        "`return 6 * 7;` and map source=\"=result.response\"."
                     )
                 if source != "=result.response":
                     _fail(
