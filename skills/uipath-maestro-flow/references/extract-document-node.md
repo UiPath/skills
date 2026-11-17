@@ -14,7 +14,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add the Extract document node to a new flow only when the user asks for it by name. In an existing flow, keep the extraction node it has: a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or a request about the taxonomy that node carries inline, stays on this guide. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet ([ixp.md](ixp.md#resource-identity)). Add the Extract document node to a new flow only when the user asks for it by name, or offer it when `uipath-ixp` reports IXP not enabled. In an existing flow, keep the extraction node it has: a node of type `uipath.ixp.extract-document-builder` (`uip maestro flow nodes list <file> --output json` shows the types), or a request about the taxonomy that node carries inline, stays on this guide. A published-model node's taxonomy lives in its IXP project and belongs to `uipath-ixp`.
 
 Three node families share the `uipath.ixp.` prefix and they are not interchangeable:
 
@@ -238,7 +238,7 @@ When the flow has been through Studio Web since it was pulled down, pull the sol
 
 ## When Extract document is not available
 
-This covers both ways the answer arrives: a check that settled the question against the tenant, and a refusal from deploy or a run. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
+This covers both ways the answer arrives: a check that settled the question against the tenant, and a refusal from deploy or a run. `uipath-ixp` reporting IXP not enabled is not this case; `extraction check` decides. Take the reason from whichever reported it — `Data.Reason` from the check, or the service's own message — and keep it in what you say, including when it names something this guide does not describe.
 
 Never add the node anyway, and never substitute a placeholder for it when the user asked for working extraction. Fall back in two steps.
 

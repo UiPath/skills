@@ -97,7 +97,7 @@ results are under `ExtractionResult.ResultsDocument.Tables[]`. In both arrays,
 
 If the registry has no suitable published extractor, the requested acceptance
 bar determines the next step. For a runtime or published-model requirement,
-report the missing capability and stop. For a validate-only topology whose
+report the missing capability and ask whether to build one with `uipath-ixp`. For a validate-only topology whose
 purpose is to show where extraction belongs, put `mock()` in the extraction
 position, complete and validate the surrounding flow, and report the placeholder
 as the capability gap. Do not block a validate-only topology on an unavailable
