@@ -292,7 +292,7 @@ def _where_plan() -> dict:
     }
 
 
-@pytest.mark.parametrize("representation", ["live", "sdk"])
+@pytest.mark.parametrize("representation", ["live", "sdk", "sdk-legacy"])
 def test_ceql_where_accepts_curated_and_generic_groups_operations(
     tmp_path: Path, representation: str
 ) -> None:
@@ -302,8 +302,9 @@ def test_ceql_where_accepts_curated_and_generic_groups_operations(
             "inputs": {"detail": {}},
         }
     else:
+        slug = "list-records" if representation == "sdk" else "list-all-records"
         connector = {
-            "type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-all-records",
+            "type": f"uipath.connector.uipath-microsoft-azureactivedirectory.{slug}",
             "inputs": {"detail": {"objectName": "groups", "endpoint": "/groups"}},
         }
     _write_json(tmp_path / "where_detail.json", _where_plan())
@@ -317,14 +318,15 @@ def test_ceql_where_accepts_curated_and_generic_groups_operations(
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-def test_ceql_where_rejects_generic_operation_for_another_object(tmp_path: Path) -> None:
+@pytest.mark.parametrize("slug", ["list-records", "list-all-records"])
+def test_ceql_where_rejects_generic_operation_for_another_object(tmp_path: Path, slug: str) -> None:
     _write_json(tmp_path / "where_detail.json", _where_plan())
     _write_json(
         tmp_path / "CeqlWhereTest.flow",
         {
             "nodes": [
                 {
-                    "type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-all-records",
+                    "type": f"uipath.connector.uipath-microsoft-azureactivedirectory.{slug}",
                     "inputs": {"detail": {"objectName": "users", "endpoint": "/users"}},
                 },
                 {"type": "core.logic.terminate"},

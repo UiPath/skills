@@ -114,7 +114,7 @@ Use the library action id and object option directly:
   {}, { connection: 'sn', folder: 'shared', object: 'acr_user' }))
 ```
 
-This generic form needs no live resolution and compiles from the baked library. `registry prepare` is for curated schema-dynamic operations; for a generic operation use it only when a needed field is genuinely missing (a generic list usually has none, so preparing resolves nothing). The library and the registry use the same id, `list-records`. A library built before 2026-11 called it `list-all-records`; against the current library that id is `CONNECTOR_NOT_IN_LIBRARY`. ServiceNow's `list-records` is one object-less entry, so `object: 'acr_user'` is accepted with a warning and the tenant resolves it at dispatch; a connector with static objects (Coupa) has one `list-records` entry per object.
+This generic form needs no live resolution and compiles from the baked library. `registry prepare` is for curated schema-dynamic operations; for a generic operation use it only when a needed field is genuinely missing (a generic list usually has none, so preparing resolves nothing). The library and the registry use the same id, `list-records`. Older libraries called it `list-all-records`; against the current library that id is `CONNECTOR_NOT_IN_LIBRARY`. ServiceNow's `list-records` is one object-less entry, so `object: 'acr_user'` is accepted with a warning and the tenant resolves it at dispatch; a connector with static objects (Coupa) has one `list-records` entry per object.
 
 ### Finding the object id for a Generic operation
 
