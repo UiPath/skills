@@ -46,6 +46,11 @@ flow-merge: restamped Deployed.flow.ts for the merged Deployed.flow, so it merge
 
 Only `merge` writes the `.flow`; never write, patch, or copy only a change into it. Merge may renumber edges (`edge_0`, `edge_1`, ...), reorder nodes, add default fields, or move original nodes right/down; accept these and follow [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
+Before either `git checkout` below: if the solution root has a `.git-studioweb`
+folder and no `.git` entry, run `uip solution git-link` there first; never
+`git init` / `git clone` in a solution folder that has `.git-studioweb`, linked
+or not (full guide: `uipath-solution` skill).
+
 A refused merge writes nothing, so there is nothing to restore. A merge that
 fails after it printed `flow-merge: wrote Deployed.flow` (an I/O error on an
 agent file or `bindings_v2.json`) is not a refusal: the `.flow` already holds
@@ -58,9 +63,7 @@ If validate fails after a merge, fix `.flow-sdk/Deployed.flow.ts` and run `check
 To drop the edit instead, revert it in the source and merge again. The result
 is equivalent to the original, not byte-identical (edges renumbered, nodes
 moved for the edit stay moved); for a byte-exact undo of a project under
-version control, `git checkout -- Deployed.flow`. If the solution root has a
-`.git-studioweb` folder and no `.git` entry, run `uip solution git-link` there
-first, and never `git init` it (full guide: `uipath-solution` skill).
+version control, `git checkout -- Deployed.flow`.
 
 ### The stamp, and when merge refuses
 
