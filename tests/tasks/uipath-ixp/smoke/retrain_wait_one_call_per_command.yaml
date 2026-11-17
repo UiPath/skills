@@ -89,7 +89,7 @@ success_criteria:
 
   # The three guards below match the `uip ixp projects get-metrics` call, not the
   # bare word: reading the skill (`rg -n 'get-metrics' …`) names the verb without
-  # running a check, and a bare `get-metrics[\s\S]*get-metrics` failed codex for it.
+  # running a check.
   #
   # The `do` must sit within 80 characters of the loop head, so prose like
   # `echo "waiting for the retrain"` beside a check does not read as a loop.
