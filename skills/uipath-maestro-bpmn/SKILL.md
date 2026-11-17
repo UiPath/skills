@@ -28,7 +28,40 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 ## Workflow
 
 <!--skill-flavor:workflow-scaffold:start-->
-1. Scaffold the project first with `uip maestro bpmn init <Name> --output json`, and take the project directory from `Data.Path`.
+1. **Before the first `init`, ask which solution to use when one already exists.**
+   Look for a `.uipx` up to two levels below the working directory and in every directory above it:
+
+   ```bash
+   find . -maxdepth 2 -type f -name '*.uipx' -print
+   d="$PWD"; while [ "$d" != / ]; do d=$(dirname "$d"); find "$d" -maxdepth 1 -type f -name '*.uipx' -print; done
+   ```
+
+   Ask this for a draft and for a plain build alike; an edit of an existing `.bpmn` runs no `init` and skips the scan.
+   - When the scan finds nothing, or only a solution this run created, run `init` without asking.
+   - When the request names the solution to use (an existing one, or a new one by name), use it without asking.
+   - When the request names no solution and says nobody will answer questions, do not ask: put the project in a new solution, never an existing one, and say so: in a draft, in the gate reply's one sentence; in a build, on the final report's `Assumed:` line.
+   - Otherwise stop and ask the user which to use, as a pick list if the host has one: one option per solution found, named by its folder, plus "Create a new solution".
+     Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
+     Unless the request forbids upload, say in the question that adopting a solution means a later upload overwrites its cloud copy.
+     When the request asks for a new solution without naming it, ask only for its name, offering `<Name>Solution` as the default, or a free name by the rule below when that one is taken.
+
+   Then place the project in the chosen solution:
+   - An existing solution: run `init` from that solution's directory, so the project lands in it as `<SolutionDir>/<Name>/`.
+     When the user picked it from the question above, and that question said a later upload overwrites its cloud copy, upload without asking again.
+     When the request named it instead, confirm before the first upload, as [Operate](references/operate.md#studio-web-upload) requires; a draft holds the upload instead, as [Draft skeleton](references/draft-skeleton.md#steps) says.
+     Either way, check its cloud copy before uploading over it.
+   - A new solution: its name is the user's, else `<Name>Solution`, and nothing by that name may exist in the directory you create it from, because `uip solution init` on an existing solution succeeds but replaces its `SolutionId` and empties its `Projects`, unregistering every project in it.
+     Create it with the guard in the same command, never `uip solution init` alone: `test ! -e <SolutionName> && uip solution init <SolutionName> --output json`.
+     When the guard fails because the name exists, ask the user for another name; when nobody will answer, retry with `<SolutionName>2`, `<SolutionName>3`, and so on until a free one succeeds, and say so: in a draft, in the gate reply's one sentence; in a build, on the final report's `Assumed:` line.
+     When `uip solution init` itself fails, stop and report its error; do not retry under another name.
+     Then `cd <SolutionName>` and run `init` there; this works even inside another solution, which stays untouched.
+     This run created it, so upload without confirming.
+
+   When the user named where the `.bpmn` goes, run the command the table below gives for that path, from the workspace root, instead.
+   Ask only when a directory above that path holds a `.uipx`, because `init` registers the project in that solution; offer that solution or "No solution", since a new solution cannot hold a project outside its folder.
+   On "No solution", or when nobody will answer, add `--skip-solution-registration` to the command.
+
+   `init` is `uip maestro bpmn init <Name> --output json`; take the project directory from `Data.Path`.
    Below, `<Project>` means that directory.
    It holds `<Name>.bpmn` plus `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, and `package-descriptor.json` — the layout `bpmn pack` and product tooling require.
    Without `--path`, `init` writes under the current directory:
@@ -55,6 +88,8 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    Check that `Data.Path` is the requested project directory before writing anything, and compile to `<Project>/<Name>.bpmn`, not to a copy elsewhere.
    A project with no solution validates, refreshes and packs; to upload or deploy it later, see [Operate](references/operate.md#studio-web-upload).
 2. Install the SDK first, once per machine: `npm install -g @uipath/maestro-builder-sdk` (6.88.1 or later; `npm ls -g @uipath/maestro-builder-sdk` shows the installed version).
+   Fetching connector definitions through `uip` needs `@uipath/maestro-builder-sdk` 6.97.0 or later, whether it runs through `uip` or the SDK's own `flow-sdk` bin.
+   When `uip` says the installed SDK cannot fetch connector definitions through uip, run the upgrade its message names (`npm install -g @uipath/maestro-builder-sdk@latest`, or `--save-dev` for a workspace copy); on cloud, `uip maestro registry pull` also works.
    Write `<Name>.bpmn.ts` in the workspace root (the directory you started in), not inside the solution or project folder, even when you ran `init` from the solution folder.
    No `package.json` is needed; do not add one (with one, `check` can fail with `Cannot use import statement outside a module`).
 <!--skill-flavor:workflow-scaffold:end-->
@@ -105,16 +140,20 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 <!--skill-flavor:workflow-merge:start-->
 8. Edit an existing process with `merge`, which takes the edited source and the original: see [Brownfield](references/bpmn-runtime.md#brownfield-editing).
    No `.bpmn` other than the target goes in the workspace: no intermediate copy, probe or second scaffold.
-   When the project sits in a solution this run did not scaffold, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
+   When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
+9. **End every build with the final report.**
+   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**.
+   It ends the turn too when validation fails only because tenant resources are missing.
 
 ## Draft first
 
 When the user asks to see the shape before it is built — *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+Judge the intent, not the word: a "draft project" asking for source files to import later, with no upload or run, is a build, not the draft gate.
+<!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
-<!--skill-flavor:draft-upload-summary:start-->
-Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with a second upload and a final report.
+Unless the request forbids upload or the project has no solution, the validated skeleton is uploaded to Studio Web and the gate reply carries its link; *Build it* ends with the final report, which uploads again when [its rules](references/final-report-template.md#upload-the-built-process) allow.
 <!--skill-flavor:draft-upload-summary:end-->
 
 ## API index
@@ -135,7 +174,7 @@ Match one name — do not read either end to end — then read the span it gives
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Show the shape before building it (sketch, draft, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
+| Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -158,7 +197,9 @@ Match one name — do not read either end to end — then read the span it gives
 | Existing BPMN | `bpmn decompile`, `check`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
 | Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+<!--skill-flavor:evaluate-row:start-->
 | Evaluate a process: evaluators, eval sets, data points, simulations, eval runs | `uip maestro bpmn eval` | [Evaluate](references/evaluate.md) | — |
+<!--skill-flavor:evaluate-row:end-->
 | A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
 | Sanitize a file to share or commit; what notes and examples may contain | placeholders in the `.bpmn.ts`, then `decompile` / `merge` for an export | [Public safety](references/public-safety.md) | — |
 | A recurring process shape: review gate, approval chain, triage, external wait, batch, failure net, queue | `choose`, `race`, `subProcess` with `loop`, `eventSubProcess` | [Patterns](#patterns) | — |
@@ -210,8 +251,10 @@ export default bpmn('approval')
 
 - A boundary event is declared on the activity it guards, in that activity's body callback, so `attachedTo` is never written.
   An interrupting handler's path rejoins at the statement after the activity; a non-interrupting one runs beside the activity and must end its own path with an end event, `.goto()`, or an explicit flow.
+  On a `.fork()` branch's last activity, that statement is the fork's join, which then waits forever after the failure: end the handler's path in `.endEvent(<id>, { terminate: true })` or an `error` end, or follow the activity with another statement on its branch; a plain end stalls the join too ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9).
 - `choose` arms need `when` or `otherwise: true`; the fallback is the default flow, and no flow id is named.
   Arms rejoin at the next statement, through a join named `<id>_join` only when more than one arm reaches it.
+  Inside a `.fork()` branch, a `choose` or `race` arm that ends in a plain `.endEvent()`, or that jumps out with `.goto()` into a sibling branch, past the join, or into the join while the branch's own path also reaches it, stalls the fork's join; end it with `terminate: true` or an `error` end, or let it rejoin ([draft-skeleton](references/draft-skeleton.md#what-a-skeleton-is) rule 9); to retry the whole fork, `.goto()` the box before it, never the fork itself.
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
@@ -297,7 +340,8 @@ Read **[`references/evaluate.md`](references/evaluate.md)**.
 
 Triage in order — job status, incidents, runtime variables, the deployed BPMN
 asset, element executions and cursors, the generated package files, traces last
-— with the CLI's exact verbs, every `instance` read carrying `-f <FOLDER_KEY>`.
+— with the CLI's exact verbs, one literal command per read and never a loop,
+every `instance` read carrying `-f <FOLDER_KEY>`.
 Never mutate while diagnosing, and never guess a command shape: the reference
 lists them. Read **[`references/diagnose.md`](references/diagnose.md)**.
 

@@ -8,7 +8,7 @@ description: >
   upload, or debug. Graded from artifacts — a solution zip whose case .nupkg
   carries the compiled content/caseplan.*.bpmn, with the plan left unchanged —
   plus guards that nothing reached the tenant. No tenant writes.
-tags: [uipath-maestro-case, smoke, mode:operate, lifecycle:generate]
+tags: [uipath-maestro-case, smoke, mode:operate, lifecycle:generate, "skip:studio-web"]
 max_iterations: 1
 
 run_limits:

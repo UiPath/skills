@@ -44,9 +44,10 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 `markdownPath` is that operation's field reference: read it rather than guessing input names.
 <!--skill-flavor:field-reference:end-->
 
-`"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
+`"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
 <!--skill-flavor:library-pull:start-->
-A usage error saying no library is cached means `uip maestro registry pull` first.
+With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
+A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
 <!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
@@ -104,7 +105,9 @@ It discovers the connection itself (`--connection` or `--connection-folder` pick
 Then re-run `check` and compile.
 `compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
 
+<!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
+<!--skill-flavor:prepare-live:end-->
 
 These codes are mistakes in your own source, and `prepare` does not close them; fix the source and re-run `check`:
 
@@ -120,12 +123,15 @@ These codes are mistakes in your own source, and `prepare` does not close them; 
 
 ## 4. When the connector is not in the library
 
-The shipped library covers roughly 150 connectors.
-A tenant can serve more, and `compile` says so:
+With no library pulled, `check` and `compile` fetch an operation through `uip` themselves, from the Flow node catalog, so a connector the tenant serves there needs nothing more; with a pulled library they refuse one it lacks, and `uip maestro registry pull` refreshes it.
+What they cannot fetch they refuse, and the refusal's last sentence says why:
 
 ```
-connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set.
+connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set. … The tenant was asked through uip (`uip maestro flow registry get`) and does not serve it.
 ```
+
+Any other note gives `uip`'s own reason; fix what it names (log in again only when the session is the problem), then re-run `check`.
+"does not serve it" is either a misspelt action or a connector the Flow node catalog lacks, which `prepare` below covers.
 
 **`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
 This covers a connector the Flow node catalog does not carry at all (Test Manager is one): when `registry search <key>` answers nothing, `prepare` refreshes the local catalog copy once (`uip maestro flow registry pull --force`, since a stale copy answers nothing for any connector) and, if it still serves nothing, reads Integration Service itself, the activity catalog for the identity and `is resources describe` for the path, parameters and fields, and says so:

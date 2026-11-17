@@ -58,6 +58,33 @@ make from syntax alone. Exact signatures remain in the generated API.
   `vars.scriptResult.<field>` downstream. The compiled output row is named
   `scriptResponse`.
 
+## HTTP requests
+
+<!-- RULE:case.http.modes -->
+- `.httpRequest({ method, url, ... })` sends one HTTP call. Without `connector`
+  the request goes to `url` unauthenticated. With
+  `connector: { key, connection, folder }` it reuses that connection's auth and
+  `path` replaces `url`. Compile refuses `url` through a connector or `path`
+  without one.
+
+<!-- RULE:case.http.body -->
+- An `=` value inside an object body compiles to the code it reads:
+  `body: { id: '=vars.id' }` sends the variable's value, and so does a
+  `'=js:<expr>'` leaf. Each `=js:` value must be exactly one expression
+  (acorn-parsed); a statement or unparseable text is refused at compile
+  (`HTTP_REQUEST_BODY_EXPRESSION`). Both work nested and in arrays. Other
+  `=` forms (`=vars.a + 1`) are also refused with the same code; write as
+  `'=js:vars.a + 1'`. A string body must be JSON or an `=` expression;
+  other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+
+<!-- RULE:case.http.credentials -->
+- Compile writes literal credential headers and query parameters as authored.
+  Use `=vars.` references for secrets; `check` warns on literals.
+
+<!-- RULE:case.http.outputs -->
+- Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
+  `.outputs({ v: '=response.body' })` maps one to a case variable.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
@@ -164,6 +191,29 @@ make from syntax alone. Exact signatures remain in the generated API.
   rather than relying on a default the schema leaves unstated. Secondary lanes
   are the common case: an `exceptionStage(...)` that gates normal completion is
   almost never what was meant.
+
+## Activation modes
+
+<!-- RULE:case.activation.lane -->
+- For an SDD `Activation Mode` column, use `runs-sequentially` and `lane`.
+  `lane` is the third argument to `.task()`: `.task(name, fn, { lane: N })`.
+  It sets the set index in `data.tasks[][]` (`lane ?? 0` in the SDK).
+  Tasks that share a lane start together after the predecessor set completes.
+
+  | SDD Activation Mode | SDK entry rule | `lane` | Effect |
+  |---|---|---|---|
+  | `parallel` | `rule('current-stage-entered')` | omit | Task starts at stage entry, in its own set. |
+  | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared | Siblings share a set; start together after the predecessor set. The predecessor also uses `runs-sequentially`. |
+  | `sequential` | `rule('runs-sequentially')` | unique per task | Strict chain: each task waits for the previous set. |
+
+  A task without `runs-sequentially` gets its own set regardless of `lane`.
+  See `examples/PermitIssuance.case.ts` for a three-set stage.
+
+<!-- RULE:case.activation.anti-pattern -->
+- Omitting `lane` on all `runs-sequentially` tasks defaults them to set 0 —
+  they start together, losing sequential structure. The same happens when every
+  task gets the same explicit `lane`. Every `runs-sequentially` task needs an
+  explicit `lane`.
 
 ## Design fidelity
 

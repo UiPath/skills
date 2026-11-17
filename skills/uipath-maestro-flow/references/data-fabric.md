@@ -350,13 +350,11 @@ upstream `out('<step>', '<fileField>')`, or any step whose declared output type
 is a file. The runtime is the file reference, never the bytes.
 
 <!--skill-flavor:operation-doc:start-->
-**Read the operation's own doc before guessing anything.** The connector library
-ships a Markdown page per operation, and an environment that stages a library
-points `$FLOW_SDK_LIBRARY_MD` at it (`uip maestro registry path --library-md --output plain`
-otherwise):
+**Read the operation's own doc before guessing anything.**
+`registry describe` prints its page, from the pulled library or, with none pulled, from the tenant through `uip`:
 
 ```bash
-sed -n '1,60p' "$FLOW_SDK_LIBRARY_MD/uipath-uipath-dataservice/create-entity-record@1.0.0.md"
+uip maestro registry describe uipath.connector.uipath-uipath-dataservice.create-entity-record
 ```
 
 That page names the connector *UiPath Data Fabric*, gives the HTTP route

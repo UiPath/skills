@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-12T04:06:35Z",
-  "cli_version": "1.207.0-dev.9816",
+  "generated_at": "2026-11-13T04:07:39Z",
+  "cli_version": "1.207.0-dev.9832",
   "verbs": [
     "admin",
     "admin audit",
@@ -1159,10 +1159,12 @@
     "or folders",
     "or folders create",
     "or folders delete",
+    "or folders explore",
     "or folders get",
     "or folders list",
     "or folders move",
     "or folders runtimes",
+    "or folders stop-exploring",
     "or folders update",
     "or jobs",
     "or jobs get",

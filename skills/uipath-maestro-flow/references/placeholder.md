@@ -52,8 +52,9 @@ keeps its identity and its inputs:
 ```
 
 Two rules. **The manifest must be real** — an exact copy of what
-`uip maestro flow registry get <nodeType>` returns (after
-`registry pull --force`, since registry reads are cached). A hand-written
+`uip maestro flow registry get <nodeType>` returns (registry reads are cached
+for 30 minutes, so run `registry pull --force` first only when the resource was
+redeployed with a changed schema, or `get` misses it). A hand-written
 manifest validates locally and fails on the tenant, which resolves the node
 against its own catalog. **Prefer a typed factory** whenever one exists: it
 carries the family's check rules, its defaults and its output contract, none of

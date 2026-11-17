@@ -990,27 +990,36 @@ def start_debug(
     Exits if the debug command fails to launch / does not return parseable
     JSON. A non-Completed ``finalStatus`` is NOT a failure here.
     """
-    project_dir = find_project_dir(project_glob)
-    solution_dir = find_solution_dir(solution_glob)
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
+    in_studio_web = os.path.isdir("/solution")
 
-    refresh_cmd = [
-        "uip", "solution", "resources", "refresh",
-        "--solution-folder", solution_dir,
-        "--output", "json",
-    ]
-    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
-    r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
-    if r.returncode != 0:
-        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
-        # output fails with "Node already added to the graph" (RetryWillNotFix).
-        # When the agent already refreshed, the resource docs are on disk and debug
-        # can proceed; only that exact re-refresh failure is tolerated.
-        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
-        if not (already_refreshed and duplicate_node):
-            _fail(
-                f"solution resources refresh exit {r.returncode}\n"
-                f"stdout: {r.stdout}\nstderr: {r.stderr}"
-            )
+    if in_studio_web:
+        project_dir = find_project_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        project_dir = find_project_dir(project_glob)
+        solution_dir = find_solution_dir(solution_glob)
+
+    if not in_studio_web:
+        refresh_cmd = [
+            "uip", "solution", "resources", "refresh",
+            "--solution-folder", solution_dir,
+            "--output", "json",
+        ]
+        already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
+        r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
+        if r.returncode != 0:
+            # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+            # output fails with "Node already added to the graph" (RetryWillNotFix).
+            # When the agent already refreshed, the resource docs are on disk and debug
+            # can proceed; only that exact re-refresh failure is tolerated.
+            duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+            if not (already_refreshed and duplicate_node):
+                _fail(
+                    f"solution resources refresh exit {r.returncode}\n"
+                    f"stdout: {r.stdout}\nstderr: {r.stderr}"
+                )
 
     debug_cmd = [
         "uip", "maestro", "case", "debug", project_dir,

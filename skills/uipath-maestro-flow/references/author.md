@@ -1,10 +1,12 @@
 # Author — build and edit a flow with the builder SDK
 
+<!--skill-flavor:author-scope:start-->
 Everything that happens on disk before a flow touches the cloud: scaffold the
 project, choose each node, write `<Name>.flow.ts`, and run the loop in
 [`CLI-LOOP.md`](CLI-LOOP.md) until the emitted `.flow` validates. Authoring ends
 at a valid artifact; publishing, running and debugging are
 [`operate.md`](operate.md), and a failed run is [`diagnose.md`](diagnose.md).
+<!--skill-flavor:author-scope:end-->
 
 The builder owns the `.flow` JSON. `compile` emits every node definition, the
 `variables.nodes[]` entries that make `$vars.<step>.output` resolve, the
@@ -22,10 +24,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    keeps the credential in the flow, outside `uip is connections list`), and an
    RPA workflow only when there is no API at all (a desktop app, a terminal). For a
    tenant resource (agent, process, API workflow, IxP model) run the family's
-   `uip maestro flow registry search`; it only returns published resources, so
-   `uip maestro flow registry pull --force` first, and check the solution's own
-   projects with `uip maestro flow registry list --local` before concluding a
-   resource is missing. `mock()` marks a capability both searches proved
+   `uip maestro flow registry search`; it only returns published resources.
+   Before concluding a resource is missing, check the solution's own projects
+   with `uip maestro flow registry list --local`, and if it is still missing,
+   run `uip maestro flow registry pull --force` once and search again
+   (registry reads are cached for 30 minutes). `mock()` marks a capability both searches proved
    absent; it is never a stand-in for one they found.
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
@@ -38,9 +41,11 @@ cannot make: which node, which topology, what an output means, and what to ask.
    connection exists after its recovery flow, stop and report it as an open
    question. `resources.md` covers reference-field lookups; finish its
    pagination loop before reporting "not found".
+<!--skill-flavor:source-not-artifact:start-->
 4. **Edit the source, not the artifact.** Change `<Name>.flow.ts` and re-emit
    with `compile -o` for a new flow; a non-empty `.flow` that existed before this
    turn is re-emitted by decompile and merge ([`brownfield.md`](brownfield.md)).
+<!--skill-flavor:source-not-artifact:end-->
    Never hand-edit the emitted `.flow`, `content/*.bpmn`, `bindings_v2.json`,
    `entry-points.json`, `operate.json` or `package-descriptor.json` — the CLI
    regenerates them, and the next compile silently undoes a hand edit.

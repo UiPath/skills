@@ -5,14 +5,25 @@ Keep each checkpoint short. Start each one with its phase name in bold (Framing,
 ## Phase 1: Framing
 
 ```markdown
-**Decision question:** Is this device reimbursement approved?
-**Subject:** Employee device reimbursement claim
+**Decision question:** Is this employee device reimbursement claim approved?
 **Requested scope:** Device reimbursement policy (pages to confirm after intake)
 ```
 
-**Review level for extraction** (one question): `Open questions only (Recommended)` | `Every section` | `At the end`
+**Review level for extraction** (one question): `Ask me only when unclear (Recommended)` | `Every section` | `Quick draft (IXP)` (only when the phase guide offers it; one document, no amendments)
 
-Framing question options: `Confirm framing (Recommended)` | `Change framing`.
+The Framing question asks the decision question when the request gave none (generic options; the user types their own wording in Other) together with the review level, and nothing else.
+
+### One-shot profile
+
+One question set (outcomes, score bands when scored, folder); its answers start the run. The query is stated in the question text, not asked.
+
+```markdown
+**Quick draft (IXP)**
+**Document:** <FILE_NAME>
+**Query:** Is this device reimbursement approved?
+```
+
+Outcomes options: `<LABEL>:positive, <LABEL>:negative, <LABEL>:neutral (Recommended)` | a variant. Folder options: `Personal workspace (Recommended)` | a `Standard` folder by path.
 
 ## Phase 2: Intake
 
@@ -145,7 +156,7 @@ Options: `Approve section (Recommended)` | `Change rows`. Blocking questions are
 **Gaps:** none
 **Duplicates:** none
 **Uncovered clauses:** p.2 "Managers may approve exceptions" - not a rule (permission)
-**Review level:** Open questions only
+**Review level:** Ask me only when unclear
 **validate:** passed   **Sampled runs:** 6 of 6 evaluated; the omitted-input set returned Referred, or none was made (<REASON>)
 **Documents:** base and 1 amendment applied as of <DATE>; FAQ read, not used; 1 amendment not yet effective
 **Limits:** supporting-document citations carry no box; 2 assumptions recorded; 1 user-stated rule awaiting written confirmation

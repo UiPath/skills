@@ -45,17 +45,21 @@ source. The loop is:
 2. **Author** the step from the task's own words — the fields you intend,
    `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
    generic operation.
+<!--skill-flavor:check-source:start-->
 3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
+<!--skill-flavor:check-source:end-->
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
    Three codes say the operation itself does not resolve, so no prepare
    fixes them; edit the source and re-run `check`:
-   - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
-     connector, or version). The message lists the connector's operations and
-     a `Closest:` match. The operation is the node type's slug, not the
-     tenant's `objectName` (`send-email`, not `send-mail-v2`).
+   - `CONNECTOR_NOT_IN_LIBRARY` — no library layer has such an operation (or connector, or version), and, with no library pulled, neither does the tenant.
+     The message lists the connector's operations and a `Closest:` match.
+     The operation is the node type's slug, not the tenant's `objectName` (`send-email`, not `send-mail-v2`).
 <!--skill-flavor:not-in-library-pull:start-->
-     If the operation is newer than the library, run `uip maestro registry pull`.
+     With no library pulled, `check` and `compile` have already asked the tenant through `uip`, and the message's last sentence says what it answered.
+     With a pulled library they do not ask: if the operation is newer than the library, refresh it with `uip maestro registry pull`.
+     "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name, or use `http()`.
+     Otherwise the sentence gives `uip`'s own reason: run `uip login` only when it says `uip` is not logged in or the session expired; for anything else (a missing `uip`, a failed catalog refresh, an unreadable answer), report the reason to the user and stop.
 <!--skill-flavor:not-in-library-pull:end-->
    - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
      add `{ object: '<name>' }`. The message lists the objects.
@@ -93,28 +97,24 @@ plausible Flow compiles but loses the intended runtime or Studio Web contract:
 ## Discovering operations and fields
 
 <!--skill-flavor:library-discovery:start-->
-`$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
-(machine-readable, for compiling) point at a connector library staged by the
-environment. It is not baked into the npm package, so when those variables are
-unset, fetch one into the project:
+`uip maestro registry pull` downloads the published library into a shared cache (`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and `registry search` resolve it from there with no flag.
+The project gets only `.flow-sdk/connectors/`, holding a descriptor per connector it references.
 
 ```bash
 uip maestro registry pull
 ```
 
-The library and its Markdown go to a shared cache
-(`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and
-`registry search` resolve them from there with no flag. The project gets only
-`.flow-sdk/connectors/`, holding a descriptor per connector it references.
+When the library cannot be downloaded, or none is published for this environment (Automation Suite), nothing has to be pulled first:
 
-To read the Markdown directly, ask where it is:
+- `pull` fetches the connectors the project references through `uip` into `.flow-sdk/connectors-local/` instead, with their `<key>.ts` modules; name one the source does not use yet with `--connector <key>`.
+- `registry search` searches the tenant's live catalog.
+- `check`, `compile`, `decompile`, `merge` and `registry describe` fetch an operation no library holds through `uip` into `.flow-sdk/connectors-local/`, then go on.
 
-```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
-  || echo "no connector library yet: run uip maestro registry pull" >&2
-```
+All of that needs a logged-in `uip`, and an SDK recent enough to fetch: see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package).
+With neither a library nor a working `uip`, connector work stops at a message that gives the reason; fix what it names (`uip login` when the session is the problem).
+`$FLOW_SDK_LIBRARY_JSON`, when an environment sets it, points at a staged library and wins over the cache.
 
-The four library verbs are `pull`, `search`, `path` and `prepare`.
+The library verbs are `pull`, `search`, `describe`, `path` and `prepare`.
 Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
 `uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
 (The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
@@ -129,21 +129,18 @@ connector operation is never in the node registry and a node type is never in
 the library, so a miss in one is not evidence about the other.
 
 <!--skill-flavor:library-search:start-->
-Search that library for static contracts:
+Search for static contracts, then read one operation's page:
 
 ```bash
-jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path}' \
-  "$FLOW_SDK_LIBRARY_MD/index.json"
-sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
+uip maestro registry search 'send email'
+uip maestro registry describe uipath.connector.uipath-microsoft-outlook365.send-email
 ```
+
+`describe` renders the page from the operation's entry, so it works with or without a pulled library; a page fetched from the tenant says so on its first line.
 <!--skill-flavor:library-search:end-->
 
-When `check` refuses a connection-specific field as unknown — or warns the
-schema is unprepared — materialize the live schema rather than guessing or
-hand-editing the emitted Flow; its diagnostic names this command. It reads the
-schema through the tenant, so it needs a live Integration Service connection
-and a logged-in `uip`; without one, fall back to the curated operation in the
-markdown library.
+When `check` refuses a connection-specific field as unknown — or warns the schema is unprepared — materialize the live schema rather than guessing or hand-editing the emitted Flow; its diagnostic names this command.
+It reads the schema through the tenant, so it needs a live Integration Service connection and a logged-in `uip`; without one, author against the connection-independent fields `registry describe` lists.
 
 ```bash
 uip maestro registry prepare <connector-key> --action <action>
@@ -647,9 +644,8 @@ wants a not-found answer; otherwise failing loud can be intentional.
 
 <!--skill-flavor:output-names:start-->
 Output field names are case-sensitive and `check` does not verify them:
-`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
-`webUrl`. Copy each name from the operation's `## Outputs` in
-`$FLOW_SDK_LIBRARY_MD`.
+`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is `webUrl`.
+Copy each name from the operation's `## Outputs` in `uip maestro registry describe <nodeType>`.
 <!--skill-flavor:output-names:end-->
 
 For a response with no declared fields, read the whole output into a script
