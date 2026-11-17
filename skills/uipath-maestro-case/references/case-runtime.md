@@ -176,8 +176,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   `escalationId: "any"` wildcard, makes the rule at-risk; one to an
   `sla-breached` escalation is Breached. The wildcard is valid and fires on
   every at-risk escalation of that SLA (in SDK source,
-  `escalation: ANY_ESCALATION`). Do not author it; name the escalation the
-  requirement means. Repair an existing rule by the requirement's status, never
+  `escalation: ANY_ESCALATION`). **Never author `escalationId: "any"` or
+  `escalation: ANY_ESCALATION`.** Always name the concrete escalation the
+  requirement means — the SDD names it. `"any"` appears only in Designer-saved
+  plans; it is a read-only artifact of the UI, not a value to write.
+  Repair an existing rule by the requirement's status, never
   by what the plan already carries: a breach response drops the reference and
   leaves a plain breach rule on the SLA; repointing it at an at-risk escalation
   keeps it at-risk, which fires at a different time. Only an at-risk response
@@ -280,6 +283,27 @@ make from syntax alone. Exact signatures remain in the generated API.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
+
+## Metadata fidelity
+
+<!-- RULE:case.metadata.intsvc-activity-config -->
+- Connector tasks (type `execute-connector-activity` and `wait-for-connector`)
+  require `metadata.intsvcActivityConfig: "v2"` on the case project. `case init`
+  stamps it; `decompile` → `compile` preserves it through `preserveCaseJson`.
+  When writing `caseplan.json` directly, include `"intsvcActivityConfig": "v2"`
+  in the top-level `metadata` object. Without it, connector tasks use V1 I/O
+  negotiation and fail at runtime with mismatched inputs. `case validate` does
+  not currently check for it, so its absence is silent.
+
+<!-- RULE:case.variable.closed-types -->
+- Case variable `type` values are a closed set: `string`, `integer`, `float`,
+  `double`, `boolean`, `datetime`, `date`, `time`, `object`, `file`, `array`,
+  `jsonSchema`. These apply to `variables.inputs`, `variables.outputs`, and
+  `variables.inputOutputs`. Do not use `number` (that is a Flow SDK type, not
+  a Case type); use `integer` for whole numbers, `float` or `double` for
+  decimals. `case validate` warns `number` as an alias
+  (`CASE_MGMT_VARIABLE_TYPE_ALIAS`) and rewrites it to `double`; the backend
+  also accepts `number`, but the Case Designer never writes it.
 
 ## Brownfield editing
 
