@@ -80,15 +80,18 @@ Packing walks the whole project and keeps only what the runtime reads:
 
 `operate.json` and `package-descriptor.json` are generated; `operate.json`'s `main` is the entry point for `project.uiproj`'s `MainFile`.
 
-Packing then checks the package against itself and **fails** (`Message` starts with "The package is inconsistent") when:
+Packing then checks the package against itself. An invoke the package cannot resolve, or two paths that collide, **fail** the pack (`Message` starts with "The package is inconsistent, so it would publish and then fail at run time"):
 
 | Problem | Fix |
 |---|---|
-| `'entry-points.json' names 'content/X.json', which the package does not contain` | The entry's `filePath` points at a missing, renamed or left-out file. Fix the path, or move the file out of the left-out locations above. |
-| `'operate.json' main names ...` | Same, for `MainFile` / a hand-written `operate.json`. Delete a stale `operate.json`; the packager generates it. |
 | `'content/A.json' invokes 'content/B.json', which the package does not contain` | A `run.workflow` `name` points at no packaged workflow. Fix the name (project-root path, no `.json`) or add the file. |
-| `... which the package holds only as 'content/Shared/Validate.json' (names are case-sensitive)` | The name differs from the file only in case. Use the file's exact case. |
-| `'content/a.json' and 'content/A.json' differ only in case` | Two files whose paths differ only in case; one is lost on Windows and macOS. Rename one. |
+| `... invokes 'content/b.json', which the package holds only as 'content/B.json' (names are case-sensitive)` | The name differs from the file only in case. Use the file's exact case. |
+| `... invokes a workflow by a name the runtime refuses: <reason>` | The name breaks the naming rules above (`\`, `./`, a leading `/`, an expression, a project file, `content/` or `evals/`). |
+| `... invokes ..., which is not a workflow definition` | The target is data JSON, not a workflow (no `document` and `do`). Invoke the workflow file instead. |
+| `... invokes ..., which is larger than the 10 MB the runtime loads` | Split the workflow; the runtime refuses files over 10 MB. |
+| `'content/a.json' and 'content/A.json' differ only in letter case or Unicode form` | Two files whose paths collide; one overwrites the other on Windows and macOS. Rename one. |
+
+An entry point or `operate.json` `main` that names a file the package lacks is a **warning**, and the package still ships, as Studio Web's server-side publish ships it ("The package names entry points it may not find at run time; it is packed anyway"). Fix it anyway: a job started from that entry point fails. `'entry-points.json' names 'content/X.json', which the package does not contain` means the entry's `filePath` points at a missing, renamed or left-out file; for `'operate.json' main`, delete a stale hand-written `operate.json` (the packager generates it).
 
 A warning (not a failure) lists files left out of the package, with a count and the first five names. Read it: a file the project needs at run time must be `.json` (or live under `evals/`).
 <!--skill-flavor:multi-workflow-package-contents:end-->

@@ -89,7 +89,7 @@ uip api-workflow pack <project-path> <destinationPath> \
 
 Output: `{ "Result": "Success", "Code": "ApiWorkflowPack", "Data": { "Success": true, "Packages": ["<path>.nupkg"] } }`. Exit 1 on failure.
 
-It packs with the same rules as `uip solution pack` (below) and fails with `Message: "The package is inconsistent, ..."` when an entry point, `main` or `run.workflow` names a file the package lacks. There is no command that uploads this `.nupkg`; publish a solution with `uip solution publish`, or a standalone project from Studio Web. List what it shipped with `unzip -l <path>.nupkg | grep content/`. Rules, messages and fixes: [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships).
+It packs with the same rules as `uip solution pack` (below). It fails with `Message: "The package is inconsistent, ..."` when a `run.workflow` names a file the package lacks, and warns (still packing) when an entry point or `main` does. There is no command that uploads this `.nupkg`; publish a solution with `uip solution publish`, or a standalone project from Studio Web. List what it shipped with `unzip -l <path>.nupkg | grep content/`. Rules, messages and fixes: [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships).
 <!--skill-flavor:local-project-lifecycle:end-->
 
 <!--skill-flavor:runtime-execution:start-->
@@ -493,7 +493,7 @@ For each `Type: "Api"` project:
 2. Copies the root metadata, the root `project.uiproj`, every other `.json` file at any depth, and everything under `evals/` to a clean output directory. Dot-folders and dot-files, `~` files, `node_modules/` and non-JSON files outside `evals/` are left out, with a warning that lists them.
 3. Generates `operate.json` — runtime configuration consumed by the executor
 4. Generates `package-descriptor.json` — manifest for the Cloud platform
-5. Fails the pack when an entry point, `main` or `run.workflow` names a file the package lacks, or two paths differ only in case ([multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships))
+5. Fails the pack when a `run.workflow` names a file the package lacks or a name the runtime refuses, or two paths collide by case; warns, and still packs, when an entry point or `main` names a missing file ([multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships))
 6. Wraps the output as a `.nupkg`
 
 Older CLIs copy only root files and `evals/`, with no checks. If the CLI also validates workflows while packing, each `validate` problem prints as a warning and the pack still succeeds; fix them as `validate` errors.

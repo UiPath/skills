@@ -21,14 +21,17 @@ Publishing packs the whole project and keeps what the runtime reads:
 | every other `.json` file, at any depth (workflows and the JSON data they read) | `~` temp files and `node_modules/` |
 | everything under the root `evals/`, any file type | every non-JSON file outside `evals/` (`README.md`, images, `.txt`/`.csv` data) |
 
-Packing then checks the package against itself and fails the publish (the message starts with "The package is inconsistent") when:
+Packing then checks the package against itself. An invoke the package cannot resolve, or two paths that collide, fail the publish (the message starts with "The package is inconsistent"):
 
 | Problem | Fix |
 |---|---|
-| An entry point or the main workflow names a file the package does not contain | Fix the file's location or name so the entry point finds it. |
 | `'content/A.json' invokes 'content/B.json', which the package does not contain` | A `run.workflow` `name` points at no packaged workflow. Fix the name (project-root path, no `.json`) or add the file. |
-| `... which the package holds only as 'content/Shared/Validate.json' (names are case-sensitive)` | The name differs from the file only in case. Use the file's exact case. |
-| `'content/a.json' and 'content/A.json' differ only in case` | Two files whose paths differ only in case. Rename one. |
+| `... which the package holds only as 'content/B.json' (names are case-sensitive)` | The name differs from the file only in case. Use the file's exact case. |
+| `... invokes a workflow by a name the runtime refuses: <reason>` | Rename the invoke to a project-root path that follows the naming rules above. |
+| `... which is not a workflow definition` | The target is data JSON; invoke the workflow file. |
+| `'content/a.json' and 'content/A.json' differ only in letter case or Unicode form` | Two files whose paths collide. Rename one. |
+
+An entry point or the main workflow that names a file the package lacks is reported as a warning, and the publish goes ahead. Fix the file's location or name so the entry point finds it; a job started from that entry point fails.
 
 A file the project needs at run time is `.json`, or lives under `evals/`.
 <!--skill-flavor:multi-workflow-package-contents:end-->

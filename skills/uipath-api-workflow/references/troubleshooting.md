@@ -715,7 +715,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Fix:** Verify `Workflow.json` is in the project folder whose `project.uiproj` is declared in the solution `.uipx`. Read the pack warning that lists left-out files, and list the package with `unzip -l <nupkg> | grep content/`. See [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships).
 
 ### `The package is inconsistent, so it would publish and then fail at run time: ...`
-- **Cause:** An entry point, `operate.json` `main` or `run.workflow` name points at a file the package does not contain, or two packaged paths differ only in case. The message lists each problem with package paths (`content/...`).
+- **Cause:** A `run.workflow` name points at a file the package does not contain, or at data JSON, or breaks the runtime's naming rules, or two packaged paths collide by case. The message lists each problem with package paths (`content/...`). An entry point or `operate.json` `main` naming a missing file is only a warning ("The package names entry points it may not find at run time"); fix it the same way.
 - **Fix:** Use the table in [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships): fix the name (path from the project root, no `.json`, exact case), the entry `filePath`, or move the file out of a left-out location. Delete a stale hand-written `operate.json`.
 
 ### Pack succeeds but prints API workflow validation warnings
