@@ -112,7 +112,7 @@ Populate every template section per the format guide's population matrix. Build 
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface matching the Handoffs row.
 
-Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Platform Dependencies takes one table per kind of resource the description implies ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)). Deployment records the environment the UI targets come from ("UI targets: <environment>") and that libraries pack before their consumers; a component genome, which has no Deployment, records the environment in its Target Applications row's Notes cell, so the build can offer it.
+Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Platform Dependencies takes one table per kind of resource the description implies ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)). Deployment records that libraries pack before their consumers, and the environment the UI targets come from where [genome-format-guide.md § Deployment (process)](../shared/genome-format-guide.md) places it.
 
 ## Step 8 — Write, then offer edits
 

@@ -383,14 +383,21 @@ export function openDecisions(text) {
  * processScope the process genome's (`process D3`). */
 export function namedEntries(text, processScope = false) {
   const rest = text.replace(sectionBody(text, "Open Decisions"), "");
-  const pattern = processScope ? /\bprocess\s+D(\d+)\b/g : /(?<!process\s)\bD(\d+)\b/g;
-  return new Set([...rest.matchAll(pattern)].map((m) => Number(m[1])));
+  if (processScope) return new Set([...rest.matchAll(/\bprocess\s+D(\d+)\b/g)].map((m) => Number(m[1])));
+  // the forms that name an entry: a mark (`*[Inferred: D3]*`), a defect's `(ruling open: D3)`, a row's `(D3)` or `(D1, D3)`
+  const named = new Set();
+  for (const m of rest.matchAll(/\*\[Inferred:\s*D(\d+)\]\*|\((?:ruling open:\s*)?(D\d+(?:\s*,\s*D\d+)*)\)/g)) {
+    for (const n of (m[1] ? `D${m[1]}` : m[2]).matchAll(/D(\d+)/g)) named.add(Number(n[1]));
+  }
+  return named;
 }
 
 function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new Set()) {
   const section = sectionBody(text, "Open Decisions");
   const entries = openDecisions(text);
   if (section.trim() && !entries.size && !section.includes(NO_DECISIONS)) r.strict("Open Decisions: neither numbered entries nor the stub line");
+  const numbers = [...section.matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1]));
+  for (const num of new Set(numbers.filter((n, i) => numbers.indexOf(n) !== i))) r.strict(`Open Decisions: entry ${num} appears more than once`);
   [...entries.keys()].forEach((num, i) => {
     if (num !== i + 1) r.strict(`Open Decisions: entry ${num} follows entry ${i}; an entry stays when decided or withdrawn, so the numbers never skip`);
   });

@@ -10,7 +10,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 
 ## Writing Rules
 
-1. **Written from the genome after its strict check, on every write, its answers kept.**
+1. **Written from the genome on every write, its answers kept**; the strict check run after the write verifies its fingerprint.
    - An item keeps its answer, matched by its id (`D3`, `CQ2`, under its component's heading), or by what it asks when the id no longer fits.
    - An item the answers made into a genome edit leaves the section on the rewrite after that edit; the genome's decided entry keeps the record. One the edit could not make stays, marked `Not applied: <why>`.
    - A configuration value's answer stays as it is: it is the build's answer.
@@ -43,7 +43,7 @@ Business decisions close with two lists that ask nothing one item at a time:
 - **Checked against the application at build:** each reading entry that only the live application shows (a screen label, a window title, a control's position), one line each, with no `Change:`.
 - **Defects the rebuild fixes:** each defect that has no entry because its rebuild follows an intent the source states and changes no business outcome ([extracted-genome-guide.md § Source Defects](extracted-genome-guide.md)). One line each, with its component, step and what the rebuild does. The block's one `Change:` names any the rebuild should keep as the source does.
 
-**A process genome's items** sit only in the solution overview's Action Required, under one heading per component, the process genome's own under the process's name. Each keeps its own genome file's id: ids repeat across components and are never renumbered into one series, so an item is named by its component and id (`LARA.Library D1`, `process D1`). A per-project SDD has no Action Required section, and its body's markers name the item with its component.
+**A process genome's items** sit only in the solution overview's Action Required, under one heading per component, the process genome's own under the process's name. Each keeps its own genome file's id: ids repeat across components and are never renumbered into one series, so an item is named by its component and id (`Portal.Library D1`, `process D1`). A per-project SDD has no Action Required section, and its body's markers name the item with its component.
 
 The section opens with its counts: needed before the build, by group and by role. An item that ends on `Answer:` counts as needed, including one the build covers with a placeholder until then. A group or tier with no item is left out of the section.
 

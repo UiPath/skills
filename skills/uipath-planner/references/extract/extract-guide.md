@@ -86,7 +86,7 @@ Per artifact, in inventory order, using source guide's signal tables. Collect in
 | Triggers, schedules, entry points | Workflow step 1; Platform Dependencies' Triggers table; Deployment's Entry points (a standalone component: Interface) |
 | Queues and their item fields and settings, assets, credentials, buckets, connections, entities | Platform Dependencies, one table per kind |
 | Log masking | Deployment's Kept out of the logs; a standalone component's Business Rules |
-| The source's machines, run-as accounts, folders and retention | the Source Map, as the source runs today: the target's environments are the build's |
+| The source's machines, run-as accounts, folders and retention | the Source Map's deployed-state row, as the source runs today: the target's environments are the build's |
 | Per-item iteration with per-item outcomes: queue item fetch and status updates, a loop over rows or files with a per-item catch, a work-list read; framework state machines and their configuration workbook | **Transactional Shape** — unit of work and its alternatives, the As-is (produced by, consumed by, item store, coordination, item kinds, step groups), the outcomes, the split options derived with rule 8's table and the evidence ([transactional-shape-guide.md](../shared/transactional-shape-guide.md)); never a verdict; the framework's plumbing is not steps (source guide's framework section) |
 | Hardcoded literals and configuration keys: paths, URLs, addresses, names, thresholds, columns | Configuration Questions for the open ones; every other one in the step, rule or handler that uses it ([genome-format-guide.md § Configuration Questions](../shared/genome-format-guide.md)) |
 | Test cases, eval sets, assertions | Acceptance Criteria evidence |

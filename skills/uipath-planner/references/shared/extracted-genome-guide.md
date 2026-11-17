@@ -74,5 +74,5 @@ An extracted genome carries a source's defect only once extraction's defect veri
 - A defect's own Source Map row names the objects and lines that prove it.
 - A behaviour the source's comments or design show as intended is a rule, not a defect.
 - An AI step's instructions are source like any other step's: a rule that uses data the step is never given, or rules that contradict each other, is a source defect. Following its intent gives the step the data its instructions name, or rewords the rule, and the step's Business Rules state the instructions the rebuild uses.
-- A behaviour that turns on semantics nobody documents is **unresolved**: state both readings and mark the chosen one `*[Inferred]*`.
+- A behaviour that turns on semantics nobody documents is **unresolved**: state both readings and mark the chosen one `*[Inferred: D<n>]*`, its entry the question.
 - The word "suspected" never appears in a written genome: a finding is verified or not written as a defect.

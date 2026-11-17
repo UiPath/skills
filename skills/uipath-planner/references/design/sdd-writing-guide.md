@@ -128,7 +128,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - a `default-carried` item states its default and ends on `Change:`;
    - a `blocking` item has no default: it ends on `Answer:`, after `Until answered:`.
 
-   The genome keeps each id for the entry it carries the item into, and writes the section again from the genome once it exists ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6). A Case Management SDD keeps its review-item table instead ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
+   The genome keeps each id for the entry it carries the item into where the SDD's items land in one genome file ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 5), and writes the section again from the genome once it exists ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6). A Case Management SDD keeps its review-item table instead ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
 
 5. **Length follows content, never padding.** Every step, rule, exception, application and example the source states is kept — business rules all of them ([business-rules-guide.md](business-rules-guide.md) § 4). What is cut is restatement: a fact lives in one section and others name it; no template instruction, placeholder or empty example row survives; a table row replaces prose that says the same; a section the template makes conditional and whose condition does not hold is omitted.
 6. **Re-run handling — already resolved at Step 0.** This check runs BEFORE the Step 0 skeleton write (that is the write that can clobber an existing file); by the time you reach here the answer is already applied, so do not re-ask. The question, for reference and for the Step 0 gate: if `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user with a structured question:
@@ -186,7 +186,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
 
 **Next — branch on the handoff `Status`:**
-- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries under their ids, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
+- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
 - `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written until then.
 ```
 

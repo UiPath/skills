@@ -943,3 +943,38 @@ def test_platform_dependencies_with_neither_tables_nor_stub_fails_strict(check):
     assert "Platform Dependencies: neither a table per kind nor the stub line" in out
     stub = COMPONENT.replace(pd, "## Platform Dependencies\n\nNo Orchestrator or Integration Service resources required.\n\n", 1)
     assert "Platform Dependencies: neither a table per kind" not in check(stub, profile="strict")[1]
+
+
+# --- Open Decisions: numbers and the forms that name an entry ------------------------------------
+
+def test_a_repeated_entry_number_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    last = re.findall(r"^\d+\. [^\n]*$", od, re.M)[-1]
+    rc, out = check(COMPONENT.replace(last, last + "\n" + last, 1), profile="strict")
+    assert rc == 1
+    assert f"Open Decisions: entry {last.split('.')[0]} appears more than once" in out
+
+
+def test_a_cell_reference_names_no_entry(check):
+    od = open_decisions(COMPONENT)
+    n = int(re.findall(r"^(\d+)\. ", od, re.M)[-1]) + 1
+    extra = f"{n}. Who reads the run summary? (reading; answered by: whoever knows the process; reading: the finance team) — step 13\n"
+    text = COMPONENT.replace(od, od.rstrip("\n") + "\n" + extra + "\n", 1).replace("## Interface", f"The totals go to cell D{n} of the summary sheet.\n\n## Interface", 1)
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"Open Decisions entry {n} is named nowhere in the genome" in out
+
+
+def test_a_mark_naming_a_missing_configuration_question_fails_strict(check):
+    rc, out = check(COMPONENT.replace("## Interface", "A value read at start *[Inferred: CQ99]*.\n\n## Interface", 1), profile="strict")
+    assert rc == 1
+    assert "*[Inferred: CQ99]* names Configuration Question 99, which this genome does not have" in out
+
+
+def test_a_process_mark_naming_a_missing_process_entry_fails_strict(process_tree, check_process):
+    target = process_tree.parent / PROCESS_DIR.name / "invoice-extraction-genome.md"
+    text = target.read_text(encoding="utf-8")
+    target.write_text(text.replace("## Interface", "A value the process decides *[Inferred: process D9]*.\n\n## Interface", 1), encoding="utf-8")
+    rc, out = check_process(profile="strict")
+    assert rc == 1
+    assert "*[Inferred: process D9]* names entry 9, which the process genome's Open Decisions does not have" in out

@@ -31,7 +31,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      A Case component designed in an SDD already has one: its Interface names it, and nothing is written for it.
    - **A process genome:**
      - a solution overview, `<slug>-solution-sdd.md`, beside the process genome;
-     - one SDD per project, `<component-slug>-sdd.md` beside its component genome in `<slug>-genome/`, linked from the overview's Per-Project SDD Index; the RPA components of one flow share one RPA SDD.
+     - one SDD per project, `<component-slug>-sdd.md` beside its component genome in `<slug>-genome/`, linked from the overview's Per-Project SDD Index; the RPA components of one flow share one RPA SDD, named after the first of them.
 
      The open questions of every component are in the overview's Action Required ([open-questions-guide.md](open-questions-guide.md) § Items).
 
@@ -78,12 +78,12 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    Length follows content, and the template-superset check passes ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 2 items 5 and 8).
 
    An extracted genome's provenance stays in its Source Map. The SDD names the source once, in § 1, and nothing more of it.
-4. **Fingerprint.** `node "<SKILL_DIR>/scripts/sdd-fingerprint.mjs" --genome "<GENOME_MD>"` prints the genome's fingerprint: the process genome and every component genome it links. It goes in the root SDD's `Genome` row once the genome is final. The strict check fails an SDD whose row no longer matches its genome.
+4. **Fingerprint.** `node "<SKILL_DIR>/scripts/sdd-fingerprint.mjs" --genome "<GENOME_MD>"` prints the genome's fingerprint: the process genome and every component genome it links. It goes in the root SDD's `Genome` row once the genome is final; a per-project SDD's row names its component genome, `| **Genome** | <relative path to its component genome> |`, with no fingerprint. The strict check fails an SDD whose row no longer matches its genome.
 5. **Written again on every write.**
    - `edit` writes again the sections the edit changed, and Action Required, keeping its answers ([open-questions-guide.md](open-questions-guide.md) Writing Rule 1), then the fingerprint.
    - A person's edit to any other section is a change request: `edit` "The SDD was edited: update the genome" ([edit-guide.md](../edit/edit-guide.md)). The genome takes the change, and the SDD is written from it again.
 6. **A designed genome's SDD** keeps its body as `design` wrote it. After the genome is written and after every edit, its Action Required section is written again from the genome, holding:
-   - the SDD's own items carried as entries, under their ids;
+   - the SDD's own items carried as entries, under the ids the genome gives them;
    - the genome's Configuration Questions;
    - every entry the genome added.
 

@@ -33,7 +33,7 @@
 
 ## Platform Dependencies
 
-{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is *[Inferred]*, or the Configuration Question that asks it.}
+{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
 
 ### Queues
 
