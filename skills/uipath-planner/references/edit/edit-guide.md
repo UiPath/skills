@@ -1,6 +1,6 @@
 # Editing Guide — change a genome in place
 
-Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a deviation the build reports comes back here and the build re-runs. Every edit ends with the strict check (§ Review after every edit). Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
+Content rules for what an edit writes: [genome-format-guide.md](../shared/genome-format-guide.md), and for an extracted genome [extracted-genome-guide.md](../shared/extracted-genome-guide.md). Only `edit` changes a genome; `uipath-genome` reads it and never edits it, so a deviation the build reports comes back here and the build re-runs. A request from `uipath-genome` quotes the user's yes to its offer and is applied without offering the edits again; one without it offers them first. Every edit ends with the strict check (§ Review after every edit). Edits are targeted and in place, never a regeneration ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)).
 
 ## Read Plan
 
@@ -25,7 +25,7 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 | Request | Update |
 |---|---|
 | "The SDD was revised: update the genome" (after a `design` revise, or from the user) | Read the SDD the `Designed in:` line links whole and redo [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) items 3–6 against it: every section whose SDD content changed is rewritten, nothing else is. Then take the fingerprint again, over the root and every child SDD it lists for a solution, and rewrite the `Designed in:` line ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md)). A run that follows a `design` revise, or an unattended request, applies the edit without offering it; the closing summary names the sections changed |
-| "Findings from `uipath-genome`" (from the build's completion report, or the user forwarding it) | Apply each finding where it points: a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md). A build's request applies the edits without offering them |
+| "Findings from `uipath-genome`" (from the build's completion report, or the user forwarding it) | Apply each finding where it points: a genome deviation → the step the source contradicts, written as the build followed it unless the user rules otherwise; a retired skill name → the Build With row, from [skill-mapping-guide.md](../shared/skill-mapping-guide.md); a `Not covered` object to build → [extract-guide.md § Partial Re-extraction](../extract/extract-guide.md) |
 | "Write the SDD" (a genome with no SDD beside it, or one whose SDD the user wants written again) | The SDD from the genome ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md)); nothing in the genome changes |
 | "Apply the answers" (the user filled in the SDD's Action Required or the readiness file, answered in a reply or an interview (§ Interview), or `uipath-genome` sent them back) | [§ Applying the Answers](#applying-the-answers) |
 | "The SDD was edited: update the genome" (the user changed a section other than Action Required, of an SDD written from the genome) | Read each changed section against the genome, and apply each change as the row of this guide it is (a step, a rule, an application, a component). In a migration, a change that departs from the source goes to the user first. The SDD is then written again from the genome |
@@ -40,7 +40,7 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 | "Make it transactional" / "drop the transactional shape" | Transactional Shape (unit of work, As-is, outcomes, split options, evidence) or its stub; Platform Dependencies (the store the As-is names); Configuration Questions (retry counts) |
 | "Step X should be a business exception" | Transactional Shape outcomes table; the rule under Business Rules for step X; an acceptance criterion for the recorded reason |
 | "One row per transaction instead of one file" (change the unit of work) | Transactional Shape (Unit of work, Alternative units of work, As-is, outcomes, split options); Interface; Handoffs data passed; Platform Dependencies (store); Acceptance Criteria (duplicate and retry cases) |
-| "Split the dispatcher into its own component" / "use one queue" / "apply the REFramework" / "drop the ledger" | A decision for the build, not a rewrite of what the genome describes: record it as the flow's `Decided:` line ([transactional-shape-guide.md](../shared/transactional-shape-guide.md) rule 8). Edit the Transactional Shape itself only when what it describes changes — a new source, a new item kind, items that must now be shared. A split that drops a store of the flow's Coordination row rewrites the genome as that guide's rule 3 states |
+| "Split the dispatcher into its own component" / "use one queue" / "apply the REFramework" / "drop the ledger" | A decision for the build, not a rewrite of what the genome describes: the user's request made here is recorded as the flow's `Decided:` line, which a split answered for a build never is ([transactional-shape-guide.md](../shared/transactional-shape-guide.md) rule 8). Edit the Transactional Shape itself only when what it describes changes — a new source, a new item kind, items that must now be shared. A split that drops a store of the flow's Coordination row rewrites the genome as that guide's rule 3 states |
 
 ### Extracted genomes
 
@@ -77,8 +77,10 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 
 "Apply the answers" takes each item answered whose answer alters the genome, matched by its id:
 - the SDD's Business decisions, Material to supply and Preferences;
-- the readiness file's Architecture decisions whose `Written into:` line names a genome section, and each line of its Edits for `uipath-planner`;
+- the readiness file's Genome edits: each gap ruled on, and each line of its Edits for `uipath-planner`;
 - the SDD items the readiness file lists as still open.
+
+The readiness file's Architecture decisions and Build setup are the build's: none changes the genome.
 
 A reply's id is checked against what its item asks. Two answers to one id go to the user with both, and so does a readiness answer whose `Context:` line no longer matches the genome section it rests on, since an edit changed that section after `prepare` wrote it.
 
@@ -88,11 +90,10 @@ Each is applied as the row of § Edits it is:
 - an export given, or an object to translate, as a partial re-extraction;
 - a resource as "Here is the PDD too";
 - a preferences file as the `Preferences:` line, the genome then brought in line with it ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md));
-- a split as the flow's `Decided:` line, its source `the request` with the answer quoted;
-- any other Architecture decision in the section its `Written into:` line names, as the row of that section's subject (a technology: "Add/remove an application");
+- a gap ruled on in the sections its `See:` line names, as the row of what the option chosen changes;
 - a line of Edits for `uipath-planner` as the row of what it finds wrong, once the genome and the source confirm it, otherwise marked `Not applied:` with what they show.
 
-On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome kept as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the recommended option` when that was chosen); configuration values stay as answered, for the build. A request from `uipath-genome` applies the edits without offering them.
+On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome kept as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the recommended option` when that was chosen); configuration values stay as answered, for the build.
 
 ## Review after every edit
 
@@ -102,4 +103,4 @@ Then write the SDD again ([sdd-from-genome-guide.md](../shared/sdd-from-genome-g
 
 ## Back to the Build
 
-An edit `uipath-genome` requested, or a request that also asks to build or to prepare the build, ends by invoking `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare, and the user's request quoted verbatim, after § Review after every edit. A finding or answer the edit could not apply is named in that hand-off; the build reports it instead of handing it back again. `uipath-genome` not installed → end at the summary and say the build needs it. Any other edit ends at its summary.
+An edit `uipath-genome` requested, or a request that also asks to build or to prepare the build, ends by invoking `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare, and the user's request quoted verbatim, after § Review after every edit. A finding or answer the edit could not apply is named in that hand-off; the build reports it instead of handing it back again. The edit `prepare` asks for at its end ends at its summary, since that `prepare` has finished. `uipath-genome` not installed → end at the summary and say the build needs it. Any other edit ends at its summary.

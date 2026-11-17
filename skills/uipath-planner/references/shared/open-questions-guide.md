@@ -54,7 +54,7 @@ The section opens with its counts: needed before the build, by group and by role
   - On the design path, an item taken from the SDD's own design is a design change first ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Keeping the Genome Current).
 - **A point an answer opens** (a clash the new behaviour can meet, a value it needs) is a new entry, added at the end with its default and marked where the genome states it. On the design path it is a new SDD item, after the SDD's last id.
 - **Configuration values are the build's answers.** `uipath-genome` reads this section as the user's file of answers, so an answered question is not asked again.
-- **Before the build asks anything,** `uipath-genome` sends back as that edit every answered item of the genome-edit groups not yet applied.
+- **Before the build asks anything,** `uipath-genome` offers to send back as that edit every answered item of the genome-edit groups not yet applied, and builds nothing past them until it is made.
 
 ## Template
 

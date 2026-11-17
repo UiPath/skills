@@ -25,7 +25,7 @@
 //           genome's Source Map: behavioural wording (no code-level tokens), configuration question kind
 //           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
 //           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
-//           complete for every unit and alternative unit, a `Decided:` project chain on option B only and naming two
+//           complete for every unit and alternative unit, a decided flow's too, a `Decided:` project chain on option B only and naming two
 //           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
@@ -531,7 +531,7 @@ function checkTransactional(text, level, r, partOf = false) {
       if (m) { if (!units.has(row[0])) units.set(row[0], new Set()); units.get(row[0]).add(m[1]); }
       if (row.length >= 2 && !SPLIT_OPTIONS.includes(row[1].trim())) r.strict(`Transactional Shape ${name}: option cell '${row[1]}' of '${row[0]}' holds more than its letter — the transactional shape guide defines A, B and C`);
     }
-    // a split the SDD, the request or the refactor answers already took (`**Decided:** B, ...`) lists that option alone, never reopened
+    // a split the SDD, the request or the refactor answers already took (`**Decided:** B, ...`) names one row of a table kept whole
     const decidedLine = lines(body).find((l) => l.startsWith("**Decided:**")) ?? "";
     const decided = decidedLine.match(/^\*\*Decided:\*\*\s*([ABC])\b(?:,\s*([^—–]+?))?\s*(?:[—–]\s*(.*)|$)/);
     if (decidedLine && !decided) r.strict(`Transactional Shape ${name}: the 'Decided:' line does not start with the option letter`);
@@ -549,14 +549,13 @@ function checkTransactional(text, level, r, partOf = false) {
       const unit = (decided[2] ?? "").trim();
       const pool = unit && units.has(unit) ? [units.get(unit)] : unit ? [] : [...units.values()];
       if (!pool.some((opts) => opts.has(decided[1]))) r.strict(`Transactional Shape ${name}: decided option ${decided[1]}${unit ? ` of '${unit}'` : ""} has no Split options row`);
-    } else {
-      for (const [unit, opts] of units) {
-        const missing = SPLIT_OPTIONS.filter((o) => !opts.has(o));
-        if (missing.length) r.strict(`Transactional Shape ${name}: unit '${unit}' lacks option(s) ${repr(missing)}`);
-      }
-      const alt = lines(body).find((l) => l.startsWith("**Alternative units of work:**")) ?? "";
-      if (alt && !/:\*\*\s*none\b/i.test(alt) && units.size < 2) r.strict(`Transactional Shape ${name}: alternative units of work named but split options cover only one unit`);
     }
+    for (const [unit, opts] of units) {
+      const missing = SPLIT_OPTIONS.filter((o) => !opts.has(o));
+      if (missing.length) r.strict(`Transactional Shape ${name}: unit '${unit}' lacks option(s) ${repr(missing)}`);
+    }
+    const alt = lines(body).find((l) => l.startsWith("**Alternative units of work:**")) ?? "";
+    if (alt && !/:\*\*\s*none\b/i.test(alt) && units.size < 2) r.strict(`Transactional Shape ${name}: alternative units of work named but split options cover only one unit`);
     const header = lines(body).find((l) => l.trim().startsWith("| Unit of work | Option |")) ?? "";
     const cols = cells(header).map((c) => c.toLowerCase());
     if (!cols.includes("requires") || !cols.includes("changes against as-is")) {

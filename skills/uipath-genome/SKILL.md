@@ -19,7 +19,7 @@ Two verbs: `build`, and `prepare`, which asks the build's questions on the machi
    - **Transactional** — the Transactional Shape is not the stub.
    - **Test components** — a Components Type cell reading "Test-case group…", or `Test case:` steps.
    - **Packaging** — the process genome's Deployment "Packaging and route" line.
-   - **Designed** — the genome carries a `Designed in:` line; the build reads only that SDD's Action Required section, as answers.
+   - **Answers beside it** — the SDD and the readiness file beside the genome, read as answers whether or not the genome carries a `Designed in:` line, an SDD for its Action Required section alone ([configuration-questions-guide.md](references/configuration-questions-guide.md) rule 4a).
 2. **Open the verb's guide** and read it whole; its § Read Plan names every other file the verb reads and when. Never work from memory of a guide.
 
 ## Verbs
@@ -27,7 +27,7 @@ Two verbs: `build`, and `prepare`, which asks the build's questions on the machi
 | Verb | Input | Output | Guide |
 |---|---|---|---|
 | `build` | A `*-genome.md` | The projects, built through their owning skills, and the hand-off folder | [build-guide.md](references/build-guide.md) |
-| `prepare` | A `*-genome.md`, on the machine that will build it | The build's questions, asked as far as the user wants, then `<slug>-readiness.md` beside the genome with the answers and the rest: the Architecture decisions (the questions that shape what gets built, each with the build's proposal), Build setup (every other question), the build's tasks and the SDD's questions still open; nothing built | [prepare-guide.md](references/prepare-guide.md) |
+| `prepare` | A `*-genome.md`, on the machine that will build it | The build's questions, asked as far as the user wants, then `<slug>-readiness.md` beside the genome with the answers and the rest: the Architecture decisions (the questions that shape what gets built, each with the build's proposal), the Genome edits (what discovery found wrong in the genome), Build setup (every other question), the build's tasks and the SDD's questions still open; nothing built | [prepare-guide.md](references/prepare-guide.md) |
 
 ## Choosing the Verb
 
@@ -47,7 +47,7 @@ Any other input is another skill's job: say which, and stop.
 Each rule names its subject and the guide that states it in full; [build-guide.md § Verb Rules](references/build-guide.md) holds the rest.
 
 1. **Choose the verb first** (§ Choosing the Verb) and run § Setup before anything else.
-2. **The build never edits the genome** — not even a one-line fix the user names. A gap in the genome goes into the report and back to `uipath-planner` as an edit, then the build runs again.
+2. **The build never edits the genome, and hands `uipath-planner` an edit only on the user's yes** — not even a one-line fix the user names is made here. A gap goes into the report, and the edit is offered: [configuration-questions-guide.md](references/configuration-questions-guide.md) rule 4a, [completion-report-guide.md](references/completion-report-guide.md).
 3. **Never skip the configuration questions** — [build-guide.md](references/build-guide.md) rules 1–2.
 4. **Build through the owning skill, verifiably** — [build-guide.md](references/build-guide.md) rule 4.
 5. **Nothing reaches a tenant that no answer allowed** — [build-guide.md](references/build-guide.md) rule 12.

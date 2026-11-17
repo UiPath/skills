@@ -100,6 +100,7 @@ No open decisions.
 ### Flow 1 — one invoice: steps 1–2 → steps 3–6 → step 7
 
 **Unit of work:** one invoice; reference the invoice number, unique per invoice; fields InvoiceNumber, Supplier, Amount, Currency, DueDate; about 400 a day, queued once every weekday morning.
+**Alternative units of work:** none — the export holds one row per invoice and nothing groups them.
 
 **As-is** — how the work is described:
 
@@ -118,11 +119,13 @@ No open decisions.
 | Business exception | Step 4 rules: empty Supplier, non-positive Amount, unreadable DueDate | no retry; item recorded with the reason; register row Rejected; run continues |
 | System exception | every other failure — Step 5 and Step 7 handlers | item retried 2× (Configuration Question 5), then recorded as failed with the reason; run stops after 3 consecutive (Configuration Question 6) |
 
-**Split options** — the decided option:
+**Split options** — for the unit of work, each option by its letter; none asserted beyond the `Decided:` line:
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
-| one invoice | B | a time trigger for the dispatcher and queue triggers for the performer and the reporter | three processes to publish and operate instead of one; each invoice is retried and visible on its own queue item |
+| one invoice | A | one runner works the export end to end in one job, the register written by the same job | no queue: an invoice's status shows only in the register and the job log, and a failed invoice is retried only by the next run |
+| one invoice | B | a time trigger for the dispatcher and queue triggers for the performer and the reporter | three processes to publish and operate; each invoice is retried and visible on its own queue item |
+| one invoice | C | one process with one time trigger; the invoice number the queue refuses twice as its once-guard | one process to publish and operate; the queues kept between its roles, each invoice retried and visible on its own queue item |
 
 **Evidence:** about 400 invoices a day; each invoice is checked and filed independently; finance needs per-invoice status; the register is one workbook written by one process at a time.
 **Decided:** B, one invoice — the SDD §10: InvoiceDispatcher → InvoicePerformer → InvoiceReporter

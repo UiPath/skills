@@ -325,12 +325,13 @@ def _decided(text: str, line: str) -> str:
     return re.sub(r"^(\*\*Evidence:\*\*.*)$", lambda m: m.group(1) + "\n" + line, text, count=1, flags=re.M)
 
 
-def test_a_decided_split_lists_its_option_alone(check):
-    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    text = _decided(text, "**Decided:** B, one requisition line — the SDD §10")
+def test_a_decided_split_keeps_every_row(check):
+    text = _decided(COMPONENT, "**Decided:** B, one requisition row — the SDD §10")
     rc, out = check(text, profile="strict")
-    assert "lacks option(s)" not in out and "alternative units of work named" not in out, out
+    assert "lacks option(s)" not in out and "Split options row" not in out and "'Decided:'" not in out, out
+    rc, out = check(re.sub(r"^\| one requisition row \| [AC] \|.*\n", "", text, flags=re.M), profile="strict")
+    assert rc == 1
+    assert "unit 'one requisition row' lacks option(s) ['A', 'C']" in out
 
 
 def test_a_decided_option_needs_its_row(check):
@@ -347,22 +348,13 @@ def test_a_decided_line_names_its_option_first(check):
     assert "the 'Decided:' line does not start with the option letter" in out
 
 
-def _decided_b(line: str) -> str:
-    """COMPONENT with the B row of 'one requisition line' alone and the given Decided: line."""
-    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    return _decided(text, line)
-
-
 def test_a_decided_b_line_with_a_project_chain_passes(check):
-    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
+    rc, out = check(_decided(COMPONENT, "**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
     assert "'Decided:'" not in out, out
 
 
 def test_a_decided_chain_on_option_a_fails_strict(check):
-    text = re.sub(r"^\| one requisition line \| [BC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    text = _decided(text, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
+    text = _decided(COMPONENT, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
     assert rc == 1
@@ -370,7 +362,7 @@ def test_a_decided_chain_on_option_a_fails_strict(check):
 
 
 def test_a_decided_chain_naming_one_project_fails_strict(check):
-    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
+    rc, out = check(_decided(COMPONENT, "**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
     assert rc == 1
     assert "the 'Decided:' project chain 'ReqDispatcher' does not name two or more projects separated by ' → '" in out
 
@@ -381,13 +373,13 @@ def test_a_decided_chain_naming_one_project_fails_strict(check):
     "InvoiceDispatcher → InvoicePerformer, InvoiceReporter",
 ])
 def test_a_decided_chain_not_separated_by_arrows_fails_strict(check, chain):
-    rc, out = check(_decided_b(f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
+    rc, out = check(_decided(COMPONENT, f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
     assert rc == 1
     assert f"the 'Decided:' project chain '{chain}' separates its projects with '->', ',' or ' and ' — separate them with ' → '" in out
 
 
 def test_a_decided_source_quoting_the_request_is_no_chain(check):
-    rc, out = check(_decided_b('**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
+    rc, out = check(_decided(COMPONENT, '**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
     assert "project chain" not in out, out
 
 
