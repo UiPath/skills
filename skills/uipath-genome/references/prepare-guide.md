@@ -5,17 +5,17 @@
 1. **Start as a build starts:** [build-guide.md](build-guide.md) § Start and the reads of § Read Plan, then [execution-guide.md](execution-guide.md) § 1.1 and its § 1.2, the preflight discovery the options are built from.
 2. **Read the answers already given.** That means the SDD beside the genome, and an earlier readiness file, both as the user's files of answers ([configuration-questions-guide.md](configuration-questions-guide.md) rules 4 and 4a). Their genome edits not yet made go to `uipath-planner` first, as at build. A genome with no SDD beside it is read for its open entries and its Configuration Questions directly.
 3. **Select every question this build would ask** — the genome, refactor, split and scaffolding questions and the run-level ones ([configuration-questions-guide.md](configuration-questions-guide.md)). Drop each one answered by the request, the decided-values table, the preferences file the genome names, or the SDD (an item answered there), and the Subagents question, which the session that builds answers. An answer that carries a check still to make ("to be checked at build") is kept as a task under Systems and applications, naming its item. An SDD item still open is kept under its id, in Still open in the SDD. A question an answer settles only in part is kept for the rest alone, worded for it: Settings store, when the preferences file places only the constants.
-4. **Ask as the build asks, as far as the user wants** ([configuration-questions-guide.md](configuration-questions-guide.md) rules 2–3b), in its order whatever section of the file a question lands in, the first question being how to answer. Each answer is written into its item, after `Change:` or `Answer:`, with its source: `(the user, in prepare, <YYYY-MM-DD>)`. A question the user skips, or is not asked, stays open in the file. An answer that settles another question drops it, as at build.
+4. **Ask as the build asks, as far as the user wants** ([configuration-questions-guide.md](configuration-questions-guide.md) rules 2–3b), in its order whatever section of the file a question lands in, the first question being how to answer. Each answer is written after its item's `Answer:`, with its source: `b (the user, in prepare, <YYYY-MM-DD>)`. A question the user skips, or is not asked, stays open in the file. An answer that settles another question drops it, as at build.
 5. **Write the readiness file**, `<slug>-readiness.md` beside the genome (the genome's file name with `-readiness.md` in place of `-genome.md`). A process genome has one, covering its components. It holds the sections of § The readiness file, in their order, each with its "Usually answered by" line; a section with no item reads "None.".
 6. **Every question is rendered as an item**, worded and optioned as the build would ask it (rules 2–2b), in the item form:
    - its id and the question in bold, `R<n>.`, numbered through the file and kept on a re-run, a new item taking the next number;
    - at most one `Context:` line, with the facts rule 2a names;
    - `See:` the genome sections they rest on;
-   - `Recommended:` the Recommended option, with what it gives;
-   - `Instead:` one line per other option, with what it gives;
-   - `Change:`.
+   - `Options:` lettered, one per line, each with what it gives, the Recommended one marked `(recommended)`;
+   - `Written into:` the genome section the answer goes to, for an Architecture decision;
+   - `Answer:`, which takes an option's letter or the person's own words.
 
-   Each label is in bold and every line is in short sentences. Backticks hold only a name a person types or searches for (a queue, an asset, a file, a package); components and source objects are written plain. A question with no option the build can recommend (a path only the user knows) ends instead on `Until answered:` (what the build does while it stays open) and `Answer:`. A task ends on `Status:`.
+   Each label is in bold and every line is in short sentences. Backticks hold only a name a person types or searches for (a queue, an asset, a file, a package); components and source objects are written plain. A question with no option the build can recommend (a path only the user knows) has `Until answered:` (what the build does while it stays open) in place of its options. A task ends on `Status:`.
 7. **Build nothing:** no project or install but the scratch project of preflight discovery, and no tenant write. End by naming the file, how many items each section holds, and how many are needed before the build. When the answers include genome edits, offer to run `uipath-planner` "Apply the answers" now; when no question is left open, offer to build.
 
 ## The readiness file
@@ -25,7 +25,7 @@ The file travels with the genome: no line of it names a signed-in account, a use
 The header says, in this order:
 - when and on what machine facts it was prepared, those facts alone: the host, the packages discovery found, the template feed, the deployed libraries the search found or that it could not run, the source export found;
 - how many items are needed before the build, by section;
-- how to answer: fill in an item, `accept` under its `Change:` taking its Recommended option or default, then ask `uipath-planner` to "apply the answers", which writes into the genome what changes it;
+- how to answer: write an option's letter, or your own words, after an item's `Answer:`, then ask `uipath-planner` to "apply the answers", which writes into the genome what changes it;
 - the Contents, with each section's counts.
 
 The sections:
@@ -46,11 +46,11 @@ The sections:
    Each ends on `Status:`. Usually answered by: the engineer, with the tenant admin.
 5. **Still open in the SDD** — every item of the SDD's Action Required with no answer, under its id and its group's heading, in the SDD's own form. An answer given here is the same item's: it reaches the genome as the SDD's would. Usually answered by: as each item names.
 
-`prepare` run again keeps every change and every `Status:`. It drops:
-- each item whose question is now answered elsewhere (the genome, by the decided-values table of [configuration-questions-guide.md](configuration-questions-guide.md) rule 5; the SDD; the preferences file), unless it carries a change, which stays as the record of the decision;
+`prepare` run again keeps every answer and every `Status:`. It drops:
+- each item whose question is now answered elsewhere (the genome, by the decided-values table of [configuration-questions-guide.md](configuration-questions-guide.md) rule 5; the SDD; the preferences file), unless it carries an answer, which stays as the record of the decision;
 - each edit line marked applied.
 
-It draws again a decision whose Recommended option rests on an answer since changed (a settings store that names the template a change removed), clearing an `accept` under it: that took the option the change replaced.
+It draws again a decision whose Recommended option rests on an answer since changed (a settings store that names the template a change removed), clearing an answer that chose the option the change replaced.
 
 ## The Architecture decisions section
 
@@ -58,12 +58,12 @@ The build's questions that shape what gets built, each with its Recommended opti
 1. **Refactor** — in a refactor, the refactor questions but the rulings, whose source defects are open decisions the SDD holds.
 2. **Processes and their work items** — for each flow of the Transactional Shape without a `Decided:` line, its split questions ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)), each `Context:` naming the flow and the facts of its As-is the answer rests on.
 3. **Libraries and reusable parts** — Source fidelity, Library layout and Library location, the layout's `Context:` naming the libraries and the source units each is built from, as the Source Map names them.
-4. **Technology per capability** — one question per independent choice, its `Today:` line, in place of `Context:`, saying how the source does it (the application, the client, the protocol), as the genome states it.
-5. **Genome gaps to rule on** — each gap discovery found that needs someone to choose, with its options, its `Recorded in:` the genome section it changes.
+4. **Technology per capability** — one question per independent choice, its `Context:` saying how the source does it today (the application, the client, the protocol), as the genome states it.
+5. **Genome gaps to rule on** — each gap discovery found that needs someone to choose, with its options, its `Written into:` the genome section it changes.
 
 What the genome already shows is named by section where a decision rests on it, never redrawn: its Process Map and Components, Platform Dependencies, the Transactional Shape, Deployment, the Source Map.
 
-**Recorded in.** Each decision has a `Recorded in:` line naming the genome section that states its subject, or `the build` when no section does. `uipath-planner`'s "Apply the answers" writes the answer there. The sections are the flow's `Decided:` line, and the Target Applications row of the component that uses a capability.
+**Written into.** Each decision has a `Written into:` line naming the genome section that states its subject, or `the build` when no section does. `uipath-planner`'s "Apply the answers" writes the answer there. The sections are the flow's `Decided:` line, and the Target Applications row of the component that uses a capability.
 
 A split option's letter appears only beside its meaning.
 
@@ -76,7 +76,7 @@ Genome: [`<genome file>`](<relative path>). Prepared <YYYY-MM-DD> by `uipath-gen
 
 Needed before the build: <n> answers and <n> tasks — <section>: <n>; <section>: <n>. Every other item has a default.
 
-Write an answer after each `Answer:`, `Change:` and `Status:`. To take an item's Recommended option or default, write `accept` under its `Change:`. An item left blank stays open, and the build asks it. Then ask `uipath-planner` to "apply the answers", and build with `uipath-genome`: it asks nothing this file answers.
+Write the letter of the option you choose, or your own words, after each `Answer:`, and the state of each task after its `Status:`. An item left blank stays open, and the build asks it. Then ask `uipath-planner` to "apply the answers", and build with `uipath-genome`: it asks nothing this file answers.
 
 ## Contents
 
@@ -90,55 +90,60 @@ Write an answer after each `Answer:`, `Change:` and `Status:`. To take an item's
 
 Usually answered by: the engineer, with the architect.
 
-Each decision carries the build's proposal: accept it, or change it.
+Each decision carries the build's proposal, marked `(recommended)`.
 
 ### Refactor
 
 **R<n>. <The refactor question in plain words>**
 - **Context:** <the component, and the facts the answer rests on>
-- **Recommended:** <the option, with what it gives>
-- **Instead:** <one alternative per line>
-- **Recorded in:** the build
-- **Change:**
+- **Options:**
+  - a. <the option, with what it gives> (recommended)
+  - b. <another option, with what it gives, one per line>
+- **Written into:** the build
+- **Answer:**
 
 ### Processes and their work items
 
 **R<n>. <The split question in plain words>**
 - **Context:** <the flow, and the facts of its As-is the answer rests on>
 - **See:** <the genome sections the context rests on>
-- **Recommended:** <the option, with what it gives and why it fits this genome>
-- **Instead:** <one alternative, with what it gives>
-- **Instead:** <the next alternative, one line each>
-- **Recorded in:** <the flow's `Decided:` line>
-- **Change:** <blank, or the answer given while preparing, with its source: (the user, in prepare, YYYY-MM-DD)>
+- **Options:**
+  - a. <the option, with what it gives and why it fits this genome> (recommended)
+  - b. <one alternative, with what it gives>
+  - c. <the next alternative, one line each>
+- **Written into:** <the flow's `Decided:` line>
+- **Answer:** <blank, or the answer given while preparing, with its source: b (the user, in prepare, YYYY-MM-DD)>
 
 ### Libraries and reusable parts
 
 **R<n>. <The Library layout question>**
 - **Context:** <the libraries, and the source units each is built from>
 - **See:** <the genome sections the context rests on>
-- **Recommended:** …
-- **Instead:** <one alternative per line>
-- **Recorded in:** the build
-- **Change:**
+- **Options:**
+  - a. … (recommended)
+  - b. <another option, with what it gives, one per line>
+- **Written into:** the build
+- **Answer:**
 
 ### Technology per capability
 
 **R<n>. <Capability>: how should the automation <do it>?**
-- **Today:** <how the source does it>
-- **Recommended:** <the owning skill's way, or the source's in a migration>
-- **Instead:** <one alternative per line, with when it fits>
-- **Recorded in:** <the component's Target Applications row>
-- **Change:**
+- **Context:** <how the source does it today>
+- **Options:**
+  - a. <the owning skill's way, or the source's in a migration> (recommended)
+  - b. <another way, with when it fits, one per line>
+- **Written into:** <the component's Target Applications row>
+- **Answer:**
 
 ### Genome gaps to rule on
 
 **R<n>. <The two statements, or the source's way and the skill's, as a question>**
 - **Context:** <where the genome states each, and the fact that shows the gap>
-- **Recommended:** <the option, with what it gives>
-- **Instead:** <one alternative per line>
-- **Recorded in:** <the genome section it changes>
-- **Change:**
+- **Options:**
+  - a. <the option, with what it gives> (recommended)
+  - b. <another option, with what it gives, one per line>
+- **Written into:** <the genome section it changes>
+- **Answer:**
 
 ### Edits for `uipath-planner`
 
@@ -152,9 +157,10 @@ Usually answered by: the engineer.
 
 **R<n>. <The question in plain words>**
 - **Context:** <…>
-- **Recommended:** <…>
-- **Instead:** <one alternative per line>
-- **Change:**
+- **Options:**
+  - a. … (recommended)
+  - b. <another option, with what it gives, one per line>
+- **Answer:**
 
 ## 3. Systems and applications
 

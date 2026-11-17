@@ -79,18 +79,20 @@ section again from it, with every open question. See open-questions-guide.md for
 <COUNT> questions are open: <COUNT_NEEDED> needed before the genome is written, the rest with a default applied in its section.
 
 **D1. <QUESTION>**
-- **Context:** <SECTION>: <WHAT_IS_UNKNOWN>
-- **Default:** <DEFAULT_APPLIED>
-- **Answered by:** <ROLE>
-- **Change:**
+- **Context:** <WHAT_IS_UNKNOWN>
+- **See:** <SECTION>
+- **Options:**
+  - a. <DEFAULT_APPLIED> (built now)
+  - b. <ANOTHER_OPTION>
+- **Answer (by <ROLE>):**
 
 **D2. <QUESTION_WITH_NO_DEFENSIBLE_DEFAULT>**
-- **Context:** <SECTION>: <WHAT_IS_UNKNOWN>
+- **Context:** <WHAT_IS_UNKNOWN>
+- **See:** <SECTION>
 - **Until answered:** the SDD stays `draft` and no genome is written
-- **Answered by:** <ROLE>
-- **Answer:**
+- **Answer (by <ROLE>):**
 
-> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the recorded default, which must be verified before production sign-off. An item ending on `Answer:` keeps the handoff at `Status: draft`.
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 

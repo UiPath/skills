@@ -58,7 +58,7 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 
 ## Interview
 
-`interview` asks the open items of the SDD's Action Required, and of the readiness file when one exists beside the genome, then applies the answers. It asks only what nothing else answers: an item the request, an answers file, the preferences file or its own `Change:` or `Answer:` already settles is never asked.
+`interview` asks the open items of the SDD's Action Required, and of the readiness file when one exists beside the genome, then applies the answers. It asks only what nothing else answers: an item the request, an answers file, the preferences file or its own answer already settles is never asked.
 
 1. **How to answer.** One structured question comes first, skipped when the request already says. Its options:
    - every item, a batch at a time (Recommended when an item has no default);
@@ -68,31 +68,31 @@ On a genome with a `Designed in:` line, a change to what the SDD holds — produ
 2. **Roles.** When the items name more than one answerer and the request names none, one multi-select question asks which roles the user answers for. Only their items are asked; the others stay open for their own answerers.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** of at most four structured questions, each with at most four options: one question per item, and, while the group has more items, the fourth offering "use the defaults for the rest of this group":
-   - the options come from the item's `Builds now:`, `Recommended:`, `Default:`, `Reading:` and `Instead:` lines, the recommended one first and marked (with none recommended, what the genome builds now first, as the build orders it), the default named;
+   - the options come from the item's `Options:`, the recommended one first and marked (with none recommended, the one built now first, as the build orders it), and a value item's `Default:` named;
 5. **Stop** when the user says so, takes the defaults for what is left, or no item of the user's roles remains.
-6. **Write, then apply.** Each answer goes under its item, as its `Change:` or `Answer:`; a default the user takes, alone or with the rest of a group, as `accept`. Then apply them (§ Applying the Answers).
+6. **Write, then apply.** Each answer goes after its item's `Answer`: the option's letter, a value, or `default`, alone or for the rest of a group. Then apply them (§ Applying the Answers).
 7. **What remains.** The closing summary lists the items still open by role. With them it names the document to send to each: the SDD, or the readiness file for the build's own questions.
 
 ## Applying the Answers
 
-"Apply the answers" takes each item answered or changed, an `accept` included, whose answer alters the genome, matched by its id:
+"Apply the answers" takes each item answered whose answer alters the genome, matched by its id:
 - the SDD's Business decisions, Material to supply and Preferences;
-- the readiness file's Architecture decisions whose `Recorded in:` line names a genome section, and each line of its Edits for `uipath-planner`;
+- the readiness file's Architecture decisions whose `Written into:` line names a genome section, and each line of its Edits for `uipath-planner`;
 - the SDD items the readiness file lists as still open.
 
-A reply's id is checked against what its item asks. Two answers to one id go to the user with both, and so does a readiness answer whose `Context:` or `Today:` line no longer matches the genome section it rests on, since an edit changed that section after `prepare` wrote it.
+A reply's id is checked against what its item asks. Two answers to one id go to the user with both, and so does a readiness answer whose `Context:` line no longer matches the genome section it rests on, since an edit changed that section after `prepare` wrote it.
 
 Each is applied as the row of § Edits it is:
-- a ruling, a defect named under Defects the rebuild fixes, and an accepted recommendation the genome does not build yet, as "Fix this defect in the rebuild" / "keep the source's behaviour";
-- an accepted reading loses its marker; a changed one, or a discrepancy the owner rules for the resource, as "This step is wrong / missing";
+- a ruling, a defect named under Defects the rebuild fixes, and a recommended option chosen that the genome does not build yet, as "Fix this defect in the rebuild" / "keep the source's behaviour";
+- a reading the answer keeps loses its marker; a changed one, or a discrepancy the owner rules for the resource, as "This step is wrong / missing";
 - an export given, or an object to translate, as a partial re-extraction;
 - a resource as "Here is the PDD too";
 - a preferences file as the `Preferences:` line, the genome then brought in line with it ([genome-format-guide.md § Design Links](../shared/genome-format-guide.md));
 - a split as the flow's `Decided:` line, its source `the request` with the answer quoted;
-- any other Architecture decision in the section its `Recorded in:` line names, as the row of that section's subject (a technology: "Add/remove an application");
+- any other Architecture decision in the section its `Written into:` line names, as the row of that section's subject (a technology: "Add/remove an application");
 - a line of Edits for `uipath-planner` as the row of what it finds wrong, once the genome and the source confirm it, otherwise marked `Not applied:` with what they show.
 
-On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome accepted as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the Recommended option` for an accepted one); configuration values stay as answered, for the build. A request from `uipath-genome` applies the edits without offering them.
+On a genome with a `Designed in:` line, an item taken from the SDD's own design goes to `design` first (§ Any genome). An answer that leaves the genome as it stands (an object left out, the source kept, a business outcome kept as built) changes no step. Every entry an answer settles reads decided ([genome-format-guide.md § Open Decisions](../shared/genome-format-guide.md)). The readiness file's applied items are marked `Applied <YYYY-MM-DD>: <what it wrote>` (`the recommended option` when that was chosen); configuration values stay as answered, for the build. A request from `uipath-genome` applies the edits without offering them.
 
 ## Review after every edit
 

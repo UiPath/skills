@@ -181,7 +181,7 @@ Each use case is a few requests in a row. Steps 1 to 5 below say what each reque
 | Change an automation built from a genome | The change, in plain words: "step 4 should also …" | The genome and its SDD are updated, your answers kept. The build (step 3) changes the projects it made before, or those you name in the readiness file, and the report lists every change made to them |
 | Get the questions answered by other people | Share the SDD, or say "Interview me on the open questions" with the person beside you | "Apply the answers" writes them into the genome and the SDD |
 | Get the build's own questions answered ahead | "Prepare the build of `<name>-genome.md`" on the machine that will build, then share the readiness file | "Apply the answers", then build: it asks nothing the files answer |
-| Change answers after the build was prepared | Edit the SDD or the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again, and an `accept` you wrote under it is cleared |
+| Change answers after the build was prepared | Edit the SDD or the readiness file, then "Prepare the build" again | Your changes stay; a decision that rests on an answer you changed is drawn again, and the answer you gave it is cleared |
 | Build on another machine than the one prepared | "Build `<name>-genome.md`" on that machine | The file's answers hold; a question whose options are not the same there (other packages installed) is asked again |
 | Build with nobody to answer | "Build `<name>-genome.md`, take the defaults" | The build asks nothing and takes each recommended option or default; the report lists each one it took |
 | Use a genome that has no SDD | "Write the SDD for `<name>-genome.md`" | Steps 2 to 5 |
@@ -227,7 +227,7 @@ This is your main decision point. The build follows the genome, and the agent ne
 To check a step against the original, the genome's Source Map names the part of the source each step came from. When the rebuild merges, splits or drops parts of the source, its as-is process map shows the source as a whole, beside the Process Map.
 
 **Answer the questions** with the people each item names: the process owner for the business decisions, whoever holds the source for missing material, the environment owners for the configuration values.
-- **In the SDD:** share it. Most items carry a default: write `accept` under each one that is right, and the change under each one that is wrong. An item left blank stays open.
+- **In the SDD:** share it. Each item lists its options by letter, the one built until someone answers marked `(built now)`: write the letter you choose, or your own words, after its `Answer`. An item left blank stays open.
 - **In the chat:** say "Interview me on the open questions", or add a role ("the process owner's"). It asks first how you want to answer, as the build does: every item, only what needs a decision, or the defaults.
 
 Then say "Apply the answers": the agent writes into the genome what the answers change, writes the SDD again, and keeps each configuration value for the build. If you skip it, preparing or building does it first.

@@ -125,8 +125,9 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
    - its marker in the body names it (`[SME REVIEW] D2: <note>`);
-   - a `default-carried` item states its default and ends on `Change:`;
-   - a `blocking` item has no default: it ends on `Answer:`, after `Until answered:`.
+   - a `default-carried` item lists its options, the default applied marked `(built now)`, or as a value its `Default:`;
+   - a `blocking` item has no default: an `Until answered:` line in its place;
+   - each ends on `Answer (by <role>):`.
 
    The genome keeps each id for the entry it carries the item into where the SDD's items land in one genome file ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 5), and writes the section again from the genome once it exists ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6). A Case Management SDD keeps its review-item table instead ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items).
 
