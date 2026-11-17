@@ -1,6 +1,6 @@
 # Mail Activities (classic)
 
-Activities in the classic `UiPath.Mail.Activities` package (grouped by namespace below) that talk to a mail system directly from the Robot — distinct from the modern Graph/OAuth activities in **o365-activities** (`UiPath.MicrosoftOffice365.Activities`) and the Gmail activities in **gsuite-activities**. The classic mail packages are:
+Activities in the classic `UiPath.Mail.Activities` package (grouped by namespace below) that talk to a mail system directly from the Robot — distinct from the modern Graph/OAuth activities in **o365-activities** (`UiPath.MicrosoftOffice365.Activities`) and the Gmail activities in **gsuite-activities**. Its namespaces are:
 
 - **Outlook (desktop COM)** — `UiPath.Mail.Outlook.Activities`. Drives the locally installed **Outlook desktop application** through COM interop: `Send Outlook Mail Message` (`SendOutlookMail`), `Get Outlook Mail Messages` (`GetOutlookMailMessages`), `Move Outlook Mail Message`, `Reply To Outlook Mail Message`, `Mark Outlook As Read`. Requires Outlook installed **and** a configured mail profile in the session the Robot runs as.
 - **SMTP / IMAP / POP3 / Exchange** — `UiPath.Mail.SMTP.Activities` (`Send SMTP Mail Message`), `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.Exchange.Activities`. Protocol-level mail that talks to a mail server directly, with no desktop client dependency.

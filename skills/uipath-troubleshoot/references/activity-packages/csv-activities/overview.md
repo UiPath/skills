@@ -13,7 +13,7 @@ Failures originate at distinct layers — **package/dependency load** (the bundl
 ## Key Activities
 
 - **Read CSV** (`UiPath.CSV.Activities.ReadCsvFile`, "Read CSV") — read a delimited file into a `DataTable` (`Path` in, `DataTable` out).
-- **Write CSV** (`UiPath.CSV.Activities.AppendWriteCsvFile`, "Write CSV"; `WriteCsvFile` in older releases) — overwrite a file from a `DataTable` (`Path`, `DataTable`).
+- **Write CSV** (`UiPath.CSV.Activities.AppendWriteCsvFile` and `UiPath.CSV.Activities.WriteCsvFile`, both "Write CSV") — write a `DataTable` to a file (`Path`, `DataTable`); `AppendWriteCsvFile` writes or appends per its `CsvAction`.
 - **Append To CSV** (`UiPath.CSV.Activities.AppendCsvFile`, "Append To CSV") — append a `DataTable`'s rows to an existing file (`Path`, `DataTable`). **Local files only.**
 
 ## Common Failure Patterns

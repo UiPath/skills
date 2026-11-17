@@ -40,7 +40,7 @@ What to look for:
 Install the named LocalServer package (`UiPath.ComputerVision.LocalServer` for Screen, `UiPath.DocumentUnderstanding.OCR.LocalServer` for Document) at the required version, or turn off local server mode to use the cloud endpoint.
 
 ### Missing CoreIPC
-No package is missing: the check fails wherever it cannot locate CoreIPC through Studio, the headless `uip rpa` host included, and no project change clears it. The UI Automation and OCR activities packages no longer carry the check; update to a release without it. If the message still appears, read the PDF from a coded workflow that calls the PDF package's coded `ReadPDFWithOCR`, and invoke it from the XAML.
+No package is missing: the check fails wherever it cannot locate CoreIPC through Studio, the headless `uip rpa` host included, and no project change clears it. The UI Automation and OCR activities packages no longer carry the check; update to a release without it. If the message still appears, read the PDF from a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.
 
 ### Incompatible companion versions
 Upgrade the named companion packages (IntelligentOCR, PDF, DU.ML, OmniPage) to at least the stated minimums.
