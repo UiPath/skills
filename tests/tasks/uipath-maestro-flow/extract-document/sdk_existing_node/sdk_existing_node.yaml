@@ -1,0 +1,78 @@
+task_id: skill-flow-extract-document-sdk-existing-node
+description: >
+  Integration: the InvoiceReader flow already holds an Extract document node,
+  and its project also holds a supplied `.flow-sdk/InvoiceReader.flow.ts`. The
+  user renames a taxonomy field. The separate-project redirect is for adding a
+  new node only, so the agent edits the existing node in InvoiceReader.flow and
+  builds no second project. The rename itself is graded in full by
+  `rename_field`; this task grades where the edit landed.
+
+  The source is the fixture flow decompiled by the builder SDK, overlaid into
+  the shared InvoiceReader fixture.
+
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/InvoiceReader
+      mount_point: InvoiceReader
+    - type: template_dir
+      path: flow-sdk-source
+      mount_point: InvoiceReader/InvoiceReader/.flow-sdk
+reference:
+  directory: ../..
+
+initial_prompt: |
+  In my InvoiceReader flow, rename the Total field of the Extract document
+  node's taxonomy to "Total Amount". Make sure the flow validates.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: run_command
+    description: "The existing node in InvoiceReader.flow was edited: \"Total Amount\" kept the id Total had"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader fields
+      '[{"name": "Total Amount", "id": "059158da-1564-4680-a208-ce02de660518"}]'
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No separate project was built: no other Flow project holds an Extract document node"
+    command: test -z "$(python3 $REFERENCE_DIR/extract-document/sdk_project/sdk_project_helper.py InvoiceReader/InvoiceReader)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every node but the Extract document node, and every edge, variable and definition, is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader --changed-node extractInvoice1"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on InvoiceReader.flow with no warnings"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings InvoiceReader/InvoiceReader/InvoiceReader.flow
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 25
+  max_turns: 50
+  task_timeout: 1200
