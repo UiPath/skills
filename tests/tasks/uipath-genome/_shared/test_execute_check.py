@@ -174,3 +174,11 @@ def test_a_missing_project_fails(project):
 def test_an_unexpected_project_fails(project):
     rpa_project(project.parent, "Reporter")
     assert projects("Sales") == 1
+
+
+def test_no_projects_passes_on_an_empty_folder_and_fails_on_a_project(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert execute_check.cmd_no_projects(argparse.Namespace()) == 0
+    (tmp_path / "DailyNote").mkdir()
+    (tmp_path / "DailyNote" / "project.json").write_text(json.dumps({"name": "DailyNote", "main": "Main.xaml"}), encoding="utf-8")
+    assert execute_check.cmd_no_projects(argparse.Namespace()) == 1

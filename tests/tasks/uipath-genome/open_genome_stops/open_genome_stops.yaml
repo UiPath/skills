@@ -1,0 +1,68 @@
+task_id: skill-genome-open-genome-stops
+description: >
+  Smoke: a genome whose Build Decisions read `Build: open — 1 open` (the Log target row left to the
+  CoE) is handed to the build. The readiness gate stops it: no project is created, no question is
+  asked, the genome is left unchanged, and the agent hands the open row back to uipath-planner rather
+  than picking a default itself.
+tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+  task_timeout: 900
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `daily-note-genome.md` in this folder.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No project is created for a genome that is not ready"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'no-projects']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "The build asks the user nothing; the open row goes back to uipath-planner"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The build leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'daily-note-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'open_genome_stops', 'fixtures', 'daily-note-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No project is scaffolded"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+init'
+    weight: 1.0
+    pass_threshold: 1.0

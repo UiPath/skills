@@ -39,6 +39,21 @@ Runs unattended with no arguments; the output is the note file Workflow step 3 w
 
 1. Which folder receives the note? (constant; default: `Notes`, relative to the process folder)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Take the business date** (input: none; output: business date): take today's date as the business date, formatted `yyyy-MM-dd`.

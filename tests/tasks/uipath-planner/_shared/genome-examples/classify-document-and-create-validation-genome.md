@@ -52,6 +52,21 @@ When the classification confidence falls below a configurable threshold, the aut
 5. Which Orchestrator folder receives the Action Center tasks? (setting; default: the process's own folder)
 6. What task priority for validation tasks? (constant; default: Medium)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Receive document** (input: file path; output: document reference):

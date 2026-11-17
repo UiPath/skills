@@ -52,6 +52,22 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 5. How many times is a failed invoice retried? (constant; default: 2)
 6. After how many consecutive failures does a run stop? (constant; default: 3)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Split details — Flow 1 | one queue per hand-off; the REFramework in queue mode for each consumer; shared steps duplicated; the As-is triggers and runner count | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Read the day's export** (input: input folder; output: invoice rows): read the newest file ending in `.csv` in the input folder as a table with its header row. If there is none, write a message to the job log and end the run.

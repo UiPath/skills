@@ -1,10 +1,10 @@
 # Execution Guide — build an automation from a genome
 
-Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
+Genome says *what* to build; build skills know *how*. Execution reads genome and its configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([build-guide.md § Read Plan](build-guide.md)).
 
 **Done when** — execution is finished only when all of these hold; a passing build alone is not the end:
 
-1. Every configuration question is answered — by the user, or by its default in an autonomous run ([configuration-questions-guide.md](configuration-questions-guide.md)) — and applied: each setting lives where the Settings store answer puts it ([configuration-questions-guide.md](configuration-questions-guide.md)).
+1. Every configuration answer is read from the genome ([configuration-questions-guide.md](configuration-questions-guide.md)) and applied: each setting lives where the Settings store answer puts it ([configuration-questions-guide.md](configuration-questions-guide.md)).
 2. Every project validates and builds through its owning skill (§ 2.2).
 3. Every acceptance criterion carries a verdict (§ 3.1).
 4. The completion report is written as the hand-off's README, and its status is given to the user ([completion-report-guide.md](completion-report-guide.md)).
@@ -18,26 +18,26 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 
 Read whole file. Identify level from preamble comment (`component` or `process`). For a process genome, read every component genome linked in the Components table before anything else. A missing linked component file: [build-guide.md § Start](build-guide.md) (ask for its path; none supplied → a `uipath-planner` edit, and stop).
 
-Required sections — component: Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity; process: Overview, Actors and Systems, Components, Process Map, Handoffs, Acceptance Criteria, Deployment, Complexity. Optional (may be stubs) — component: Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Transactional Shape, Tags, Source Map; process: Platform Dependencies, Configuration Questions, Business Rules, Error Handling and Recovery, Transactional Shape, Tags, Source Map. A genome missing a required section is not buildable as it stands: report the section as an edit for `uipath-planner`, and stop. A missing optional section goes into the completion report as an edit for `uipath-planner`, and the build continues.
+Required sections — component: Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity; process: Overview, Actors and Systems, Components, Process Map, Handoffs, Acceptance Criteria, Deployment, Complexity. Build Decisions is required for both, and its readiness gate is 1.3's. Optional (may be stubs) — component: Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Transactional Shape, Tags, Source Map; process: Platform Dependencies, Configuration Questions, Business Rules, Error Handling and Recovery, Transactional Shape, Tags, Source Map. A genome missing a required section is not buildable as it stands: report the section as an edit for `uipath-planner`, and stop. A missing optional section goes into the completion report as an edit for `uipath-planner`, and the build continues.
 
 When the genome carries a design link ([genome-reading-guide.md § Design Links](genome-reading-guide.md)):
 
-- **`Designed in:`** — the build reads no SDD and does not compare its `sdd-sha256` fingerprint: `uipath-planner` keeps a designed genome current. The SDD's decisions are already in the genome's sections — the split and queue design on `Decided:` lines, the implementation mode, the package pins, the refactor answers, the products and projects the Build With and Components tables name — and are answered from there, each recorded under its source's label ([configuration-questions-guide.md](configuration-questions-guide.md), the decided-values table). The scaffolding and environment questions the genome leaves open are asked as usual ([configuration-questions-guide.md](configuration-questions-guide.md), autonomous runs).
+- **`Designed in:`** — the build reads no SDD and does not compare its `sdd-sha256` fingerprint: `uipath-planner` keeps a designed genome current. The SDD's decisions are already in the genome's sections — the split and queue design on `Decided:` lines, the implementation mode, the package pins, the refactor answers, the products and projects the Build With and Components tables name — and are answered from there, each recorded under its source's label ([configuration-questions-guide.md](configuration-questions-guide.md) § Reading the answers). Its Build Decisions hold the scaffolding and environment answers; nothing is asked.
 
 ### 1.2 Preflight discovery
 
-Gather facts the 1.3 scaffolding questions are built from before asking anything. Discovery is silent; it never replaces the questions.
+Gather the machine facts 1.3 records and checks the genome's answers against. Discovery is silent; it never replaces an answer the genome gives.
 
 1. Run the UiPath login status check (`uip login status --output json`); record what an expired session blocks (resource refresh, publish, deploy, Test Manager attachments — local init, validate, build, pack and run still work).
 2. Confirm runtime host and edit surface; record which target frameworks and expression languages they support.
 3. For every skill named in Build With / Components, run that skill's discovery commands for installed packages; record activity packages and versions available to the authoring host. When a project already exists in the build location, also record its declared dependencies and versions from its manifest.
 4. Determine candidate build location: the folder containing the genome file, never the current working directory when that is a different repository.
-5. **Export check.** When the Source Map names a framework other than UiPath, read the export path and identity it records and check the export is where it says (manifest matches recorded identity). Record the outcome for the 1.3 scaffolding questions; derive nothing yet — that is [source-migration-guide.md § Migration preflight](source-migration-guide.md), after the questions. The framework migration pack is asked for in 1.3, not searched for here ([source-frameworks-guide.md](source-frameworks-guide.md)).
-6. **Template check.** When the genome's Transactional Shape is not the stub ([transactional-execution-guide.md § Shape Rules](transactional-execution-guide.md)), run the owning skill's template discovery for the REFramework (`uipath-rpa` searches the template feed) and record whether an official template is available to this host. The result informs 1.4; it never removes the 1.3 scaffolding question — the owning skill's template-selection rules decide what happens at creation when no official template is found.
+5. **Export check.** When the Source Map names a framework other than UiPath, read the export path and identity it records and check the export is where it says (manifest matches recorded identity). Record the outcome for 1.3; derive nothing yet — that is [source-migration-guide.md § Migration preflight](source-migration-guide.md), after 1.3. The framework migration pack is asked for in 1.3, not searched for here ([source-frameworks-guide.md](source-frameworks-guide.md)).
+6. **Template check.** When the genome's Transactional Shape is not the stub ([transactional-execution-guide.md § Shape Rules](transactional-execution-guide.md)), run the owning skill's template discovery for the REFramework (`uipath-rpa` searches the template feed) and record whether an official template is available to this host. The result informs 1.4; it never changes a 1.3 answer — the owning skill's template-selection rules decide what happens at creation when no official template is found.
 
-### 1.3 Configuration questions — never skipped
+### 1.3 Configuration answers — read, never asked
 
-[configuration-questions-guide.md](configuration-questions-guide.md), read whole before anything is asked.
+[configuration-questions-guide.md](configuration-questions-guide.md), read whole: its readiness gate runs before anything is created.
 
 ### 1.4 Resolve the target project
 
@@ -65,7 +65,7 @@ If the genome's Deployment section says "independent packages", skip the solutio
 
 **Retired and folded components** — every build, refactor, migration or plain build. A component whose Build With / Components row's Rationale opens `Retired:` gets no project. One whose Rationale opens `Folded into <writer>:` gets no project either: its steps are built in the writer's groups, after the writer's steps whose data they use (§ 2.1), the handoff between the two is not built (§ 2.3), and every output the folded component left is still written, by the writer.
 
-**Split answers** (the split questions, one per flow): resolve them before creating anything, and create each consumer project chosen for the REFramework from its template — [transactional-execution-guide.md § Projects from the split answers](transactional-execution-guide.md).
+**Split answers** (one per flow): resolve them before creating anything, and create each consumer project chosen for the REFramework from its template — [transactional-execution-guide.md § Projects from the split answers](transactional-execution-guide.md).
 
 ### 1.5 Library components and their consumers
 
@@ -182,7 +182,7 @@ Acceptance Criteria
 Result: 5/8 met, 1 partial, 1 not met, 1 not verifiable
 ```
 
-For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate the touched files and re-run every local run and test that exercises them: a fix to a shared workflow can break a criterion already Met. A fix that turns a Met criterion into Partial or Not Met is undone before another fix is tried, and the report gives the final build's verdicts.
+For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately when the request asks for an unattended build, then re-validate the touched files and re-run every local run and test that exercises them: a fix to a shared workflow can break a criterion already Met. A fix that turns a Met criterion into Partial or Not Met is undone before another fix is tried, and the report gives the final build's verdicts.
 
 ### 3.3 Completion report — the hand-off
 
@@ -198,7 +198,7 @@ After every project of a process genome is built, and before the report, a revie
 
 ## Anti-patterns
 
-1. **Building before the configuration questions are answered.** Produces placeholder values the user must hunt down later. Variants: skipping 1.3 because the genome's section is a stub (scaffolding questions are asked regardless); taking a "(Recommended)" or discovered value without asking outside an autonomous run; declaring the run autonomous because nobody replied yet, or because it runs in a subagent; letting the init command pick target framework and package versions the user was never asked about.
+1. **Asking, or building a genome that is not ready.** The genome holds every answer: a question to the user at build re-opens what `uipath-planner` settled, and a build past the readiness gate produces placeholder values the user must hunt down later. Variants: asking a scaffolding, split or refactor question; taking a default the genome does not record; building a genome whose `Build:` line reads `open`; letting the init command pick a target framework or package versions the genome's answers do not name.
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
 3. **One project per skill group.** Component genome is one project. Process genome is one solution with one project per non-test component, a library the Library layout answer folds and a retired or folded component (§ 1.4) excepted, and exactly one test project holding every test component — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.
@@ -206,7 +206,7 @@ After every project of a process genome is built, and before the report, a revie
 6. **Editing the genome during execution** ([SKILL.md](../SKILL.md) Critical Rule 2).
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).
-9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in the anti-patterns of [source-migration-guide.md](source-migration-guide.md), [ui-target-migration-guide.md](ui-target-migration-guide.md), [ui-verification-guide.md](ui-verification-guide.md) and [test-execution-guide.md](test-execution-guide.md).
+9. **Skipping the export check, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in the anti-patterns of [source-migration-guide.md](source-migration-guide.md), [ui-target-migration-guide.md](ui-target-migration-guide.md), [ui-verification-guide.md](ui-verification-guide.md) and [test-execution-guide.md](test-execution-guide.md).
 10. **Writing to a tenant that no answer allowed** — publishing or deploying a package, creating a queue, asset or trigger, or an entity the Data Fabric answer did not allow. The build is local; what the target environment needs goes into the open-items files (§ 3.4).
 11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
 12. **Ending with the report in the conversation only, or with the engineer's files spread across the working folder.** The genome and the build then travel without the answers, the decisions and what is left to check on the live application ([completion-report-guide.md](completion-report-guide.md)).

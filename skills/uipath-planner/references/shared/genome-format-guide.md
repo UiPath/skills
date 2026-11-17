@@ -17,8 +17,9 @@ Content rules for every genome, however produced — `author`, `extract` and `ed
 9. **Flag ambiguity, never leave gaps**: the best interpretation plus `*[Inferred]*` — § Ambiguity Marker.
 10. **Write immediately, offer edits after**; edits are in place, never a regeneration — § Write, Then Offer Edits; [edit-guide.md](../edit/edit-guide.md).
 11. **Composite source actions are contracts in the genome** — § Workflow; `uipath-genome` turns them into patterns.
-12. **The transactional shape is described; a split is recorded only when it was already decided**: the genome asserts no split, store, template or unit of its own. A flow's `Decided:` line records the split the agreed SDD, the user's request or the refactor answers chose ([transactional-shape-guide.md](transactional-shape-guide.md) rule 8); for every other flow `uipath-genome` asks the split questions.
+12. **The transactional shape is described; a split is recorded only when someone decided it**: the genome asserts no split, store, template or unit of its own. A flow's `Decided:` line records the split the agreed SDD, the user's request, the refactor answers, the interview or the user's choice of the defaults took ([transactional-shape-guide.md](transactional-shape-guide.md) rule 8).
 13. **Checked after every write**: the writer reviews every write against these rules, then runs the strict check and fixes every `FAIL` before offering edits ([SKILL.md](../../SKILL.md) § Check). `uipath-genome` builds the genome as written.
+14. **A genome is build-complete: `uipath-genome` asks nothing.** Every choice the build makes that is not behaviour is answered in the genome before it is built — Build Decisions, every Configuration Question's default, every flow's `Decided:` line — and the `Build:` line says whether anything is still open — § Build Decisions.
 
 ## Two Levels
 
@@ -92,7 +93,59 @@ Every other value is a fact, written once where its reader looks: a value typed,
 
 **A setting depends on the environment.** Every Orchestrator connection the automation is deployed to is its own environment — dev, UAT, prod — and the build is often made on another machine and tenant than the one it runs on. Mark each Configuration Question as a *setting* when its answer differs between environments (hosts and URLs, mailboxes and recipients, shares and paths, credential, queue, bucket, asset and Data Fabric entity names, schedules, language models) or must change without a new version (a key the source reads from its configuration store, item 4 above), and as a *constant* when it is the same in every environment and a change to it is a change to the automation (thresholds, limits, retry counts, message texts). The kind is written in the question's parenthesis, before the default: `(setting; default: …)` or `(constant; default: …)`. A configuration key is not by itself one setting: several keys that always carry the same value (one recipient list repeated per notification type) are one setting, and a key whose value only names another resource (a vault alias, a table name fixed by the setup) is a fact. A source's own configuration store (a config table, a properties file, a workbook) is not a Platform Dependency of the rebuild: its keys become questions or facts, and where the rebuild's settings and constants live is decided by execution's configuration questions.
 
-Both modes: when the open values run to dozens (a configuration table or procedure), group them by theme into one question per theme and name every key inside its question, before the question mark, so the list stays readable and the build can still map each key: `4. Which folders does the run use — the drive letter (row 5) and the in-process, processed and invalid folders (rows 6–8)? (setting; default: not in the export)`. A grouped question holds values of one kind; a theme whose values are settings and constants is two questions. When an empty value would change the flow instead of failing (an end time that compares as reached, a list matched by containment), the question says so — "required: empty ends the run" — so the build guards it. Questions the build asks itself are not written into the genome: the scaffolding choices (project location, target framework, expression language, installed package versions), and the split questions (unit, split, store, template, triggers and runners) when the Transactional Shape is not the stub.
+Both modes: when the open values run to dozens (a configuration table or procedure), group them by theme into one question per theme and name every key inside its question, before the question mark, so the list stays readable and the build can still map each key: `4. Which folders does the run use — the drive letter (row 5) and the in-process, processed and invalid folders (rows 6–8)? (setting; default: not in the export)`. A grouped question holds values of one kind; a theme whose values are settings and constants is two questions. When an empty value would change the flow instead of failing (an end time that compares as reached, a list matched by containment), the question says so — "required: empty ends the run" — so the build guards it. **The build takes every default as its answer and never asks a Configuration Question**: a value the user gives replaces the default in place; a setting whose value differs per environment is set per environment at deployment, the default being the build's value; a default of "not in the export" builds an empty setting the build guards. The build's own choices — project location, target framework, packages, the split — are not Configuration Questions: § Build Decisions and the flows' `Decided:` lines hold them.
+
+### Build Decisions
+Every choice the build makes that is not behaviour, answered before the build, so `uipath-genome` asks nothing: it reads this section, the Configuration Questions' defaults and every flow's `Decided:` line, and finds on its machine only facts — the packages installed, the export at the recorded path, whether a named application is reachable — following a fixed fallback when the machine contradicts the genome.
+
+Form: the `Build:` line, then one table.
+
+```markdown
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | next to the genome | default |
+| Workflow type | coded C# | interview |
+| Split details — Flow 1 | store one queue per unit; template REFramework queue; shared steps duplicated; triggers producer time 07:00 one runner, consumer queue trigger cap 3 | SDD |
+```
+
+- **`Build: ready`** when no row is open and every flow of the Transactional Shape has a `Decided:` line; otherwise **`Build: open — <n> open`**, an open row's Decision reading `open: <question> (default: <value>; answered by: <role>)`. `uipath-genome` builds only a ready genome.
+- **From** names who decided: `SDD`, `request`, `interview`, `refactor answers`, `source`, or `default` — the default below, taken when the user chose "use the defaults" or the run is autonomous or a caller's request.
+- **Topic** is a name from the table below; a row for one component or flow adds it after ` — ` (`Workflow type — Invoice Extraction`, `Split details — Flow 2`).
+- **Levels.** A process genome holds the rows for the whole solution, a component's row only where it differs; a component genome inside a process reads `As the process genome.`, and a standalone component genome holds its own rows.
+- **One row per topic that applies**, in the table's order. A topic whose condition does not hold has no row.
+- **Writing.** `author`, `extract` and `design`'s genome turn write every row: an answer the source, the SDD or the request gives, otherwise the default. In an interactive run a row whose default changes what is built or touches live data (Healing pass, Data Fabric, Connections) is asked in the interview ([interview-guide.md](../interview/interview-guide.md)); the rest take the default unless the user asks to choose. A row the user leaves for another role stays open.
+
+| Topic | Applies when | Default (first), then the other options |
+|---|---|---|
+| Project location | always | a folder next to the genome; an existing project the request or the Source Map names, updated in place; another path |
+| Library layout | a library component that one project consumes | packages, as the genome lays them out — one project instead when the source kept the library's objects in its consumer's own project; one project; per library, named |
+| Library location | each library kept a package | inside the folder of the one solution that uses it — a shared libraries folder when several solutions use it; an existing project of the library, updated in place |
+| Target framework | an RPA project | the owning skill's default for a new project — in a refactor, the one Build With or Components names, Portable when none; another the owning skill lists |
+| Expression language | an RPA project | the owning skill's default for a new project; the other |
+| Workflow type | an RPA project | the owning skill's default for a new project; coded only; hybrid |
+| Package versions | always | the latest stable — the versions installed where the build runs, found by the build; pinned, `name version` each (an SDD's package pins) |
+| Runtime | a non-RPA project | the owning skill's `init` default (runtime version, framework, template); an alternative it lists |
+| Settings store | a project with settings or constants | settings as one Orchestrator asset each and constants where the project keeps its configuration (the REFramework's configuration file, the test project's configuration, the code of a plain project or a library); every value an asset; a configuration workbook in a storage bucket |
+| Log target | a project that logs | Orchestrator's job log; the source's own run log as well (extracted genomes); a target named |
+| Data Fabric | an entity in Platform Dependencies, a record store, or test data kept in one | create the entities and load the records the build holds; create only; neither |
+<!--skill-flavor:build-decision-test-template-row:start-->
+| Test project template | test components | the Test Automation Framework template; a blank test project |
+<!--skill-flavor:build-decision-test-template-row:end-->
+| Test case status | test components | Publishable; in progress |
+| Source export | an extracted genome | the path the Source Map records; another path; none — live capture or placeholders, said in the report |
+| Migration guide | a genome extracted from a framework other than UiPath | the pack the Source Map names; a path or git URL; none |
+| Source fidelity | a genome extracted from a framework other than UiPath, no refactor requested | the source's names, and its shape where UiPath's way does not differ; the source's shape throughout; the build's own names and grouping |
+| Live application | the genome has UI steps | none — every target built offline, its live checks handed to the engineer; a comparable instance — its window or URL, the account that signs in, what must never be closed; the target application — the same three |
+| Healing pass | Live application names an instance | read-only checks; also run the workflows and tests on data the user names, with who allowed it and when; only the test cases |
+| Run modes | a refactor | shadow and write-test modes when the automation writes to a system of record or reaches people and no test environment holds production-like data, otherwise none; dry run only |
+| Run record | a refactor | a run record and a failure alert when the source's runs can skip items or fail without notice, otherwise logs only |
+| Connections | a refactor whose deployed state shows a connection signed in as a person | a service account of the same connector the source uses elsewhere; the source's identity; a service account named |
+| Split details | a flow with a `Decided:` line, per flow | from the decided option: store (B and C one queue per unit of work and hand-off; A in-process), template (REFramework in the store's mode), shared steps (duplicated below about five steps, else a common library), triggers and runners (the As-is cadence and runner count) |
+| Subagents | the host runs subagents | from Complexity: no subagents for `simple` and `medium`, a smaller model at most two parts at once for `complex`; the smaller model, as many parts as can run in parallel; the lead agent's model, at most two at once; no subagents |
+
+The `Decided:` line of a flow no SDD, request or refactor answer decided takes the As-is option and the genome's unit of work — B when the As-is runs producer and consumer as separate processes, C when one process produces and consumes and shares its items across robots or runs, A otherwise — with source `the interview` when the user chose it, `the defaults` when not.
 
 ### Workflow (component) / Process Map (process)
 Numbered steps in execution order, each `N. **{Step name}** (input: …; output: …)`: the number keys the step's row in the Source Map's step table, the bold name heads its Business Rules and Error Handling entries. Steps may be grouped under `###` headings (one per entry point), each step keeping that form. Steps several entry points share are written once, under a heading of their own, and each entry point's last step names the step it continues into. A step that calls an automation the source does not hold (another project's process, a workflow outside the export) names it by what it does, states what the step passes to it and what it uses of the result, and flags `*[Inferred]*` what the caller does not show; the callee is a Platform Dependency the rebuild calls but does not build, and the Source Map's unresolved-invocation row names it. A step involving several fields, a condition, validation, or a transformation gets substeps (a, b, c) and a data annotation `(input: …; output: …)`.

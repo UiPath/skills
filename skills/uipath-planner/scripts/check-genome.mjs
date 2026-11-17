@@ -30,7 +30,9 @@
 //           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
-//           lists) and still has that fingerprint.
+//           lists) and still has that fingerprint; a Build Decisions section with its `Build: ready | open` line,
+//           rows of known topics and sources, and `ready` only when no row is open and every flow has a
+//           `Decided:` line (a component inside a process may read `As the process genome.`).
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -73,12 +75,12 @@ const routesToBuilder = (s) => /\buipath-genome(?![\w-])/.test(s);
 
 export const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
-  "Configuration Questions", "Workflow", "Business Rules", "Error Handling",
+  "Configuration Questions", "Build Decisions", "Workflow", "Business Rules", "Error Handling",
   "Transactional Shape", "Acceptance Criteria", "Complexity", "Tags",
 ];
 export const PROCESS_SECTIONS = [
   "Overview", "Actors and Systems", "Components", "Process Map", "Handoffs",
-  "Platform Dependencies", "Configuration Questions", "Business Rules",
+  "Platform Dependencies", "Configuration Questions", "Build Decisions", "Business Rules",
   "Error Handling and Recovery", "Transactional Shape", "Acceptance Criteria", "Deployment",
   "Complexity", "Tags",
 ];
@@ -89,6 +91,15 @@ const BANNED_BODY_TOKENS = [
   "AndAlso", "OrElse", "dt_", "in_", "out_", ".xaml", "core.action", "core.logic",
   "uipath.core.", "activityType", "JsInvoke",
 ];
+// Build Decisions: every choice the build makes that is not behaviour, answered before the build
+export const BUILD_TOPICS = new Set([
+  "Project location", "Library layout", "Library location", "Target framework", "Expression language",
+  "Workflow type", "Package versions", "Runtime", "Settings store", "Log target", "Data Fabric",
+  "Test project template", "Test case status", "Source export", "Migration guide", "Source fidelity",
+  "Live application", "Healing pass", "Run modes", "Run record", "Connections", "Split details", "Subagents",
+]);
+export const BUILD_SOURCES = new Set(["SDD", "request", "interview", "refactor answers", "source", "default"]);
+export const BUILD_STUB = "As the process genome.";
 export const OUTCOME_ROWS = new Set(["Success", "Business exception", "System exception", "Postponed"]);
 // the genome format's minimum Workflow steps and Acceptance Criteria per complexity.
 // core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
@@ -141,7 +152,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{projects and schedules, where per-item state is visible, retry granularity, end-of-parent work}",
   "{alternative unit}",
   "{facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}",
-  "{only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
+  "{the split the SDD, the request, the refactor answers, the interview or the user's choice of the defaults took — every flow of a build-ready genome has one: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
   "{a, b}",
   "{c, d}",
   "{per-item record and where it lands; screenshot on system exception; run summary}",
@@ -455,6 +466,37 @@ function checkTransactional(text, level, r, partOf = false) {
   }
 }
 
+/** Build Decisions: the `Build:` line, rows of known topics and sources, and `Build: ready` only when nothing is open. */
+function checkBuildDecisions(text, level, r, partOf = false) {
+  const bd = sectionBody(text, "Build Decisions");
+  if (!bd.trim()) return; // a missing section is checkCommon's finding
+  const inProcess = level === "component" && (partOf || text.includes("Part of:"));
+  if (inProcess && bd.trim().startsWith(BUILD_STUB)) return;
+  const line = lines(bd).find((l) => /^Build:/.test(l.trim()))?.trim() ?? "";
+  const state = line.match(/^Build:\s*(ready|open)\b/);
+  if (!state) { r.strict(inProcess ? `Build Decisions: neither '${BUILD_STUB}' nor a 'Build: ready | open' line` : "Build Decisions: no 'Build: ready' or 'Build: open — <n> open' line"); return; }
+  const rows = tableRows(bd, "| Topic |");
+  let open = 0;
+  for (const row of rows) {
+    if (row.length < 3) { r.strict(`Build Decisions: row '${row.join(" | ")}' does not have Topic, Decision and From cells`); continue; }
+    const topic = row[0].split(/\s+[—–]\s+/)[0].trim();
+    if (!BUILD_TOPICS.has(topic)) r.strict(`Build Decisions: unknown topic '${row[0]}'`);
+    if (/^open:/i.test(row[1])) { open += 1; continue; }
+    if (!row[1]) r.strict(`Build Decisions: '${row[0]}' has no decision — write it, or 'open: <question> (default: …; answered by: …)'`);
+    if (!BUILD_SOURCES.has(row[2])) r.strict(`Build Decisions: '${row[0]}' From '${row[2]}' is none of ${repr([...BUILD_SOURCES])}`);
+  }
+  // every flow this genome owns takes its split from a `Decided:` line; a component inside a process points to the process genome
+  const ts = sectionBody(text, "Transactional Shape");
+  let undecided = 0;
+  if (!inProcess && ts.trim() && !ts.trim().startsWith(STUB)) {
+    for (const [, body] of effectiveFlows(ts)[0]) if (!EXTERNAL_SIDE.test(body) && !lines(body).some((l) => l.startsWith("**Decided:**"))) undecided += 1;
+  }
+  if (state[1] === "ready") {
+    if (open) r.strict(`Build Decisions: 'Build: ready' with ${open} open row(s)`);
+    if (undecided) r.strict(`Build Decisions: 'Build: ready' with ${undecided} flow(s) of the Transactional Shape lacking a 'Decided:' line`);
+  } else if (!open && !undecided) r.strict("Build Decisions: 'Build: open' but no row is open and every flow is decided — write 'Build: ready'");
+}
+
 /** --shape: what the Transactional Shape of this genome must describe. */
 function checkShapeAssertion(text, shape, flows, units, r) {
   const ts = sectionBody(text, "Transactional Shape");
@@ -537,6 +579,7 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
   if (!partOf && !text.includes("Part of:")) checkSourceFramework(text, r);
   if (partOf && !text.includes("Part of:")) r.strict("component inside a process genome lacks the 'Part of:' line");
   checkTransactional(text, "component", r, partOf);
+  checkBuildDecisions(text, "component", r, partOf);
   if (a.shape && shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
   for (const tok of a.expect) if (!text.toLowerCase().includes(tok.toLowerCase())) r.core(`expected token '${tok}' not found`);
   return r.errors.map((e) => `${baseName(path)}: ${e}`);
@@ -573,6 +616,7 @@ function checkProcess(path, a) {
   const handoffs = lines(sectionBody(text, "Handoffs")).filter((l) => l.startsWith("|"));
   if (handoffs.length < 4) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 2`); // header + separator + >= 2 rows
   checkTransactional(text, "process", r);
+  checkBuildDecisions(text, "process", r);
   if (a.shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
   for (const tok of a.expect) if (!text.toLowerCase().includes(tok.toLowerCase())) r.core(`expected token '${tok}' not found`);
   return [...r.errors.map((e) => `${baseName(path)}: ${e}`), ...componentErrors];

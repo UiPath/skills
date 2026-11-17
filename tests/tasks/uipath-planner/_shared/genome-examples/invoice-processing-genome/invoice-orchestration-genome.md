@@ -52,6 +52,10 @@ Each queue item on the intake queue starts one instance of this process. The ins
 3. How many ERP rejections before the invoice is rejected outright? (constant; default: 2)
 4. Which app renders the human review task? (constant; default: AP Invoice Review)
 
+## Build Decisions
+
+As the process genome.
+
 ## Workflow
 
 1. **Trigger**: a new item on the intake queue starts the instance with the item's specific content.

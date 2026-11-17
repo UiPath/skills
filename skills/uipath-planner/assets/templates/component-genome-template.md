@@ -54,6 +54,16 @@
 
 *Stub when none: "No open values — no configuration needed."*
 
+## Build Decisions
+
+{Every choice the build makes that is not behaviour, so `uipath-genome` asks nothing (format guide § Build Decisions): one row per topic that applies, in the format guide's order, each the answer the SDD, the request, the source or the interview gave, otherwise the default. `Build: ready` once no row is open and every flow of the Transactional Shape has a `Decided:` line; otherwise `Build: open — {n} open`, an open row's Decision reading `open: {question} (default: {value}; answered by: {role})`. A component genome inside a process reads only "As the process genome." unless a row differs for this component.}
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | {next to the genome} | {SDD / request / interview / refactor answers / source / default} |
+
 ## Workflow
 
 1. **Trigger**: {What starts the automation}
@@ -126,7 +136,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Decided:** {only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
+**Decided:** {the split the SDD, the request, the refactor answers, the interview or the user's choice of the defaults took — every flow of a build-ready genome has one: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
 

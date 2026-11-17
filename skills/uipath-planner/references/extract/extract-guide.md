@@ -179,7 +179,7 @@ The answers are the genome's target design: each kept component's Build With / C
 
 ### Step 7 — Write and offer edits
 
-Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)), and review each against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md). Then run the strict check on every genome written — the process genome, whose check covers its component genomes, or the one component genome ([SKILL.md](../../SKILL.md) § Check):
+Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)), with Build Decisions and every flow's `Decided:` line written from the source, the request and the refactor answers, otherwise the defaults ([genome-format-guide.md § Build Decisions](../shared/genome-format-guide.md)), and review each against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md). Then run the strict check on every genome written — the process genome, whose check covers its component genomes, or the one component genome ([SKILL.md](../../SKILL.md) § Check):
 
 ```bash
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict --processes "<INVENTORY_JSON>" --recordsets "<RECORDSETS_JSON>"

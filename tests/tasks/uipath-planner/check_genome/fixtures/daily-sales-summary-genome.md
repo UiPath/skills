@@ -50,6 +50,21 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 4. Below which amount is a sales line left out of the totals? (constant; default: 10.00)
 5. What is the summary sheet called? (constant; default: Summary)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Start the evening run** (input: none; output: business date, folder locations): take today's date as the business date and read the input, output and archive folder locations.

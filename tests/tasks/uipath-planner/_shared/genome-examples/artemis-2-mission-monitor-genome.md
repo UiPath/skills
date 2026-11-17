@@ -52,6 +52,22 @@ The automation maintains a lightweight state file tracking the last known missio
 4. Should the state file persist across Orchestrator restarts? (constant; default: yes — avoids duplicate notifications)
 5. Which email format? (constant; default: HTML with mission phase icons; alternative: plain text)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Live application | none — every target built offline, its live checks handed to the engineer | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Trigger**: Orchestrator time trigger fires every 3 minutes.

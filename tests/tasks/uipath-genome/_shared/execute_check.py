@@ -79,6 +79,15 @@ def project_name(project: Path) -> str:
         return ""
 
 
+def cmd_no_projects(a: argparse.Namespace) -> int:
+    projects = rpa_projects(Path("."))
+    if projects:
+        print(f"FAIL: projects created: {', '.join(str(p) for p in projects)}")
+        return 1
+    print("OK: no project created")
+    return 0
+
+
 def cmd_projects(a: argparse.Namespace) -> int:
     projects = rpa_projects(Path("."))
     names = [{p.name, project_name(p)} for p in projects]
@@ -275,6 +284,8 @@ def main() -> int:
     p = sub.add_parser("projects")
     p.add_argument("--expect", nargs="+", required=True)
     p.set_defaults(func=cmd_projects)
+    p = sub.add_parser("no-projects")
+    p.set_defaults(func=cmd_no_projects)
     p = sub.add_parser("settings")
     p.add_argument("--expect", nargs="*", default=[])
     p.set_defaults(func=cmd_settings)

@@ -55,6 +55,10 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 4. Which SAP company codes are in scope? (setting; default: 1000, 2000)
 5. Which SAP transaction posts incoming invoices? (constant; default: the standard incoming-invoice transaction)
 
+## Build Decisions
+
+As the process genome.
+
 ## Workflow
 
 1. **Trigger A**: time trigger every 15 minutes.

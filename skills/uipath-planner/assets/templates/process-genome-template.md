@@ -75,6 +75,16 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 1. {Question}? ({setting | constant}; default: {value})
 
+## Build Decisions
+
+{The build's choices for the whole solution (format guide § Build Decisions): one row per topic that applies, a component's own row only where it differs (`Workflow type — {Component}`), one `Split details — Flow {N}` row per flow. `Build: ready` once no row is open and every flow has a `Decided:` line; otherwise `Build: open — {n} open`.}
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | {next to the genome} | {SDD / request / interview / refactor answers / source / default} |
+
 ## Business Rules
 
 {Cross-cutting rules only. Rules scoped to one component stay in that component's genome.}
@@ -135,7 +145,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Decided:** {only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
+**Decided:** {the split the SDD, the request, the refactor answers, the interview or the user's choice of the defaults took — every flow of a build-ready genome has one: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}.
 

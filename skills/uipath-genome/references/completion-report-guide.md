@@ -7,17 +7,17 @@ Execution ends with a hand-off for the engineer who maintains and deploys the bu
 
 | File | Holds | Written |
 |---|---|---|
-| `README.md` | the completion report, below, and the index of the folder | its Configuration answers once they exist ([configuration-questions-guide.md](configuration-questions-guide.md) rule 4), the rest last |
+| `README.md` | the completion report, below, and the index of the folder | its Configuration answers once they exist ([configuration-questions-guide.md](configuration-questions-guide.md) § Reading the answers), the rest last |
 | `open-items.md`, `open-items/<project-slug>.md` | what the target environment needs before the first run, with the records to load beside them | at the end, when the environment needs setup ([open-items-guide.md](open-items-guide.md)) |
 | `live-checks/<project-slug>.md` | what only the live application can settle, by screen | with each UI target ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)) |
 | `applications/<application-slug>.md` | how each application is driven: windows and titles, input method, structures, selector verdicts | when a reachable application is explored ([live-application-guide.md § Exploring](live-application-guide.md)) |
 | `correspondence/<component>.md` | where the rebuild departs from the source's names and shape, and why | with each component of an extracted genome, unless the Source fidelity answer takes the build's own names and grouping ([source-migration-guide.md § What the executor records](source-migration-guide.md)) |
 | `parity/<TestCase>.md`, `checkpoints/<component>.md` | which assertion stands for each source checkpoint | with each test component ([test-execution-guide.md § Result parity](test-execution-guide.md)) |
-| `refactor-plan.md` | a refactor's decisions, differences from the source, kept outputs and what is not proven until it runs | once the refactor questions are answered ([refactor-guide.md § Refactor plan](refactor-guide.md)) |
+| `refactor-plan.md` | a refactor's decisions, differences from the source, kept outputs and what is not proven until it runs | once the refactor answers are read ([refactor-guide.md § Refactor plan](refactor-guide.md)) |
 | `integration-check.md` | the independent review of the projects against each other and what became of each finding | after every project is built (§ 3.5) |
 | `reports/<project-slug>.md` | each project's group reports: files, validation and link counts, the activity kinds read, what each step's source defects became | at each group's end (§ 2.2 step 4) |
 
-The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2b), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path.
+The README is the completion report. It is written for a reader who has this folder and the build but no working folder: in full sentences, with steps and components by the names the genome gives them ([configuration-questions-guide.md](configuration-questions-guide.md) rule 3), source objects by the names their author wrote, and each decision with its reason, never by a ruling, part or finding number. It states each fact once: the tables stay in their files, and the README counts and links them. The final message to the user is the README's Status section and its path.
 
 ````markdown
 # <Solution or project>: hand-off
@@ -49,9 +49,9 @@ The README is the completion report. It is written for a reader who has this fol
 3. Expect the failures below on the first live run.
 
 ## Configuration answers
-| Question | Answer |
+| Topic | Answer |
 |---|---|
-| <the question in plain words> | <the answer>, with its source's label where the user did not give it in a batch: "(from the SDD)", "(from the request)" or "(from the refactor answers)" where the genome records it as decided, "(from the answers file)" where a file of answers gave it, "(source)" where the source's values answered it, "(default)" where no one answered |
+| <the topic in plain words> | <the answer>, with its label: "(from the genome: <From>)" for a Build Decisions row, "(from the genome)" for a Configuration Question's default, the `Decided:` line's source for a split, "(discovered)" for a machine fact, "(fallback)" where the machine contradicted the genome |
 
 ## Acceptance criteria
 | # | Criterion | Verdict | Where, or what is missing |
@@ -69,7 +69,7 @@ The README is the completion report. It is written for a reader who has this fol
 |---|---|---|---|
 
 ## Rulings still owed
-- <The question the user has not answered>: <the default in place>; <what changes if the answer differs>.
+- <The point the genome does not settle>: <what the build built>; <what changes if `uipath-planner` settles it otherwise>.
 
 ## Expected failures on a live run
 - <Step or criterion>: <what fails, and why>.
@@ -84,11 +84,11 @@ The README is the completion report. It is written for a reader who has this fol
 
 What each section holds:
 
-1. **Decisions:** every choice the build made that the genome leaves open — the split per flow (`Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> [+ record store: <entity or table>] | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence>`), the libraries folded into a project, the lead agent's rulings, the user's rulings on source defects, the guards on settings ([configuration-questions-guide.md](configuration-questions-guide.md) rule 8) and the analyzer errors accepted. A ruling that changes what the genome says is offered as a genome edit.
+1. **Decisions:** every choice the build made that the genome leaves open — the split per flow (`Flow <N> (<components>) — option <A|B|C> — <materialised projects and their roles, runners per project>; unit <item> (<the genome's | alternative: reason>); store <one queue per unit: <names> [+ record store: <entity or table>] | in-process | + kept coordination stores: <names>>; template <REFramework <queue|direct> | plain> per consumer project; coordination folded: <what became what>; exits exercised per consumer project: …; as-is was <one sentence>`), the libraries folded into a project, the lead agent's rulings, the user's rulings on source defects, the guards on settings ([configuration-questions-guide.md](configuration-questions-guide.md) rule 2) and the analyzer errors accepted. A ruling that changes what the genome says is offered as a genome edit.
 2. **Differences from the genome:** the genome deviations the groups reported, each for a `uipath-planner` edit, with what the build followed ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
 2a. **Changes to existing projects:** every difference between each project the build reused and its copy from before the first change (§ 1.4) — a workflow added, rewritten or removed, an argument added, removed, renamed or retyped, a dependency, the version it packs under — with why; a change to a library's public workflow or its arguments is marked breaking for the consumers outside this build.
 3. **Expected failures on a live run:** the criteria Met (static) that the source's own data or defect fails on a live run (§ 3.1), the placeholder targets, and, as not built, the objects of the Source Map's `Not covered` row — building them is a `uipath-planner` edit (re-extraction), then a new build.
-3a. **Rulings still owed:** the questions raised after the configuration answers that the user has not answered, each with the default in place and what changes if the answer differs.
+3a. **Rulings still owed:** each point the build met that the genome does not settle, never asked: what the build built, what changes if it is settled otherwise, and the `uipath-planner` edit that settles it.
 4. **Data the build's runs changed:** each change a run made in a target system or a store, with how to undo it; nothing is undone unasked.
 5. **Files:** every file of the folder with what it holds, and the working folder that stays with the build.
 

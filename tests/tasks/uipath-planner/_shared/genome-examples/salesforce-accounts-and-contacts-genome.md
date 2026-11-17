@@ -41,6 +41,23 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 2. Which browser does the run use? (setting; default: Chrome)
 3. How does the run get a signed-in Salesforce session, and as which user? (setting; default: the browser's existing signed-in session, as the source expects — no sign-in step and no credential asset; a sign-in instead needs one credential asset for the Salesforce user)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Live application | none — every target built offline, its live checks handed to the engineer | default |
+| Source export | the path the Source Map records | source |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 Each value below is entered by clicking its field, emptying it, then typing the value.

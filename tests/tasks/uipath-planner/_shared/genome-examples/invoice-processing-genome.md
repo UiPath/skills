@@ -91,6 +91,24 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 5. Who receives the daily failure digest? (setting; default: ap-lead@contoso.com)
 6. Which SAP company codes are in scope? (setting; default: 1000, 2000)
 
+## Build Decisions
+
+Build: ready
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome, one solution with a project per component | default |
+| Target framework — Invoice Extraction and Matching | the owning skill's default for a new project | default |
+| Expression language — Invoice Extraction and Matching | the owning skill's default for a new project | default |
+| Workflow type — Invoice Extraction and Matching | hybrid — the matching logic as a coded workflow, the rest XAML | request |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Runtime — Invoice Orchestration | the owning skill's `init` default | default |
+| Runtime — Exception Triage Agent | the owning skill's `init` default | default |
+| Settings store | settings as one Orchestrator asset each; constants where each project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Live application — Invoice Extraction and Matching | none — every target built offline, its live checks handed to the engineer | default |
+| Subagents | a smaller model, at most two parts at once | default |
+
 ## Business Rules
 
 - Every invoice needs a PO. An invoice without a PO number, or whose PO is not open, is an exception, never an auto-reject.

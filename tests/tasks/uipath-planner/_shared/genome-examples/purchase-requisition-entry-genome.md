@@ -65,6 +65,22 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (constant; default: 60 seconds)
 11. Is a delivery date equal to the run date accepted? (constant; default: yes — only a date earlier than the run date is rejected)
 
+## Build Decisions
+
+Build: open — 1 open
+
+| Topic | Decision | From |
+|---|---|---|
+| Project location | a folder next to the genome | default |
+| Target framework | the owning skill's default for a new project | default |
+| Expression language | the owning skill's default for a new project | default |
+| Workflow type | the owning skill's default for a new project | default |
+| Package versions | the latest stable — the versions installed where the build runs | default |
+| Settings store | settings as one Orchestrator asset each; constants where the project keeps its configuration | default |
+| Log target | Orchestrator's job log | default |
+| Live application | none — every target built offline, its live checks handed to the engineer | default |
+| Subagents | no subagents | default |
+
 ## Workflow
 
 1. **Trigger A**: time trigger, every business day at 06:00.

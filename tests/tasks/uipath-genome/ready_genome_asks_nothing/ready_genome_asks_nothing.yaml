@@ -1,0 +1,71 @@
+task_id: skill-genome-ready-genome-asks-nothing
+description: >
+  Smoke: a build-complete genome (Daily Note, `Build: ready`, every Build Decisions row answered) is
+  built on an attended run whose request waives nothing. The build reads every answer from the genome
+  and asks the user no question. Grades that no AskUserQuestion call is made, that the one project
+  compiles, that the genome is left unchanged, and that nothing is published or deployed.
+tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls _shared/execute_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment.
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `daily-note-genome.md` in this folder.
+  Do not publish or deploy anything.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "The build asks the user nothing: the genome holds every answer"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The one RPA project built from the genome compiles (uip rpa build exits 0)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'build']))"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The build leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'daily-note-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'ready_genome_asks_nothing', 'fixtures', 'daily-note-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing is published or deployed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy\s+run)|rpa\s+publish|or\s+packages\s+upload)'
+    weight: 1.0
+    pass_threshold: 1.0

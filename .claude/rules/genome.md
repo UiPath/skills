@@ -43,16 +43,16 @@ Paths are relative to the skill folder.
 | `build` start, verb rules, read plan | `references/build-guide.md` (§ Start, § Verb Rules, § Read Plan) |
 | What each genome section means at build | `references/genome-reading-guide.md` |
 | Execution: phases, target project resolution, skill groups, owning-skill contract, acceptance verdicts | `references/execution-guide.md` |
-| Configuration and scaffolding questions, autonomous runs | `references/configuration-questions-guide.md` |
+| Configuration answers: the readiness gate, reading each answer from the genome, machine facts and their fallbacks | `references/configuration-questions-guide.md` |
 | A build in parts: lead agent, brief, ledgers, resuming | `references/execution-parts-guide.md` |
-| Transactional shape at build: split questions, the projects a `Decided:` chain names, REFramework surfaces | `references/transactional-execution-guide.md` |
+| Transactional shape at build: split answers, the projects a `Decided:` chain names, REFramework surfaces | `references/transactional-execution-guide.md` |
 | Migration: preflight, catalogs, credentials, source steps | `references/source-migration-guide.md`; source and pack resolution: `references/source-frameworks-guide.md` |
 | UI target migration: three phases, target spec, Object Repository, verification labels | `references/ui-target-migration-guide.md`; composite interaction patterns: `references/composite-interactions-guide.md` |
 | UiPath selector facts: tag chains, tiers, rules 1–16 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
 | Live application: exploration, live healing pass | `references/live-application-guide.md` |
 | Where a UI check goes, in every build | `references/ui-verification-guide.md` |
 | Test components at build | `references/test-execution-guide.md` |
-| Refactor of a UiPath source: contract, build questions, plan, run modes, cutover | `references/refactor-guide.md` |
+| Refactor of a UiPath source: contract, refactor answers, plan, run modes, cutover | `references/refactor-guide.md` |
 | Open items for the target environment | `references/open-items-guide.md` |
 | Completion report and hand-off folder | `references/completion-report-guide.md` |
 | Package doc and tool errata (temporary) | `references/package-doc-errata-guide.md` |
@@ -97,6 +97,7 @@ Each row is one fact written in both skills. A change to either side changes the
 | Secrets and attached applications across component boundaries | `references/shared/genome-format-guide.md` § Platform Dependencies, § Interface (component) | `references/genome-reading-guide.md` § Platform Dependencies, § Interface |
 | Genome file name slug | `references/shared/genome-format-guide.md` § File Naming and Location | `references/genome-reading-guide.md` § File Naming and Location |
 | Framework migration pack resolution | `references/extract/source-frameworks-guide.md` § Other frameworks — the framework migration pack | `references/source-frameworks-guide.md` § Other frameworks — the framework migration pack |
+| Build Decisions: the topics, when each applies, its default and options, the `Build:` line and the From sources | `references/shared/genome-format-guide.md` § Build Decisions | `references/configuration-questions-guide.md` § Reading the answers and § The readiness gate; `references/genome-reading-guide.md` § Build Decisions |
 | Running in parts: lead agent, brief and rulings, ledgers and resuming, read plans, return check, ownership, the two-at-once cap, cached waits | `references/shared/extraction-parts-guide.md` § Running in Parts items 1–8: the core, with the lead agent's model as the default | `references/execution-parts-guide.md` § Running in Parts items 1–8: the core, with the smaller model, the no-subagents option and its review, and the status script |
 
 ## Paired edits
@@ -121,7 +122,7 @@ One change, every file in its row, same PR.
 | Rule for verifying suspected source defects | planner `defect-verification-guide.md` |
 | Rule for extraction in parts | planner `extraction-parts-guide.md` |
 | Fact about reading a UiPath source or its deployed state | planner `uipath-source-guide.md` (or its RPA / non-RPA signals guide); what the build re-reads of the source: builder `source-migration-guide.md` |
-| New scaffolding question | builder `configuration-questions-guide.md` |
+| New build decision (a choice the build makes that is not behaviour) | planner `genome-format-guide.md` § Build Decisions (+ both templates, `check-genome.mjs` `BUILD_TOPICS`, the interview's § Coverage); what it builds: builder `configuration-questions-guide.md` § Reading the answers |
 | New report line | builder `completion-report-guide.md` |
 | Rule for a build in parts | builder `execution-parts-guide.md` |
 | UiPath selector fact | the builder's selector guide of its technology; `selector-translation-guide.md` when it holds for every technology; matching quirk: `selector-matching-guide.md` |

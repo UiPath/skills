@@ -1,0 +1,77 @@
+task_id: skill-genome-open-genome-defaults
+description: >
+  Smoke: a genome whose Build Decisions read `Build: open — 1 open` (the Log target row left to the
+  CoE) is handed to the build with "take the defaults". The build does not pick the default itself:
+  uipath-planner writes it into the genome (Log target answered, From `default`, `Build: ready`),
+  then the build reads it back and builds the one project without asking anything.
+tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 90
+  task_timeout: 2700
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `daily-note-genome.md` in this folder.
+  Take the defaults. Do not publish or deploy anything.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "The open row went to uipath-planner, which writes the default"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "The genome is now build-ready with the Log target answered by its default"
+    path: "daily-note-genome.md"
+    patterns:
+      - pattern: '(?m)^Build: ready\s*$'
+        must_match: true
+      - pattern: '\|\s*Log target\s*\|[^|\n]*Orchestrator[^|\n]*\|\s*default\s*\|'
+        must_match: true
+      - pattern: 'open: Where do the run'
+        must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "The build asks the user nothing"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The one RPA project built from the genome compiles (uip rpa build exits 0)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'build']))"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing is published or deployed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy\s+run)|rpa\s+publish|or\s+packages\s+upload)'
+    weight: 1.0
+    pass_threshold: 1.0

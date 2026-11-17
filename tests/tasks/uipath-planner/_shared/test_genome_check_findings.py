@@ -547,14 +547,14 @@ def test_steps_without_bold_names_fail_strict_only(check):
 
 
 def test_empty_configuration_questions_fail_core(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Build Decisions")
     rc, out = check(COMPONENT.replace(cq, "## Configuration Questions\n\n"))
     assert rc == 1
     assert "Configuration Questions section is empty" in out
 
 
 def test_configuration_questions_without_list_or_stub_fail_strict_only(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Build Decisions")
     text = COMPONENT.replace(cq, "## Configuration Questions\n\nAsk the owner.\n\n")
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
@@ -791,3 +791,55 @@ def test_script_runs_as_a_command(tmp_path):
     rc, out = cli("component", genome, "--profile", "strict")
     assert rc == 0
     assert out.startswith("OK (strict)")
+
+
+# --- Build Decisions: the genome answers every choice the build makes ---------------------------------------
+
+READY = (EXAMPLES / "artemis-2-mission-monitor-genome.md").read_text(encoding="utf-8")
+
+
+def test_build_decisions_section_is_required(check):
+    text = re.sub(r"^## Build Decisions\n.*?(?=^## )", "", READY, flags=re.M | re.S)
+    code, out = check(text)
+    assert code == 1 and "missing section '## Build Decisions'" in out
+
+
+def test_build_line_is_required_strict_only(check):
+    text = READY.replace("Build: ready\n", "")
+    assert check(text)[0] == 0
+    code, out = check(text, profile="strict")
+    assert code == 1 and "no 'Build: ready' or 'Build: open" in out
+
+
+def test_ready_with_an_open_row_fails_strict(check):
+    text = READY.replace("| Log target | Orchestrator's job log | default |",
+                         "| Log target | open: Where do the run's log messages go? (default: Orchestrator's job log; answered by: engineer) | |")
+    code, out = check(text, profile="strict")
+    assert code == 1 and "'Build: ready' with 1 open row(s)" in out
+    assert check(text.replace("Build: ready", "Build: open — 1 open"), profile="strict")[0] == 0
+
+
+def test_ready_with_an_undecided_flow_fails_strict(check):
+    code, out = check(COMPONENT.replace("Build: open — 1 open", "Build: ready"), profile="strict")
+    assert code == 1 and "lacking a 'Decided:' line" in out
+
+
+def test_open_with_nothing_open_fails_strict(check):
+    code, out = check(READY.replace("Build: ready", "Build: open — 1 open"), profile="strict")
+    assert code == 1 and "but no row is open and every flow is decided" in out
+
+
+def test_unknown_topic_and_source_fail_strict(check):
+    text = READY.replace("| Log target | Orchestrator's job log | default |", "| Logging | Orchestrator's job log | the build |")
+    code, out = check(text, profile="strict")
+    assert code == 1 and "unknown topic 'Logging'" in out and "From 'the build'" in out
+
+
+def test_topic_may_name_its_component_or_flow(check):
+    text = READY.replace("| Log target | Orchestrator's job log | default |", "| Log target — Mission Monitor | Orchestrator's job log | interview |")
+    assert check(text, profile="strict")[0] == 0
+
+
+def test_component_in_a_process_reads_as_the_process_genome():
+    code, out = cli("process", PROCESS, "--profile", "strict")
+    assert code == 0, out

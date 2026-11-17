@@ -59,7 +59,11 @@ Each question names its kind, `setting` or `constant`, before its default; the S
 
 Every other value is a fact, built where the genome writes it (the Workflow substep, Business Rule, Error Handling entry, Transactional Shape outcome, Interface or Target Applications that uses it); changing a fact is a genome edit, not a configuration answer.
 
-A grouped question names every key it holds, and execution maps each key. A question saying "required: empty ends the run" marks a value whose emptiness changes the flow instead of failing, and execution guards it. Execution asks its own questions (scaffolding, and the split questions when the Transactional Shape is not the stub); the genome holds none of them.
+A grouped question names every key it holds, and execution maps each key. A question saying "required: empty ends the run" marks a value whose emptiness changes the flow instead of failing, and execution guards it. Each default is the build's answer: the build asks no Configuration Question.
+
+## Build Decisions
+
+Every choice the build makes that is not behaviour — project location, library layout, target framework, expression language, workflow type, package versions, runtime, settings store, log target, Data Fabric, the test project, the source export, the migration guide, source fidelity, the live application and healing pass, the refactor's run modes, run record and connections, each flow's split details, subagents — one row each: `| Topic | Decision | From |`, From naming who decided (`SDD`, `request`, `interview`, `refactor answers`, `source`, `default`). A process genome holds the rows for the whole solution, a component's own row only where it differs (`Workflow type — Invoice Extraction`); a component genome inside a process reads `As the process genome.`. The `Build:` line above the table reads `ready` when no row is open and every flow has a `Decided:` line, otherwise `open — <n> open`, an open row reading `open: <question> (default: …; answered by: <role>)`. What each answer builds, and the readiness gate: [configuration-questions-guide.md](configuration-questions-guide.md).
 
 ## Workflow
 
@@ -124,7 +128,7 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 | Row | What the build does with it |
 |---|---|
 | Source framework | `UiPath` makes the build a refactor; any other framework name, spelled as its migration pack's README spells it, makes it a migration |
-| Requested change | the user's words and decisions by topic; [refactor-guide.md § Refactor questions](refactor-guide.md) rule 2 takes them as the user's answers |
+| Requested change | the user's words and decisions by topic; [refactor-guide.md § Refactor answers](refactor-guide.md) rule 2 takes them as the user's answers |
 | Source export | the export's root path and identity (database or tenant, export date, process count), so a moved copy is recognised |
 | Steps | the step table above |
 | Checkpoints | per test-component step (and per step of a library a test component calls): the source's checkpoints. The build makes one assertion and one evidence artifact per checkpoint and the result parity table from them ([test-execution-guide.md § Result parity](test-execution-guide.md)) |

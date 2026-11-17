@@ -1,6 +1,6 @@
 ---
 name: uipath-genome
-description: "UiPath genome builder: always invoke FIRST to build, execute, implement or follow an EXISTING `*-genome.md`, or run the migration or refactor it describes — before reading the file or loading any skill it names — through the owning skills. Configuration questions, a build per component through its skill, a verdict per acceptance criterion, open items and cutover; a genome extracted from a UiPath project is a refactor, one from another framework's export a migration (UI targets and test data migrated, characterization tests, run modes, comparison). Write, draft, author, edit, extract or document a genome, or turn an idea, SOP, PDD or SDD into one→uipath-planner (it writes every genome; never write or change one here); check or validate a genome→uipath-planner. Build without a genome→that artifact's skill. Legacy activity upgrade in place→uipath-activity-migrator. Quality review→uipath-review."
+description: "UiPath genome builder: always invoke FIRST to build, execute, implement or follow an EXISTING `*-genome.md`, or run the migration or refactor it describes — before reading the file or loading any skill it names — through the owning skills. Answers read from the genome (no questions; a genome not marked ready goes back to uipath-planner), a build per component through its skill, a verdict per acceptance criterion, open items and cutover; a genome extracted from a UiPath project is a refactor, one from another framework's export a migration (UI targets and test data migrated, characterization tests, run modes, comparison). Write, draft, author, edit, extract or document a genome, or turn an idea, SOP, PDD or SDD into one→uipath-planner (it writes every genome; never write or change one here); check or validate a genome→uipath-planner. Build without a genome→that artifact's skill. Legacy activity upgrade in place→uipath-activity-migrator. Quality review→uipath-review."
 when_to_use: "User points at an existing *-genome.md (or a file whose first line is `<!-- UIPATH-AUTOMATION-GENOME`) and asks to build, execute, implement or follow it; or uipath-planner hands over a genome it wrote for a build, a migration or a refactor. Not for writing, drafting, editing, checking or validating a genome — that is uipath-planner."
 argument-hint: "[build] <genome.md>"
 user-invocable: true
@@ -46,7 +46,7 @@ Each rule names its subject and the guide that states it in full; [build-guide.m
 
 1. **Choose the verb first** (§ Choosing the Verb) and run § Setup before anything else.
 2. **The build never edits the genome** — not even a one-line fix the user names. A gap in the genome goes into the report and back to `uipath-planner` as an edit, then the build runs again.
-3. **Never skip the configuration questions** — [build-guide.md](references/build-guide.md) rules 1–2.
+3. **Ask the user nothing; build only a ready genome** — every answer is in the genome — [build-guide.md](references/build-guide.md) rules 1–2.
 4. **Build through the owning skill, verifiably** — [build-guide.md](references/build-guide.md) rule 4.
 5. **Nothing reaches a tenant that no answer allowed** — [build-guide.md](references/build-guide.md) rule 12.
 
