@@ -27,7 +27,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
    - **A choice.** Its options are lettered under `Options:`, one per line, each with what it gives: the one the genome builds until someone answers marked `(built now)`, the one its entry recommends `(recommended)`, both on one option when they are the same. A reading is a choice whose `(built now)` option is the genome's reading, and whose last option is "something else, in your words".
    - **A value.** `Default:` the value the build uses until someone answers.
    - **Needed.** An item with no option or value the build can run with has an `Until answered:` line instead, saying whether the build stops, asks, builds a placeholder, or builds an empty setting the run stops on.
-4. **One answer line names who answers**, `Answer (by <role>):`, the role from the genome entry's `answered by:` (for a Configuration Question, the section's role), so one person's items can be picked out. An answer is an option's letter, a value, `default` for a value item's default, or the person's own words; a blank stays open.
+4. **One answer line names who answers**, `Answer (by <role>):`, the role from the genome entry's `answered by:` (for a Configuration Question, the environment's owners for a setting and the process owner for a constant), so one person's items can be picked out. An answer is an option's letter, a value, `default` for a value item's default, or the person's own words; a blank stays open.
 5. **Only what the genome states.** An item's context comes from its step, its entry and the sections that use it. A fact the genome lacks is asked as an item, never written as one.
 6. **Marked where the design states it.** The SDD section that holds an item's subject carries `[SME REVIEW]` for an answer only the business can give, or `[DEFAULT]` for a default applied, with the note after the bracket naming the item (`[SME REVIEW] D3: refund approval when the approver is absent`), as [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers states. The note is the id and a few words, never the item's options or an answer line: an item is answered in Action Required alone, so its letters mean one thing.
 
@@ -37,7 +37,7 @@ The build's own questions are `uipath-genome`'s: the split, the libraries, the t
 |---|---|---|
 | Business decisions | open Open Decisions entry of the first three tiers, under one heading per tier, then per component (the process genome's own entries under the process's name), in step order | the process owner |
 | Material to supply | open entry of the material tier | whoever holds the source and its documents |
-| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed | the environment's owners, with the engineer |
+| Configuration values | Configuration Question not withdrawn, copied whole with its number, kind and default: process questions first, then each component's in Components order, never a component's line pointing to a process question. A default the build cannot run with ("not in the export", none) makes it needed. A question with a default per environment lists each environment's; `default` takes each, and an environment whose default is `none` makes it needed | the environment's owners for a setting, the process owner for a constant |
 | Preferences | the preferences file, only when the genome names none ([genome-format-guide.md § Design Links](genome-format-guide.md)): default none, the building skills' own practice | the delivery lead or the centre of excellence |
 
 Business decisions close with two lists that ask nothing one item at a time:
@@ -132,12 +132,12 @@ The source states what each was meant to do, and the rebuild does that. Name any
 **CQ<n>. <The question as the genome writes it, whole>**
 - **Kind:** <setting | constant>
 - **Default:** <default>
-- **Answer (by the environment's owners):**
+- **Answer (by <the environment's owners | the process owner>):**
 
 **CQ<n>. <A question whose default the build cannot run with>**
 - **Kind:** <setting | constant>
 - **Until answered:** <built as an empty setting the run stops on>
-- **Answer (by the environment's owners):**
+- **Answer (by <the environment's owners | the process owner>):**
 
 ### Preferences <only when the genome names no preferences file; with one named, this heading and its item are not written>
 

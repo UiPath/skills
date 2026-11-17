@@ -18,7 +18,7 @@ Inside `design`, `author` and `extract`, that verb's § Read Plan opens this gui
 | Phase | Condition | Read |
 |---|---|---|
 | start | — | this guide whole; the document named and its companion, whole (the SDD beside a genome, the genome an SDD's `Genome` row names); [open-questions-guide.md](../shared/open-questions-guide.md) whole; [edit-guide.md](../edit/edit-guide.md) whole, whose § Read Plan names the rest |
-| start | an SDD | [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers and § Keeping the Genome Current; with no genome on disk for it, also its Step 1.5, Step 2 items 4, 8 and 9 and Step 3 |
+| start | an SDD | [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers and § Keeping the Genome Current; where an answer revises it (a designed genome's SDD, or one with no genome on disk), also its Step 2 items 4, 8 and 9, and with no genome its Step 1.5 and Step 3 |
 | start | a readiness file beside the genome | that file, whole |
 
 ## Verb Rules
@@ -104,14 +104,14 @@ Option 1 is Recommended. After writing, the offer is § After Writing's first qu
 
 ## After Writing
 
-The gap list is the document's open items: the SDD's Action Required, or, for a genome with no SDD beside it, the open entries of its Open Decisions in the item form of [open-questions-guide.md](../shared/open-questions-guide.md) under their genome ids; plus the readiness file's open items when one exists beside the genome, an entry it lists under Decisions still open asked once and answered there. A genome's Configuration Questions are asked only where a file keeps the answer for the build: its SDD's Configuration values, or the readiness file's Decisions still open; with neither, the build asks them. An item the request, an answers file, the preferences file or its own answer already settles is never asked.
+The gap list is the document's open items: the SDD's Action Required, or, for a genome with no SDD beside it, the open entries of its Open Decisions in the item form of [open-questions-guide.md](../shared/open-questions-guide.md) under their genome ids; plus, when a readiness file is beside the genome, each of its items with a blank `Answer:`, the build's own questions included, an entry it lists under Decisions still open asked once and answered there; its tasks (`Status:`) are named in the closing, never asked. A genome's Configuration Questions are asked only where a file keeps the answer for the build: its SDD's Configuration values, or the readiness file's Decisions still open; with neither, the build asks them. An item the request, an answers file, the preferences file or its own answer already settles is never asked.
 
 1. **How to answer.** One structured question comes first, skipped when the request already says. Inside `extract`, where it is the offer, "not now" takes the place of its last option and leaves every item open. Its options:
    - every item, a batch at a time (Recommended when an item has no default);
    - only what needs a decision: the items with no default and the business outcomes, the rest keeping their defaults;
    - the defaults: a value item is answered `default`, and a choice stays open, built as marked, since a default nobody confirmed decides nothing;
    - the defaults, with the overrides the user names.
-2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line.
+2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** as § Asking rule 3, one question per item, its options from the item's `Options:` and a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
 5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then "Apply the answers" applies them ([edit-guide.md § Applying the Answers](../edit/edit-guide.md)), and the strict check runs after the last edit; an SDD with no genome yet takes them as § Where Answers Go states.

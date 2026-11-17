@@ -125,7 +125,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
    - its marker in the body names it (`[SME REVIEW] D2: <note>`);
-   - a `default-carried` item lists its options, the default applied marked `(built now)`, or as a value its `Default:`;
+   - a `default-carried` item lists its options, the default applied marked `(built now)`, or as a value its `Default:`; for a value or material nobody has yet (a production amount, sample documents), the `Default:` is what the design builds until it arrives (an empty setting, a placeholder document), never an invented value;
    - a `blocking` item has no default: an `Until answered:` line in its place;
    - each ends on `Answer (by <role>):`.
 

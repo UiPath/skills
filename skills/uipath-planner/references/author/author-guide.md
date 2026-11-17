@@ -101,7 +101,7 @@ Then add these capabilities even when the user did not name them:
 
 ## Step 6 — Interview, or bounded follow-ups
 
-**Offer the interview first** ([interview-guide.md](../interview/interview-guide.md) § The Offer), on the P0 entries of its § Coverage. Not offered from an agreed SDD, whose design settled them, for a scenario picked from proposals, or in an unattended run. Accepted, the interview replaces the rounds below and its answers are the facts Step 7 writes; one that changes a product signal reruns Step 5. Declined or not offered, the rounds below run.
+**Offer the interview first** ([interview-guide.md](../interview/interview-guide.md) § The Offer), on the P0 entries of its § Coverage. Not offered from an agreed SDD, whose design settled them, for a scenario picked from proposals, or in an unattended run. Accepted, the interview replaces the rounds below and its answers are the facts Step 7 writes; one that changes a product signal reruns Step 5. Declined or not offered, the rounds below run; an unattended run asks none.
 
 Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 1a) gets none: the agent invented every detail, so no gap is left that only the user can fill, and the values left open are Configuration Questions. An SDD's rounds: [genome-from-sdd-guide.md](genome-from-sdd-guide.md) items 2 and 5. After the last round, generate with defaults and stubs; never loop.
 
