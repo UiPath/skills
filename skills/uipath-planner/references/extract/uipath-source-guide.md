@@ -73,7 +73,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `.templates/*.xaml`, `designOptions.fileInfoCollection[]` in `project.json` | Test execution template, test-case registrations | [uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md) |
 | `AGENTS.md`, `README.md`, `.claude/rules/project-context.md` | Author-written intent, known gotchas, run instructions | evidence for Overview and Error Handling; verify every claim against code before use |
 
-Skip entirely: `.local/`, `.codedworkflows/`, `.storage/` (UI Automation's target-image and ancestry caches), `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
+Skip entirely: `.local/`, `.codedworkflows/`, `.storage/` (UI Automation's target-image and ancestry caches), `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.git-studioweb/` (Studio Web's repository folder), `.app/` (generated trigger XAML), `*.Generated.xaml`.
 
 Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `ConnectionsManager.cs`, `ConnectionsFactory.cs`, `ObjectRepository.cs`, `WorkflowRunnerService.cs`, `Triggers.Generated.xaml`, `AppsRequestTrigger.xaml`.
 

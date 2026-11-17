@@ -541,7 +541,13 @@
     }
   },
   "uipath-review": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/devops-readiness-checklist.md",
+        "command": "solution",
+        "reason": "Prose: `uip solution git-link` is named as the fix to report for an unlinked `.git-studioweb` folder, never run by the read-only review."
+      }
+    ],
     "ceiling": {
       "codedagent": 2,
       "codedagent eval": 1,

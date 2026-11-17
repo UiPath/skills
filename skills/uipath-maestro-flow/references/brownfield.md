@@ -58,7 +58,9 @@ If validate fails after a merge, fix `.flow-sdk/Deployed.flow.ts` and run `check
 To drop the edit instead, revert it in the source and merge again. The result
 is equivalent to the original, not byte-identical (edges renumbered, nodes
 moved for the edit stay moved); for a byte-exact undo of a project under
-version control, `git checkout -- Deployed.flow`.
+version control, `git checkout -- Deployed.flow`. If the solution root has a
+`.git-studioweb` folder and no `.git` entry, run `uip solution git-link` there
+first, and never `git init` it (full guide: `uipath-solution` skill).
 
 ### The stamp, and when merge refuses
 

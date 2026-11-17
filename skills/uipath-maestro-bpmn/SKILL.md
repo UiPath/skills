@@ -28,6 +28,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
 10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
 11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in the `BPMN.Variables` payload of every end event that finishes the process (root scope, not a sub-process body); a task that writes an `.output()` directly returns `null` to the caller, and every check passes ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
+<!--skill-flavor:git-studioweb-rule:start-->
+12. **`.git-studioweb` solution folders: link before git, never `git init`.** If the solution root has a `.git-studioweb` folder and no `.git` entry, run `uip solution git-link <SOLUTION_DIR>` before any git command (CLI without `git-link`: create a `.git` file containing exactly `gitdir: .git-studioweb` — ASCII, no trailing space). Never `git init` / `git clone` into that folder and never replace a `.git` folder. Full guide: `uipath-solution` skill, Git Studio Web Layout.
+<!--skill-flavor:git-studioweb-rule:end-->
 
 <!--skill-flavor:host-setup:start-->
 

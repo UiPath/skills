@@ -131,3 +131,7 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 <!--skill-flavor:trigger-debug-contract:start-->
     - **Exercise a trigger by supplying the payload.** Pass an execution input shaped like the event's output fields through the host `RunProject` operation; the trigger passes it through. With no input the runtime fetches a recent event through the live connection (`polling` always, `webhooks` only where the connector supports debug polling) — side-effecting under rule 21.
 <!--skill-flavor:trigger-debug-contract:end-->
+
+<!--skill-flavor:git-studioweb-rule:start-->
+25. **Studio Web owns the solution's repository entries.** Studio Web keeps the local repository in a `.git` or `.git-studioweb` folder and manages both itself; leave every `.git` and `.git-studioweb` entry exactly as it is while editing files in `/solution`. For desktop git or VS Code, the user links the folder from a terminal on their own machine (`uipath-solution` skill, Git Studio Web Layout).
+<!--skill-flavor:git-studioweb-rule:end-->

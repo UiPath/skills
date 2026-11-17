@@ -42,3 +42,7 @@ Not applicable in Studio Web: the agent does not write into RPA projects here, s
 <!--skill-flavor:report-how-to-run:start-->
 4. **How to run** — `uip rpa run` (host-served here), or the Run button in the Studio Web designer; `uip rpa debug start` is not available in this host
 <!--skill-flavor:report-how-to-run:end-->
+
+<!--skill-flavor:git-studioweb-rule:start-->
+12a. **Leave `.git` and `.git-studioweb` entries alone.** Studio Web manages the solution's local repository itself, in a `.git-studioweb` folder when the browser cannot create `.git`. Never create, edit or delete a `.git` or `.git-studioweb` entry with file tools. For desktop git or VS Code on that folder, tell the user to link it from a terminal on their own machine (`uipath-solution` skill, Git Studio Web Layout).
+<!--skill-flavor:git-studioweb-rule:end-->
