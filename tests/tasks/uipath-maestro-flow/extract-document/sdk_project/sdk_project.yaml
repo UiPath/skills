@@ -5,7 +5,7 @@ description: >
   with `dynamicExtract()` (no model) and compiles: compile gives the node its
   IDP processor key and writes the processor's resource file into the
   solution, so the flow validates with no CLI step afterwards. The rest of the
-  flow is kept (an edge the new step splits aside). Needs an SDK that ships builder-sdk#2052.
+  flow is kept (an edge the new step splits aside). Needs `@uipath/maestro-builder-sdk` 6.118.0 or later.
 
   No `flow debug`: extraction needs the IDP service.
 
