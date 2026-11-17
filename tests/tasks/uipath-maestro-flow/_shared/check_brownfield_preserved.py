@@ -35,10 +35,6 @@ compile -> merge loop, not a hand edit.
 its edges, node variables and layout entry; the task's own grader checks
 whether it had to go.
 
-`--grown-node` names an original node the edit may only add to: new entries
-under `outputs` (a flow output bound on an end node) and its canvas `ui`. Every
-output it already had, and every other key, must be byte-for-byte the same.
-
 `--added-binding` names a binding the edit may add, for a step whose node type
 brings its own: managed HTTP adds `uipath-uipath-http connection` and
 `FolderKey` even for a URL that needs no connection. Any other added binding
@@ -47,7 +43,7 @@ still fails.
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py \\
         --original $REFERENCE_DIR/<fixture>/<Sol>/<Project> --project <Sol>/<Project> \\
-        [--changed-node ID ...] [--grown-node ID ...] [--removable-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
+        [--changed-node ID ...] [--removable-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
         [--changed-agent UUID ...] [--added-binding NAME ...] [--aspect graph|layout|merged]
 
 Exit 0 on pass; exit 1 with one `FAIL:` line per difference.
@@ -123,16 +119,6 @@ def differing_keys(before: dict, after: dict) -> list[str]:
     return sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
 
 
-def changes_beyond_growth(before: dict, after: dict) -> list[str]:
-    """What changed on a grown node other than added outputs and its canvas `ui`."""
-    changed = [k for k in differing_keys(before, after) if k not in ("outputs", "ui")]
-    outputs_after = after.get("outputs") or {}
-    for name, output in (before.get("outputs") or {}).items():
-        if outputs_after.get(name) != output:
-            changed.append(f"outputs.{name}")
-    return changed
-
-
 def check_graph(
     original: dict,
     final: dict,
@@ -143,7 +129,6 @@ def check_graph(
     changed_agents: set[str],
     removable_nodes: set[str] = frozenset(),
     added_bindings: set[str] = frozenset(),
-    grown_nodes: set[str] = frozenset(),
 ) -> list[str]:
     failures: list[str] = []
 
@@ -157,9 +142,6 @@ def check_graph(
         if after is None:
             if node["id"] not in removable_nodes:
                 failures.append(f"node {node['id']!r} was removed")
-        elif node["id"] in grown_nodes and node["id"] not in changed_nodes | removable_nodes:
-            if changed := changes_beyond_growth(node, after):
-                failures.append(f"node {node['id']!r} changed beyond added outputs ({', '.join(changed)})")
         elif node["id"] not in changed_nodes | removable_nodes and after != node:
             failures.append(f"node {node['id']!r} changed ({', '.join(differing_keys(node, after))})")
 
@@ -710,7 +692,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--original", required=True, type=Path)
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--changed-node", action="append", default=[])
-    parser.add_argument("--grown-node", action="append", default=[])
     parser.add_argument("--removable-node", action="append", default=[])
     parser.add_argument("--removed-edge", action="append", default=[])
     parser.add_argument("--changed-agent", action="append", default=[])
@@ -736,7 +717,6 @@ def main(argv: list[str] | None = None) -> int:
             set(args.changed_agent),
             set(args.removable_node),
             set(args.added_binding),
-            set(args.grown_node),
         )
 
     for failure in failures:
