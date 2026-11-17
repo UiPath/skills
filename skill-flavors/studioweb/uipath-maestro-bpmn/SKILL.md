@@ -142,8 +142,7 @@ uip maestro bpmn format <Name>.bpmn
   them; the edited file shows `merge` no change, so it writes the target back as it was.
   When `merge` cannot open the baseline, run `mkdir -p <Draft>/baseline`, decompile `.flow-sdk/original/<Name>.bpmn`
   to `<Draft>/<Name>.baseline.bpmn.ts`, compile that to `<Draft>/baseline/<Name>.bpmn`,
-  and run step 3's `merge` again. When the gate's outline search finds a box
-  missing, rebuild the baseline the same way and run steps 3 and 4 again.
+  and run step 3's `merge` again.
 - **Step 5 lays out the whole canvas again.** `merge` keeps every shape of the
   target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports

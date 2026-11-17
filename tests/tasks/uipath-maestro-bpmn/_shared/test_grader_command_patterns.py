@@ -831,9 +831,9 @@ NOT_SHOWN = [
 
 @pytest.mark.parametrize("command", SHOWN_ON_STUDIO_WEB)
 def test_after_gate_counts_an_upload_or_a_studio_web_target_write(command: str) -> None:
-    assert _hits(_pattern(_AFTER_GATE, "both uploaded"), command), command
+    assert _hits(_pattern(_AFTER_GATE, "At least two uploads"), command), command
 
 
 @pytest.mark.parametrize("command", NOT_SHOWN)
 def test_after_gate_ignores_scratch_and_cli_target_writes(command: str) -> None:
-    assert not _hits(_pattern(_AFTER_GATE, "both uploaded"), command), command
+    assert not _hits(_pattern(_AFTER_GATE, "At least two uploads"), command), command

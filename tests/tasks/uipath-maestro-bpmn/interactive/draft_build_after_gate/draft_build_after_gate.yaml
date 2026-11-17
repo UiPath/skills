@@ -163,7 +163,7 @@ success_criteria:
   # The CLI's `bpmn init` names the file `<Name>.bpmn`, so a CLI agent still
   # needs two real uploads.
   - type: command_executed
-    description: "The shape and the built process were both uploaded (in Studio Web, both written to the open canvas target)"
+    description: "At least two uploads (in Studio Web, writes to the open canvas target); which turn built is proven by the outline-box check"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+upload\b|(uip|\$UIP)\s+maestro\s+bpmn\s+(merge|compile)\b(?:\\\n|(?<= )\n|[^\n;&|])*\s(-o|--output-file)(\s+|=)["'']?(/solution/[^/\s"'']+/|\./)?Process\.bpmn(?![\w./-])'
     min_count: 2
