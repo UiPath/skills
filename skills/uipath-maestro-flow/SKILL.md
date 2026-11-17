@@ -16,11 +16,10 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compile
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
 3. Choose every node from a registry search, never a brand name.
 4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
-5. Bind every declared output on every path. `check` misses missing outputs; the run returns `undefined`.
-6. Handle an error only when the request specifies what should happen.
-7. Never re-run `flow debug` to inspect a failed run.
-8. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
-9. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
+5. Handle an error only when the request specifies what should happen.
+6. Never re-run `flow debug` to inspect a failed run.
+7. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
+8. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
 
 ## Project layout
 
@@ -197,7 +196,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 
 ## Authoring a flow
 
-[Critical Rules](#critical-rules) govern node choice, open decisions, outputs, and errors; details are in **[`references/author.md`](references/author.md)**. A requested canvas arrangement uses `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
+[Critical Rules](#critical-rules) govern node choice, open decisions, and errors; details are in **[`references/author.md`](references/author.md)**. A requested canvas arrangement uses `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 
