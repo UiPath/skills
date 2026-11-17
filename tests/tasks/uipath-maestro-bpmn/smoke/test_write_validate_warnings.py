@@ -38,20 +38,44 @@ def _write(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
 
 def test_lists_the_warnings_of_each_built_process(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
-    _validate_prints(monkeypatch, json.dumps({"Data": {"Status": "Valid", "Warnings": WARNINGS}}))
+    _validate_prints(monkeypatch, json.dumps({"Result": "Success", "Data": {"Status": "Valid", "Warnings": WARNINGS}}))
 
     assert _write(tmp_path, monkeypatch) == f"LoyaltyDiscount.bpmn:\n{WARNINGS}"
 
 
 def test_writes_none_when_validate_reports_no_warning(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
-    _validate_prints(monkeypatch, json.dumps({"Data": {"Status": "Valid"}}))
+    _validate_prints(monkeypatch, json.dumps({"Result": "Success", "Data": {"Status": "Valid"}}))
 
     assert _write(tmp_path, monkeypatch) == writer.NO_WARNINGS
 
 
-def test_unparseable_validate_output_lists_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unparseable_validate_output_is_unknown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
     _validate_prints(monkeypatch, "not json")
 
-    assert _write(tmp_path, monkeypatch) == writer.NO_WARNINGS
+    assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)
+
+
+def test_failed_validate_lists_the_warnings_from_instructions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
+    instructions = "Found 1 error(s):\n  - [warning] [(xml)] unresolved reference <X>\n  - [error] [(xml)] BPMN_PARSE_ERROR: bad"
+    _validate_prints(monkeypatch, json.dumps({"Result": "Failure", "Instructions": instructions}))
+
+    assert _write(tmp_path, monkeypatch) == "LoyaltyDiscount.bpmn:\n- [warning] [(xml)] unresolved reference <X>"
+
+
+@pytest.mark.parametrize("error", [FileNotFoundError("uip"), subprocess.TimeoutExpired("uip", 60)])
+def test_validate_that_cannot_run_is_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
+
+    def raising_run(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(writer.subprocess, "run", raising_run)
+
+    assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)

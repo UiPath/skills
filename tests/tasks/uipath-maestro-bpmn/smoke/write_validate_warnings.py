@@ -5,8 +5,11 @@ The final `.bpmn` is what the agent shipped, so every warning listed is one it
 kept. The next criterion, a judge, reads the file and checks the final
 report names each one on `Assumed:` or `Unverified:`.
 
+The file holds `none`, the warnings, or a first line starting with `unknown`
+when a warning list could not be read; the judge scores `unknown` 0.
+
 Usage: write_validate_warnings.py <output file>
-Always exits 0: this criterion only records; the judge grades.
+Exits 0 whenever the file is written: this criterion only records.
 """
 
 import json
@@ -20,30 +23,55 @@ from _shared.validate_bpmn import _bpmn_files  # noqa: E402
 
 TIMEOUT_SECONDS = 60
 NO_WARNINGS = "none"
+UNKNOWN = "unknown"
+WARNING_LINE = "[warning]"
+
+
+class Unreadable(Exception):
+    pass
 
 
 def warnings_of(path: Path) -> str:
-    proc = subprocess.run(
-        ["uip", "maestro", "bpmn", "validate", str(path), "--output", "json"],
-        capture_output=True,
-        text=True,
-        timeout=TIMEOUT_SECONDS,
-    )
     try:
-        data = json.loads(proc.stdout).get("Data") or {}
-    except json.JSONDecodeError:
-        return ""
-    return str(data.get("Warnings") or "").strip()
+        proc = subprocess.run(
+            ["uip", "maestro", "bpmn", "validate", str(path), "--output", "json"],
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise Unreadable(f"validate did not run: {exc}") from exc
+
+    try:
+        out = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise Unreadable(f"validate printed no JSON (exit {proc.returncode})") from exc
+
+    data = out.get("Data") or {}
+    if "Warnings" in data or out.get("Result") == "Success":
+        return str(data.get("Warnings") or "").strip()
+
+    instructions = out.get("Instructions")
+    if not isinstance(instructions, str):
+        raise Unreadable(f"validate failed with no Instructions (exit {proc.returncode})")
+    return "\n".join(line for line in instructions.splitlines() if WARNING_LINE in line).strip()
 
 
 def main() -> int:
     out = Path(sys.argv[1])
-    found = []
+    found, unknown = [], []
     for path in _bpmn_files():
-        text = warnings_of(path)
+        try:
+            text = warnings_of(path)
+        except Unreadable as exc:
+            unknown.append(f"{path.name}: {exc}")
+            continue
         if text:
             found.append(f"{path.name}:\n{text}")
-    out.write_text("\n\n".join(found) or NO_WARNINGS, encoding="utf-8")
+
+    parts = [f"{UNKNOWN}: " + "; ".join(unknown)] if unknown else []
+    parts += found
+    out.write_text("\n\n".join(parts) or NO_WARNINGS, encoding="utf-8")
     print(out.read_text(encoding="utf-8"))
     return 0
 

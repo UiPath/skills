@@ -132,12 +132,14 @@ success_criteria:
     pass_threshold: 1.0
     prompt: |
       `.validate-warnings.txt` lists the warnings `uip maestro bpmn validate`
-      reports on the process the agent shipped, or holds `none`.
+      reports on the process the agent shipped, or holds `none`. A first
+      line starting with `unknown` means they could not be read.
 
       Find the final report in AGENT OUTPUT: the text from the LAST
       occurrence of `LoyaltyDiscount: built` to the end. Ignore markdown
       emphasis.
 
+      - If the file starts with `unknown`, score 0.0.
       - If the file holds `none`, score 1.0.
       - Otherwise score 1.0 only if the report's `Assumed:` and
         `Unverified:` lines together cover every distinct warning in the
