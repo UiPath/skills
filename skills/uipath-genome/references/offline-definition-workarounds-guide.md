@@ -15,7 +15,7 @@ Each screen and each element starts from a seed file of its own in the working f
 
 The definition commands write every other field and the `.xaml.metadata` sibling (§ Order of commands, offline); the undeclared `uix:` prefix is what the CLI itself writes. The CLI never adds `Version`, and it is not decorative: at V6 the runtime no longer expands a fuzzy selector itself, and without it a target falls back to legacy semantics (no anchor-alignment factor, no image scale factor). An element's strict selector is the **partial** selector, relative to its scope selector; the full selector is scope + partial, computed at run time.
 
-A definition resolved from a live capture is never a seed: every copy keeps its anchors, the launch settings of the application captured and its capture's screenshot, which registration stores with every screen and element made from it.
+A definition resolved from a live capture is never a seed: a definition built from it keeps the capture's anchors, the launch settings of the application captured and the capture's screenshot, which registration stores with the screen or element.
 
 ## Screens — `TargetApp` definitions offline
 
@@ -69,4 +69,4 @@ Shared failure mode: all these wrong answers *look* like finished work and pass 
 
 ## Before shipping
 
-An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Strict` isolates the strict step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against this guide's own checks — a `FuzzySelector` step or an anchor on an offline definition — and [selector-matching-guide.md § Checking a definition](selector-matching-guide.md). Everything a structural check cannot see is what the live pass is for ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)).
+An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Strict` isolates the strict step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against [selector-matching-guide.md § Checking a definition](selector-matching-guide.md). Everything a structural check cannot see is what the live pass is for ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)).
