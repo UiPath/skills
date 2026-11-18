@@ -1,17 +1,18 @@
 """Checker-level tests for check_billing_dispute_analyst.py.
 
-Only `run_debug` is replaced. The flow on disk is the task's reference flow
-(an inline agent wired to the SOP context index), so the source and trace
-lookups run for real. Payloads are in the `Data` shape `uip maestro flow debug
---output json` returns; the 2026-11-17 Studio Web run of this task returned
-`determination: "needs_review"` with an SOP-citing rationale in that shape.
+Only `run_debug` is replaced. The flow on disk is the task's reference flow (an
+inline agent wired to the SOP context index), with its variables renamed the
+way an agent working from the v3 prompt might name them, so the mapping by
+meaning and the trace lookups run for real. Payloads are in the `Data` shape
+`uip maestro flow debug --output json` returns; the 2026-11-17 Studio Web run
+of this task returned an agent output and an SOP-citing rationale
+("Under SOP §5.1, ...") in that shape.
 """
 
 from __future__ import annotations
 
 import importlib.util
 import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,10 @@ HERE = Path(__file__).resolve().parent
 CHECKER = HERE / "check_billing_dispute_analyst.py"
 REFERENCE_FLOW = HERE / "BillingDisputeAnalyst.reference.flow"
 AGENT_ID = "disputeAnalyst"  # the reference flow's uipath.agent.autonomous node
+RENAMES = {"disputeDescription": "customerComplaint", "invoiceNumber": "invoiceRef",
+           "determination": "decision", "rationale": "reasoning"}
+REASONING = ("Per SOP §5.4 the billed rate of $290 exceeds the contracted $235, a credit of $4,950; "
+             "§7 routes credits from $500 to $5,000 to manager review.")
 
 
 def _load_checker():
@@ -31,15 +36,18 @@ def _load_checker():
 
 @pytest.fixture
 def sandbox(tmp_path, monkeypatch):
+    text = REFERENCE_FLOW.read_text()
+    for old, new in RENAMES.items():
+        text = text.replace(f'"{old}"', f'"{new}"').replace(f".{old}", f".{new}")
     project = tmp_path / "BillingDisputeAnalyst" / "BillingDisputeAnalyst"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
-    shutil.copy(REFERENCE_FLOW, project / "new.flow")
+    (project / "new.flow").write_text(text)
     monkeypatch.chdir(tmp_path)
     return project
 
 
-def _payload(*, action, credit, agent_status="Completed", rationale="Per SOP §5.4 and §7 ..."):
+def _payload(inputs, outputs, *, agent_status="Completed"):
     return {
         "finalStatus": "Completed",
         "elementExecutions": [
@@ -47,67 +55,81 @@ def _payload(*, action, credit, agent_status="Completed", rationale="Per SOP §5
             {"elementId": AGENT_ID, "status": agent_status},
             {"elementId": "doneSuccess", "status": "Completed"},
         ],
-        "variables": {
-            "globals": {
-                "invoiceNumber": "MCS-2026-04903",
-                "disputeDescription": "90 hours billed at $290 ... contracts $235",
-                "determination": "valid_overcharge",
-                "recommendedAction": action,
-                "creditAmount": credit,
-                "rationale": rationale,
-            }
-        },
+        "variables": {"globals": {**inputs, f"{AGENT_ID}.output": outputs, **outputs}},
     }
 
 
-def _run(case, payload, monkeypatch):
+def _run(case, outputs, monkeypatch, **kw):
     checker = _load_checker()
-    monkeypatch.setattr(checker, "run_debug", lambda **_: payload)
+    sent = {}
+
+    def fake(*, inputs, **_):
+        sent.update(inputs)
+        return _payload(inputs, outputs, **kw)
+
+    monkeypatch.setattr(checker, "run_debug", fake)
     monkeypatch.setattr("sys.argv", ["check", case])
     checker.main()
+    return sent
 
 
-@pytest.mark.parametrize("action", ["manager_review", "escalate_to_manager", "Manager Review"])
-def test_rate_error_routed_to_manager_review_with_the_sop_credit_passes(sandbox, monkeypatch, capsys, action):
-    _run("overcharge", _payload(action=action, credit=4950), monkeypatch)
-    assert "creditAmount=4950" in capsys.readouterr().out
+def test_inputs_are_mapped_by_meaning(sandbox, monkeypatch):
+    sent = _run("overcharge", {"decision": "manager_review", "reasoning": REASONING}, monkeypatch)
+    assert sent["invoiceRef"] == "MCS-2026-04903"
+    assert "90 hours billed at $290" in sent["customerComplaint"]
 
 
-def test_credit_returned_as_text_passes(sandbox, monkeypatch):
-    _run("overcharge", _payload(action="manager_review", credit="$4,950.00"), monkeypatch)
+def test_rate_error_routed_to_manager_review_passes(sandbox, monkeypatch, capsys):
+    _run("overcharge", {"decision": "manager_review", "reasoning": REASONING}, monkeypatch)
+    assert "OK: the reasoning names an SOP rule" in capsys.readouterr().out
 
 
-def test_rate_error_auto_resolved_fails(sandbox, monkeypatch):
-    # $4,950 sits in the SOP's $500-$5,000 band; auto-resolve means the SOP was not read.
+def test_a_decision_inside_an_object_output_passes(sandbox, monkeypatch):
+    _run("overcharge", {"decision": {"action": "manager_review", "why": REASONING}, "reasoning": ""}, monkeypatch)
+
+
+@pytest.mark.parametrize("decision", ["credit", "Manager Review", "escalate_to_manager"])
+def test_rate_error_with_another_or_misspelled_decision_fails(sandbox, monkeypatch, decision):
+    # $4,950 sits in the SOP's $500-$5,000 band, and the prompt spells the value "manager_review".
     with pytest.raises(SystemExit) as exc:
-        _run("overcharge", _payload(action="auto_resolve", credit=4950), monkeypatch)
-    assert "recommendedAction" in str(exc.value)
+        _run("overcharge", {"decision": decision, "reasoning": REASONING}, monkeypatch)
+    assert "no declared output is the decision 'manager_review'" in str(exc.value)
 
 
-def test_wrong_credit_fails(sandbox, monkeypatch):
+def test_reasoning_that_names_no_sop_rule_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
-        _run("overcharge", _payload(action="manager_review", credit=26100), monkeypatch)
-    assert "creditAmount" in str(exc.value)
+        _run("overcharge", {"decision": "manager_review",
+                            "reasoning": "The rate looks higher than agreed so a manager should look."}, monkeypatch)
+    assert "names an SOP rule" in str(exc.value)
 
 
 def test_agent_that_did_not_complete_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
-        _run("overcharge", _payload(action="manager_review", credit=4950, agent_status="Faulted"), monkeypatch)
-    assert "did not complete" in str(exc.value)
+        _run("overcharge", {"decision": "manager_review", "reasoning": REASONING}, monkeypatch,
+             agent_status="Faulted")
+    assert "no agent node completed" in str(exc.value)
 
 
-@pytest.mark.parametrize("credit", [0, None, "0.00"])
-def test_line_at_contract_rejected_without_credit_passes(sandbox, monkeypatch, credit):
-    _run("reject", _payload(action="reject", credit=credit), monkeypatch)
-
-
-def test_line_at_contract_with_a_credit_fails(sandbox, monkeypatch):
-    with pytest.raises(SystemExit) as exc:
-        _run("reject", _payload(action="reject", credit=2590), monkeypatch)
-    assert "contracted rate" in str(exc.value)
+def test_line_at_contract_rejected_passes(sandbox, monkeypatch):
+    _run("reject", {"decision": "reject",
+                    "reasoning": "Under SOP §5.4 the billed $185 matches the contracted rate, so there is no variance."},
+         monkeypatch)
 
 
 def test_line_at_contract_sent_to_review_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
-        _run("reject", _payload(action="manager_review", credit=0), monkeypatch)
-    assert "recommendedAction" in str(exc.value)
+        _run("reject", {"decision": "manager_review", "reasoning": REASONING}, monkeypatch)
+    assert "decision 'reject'" in str(exc.value)
+
+
+def test_thin_description_goes_to_manager_review(sandbox, monkeypatch):
+    sent = _run("thin", {"decision": "manager_review",
+                         "reasoning": "SOP §5 needs the line, quantity and rates, which the description lacks."},
+                monkeypatch)
+    assert "$" not in sent["customerComplaint"]
+
+
+def test_thin_description_rejected_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit):
+        _run("thin", {"decision": "reject", "reasoning": "Per the SOP there is not enough to verify any charge."},
+             monkeypatch)

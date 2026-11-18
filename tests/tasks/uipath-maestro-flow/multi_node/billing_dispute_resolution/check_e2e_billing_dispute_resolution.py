@@ -1,131 +1,191 @@
 #!/usr/bin/env python3
 """Effects check for BillingDisputeResolution.
 
-Debugs the flow once against the live tenant and asserts what the run DID, read
-from the debug trace. Both cases use rows the tenant's BillingDisputeERP really
-holds, and the invoice PDF that matches them, so the right outcome follows from
-the tenant's own Billing Dispute SOP (its "Incorrect rate" rule compares the
-billed unitPrice with the row's contractedRate):
+Debugs the flow once against the live tenant and grades what the run did, read
+from the debug trace, and what it returned, read among the declared outputs by
+value. The prompt lets the agent choose the dispute submission's shape, so the
+submission is built from the paths the flow reads off its input
+(`flow_io_roles.map_inputs`) laid over a synonym-rich fallback for paths read
+inside scripts. The invoice number is typed with stray spaces and in
+lowercase, as the prompt warns customers do.
 
-  overcharge       Invoice MCS-2026-04903, line 2 (DevOps Engineering): 90 hours
-                   billed at $290 against a contracted $235, so the customer is
-                   owed (290 - 235) x 90 = $4,950. The run must: extract the
-                   invoice (IxP), complete both lookups, POST through
-                   FinancialPostingFunction (whose live reply must cite the
-                   invoice), run the writer, and return a credit of 4950 and an
-                   email draft that cites the invoice number and that credit.
+Both cases use rows the tenant's BillingDisputeERP really holds and the invoice
+PDF that matches them, so the right outcome follows from the tenant's own
+Billing Dispute SOP (§5.4 "Incorrect rate" compares the billed unitPrice with
+the row's contractedRate; §7 sends $500-$5,000 to manager review and anything
+without a variance to reject):
 
-  no-discrepancy   Invoice MCS-2026-04872, line 5 (Custom Integration Build):
-                   14 hours billed at $185, and the ERP row's contractedRate is
-                   $185. There is nothing to credit, so the run must complete WITHOUT
-                   posting and without running the writer (no email drafted),
-                   and still return an explanation.
+  overcharge  Invoice MCS-2026-04903, line 2 (DevOps Engineering), account
+              ACCT-71044-AT: 90 hours billed at $290 against a contracted $235,
+              so the customer is owed (290 - 235) x 90 = $4,950, which §7 sends
+              to manager review and the prompt auto-approves. The run must
+              extract the invoice (IxP), complete both lookups, POST through
+              FinancialPostingFunction (whose live reply must cite the invoice
+              number as the records hold it), run the writer, and return
+              "Approved", "manager_review" or "credit", 4950, an explanation
+              naming an SOP rule, and a plain-text email draft citing the
+              invoice and that credit.
 
-The email is never sent: the structural check forbids a send-email node.
+  reject      Invoice MCS-2026-04872, line 5 (Custom Integration Build), account
+              ACCT-98201-NE: 14 hours billed at $185, and the ERP row's
+              contractedRate is $185. No variance, so the run must complete
+              without posting and without the writer, and return "Rejected",
+              "reject", 0, an explanation naming an SOP rule, and
+              "No resolution email drafted".
 
-Usage: check_e2e_billing_dispute_resolution.py overcharge|no-discrepancy
+Both recommended actions count for the overcharge: the analyst picked
+"manager_review" in one run and "credit" in the next for the same dispute
+(round 3, 2026-11-18), and both lead to approval here. The analyst task grades
+the SOP's band strictly.
+
+Usage: check_e2e_billing_dispute_resolution.py overcharge|reject
 """
-import copy
-import glob
-import json
 import os
+import re
 import sys
 
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
+from _shared import flow_io_roles as io  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
     ENTITY_QUERY_HINTS,
-    _declared_input_global_keys,
+    _fail,
     _fail_with_capture,
     _get_ci,
-    _named_global,
-    find_project_dir,
+    _load_flow,
     node_output_leaves,
-    read_flow_file_input_vars,
-    read_flow_input_vars,
     run_debug,
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-
-# A billing-dispute submission event (the shape the prompt's helper block
-# describes). Each case replaces customer, invoice and dispute.
-WEBHOOK_PAYLOAD = {
-    "event": "billing_dispute_submitted",
-    "timestamp": "2026-04-02T15:04:05Z",
-    "disputeId": "DSP-2026-00341",
-    "attachments": [],
-    "config": {
-        "billingOpsChannel": "#billing-ops",
-        "billingAnalystEmail": "analyst@contoso.example",
-        "accountManagerSlackId": "U12345",
-        "accountManagerName": "Sam Rivera",
-        "accountManagerEmail": "sam.rivera@contoso.example",
-        "creditApprovalThreshold": 5000,
-        "autoResolveThreshold": 500,
-    },
-}
+NO_EMAIL = "No resolution email drafted"
+NAMES_A_RULE = re.compile(r"§|\bsection\s*\d|\bSOP\b", re.I)
 
 CASES = {
     "overcharge": {
         "invoice": "MCS-2026-04903",
+        "typed": " mcs-2026-04903  ",
+        "account": "ACCT-71044-AT",
+        "company": "Atlas Manufacturing Group",
+        "line": {"number": 2, "description": "DevOps Engineering", "quantity": 90, "price": 290,
+                 "amount": 26100, "reason": "Billed at $290/hour; our SOW AT-2026-008 contracts $235/hour"},
+        "statement": "We were billed a higher hourly rate than our contract specifies.",
+        "decision": "Approved",
+        "actions": ("manager_review", "credit"),
         "credit": 4950,
-        "customer": {"companyName": "Atlas Manufacturing Group", "accountNumber": "ACCT-71044-AT"},
-        "invoiceDetails": {"invoiceDate": "2026-03-31", "dueDate": "2026-04-30",
-                           "totalAmount": 27796.00, "currency": "USD"},
-        "dispute": {
-            "type": "pricing",
-            "disputedLineItems": [
-                {"lineNumber": 2, "description": "DevOps Engineering",
-                 "quantity": 90, "unitPrice": 290, "amount": 26100,
-                 "reason": "Billed at $290/hour; our SOW AT-2026-008 contracts $235/hour"},
-            ],
-            "disputedAmount": 26100,
-            "customerStatement": "We were billed a higher hourly rate than our contract specifies.",
-        },
     },
-    "no-discrepancy": {
+    "reject": {
         "invoice": "MCS-2026-04872",
-        "credit": None,
-        "customer": {"companyName": "Northwind Electronics Corp.", "accountNumber": "ACCT-98201-NE"},
-        "invoiceDetails": {"invoiceDate": "2026-03-01", "dueDate": "2026-03-31",
-                           "totalAmount": 30425.00, "currency": "USD"},
-        "dispute": {
-            "type": "pricing",
-            "disputedLineItems": [
-                {"lineNumber": 5, "description": "Custom Integration Build",
-                 "quantity": 14, "unitPrice": 185, "amount": 2590,
-                 "reason": "We believe the hourly rate is too high"},
-            ],
-            "disputedAmount": 2590,
-            "customerStatement": "The integration hourly rate looks higher than we expected.",
-        },
+        "typed": "  Mcs-2026-04872 ",
+        "account": "ACCT-98201-NE",
+        "company": "Northwind Electronics Corp.",
+        "line": {"number": 5, "description": "Custom Integration Build", "quantity": 14, "price": 185,
+                 "amount": 2590, "reason": "We believe the hourly rate is too high"},
+        "statement": "The integration hourly rate looks higher than we expected.",
+        "decision": "Rejected",
+        "actions": ("reject",),
+        "credit": 0,
     },
 }
 
 
-def submission(case):
-    """The dispute submission for a case, in the helper block's shape."""
+def line_item(case):
+    """One disputed line, with every field under several common spellings."""
+    li = CASES[case]["line"]
+    number, qty, price, amount = li["number"], li["quantity"], li["price"], li["amount"]
+    return {
+        "lineNumber": number, "line": number, "lineNo": number, "line_number": number,
+        "lineItemNumber": number, "lineId": number, "number": number,
+        "quantity": qty, "qty": qty, "hours": qty, "units": qty, "billedQuantity": qty,
+        "unitPrice": price, "unit_price": price, "price": price, "rate": price, "billedRate": price,
+        "billedUnitPrice": price, "chargedPrice": price, "chargedUnitPrice": price, "hourlyRate": price,
+        "amount": amount, "total": amount, "lineTotal": amount, "billedAmount": amount,
+        "chargedAmount": amount, "totalAmount": amount,
+        "description": li["description"], "reason": li["reason"],
+    }
+
+
+def submission_fallback(case):
+    """A dispute submission readable under the common spellings of each field."""
     c = CASES[case]
-    payload = copy.deepcopy(WEBHOOK_PAYLOAD)
-    payload["customer"] = copy.deepcopy(c["customer"])
-    payload["invoice"] = {"invoiceNumber": c["invoice"], **c["invoiceDetails"]}
-    payload["dispute"] = copy.deepcopy(c["dispute"])
-    return payload
+    lines = [line_item(case)]
+    account, invoice = c["account"], c["typed"]
+    return {
+        "accountNumber": account, "accountNo": account, "account_number": account, "accountId": account,
+        "account": account, "customerAccountNumber": account, "customerAccount": account,
+        "acctNumber": account,
+        "customer": {"accountNumber": account, "accountNo": account, "account": account, "id": account,
+                     "number": account, "name": c["company"], "companyName": c["company"]},
+        "customerName": c["company"], "companyName": c["company"],
+        "invoiceNumber": invoice, "invoiceNo": invoice, "invoice_number": invoice, "invoiceId": invoice,
+        "invoiceRef": invoice,
+        "invoice": {"invoiceNumber": invoice, "number": invoice, "invoiceNo": invoice, "id": invoice},
+        "disputedLines": lines, "disputedLineItems": lines, "disputed_lines": lines, "lineItems": lines,
+        "lines": lines, "items": lines, "disputedItems": lines, "disputes": lines,
+        "dispute": {"disputedLineItems": lines, "disputedLines": lines, "lineItems": lines, "lines": lines,
+                    "items": lines, "type": "pricing", "description": c["statement"],
+                    "customerStatement": c["statement"]},
+        "description": c["statement"], "reason": c["statement"], "customerStatement": c["statement"],
+    }
+
+
+def submission_roles(case):
+    """The submission's parts, for leaf paths the flow reads off its input."""
+    c = CASES[case]
+    return {
+        "account number": {"value": c["account"], "keywords": [
+            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct"]},
+        "invoice number": {"value": c["typed"], "keywords": [
+            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum"]},
+        "disputed lines": {"value": [line_item(case)], "keywords": ["lineitems", "lines", "items", "disputes"]},
+    }
+
+
+LINE_ROLES = ("disputed line number", "billed quantity", "billed unit price")
+
+
+def scalar_roles(case):
+    """The submission spread over separate inputs."""
+    li = CASES[case]["line"]
+    roles = {k: v for k, v in submission_roles(case).items() if k != "disputed lines"}
+    roles["invoice number"]["keywords"] = roles["invoice number"]["keywords"] + ["invoice"]
+    roles["account number"]["keywords"] = roles["account number"]["keywords"] + ["customer"]
+    roles.update({
+        "disputed line number": {"value": li["number"], "keywords": ["linenumber", "lineno", "line"]},
+        "billed quantity": {"value": li["quantity"], "keywords": ["quantity", "qty", "hours"]},
+        "billed unit price": {"value": li["price"], "keywords": ["unitprice", "price", "rate"]},
+    })
+    return roles
 
 
 def invoice_pdf(case):
     return os.path.join(_HERE, f"invoice-{CASES[case]['invoice']}.pdf")
 
 
-def _flow():
-    flows = sorted(glob.glob(os.path.join(find_project_dir(), "**/*.flow"), recursive=True))
-    if not flows:
-        sys.exit("FAIL: no .flow file in the project")
-    with open(flows[0]) as f:
-        return json.load(f)
+def build_inputs(flow, case):
+    """(inputs, attachments) for the debug run, or a clear failure naming what had no input."""
+    declared_in = io.declared(flow, "in")
+    kinds = {v["id"]: str(v.get("type") or "").lower() for v in declared_in}
+    if "file" not in kinds.values():
+        _fail(io.unmapped_error(flow, ["the invoice PDF (a file input)"]))
+    if any(k in ("object", "jsonschema") for k in kinds.values()):
+        inputs, attachments, _ = io.map_inputs(
+            flow, submission_roles(case), object_fallback=submission_fallback(case), file_path=invoice_pdf(case)
+        )
+        return inputs, attachments
+    arrays = [i for i, k in kinds.items() if k == "array"]
+    scalars = {"variables": {"globals": [v for v in declared_in if v["id"] not in arrays]}}
+    inputs, attachments, unmapped = io.map_inputs(
+        scalars, scalar_roles(case), object_fallback=None, file_path=invoice_pdf(case)
+    )
+    if arrays:
+        inputs[arrays[0]] = [line_item(case)]
+        unmapped = [r for r in unmapped if r not in LINE_ROLES]
+    if problem := io.unmapped_error(flow, unmapped):
+        _fail(problem)
+    return inputs, attachments
 
 
 def _ids_of(flow, sub):
@@ -163,38 +223,6 @@ def _completed(flow, payload, sub):
     return _ids_of(flow, sub) & _executed_ids(payload, completed=True)
 
 
-def _outputs(flow, payload):
-    """The declared `out` variables and their runtime values, inputs excluded."""
-    inputs = {k.lower() for k in _declared_input_global_keys(payload)}
-    outs = {}
-    for v in (flow.get("variables") or {}).get("globals") or []:
-        if v.get("direction") == "out" and v["id"].lower() not in inputs:
-            outs[v["id"]] = (v.get("type"), _named_global(payload, v["id"])[0])
-    return outs
-
-
-def _texts(value):
-    """Every string in an output, including inside an object such as {subject, body}."""
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, dict):
-        return [t for v in value.values() for t in _texts(v)]
-    if isinstance(value, (list, tuple)):
-        return [t for v in value for t in _texts(v)]
-    return []
-
-
-def _as_number(value):
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    try:
-        return float(str(value).replace(",", "").replace("$", "").strip())
-    except ValueError:
-        return None
-
-
 def _amount_spellings(amount):
     spellings = {f"{amount:.2f}", f"{amount:,.2f}"}
     if float(amount).is_integer():
@@ -202,24 +230,29 @@ def _amount_spellings(amount):
     return spellings
 
 
-def _debug(case):
-    project_dir = find_project_dir()
-    file_vars = read_flow_file_input_vars(project_dir)
-    obj_vars = [v for v in read_flow_input_vars(project_dir) if v not in file_vars]
-    if not obj_vars:
-        sys.exit("FAIL: the flow declares no object input for the dispute submission")
-    if not file_vars:
-        sys.exit("FAIL: the flow declares no file input for the invoice PDF")
-    print(f"debug inputs: object={obj_vars[0]} attachment={file_vars[0]} invoice={CASES[case]['invoice']}")
-    return run_debug(
-        inputs={obj_vars[0]: submission(case)},
-        attachments={file_vars[0]: invoice_pdf(case)},
-        timeout=840,
-    )
+def check_results(case, outs, *, email):
+    """Decision, action, credit and explanation by value; `email` grades the draft output."""
+    c = CASES[case]
+    if not io.find_out(outs, io.equals_exact(c["decision"])):
+        _fail_with_capture(f"no declared output is the decision {c['decision']!r}: {outs}")
+    actions = [a for a in c["actions"] if io.find_out(outs, io.equals_exact(a))]
+    if not actions:
+        _fail_with_capture(f"no declared output is the recommended action {' or '.join(map(repr, c['actions']))}: {outs}")
+    if not io.find_out(outs, io.equals_number(c["credit"], 0.005)):
+        _fail_with_capture(f"no declared output is the credit amount {c['credit']}: {outs}")
+    print(f"OK: decision {c['decision']!r}, recommended action {actions[0]!r}, credit {c['credit']}")
+
+    email_ids = email(outs)
+    explanations = [t for k, (_t, v) in outs.items() if k not in email_ids for t in io.texts(v)
+                    if len(t.split()) >= 5]
+    if not any(NAMES_A_RULE.search(t) for t in explanations):
+        _fail_with_capture(f"no returned explanation names an SOP rule (§, section or SOP): {explanations}")
+    print("OK: the explanation names an SOP rule")
 
 
 def check_overcharge(flow, payload):
-    invoice, credit = CASES["overcharge"]["invoice"], CASES["overcharge"]["credit"]
+    c = CASES["overcharge"]
+    invoice, credit = c["invoice"], c["credit"]
     if not _completed(flow, payload, "uipath.ixp"):
         _fail_with_capture("the IxP extraction did not complete")
     reads = set()
@@ -232,61 +265,65 @@ def check_overcharge(flow, payload):
     posted = _completed(flow, payload, "uipath.core.api-workflow")
     if not posted:
         _fail_with_capture("FinancialPostingFunction did not complete: a valid overcharge was not posted")
-    print(f"OK: FinancialPostingFunction completed ({sorted(posted)})")
-
     # The deployed function echoes the invoice it was sent ("Credit memo posted
     # successfully. Invoice: '<n>'. …"), so its live reply proves which invoice
-    # the flow posted. Matched on the value, not a field name: the tenant copy
-    # and the repo source name the field differently.
+    # the flow posted, and that the typed number was cleaned up first.
     replies = node_output_leaves(payload, posted)
     if not any(invoice in r for r in replies):
-        _fail_with_capture(
-            f"FinancialPostingFunction's reply does not cite {invoice}: {sorted(replies)[:5]}"
-        )
-    print(f"OK: FinancialPostingFunction replied for {invoice}: {sorted(replies)[:1]}")
+        _fail_with_capture(f"FinancialPostingFunction's reply does not cite {invoice}: {sorted(replies)[:5]}")
+    print(f"OK: FinancialPostingFunction completed ({sorted(posted)}) and replied for {invoice}")
 
     writers = _agent_ids(flow) & _downstream(flow, posted)
     if not writers & _executed_ids(payload, completed=True):
         _fail_with_capture("the writer agent after posting did not complete: no email was drafted")
     print(f"OK: writer agent completed ({sorted(writers)})")
 
-    outs = _outputs(flow, payload)
-    numbers = [n for _t, val in outs.values() if (n := _as_number(val)) is not None]
-    if not any(abs(n - credit) < 0.005 for n in numbers):
-        _fail_with_capture(f"no returned output is the credit of {credit} (90 h x $55): {outs}")
-    texts = [t for _t, val in outs.values() for t in _texts(val)]
-    if not any(invoice in t and any(s in t for s in _amount_spellings(credit)) for t in texts):
-        _fail_with_capture(f"no returned text cites both {invoice} and the credit of {credit}: {outs}")
-    print(f"OK: the flow returned a credit of {credit} and a draft citing {invoice} and that credit")
+    def email(outs):
+        drafts = [k for k, (_t, v) in outs.items() if isinstance(v, str) and invoice in v
+                  and any(s in v for s in _amount_spellings(credit))]
+        if not drafts:
+            _fail_with_capture(f"no declared output is a plain-text email citing {invoice} and the credit of {credit}: {outs}")
+        print(f"OK: the email draft ({drafts}) cites {invoice} and the credit")
+        return set(drafts)
+
+    outs = io.out_values(flow, payload)
+    print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
+    check_results("overcharge", outs, email=email)
 
 
-def check_no_discrepancy(flow, payload):
+def check_reject(flow, payload):
     api = _ids_of(flow, "uipath.core.api-workflow")
     executed = _executed_ids(payload)
     if api & executed:
-        _fail_with_capture(
-            f"FinancialPostingFunction ran ({sorted(api & executed)}) for a line billed exactly at contract"
-        )
+        _fail_with_capture(f"FinancialPostingFunction ran ({sorted(api & executed)}) for a line billed exactly at contract")
     print("OK: nothing was posted")
 
     writers = _agent_ids(flow) & _downstream(flow, api)
     if writers & executed:
         _fail_with_capture(f"the writer agent ran ({sorted(writers & executed)}): an email was drafted")
-    print("OK: no email was drafted")
+    print("OK: the writer did not run")
 
-    outs = _outputs(flow, payload)
-    if not any(t.strip() for _t, val in outs.values() for t in _texts(val)):
-        _fail_with_capture(f"the flow returned no explanation: {outs}")
-    print("OK: the flow returned an explanation")
+    def email(outs):
+        placeholder = io.find_out(outs, io.equals_exact(NO_EMAIL))
+        if not placeholder:
+            _fail_with_capture(f"no declared output is {NO_EMAIL!r}: {outs}")
+        print(f"OK: {NO_EMAIL!r} returned ({placeholder})")
+        return set(placeholder)
+
+    outs = io.out_values(flow, payload)
+    print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
+    check_results("reject", outs, email=email)
 
 
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in CASES:
         sys.exit(f"usage: {os.path.basename(__file__)} {'|'.join(CASES)}")
     case = sys.argv[1]
-    flow = _flow()
-    payload = _debug(case)
-    (check_overcharge if case == "overcharge" else check_no_discrepancy)(flow, payload)
+    flow = _load_flow("**/project.uiproj")
+    inputs, attachments = build_inputs(flow, case)
+    print(f"debug inputs: {inputs} attachments: {attachments}")
+    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840)
+    (check_overcharge if case == "overcharge" else check_reject)(flow, payload)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Unit tests for the BillingDisputeResolution structure and effects graders.
 
-The structure check must accept both reference shapes and the routing the
-short prompt allows (manager review going straight to posting), and reject a
-flow with no rejection path or with the writer before posting. The effects
-check reads the debug trace; its two cases are fed payloads in the shape
+The structure check (advisory) must accept both reference shapes and the
+routing the prompt allows (manager review going straight to posting), and
+reject a flow with no rejection path or with the writer before posting.
+
+The effects check builds the dispute submission from the paths the flow reads
+plus a synonym-rich fallback, so it is fed the reference flow with its
+variables renamed, a flow that reads the submission only inside a script (the
+2026-11-18 round-3 codex build, adhoc-2026-11-18_12-43-33), and a flow that
+spreads the submission over separate inputs. Payloads are in the shape
 `uip maestro flow debug --output json` returns.
 """
 import copy
@@ -94,93 +99,146 @@ EFFECTS = "check_e2e_billing_dispute_resolution.py"
 ALL_NODES = [n["id"] for n in _flow()["nodes"]]
 REJECT_PATH = ["start", "invoiceExtraction", "dataTransform", "queryEntityRecords1", "queryEntityRecords2",
                "merge1", "discrepancyScript", "autonomousAgent1", "switchValidity", "endReject"]
+OUT_RENAMES = {"determination": "outcome", "recommendedAction": "action", "creditAmount": "creditUsd",
+               "rationale": "why", "resolutionEmailBody": "draft"}
+IN_RENAMES = {"webhookPayload": "claim", "disputedInvoice": "invoiceScan"}
+
+
+def _renamed(flow, renames):
+    text = json.dumps(flow)
+    for old, new in renames.items():
+        text = text.replace(f'"{old}"', f'"{new}"').replace(f".{old}", f".{new}")
+    return json.loads(text)
 
 
 @pytest.fixture
-def effects(monkeypatch):
-    module = _load(EFFECTS)
-    monkeypatch.setattr(module, "_declared_input_global_keys", lambda payload: set())
-    return module
+def effects():
+    return _load(EFFECTS)
+
+
+@pytest.fixture
+def flow():
+    return _renamed(_flow(), {**OUT_RENAMES, **IN_RENAMES})
 
 
 POSTED = {"financialpostingfunction12.output": {
     "result": "Credit memo posted successfully. Invoice: 'MCS-2026-04903'. Status: posted."}}
+EXPLANATION = "Per SOP §5.4 the billed $290 exceeds the contracted $235; §7 sends $4,950 to manager review."
+DRAFT = "Dear Atlas Manufacturing Group,\n\nWe credited USD 4,950.00 on invoice MCS-2026-04903.\n\nBilling"
+APPROVED = {"outcome": "Approved", "action": "manager_review", "creditUsd": 4950, "why": EXPLANATION, "draft": DRAFT}
+REJECTED = {"outcome": "Rejected", "action": "reject", "creditUsd": 0,
+            "why": "Under SOP §5.4 line 5 was billed at the contracted $185, so there is no variance to credit.",
+            "draft": "No resolution email drafted"}
 
 
-def test_overcharge_passes_when_posted_and_the_draft_cites_invoice_and_credit(effects):
-    effects.check_overcharge(_flow(), _payload(ALL_NODES, {
-        **POSTED,
-        "creditAmount": 4950,
-        "resolutionEmailBody": "We credited $4,950.00 on invoice MCS-2026-04903.",
-    }))
+def test_submission_is_built_from_the_paths_the_flow_reads(effects, flow):
+    inputs, attachments = effects.build_inputs(flow, "overcharge")
+    claim = inputs["claim"]
+    assert attachments == {"invoiceScan": effects.invoice_pdf("overcharge")}
+    assert claim["customer"]["accountNumber"] == "ACCT-71044-AT"
+    assert claim["invoice"]["invoiceNumber"].strip().upper() == "MCS-2026-04903"
+    assert claim["invoice"]["invoiceNumber"] != "MCS-2026-04903"  # typed messily, as the prompt warns
+    line = claim["dispute"]["disputedLineItems"][0]
+    assert (line["lineNumber"], line["quantity"], line["unitPrice"], line["amount"]) == (2, 90, 290, 26100)
 
 
-def test_overcharge_fails_when_the_posting_reply_is_for_another_invoice(effects):
+def test_a_submission_read_only_inside_a_script_is_served_by_the_fallback(effects):
+    # adhoc-2026-11-18_12-43-33: `const submission = $vars.start.output.disputeSubmission;` then
+    # submission.customer.accountNumber / submission.dispute.disputedLineItems in the script.
+    script = ("const submission = $vars.start.output.disputeSubmission;\n"
+              "const accountNumber = String(submission.customer.accountNumber);")
+    flow = {"nodes": [{"id": "prepareLookup", "type": "core.action.script", "inputs": {"script": script}}],
+            "variables": {"globals": [
+                {"id": "invoicePdf", "direction": "in", "type": "file"},
+                {"id": "disputeSubmission", "direction": "in", "type": "object"}]}}
+    inputs, _ = effects.build_inputs(flow, "reject")
+    sub = inputs["disputeSubmission"]
+    for read in (sub["customer"]["accountNumber"], sub["accountNumber"], sub["account"]):
+        assert read == "ACCT-98201-NE"
+    for lines in (sub["dispute"]["disputedLineItems"], sub["disputedLines"], sub["lineItems"], sub["lines"]):
+        assert (lines[0]["lineNumber"], lines[0]["qty"], lines[0]["rate"], lines[0]["total"]) == (5, 14, 185, 2590)
+    assert sub["invoice"]["number"] == sub["invoiceNumber"] == sub["invoiceNo"]
+
+
+def test_a_submission_spread_over_separate_inputs_is_mapped(effects):
+    flow = {"nodes": [], "variables": {"globals": [
+        {"id": "pdf", "direction": "in", "type": "file"},
+        {"id": "customerAccount", "direction": "in", "type": "string"},
+        {"id": "invoiceRef", "direction": "in", "type": "string"},
+        {"id": "disputedLines", "direction": "in", "type": "array"}]}}
+    inputs, attachments = effects.build_inputs(flow, "overcharge")
+    assert inputs["customerAccount"] == "ACCT-71044-AT"
+    assert inputs["invoiceRef"].strip().upper() == "MCS-2026-04903"
+    assert inputs["disputedLines"][0]["lineNumber"] == 2 and attachments == {"pdf": effects.invoice_pdf("overcharge")}
+
+
+def test_a_flow_without_a_file_input_names_what_could_not_be_mapped(effects):
+    flow = {"nodes": [], "variables": {"globals": [{"id": "submission", "direction": "in", "type": "object"}]}}
     with pytest.raises(SystemExit) as exc:
-        effects.check_overcharge(_flow(), _payload(ALL_NODES, {
-            "financialpostingfunction12.output": {"result": "Credit memo posted. Invoice: 'MCS-2026-00001'."},
-            "creditAmount": 4950,
-            "resolutionEmailBody": "We credited $4,950.00 on invoice MCS-2026-04903.",
-        }))
-    assert "reply does not cite" in str(exc.value)
+        effects.build_inputs(flow, "overcharge")
+    assert "could not map the invoice PDF (a file input) onto inputs ['submission']" in str(exc.value)
 
 
-def test_overcharge_fails_when_posting_did_not_run(effects):
-    with pytest.raises(SystemExit) as exc:
-        effects.check_overcharge(_flow(), _payload(REJECT_PATH, {"creditAmount": 0, "rationale": "x"}))
-    assert "FinancialPostingFunction" in str(exc.value)
-
-
-def test_overcharge_fails_when_the_draft_misses_the_credit_amount(effects):
-    with pytest.raises(SystemExit) as exc:
-        effects.check_overcharge(_flow(), _payload(ALL_NODES, {
-            **POSTED,
-            "creditAmount": 4950,
-            "resolutionEmailBody": "We reviewed invoice MCS-2026-04903 and issued a credit.",
-        }))
-    assert "cites both" in str(exc.value)
-
-
-def test_overcharge_fails_when_the_credit_is_not_the_sops(effects):
-    with pytest.raises(SystemExit) as exc:
-        effects.check_overcharge(_flow(), _payload(ALL_NODES, {
-            **POSTED,
-            "creditAmount": 1610,
-            "resolutionEmailBody": "We credited $1,610.00 on invoice MCS-2026-04903.",
-        }))
-    assert "credit of 4950" in str(exc.value)
-
-
-def test_submission_uses_each_cases_invoice_and_account(effects):
-    over, none = effects.submission("overcharge"), effects.submission("no-discrepancy")
-    assert (over["invoice"]["invoiceNumber"], over["customer"]["accountNumber"]) == ("MCS-2026-04903", "ACCT-71044-AT")
-    assert (none["invoice"]["invoiceNumber"], none["customer"]["accountNumber"]) == ("MCS-2026-04872", "ACCT-98201-NE")
-    for case in ("overcharge", "no-discrepancy"):
+def test_every_case_has_its_invoice_pdf(effects):
+    for case in effects.CASES:
         assert os.path.isfile(effects.invoice_pdf(case))
 
 
-def test_no_discrepancy_passes_on_the_rejection_path(effects):
-    effects.check_no_discrepancy(_flow(), _payload(REJECT_PATH, {
-        "rationale": "Line 4 was billed at the contracted rate.",
-        "resolutionEmailBody": "No resolution email was drafted.",
-    }))
+def test_overcharge_passes_when_posted_and_the_results_are_right(effects, flow):
+    effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED}))
 
 
-def test_no_discrepancy_fails_when_it_was_posted(effects):
+def test_overcharge_accepts_credit_as_the_recommended_action(effects, flow):
+    effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "action": "credit"}))
+
+
+@pytest.mark.parametrize("field,wrong,message", [
+    ("outcome", "approved", "decision 'Approved'"),
+    ("action", "auto_resolve", "recommended action"),
+    ("creditUsd", 1610, "credit amount 4950"),
+    ("why", "We looked at it and the rate was too high, so we credited it.", "names an SOP rule"),
+    ("draft", "We reviewed invoice MCS-2026-04903 and issued a credit.", "plain-text email"),
+    ("draft", {"subject": "MCS-2026-04903", "body": DRAFT}, "plain-text email"),
+])
+def test_overcharge_fails_on_a_wrong_result(effects, flow, field, wrong, message):
     with pytest.raises(SystemExit) as exc:
-        effects.check_no_discrepancy(_flow(), _payload(ALL_NODES, {"rationale": "credited anyway"}))
+        effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, field: wrong}))
+    assert message in str(exc.value)
+
+
+def test_overcharge_fails_when_the_posting_reply_is_for_the_uncleaned_number(effects, flow):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(ALL_NODES, {
+            "financialpostingfunction12.output": {"result": "Credit memo posted. Invoice: ' mcs-2026-04903  '."},
+            **APPROVED}))
+    assert "reply does not cite" in str(exc.value)
+
+
+def test_overcharge_fails_when_posting_did_not_run(effects, flow):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(REJECT_PATH, APPROVED))
+    assert "FinancialPostingFunction" in str(exc.value)
+
+
+def test_reject_passes_on_the_rejection_path(effects, flow):
+    effects.check_reject(flow, _payload(REJECT_PATH, REJECTED))
+
+
+def test_reject_fails_when_it_was_posted(effects, flow):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_reject(flow, _payload(ALL_NODES, REJECTED))
     assert "FinancialPostingFunction ran" in str(exc.value)
 
 
+def test_reject_fails_without_the_no_email_text(effects, flow):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_reject(flow, _payload(REJECT_PATH, {**REJECTED, "draft": ""}))
+    assert "No resolution email drafted" in str(exc.value)
 
-def test_overcharge_reads_a_draft_returned_as_an_object(effects):
-    """A flow may return the email as {subject, body} (delegate run, 2026-11-18)."""
-    effects.check_overcharge(_flow(), _payload(ALL_NODES, {
-        **POSTED,
-        "creditAmount": 4950,
-        "resolutionEmailBody": {"subject": "Invoice MCS-2026-04903",
-                                "body": "We approved a credit of $4,950.00 for invoice MCS-2026-04903."},
-    }))
+
+def test_reject_disputes_a_line_billed_at_its_contracted_rate(effects):
+    line = effects.line_item("reject")
+    assert (line["lineNumber"], line["quantity"], line["unitPrice"], line["amount"]) == (5, 14, 185, 2590)
 
 
 def _with_tenant_agent_writer(flow):
@@ -196,13 +254,7 @@ def test_structure_accepts_an_existing_tenant_agent_as_the_writer():
     _topology(_with_tenant_agent_writer(_flow()))
 
 
-def test_no_discrepancy_catches_a_tenant_agent_writer_that_ran(effects):
-    flow = _with_tenant_agent_writer(_flow())
+def test_reject_catches_a_tenant_agent_writer_that_ran(effects, flow):
     with pytest.raises(SystemExit) as exc:
-        effects.check_no_discrepancy(flow, _payload(REJECT_PATH + ["autonomousAgent3"], {"rationale": "x"}))
+        effects.check_reject(_with_tenant_agent_writer(flow), _payload(REJECT_PATH + ["autonomousAgent3"], REJECTED))
     assert "writer agent ran" in str(exc.value)
-
-
-def test_no_discrepancy_disputes_a_line_billed_at_its_contracted_rate(effects):
-    line = effects.submission("no-discrepancy")["dispute"]["disputedLineItems"][0]
-    assert (line["lineNumber"], line["quantity"], line["unitPrice"], line["amount"]) == (5, 14, 185, 2590)

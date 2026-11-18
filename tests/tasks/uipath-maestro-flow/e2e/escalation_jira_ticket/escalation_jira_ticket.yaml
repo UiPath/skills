@@ -1,20 +1,24 @@
 task_id: skill-flow-e2e-escalation-jira-ticket
 description: >
   E2E live Jira coverage for the escalation flow, asked the way a Studio Web
-  user would ask it: the agent builds a manually started automation that
-  classifies an escalation's severity and opens a Jira ticket for it. The
-  grader seeds a Sev1 case with a unique correlationId, runs
-  `uip maestro flow debug --inputs` once, and checks what the run did: a Jira
-  Create Issue step completed, its returned key is the jiraIssueKey output,
-  reading that key back from Jira returns an issue whose summary carries the
-  seeded correlationId (so the ticket is real and is this run's), and the named
-  outputs severity, engineeringNeeded and caseKey are right. The created issue
-  is deleted in post_run. Text between the helper markers is lower-tier
-  guidance (experiments/use-case-tiers.yaml).
+  user would ask it (Ioana's v3 business prompt, with the eval tenant's CE
+  project and a Task instead of a Bug). The prompt names no variables, so the
+  grader maps two seeded cases onto the inputs the agent declared, by
+  meaning: an Enterprise outage with no workaround (Sev1) and a duplicate
+  Standard-tier outage with no workaround (Sev3, and duplicates still get a
+  ticket). It runs each under `uip maestro flow debug --inputs` and checks
+  what the run did: a Jira Create Issue step completed and returned a CE key;
+  a declared output holds that key, and others hold the severity, whether
+  engineering is needed and the case reference unchanged, the same outputs in
+  both cases; and reading the key back from Jira returns an issue titled
+  "[TEST]" then the severity, the case reference and the email subject, with
+  the email body as its description. The created issues are deleted in
+  post_run.
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project (issue
-  type Task). pre_run resolves both and ends the run as ERROR when it cannot.
+  type Task). pre_run resolves both and ends the run as ERROR when it cannot
+  (the connection has returned 403 since 2026-11-17).
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
 sandbox:
   template_sources:
@@ -49,32 +53,48 @@ initial_prompt: |
   ask, do not pause, and do not wait for input.
 
   Build an automation called "EscalationJiraTicket" that triages a customer
-  escalation and opens a Jira ticket for it. It is started manually.
+  escalation and opens a Jira ticket for it.
 
-  - Inputs: senderEmail, subject, body, customerTier, productionDown,
-    workaroundAvailable, correlationId.
-  - Severity: Sev1 when the customer tier is "Enterprise", production is down
-    and there is no workaround; Sev2 when production is down and a workaround
-    is available; Sev3 otherwise. Engineering is needed for Sev1 and Sev2.
-  - Create the ticket as a Task in our Jira project CE ("Coder Eval") through
-    the Jira connection in the Shared/uipath-maestro-flow folder. Put the
-    correlation id in the ticket summary, word for word.
-  - Outputs: severity, engineeringNeeded, caseKey (the correlation id) and
-    jiraIssueKey (the key of the ticket that was created).
+  For each escalation it receives:
+  - the sender's email address and domain
+  - the subject and body
+  - the customer's tier
+  - whether production is down, and whether there's a workaround
+  - whether there are attachments
+  - how the sender matched our customers
+  - whether it's a duplicate
+  - a case reference
 
-  <!-- helper:start -->
-  productionDown and workaroundAvailable are booleans.
-  <!-- helper:end -->
+  Classify the severity:
+  - Sev1: an Enterprise customer's production is down with no workaround.
+  - Sev2: production is down but there is a workaround.
+  - Sev3: everything else, including non-Enterprise customers who are down
+    without a workaround.
+
+  Engineering is needed for Sev1 and Sev2. Open a ticket for every
+  escalation, duplicates included.
+
+  Open a Task in the "Coder Eval" (CE) Jira project. The ticket title starts
+  with "[TEST]", followed by the severity, the case reference and the email
+  subject, for example "[TEST] [Sev1] CASE-123 Production down". The
+  description is the email body.
+
+  When it finishes, return:
+  - the severity, as "Sev1", "Sev2" or "Sev3"
+  - whether engineering is needed, as true or false
+  - the case reference, unchanged
+  - the key of the ticket that was created, for example "CE-12345"
 
   Build and test the automation.
 success_criteria:
+  # ── Advisory: the agent validated the flow (CLI commands are not graded) ─
   - type: command_executed
-    description: "Agent validated the generated Flow"
+    description: "Advisory: the agent validated the generated Flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   # Discover the flow file — the prompt names only the FLOW, never the enclosing
   # solution, so a hardcoded `<Name>/<Name>/<Name>.flow` would grade the solution
@@ -99,9 +119,9 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: one seeded Sev1 debug run in which a Jira Create Issue step completed, jiraIssueKey is the key it returned, reading that key back from Jira returns an issue whose summary carries the seeded correlationId, and severity=Sev1, engineeringNeeded=true, caseKey=the correlationId"
+    description: "Effects: for two seeded cases (Enterprise down without a workaround = Sev1; a duplicate Standard-tier outage without a workaround = Sev3), fed to the agent's inputs by meaning, a Jira Create Issue step completed and returned a CE key that a declared output holds; declared outputs hold the severity, whether engineering is needed and the case reference unchanged, the same outputs in both cases; and reading the key back from Jira returns an issue titled \"[TEST]\" then the severity, the case reference and the email subject, with the email body as its description"
     command: "python3 $REFERENCE_DIR/e2e/escalation_jira_ticket/check_escalation_jira_ticket.py"
-    timeout: 1600
+    timeout: 1100  # budget-guard: manual x2. 2 x debug_budget(480, retries=1) = 960 + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

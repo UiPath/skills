@@ -2,14 +2,15 @@ task_id: skill-flow-devcon-billing-dispute-analyst
 description: |
   E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent,
   grounded on the existing "Billing Dispute SOP Index", reviews a billing
-  dispute and recommends what to do, asked the way a Studio Web user would ask
-  it. Two graded debug runs check what the agent decided on real ERP lines: a
-  $55/h rate error over 90 h must come back as a $4,950 credit routed to manager
-  review (the SOP's $500-$5,000 band, which the prompt never states), and a line
-  billed at its contracted rate as a rejection with no credit. The grounding
-  must also be live (a resource.json in the inline agent project). Text between
-  the helper markers is lower-tier guidance (experiments/use-case-tiers.yaml)
-  and is not graded.
+  dispute and decides how to handle it, asked the way a business user asks it
+  (Ioana's v3 prompt; it names no variables). The graders map the seeded
+  values onto the flow's declared inputs by meaning and read the decision and
+  reasoning among its declared outputs by value. Three debug runs on real ERP
+  lines: a $55/h rate error over 90 h must come back as "manager_review" (the
+  SOP's $500-$5,000 band, which the prompt never states), a line billed at its
+  contracted rate as "reject", and a description too thin to check as
+  "manager_review"; each with reasoning that names an SOP rule. The grounding
+  must also be live (a resource.json in the inline agent project).
 tags:
   - uipath-maestro-flow
   - e2e
@@ -27,7 +28,7 @@ sandbox:
 run_limits:
   max_turns: 120
   turn_timeout: 1200
-  task_timeout: 4200
+  task_timeout: 5400
 reference:
   directory: ../..
 
@@ -39,24 +40,19 @@ initial_prompt: |
   is present, and nobody will answer a question or grant approval, so do not
   ask, do not pause, and do not wait for input.
 
-  Build an automation called "BillingDisputeAnalyst" in which an agent reviews
-  a customer's billing dispute and recommends how to resolve it. Build the
-  agent as part of this automation. It takes the invoiceNumber and a
-  disputeDescription (the customer's complaint, with the billed and contracted
-  figures). The agent must follow our "Billing Dispute SOP Index" to decide
-  whether the dispute is valid, work out any credit owed, and pick the
-  resolution the SOP calls for.
+  Build an automation called "BillingDisputeAnalyst" where an agent reviews a
+  customer's billing dispute and decides how to handle it, based on our
+  "Billing Dispute SOP Index". The agent gets the customer's description of the
+  problem and the invoice number.
 
-  Return determination, recommendedAction (one of auto_resolve,
-  manager_review or reject), creditAmount (0 when nothing is owed) and
-  rationale.
-
-  <!-- helper:start -->
-  "Billing Dispute SOP Index" is an existing context index in the tenant.
-  invoiceNumber and disputeDescription are strings.
-  <!-- helper:end -->
+  The possible outcomes are a credit, a rejection or a manager review. If the
+  description doesn't give enough detail to check the charges, the dispute
+  should go to manager review. Return the decision as one of "credit",
+  "reject" or "manager_review", and the reasoning as two or three plain
+  sentences that name the SOP rule applied.
 
   Build and test the automation.
+
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
@@ -75,18 +71,32 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235): the inline agent completes and returns recommendedAction = manager review and creditAmount = 4950, plus a rationale'
+    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235, a $4,950 credit): the agent completes and a declared output is exactly "manager_review", with reasoning that names an SOP rule'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py overcharge
     timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, no rate error (invoice MCS-2026-04872 line 5, billed at the contracted $185): the inline agent completes and returns recommendedAction = reject and no positive creditAmount, plus a rationale'
+    description: 'Effects, no rate error (invoice MCS-2026-04872 line 5, billed at the contracted $185): the agent completes and a declared output is exactly "reject", with reasoning that names an SOP rule'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py reject
     timeout: 1200
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Effects, thin description (no line, quantity or rates): the agent completes and a declared output is exactly "manager_review", as the prompt asks, with reasoning that names an SOP rule'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py thin
+    timeout: 1200
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'The grounding is LIVE, not just wired: the context-index node resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
+    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeAnalyst.flow
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Advisory: AGENT SIDECAR: the emitted agent.json carries a real model, a real system prompt, and typed outputs (not the scaffold defaults)'
@@ -95,17 +105,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
-  - type: run_command
-    description: 'Advisory: STRUCTURAL (covering): the grounding is WIRED — one inline agent, one context-index resource carrying a real non-stub index uuid and validator-required source, joined by an edge from the agent''s `context` port to the resource''s `input` port, both inputs reaching the agent, both outputs read from it'
-    command: python3 $REFERENCE_DIR/_shared/advisory_billing_dispute_analyst.py
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0
-  - type: run_command
-    description: 'The grounding is LIVE, not just wired: the context-index node resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
-    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeAnalyst.flow
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0

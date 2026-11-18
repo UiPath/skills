@@ -1,17 +1,19 @@
 task_id: skill-flow-e2e-escalation-slack-alert
 description: >
   End-to-end, outcome-based slice of the customer-escalation orchestration,
-  asked the way a Studio Web user would ask it. The agent builds an automation
-  that classifies an escalation's severity and posts a Slack alert. The grader
-  runs it under `uip maestro flow debug --inputs` for two seeded cases (an
-  Enterprise outage that is Sev1 and a Standard-tier outage that is Sev3) and
-  checks what each run did: the named outputs severity, engineeringNeeded,
-  nextSteps and caseKey, and a Slack message that was really posted
-  (slackMessageId is the ts returned by the Slack send that completed in that
-  run, in #coding-agent-testing, carrying the correlation id, severity and next
-  steps). A manual trigger is used because the Outlook email-received trigger
-  cannot be reliably debug-tested (see outlook_trigger_inbox). Text between the
-  helper markers is lower-tier guidance (experiments/use-case-tiers.yaml).
+  asked the way a Studio Web user would ask it (Ioana's v3 business prompt,
+  with the eval tenant's Slack channel). The prompt names no variables, so the
+  grader maps three seeded cases (an Enterprise outage with no workaround that
+  is Sev1, a Standard-tier outage with no workaround that is Sev3, and a
+  Standard-tier outage with a workaround that is Sev2) onto the inputs the
+  agent declared, by meaning, and runs each under
+  `uip maestro flow debug --inputs`. It then finds the results among the
+  declared outputs by value: the severity, whether engineering is needed, the
+  case reference unchanged, and a Slack message ts. That ts must come from a
+  Slack send that completed in the run, in #coding-agent-testing, whose
+  message has the severity and case reference on its first line and two or
+  three bulleted next steps. The same output must hold each result in every
+  case.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
 sandbox:
   template_sources:
@@ -44,34 +46,40 @@ initial_prompt: |
   ask, do not pause, and do not wait for input.
 
   Build an automation called "EscalationSlackAlert" that triages a customer
-  escalation and alerts our team in Slack. It is started manually.
+  escalation and alerts me in the #coding-agent-testing Slack channel. For
+  each escalation it receives the sender's email, the subject and body of the
+  email, the customer's tier, whether their production is down, whether they
+  have a workaround, and a case reference.
 
-  - Inputs: senderEmail, subject, body, customerTier, productionDown,
-    workaroundAvailable, correlationId.
-  - Severity: Sev1 when the customer tier is "Enterprise", production is down
-    and there is no workaround; Sev2 when production is down and a workaround
-    is available; Sev3 for everything else. Engineering is needed for Sev1 and
-    Sev2, not for Sev3. Also write a short next-steps note for the team.
-  - Post the alert to the Slack channel "coding-agent-testing" through our
-    Slack connection "is-sandboxes", sent as the user rather than the bot. The
-    message must include the severity, the correlation id and the next steps.
-  - Outputs: severity, engineeringNeeded, nextSteps, caseKey (the correlation
-    id) and slackMessageId (the id of the Slack message that was posted).
+  Classify the severity:
+  - Sev1: an Enterprise customer's production is down with no workaround.
+  - Sev2: production is down but there is a workaround.
+  - Sev3: everything else, including non-Enterprise customers who are down
+    without a workaround.
 
-  <!-- helper:start -->
-  productionDown and workaroundAvailable are booleans.
-  <!-- helper:end -->
+  Engineering needs to be involved for Sev1 and Sev2. Also suggest two or
+  three short next steps.
+
+  Post the alert in the #coding-agent-testing Slack channel. Put the severity
+  and the case reference on the first line, then the next steps as a short
+  bulleted list.
+
+  When it finishes, return:
+  - the severity, as "Sev1", "Sev2" or "Sev3"
+  - whether engineering is needed, as true or false
+  - the case reference, unchanged
+  - the ID of the Slack message that was sent
 
   Build and test the automation.
 success_criteria:
-  # ── The agent validated the flow (convention adherence) ─────────────────
+  # ── Advisory: the agent validated the flow (CLI commands are not graded) ─
   - type: command_executed
-    description: "Agent validated the generated Flow"
+    description: "Advisory: the agent validated the generated Flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   # ── The delivered flow validates ────────────────────────────────────────
   - type: run_command
@@ -92,11 +100,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
-  # ── OUTCOME: each seeded case posts to Slack and returns the right outputs ─
+  # ── OUTCOME: each seeded case posts to Slack and returns the right results ─
   - type: run_command
-    description: "Effects: for a Sev1 and a Sev3 seeded case, the debug run returns the expected severity, engineeringNeeded and caseKey plus a nextSteps note, and slackMessageId is the ts of a Slack message that run posted to #coding-agent-testing carrying the correlation id, severity and next steps"
+    description: "Effects: for three seeded cases (Enterprise down without a workaround = Sev1, Standard down without a workaround = Sev3, Standard down with a workaround = Sev2), fed to the agent's inputs by meaning, the debug run returns among its declared outputs the severity, whether engineering is needed (true, false, true) and the case reference unchanged, the same outputs in every case; and a returned Slack ts is that of a send that completed in the run, in #coding-agent-testing, whose message has the severity and the case reference on its first line and two or three bulleted next steps"
     command: "python3 $REFERENCE_DIR/e2e/escalation_slack_alert/check_escalation_slack_alert.py"
-    timeout: 1000  # budget-guard: manual x2. 2 x debug_budget(300, retries=1) = 600 + margin
+    timeout: 1000  # budget-guard: manual x3. 3 x debug_budget(300, retries=1) = 900 + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

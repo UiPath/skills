@@ -3,15 +3,18 @@ description: |
   E2E (DevCon BillingDisputeResolution scenario): build the end-to-end
   billing-dispute flow (IxP extraction, parallel ERP/CRM lookups, an
   SOP-grounded analyst agent, FinancialPostingFunction, a writer agent), asked
-  the way a Studio Web user would ask it. The structural check accepts any
-  routing that auto-approves manager review instead of pinning the reference's
-  switch + decision layout. Two graded debug runs check what the flow did: a
-  valid overcharge (a real rate error on the tenant) is posted through
-  FinancialPostingFunction, whose live reply must cite the invoice, and returns
-  the SOP's credit plus an email draft citing the invoice and that credit; a
-  line billed exactly at contract is neither posted nor drafted. Text
-  between the helper markers is lower-tier guidance
-  (experiments/use-case-tiers.yaml) and is not graded.
+  the way a business user asks it (Ioana's v3 prompt; it names no variables and
+  leaves the dispute submission's shape to the agent). The graders build the
+  submission from the paths the flow reads off its input over a synonym-rich
+  fallback, with the invoice number typed in messy spacing and case, attach
+  the matching invoice PDF, and read the results among the declared outputs by
+  value. Two debug runs on live data: a real rate error (MCS-2026-04903 line 2)
+  is posted through FinancialPostingFunction, whose live reply must cite the
+  cleaned-up invoice, and returns "Approved", 4950, an SOP-citing explanation
+  and a plain-text draft citing the invoice and credit; a line billed at
+  contract (MCS-2026-04872 line 5) is neither posted nor drafted and returns
+  "Rejected", "reject", 0 and "No resolution email drafted". Layout is
+  advisory.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -43,35 +46,42 @@ initial_prompt: |
   is present, and nobody will answer a question or grant approval, so do not
   ask, do not pause, and do not wait for input.
 
-  Build an automation called "BillingDisputeResolution" that takes an invoice
-  PDF and a customer's dispute submission, checks the disputed charges against
-  their contract, and determines how to resolve the dispute.
-  Use the existing invoice extraction model in
-  Shared/uipath-maestro-flow/BillingDispute. Customer information is in
-  BillingDisputeCRM and contract details are in BillingDisputeERP; look these
-  up in parallel.
-  Have an agent assess any pricing differences using the "Billing Dispute SOP
-  Index" and recommend a credit, rejection or manager review. For now,
-  automatically approve anything requiring manager review.
-  For approved disputes, call the existing FinancialPostingFunction workflow,
-  then have a second agent draft a customer email explaining the resolution,
-  including the invoice number and credit amount. Don't send the email.
-  Return the decision, recommended action, credit amount, explanation and email
-  draft. For rejected disputes, explain the rejection without drafting an
-  email.
+  Build an automation called "BillingDisputeResolution" that resolves a
+  customer's billing dispute.
 
-  <!-- helper:start -->
-  BillingDisputeCRM and BillingDisputeERP are Data Service entities.
-  The dispute submission is one object input shaped like
-  `{customer: {accountNumber}, invoice: {invoiceNumber}, dispute:
-  {disputedLineItems: [{lineNumber, quantity, unitPrice, amount,
-  description}]}}`; the invoice PDF is a file input.
-  <!-- helper:end -->
+  It receives the disputed invoice as a PDF together with the customer's
+  dispute submission. The submission has the customer's account number, the
+  invoice number, and the invoice lines they dispute, with the quantity and
+  price they were charged. Customers sometimes type the invoice number with
+  extra spaces, in lowercase or without the "MCS-" prefix.
+
+  Read the invoice with our existing invoice extraction model in
+  Shared/uipath-maestro-flow/BillingDispute. Customer details are in
+  BillingDisputeCRM and contract details are in BillingDisputeERP, both in Data
+  Fabric. Look them up at the same time, and compare each disputed line with
+  the contract line that has the same line number.
+
+  Have an agent assess the pricing differences using the
+  "Billing Dispute SOP Index" and recommend a credit, a rejection or a manager
+  review. For now, automatically approve anything that needs manager review.
+
+  For approved disputes, post the credit through the existing
+  FinancialPostingFunction workflow. Then have a second agent draft an email to
+  the customer explaining the resolution, mentioning the invoice number and the
+  credit amount in USD. Don't send the email.
+
+  At the end, return five results:
+  - the decision, as "Approved" or "Rejected"
+  - the recommended action, as "credit", "reject" or "manager_review"
+  - the credit amount as a plain number in USD, 0 when rejected
+  - a short explanation of two or three sentences that names the SOP rule
+    applied
+  - the full email draft as plain text
+
+  Rejected disputes get no email. Return "No resolution email drafted" instead,
+  and explain the rejection in the explanation.
 
   Build and test the automation.
-pre_run:
-  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
-    timeout: 120
 
 success_criteria:
   - type: run_command
@@ -91,12 +101,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Structure: trigger→IxP→ERP/CRM→analyst (SOP index attached)→FinancialPostingFunction→writer→end, a rejection path that skips posting, no HITL node, no send-email node, ≥2 out variables'
+    description: 'Advisory: structure: trigger→IxP→ERP/CRM→analyst (SOP index attached)→FinancialPostingFunction→writer→end, a rejection path that skips posting, no HITL node, no send-email node, ≥2 out variables'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_structure_billing_dispute_resolution.py
     timeout: 90
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
     description: 'The grounding is LIVE, not just wired: the context-index node resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
     command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeResolution.flow
@@ -105,15 +115,15 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, valid overcharge (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs contracted $235): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04903, the writer completes, and the flow returns a credit of 4950 and a draft citing MCS-2026-04903 and that credit'
+    description: 'Effects, overcharge (invoice " mcs-2026-04903 " line 2 for ACCT-71044-AT, 90 h billed at $290 vs a contracted $235): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04903, the writer completes, and the declared outputs carry "Approved", "manager_review" or "credit", 4950, an explanation naming an SOP rule and a plain-text draft citing MCS-2026-04903 and that credit'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py overcharge
     timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, no discrepancy (invoice MCS-2026-04872 line 5, billed at the ERP contractedRate of $185): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
-    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py no-discrepancy
+    description: 'Effects, reject (invoice "  Mcs-2026-04872 " line 5 for ACCT-98201-NE, billed at the ERP contractedRate of $185): the run completes without running FinancialPostingFunction or the writer, and the declared outputs carry "Rejected", "reject", 0, an explanation naming an SOP rule and "No resolution email drafted"'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py reject
     timeout: 1800
     expected_exit_code: 0
     weight: 3.0

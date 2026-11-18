@@ -2,13 +2,16 @@ task_id: skill-flow-devcon-billing-resolution-writer
 description: |
   E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent
   drafts a customer-facing billing-dispute resolution email and posts it to
-  Slack, asked the way a Studio Web user would ask it. One graded debug run
-  checks what the flow did: the agent node completed and its own output is the
-  returned email body, which cites the invoice and the approved credit; caseKey
-  echoes the per-run correlationId; and the Slack message was really posted
-  (its ts, read off the executed send node, carries the correlationId, the
-  invoice and the drafted body). Text between the helper markers is lower-tier
-  guidance (experiments/use-case-tiers.yaml) and is not graded.
+  Slack, asked the way a business user asks it (Ioana's v3 prompt; it names no
+  variables, with the eval tenant's Slack channel). The grader maps the seeded
+  values onto the flow's declared inputs by meaning and reads the results among
+  its declared outputs by value. One debug run: the agent completes and its own
+  output is the returned body, which mentions the invoice and "USD 1,610.00"
+  and is signed "Billing Support Team"; the subject is one line; the per-run
+  case reference comes back unchanged; and the returned Slack ts is the
+  response of an executed send to #coding-agent-testing whose message starts
+  with the case reference and carries the body. The sender identity is not
+  graded.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -40,24 +43,24 @@ initial_prompt: |
   ask, do not pause, and do not wait for input.
 
   Build an automation called "BillingResolutionWriter" that writes the
-  customer email for an approved billing-dispute credit and shares it with the
-  team on Slack. It takes customerName, invoiceNumber, creditAmount and
-  correlationId. Have an agent, built as part of this automation, draft the
-  email's subject and body; the body must state the invoice number and the
-  approved credit amount.
+  resolution email for a billing dispute we've approved and sends it in the
+  #coding-agent-testing Slack channel. It receives the customer's name, the
+  invoice number, the approved credit in USD and a case reference.
 
-  Then post the drafted body, word for word and prefixed with the
-  correlationId, to the Slack channel "coding-agent-testing" through our
-  "is-sandboxes" Slack connection, sent as the user rather than the bot.
+  Have an agent draft the email, with a subject and a body, signed
+  "Billing Support Team". The email must mention the invoice number and the
+  credit amount, written like "USD 1,610.00". Post the email body in the
+  #coding-agent-testing Slack channel, starting with the case reference.
 
-  Return emailSubject, emailBody, caseKey (the correlationId) and
-  slackMessageId (the id of the posted Slack message).
-
-  <!-- helper:start -->
-  creditAmount is a number; the other inputs are strings.
-  <!-- helper:end -->
+  When it finishes, return:
+  - the email subject, as a single line
+  - the email body as plain text: a greeting, two or three short paragraphs,
+    and the signature
+  - the case reference, unchanged
+  - the ID of the Slack message that was sent
 
   Build and test the automation.
+
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
@@ -76,7 +79,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects: one debug run in which the inline agent completed and its own output is emailBody, which cites MCS-2026-04872 and the 1610 credit; emailSubject is set; caseKey echoes the per-run correlationId; and the Slack send to coding-agent-testing (sent as user) really posted: slackMessageId is the ts of a message carrying the correlationId, the invoice and the drafted body'
+    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-04872 and "USD 1,610.00" and is signed "Billing Support Team"; a one-line subject is returned; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message starts with the case reference and carries the invoice and the body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0
@@ -85,13 +88,6 @@ success_criteria:
   - type: run_command
     description: 'Advisory: AGENT SIDECAR: the emitted agent.json carries a real model, a real system prompt, and typed outputs (not the scaffold defaults)'
     command: python3 $REFERENCE_DIR/_shared/check_inline_agent.py '**/agent.json'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0
-  - type: run_command
-    description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, no email literals; plus the Slack contract — correlationId in-global, caseKey/slackMessageId out-globals, exactly one Slack send-message-to-channel node sending as user, the posted message depending on the agent, caseKey routing the correlationId and slackMessageId from the executed send'
-    command: python3 $REFERENCE_DIR/_shared/advisory_billing_resolution_writer.py
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
