@@ -62,9 +62,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   Brownfield: keep a decompiled `{ type, value }` recipient as is.
 
 <!-- RULE:case.recipient.no-silent-default -->
-- Before `uip solution upload` or `uip solution publish`, tell the user, and
-  repeat it in the final summary of every build or edit: list each assignee
-  the user did not name as the production assignee: an input default, a literal
+- Before `uip solution upload` or `uip solution publish`, tell the user the
+  list below, and repeat that list in the final summary of every build or
+  edit. List each assignee the user did not name as the production assignee: an input default, a literal
   `recipient`, or an SLA escalation target (`toUser`, `toGroup`). These include
   a test mailbox, the user's own email, and `<UNRESOLVED: ...>`. For each one,
   give the address or group, the actions or escalations it routes, and what
