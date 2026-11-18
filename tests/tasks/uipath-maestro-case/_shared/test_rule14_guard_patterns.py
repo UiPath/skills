@@ -104,6 +104,8 @@ CASEPLAN_EDITS = [
     "F=a/caseplan.json; cp /tmp/x $F",
     "jq . a/caseplan.json > /tmp/p.json && mv /tmp/p.json a/caseplan.json",
     "cp new.json P/caseplan.json",
+    "install -m644 t P/caseplan.json",
+    "find . -name '*.json' -exec perl -pi -e 's/a/b/' {} \\;",
     # A glob or a find that can reach an artifact (caught on main).
     "sed -i 's/a/b/' P/*.json",
     "find P -name caseplan.json -exec sed -i 's/a/b/' {} +",
@@ -129,6 +131,14 @@ NOT_CASEPLAN_EDITS = [
     "cp P/caseplan.json /tmp/backup.json",
     "mkdir -p .flow-sdk/original && cp P/caseplan.case .flow-sdk/original/",
     "sed -i 's/x/y/g' src/*.ts",
+    # In-place edits found by name on source files, and backups of the plan.
+    "find src -name '*.ts' -exec sed -i 's/a/b/' {} +",
+    "find . -name '*.case.ts' -exec sed -i 's/a/b/' {} +",
+    "F=P/caseplan.json; cp \"$F\" backup/",
+    "F=P/caseplan.json; cp $F /tmp/bak.json",
+    "cp caseplan.json backup/caseplan.json",
+    "cp caseplan.json orig-caseplan.json",
+    "cp P/caseplan.json .flow-sdk/original/caseplan.json",
     # Copying the plan aside before editing is the documented baseline step.
     "python3 -c \"import shutil;shutil.copy('P/caseplan.json','/tmp/b')\"",
     "node -e \"require('fs').copyFileSync('P/caseplan.json','.flow-sdk/original/caseplan.json.bak')\"",
