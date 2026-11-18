@@ -1,0 +1,69 @@
+task_id: skill-rules-smoke-graph-chain-author
+description: >
+  Agent creates a Business Rules project whose rule holds two decisions,
+  offline: a credit-risk band, and an interest rate that reads the band. Grades
+  skill activation, `uip rules validate` run by the grader, the rate decision
+  requiring the band decision, both decisions' values on the policy cases, the
+  whole-file entry point carrying the contract, and every row being named.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named LoanRules for our loan policy.
+  The process reads two results, and the interest rate builds on the risk
+  band, so keep them as two decisions in the one rule:
+
+  Risk band
+  - Inputs: `creditScore` (number) and `income` (number).
+  - Output: `riskBand` (string), one of "High", "Medium", "Low".
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+
+  Interest rate
+  - Inputs: the risk band and `loanAmount` (number).
+  - Output: `interestRate` (number).
+  - High risk is 12.5.
+  - Medium risk is 9 for a loan amount of 100000 or more, otherwise 8.
+  - Low risk is 6 for a loan amount of 100000 or more, otherwise 5.5.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate LoanRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rate decision requires the band decision, both return the policy's values, and the whole-file entry point carries the contract"
+    command: "python3 $REFERENCE_DIR/_shared/graph_check.py chain"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every rule of both decisions carries an annotation naming its case"
+    command: "python3 $REFERENCE_DIR/_shared/graph_check.py names LoanRules"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

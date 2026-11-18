@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" id="definitions_c03c2360-f098-4753-bae7-38094d3d5e5e" name="LoanRules" namespace="http://uipath.com/dmn/ns_773efef5-3d2e-4ab4-9bab-1de8551800a2" exporter="UiPath Maestro" xmlns:tns="http://uipath.com/dmn/ns_773efef5-3d2e-4ab4-9bab-1de8551800a2" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring">
+  <extensionElements>
+    <uipath:authoring surface="decision-graph" />
+  </extensionElements>
+  <decision id="decision_risk" name="risk" label="Risk band">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_risk" name="risk" typeRef="string" />
+    <informationRequirement id="informationRequirement_risk_creditScore">
+      <requiredInput href="#inputData_creditScore" />
+    </informationRequirement>
+    <informationRequirement id="informationRequirement_risk_income">
+      <requiredInput href="#inputData_income" />
+    </informationRequirement>
+    <informationRequirement id="informationRequirement_risk_rate">
+      <requiredDecision href="#decision_rate" />
+    </informationRequirement>
+    <decisionTable id="decisionTable_risk" hitPolicy="FIRST">
+      <input id="input_risk_creditScore" label="Credit score">
+        <inputExpression id="inputExpression_risk_creditScore" typeRef="number">
+          <text>creditScore</text>
+        </inputExpression>
+      </input>
+      <input id="input_risk_income" label="Income">
+        <inputExpression id="inputExpression_risk_income" typeRef="number">
+          <text>income</text>
+        </inputExpression>
+      </input>
+      <output id="output_riskBand" label="Risk band" name="riskBand" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_risk_1">
+        <inputEntry id="inputEntry_risk_1a">
+          <text>&lt; 580</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_risk_1b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_risk_1">
+          <text>"High"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Subprime</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_risk_2">
+        <inputEntry id="inputEntry_risk_2a">
+          <text>[580..700)</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_risk_2b">
+          <text>&gt;= 50000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_risk_2">
+          <text>"Medium"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Near-prime, sufficient income</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_risk_3">
+        <inputEntry id="inputEntry_risk_3a">
+          <text>[580..700)</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_risk_3b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_risk_3">
+          <text>"High"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Near-prime, low income</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_risk_4">
+        <inputEntry id="inputEntry_risk_4a">
+          <text>&gt;= 700</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_risk_4b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_risk_4">
+          <text>"Low"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Prime</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_rate" name="rate" label="Interest rate">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_rate" name="rate" typeRef="number" />
+    <informationRequirement id="informationRequirement_rate_risk">
+      <requiredDecision href="#decision_risk" />
+    </informationRequirement>
+    <informationRequirement id="informationRequirement_rate_loanAmount">
+      <requiredInput href="#inputData_amount" />
+    </informationRequirement>
+    <decisionTable id="decisionTable_rate" hitPolicy="FIRST">
+      <input id="input_rate_risk" label="Risk band">
+        <inputExpression id="inputExpression_rate_risk" typeRef="string">
+          <text>risk</text>
+        </inputExpression>
+      </input>
+      <input id="input_rate_loanAmount" label="Loan amount">
+        <inputExpression id="inputExpression_rate_loanAmount" typeRef="number">
+          <text>loanAmount</text>
+        </inputExpression>
+      </input>
+      <output id="output_interestRate" label="Interest rate" name="interestRate" typeRef="number" />
+      <annotation name="Annotation" />
+      <rule id="rule_rate_1">
+        <inputEntry id="inputEntry_rate_1a">
+          <text>"High"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_rate_1b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_rate_1">
+          <text>12.5</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>High risk</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rate_2">
+        <inputEntry id="inputEntry_rate_2a">
+          <text>"Medium"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_rate_2b">
+          <text>&gt;= 100000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_rate_2">
+          <text>9</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Medium risk, large loan</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rate_3">
+        <inputEntry id="inputEntry_rate_3a">
+          <text>"Medium"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_rate_3b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_rate_3">
+          <text>8</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Medium risk</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rate_4">
+        <inputEntry id="inputEntry_rate_4a">
+          <text>"Low"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_rate_4b">
+          <text>&gt;= 100000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_rate_4">
+          <text>6</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Low risk, large loan</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_rate_5">
+        <inputEntry id="inputEntry_rate_5a">
+          <text>"Low"</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_rate_5b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_rate_5">
+          <text>5.5</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Low risk</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="inputData_creditScore" name="creditScore">
+    <variable id="variable_creditScore" name="creditScore" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_income" name="income">
+    <variable id="variable_income" name="income" typeRef="number" />
+  </inputData>
+  <inputData id="inputData_loanAmount" name="loanAmount">
+    <variable id="variable_loanAmount" name="loanAmount" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_rate" dmnElementRef="decision_rate">
+        <dc:Bounds x="640" y="64" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_risk" dmnElementRef="decision_risk">
+        <dc:Bounds x="208" y="304" width="288" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_creditScore" dmnElementRef="inputData_creditScore">
+        <dc:Bounds x="48" y="560" width="216" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_income" dmnElementRef="inputData_income">
+        <dc:Bounds x="432" y="592" width="216" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_loanAmount" dmnElementRef="inputData_loanAmount">
+        <dc:Bounds x="944" y="336" width="216" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

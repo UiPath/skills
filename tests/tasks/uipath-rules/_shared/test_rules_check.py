@@ -70,7 +70,21 @@ class TestUnaryTest:
 
     def test_unsupported_expression_fails_loudly(self):
         with pytest.raises(SystemExit):
-            rc.unary_test("not(5)", 5)
+            rc.unary_test('starts with("a")', 5)
+
+    @pytest.mark.parametrize("cell, value, expected", [
+        ('"High", "Medium"', "Medium", True),
+        ('"High","Medium"', "Low", False),
+        ('"a,b"', "a,b", True),
+        ('not("High")', "Low", True),
+        ('not("High", "Medium")', "Medium", False),
+        ("not(< 10)", 5, False),
+        ('"High"', None, False),
+        ("< 10", None, False),
+        ("-", None, True),
+    ])
+    def test_lists_negation_and_null(self, cell, value, expected):
+        assert rc.unary_test(cell, value) is expected
 
 
 class TestLiteral:
