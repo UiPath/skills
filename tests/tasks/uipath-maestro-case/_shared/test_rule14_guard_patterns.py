@@ -229,6 +229,9 @@ NOT_CASEPLAN_EDITS = [
     # Seen in nightly runs: a Python variable named cp, and a scratch file whose name ends in an artifact name.
     "python3 << EOF\nimport json\ncp = json.load(open('CMGoldenExpense/CMGoldenExpense/caseplan.json'))\nprint(len(cp))\nEOF",
     "node -e 'const fs=require(\"fs\");fs.writeFileSync(\"test-caseplan.case\", JSON.stringify({}))'",
+    # open(p) in default read mode, with a later 'w' that belongs to another call.
+    "python3 -c \"p='P/caseplan.json'; print(open(p), 'w')\"",
+    "python3 -c \"p='P/caseplan.json'; print(open(str(p)), 'w')\"",
     "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('P/caseplan.json'));const o='/tmp/x.json';fs.writeFileSync(o,JSON.stringify(d))\"",
     "python3 -c \"open('P/caseplan.json','rb').read()\"",
     "python3 -c \"open('P/caseplan.json', encoding='utf8').read()\"",
