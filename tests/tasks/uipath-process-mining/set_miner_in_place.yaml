@@ -46,7 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Agent switched the existing app's miner in place"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+apps\s+data-model\s+set-miner\b(?=[^;&|\n]*\b9c46289e\b)[^;&|\n]*--miner[\s=]+["'']?inductive\b'
+    command_pattern: 'uip\s+pm\s+apps\s+data-model\s+set-miner\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\b9c46289e\b)(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--miner[\s=]+["'']?inductive\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -54,7 +54,7 @@ success_criteria:
   - type: command_executed
     description: "Agent re-ingested, since the process is re-mined only on the next ingestion"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+ingestions\s+create\b[^;&|\n]*\b9c46289e\b'
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\b9c46289e\b'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
