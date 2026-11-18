@@ -46,17 +46,20 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
   "A variable is unresolved" on the canvas, and `validate` passes with a `VARIABLE_NOT_SET`
-  warning: fix it, never wave it off. Map each input the steps read on the start event into a
-  variable scoped to it, as the canvas does, and read that variable downstream:
+  warning: fix it, never wave it off. On the start event, map each input the steps read into a
+  variable scoped to that event, as the canvas does, and read that variable downstream. When the
+  start event already maps the input (a canvas-made process), read that row's `var`; add no second row.
   ```ts
   .input('amount', 'number')
   .var('amountIn', 'number', { elementId: 'start' })
+  .var('total', 'number')
   .startEvent('start', { payload: { type: 'BPMN.Variables', outputRows: [
     { name: 'amount', type: 'number', source: '=vars.amount', var: 'amountIn' },
   ] } })
   .task('double', { set: { total: '=js:vars.amountIn * 2' } })
   ```
-  Without the `.var()`, `check` fails `EXPR_UNDECLARED_REF`.
+  Unlike a task's output row, a start-event row does not declare its variable: without the
+  `.var()`, `check` fails `EXPR_UNDECLARED_REF`.
 
 <!-- RULE:bpmn.expression.js-for-methods -->
 - A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
