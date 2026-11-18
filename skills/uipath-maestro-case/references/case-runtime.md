@@ -176,8 +176,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `escalationId: "any"` wildcard, makes the rule at-risk; one to an
   `sla-breached` escalation is Breached. The wildcard is valid and fires on
   every at-risk escalation of that SLA (in SDK source,
-  `escalation: ANY_ESCALATION`). Do not author it; name the escalation the
-  requirement means. Repair an existing rule by the requirement's status, never
+  `escalation: ANY_ESCALATION`). In `caseplan.json` do not write `"any"` by
+  hand; in `.case.ts` use `ANY_ESCALATION` only when the requirement means
+  every at-risk escalation. When the SDD names one escalation, name it.
+  Repair an existing rule by the requirement's status, never
   by what the plan already carries: a breach response drops the reference and
   leaves a plain breach rule on the SLA; repointing it at an at-risk escalation
   keeps it at-risk, which fires at a different time. Only an at-risk response
@@ -280,6 +282,24 @@ make from syntax alone. Exact signatures remain in the generated API.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
+
+## Metadata fidelity
+
+<!-- RULE:case.metadata.intsvc-activity-config -->
+- A new case carries `metadata.intsvcActivityConfig: "v2"`. `case init` writes
+  it on a new case; `decompile` → `compile` preserves whatever the plan's
+  metadata carried. Never add `"v2"` to a decompiled plan that lacks
+  it — a V1 plan must stay V1. Tasks that call Integration Service use V2 I/O
+  negotiation when the marker is present.
+
+<!-- RULE:case.variable.closed-types -->
+- Case variable `type` values are a closed set: `string`, `integer`, `float`,
+  `double`, `boolean`, `datetime`, `date`, `time`, `object`, `file`, `array`,
+  `jsonSchema`. These apply to `variables.inputs`, `variables.outputs`, and
+  `variables.inputOutputs`. Do not use `number` (that is a Flow SDK type, not
+  a Case type); use `integer` for whole numbers, `float` or `double` for
+  decimals. `case validate` warns `number` (`CASE_MGMT_VARIABLE_TYPE_ALIAS`);
+  write `double`.
 
 ## Brownfield editing
 
