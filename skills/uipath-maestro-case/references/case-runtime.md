@@ -37,35 +37,25 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Action recipients and the go-live trap
 
-<!-- RULE:case.recipient.externalize -->
-- An action task's `recipient` bakes the email address into the plan. Safe for
-  testing; a trap for go-live. Going live requires editing every action's
-  recipient in the source and republishing the case.
+<!-- RULE:case.recipient.literal-at-go-live -->
+- An action task's `recipient` is a literal email address baked into the plan.
+  Safe for testing; a trap for go-live. Going live requires editing every
+  action's recipient in the source and publishing a new case version.
 
-  When a request names a person or test mailbox as the recipient, wire it
-  through a case **input** with a placeholder default instead of a literal.
-  Declare the input, reference it in the `recipient` field, and verify with
-  `case check --source` that the expression resolves:
+  Write the recipient as a plain email address. Do not write an `=` expression
+  in `recipient`: no case plan in use carries one, runtime resolution is
+  unconfirmed, and `case check` does not read `recipient`, so a wrong
+  expression passes `check` and `validate`.
 
-  ```ts
-  .input({ approver: types.string })
-  // ...
-  .action({ ..., recipient: '=vars.start.output.approver' })
-  ```
-
-  If `check` reports the expression as a literal, use a script task to read
-  the input into a variable and pass that variable's value instead.
-
-  Tell the user before publishing:
-  1. The input default is a **test** value. It routes every action to that
-     address until someone edits the case input defaults and republishes.
-  2. Going live means changing the defaults in the source (or removing them so
-     the caller must supply real addresses) and publishing a new version.
+  When the recipient is a test address, tell the user before publishing:
+  1. Every action routes to that test address until someone edits each
+     recipient in the source.
+  2. Going live means changing each recipient and publishing a new version.
 
 <!-- RULE:case.recipient.no-silent-default -->
-- Do not set a recipient default to the user's own email without saying so.
-  State what the default is, that it is baked into the plan, and what
-  changing it requires. The user decides whether to publish with that default.
+- Do not set a recipient to the user's own email without saying so.
+  State the address, that it is baked into the plan, and what changing it
+  requires. The user decides whether to publish with that recipient.
 
 ## Script tasks
 
