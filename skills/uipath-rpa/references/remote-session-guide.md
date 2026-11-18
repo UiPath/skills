@@ -146,6 +146,11 @@ Prepare a target only when the user asks for it or agrees when asked (Rule 11). 
 
 Only when the user asks to convert a user account to unattended — the user's own account or any other user account in the tenant; never propose or start it otherwise. Orchestrator registers a machine whose Robot is signed in with a user account in that account's Personal Workspace.
 
+Before the first change:
+
+- **Another user's account** → the signed-in user must be an Orchestrator administrator — check through the `uipath-platform` skill. Not an administrator → stop and tell the user an Orchestrator administrator has to make the changes. Administrator → have the user confirm that the account owner agreed.
+- **Any account** → tell the user that once prepared, the machine accepts the folder's unattended jobs and remote shell commands run as that account on it (§ Execute a Shell Command on the Remote), until its unattended license and folder assignment are removed.
+
 1. **Machine assigned to the shared folder** — assign that account's Personal Workspace machine to the shared folder too; it stays in the Personal Workspace.
 2. **User account assigned directly to that folder** with a role that can run jobs (e.g. Automation User). Access through a group is not enough — the robot appears in `remote targets` only after a direct assignment.
 3. **Unattended license allocated to the machine** — at least one unattended runtime. While the Robot is online, Orchestrator licenses the machine right away.
@@ -397,7 +402,7 @@ uip rpa remote upload-file \
 - **Guessing folder/machine/robot/runtime names** — look them up from Orchestrator and ask the user (Rule 3).
 - **Configuring a machine whose host is not connected** — `configure` rejects it; pick a machine with a connected, responsive host.
 - **Preparing a target without asking the user** — when no usable target exists, ask whether to prepare one; never start on your own (Rule 11).
-- **Converting a user account to unattended without the user's request** — recommend an Unattended Robot with a robot account (Rule 11).
+- **Converting a user account to unattended without the user's request, or another user's account without the owner's agreement** — recommend an Unattended Robot with a robot account (Rule 11); for another user's account, check the administrator role and the owner's agreement first (§ Interactive Sign-In Robot with a User Account (On Request Only)).
 - **Preparing a target only in a Personal Workspace** — remote sessions need the robot and machine in a shared folder (§ Rules for Preparing a Target).
 - **Relying on group access for an Interactive Sign-In Robot** — assign the user account directly to the folder; otherwise the robot does not appear in `remote targets`.
 - **Configuring a robot with `hasCredentials: false`** — it runs only background processes and the session fails; ask the user whether to enable foreground automation first (Rule 11).
