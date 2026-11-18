@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-16T04:06:20Z",
-  "cli_version": "1.207.0-dev.9850",
+  "generated_at": "2026-11-18T04:06:27Z",
+  "cli_version": "1.208.0-dev.9880",
   "verbs": [
     "admin",
     "admin audit",
@@ -1860,6 +1860,10 @@
     "tools uninstall",
     "tools update",
     "traces",
+    "traces decisions",
+    "traces decisions create",
+    "traces decisions get",
+    "traces decisions list",
     "traces feedback",
     "traces feedback create",
     "traces feedback delete",

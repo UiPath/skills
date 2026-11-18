@@ -52,12 +52,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN file has a diagram and a parallel gateway"
-    path: "ParallelSync.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "parallelGateway"
+    command: 'python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ParallelSync --contains bpmndi:BPMNDiagram --contains parallelGateway'
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
