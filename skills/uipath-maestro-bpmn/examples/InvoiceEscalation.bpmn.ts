@@ -119,12 +119,12 @@ export default bpmn('invoice-escalation')
   // back to the approver; `rejected` ends the process; `approved` continues.
   .choose('route', [
     {
-      when: '=vars.decision == "Approve"',
+      when: '=js:vars.decision == "Approve"',
       label: 'Approved',
       body: (b) => b.task('markApproved', { name: 'Mark approved', set: { outcome: 'APPROVED' } }),
     },
     {
-      when: '=vars.decision == "Needs info"',
+      when: '=js:vars.decision == "Needs info"',
       label: 'Needs info',
       body: (b) => b.task('requestInfo', { name: 'Ask the vendor', set: { outcome: 'AWAITING_VENDOR' } }).goto('approve'),
     },

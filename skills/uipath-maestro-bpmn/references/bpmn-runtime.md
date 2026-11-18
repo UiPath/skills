@@ -24,7 +24,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   .var('scoreValue', 'number')
   // … tasks write scoreValue …
   .endEvent('done', { payload: { type: 'BPMN.Variables', outputRows: [
-    { name: 'score', type: 'number', source: '=vars.scoreValue', var: 'score' },
+    { name: 'score', type: 'number', source: '=js:vars.scoreValue', var: 'score' },
   ] } })
   ```
   Never read an `.output()` before its end event; read the `.var()` instead.
@@ -48,16 +48,24 @@ make from syntax alone. Exact signatures remain in the generated API.
   seeds every declaration by id. The start-event mapping that bridges each input into
   an internal variable is the canvas's spelling, not a requirement.
 
-<!-- RULE:bpmn.expression.js-for-methods -->
-- A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
-  `vars.x` reads work, a JS method call does not, and a JS property such as `.length` reads back `null` with no incident (use `.Count`). `=vars.d.toLowerCase() == "approve"` passes
-  validate, then faults the run (incident `400302`); in a gateway `when` it evaluates `false` and the
-  run takes the wrong branch. Prefix any expression that calls a JavaScript
-  method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
-  (`Contains`, `Split`, `String.IsNullOrEmpty`) work in plain `=`, as decompiled canvas expressions show.
-  Local `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
-- A `.task()`'s `set` values are strings: an `=`-expression or a literal. `set: { done: true }`
-  fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=true'`.
+<!-- RULE:bpmn.expression.js-everywhere -->
+- Write every expression you author as `=js:` JavaScript, in any field: `set`, a `when`, a row
+  `source`, a connector input, a loop `collection` or `completion`, a timer `date`
+  (`'=js:vars.total * 0.9'`, `'=js:vars.tier == "gold"'`). A plain `=` passes `check`, `compile` and
+  `validate`, but it is C#: the designer opens any plain expression beyond a bare variable read in its
+  C# editor, and a JavaScript method in it (`=vars.d.toLowerCase() == "approve"`) faults the run
+  (incident `400302`), or in a gateway `when` evaluates `false` and takes the wrong branch. Local
+  `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
+  Leave plain only what the canvas writes plain: a row `source` reading the node's own result
+  (`=result…`, `=response…`, `=Error`, a form field such as `=Action`, an agent output such as
+  `=Decision`), `=bindings.<id>`, `=iterator[0]`, the start-event row that maps a process input
+  (`=vars.<inputId>`), and a human-task form field's `value` (`=vars.<id>`: its runtime evaluates
+  UiPath expressions, not JavaScript). An imported file's existing plain `=` expressions are C#
+  (`examples/InvoiceApproval.bpmn.ts`): leave them as they are, and copy none of them.
+  In a plain `=` you keep or edit, `.length` reads back `null` with no incident: use `.Count`.
+  `.length` works only inside `=js:`.
+- A `.task()`'s `set` values are strings: an `=js:` expression or a literal. `set: { done: true }`
+  fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=js:true'`.
 
 <!-- RULE:bpmn.variables.input-name -->
 - Input values are matched to declarations by display `name` when a run starts, so an
@@ -233,7 +241,7 @@ make from syntax alone. Exact signatures remain in the generated API.
     propertyAttribute: 'folderPath', resourceKey: 'CreditAssessment', resourceSubType: 'ProcessOrchestration' })
   // …
   .startAgenticProcess('assess', { process: '=bindings.childName', folder: '=bindings.childFolder',
-    input: { annualIncome: '=vars.annualIncome' }, outputs: { score: '=result.score' } })
+    input: { annualIncome: '=js:vars.annualIncome' }, outputs: { score: '=result.score' } })
   ```
   The called process must map its outputs at its end event ([output end mapping](#variables-and-the-process-contract)),
   or `result.score` is `null`.
@@ -301,7 +309,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:bpmn.http.url-placeholders -->
-- Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=`-expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
+- Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=js:` expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
@@ -405,9 +413,9 @@ binding half, which is the same for every connector-backed node.
   way the platform's own tools do and needs no connector library or `prepare`
   step. The response lands in `<id>_response` and the error payload in
   `<id>_Error`, both declared for you — read the created record's id as
-  `=vars.<id>_response.Id`. Map results onto process outputs on the end event
+  `=js:vars.<id>_response.Id`. Map results onto process outputs on the end event
   (`payload: { type: 'BPMN.Variables', outputRows: [{ name, type, var, source:
-  '=vars.<id>_response' }] }`). Do not hand-fill
+  '=js:vars.<id>_response' }] }`). Do not hand-fill
   `.activity('Intsvc.ActivityExecution', …)` for these operations: the library
   ships one Data Service operation, so `.connector()` cannot author the rest, and a
   hand-filled node gets `objectName`, the parameter targets and the folder binding

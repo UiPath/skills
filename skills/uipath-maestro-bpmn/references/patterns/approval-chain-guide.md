@@ -54,13 +54,13 @@ export default bpmn('vendor-onboarding')
   // the chain. The joins the arms imply are the one shared reject merge.
   .choose('panelVerdict', [
     {
-      when: '=vars.complianceOutcome == "Approve" && vars.financeOutcome == "Approve"',
+      when: '=js:vars.complianceOutcome == "Approve" && vars.financeOutcome == "Approve"',
       label: 'Both approve',
       body: (b) =>
         b.humanTask('managerReview', { name: 'Manager review', ...review('managerOutcome', 'managerRationale') })
           .choose('managerVerdict', [
             {
-              when: '=vars.managerOutcome == "Approve"',
+              when: '=js:vars.managerOutcome == "Approve"',
               label: 'Approve',
               body: (a) => a.scriptTask('provision', { name: 'Provision vendor', script: 'return { ok: true };' })
                 .plainTask('notifyApproved', { name: 'Tell requester', element: 'bpmn:sendTask' })
