@@ -18,10 +18,10 @@ Business rules in an SDD: validation rules, DMN-style decision tables, and rules
 
 ## 2. Decision tables
 
-One decision per output decided from the same inputs: one table, one row per rule or tier, numbered `D1`, `D2`, … Example:
+One decision per output decided from the same inputs: one table, one row per rule or tier, numbered `DT1`, `DT2`, … (`D<n>` is an open item of Action Required). Example:
 
 ```markdown
-#### D1 — Approval route
+#### DT1 — Approval route
 **Hit policy:** UNIQUE
 **Inputs:** `invoiceAmount` (number), `vendorStatus` (string: "new", "active", "blocked")
 **Output:** `approvalRoute` (string: "auto", "manager", "director", "reject")
