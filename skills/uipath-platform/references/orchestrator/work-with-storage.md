@@ -120,16 +120,35 @@ uip or bucket-files upload <bucket-key> "data/config.json" \
 
 ### List Files
 
+`bucket-files list` has two modes. Pick by what you need:
+
+| Need | Use | Sub-folders |
+|------|-----|-------------|
+| Every file in the bucket | `list <bucket-key>` (default) | Included |
+| Every file under a path | `list <bucket-key> --prefix <path>` | Included |
+| Only the files directly in one directory | `list <bucket-key> --directory <path>` | **Left out** |
+| One directory and everything below it | `list <bucket-key> --directory <path> --recursive` | Included |
+
 ```bash
-# List all files in a bucket
+# List all files in a bucket, sub-folders included
 uip or bucket-files list <bucket-key> --folder-path "Finance" --output json
 
-# Filter by path prefix
+# Filter by path prefix (also includes sub-folders)
 uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --prefix "reports/" --output json
+
+# Only the files directly inside reports/ (one level)
+uip or bucket-files list <bucket-key> --folder-path "Finance" \
+  --directory "reports" --output json
+
+# reports/ and all its sub-folders, through the directory API
+uip or bucket-files list <bucket-key> --folder-path "Finance" \
+  --directory "reports" --recursive --output json
 ```
 
-File listing uses **continuation-token pagination** (not offset/limit). Check the response for a continuation token and pass it back:
+`--directory` lists **one level only** unless `--recursive` is given. `--directory "/"` without `--recursive` returns `Items: []` for a bucket whose files all sit in sub-folders, even though the bucket is not empty. To find files, prefer the default mode or `--prefix`. Use `--directory` when you want one level on purpose, and pair it with `list-dirs` to walk the tree. `--recursive` without `--directory` is rejected (`ValidationError`, exit 3), because the default listing already includes sub-folders.
+
+The default and `--prefix` modes use **continuation-token pagination** (not offset/limit). Check the response for a continuation token and pass it back:
 
 ```bash
 # Fetch next page
@@ -137,14 +156,14 @@ uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --continuation-token "<token-from-previous-response>" --output json
 ```
 
-Additional options: `--take-hint <n>` (items per page, default 500, max 1000), `--expiry-in-minutes` (presigned URL lifetime in the response).
+Additional options: `--take-hint <n>` (items per page, default 500, max 1000), `--expiry-in-minutes` (presigned URL lifetime in the response). These and `--prefix` cannot be combined with `--directory`, which returns its whole result in one response with no continuation token.
 
 ### List Directories
 
 ```bash
 uip or bucket-files list-dirs <bucket-key> --folder-path "Finance" --output json
 uip or bucket-files list-dirs <bucket-key> --folder-path "Finance" \
-  --directory "reports/" --file-name-glob "*.csv" --output json
+  --directory "reports" --file-name-glob "*.csv" --output json
 ```
 
 Unlike `list`, `list-dirs` uses standard `--limit` / `--offset` pagination.
@@ -259,13 +278,16 @@ uip or bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 
 ### Pagination Differences
 
-- `bucket-files list` -- continuation-token based (`--continuation-token`, `--take-hint`)
+- `bucket-files list` (default and `--prefix`) -- continuation-token based (`--continuation-token`, `--take-hint`)
+- `bucket-files list --directory` -- not paged; one response holds the whole result
 - `bucket-files list-dirs` and `buckets list` -- offset/limit based (`--offset`, `--limit`)
 
 ### Common Pitfalls
 
 - **`buckets list` requires either `--folder-path`/`--folder-key` or `--all-folders`.** No-flag invocations error out — there is no implicit cross-folder default.
 - **File paths containing `&`, `+`, `%`, or `?` are rejected by the CLI.** The Orchestrator storage API builds presigned blob URIs without re-encoding URL-reserved characters, so such paths are silently corrupted server-side while the API reports success (`a&b.txt` is truncated to `a`; `+` and `%xx` decode to other characters; delete then operates on the corrupted name). The CLI refuses these paths up front on every path-taking command (`upload`, `download`, `delete`, `get`, `get-download-url`, `get-upload-url`). Rename files to avoid these characters. The same corruption applies when calling the REST API directly — the only REST workaround is double-URL-encoding the `path` parameter, which will break when the server-side fix lands; prefer renaming.
+- **`bucket-files list --directory` stops at one level.** An empty `Items` from `--directory` does not mean the bucket or directory is empty: the files may be in sub-folders. Add `--recursive`, or list without `--directory` (optionally with `--prefix`).
+- **`--directory` takes no trailing slash.** `--directory "reports/"` fails with `HTTP 400: Invalid blob file path` on both `list` and `list-dirs`; write `--directory "reports"` (or `"/reports"`). Use `"/"` for the bucket root. `--prefix` accepts a trailing slash.
 - **`download` without `--destination`** writes to stdout. For binary files, always use `--destination`.
 - **External providers** (Azure, Amazon) require `--credential-store-key`. Use `uip or credential-stores list` to find keys.
 - **Bucket keys** are GUIDs (the `identifier` field from list/create output). Do not confuse with numeric `id`.
