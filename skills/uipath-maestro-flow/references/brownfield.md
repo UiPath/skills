@@ -157,7 +157,7 @@ Merge warns, omits carrying, and refuses with `--strict` when:
   differs from the original's ... The change is NOT carried`). Keep a baseline
   file in a directory of its own, as [a supplied source](#a-supplied-source) does.
 - an agent resource changed/removed cannot pair with a project resource because the canvas gave its node an id compile does not reproduce and its `resource.json` has fields compile does not write; make the change on the canvas;
-- an older canvas save embeds prompts on the agent node; editing `agent.json` would not change runtime behavior; edit on the canvas.
+- with an SDK older than 6.117.2, an older canvas save embeds prompts on the agent node, so an `agent.json` edit would not change runtime behavior; edit on the canvas. From 6.117.2, merge carries a prompt, model or settings edit onto such a node; see [the embedded-agent warning](#merge-warnings-what-the-round-trip-changed).
 
 Never copy a compiled `<source>/` directory into the project by hand: it
 carries the round trip's changes along with yours.
@@ -280,7 +280,13 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 
 `the round trip appends End "<id>" after …` is benign: compile caps a path that simply stops and does not change behavior. A `.openTails()` flow gets it only after a human task; see [A path without an End stays open](#a-path-without-an-end-stays-open).
 
-`agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge preserves it and applies only node edits (input, output, label). Prompt/model/settings edits in source do not affect embedded agents; edit them on the canvas. `--strict` accepts input/output edits but refuses dropped/changed embedded configuration or a kept prompt still using `{{input.X}}` after input `X` was removed.
+`agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge keeps it embedded and applies node edits (input, output, label).
+From SDK 6.117.2, merge also writes a prompt, model or settings edit to an embedded agent onto the node and prints `flow-merge: carried the agent.json edit onto embedded agent "<id>"`.
+If merge prints no such line for your edit, the SDK does not carry it; edit it on the canvas.
+Deleting a setting from the source is carried as its default value when compile writes one (for example `maxTokenPerResponse` becomes 16384); to keep a value, leave the setting in the source.
+A deletion merge cannot carry, such as `model`, warns `NOT carried`, and the node keeps its value.
+`--strict` refuses an edit merge cannot carry onto the node, a merged node that drops or changes configuration you did not edit, a prompt you edited that uses a new `{{input.X}}` the node does not declare, or a prompt that still uses an input your edit removed.
+An undeclared placeholder the original prompt already had is not refused.
 <!--skill-flavor:strict-merge:start-->
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
   warning. The benign End line never refuses. Every merge on this page has a

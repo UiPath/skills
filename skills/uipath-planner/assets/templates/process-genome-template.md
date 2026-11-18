@@ -12,6 +12,8 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
+> Preferences: [{title}]({relative path to the preferences file}) *(Only when the user named one; omit otherwise.)*
+
 ## Overview
 
 {2-4 paragraphs: business process, why it is automated, who owns it, volumes and cadence, what "done" means end to end.}
@@ -53,7 +55,9 @@ flowchart TB
   C3 -.->|"{file or mail passed}"| C4
 ```
 
-Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file or mail.
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another component. Solid arrow: adds to or takes from a queue, or calls a component; dotted arrow: a handoff through a file, a mail or a shared store.
+
+*Only when the Source Map holds an as-is process map — otherwise delete this line:* The source as it runs, and what each of its parts becomes: Source Map, As-is process map.
 
 *When the customer needs a formal model, add a BPMN 2.0 sidecar `{process-slug}-process.bpmn` authored from this Process Map with `uipath-maestro-bpmn`, and link it here.*
 
@@ -61,19 +65,68 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 | From | To | Mechanism | Data passed | Failure behaviour |
 |------|----|-----------|-------------|-------------------|
-| {Component 1} | {Component 2} | {Queue item / Start job / Flow invoke / Event / File / Action Center task / Shared store} | {fields, schema, file type} | {retry, dead-letter, escalation} |
+| {Component 1} | {Component 2} | {Queue item / Library workflow call / Invoke Process / Start job, waited for or not / Flow invoke / Event / File / Action Center task / Shared store} | {fields, schema, file type} | {retry, dead-letter, escalation} |
 
 ## Platform Dependencies
 
-| Resource | Type | Shared by | Purpose |
-|----------|------|-----------|---------|
-| {e.g. InvoiceQueue} | Queue | {components} | {purpose} |
+{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
+
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| {e.g. InvoiceQueue} | {one invoice} | {InvoiceNumber: Text, Amount: Number} | {InvoiceNumber, on} | {2} | {component 1} | {component 2} |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| {e.g. ErpBaseUrl} | {Text / Integer / Bool / Secret} | {fixed value, or Configuration Question N; never a secret} | {components} | {what it is for} |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+
+### Data Fabric entities
+
+| Entity | Fields | Written by | Read by |
+|--------|--------|------------|---------|
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| {e.g. DailyIntake} | {component 1} | {Time / Queue / Event / API} | {weekdays 07:00, Europe/Berlin; or the queue; or the event; or the API endpoint} | {1} |
+
+### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
 
 ## Configuration Questions
 
 {Process-wide questions. Component-specific questions live in the component genomes.}
 
 1. {Question}? ({setting | constant}; default: {value})
+
+## Open Decisions
+
+{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (format guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
+
+1. {The decision as a question}? ({business outcome | run behaviour | reading | material}; answered by: {role}; {builds now | recommended | reading | until answered}: {…}; instead: {the other option}) — {the components and steps it spans}
+
+*Stub when the genome has never had one: "No open decisions."*
 
 ## Business Rules
 
@@ -123,7 +176,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists (a flow with a `Decided:` line: that one row alone), each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
@@ -154,9 +207,12 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 ## Deployment
 
-- **Packaging:** {single solution (`uipath-solution`) / independent packages} — {solution name}
-- **Entry points and triggers:** {schedule, queue trigger, connector trigger, manual}
-- **Environments:** {folders, tenants, feeds}
+- **Packaging and route:** {single solution (`uipath-solution`) / independent packages} — {solution name}; {each library and the feed it is published to, before its consumers}
+- **Entry points:** {each process's entry point, and who or what starts it; how each starts: Platform Dependencies, Triggers}
+- **Runtime:** {Windows / cross-platform / serverless, and unattended or attended, per component}
+- **Kept out of the logs:** {the data a run must not log, or none}
+
+UI targets: {the environment whose screens the targets describe}
 
 ## Complexity
 
@@ -175,10 +231,31 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Source framework | {`UiPath` for a UiPath source, else the framework name as the migration pack's README spells it} {version the source states} | |
 | Source export | {root path as read at extraction} | {identity: database or tenant, export date, process count — what recognises a moved copy} |
 | Requested change | {for a refactor or migration request: the user's words; otherwise —} | {each refactor-question decision — `Target: <component> → <product>`, `Retire: <entry point>`, `Fold: <reader> into <writer>`; a split decision is that flow's `Decided:` line alone} |
-| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {ambiguity or unresolved reference} |
+| {Component} | {Source framework}: {project / solution / object} — `{Name}` ({id}) per object where names repeat | {the source units whose actions became its steps' activities; ambiguity or unresolved reference} |
 | Not covered | {live entry points, public workflows or test cases of the extracted projects that no step is built from — `{Name}` ({id})} | {what each does; left out because nothing reaches it and the Unused parts answer kept to what runs or it only works a technology UiPath's activities cover, or the request named others} |
 | Unused | {workflows, pages and helpers no caller invokes that extraction left out — `{Name}` ({id})} | {what each does} |
 | Excluded / unreachable | {objects the source guide excludes; dead code, superseded copies, objects reached only through disabled calls — by name} | {why} |
 | Inventory | {processes, windows, controls (n without a locator), recordsets, rows, credential accounts} | {counts the inventory script reported; execution re-derives the catalogs from the export} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
+
+### As-is process map
+
+*Only when the rebuild changes the source's shape (extracted genome guide § Source Map, the as-is process map); otherwise delete this block.*
+
+The source as it runs, and what each of its parts becomes.
+
+```mermaid
+flowchart TB
+  S1["⏰ {source unit}<br/>→ [1]"]
+  SQ[("{source queue}")]
+  S2["{n} {source units}<br/>→ [2]"]
+  S3["{source unit}<br/>→ part of [1]"]
+  S4["{source unit}<br/>→ not rebuilt: {row}"]
+  S1 -->|"{adds items}"| SQ
+  SQ -->|"{takes items}"| S2
+  S1 -->|"{call}"| S3
+  S2 -.->|"{file or mail passed}"| S4
+```
+
+Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · 👤 started by a person · no mark: invoked by another unit. → [n]: becomes component n · part of [n]: folded into component n's steps · not rebuilt: the Source Map row that says why. Solid arrow: adds to or takes from a queue, or calls a unit; dotted arrow: a handoff through a file, a mail or a shared store.
