@@ -72,7 +72,7 @@ Framework facts (detection, inventory, locators, per-field translation, pitfalls
 9. **The framework migration pack cites rules by subject**, in the skill's words (a heading or bold rule head), never by file name or number. Renaming a subject the pack quotes updates the pack in a paired PR.
 10. **Every reference file has its row in its verb's § Read Plan**, keyed by a condition decidable at that phase, written in the same change as the file.
 11. **Temporary guides are deleted on their conditions:**
-    - `offline-definition-workarounds-guide.md`: once the UIA CLI creates a first definition offline and registers a number attribute bound to a selector variable.
+    - `offline-definition-workarounds-guide.md`: once the UIA CLI creates a first definition offline.
     - `package-doc-errata-guide.md`: a package's section once that package's shipped docs carry the corrected text; a tool's row once the tool behaves as its docs say; the file once no section is left.
 12. **Keep the external contracts** unchanged unless the change is the point: each skill's frontmatter `description`, the verbs and entry points other skills and hosts call, the pack resolution steps and the pack's README § Frameworks table shape, the Source Map contract rows, the planner's script names and flags.
 13. **A file's boundary is its audience: verb × condition.** A rule sits in the file every session that needs it reads, and in no file a session reads without needing it. A file every session of a verb reads holds no conditional block above about 5 KB; a block under about 5 KB whose condition is common stays where it is.
