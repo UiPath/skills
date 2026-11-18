@@ -110,6 +110,13 @@ CASEPLAN_EDITS = [
     "cp x P/origin/caseplan.json",
     "cp x P/caseplan.json 2>&1",
     "cp x P/caseplan.json > /dev/null",
+    # Every writable open() mode, not only a leading w, a or x.
+    "python3 -c \"open('P/caseplan.json','r+').write('{}')\"",
+    "python3 -c \"open('P/caseplan.json','wb+').write(b'{}')\"",
+    "python3 -c \"open('P/caseplan.json','rb+')\"",
+    "python3 -c \"open('P/caseplan.json','r+b')\"",
+    "python3 -c \"p='P/caseplan.json'; open(p,'r+')\"",
+    "python3 -c \"Path('P/caseplan.json').open('r+')\"",
     "find . -name '*.json' -exec perl -pi -e 's/a/b/' {} \\;",
     # A glob or a find that can reach an artifact (caught on main).
     "sed -i 's/a/b/' P/*.json",
@@ -145,6 +152,8 @@ NOT_CASEPLAN_EDITS = [
     "cp caseplan.json orig-caseplan.json",
     "cp P/caseplan.json .flow-sdk/original/caseplan.json",
     "cp P/caseplan.json bak/caseplan.json",
+    "python3 -c \"open('P/caseplan.json','rb').read()\"",
+    "python3 -c \"open('P/caseplan.json', encoding='utf8').read()\"",
     "cp P/caseplan.json \"backups/caseplan.json\"",
     # Copying the plan aside before editing is the documented baseline step.
     "python3 -c \"import shutil;shutil.copy('P/caseplan.json','/tmp/b')\"",
