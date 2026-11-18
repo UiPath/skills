@@ -37,6 +37,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 ## Workflow
 
 A discovery-only request (discover types or save registry evidence, no authoring) skips this whole Workflow: follow [Discovery only](references/bpmn-runtime.md#registry-extension-types).
+A request for a draft, an outline or a sketch, or one that could mean either a draft or a build, ends this Workflow at the [draft gate](#draft-first) with a skeleton, however complete its spec.
 
 <!--skill-flavor:workflow-scaffold:start-->
 1. **Before the first `init`, ask which solution to use when one already exists.**
@@ -165,8 +166,8 @@ A discovery-only request (discover types or save registry evidence, no authoring
 
 ## Draft first
 
-When the user asks for a draft or to see the shape before it is built — *create a draft*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
-A request for a draft is this gate even when it describes the whole process; the one exception is a "draft project" asking for source files to import later, with no upload or run: that is a build.
+When the user asks for a draft or to see the shape before it is built — *create a draft*, *outline it*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
+A request for a draft, an outline or a sketch is this gate even when it describes the whole process, and a request that could mean either a draft or a build gets the draft; the one exception is a "draft project" asking for source files to import later, with no upload or run: that is a build.
 <!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
