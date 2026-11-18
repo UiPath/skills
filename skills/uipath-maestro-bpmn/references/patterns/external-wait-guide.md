@@ -51,7 +51,7 @@ export default bpmn('vendor-docs')
       b.receiveMessage('replyReceived', {
         name: 'Vendor replied',
         message: 'VendorDocumentReply',
-        reference: '=vars.correlationKey',
+        reference: '=js:vars.correlationKey',
         outputVar: 'responseData',
       }),
     (b) =>
@@ -59,7 +59,7 @@ export default bpmn('vendor-docs')
         .plainTask('sendReminder', { name: 'Nudge vendor', element: 'bpmn:sendTask' })
         .goto('wait'),
     (b) =>
-      b.intermediateCatchEvent('slaDeadline', { name: 'Deadline passed', timer: { date: '=vars.slaDueAt' } })
+      b.intermediateCatchEvent('slaDeadline', { name: 'Deadline passed', timer: { date: '=js:vars.slaDueAt' } })
         .scriptTask('runEscalation', { name: 'Escalate', script: 'return { escalated: true };' })
         .endEvent('escalated', { name: 'Escalated' }),
   ])
@@ -69,7 +69,7 @@ export default bpmn('vendor-docs')
     outputs: { responseValid: '=result.response.valid', validationIssue: '=result.response.issue' },
   })
   .choose('validGate', [
-    { when: '=vars.responseValid == true', label: 'Valid', body: (b) => b },
+    { when: '=js:vars.responseValid == true', label: 'Valid', body: (b) => b },
     {
       otherwise: true,
       label: 'Invalid',
@@ -80,7 +80,7 @@ export default bpmn('vendor-docs')
           outputs: { reviewOutcome: '=Action' },
         })
           .choose('reviewGate', [
-            { when: '=vars.reviewOutcome == "Accept"', label: 'Accepted', body: (r) => r },
+            { when: '=js:vars.reviewOutcome == "Accept"', label: 'Accepted', body: (r) => r },
             {
               otherwise: true,
               label: 'Resend',
@@ -163,7 +163,7 @@ The deadline gate is what stops the loop; without it this shape never terminates
   A bare `bpmn:sendTask` placeholder validates with a warning that it invokes nothing.
 - **Reply arms**: the message name and its `reference` (`.receiveMessage()`), or the connector event (`.waitForEvent()`), per channel.
 - **Timers**: the reminder cadence is an ISO 8601 duration on `reminderDue`, which re-arms on each loop by design.
-  The SLA is not a duration: set its length in `compose`, where `slaDueAt` is computed once, and keep `slaDeadline` on `timer: { date: '=vars.slaDueAt' }` ([Events](../bpmn-runtime.md#events-and-timers)).
+  The SLA is not a duration: set its length in `compose`, where `slaDueAt` is computed once, and keep `slaDeadline` on `timer: { date: '=js:vars.slaDueAt' }` ([Events](../bpmn-runtime.md#events-and-timers)).
   Never give a race that is re-entered a relative SLA timer.
   `check`, `compile` and `validate` accept the date expression; that the runtime resolves an expression on an intermediate catch timer is not yet confirmed on a live run.
   If it does not, the fallback that also never resets is a `.subProcess()` around the race with an interrupting `onTimer('P10D', …)` in its body, armed once on entry.
