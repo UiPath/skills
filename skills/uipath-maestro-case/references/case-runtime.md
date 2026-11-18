@@ -56,7 +56,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   email, and as a group name otherwise. An expression needs type `3`: a bare
   string `'=vars.approver'` is type `2` and is looked up as a literal email.
   `case check` warns `STRICT_RECIPIENT_EXPRESSION_TYPE` on that, and
-  `case validate --strict` fails.
+  `case validate --strict` fails. The SDK's `RecipientType` doc comment still
+  calls `0`/`1`/`3` reserved; that comment is stale, and type `3` is the
+  expression type the CLI and `case check` accept.
   Brownfield: keep a decompiled `{ type, value }` recipient as is.
 
 <!-- RULE:case.recipient.no-silent-default -->
@@ -68,11 +70,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   going live changes: the input default, or each literal in the source plus a
   new published version.
 
-  A command that starts a case instance creates real tasks for these
-  assignees. Examples are `uip maestro case debug`, `uip maestro case process
-  run`, and `uip solution deploy run` or `activate` on a case with a trigger.
-  `upload`, `publish`, `check`, `compile` and `validate` start none. Before a
-  command that starts an instance:
+  `uip maestro case debug` and `uip maestro case process run` start a case
+  instance and create real tasks for these assignees. `upload`, `publish`,
+  `check`, `compile` and `validate` start none. Before `debug` or
+  `process run`:
   1. An assignee still `<UNRESOLVED: ...>`: do not run it.
   2. An address or group the user did not confirm: ask. A request or
      pre-approval that names that step is the user's answer. When no user can
