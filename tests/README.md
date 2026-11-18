@@ -108,7 +108,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
 | **path-to-ga** | flat, optional | Marks exhaustive, difficult, currently blocked, or historically fragile tasks that represent must-pass scenarios on the path to GA. | `path-to-ga` |
-| **autopilot-sw-ga** | flat, optional | Marks Studio Web Autopilot use-case tasks tracked for GA (the `uipath-agents` low-code use-case suite). | `autopilot-sw-ga` |
+| **autopilot-sw-ga** | flat, optional | Marks Studio Web Autopilot use-case tasks tracked for GA: the `uipath-agents` low-code use-case suite, and the `*_sw_ga` Flow tasks that ask a `path-to-ga` scenario the way a Studio Web user would. | `autopilot-sw-ga` |
 | **outcome-graded** | flat, optional | Marks tasks whose primary criteria grade the live outcome of an executed run rather than authored file contents. | `outcome-graded` |
 | **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `conversational`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
