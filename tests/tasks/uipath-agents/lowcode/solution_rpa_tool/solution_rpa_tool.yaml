@@ -59,7 +59,7 @@ success_criteria:
   # CLI discovery. pass_threshold:0 means these never block the run.
   - type: command_executed
     description: "Agent discovered the existing CalculatePay via solution resources list or ManageSolutionResources (informational)"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+list\b.*--source\s+local|\A\{(?=.*"toolName":\s*"ManageSolutionResources")(?=.*"action":\s*"list")(?=.*"source":\s*"local)'
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+list\b.*--source\s+local|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"source":\s*"local)'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -70,7 +70,7 @@ success_criteria:
   # follow-up.
   - type: command_executed
     description: "Agent fetched the CalculatePay configuration with uip solution resources get or ManageSolutionResources (informational)"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=.*"toolName":\s*"ManageSolutionResources")(?=.*"action":\s*"get")'
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0

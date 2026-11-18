@@ -312,3 +312,20 @@ QUOTES = [
 @pytest.mark.parametrize("call", QUOTES)
 def test_resource_lookup_ignores_other_tools_quoting_it(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# An edit forwards an arbitrary patch, so lookup fields nested in it are not a lookup.
+NESTED = [
+    _host_call(action="edit", resourceKey=KEY, patch={"action": action, "kind": kind, "source": "local"})
+    for action in ("list", "get")
+    for kind in ("Process", "App", "Index", "MemorySpace")
+] + [
+    _host_call(action="edit", resourceKey=KEY, patch={"params": {"action": "get"}}),
+    _host_call(action="edit", resourceKey=KEY, patch={"params": {"action": "list", "kind": "Process", "source": "local"}}),
+]
+
+
+@pytest.mark.parametrize("pattern", _host_tool_patterns())
+@pytest.mark.parametrize("call", NESTED)
+def test_resource_lookup_ignores_lookup_fields_nested_in_an_edit(pattern, call):
+    assert _hits(pattern, call) == {False}
