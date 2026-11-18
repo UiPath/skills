@@ -214,6 +214,10 @@ Three things hold in every run:
 - **A preferences file, when your team has standards.** It holds your standing answers: naming, project structure, logging, the template, where settings live. Give it once, and every genome and build follows it. Start one from the planner's `preferences-template.md`; a filled-in example: [migration-preferences.md](preferences-example/migration-preferences.md), with its [hand-off report example](preferences-example/handoff-report-example.html).
 - **For live runs:** the target apps installed and signed in on this machine, the UiPath browser extension, and the Windows session unlocked.
 - **A test environment.** Live runs create real records. Everything else stays on this machine, with one exception the build asks about: the Data Fabric entities it needs are created in the connected tenant. Nothing is published or deployed unless you ask.
+- **Your rights.** Check that you have the rights to use with LLMs, including any third-party content they may contain:
+  - the files or exports of an automation you extract, for the purpose of the extraction;
+  - the genome, and the source of a genome extracted from an existing automation, for the purpose of building the automation in UiPath. The build reads that source again for its UI targets and test data.
+- **Your setup.** Confirm that model hosting, data handling and coding agent configuration meet your organisation's requirements and respect rights reservations.
 
 > **Tip.** Say in your request where the automation will run (Automation Cloud, Automation Suite and its version, or a standalone Orchestrator) when you know it. The product choice depends on it, and the agent asks when the request does not say.
 
