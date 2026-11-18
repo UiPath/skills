@@ -81,7 +81,7 @@ uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 uip traces spans get <TRACE_ID> --output json
 ```
 
-`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `Data.traceId` is present only when tracing is on for the tenant (the default); without it, compare the inputs against each row by hand. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the whole solution folder and overwrites its Studio Web solution; pull Studio Web edits first.
+`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `Data.traceId` is present only when tracing is on for the tenant (the default); without it, compare the inputs against each row by hand. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the solution's own files (`.uipignore` applied) and overwrites its Studio Web solution; pull Studio Web edits first.
 <!--skill-flavor:verify:end-->
 
 ## Editing an Existing Rule

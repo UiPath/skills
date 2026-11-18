@@ -22,7 +22,7 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 | Application | Role | Notes |
 |-------------|------|-------|
 | Microsoft Excel (purchasing requisition workbook on the finance share) | Input source and output target | Open-requisitions sheet with the dispatched-timestamp column, approved-supplier sheet, run-summary sheet |
-| Coupa (web portal) | Output target | Requisition search, header and line entry, submit; purchasing robot account |
+| Coupa (web portal) | Output target | Requisition search, header and line entry, submit; purchasing robot account; UI targets: the production Coupa tenant |
 | Exchange Online | Notification channel | Requester notifications, run summary and stop alert to purchasing operations |
 | Orchestrator | Queue, assets, triggers | Shared queue for three unattended robots |
 
@@ -35,15 +35,37 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| PR_Requisitions | Queue | Entry point A writes one item per requisition row; three robots running entry point B share it, and an item survives a failed run |
-| Coupa_PurchasingRobot | Credential asset | Portal sign-in for the purchasing robot account on the production Coupa tenant |
-| Coupa_PortalUrl | Text asset | Address of the Coupa tenant entry point B opens |
-| FinanceShare_RequisitionsPath | Text asset | Location of the requisition workbook and the summary sheet on the finance share |
-| Purchasing_Mailbox | Integration Service connection (Exchange Online) | Sends requester notifications, the run summary and the stop alert |
-| PR_DispatchSchedule | Time trigger | Starts entry point A every business day at 06:00 |
-| PR_RequisitionsQueueTrigger | Queue trigger | Starts entry point B from 06:30 on up to three unattended robots |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| PR_Requisitions (Configuration Question 3) | one requisition | as in Interface: requester email, supplier name, cost centre, delivery date, line items | the requisition number, on | 2 (Configuration Question 7) | steps 1–4, entry point A | steps 5–13, entry point B |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| Coupa_PortalUrl | Text | Configuration Question 4 | step 6 | address of the Coupa tenant entry point B opens |
+| FinanceShare_RequisitionsPath | Text | Configuration Question 1 | steps 2, 4 and 13 | location of the requisition workbook and the summary sheet on the finance share |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| Coupa_PurchasingRobot | the purchasing robot account | Coupa, production tenant | step 6 |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| Purchasing_Mailbox | Exchange Online | the mailbox of Configuration Question 5 | steps 12 and 13, and the stop alert |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| PR_DispatchSchedule | entry point A | Time | every business day at 06:00; time zone *[Inferred: D1]* | 1 *[Inferred: D2]* |
+| PR_RequisitionsQueueTrigger | entry point B | Queue | `PR_Requisitions`, from 06:30 | up to 3 |
 
 ## Interface
 
@@ -64,6 +86,11 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 9. Where is the supplier checked? (setting; default: the approved-supplier sheet; alternative: the portal's supplier search)
 10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (constant; default: 60 seconds)
 11. Is a delivery date equal to the run date accepted? (constant; default: yes — only a date earlier than the run date is rejected)
+
+## Open Decisions
+
+1. In which time zone does the 06:00 dispatch run? (reading; answered by: whoever knows the process; reading: the finance team's local time zone, since the description gives a time but no zone) — Platform Dependencies, Triggers
+2. How many runners does the dispatch schedule use? (reading; answered by: whoever knows the process; reading: one runner, since the dispatch is a single daily run; the description does not state it) — Platform Dependencies, Triggers
 
 ## Workflow
 

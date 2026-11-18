@@ -1,18 +1,27 @@
+<!--skill-flavor:critical-rules-extra:start-->
+13. A new process goes into a project's main file in `/solution`: the `.bpmn` its `entry-points.json` names, `Process.bpmn` in a project Studio Web created (`uip maestro bpmn init` included). Studio Web packages any other `.bpmn` only as a non-default entry point and shows nothing outside `/solution`. Before you write a `.bpmn`:
+    1. Pick the project: the one the request names (`B`, or `A/B`, names `/solution/B`), else the open one. When it does not exist, run `uip maestro bpmn init B` from `/solution`.
+    2. When its main file already holds a process (it is not empty, and after `decompile`, `check --graph` lists any node besides one start event and one end event, which is all an `init` template has), never build over it unasked. If the request named this project, ask the user whether to replace its process or use a new project. On *replace*, build into its main file through the [Validation loop](#validation-loop). On *new project*, go to step 3. When the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking.
+    3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn`, else a short name for the process, never a folder `/solution` already holds. Never pass `--force`.
+
+    A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
+<!--skill-flavor:critical-rules-extra:end-->
+
 <!--skill-flavor:host-setup:start-->
 ## Studio Web
 
 **The builder SDK is built in.** `uip maestro bpmn check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: there is no `npm`, no Node process and no Python here.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its `.bpmn`, `project.uiproj` and package files. Create a BPMN project only when the user asks for a new project: run `uip maestro bpmn init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another. Each project is a folder `/solution/<Project>/` with its `.bpmn`, `project.uiproj` and package files. Create a BPMN project only when the user asks for a new project, or when [Critical Rule 13](#critical-rules) needs one: run `uip maestro bpmn init <Project>` from `/solution`. A `Data.AutoCreatedSolution` in the response means `init` ran outside the open solution: run it again from `/solution` and report the stray directory.
 
 **Edit the open process.** The context of each turn gives these values:
 
-- `CurrentFile.AbsolutePath` — the open file, for example `/solution/Approval/Approval.bpmn`.
+- `CurrentFile.AbsolutePath` — the open file, for example `/solution/Approval/Process.bpmn`.
 - `CurrentFile.IsCurrentFileEmpty` — `true` when the open `.bpmn` holds no process yet.
 - `CurrentProject.AbsolutePath` — the open project, for example `/solution/Approval`.
 - `CurrentWorkingDirectory` — the directory of the shell. It can differ from the project, so `cd` to the project first.
 
-The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`. Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
+The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.AbsolutePath`. Check a named `.bpmn` with `ls <path>`. When `ls` finds no such file, it is a new process: build it where [Critical Rule 13](#critical-rules) says. When `ls` finds the file outside `/solution`, it stays the target: follow [an existing `.bpmn` outside a `/solution` project](#studio-web). Below, `<Project>` is the folder of the target, `<Name>` is the file name of the target without `.bpmn`, and `<Draft>` is `/tmp/bpmn-draft/<Project>/<Name>`.
 
 **The target `.bpmn` is the single source of truth.** The user can change it on the canvas between your turns. So never use a `.bpmn.ts` from an earlier turn: decompile a fresh one every turn.
 
@@ -61,10 +70,8 @@ When a reference tells you to run a command that is not available, use the Studi
 <!--skill-flavor:host-setup:end-->
 
 <!--skill-flavor:workflow-scaffold:start-->
-1. The project already exists: the open project in `/solution`, with its
-   `.bpmn`, `project.uiproj` and package files ([Studio Web](#studio-web)).
-   Run `uip maestro bpmn init <Project>` from `/solution` only for a new
-   project the user asks for.
+1. Find the project and its main file before you write a `.bpmn`
+   ([Critical Rule 13](#critical-rules)).
 2. Keep the source at `/solution/<Project>/.flow-sdk/<Name>.bpmn.ts`, and run
    every command from `/solution/<Project>`.
 <!--skill-flavor:workflow-scaffold:end-->
