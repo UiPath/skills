@@ -6,7 +6,7 @@ An Extract document node (`uipath.ixp.extract-document-builder`) extracts named 
 
 ```bash
 uip maestro flow extraction check --output json
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --position <x>,<y> --output json
 uip maestro flow validate <file> --output json
 ```
 
@@ -35,7 +35,7 @@ Add a descriptive node, wire its file, write taxonomy, bind the result, and vali
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant:** run `uip maestro flow extraction check --output json`. Any settled answer other than `Available` stops the loop; an unsettled check is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the input if absent:** run `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is `<trigger>` in `$vars.<trigger>.output.invoice`.
-3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#layout-of-the-emitted-flow).
+3. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position` on the canvas grid ([operate.md](operate.md#lay-out-from-source-instead-layout-at-dim), rule 1); without it every added node lands at 0,0.
 4. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
@@ -89,7 +89,7 @@ Keep `modelName`, `folderKey`, and other deployment fields under `inputs` as emp
 Set it at creation when the upstream node already exists:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --position <x>,<y> --output json
 ```
 
 Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` validates only when `fieldType` is present. A literal filename or hand-built attachment object remains literal and does not resolve upstream.
@@ -129,7 +129,7 @@ Declare an output, add an End node, connect the extract node, then bind the outp
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
-uip maestro flow nodes create <file> core.control.end --label 'End' --output json
+uip maestro flow nodes create <file> core.control.end --label 'End' --position <x>,<y> --output json
 uip maestro flow edges create <file> <extract-id> <end-id> --output json
 ```
 
@@ -182,7 +182,7 @@ Never hand-write `processorKey` or give a node another node's key as its own. Ea
 A second node with identical fields and model settings shares the existing node's processor rather than copying its taxonomy; supply both inputs at creation, since nothing adds them later:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --position <x>,<y> --output json
 ```
 
 A read-only node has no resource or taxonomy; it runs the author's processor. `nodes schema set` changes nothing that deploys when run on it.
