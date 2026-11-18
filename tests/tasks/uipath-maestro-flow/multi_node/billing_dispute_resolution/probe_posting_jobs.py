@@ -15,7 +15,7 @@ invoice, so a job in the window is evidence, not proof, that THIS run made it.
   overcharge       passes when at least one such job is Successful.
   no-discrepancy   passes when there is none.
 
-Usage: probe_posting_jobs_sw_ga.py overcharge|no-discrepancy
+Usage: probe_posting_jobs.py overcharge|no-discrepancy
 """
 import json
 import subprocess
@@ -84,7 +84,7 @@ def verdict(case, matched):
 
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in CASES:
-        sys.exit(f"usage: probe_posting_jobs_sw_ga.py {'|'.join(CASES)}")
+        sys.exit(f"usage: probe_posting_jobs.py {'|'.join(CASES)}")
     case = sys.argv[1]
     try:
         with open(WINDOW_FILE.format(case=case)) as f:

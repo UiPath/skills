@@ -1,6 +1,14 @@
 task_id: skill-flow-devcon-billing-discrepancy-detector
 description: |
-  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that queries the BillingDisputeERP and BillingDisputeCRM entities as parallel branches joined by a merge, then computes an invoice overcharge; graded by validate plus one flow debug run against seeded tenant data.
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
+  queries the BillingDisputeERP and BillingDisputeCRM entities in parallel and
+  computes an invoice overcharge, asked the way a Studio Web user would ask it.
+  The grader runs the flow once under debug against seeded tenant data and
+  checks what the run did: the ERP and CRM queries and their merge each
+  completed, and the four named outputs carry the live values. It also checks
+  that the agent ran its own test run, as the request asks. Text between the
+  helper markers is lower-tier guidance (experiments/use-case-tiers.yaml) and
+  is not graded.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -9,6 +17,7 @@ tags:
   - shape:multi-node
   - connector
   - path-to-ga
+  - outcome-graded
 sandbox:
   template_sources:
     - type: template_dir
@@ -25,48 +34,36 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
-  name) that checks a disputed invoice line against the contracted amount and
-  pulls the customer's account tier.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
+  is present, and nobody will answer a question or grant approval, so do not
+  ask, do not pause, and do not wait for input.
 
-  - Inputs: trigger variables `invoiceNumber` (string), `accountNumber`
-    (string), `disputedLineNumber` (number), `disputedUnitPrice` (number),
-    `disputedQuantity` (number).
-  - Look up two existing Data Service entities:
-      - `BillingDisputeERP` — rows for `invoiceNumber`; each has a `lineNumber`
-        and contracted `amount`.
-      - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
-        `accountTier`.
-  - The two lookups are independent. Run them as parallel branches that fan out
-    from the trigger and rejoin at a merge before the End node computes the
-    result — do not chain them one after the other.
-  - Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
-    the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
-    `totalOvercharge` = invoiced minus contracted when positive, else 0;
-    `discrepancyCount` = 1 when overcharge is positive, else 0.
-  - Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
-    `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
-    CRM).
+  Build an automation called "BillingDiscrepancyDetector" that checks a
+  disputed invoice line against the contracted amount and pulls the customer's
+  account tier.
 
-  Build both lookups on the Data Service `query-entity-records` activity, not
-  the native Data Fabric nodes: the tenants this ships to do not all enable
-  them.
+  - Inputs are the trigger variables: invoiceNumber, accountNumber,
+    disputedLineNumber, disputedUnitPrice, disputedQuantity.
+  - Invoice and customer information can be found in Data Services:
+    - BillingDisputeERP has records for each invoice number; each with line
+      number and contracted amount.
+    - BillingDisputeCRM holds rows for account numbers, and it has the account
+      tier. You should query the two databases in parallel.
 
-  Validate the final flow file — the task is not complete until `uip maestro
-  flow validate` passes. Grading then runs the flow under debug against live
-  tenant data, so build it to actually run, not merely validate.
+  How to compute the disputed amount: invoiced = `disputedUnitPrice` x
+  `disputedQuantity`; contracted = the `amount` of the ERP row whose
+  `lineNumber` equals `disputedLineNumber`; `totalOvercharge` = invoiced minus
+  contracted when positive, otherwise 0; `discrepancyCount` = 1 when overcharge
+  is positive, else 0.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  - Outputs: totalOvercharge, discrepancyCount, matchedInvoiceNumber,
+    accountTier
+
+  <!-- helper:start -->
+  disputedLineNumber, disputedUnitPrice and disputedQuantity are numbers.
+  <!-- helper:end -->
+
+  Build and do a test run of the automation.
 pre_run:
   - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
     timeout: 120
@@ -79,8 +76,15 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  - type: command_executed
+    description: The agent ran its own test run (uip maestro flow debug), as the request asks
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
   - type: run_command
-    description: Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise
+    description: 'Effects: one debug run in which the ERP query, the CRM query and their merge each completed, and the named outputs are totalOvercharge=1610, discrepancyCount=1, matchedInvoiceNumber=MCS-2026-04872, accountTier=Enterprise'
     command: python3 $REFERENCE_DIR/multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py
     timeout: 600
     expected_exit_code: 0

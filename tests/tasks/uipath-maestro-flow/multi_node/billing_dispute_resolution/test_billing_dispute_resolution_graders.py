@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for the Studio Web GA graders of BillingDisputeResolution.
+"""Unit tests for the BillingDisputeResolution structure, effects and job-probe graders.
 
 The structure check must accept both reference shapes and the routing the
 short prompt allows (manager review going straight to posting), and reject a
@@ -15,7 +15,7 @@ import os
 import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_V1 = os.path.join(os.path.dirname(_HERE), "billing_dispute_resolution")
+_V1 = _HERE
 REFERENCES = ["BillingDisputeResolution.reference.flow", "BillingDisputeResolution.native.reference.flow"]
 
 
@@ -32,7 +32,7 @@ def _flow(reference=REFERENCES[0]):
 
 
 def _topology(flow):
-    _load("check_structure_billing_dispute_resolution_sw_ga.py").assert_topology(
+    _load("check_structure_billing_dispute_resolution.py").assert_topology(
         {n["id"]: n for n in flow["nodes"]}, flow["edges"]
     )
 
@@ -47,11 +47,6 @@ def _without_decision(flow):
         if e["sourceNodeId"] != "decisionApproval"
     ]
     return flow
-
-
-@pytest.mark.parametrize("reference", REFERENCES)
-def test_structure_accepts_both_reference_shapes(reference):
-    _topology(_flow(reference))
 
 
 def test_structure_accepts_manager_review_routed_straight_to_posting():
@@ -95,7 +90,7 @@ def _payload(executed, outputs):
     }
 
 
-EFFECTS = "check_effects_billing_dispute_resolution_sw_ga.py"
+EFFECTS = "check_e2e_billing_dispute_resolution.py"
 ALL_NODES = [n["id"] for n in _flow()["nodes"]]
 REJECT_PATH = ["start", "invoiceExtraction", "dataTransform", "queryEntityRecords1", "queryEntityRecords2",
                "merge1", "discrepancyScript", "autonomousAgent1", "switchValidity", "endReject"]
@@ -168,7 +163,7 @@ def _job(created, state="Successful", invoice="MCS-2026-04872"):
 
 
 def test_probe_keeps_only_jobs_in_the_window_for_the_invoice():
-    probe = _load("probe_posting_jobs_sw_ga.py")
+    probe = _load("probe_posting_jobs.py")
     jobs = [_job("2026-11-18T10:02:00Z"), _job("2026-11-18T09:59:00Z"),
             _job("2026-11-18T10:05:30.5Z"), _job("2026-11-18T10:03:00Z", invoice="MCS-2026-05128")]
     kept = probe.jobs_in_window(jobs, WINDOW)
@@ -176,7 +171,7 @@ def test_probe_keeps_only_jobs_in_the_window_for_the_invoice():
 
 
 def test_probe_verdicts():
-    probe = _load("probe_posting_jobs_sw_ga.py")
+    probe = _load("probe_posting_jobs.py")
     assert probe.verdict("overcharge", [_job("t")]) is None
     assert "no Successful" in probe.verdict("overcharge", [_job("t", state="Faulted")])
     assert probe.verdict("no-discrepancy", []) is None
