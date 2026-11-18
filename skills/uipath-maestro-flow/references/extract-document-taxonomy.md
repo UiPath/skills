@@ -203,7 +203,7 @@ These limits are not CLI-enforced but improve extraction:
 - **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve supplied ids and assign a missing entry the id of the same-named replaced entry.
 - **Model settings:** It rebuilds them from `inputs.modelConfig`.
 - **Validation:** A non-schema or limit violation returns exit 3 and changes nothing on disk.
-- **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to bypass this.
+- **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop; the request is not done. Run no `nodes provision` either: it writes `inputs.processorKey` into the node. Report a missing processor instead. Never hand-edit `inputs.schemaDocument` to bypass this.
 
 ## Editing a taxonomy that already exists
 
