@@ -46,9 +46,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
   "A variable is unresolved" on the canvas, and `validate` passes with at most a
-  `VARIABLE_NOT_SET` warning (none for a loop's collection): fix it, never wave it off. On the
-  start event, map each input the steps read into a variable scoped to that event, as the canvas
-  does, and read that variable downstream. When the start event already maps the input (a
+  `VARIABLE_NOT_SET` warning: fix it, never wave it off. On the start event, map each input the
+  steps read into a variable scoped to that event, as the canvas does, and read that variable
+  downstream. When the start event already maps the input (a
   canvas-made process), read that row's `var`; add no second row.
   ```ts
   .input('amount', 'number')

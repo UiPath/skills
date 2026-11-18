@@ -45,7 +45,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The start values are process inputs (otherwise the scope check is vacuous)"
+    description: "The start values are process inputs, mapped by the start event and read by a later step (otherwise the scope check is vacuous)"
     command: "python3 $REFERENCE_DIR/expressions/input_scope/check_inputs_declared.py ParkingFee.bpmn 2"
     timeout: 30
     expected_exit_code: 0

@@ -33,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
-RESULT_READ = re.compile(r"^=(result|response|Error|bindings\.|iterator|jsonString:)")
+RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")
 FORM_INPUT = re.compile(r"^=vars\.[\w.\[\]]+$")
