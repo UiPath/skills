@@ -12,6 +12,8 @@ A later edit that brings the old wording back fails here.
   current directory, so it runs where `prepare` ran.
 * Only an Enabled connection may be bound.
 * Outlook `saveAsDraft` must be set explicitly.
+* Every authored expression is `=js:`: the designer opens a plain `=` in its
+  C# editor (PO.Frontend `JAVASCRIPT_PATH_PREFIX`).
 * Retry is activity configuration, never a drawn loop, and an `errorMapping`
   row names a declared error's id, never a bare status code: `code: '429'`
   validates and retries nothing.
@@ -97,6 +99,26 @@ def test_error_mapping_names_a_declared_error(path: Path) -> None:
     )
 
 
+# A quoted `=vars.` read: an authored expression without `=js:`.
+PLAIN_VARS_READ = re.compile(r"[\"'`]=vars\.")
+# A real canvas import keeps the canvas's own (C#) expressions; the rule quotes
+# the wrong form once, to warn against it; a start event's row that maps a
+# process input is written plain by the canvas.
+CANVAS_IMPORT = "InvoiceApproval.bpmn.ts"
+JS_WARNING = '`=vars.d.toLowerCase() == "approve"`'
+
+
+@pytest.mark.parametrize("path", [p for p in DOCS if p.name != CANVAS_IMPORT], ids=_id)
+def test_authored_expressions_are_javascript(path: Path) -> None:
+    hits = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if PLAIN_VARS_READ.search(line.replace(JS_WARNING, ""))
+        and not re.search(r"start[ -]?event", line, re.IGNORECASE)
+    ]
+    assert not hits, f"{_id(path)} writes a plain `=vars.` expression (opens in the C# editor): {hits}"
+
+
 REQUIRED = [
     ("references/bpmn-runtime.md", "JSON **string**"),
     ("references/bpmn-runtime.md", "not the entry point's `DisplayName`"),
@@ -113,6 +135,7 @@ REQUIRED = [
     ("references/bpmn-runtime.md", "A process returns only what its end event maps"),
     ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
     ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-for-methods"),
+    ("references/bpmn-runtime.md", "Write every expression you author as `=js:` JavaScript, in any field"),
     ("references/bpmn-runtime.md", "RULE:bpmn.hitl.no-completer-identity"),
     ("references/patterns/high-volume-batch-guide.md", "Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`"),
     ("references/patterns/high-volume-batch-guide.md", "the inner key stays `item`"),
