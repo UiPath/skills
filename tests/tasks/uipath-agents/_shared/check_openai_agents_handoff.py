@@ -92,7 +92,11 @@ def check_openai_agents_json() -> tuple[Path, str]:
     The skill guide allows `<file>:<symbol>` where the symbol is a variable
     OR a function that returns an Agent. Only the function form preserves
     the lazy-LLM-init invariant, so require the symbol to resolve to a
-    top-level function def — under any name (`main`, `agent`, ...).
+    top-level function def — under any name (`main`, `agent`, ...) — or to
+    a top-level alias of one (`agent = main`, keeping the scaffold's
+    `main.py:agent` mapping). An alias binds the function, not an Agent, so
+    nothing is built at import; the returned symbol is the aliased function
+    so later checks inspect its body.
     """
     doc = _load_json(ROOT / "openai_agents.json")
     agents = doc.get("agents") or {}
@@ -107,13 +111,30 @@ def check_openai_agents_json() -> tuple[Path, str]:
     file_part, symbol = target.split(":", 1)
     factory_path = ROOT / file_part
     tree = ast.parse(_read_text(factory_path), filename=str(factory_path))
+    functions = {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    if symbol in functions:
+        print(
+            f"OK: openai_agents.json registers an agent -> {target!r} "
+            f"(factory function `{symbol}`)"
+        )
+        return factory_path, symbol
+    # The last top-level binding wins at import, so judge that one.
+    alias_value = None
     for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == symbol:
-            print(
-                f"OK: openai_agents.json registers an agent -> {target!r} "
-                f"(factory function `{symbol}`)"
-            )
-            return factory_path, symbol
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == symbol for t in node.targets
+        ):
+            alias_value = node.value
+    if isinstance(alias_value, ast.Name) and alias_value.id in functions:
+        print(
+            f"OK: openai_agents.json registers an agent -> {target!r} "
+            f"(`{symbol}` aliases factory function `{alias_value.id}`)"
+        )
+        return factory_path, alias_value.id
     assigned = {
         t.id
         for node in tree.body
