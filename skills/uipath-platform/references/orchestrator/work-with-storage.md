@@ -120,7 +120,7 @@ uip or bucket-files upload <bucket-key> "data/config.json" \
 
 ### List Files
 
-`bucket-files list` has two modes. Pick by what you need:
+`bucket-files list` reads through two APIs: a paged listing (default, `--prefix`) and the directory API (`--directory`). Pick by need:
 
 | Need | Use | Sub-folders |
 |------|-----|-------------|
@@ -146,7 +146,7 @@ uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --directory "reports" --recursive --output json
 ```
 
-`--directory` lists **one level only** unless `--recursive` is given. `--directory "/"` without `--recursive` returns `Items: []` for a bucket whose files all sit in sub-folders, even though the bucket is not empty. To find files, prefer the default mode or `--prefix`. Use `--directory` when you want one level on purpose, and pair it with `list-dirs` to walk the tree. `--recursive` without `--directory` is rejected (`ValidationError`, exit 3), because the default listing already includes sub-folders.
+`--directory` lists **one level only** unless `--recursive` is given (see [Common Pitfalls](#common-pitfalls)). To find files, prefer the default mode or `--prefix`. Use `--directory` when you want one level on purpose, and pair it with `list-dirs` to walk the tree. `--recursive` without `--directory` is rejected (`ValidationError`, exit 3), because the default listing already includes sub-folders. If `--recursive` is rejected as an unknown option (a CLI older than the flag), drop `--directory` and use `--prefix <path>`: that listing includes sub-folders too.
 
 The default and `--prefix` modes use **continuation-token pagination** (not offset/limit). Check the response for a continuation token and pass it back:
 
@@ -166,7 +166,7 @@ uip or bucket-files list-dirs <bucket-key> --folder-path "Finance" \
   --directory "reports" --file-name-glob "*.csv" --output json
 ```
 
-Unlike `list`, `list-dirs` uses standard `--limit` / `--offset` pagination.
+Unlike `list`'s continuation tokens, `list-dirs` uses standard `--limit` / `--offset` pagination.
 
 ### Get Metadata, Download, Delete
 
@@ -286,7 +286,7 @@ uip or bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 
 - **`buckets list` requires either `--folder-path`/`--folder-key` or `--all-folders`.** No-flag invocations error out — there is no implicit cross-folder default.
 - **File paths containing `&`, `+`, `%`, or `?` are rejected by the CLI.** The Orchestrator storage API builds presigned blob URIs without re-encoding URL-reserved characters, so such paths are silently corrupted server-side while the API reports success (`a&b.txt` is truncated to `a`; `+` and `%xx` decode to other characters; delete then operates on the corrupted name). The CLI refuses these paths up front on every path-taking command (`upload`, `download`, `delete`, `get`, `get-download-url`, `get-upload-url`). Rename files to avoid these characters. The same corruption applies when calling the REST API directly — the only REST workaround is double-URL-encoding the `path` parameter, which will break when the server-side fix lands; prefer renaming.
-- **`bucket-files list --directory` stops at one level.** An empty `Items` from `--directory` does not mean the bucket or directory is empty: the files may be in sub-folders. Add `--recursive`, or list without `--directory` (optionally with `--prefix`).
+- **`bucket-files list --directory` stops at one level.** An empty `Items` from `--directory` (even `--directory "/"`) does not mean the bucket or directory is empty: the files may be in sub-folders. List without `--directory`, narrowing with `--prefix <path>` (works on every CLI version), or add `--recursive`.
 - **`--directory` takes no trailing slash.** `--directory "reports/"` fails with `HTTP 400: Invalid blob file path` on both `list` and `list-dirs`; write `--directory "reports"` (or `"/reports"`). Use `"/"` for the bucket root. `--prefix` accepts a trailing slash.
 - **`download` without `--destination`** writes to stdout. For binary files, always use `--destination`.
 - **External providers** (Azure, Amazon) require `--credential-store-key`. Use `uip or credential-stores list` to find keys.
