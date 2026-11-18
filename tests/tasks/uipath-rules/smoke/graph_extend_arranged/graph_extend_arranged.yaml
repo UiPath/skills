@@ -1,0 +1,63 @@
+task_id: skill-rules-smoke-graph-extend-arranged
+description: >
+  Agent adds a third decision to a Business Rules project that already holds a
+  two-decision graph whose diagram the user arranged by hand, offline. Grades
+  every shape the user placed staying where it was, no two cards overlapping
+  at the size the designer draws them, the published entry points being kept,
+  the new decision requiring the risk band, all three decisions' values on the
+  policy cases, and `uip rules validate` run by the grader.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  The `LoanRules/` folder is our UiPath Business Rules project. It decides a
+  risk band and an interest rate, and I arranged its diagram in Studio Web the
+  way I want it. Add an approval decision to the same rule:
+
+  - Inputs: the risk band and a new input `debtRatio` (number).
+  - Output: `approved` (boolean).
+  - A High risk application is not approved.
+  - Any other application is approved when the debt ratio is 0.45 or less.
+
+  Everything else stays as it is. There is no tenant to evaluate against, so
+  do not run `uip rules debug`. Do not ask for confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "The user's shapes are where they were, no cards overlap, and the published entry points are kept"
+    command: "python3 $REFERENCE_DIR/smoke/graph_extend_arranged/check_graph_extend_arranged.py diagram"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The approval decision requires the band decision and all three decisions return the policy's values"
+    command: "python3 $REFERENCE_DIR/smoke/graph_extend_arranged/check_graph_extend_arranged.py behavior"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate LoanRules"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not re-scaffold the existing project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    weight: 1.0
+    pass_threshold: 1.0
