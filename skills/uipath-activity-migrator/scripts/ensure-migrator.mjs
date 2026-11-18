@@ -20,7 +20,8 @@
 // Exit:  0 ok, 1 error, 3 missing. No dependencies. Node 18+.
 //
 // The migrator ships inside Helm, which uip installs with rpa-tool: `uip rpa project migrate analyze|upgrade|bulk|version`
-// forwards its arguments to `UiPath.Studio.Helm.exe migrate`, and uip resolves the dotnet Helm runs on. The script asks
+// forwards its arguments to `UiPath.Upgrade.exe` in Helm's folder (Helm's apphost under another name), on the dotnet
+// uip resolves for Helm. The script asks
 // `uip rpa project migrate version`. The public archive of the standalone UiPath.Upgrade.exe is the fallback for a
 // machine without uip, a uip without `project migrate`, a uip without Helm (helm-missing), or a Helm without the verb.
 //
