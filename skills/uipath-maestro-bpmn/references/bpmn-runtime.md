@@ -79,15 +79,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   under `Amount`. Leave `name` off unless the caller's key is meant to differ from the id.
 
 <!-- RULE:bpmn.variables.node-output-declares-itself -->
-- **Do not declare a variable for a node's own output.** A start-event row is the exception:
-  it does not declare its variable, so its `.var()` stays (see
-  `bpmn.variables.inputs-through-start` above). An output row declares the variable it
-  fills: the compiler derives a declaration from the row, attributed to that node, with the
-  row's `name` and `type`. Writing a `.var()` beside the node for the same
-  id states the same thing twice and makes it the author's declaration instead of the
-  node's. Where the variable carries a JSON Schema, put it on the ROW as `varSchema` —
-  the platform writes the shape on the declaration and not on the row, so `varSchema` is
-  what reaches it:
+- **Do not declare a variable for a node's own output.** An output row declares the
+  variable it fills: the compiler derives a declaration from the row, attributed to that
+  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the
+  same id states the same thing twice and makes it the author's declaration instead of
+  the node's. A start-event row is the exception: it does not declare its variable, so
+  its `.var()` stays (see `bpmn.variables.inputs-through-start` above). Where the
+  variable carries a JSON Schema, put it on the ROW as `varSchema` — the platform writes
+  the shape on the declaration and not on the row, so `varSchema` is what reaches it:
 
   ```ts
   outputRows: [{ name: 'response', type: 'jsonSchema', var: 'act_response',
@@ -99,11 +98,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   the author's with `custom="true"`.
 
 <!-- RULE:bpmn.variables.element-id-is-placement -->
-- `elementId` is placement, not scope. The runtime seeds every declaration into one flat
-  namespace and resolves `vars.<id>` there whatever it says, and an id is unique across
-  the whole document — so two elements cannot each own a `response`. What it decides is
-  which element the declaration BELONGS to, which is what the canvas and
-  `uip maestro bpmn validate` read (1.203 requires one).
+- `elementId` is placement to the runtime and scope to the canvas. The runtime seeds
+  every declaration into one flat namespace and resolves `vars.<id>` there whatever it
+  says, and an id is unique across the whole document — so two elements cannot each own
+  a `response`. What it decides is which element the declaration BELONGS to, which is
+  what the canvas and `uip maestro bpmn validate` read (1.203 requires one; see
+  `bpmn.variables.inputs-through-start`).
 
 <!-- RULE:bpmn.variables.array-forms -->
 - `.vars([…])`, `.bindings([…])` and `.schemas([…])` take the whole block at once, with
