@@ -1,7 +1,7 @@
 <!--skill-flavor:sdk-project-layout:start-->
 **In Studio Web the builder SDK is built in.** `uip maestro flow check`, `compile`, `decompile` and `merge` run `@uipath/maestro-builder-sdk` inside the page. Install nothing: no `npm` or Node.
 
-**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Create a Flow project only when the user asks for one, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `new.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
+**The open solution is the workspace.** `/solution` is the Studio Web solution the user has open; never create another, and never copy a project out of it. Each project is a folder `/solution/<Project>/`. Build there even when the shell starts in `/sandbox`; `.flow-sdk/` source and the final `.flow` too. Create a Flow project only when the user asks for one, never because the request names the flow ("a Maestro Automate called CronCop"): `uip maestro flow init <Project>` creates it through Studio Web and seeds a trigger-only `new.flow`. Run `uip maestro flow init <Project> --automate` when the request names **Maestro Automate** as the product. A project you fill keeps its type: if the request names Maestro Automate and `/solution/<Project>/.maestro_automate` is missing, keep building, then tell the user to switch Build as to Maestro Automate.
 
 **Edit the open flow.** Each turn's context gives:
 
@@ -116,7 +116,7 @@ uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```
 
-**A flow holding an Extract document node skips this round trip** — merge's in-memory baseline compile fails on that node; use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
+**An Extract document node** takes this round trip unless merge's in-memory baseline compile fails on it (SDK before 6.118.0); then use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop an edit: [undo](references/brownfield.md#dropping-an-edit). A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 
