@@ -132,7 +132,7 @@ Prepare a target only when the user asks for it or agrees when asked (Rule 11). 
 3. **Confirm each change with the user before making it** — every change alters shared tenant configuration. No free unattended license in the tenant → stop and tell the user; never take a license from another machine.
 4. **Never ask the user for a password.** Unattended Robot → the user or an administrator enters the Windows credentials in the Orchestrator web UI. Interactive Sign-In Robot → password is the fixed value `password`; username per OS (§ Interactive Sign-In Robot with a User Account (On Request Only) item 4).
 5. **Shared folder only (e.g. `Shared`)** — never prepare a target only in a Personal Workspace.
-6. **Robot 26.10 or later required.** Read the version from the machine's session in Orchestrator. Older → ask the user to upgrade the Robot; stop until done.
+6. **Robot 26.10.0 or later** — the floor for every remote target (§ Discovering Option Values, step 3). Older → ask the user to upgrade the Robot; stop until done.
 7. **Steps on the machine belong to the user** — installing or upgrading the Robot, connecting it to Orchestrator, signing in. Tell the user what to do and wait for confirmation.
 
 ### Unattended Robot with a Robot Account (Recommended)
@@ -140,7 +140,7 @@ Prepare a target only when the user asks for it or agrees when asked (Rule 11). 
 1. **Robot account assigned directly to the shared folder**, with a role that can run jobs. No robot account → ask the user whether to create one; robot accounts are created in Identity (the `uipath-admin` skill), then assigned to the folder (`uipath-platform`).
 2. **Foreground automation enabled** — the robot's unattended setup holds Windows credentials (the Windows account it runs as). Without them the robot is background-only: `hasCredentials: false` in `remote targets`, and the session fails with `Foreground process requires you to have an unattended robot with credentials defined`. Credentials come from the user or an administrator (item 4 of § Rules for Preparing a Target).
 3. **Machine in the same folder with an unattended license** — the machine or machine template is assigned to the folder and has at least one unattended runtime.
-4. **Robot 26.10+ connected as unattended** — its host shows `Available` in `remote targets`.
+4. **Robot 26.10.0+ connected as unattended** — its host shows `Available` in `remote targets`.
 
 ### Interactive Sign-In Robot with a User Account (On Request Only)
 
@@ -155,7 +155,7 @@ Only when the user asks to convert a user account to unattended — the user's o
    - **OS unknown** → ask the user.
 
    Orchestrator rejects `.` as the username.
-5. **Robot 26.10+ signed in with that account** — another user's account → its owner signs in on their machine (item 7 of § Rules for Preparing a Target); its host shows `Available` in `remote targets`.
+5. **Robot 26.10.0+ signed in with that account** — another user's account → its owner signs in on their machine (item 7 of § Rules for Preparing a Target); its host shows `Available` in `remote targets`.
 
 ### Verify the Prepared Target
 
@@ -245,7 +245,9 @@ Look up each value the user has not named with these read-only commands, in orde
 
    When the user already named the robot or machine, narrow the listing: `--robot "<ROBOT_NAME>"` lists only the machines that robot can use and the hosts that serve it — the same check `configure --robot` runs; `--machine "<MACHINE_NAME>"` lists only that machine's hosts.
 
-Then apply Rule 3: present the candidates and ask the user which to use. Offer only machines with at least one `Available` host — `configure` rejects a machine with no connected host; for Remote Run Only, `Serverless` machines are usable too. Empty `robots`, or no usable row in `targets`, means the folder has no usable robot or host; ask the user whether to prepare a target in that folder or use another folder (Rule 11). On `not authenticated` / `401` / `403`, sign in per Rule 6 and retry.
+3. **Robot version of each candidate host** — every remote target, in both modes, needs Robot 26.10.0 or later on the host, also when the user named the target. `remote targets` does not report the version: read it from the host's session in Orchestrator through the `uipath-platform` skill, or ask the user to check it in the Orchestrator web UI when that skill is unavailable. Older → the host is not usable: ask the user to upgrade the Robot on it, or pick another host.
+
+Then apply Rule 3: present the candidates and ask the user which to use. Offer only machines with at least one `Available` host on Robot 26.10.0 or later (step 3) — `configure` rejects a machine with no connected host; for Remote Run Only, `Serverless` machines are usable too. Empty `robots`, or no usable row in `targets`, means the folder has no usable robot or host; ask the user whether to prepare a target in that folder or use another folder (Rule 11). On `not authenticated` / `401` / `403`, sign in per Rule 6 and retry.
 
 ### Configure Errors
 
