@@ -137,7 +137,7 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5a. Only when step 1 seeded a template or the user chose *replace*: lay out the whole diagram, then run step 4 again
+# 5a. Only when step 1 seeded a template, the target was empty, or the user chose *replace*: lay out the whole diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn --relayout
 # 5b. Only when step 4 reports BPMN_PARSE_ERROR with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: add the missing shapes, then run step 4 again
 uip maestro bpmn format <Name>.bpmn

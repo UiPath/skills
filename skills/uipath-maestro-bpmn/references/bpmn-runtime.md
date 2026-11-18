@@ -599,7 +599,7 @@ binding half, which is the same for every connector-backed node.
   `Orchestrator.Start*Process` type with a process binding.
 
 <!-- RULE:bpmn.brownfield.format -->
-- Do not relay out a merged process. `merge` keeps every shape and edge of the
+- Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
   no room for a new shape and shifts the shapes below it, and reroutes an existing edge
   whose flow the edit rewired), and draws the shapes of the elements the

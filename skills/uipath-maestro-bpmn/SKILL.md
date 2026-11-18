@@ -325,7 +325,7 @@ uip maestro bpmn refresh <Project> --output json   # entry-points.json + operate
 uip maestro bpmn validate <Project>/<Name>.bpmn --output json
 ```
 
-Editing an existing process: first `decompile` it ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), edit, run both `check` lines, then `merge` in place of the `compile` and `format` lines, then `refresh` and `validate`; `format` only when one of them reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, then run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset.
+Editing an existing process: first `decompile` it ([Brownfield](references/bpmn-runtime.md#brownfield-editing)), edit, run both `check` lines, then `merge` in place of the `compile` and `format` lines, then `refresh` and `validate`; `format` without `--relayout` only when one of them reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, then run `refresh` and `validate` again; on a CLI whose `format --help` lists no `--relayout`, unless the report was `No diagrams found`, tell the user the canvas layout was reset.
 
 With connector nodes, run `check` and `compile` from the directory `prepare` ran in ([Connectors §3](references/connectors.md#3-the-loop-author--check--prepare--check--compile)).
 <!--skill-flavor:validation-loop:end-->

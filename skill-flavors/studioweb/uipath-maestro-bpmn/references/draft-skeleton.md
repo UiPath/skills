@@ -4,7 +4,7 @@
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
-4. Run steps 2 to 5 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
+4. Run steps 2 to 4 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
    Merge keeps the shapes the user already has on the canvas. An empty target is an exception: compile straight over it, then lay it out with `format`.
    A target that held only one start event and at most one end event (a template) takes `format <Name>.bpmn --relayout` after the merge, then `refresh` and `validate` again: it has no layout of the user's to keep.
    `validate` must report `Status: Valid`.
