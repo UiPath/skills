@@ -118,16 +118,12 @@ For a Serverless robot, tell the user Live Authoring is not supported on it and 
 
 ## Prepare a Remote Target in Orchestrator
 
-**Preferred approach: Unattended Robot with a robot account. A user account is used only on the user's request.**
-
 Prepare a target only when the user asks for it or agrees when asked (Rule 11). Ask when § Discovering Option Values finds no usable robot or host, or when the intended robot shows `hasCredentials: false`. Pick the scenario:
 
 | Scenario | Robot identity | Machine | Use | Checklist |
 |---|---|---|---|---|
 | Unattended Robot with a robot account (**preferred**) | Robot account; Robot connected as unattended (machine key or client credentials) | Dedicated VM or server | Default — the one to offer | § Unattended Robot with a Robot Account (Recommended) |
 | Interactive Sign-In Robot with a user account (on request only) | User account — the user's own or any other user account; Robot signed in with interactive sign-in | The machine where that account signs in to the Robot | Only when the user asks to convert a user account to unattended | § Interactive Sign-In Robot with a User Account (On Request Only) |
-
-Never propose converting a user account to unattended; recommend the robot account instead.
 
 ### Rules for Preparing a Target
 
