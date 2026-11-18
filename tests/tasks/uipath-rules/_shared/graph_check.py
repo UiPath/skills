@@ -6,12 +6,14 @@ A graph is one `.dmn` whose decisions are linked by `informationRequirement`.
 grade what each decision returns instead of how the agent named or shaped it.
 The diagram checks compare `DMNShape` positions with the fixture the task
 started from. `graph_check.py chain` grades a freshly authored LoanRules
-project; `graph_check.py names` checks every table's rule annotations.
+project; `graph_check.py names` checks every table's rule annotations;
+`graph_check.py engine` asks the rules engine for the LoanRules values.
 """
 
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -222,6 +224,37 @@ def check_all_named(root: ET.Element) -> None:
         check_named_rules(decision.find("dmn:decisionTable", NS))
 
 
+# One case per rate row. Each `rules debug` uploads the solution, so the engine grade keeps to these.
+ENGINE_CASES = [case for case in LOAN_CASES if case[0]["loanAmount"] != 99999
+                and (case[0]["creditScore"], case[0]["income"]) in ((550, 90000), (580, 50000), (700, 0))]
+
+
+def engine_outputs(project: Path, inputs: dict) -> dict:
+    """What `uip rules debug` returns for `inputs`: every decision's outputs by output name."""
+    completed = subprocess.run(
+        ["uip", "rules", "debug", str(project), "--inputs", json.dumps(inputs), "--output", "json"],
+        capture_output=True, text=True, timeout=180,
+    )
+    if completed.returncode != 0:
+        fail(f"rules debug exited {completed.returncode} for {inputs}: {(completed.stdout or completed.stderr)[-1500:]}")
+    result = (json.loads(completed.stdout).get("Data") or {}).get("result") or {}
+    outputs: dict = {}
+    for decision in result.get("decisions") or []:
+        value = decision.get("outputs")
+        outputs.update(value if isinstance(value, dict) else {decision.get("decisionName"): value})
+    return outputs
+
+
+def grade_engine() -> None:
+    project = find_project(LOAN_PROJECT)
+    for inputs, expected in ENGINE_CASES:
+        actual = engine_outputs(project, inputs)
+        for name, value in expected.items():
+            if actual.get(name) != value:
+                fail(f"the engine returned {name}={actual.get(name)!r} for {inputs}, expected {value!r}; it returned {actual}")
+    print(f"OK: the engine returns the expected risk band and interest rate for all {len(ENGINE_CASES)} cases")
+
+
 def grade_chain() -> None:
     project = find_project(LOAN_PROJECT)
     dmn_file, root = load_graph(project)
@@ -237,8 +270,10 @@ if __name__ == "__main__":
     name = sys.argv[2] if len(sys.argv) > 2 else LOAN_PROJECT
     if mode == "chain":
         grade_chain()
+    elif mode == "engine":
+        grade_engine()
     elif mode == "names":
         check_all_named(load_graph(find_project(name))[1])
         print("OK: every rule of every decision carries an annotation")
     else:
-        fail("mode: chain | names [project]")
+        fail("mode: chain | engine | names [project]")

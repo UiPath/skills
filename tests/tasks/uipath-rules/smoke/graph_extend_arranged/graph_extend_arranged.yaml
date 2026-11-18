@@ -25,7 +25,8 @@ initial_prompt: |
   - Inputs: the risk band and a new input `debtRatio` (number).
   - Output: `approved` (boolean).
   - A High risk application is not approved.
-  - Any other application is approved when the debt ratio is 0.45 or less.
+  - Any other application is approved when the debt ratio is 0.45 or less,
+    and not approved above that.
 
   Everything else stays as it is. There is no tenant to evaluate against, so
   do not run `uip rules debug`. Do not ask for confirmation.
