@@ -91,6 +91,19 @@ CASEPLAN_EDITS = [
     "python3 -c \"open('P/caseplan.json',encoding='utf8',mode='w')\"",
     "python3 -c \"Path('P/caseplan.json').open('w')\"",
     "python3 -c \"(Path('P')/'caseplan.json').write_text('x')\"",
+    "python3 -c \"open(os.path.join(os.getcwd(),'x','caseplan.json'),'w')\"",
+    "python3 -c \"open(str(Path('a')/'caseplan.json'),'w')\"",
+    # A built path in a variable, written through it (caught on main).
+    "python3 -c \"f='a/caseplan.json'; Path(f).write_text(s)\"",
+    "python3 -c \"f=f'{d}/caseplan.json'; open(f,'w')\"",
+    "python3 -c \"f=os.path.join(d,'caseplan.json'); open(f,'w')\"",
+    "python3 -c \"f=d+'/caseplan.json'; open(f,'w')\"",
+    "node -e \"const f=`a/caseplan.json`;require('fs').writeFileSync(f,s)\"",
+    # A copy or move onto the artifact.
+    "python3 -c \"f='a/caseplan.json'; shutil.copy('/tmp/x',f)\"",
+    "F=a/caseplan.json; cp /tmp/x $F",
+    "jq . a/caseplan.json > /tmp/p.json && mv /tmp/p.json a/caseplan.json",
+    "cp new.json P/caseplan.json",
     "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
     "ruby -e \"File.write('P/caseplan.json','{}')\"",
 ]
@@ -110,6 +123,8 @@ NOT_CASEPLAN_EDITS = [
     "node -e \"const p='P/caseplan.json';require('fs').writeFileSync('/tmp/x', require('fs').readFileSync(p))\"",
     "python3 -c \"Path('P/caseplan.json').read_text(); Path('/tmp/x').write_text('1')\"",
     "F=P/caseplan.json; sed -n '1,5p' $F",
+    "cp P/caseplan.json /tmp/backup.json",
+    "mkdir -p .flow-sdk/original && cp P/caseplan.case .flow-sdk/original/",
     # Copying the plan aside before editing is the documented baseline step.
     "python3 -c \"import shutil;shutil.copy('P/caseplan.json','/tmp/b')\"",
     "node -e \"require('fs').copyFileSync('P/caseplan.json','.flow-sdk/original/caseplan.json.bak')\"",
@@ -122,15 +137,14 @@ NOT_CASEPLAN_EDITS = [
     "node -e \"console.log(require('crypto').randomUUID())\"",
 ]
 
-# Known misses, kept visible. The guard needs the artifact name inside the edit itself, so
-# an indirect path, a separate script file, or shell redirection escapes it. The
-# redirection/helper-script criterion in artifact_safety_guard catches `python fix.py`,
-# `> caseplan.json` and `tee`; cm_golden_expense has no such criterion.
+# Known misses, kept visible: a glob, a `find -exec`, a separate script file, and shell
+# redirection. The redirection/helper-script criterion in artifact_safety_guard catches
+# `python fix.py`, `> caseplan.json` and `tee`; cm_golden_expense has no such criterion.
 DOCUMENTED_MISSES = [
     "sed -i 's/a/b/' P/*.json",
+    "find P -name caseplan.json -exec sed -i 's/a/b/' {} +",
     "python3 fix.py P/caseplan.json",
     "echo '{}' > P/caseplan.json",
-    "jq '.a=1' P/caseplan.json > t && mv t P/caseplan.json",
 ]
 
 
