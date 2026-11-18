@@ -126,6 +126,9 @@ rules:
   UIP-EVAL-COVERAGE:
     tasks_dir: tests/tasks
     required_tiers: [smoke, e2e]
+  # The required `Skill activation gate` (activation-gate.yml) skips a skill with no baseline and passes.
+  EVAL-GATE-BASELINE:
+    baselines_file: tests/scripts/activation_gate.py
 
 overrides:
   - paths: ["skills/uipath-maestro-bpmn/**"]

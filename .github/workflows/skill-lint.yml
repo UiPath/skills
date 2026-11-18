@@ -91,7 +91,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           repository: UiPath/skill-linter
-          ref: 0a795c758fbe69c537980e308a1124df2909b665  # skill-linter#17, pinned; bump as described above
+          ref: c71f4de02ba32f4a126d6949e4d5a780bbb9e5fa  # skill-linter#19, pinned; bump as described above
           token: ${{ secrets.PAT_LINTER }}
           path: linter
           persist-credentials: false
