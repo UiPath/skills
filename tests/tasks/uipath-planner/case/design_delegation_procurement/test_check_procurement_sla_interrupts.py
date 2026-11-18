@@ -72,6 +72,27 @@ def test_sla_references_skip_prose_shorthand_without_quoted_args():
     assert references == [(4, ["Intake", "Intake SLA"])]
 
 
+def test_sla_references_count_every_call_on_a_line():
+    """A rollup row naming two SLAs yields both, not only the first."""
+    sdd = '| S2 | sla-status-change("Intake","Intake SLA"), sla-status-change("Close","Close SLA") |\n'
+
+    assert sla_references(sdd) == [
+        (1, ["Intake", "Intake SLA"]),
+        (1, ["Close", "Close SLA"]),
+    ]
+
+
+def test_sla_references_reject_or_joined_when_cell():
+    """One trigger per WHEN cell: an OR-joined cell is named, not half-counted."""
+    sdd = (
+        '| sla-status-change("Intake","Intake SLA") OR '
+        'sla-status-change("Close","Close SLA") | — | Yes | Any phase breach |\n'
+    )
+
+    with pytest.raises(SystemExit, match="OR-joins several sla-status-change"):
+        sla_references(sdd)
+
+
 def test_stage_heading_variants_are_recognized():
     sdd = """
 ### Primary Stage 1: Intake
