@@ -1,12 +1,44 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sample hand-off report</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Example hand-off report</title>
 <!--
-  HAND-OFF REPORT TEMPLATE (standalone sample, no data of any project).
-  A generator fills in exactly three places:
-    1. the title element of the head   (the browser tab title)
-    2. the elements with id page-title and page-subtitle   (the header)
-    3. the JSON script block with id report-data   (all report content)
-  Everything else (style, tabs, filter, diagrams) is data independent. See README.md.
+  HAND-OFF REPORT EXAMPLE: a standalone page with placeholder data, no data of any project.
+  Open it in a browser to see it. Light and dark UiPath Apollo themes (System, the default, follows the
+  operating system); diagrams use Mermaid from a public CDN, and without a network their text is shown.
+
+  A generator fills in exactly three places and touches nothing else:
+    1. the title element of the head (the browser tab title);
+    2. h1#page-title (the accent-coloured part in a span) and p#page-subtitle (the header);
+    3. the JSON block script#report-data (all report content). Inside the JSON, write < > & as
+       \u003c \u003e \u0026, so a value can never close the script tag.
+
+  The data block:
+    { "notice": optional text above the tabs, "footer": optional text under the last report,
+      "reports": [ { "title": tab name (required), "id": anchor (default: a slug of the title),
+                     "intro": optional sentence, ...one of the bodies below } ] }
+  Report bodies:
+    columns + rows    a table with a filter. A column is a string or {name, wide}. A cell is a string,
+                      a number or {text, tone: "warn"} (amber). One cell per column; the first column
+                      is shown in the accent colour. "empty": text for a table with no rows.
+    columns + groups  [{name, rows, empty}]: each group a sub-tab with its own count and filter.
+    diagrams          [{title, mermaid}] side by side, with or without a table or groups after them;
+                      "notes": [{title, items}], "legend": [text], "table_title": heading above the table.
+    markdown          a page of Markdown: headings, paragraphs, lists, bold, italic, code, links
+                      (http, https, mailto, #). Everything else, HTML included, shows as plain text.
+                      No filter and no count; the same text is also written to a .md file beside the page.
+  All text is escaped, so a cell cannot carry HTML; line breaks in a cell are kept. A tab's badge counts
+  its rows (all groups added up), or its diagrams; a Markdown tab has none.
+
+  The reports this example holds, in order (the preferences' Hand-off item says what each contains):
+    Overview (Markdown, about 600 to 1000 words, no migration internals); Workflow map;
+    Design decisions (Topic, Decision, Why, Applies to; no configuration answers or preferences);
+    Defect register; TODO list; Deployment open items (groups Set-up, Packages, Queues, Entities,
+    Triggers, Assets, Credential assets, Settings, Deployment notes; an Entities row ends with the
+    entity's definition JSON; Used by names each process with at most three workflows, then +N more,
+    or "(not used in any workflow)"); Structural deviations (groups Added, Removed (not migrated),
+    Changed); Process components (an original and a migrated diagram of processes and queues only,
+    then the groups Components and links, and Queues and data stores).
+  The Excel file holds the seven data reports, one sheet each; the Overview, and the open items
+  (Deployment open items and the TODO list by project), are also written as two .md files.
 -->
 <script>/* theme before first paint: System (default), Light or Dark, remembered in this browser */
 (function(){var k='handoff-theme',t='auto',m=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;try{var v=localStorage.getItem(k);if(v=='light'||v=='dark')t=v}catch(e){}
@@ -96,7 +128,7 @@ tbody tr:hover td{background:var(--fill)}
 .mm-err{color:var(--err);padding:6px 12px;font-size:12px}
 @media (max-width:1000px){.mm-grid{grid-template-columns:1fr}}
 </style></head><body>
-<header><label class="theme">Theme <select id="theme-pick"><option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><h1 id="page-title"><span>Sample</span> hand-off report</h1><p class="sub-title" id="page-subtitle">Standalone sample of the hand-off page: eight reports, each with a filter. All names and values below are placeholders.</p><div class="note" id="page-notice" hidden></div><div class="tabs" role="tablist" id="tab-list"></div></header>
+<header><label class="theme">Theme <select id="theme-pick"><option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><h1 id="page-title"><span>Example</span> hand-off report</h1><p class="sub-title" id="page-subtitle">Standalone example of the hand-off page: eight reports, each with a filter. All names and values below are placeholders.</p><div class="note" id="page-notice" hidden></div><div class="tabs" role="tablist" id="tab-list"></div></header>
 <main id="report-main"><noscript><div class="empty">This page needs JavaScript to show its reports.</div></noscript></main>
 
 <!-- ===================== DATA: the only place a generator fills in report content ===================== -->

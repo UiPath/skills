@@ -41,7 +41,7 @@ The standards the build follows beyond the genome.
    - Rows one robot works through in one run: a For Each, not a get-next over a "taken" flag; a queue only where items run in parallel or must survive a crash.
 8. **Hand-off:**
    - Audience: the team that runs and maintains the automations, with general automation knowledge. Simple, friendly documents, without migration internals.
-   - Format: one report per solution, as an HTML page and an Excel file, from [handoff-report-template.html](handoff-template/handoff-report-template.html) ([how to fill it](handoff-template/README.md)): a tab per report, each with a filter, in UiPath's Apollo light and dark themes. Two Markdown files beside them: the Overview, and the open items (Deployment open items and the TODO list).
+   - Format: one report per solution, as an HTML page and an Excel file, shaped as [handoff-report-example.html](handoff-report-example.html), whose opening comment says how to fill it: a tab per report, each with a filter, in UiPath's Apollo light and dark themes. Two Markdown files beside them: the Overview, and the open items (Deployment open items and the TODO list).
    - Reports, in this order:
      1. Overview: a one-page description of the process: how the source works, what it was migrated to and why.
      2. Workflow map: each source process and component to its UiPath workflow file.
