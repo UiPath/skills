@@ -42,16 +42,19 @@ export default bpmn('claim-worker')
   .name('ClaimWorker')
   .flowMode('sequence')
   .input('queueItem', 'object', { name: 'Queue item' })
+  .var('item', 'object', { elementId: 'start' })
   .var('itemOutcome', 'string', { default: 'success' })
   .var('failureReason', 'string')
-  // The queue trigger is configured outside the BPMN; the start stays plain.
-  .startEvent('start', { name: 'Queue item added' })
+  // The queue trigger is configured outside the BPMN; the start only maps the input.
+  .startEvent('start', { name: 'Queue item added', payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'Queue item', type: 'object', source: '=vars.queueItem', var: 'item' },
+  ] } })
   .scriptTask('perItemAction', { name: 'Handle claim', script: 'return { outcome: "success", reason: null };', outputs: { itemOutcome: '=result.response.outcome', failureReason: '=result.response.reason' } })
   // Every branch BEGINS with the activity that marks the transaction.
   .choose('outcomeGate', [
-    { when: '=vars.itemOutcome == "failure"', label: 'Failure', body: (b) => b.activity('setFailed', 'Orchestrator.SetTransactionStatus', { name: 'Mark failed', inputs: { QueueItem: '=vars.queueItem', Status: 'Failed', Reason: '=vars.failureReason' } }).endEvent('endFailed', { name: 'Item failed' }) },
-    { when: '=vars.itemOutcome == "defer"', label: 'Defer', body: (b) => b.activity('postpone', 'Orchestrator.PostponeTransactionItem', { name: 'Postpone item', inputs: { QueueItem: '=vars.queueItem', PostponeDate: '=js:new Date(Date.now() + 3600000).toISOString()' } }).endEvent('endPostponed', { name: 'Item postponed' }) },
-    { otherwise: true, label: 'Success', body: (b) => b.activity('setSuccessful', 'Orchestrator.SetTransactionStatus', { name: 'Mark successful', inputs: { QueueItem: '=vars.queueItem', Status: 'Successful' } }).endEvent('endSucceeded', { name: 'Item succeeded' }) },
+    { when: '=vars.itemOutcome == "failure"', label: 'Failure', body: (b) => b.activity('setFailed', 'Orchestrator.SetTransactionStatus', { name: 'Mark failed', inputs: { QueueItem: '=vars.item', Status: 'Failed', Reason: '=vars.failureReason' } }).endEvent('endFailed', { name: 'Item failed' }) },
+    { when: '=vars.itemOutcome == "defer"', label: 'Defer', body: (b) => b.activity('postpone', 'Orchestrator.PostponeTransactionItem', { name: 'Postpone item', inputs: { QueueItem: '=vars.item', PostponeDate: '=js:new Date(Date.now() + 3600000).toISOString()' } }).endEvent('endPostponed', { name: 'Item postponed' }) },
+    { otherwise: true, label: 'Success', body: (b) => b.activity('setSuccessful', 'Orchestrator.SetTransactionStatus', { name: 'Mark successful', inputs: { QueueItem: '=vars.item', Status: 'Successful' } }).endEvent('endSucceeded', { name: 'Item succeeded' }) },
   ])
   .build();
 ```
@@ -72,13 +75,13 @@ Neither needs discovery.
 
 | Variable | Type | Holds |
 | --- | --- | --- |
-| `queueItem` | object | The triggering item, the `QueueItem` each marking step names |
+| `queueItem` | object | The triggering item, the process input |
+| `item` | object | `queueItem` as the start event maps it, the `QueueItem` each marking step names |
 | `itemOutcome` | string | `success`, `failure`, or `defer` |
 | `failureReason` | string | Why it failed, for `setFailed` |
 
 `QueueItem` takes the triggering item (an object carrying its `Id`).
 How the trigger hands that item to the process is configured with the trigger, outside the BPMN; bind `queueItem` to whatever carries it.
-Until something assigns it, `validate` warns `VARIABLE_NOT_SET` on each marking step.
 
 ## Variants
 
