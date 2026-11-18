@@ -564,6 +564,10 @@ def test_develop_solution_never_promises_updated_on_rerun():
     assert not re.search(r"(?i)re-?run[^\n]*\bUpdated\b", t)
     entity = next(l for l in t.splitlines() if l.startswith("**Folder-scoped `Entity`"))
     assert "Unchanged" in entity and "Step 11a" in entity
+    # the SDK still reports Updated when a new remote import changes resources already in the solution
+    status = next(l for l in t.splitlines() if l.startswith("`Status` is `\"Added\"`"))
+    for value in ('"Added"', '"Unchanged"', '"Updated"'):
+        assert value in status, value
 
 
 # --- grouping (ont:domain), source-system icons (mapping `system:`), in-place upgrade -------------------
