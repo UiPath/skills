@@ -52,12 +52,14 @@ A skeleton is not a working process and must never be reported as one.
    When several kinds could fit, pick the one a Studio Web user would most likely choose; the user changes it at the gate if they disagree.
 6. **Label each decision arm** with the outcome it carries (`label: 'Approved'`), so the routing reads off the picture.
    `fork` branches take no label: every branch runs.
-7. **Declare the variables the decisions read, for real**, with `.var()`.
+7. **Declare the variables the decisions read, for real**, with `.var()`, or `.input()` for a value the process is given at start.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
+   What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`: never draw a box whose only job is to receive, read or capture it, since the steps that use it read `vars.<id>`.
+   Data a person supplies after the process has started is a real step: draw its box (`[Action app]`).
 8. **Mark a step that runs once per item on its own box.**
-   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
+   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
@@ -220,7 +222,7 @@ When this run already found no `uip login` (the upload failed for it), skip the 
 Otherwise run every lookup in **one** Bash call.
 <!--skill-flavor:lookup-no-login:end-->
 The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
-It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
+It is the turn's last tool call: before it, read [gate-reply-template.md](gate-reply-template.md), search the target for each box's `id="<id>"` as its [End the turn](gate-reply-template.md#end-the-turn) says, and send any progress note; when it returns, send the gate reply as your next and final message, starting with its first line.
 
 - **Processes and queues:** `uip solution resources list --kind <Process|Queue> --search "<term>" --output json`.
   It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).
@@ -286,6 +288,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  A value the request leaves open, such as a rate, a threshold or a formula, is not a question either: *Build it* hands it to you, so pick a plausible one, build with it, and name it under `Assumed`; an identifier or URL part is never invented.
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
@@ -295,7 +298,7 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  End the turn with the [final report](final-report-template.md); its first line says `(draft mode)`, because this run stopped at a gate.
+  End the turn with the [final report](final-report-template.md), read as [SKILL.md](../SKILL.md#workflow) step 9 says; its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.
