@@ -1,0 +1,21 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpCheck",
+  "ErrorCode": "execution_failed",
+  "Message": "Failed to retrieve authentication token from Integration Service connection",
+  "Instructions": "Agent Gateway could not get a token from the server's connection 6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01, so nothing reached the server. Run `uip is connections ping 6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01 --force-refresh`; an expired connection needs its owner to sign in again.",
+  "Retry": "RetryWillNotFix",
+  "Data": {
+    "Status": "ConnectionFailed",
+    "DurationMs": 85,
+    "Message": "Failed to retrieve authentication token from Integration Service connection",
+    "HttpStatus": null,
+    "Connection": {
+      "Source": "ServerDefault",
+      "ConnectionId": "6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01"
+    },
+    "Mcp": null,
+    "Spec": null,
+    "Api": null
+  }
+}
