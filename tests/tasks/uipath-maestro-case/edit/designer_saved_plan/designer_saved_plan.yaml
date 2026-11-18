@@ -11,7 +11,11 @@ description: >
   only the newest name, so an edit in a new caseplan.json is silently ignored),
   never a lowered version, never a dropped layout or entryPointId (dropping the
   entryPointId makes the Designer re-mint the entry point, MST-16422). Local
-  only; the prompt states the copy is current, so no pull. Needs a CLI that
+  only; the prompt states the copy is current, so no pull. Asked the way a
+  Studio Web user would ask it. Not run under debug: the edited stage is
+  entered only by a user's choice after a human approval and a webhook, which
+  a debug run never reaches, so the graded outcome is the plan file Studio Web
+  will load. Needs a CLI that
   reads 32.0.4 (UiPath/cli#5001, in @dev since 1.205.0-dev.9162). Passes on the
   skill as it stands (2026-10-09, one run each with and without #3817's
   brownfield commit): the guard is against regressions in edits to Designer
@@ -43,20 +47,22 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  The case solution in /solution/ExpenseDesignerSaved was just pulled from
-  Studio Web, so the local copy is current: edit it locally and don't pull it
-  again. It is the expense-reporting case, project CMGoldenExpense.
+  You are a coding agent in UiPath Studio Web in a Studio Web project that
+  already contains the expense-reporting case (solution
+  /solution/ExpenseDesignerSaved, case project CMGoldenExpense). No user is
+  present, and nobody will answer a question or grant approval, so do not ask,
+  do not pause, and do not wait for input.
 
-  Add one optional built-in wait-for-timer task named "Final cool-off" to the
-  stage "Stage 7 - user select". It waits 10 minutes, starts when the stage is
-  entered, and the stage must not wait on it to complete. Leave everything else
-  in the case as it is.
+  I just pulled the solution from Studio Web, so the copy here is current;
+  don't pull it again.
 
-  Do NOT run `uip maestro case debug`, and do not upload or publish. Do NOT ask
-  for approval, confirmation, or feedback. Finish with `uip maestro case
-  validate` passing on the case.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
+  In the stage "Stage 7 - user select", add an optional timer task called
+  "Final cool-off" that waits 10 minutes. It starts as soon as the stage is
+  entered, and the stage doesn't wait for it to finish. Leave everything else
+  in the case as it is. Don't run, upload or publish the case: I will test it
+  from the Designer.
+
+  Make the change and check that the case is valid.
 
 success_criteria:
   - type: skill_triggered

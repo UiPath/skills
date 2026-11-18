@@ -1,0 +1,289 @@
+{
+ "id": "case-V6ahYEGwmt",
+ "name": "BusinessRuleSingleCase",
+ "description": "Single-node case that scores a credit application with the CreditRisk business rule.",
+ "version": "32.0.3",
+ "bindings": [
+  {
+   "id": "b3Is6hLNW",
+   "name": "name",
+   "type": "string",
+   "resource": "BusinessRule",
+   "resourceKey": "solution_folder.CreditRisk",
+   "default": "CreditRisk",
+   "propertyAttribute": "name"
+  },
+  {
+   "id": "bptC3AWDT",
+   "name": "folderPath",
+   "type": "string",
+   "resource": "BusinessRule",
+   "resourceKey": "solution_folder.CreditRisk",
+   "default": "",
+   "propertyAttribute": "folderPath"
+  }
+ ],
+ "variables": {
+  "inputOutputs": [
+   {
+    "id": "creditScore",
+    "name": "creditScore",
+    "type": "number",
+    "elementId": "trigger_1"
+   },
+   {
+    "id": "riskBand",
+    "name": "riskBand",
+    "type": "string",
+    "elementId": "root",
+    "description": "Risk band the CreditRisk rule returns; populated by Score Credit Risk."
+   }
+  ],
+  "inputs": [
+   {
+    "id": "vhIw9ST3m",
+    "name": "creditScore",
+    "type": "number",
+    "default": "742",
+    "description": "Applicant credit score passed to the rule.",
+    "elementId": "trigger_1"
+   }
+  ]
+ },
+ "metadata": {
+  "caseIdentifier": "BRC",
+  "caseAppEnabled": false,
+  "caseIdentifierType": "constant",
+  "publishVersion": 2,
+  "caseExitRules": [
+   {
+    "id": "Condition_XhGs8y",
+    "displayName": "Complete Rule 1",
+    "rules": [
+     [
+      {
+       "rule": "required-stages-completed",
+       "id": "Rule_d8Ivvu"
+      }
+     ]
+    ],
+    "marksCaseComplete": true
+   }
+  ],
+  "slaRules": [
+   {
+    "id": "sla_hjPpXkZQ",
+    "displayName": "Default SLA",
+    "expression": "=js:true",
+    "count": 1,
+    "unit": "d"
+   }
+  ],
+  "intsvcActivityConfig": "v2"
+ },
+ "nodes": [
+  {
+   "id": "trigger_1",
+   "type": "uipath.case.trigger",
+   "data": {
+    "typeVersion": "1.0.0",
+    "display": {
+     "label": "Trigger 1"
+    },
+    "inputs": {
+     "serviceType": "None",
+     "outputs": [
+      {
+       "name": "creditScore",
+       "type": "number",
+       "source": "=vars.vhIw9ST3m",
+       "var": "creditScore"
+      }
+     ],
+     "entryPointId": "1c89a295-88f1-4f20-b1df-0ebed14aa20f"
+    }
+   }
+  },
+  {
+   "id": "Stage_xZbs5n",
+   "type": "case-management:Stage",
+   "data": {
+    "label": "Score",
+    "parentElement": {
+     "id": "root",
+     "type": "case-management:root"
+    },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": [
+     [
+      {
+       "id": "tZybvNTGY",
+       "displayName": "Score Credit Risk",
+       "type": "business-rule",
+       "data": {
+        "name": "=bindings.b3Is6hLNW",
+        "folderPath": "=bindings.bptC3AWDT",
+        "version": "v3",
+        "inputs": [
+         {
+          "name": "creditScore",
+          "type": "number",
+          "id": "vqueUOUMU",
+          "var": "vqueUOUMU",
+          "elementId": "Stage_xZbs5n-tZybvNTGY",
+          "value": "=vars.creditScore"
+         }
+        ],
+        "outputs": [
+         {
+          "name": "output",
+          "type": "jsonSchema",
+          "id": "v1V6rABfT",
+          "var": "v1V6rABfT",
+          "value": "v1V6rABfT",
+          "source": "=result",
+          "target": "=v1V6rABfT",
+          "elementId": "Stage_xZbs5n-tZybvNTGY",
+          "_jsonSchema": {
+           "type": "object",
+           "properties": {
+            "RiskDecision": {
+             "type": "object",
+             "properties": {
+              "riskBand": {
+               "type": "string"
+              }
+             }
+            }
+           }
+          }
+         },
+         {
+          "name": "Error",
+          "type": "jsonSchema",
+          "id": "vg4BTK61Y",
+          "var": "vg4BTK61Y",
+          "value": "vg4BTK61Y",
+          "source": "=Error",
+          "target": "=vg4BTK61Y",
+          "elementId": "Stage_xZbs5n-tZybvNTGY",
+          "displayName": "Error",
+          "_jsonSchema": {
+           "type": "object",
+           "properties": {
+            "code": {
+             "type": "string"
+            },
+            "message": {
+             "type": "string"
+            },
+            "detail": {
+             "type": "string"
+            },
+            "category": {
+             "type": "string"
+            },
+            "status": {
+             "type": "number"
+            },
+            "element": {
+             "type": "string"
+            }
+           }
+          },
+          "body": {
+           "type": "object",
+           "properties": {
+            "code": {
+             "type": "string"
+            },
+            "message": {
+             "type": "string"
+            },
+            "detail": {
+             "type": "string"
+            },
+            "category": {
+             "type": "string"
+            },
+            "status": {
+             "type": "number"
+            },
+            "element": {
+             "type": "string"
+            }
+           }
+          }
+         },
+         {
+          "name": "riskBand",
+          "type": "string",
+          "id": "riskBand",
+          "var": "riskBand",
+          "value": "riskBand",
+          "source": "=RiskDecision.riskBand",
+          "target": "=riskBand",
+          "elementId": "Stage_xZbs5n-tZybvNTGY",
+          "originalVar": "riskBand"
+         }
+        ]
+       },
+       "elementId": "Stage_xZbs5n-tZybvNTGY",
+       "shouldRunOnlyOnce": false,
+       "isRequired": true,
+       "description": "Evaluate the CreditRisk rule on the applicant's credit score.",
+       "entryConditions": [
+        {
+         "id": "Condition_Ka2d5s",
+         "displayName": "Entry rule 1",
+         "rules": [
+          [
+           {
+            "rule": "current-stage-entered",
+            "id": "Rule_gVCFFI"
+           }
+          ]
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "description": "Score the application with the CreditRisk business rule.",
+    "isRequired": true,
+    "entryConditions": [
+     {
+      "id": "Condition_TQLV73",
+      "displayName": "Entry Rule 1",
+      "rules": [
+       [
+        {
+         "rule": "case-entered",
+         "id": "Rule_NJzuGg"
+        }
+       ]
+      ]
+     }
+    ],
+    "exitConditions": [
+     {
+      "id": "Condition_5Kfcxw",
+      "displayName": "Exit Rule 1",
+      "rules": [
+       [
+        {
+         "rule": "required-tasks-completed",
+         "id": "Rule_3J5zLs"
+        }
+       ]
+      ],
+      "marksStageComplete": true,
+      "type": "exit-only"
+     }
+    ]
+   }
+  }
+ ],
+ "edges": []
+}

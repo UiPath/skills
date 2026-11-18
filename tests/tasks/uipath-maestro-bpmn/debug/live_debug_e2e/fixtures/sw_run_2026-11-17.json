@@ -1,0 +1,78 @@
+{
+  "debug": {
+    "JobKey": "d37be72a-092e-4302-83d2-d5cfd6127662",
+    "InstanceId": "d37be72a-092e-4302-83d2-d5cfd6127662",
+    "RunId": "01a1eae4-2360-7d8d-9a84-32523a7d4a57",
+    "FinalStatus": "Completed",
+    "SolutionId": "d20715b4-29a4-4b4d-6da4-08df44d7304b",
+    "ProjectId": "0c8800c8-d2ee-4533-820e-6432e89f1461",
+    "StudioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/0c8800c8-d2ee-4533-820e-6432e89f1461?solutionId=d20715b4-29a4-4b4d-6da4-08df44d7304b",
+    "ElementExecutions": [
+      {
+        "ElementId": "start",
+        "ElementType": "StartEvent",
+        "Status": "Completed",
+        "StartedAt": "2026-11-17T19:03:04.972Z",
+        "CompletedAt": "2026-11-17T19:03:05.268Z"
+      },
+      {
+        "ElementId": "calculateProduct",
+        "ElementType": "ScriptTask",
+        "Status": "Completed",
+        "StartedAt": "2026-11-17T19:03:05.625Z",
+        "CompletedAt": "2026-11-17T19:03:05.895Z"
+      },
+      {
+        "ElementId": "end",
+        "ElementType": "EndEvent",
+        "Status": "Completed",
+        "StartedAt": "2026-11-17T19:03:06.048Z",
+        "CompletedAt": "2026-11-17T19:03:06.342Z"
+      }
+    ]
+  },
+  "variables_scope": {
+    "Elements": [
+      {
+        "ElementId": "end",
+        "ElementRunId": "1a66b3ee-2495-4e01-a6ae-93e91a935e22",
+        "IsMarker": false,
+        "Inputs": {},
+        "InputDefinitions": {},
+        "Outputs": {}
+      },
+      {
+        "ElementId": "calculateProduct",
+        "ElementRunId": "6315ae3c-1afd-4e5e-855a-6c95ec977792",
+        "IsMarker": false,
+        "Inputs": {
+          "Args": {}
+        },
+        "InputDefinitions": {},
+        "Outputs": {
+          "Response": 42
+        }
+      },
+      {
+        "ElementId": "start",
+        "ElementRunId": "f6af85be-085c-491f-97bb-facb6e5101d7",
+        "IsMarker": false,
+        "Inputs": {},
+        "InputDefinitions": {},
+        "Outputs": {}
+      }
+    ],
+    "Globals": {
+      "Product": 42
+    },
+    "InstanceId": "d37be72a-092e-4302-83d2-d5cfd6127662",
+    "WorkflowId": "d37be72a-092e-4302-83d2-d5cfd6127662/BpmnGenericWorkflow",
+    "ParentElementId": null,
+    "GlobalDefinitions": {
+      "Product": {
+        "Name": "product",
+        "Type": "integer"
+      }
+    }
+  }
+}

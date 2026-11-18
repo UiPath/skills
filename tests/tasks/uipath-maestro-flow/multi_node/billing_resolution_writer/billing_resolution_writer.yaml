@@ -1,6 +1,14 @@
 task_id: skill-flow-devcon-billing-resolution-writer
 description: |
-  Build a Maestro Flow whose inline low-code agent (uipath.agent.autonomous) drafts a customer-facing billing-dispute resolution and then posts it to Slack. Graded by flow validate plus one flow debug run: the inline agent node must be present, the drafted email must cite the disputed invoice number, and the Slack Send-Message activity must have ACTUALLY posted (verified via a real message ts).
+  E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent
+  drafts a customer-facing billing-dispute resolution email and posts it to
+  Slack, asked the way a Studio Web user would ask it. One graded debug run
+  checks what the flow did: the agent node completed and its own output is the
+  returned email body, which cites the invoice and the approved credit; caseKey
+  echoes the per-run correlationId; and the Slack message was really posted
+  (its ts, read off the executed send node, carries the correlationId, the
+  invoice and the drafted body). Text between the helper markers is lower-tier
+  guidance (experiments/use-case-tiers.yaml) and is not graded.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -27,40 +35,29 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  Build a Maestro Flow "BillingResolutionWriter" (in a solution of the same
-  name) whose inline low-code agent drafts a customer-facing billing-dispute
-  resolution and then posts that resolution to Slack.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
+  is present, and nobody will answer a question or grant approval, so do not
+  ask, do not pause, and do not wait for input.
 
-  - Trigger inputs: `customerName` (string), `invoiceNumber` (string),
-    `creditAmount` (number), `correlationId` (string).
-  - An inline low-code agent embedded in the flow project (not a separate
-    published agent) reads those inputs and returns two strings: the email
-    `subject` and the email `body`. The body must state the invoice number and
-    the approved credit amount. Map them to flow outputs `emailSubject` and
-    `emailBody`.
-  - Post the drafted resolution to Slack using the Slack "Send Message to
-    channel" activity: channel "coding-agent-testing", the Slack connection named
-    "is-sandboxes", send as `user`. The message text must be the agent's drafted
-    `body` verbatim, prefixed with the correlationId.
-  - Also map these flow outputs: `caseKey` = the incoming correlationId, and
-    `slackMessageId` = the identifier of the Slack message that was posted (from
-    the Slack Send Message node's output).
+  Build an automation called "BillingResolutionWriter" that writes the
+  customer email for an approved billing-dispute credit and shares it with the
+  team on Slack. It takes customerName, invoiceNumber, creditAmount and
+  correlationId. Have an agent, built as part of this automation, draft the
+  email's subject and body; the body must state the invoice number and the
+  approved credit amount.
 
-  Validate the final flow file — the task is not complete until `uip maestro
-  flow validate` passes. Grading then runs the flow under debug, so build it to
-  actually run, not merely validate.
+  Then post the drafted body, word for word and prefixed with the
+  correlationId, to the Slack channel "coding-agent-testing" through our
+  "is-sandboxes" Slack connection, sent as the user rather than the bot.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  Return emailSubject, emailBody, caseKey (the correlationId) and
+  slackMessageId (the id of the posted Slack message).
+
+  <!-- helper:start -->
+  creditAmount is a number; the other inputs are strings.
+  <!-- helper:end -->
+
+  Build and test the automation.
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
@@ -69,8 +66,17 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
-    description: 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the drafted email cites invoice MCS-2026-04872 and the approved credit, caseKey echoes the correlationId, and the Slack Send-Message activity actually posted (real message ts carrying the correlationId + invoice + the drafted resolution)'
+    description: 'Effects: one debug run in which the inline agent completed and its own output is emailBody, which cites MCS-2026-04872 and the 1610 credit; emailSubject is set; caseKey echoes the per-run correlationId; and the Slack send to coding-agent-testing (sent as user) really posted: slackMessageId is the ts of a message carrying the correlationId, the invoice and the drafted body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0

@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Seed a Sev1 escalation case for the Slack-alert outcome eval.
+"""Seed the escalation cases for the Slack-alert outcome eval.
 
-Writes seed.json with one Enterprise / production-down / no-workaround case.
-A fresh correlationId per run keeps the posted Slack message and the caseKey
-assertion isolated across runs. The grader (check_escalation_slack_alert.py)
-runs `flow debug --inputs <inputs>` and asserts both the classification outputs
-and that a Slack message was actually posted.
+Writes seed.json with two cases the grader runs through `flow debug --inputs`:
+
+- Enterprise, production down, no workaround: Sev1, engineering needed.
+- Standard, production down, no workaround: Sev3, no engineering. Sev1 needs
+  the Enterprise tier and Sev2 needs a workaround, so this case is Sev3. It
+  catches a classifier that ignores the tier or always answers Sev1.
+
+A fresh correlationId per run ties each posted Slack message and the caseKey
+assertion to this run.
 """
 
 from __future__ import annotations
@@ -39,7 +43,24 @@ def build_seed() -> dict:
                     "engineeringNeeded": True,
                     "caseKey": f"E2E-{run_id}-SEV1",
                 },
-            }
+            },
+            {
+                "name": "standard-production-down-sev3",
+                "inputs": {
+                    "senderEmail": "sam.lee@smallshop.com",
+                    "subject": "Our storefront is down",
+                    "body": "Every visitor gets an error page and we have no workaround.",
+                    "customerTier": "Standard",
+                    "productionDown": True,
+                    "workaroundAvailable": False,
+                    "correlationId": f"E2E-{run_id}-SEV3",
+                },
+                "expected": {
+                    "severity": "Sev3",
+                    "engineeringNeeded": False,
+                    "caseKey": f"E2E-{run_id}-SEV3",
+                },
+            },
         ],
     }
 

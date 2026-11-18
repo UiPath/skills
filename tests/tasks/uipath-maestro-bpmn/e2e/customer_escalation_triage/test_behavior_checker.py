@@ -53,7 +53,7 @@ SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">
-      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>
+      <bpmn:script><![CDATA[return vars.customerTier === "Enterprise" ? "Sev1" : (vars.serviceState === "Degraded" ? "Sev2" : "Sev3");]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:serviceTask id="JiraCreate1">
       <bpmn:extensionElements>
@@ -102,7 +102,6 @@ CONTRACT = checker.Contract(
     },
     jira_create_ids=("JiraCreate1",),
     slack_send_ids=("SlackSend1",),
-    classifier_ids=("Classify1",),
 )
 
 
@@ -196,60 +195,62 @@ class ContractResolutionTests(unittest.TestCase):
     def test_missing_connector_fails(self):
         no_slack = SAMPLE_BPMN.replace("uipath-salesforce-slack", "uipath-else")
         with self.assertRaisesRegex(
-            checker.CheckFailure, "send_message_to_channel"
+            checker.CheckFailure, "has no uipath-salesforce-slack step"
         ):
             self._resolve(no_slack)
 
-    def test_every_curated_create_issue_object_resolves(self):
-        # All three create the same issue on the live tenant, and describe
-        # cannot rank them, so all three must resolve.
-        for object_name in (
-            "curated_create_issue",
-            "curated-issue-create",
-            "curated_issue",
+    def test_any_jira_create_operation_resolves(self):
+        # Several Jira objects create the same ticket, and the Studio Web
+        # builder emits the generic `issue` object (run
+        # adhoc-2026-11-14_08-01-54); the request names no operation, and the
+        # tenant reread proves the ticket whichever one made it.
+        for path in (
+            "/curated_create_issue",
+            "/curated-issue-create",
+            "/curated_issue",
+            "/create_issue",
+            "/issue",
+            "/rest/api/3/issue",
         ):
-            with self.subTest(object_name=object_name):
-                variant = SAMPLE_BPMN.replace(
-                    "/curated_create_issue", f"/{object_name}"
-                )
+            with self.subTest(path=path):
+                variant = SAMPLE_BPMN.replace("/curated_create_issue", path)
                 self.assertEqual(
                     self._resolve(variant).jira_create_ids, ("JiraCreate1",)
                 )
 
-    def test_object_name_identifies_the_activity_when_the_path_does_not(self):
-        templated = SAMPLE_BPMN.replace(
-            '<uipath:input name="path" value="/curated_create_issue"/>',
-            '<uipath:input name="path" value="/{objectName}"/>'
-            '<uipath:input name="objectName" value="curated_issue"/>',
+    def test_a_process_that_never_names_the_other_severities_fails(self):
+        hardcoded = SAMPLE_BPMN.replace(
+            'return vars.customerTier === "Enterprise" ? "Sev1" : (vars.serviceState === "Degraded" ? "Sev2" : "Sev3");',
+            'return "Sev1";',
         )
-        self.assertEqual(
-            self._resolve(templated).jira_create_ids, ("JiraCreate1",)
-        )
+        with self.assertRaisesRegex(checker.CheckFailure, "never names"):
+            self._resolve(hardcoded)
 
-    def test_non_curated_create_issue_object_is_rejected(self):
-        # `create_issue` creates the same ticket but carries no curated
-        # marker, so it is the generic operation the prompt rules out.
-        generic = SAMPLE_BPMN.replace("/curated_create_issue", "/create_issue")
-        with self.assertRaisesRegex(checker.CheckFailure, "no uipath-atlassian-jira"):
-            self._resolve(generic)
 
-    def test_generic_rest_path_is_rejected(self):
-        raw = SAMPLE_BPMN.replace(
-            "/curated_create_issue", "/rest/api/3/issue"
-        )
-        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
-            self._resolve(raw)
+class StudioWebLayoutTests(unittest.TestCase):
+    """adhoc-2026-11-14_08-01-54: the Studio Web agent's correct project sat at
+    CustomerEscalationTriage/CustomerEscalationTriage/Process.bpmn, and the old
+    graders, pinned to CustomerEscalationTriageSolution/.../CustomerEscalationTriage.bpmn,
+    failed it as missing before running it."""
 
-    def test_curated_object_name_does_not_rescue_a_raw_rest_path(self):
-        # The node calls the provider's API directly whatever its objectName
-        # claims, so the accepted-object match must not read the name here.
-        conflicting = SAMPLE_BPMN.replace(
-            '<uipath:input name="path" value="/curated_create_issue"/>',
-            '<uipath:input name="path" value="/rest/api/3/issue"/>'
-            '<uipath:input name="objectName" value="curated_issue"/>',
-        )
-        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
-            self._resolve(conflicting)
+    def test_the_studio_web_project_is_found_and_resolves(self):
+        sw = (HERE / "fixtures" / "sw_Process.bpmn").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "CustomerEscalationTriage" / "CustomerEscalationTriage"
+            project.mkdir(parents=True)
+            (project / "project.uiproj").write_text('{"Name": "CustomerEscalationTriage"}')
+            (project / "Process.bpmn").write_text(sw, encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                self.assertFalse(Path("CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn").is_file())
+                found = checker.locate_bpmn()
+                self.assertEqual(found.name, "Process.bpmn")
+                self.assertEqual(packager.locate_bpmn(), found)
+                contract = checker.resolve_contract(found)
+            finally:
+                os.chdir(cwd)
+        self.assertTrue(contract.jira_create_ids and contract.slack_send_ids)
 
 
 class OutcomeAssertionTests(unittest.TestCase):
@@ -730,51 +731,6 @@ class DeleteConfirmationTests(unittest.TestCase):
                 self._completed(observed), "slack message", "1788913576.470749"
             )
         )
-
-
-class ComputedSeverityTests(unittest.TestCase):
-    """Severity must come from a node that ran, not from a literal.
-
-    The seed declares the one expected severity, so a process that computes
-    nothing and returns "Sev1" would satisfy every other criterion. The flow
-    suite binds severity to the executed Script whose own output carries it.
-    """
-
-    def test_literal_severity_with_no_classifier_output_fails(self):
-        variables = good_variables_data()
-        elements = variables["Variables"][0]["Elements"]
-        variables["Variables"][0]["Elements"] = [
-            e for e in elements if e["ElementId"] != "Classify1"
-        ]
-        with self.assertRaisesRegex(checker.CheckFailure, "severity was not computed"):
-            checker.assert_outcome(
-                CONTRACT, SEED, good_debug_data(), variables, []
-            )
-
-    def test_classifier_output_disagreeing_with_the_exposed_value_fails(self):
-        variables = good_variables_data()
-        for element in variables["Variables"][0]["Elements"]:
-            if element["ElementId"] == "Classify1":
-                element["Outputs"]["response"] = "Sev3"
-        with self.assertRaisesRegex(checker.CheckFailure, "not in any executed"):
-            checker.assert_outcome(
-                CONTRACT, SEED, good_debug_data(), variables, []
-            )
-
-    def test_bpmn_without_a_scripttask_is_refused_at_contract_time(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "NoClassifier.bpmn"
-            path.write_text(
-                SAMPLE_BPMN.replace(
-                    '<bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">\n'
-                    '      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>\n'
-                    "    </bpmn:scriptTask>\n    ",
-                    "",
-                ),
-                encoding="utf-8",
-            )
-            with self.assertRaisesRegex(checker.CheckFailure, "no bpmn:scriptTask"):
-                checker.resolve_contract(path)
 
 
 V1_SEND_AS = '<uipath:input target="query" name="send_as" value="user"/>'

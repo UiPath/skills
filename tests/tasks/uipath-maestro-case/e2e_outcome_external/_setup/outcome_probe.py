@@ -74,7 +74,10 @@ PEER_WAIT_SECONDS = 900
 STALE_LOCK_SECONDS = 1500
 
 # Clock-skew tolerance when comparing a third-party timestamp to our debug start.
-SKEW_SECONDS = 30
+# Kept small because the agent is asked to test its build: its own debug run
+# writes token-bearing records shortly before this floor. The harness's run
+# lands its records well after the floor (refresh + upload + start come first).
+SKEW_SECONDS = 5
 
 
 def precondition_failed(msg: str) -> None:

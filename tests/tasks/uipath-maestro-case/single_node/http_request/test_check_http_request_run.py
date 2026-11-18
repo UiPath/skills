@@ -1,0 +1,126 @@
+"""check_http_request_run.py against a real debug run's instance evidence.
+
+testdata/ holds what alpha returned on 2026-11-18 for the HttpRequestSingleCase
+artifact of nightly 2026-11-18_04-23-44: the `case debug` Data, the instance
+list row and `instance variables-all`, plus that run's plan. No tenant is touched.
+
+    cd tests && uv run -q --with pytest python -m pytest -q tasks/uipath-maestro-case/single_node/http_request
+"""
+
+from __future__ import annotations
+
+import copy
+import importlib.util
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+EVIDENCE = json.loads((HERE / "testdata" / "http_run_evidence.json").read_text())
+PLAN = json.loads((HERE / "testdata" / "plan.json").read_text())
+
+
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+grader = _load("check_http_request_run_under_test", HERE / "check_http_request_run.py")
+evidence_mod = _load("case_run_evidence_http_under_test", HERE / "case_run_evidence.py")
+
+
+def _evidence(variables_all: dict | None = None):
+    return grader.RunEvidence((variables_all or EVIDENCE["variables_all"])["Data"])
+
+
+def _globals(variables_all: dict) -> dict:
+    return next(b for b in variables_all["Data"]["Variables"] if b["ParentElementId"] is None)["Globals"]
+
+
+def test_the_recorded_run_passes() -> None:
+    assert grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence()) == "'Post Invoice'"
+
+
+def test_reads_the_variable_by_its_plan_name_although_the_cli_pascalcases_it() -> None:
+    evidence = _evidence()
+    assert "EchoResponse" in evidence.globals
+    assert evidence.value("echoResponse")["Json"]["Probe"] == "skills-case-http-7f3a"
+
+
+def test_an_echo_without_the_probe_fails() -> None:
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    _globals(variables_all)["EchoResponse"] = {"Json": {"InvoiceNumber": "INV-1042"}}
+    with pytest.raises(SystemExit, match="skills-case-http-7f3a"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))
+
+
+def test_an_unbound_response_fails() -> None:
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    _globals(variables_all)["EchoResponse"] = {}
+    with pytest.raises(SystemExit, match="does not hold the echo"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))
+
+
+def test_a_run_where_the_call_failed_fails() -> None:
+    debug = copy.deepcopy(EVIDENCE["debug"]["Data"])
+    for execution in debug["elementExecutions"]:
+        if execution["elementId"] == "trBBgDSNV":
+            execution["status"] = "Failed"
+    with pytest.raises(SystemExit, match="'Post Invoice' finished 'Failed'"):
+        grader.check_run(PLAN, debug, _evidence())
+
+
+def test_any_task_name_and_variable_layout_pass() -> None:
+    """Nothing pins the task's name or id: a renamed task that did the call passes."""
+    plan = copy.deepcopy(PLAN)
+    debug = copy.deepcopy(EVIDENCE["debug"]["Data"])
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    for node in plan["nodes"]:
+        for lane in node["data"].get("tasks") or []:
+            for task in lane:
+                task["id"], task["displayName"] = "tOther1", "Send invoice to echo"
+    for execution in debug["elementExecutions"]:
+        if execution["elementId"] == "trBBgDSNV":
+            execution["elementId"] = "tOther1"
+    for block in variables_all["Data"]["Variables"]:
+        for element in block["Elements"]:
+            if element["ElementId"] == "trBBgDSNV":
+                element["ElementId"] = "tOther1"
+    assert grader.check_run(plan, debug, _evidence(variables_all)) == "'Send invoice to echo'"
+
+
+def test_a_credential_header_fails() -> None:
+    plan = copy.deepcopy(PLAN)
+    task = next(t for n in plan["nodes"] for lane in n["data"].get("tasks") or [] for t in lane)
+    body = next(i for i in task["data"]["inputs"] if i["name"] == "body")["body"]
+    body["headers"]["Authorization"] = "Bearer x"
+    with pytest.raises(SystemExit, match="Authorization"):
+        grader.check_no_credential_headers(plan)
+
+
+def test_folder_key_is_found_in_the_instance_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    listed = json.dumps(EVIDENCE["instance_list"])
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        return subprocess.CompletedProcess(cmd, 0, listed, "")
+
+    monkeypatch.setattr(evidence_mod, "_run", lambda cmd, **kw: fake_run(cmd))
+    instance = EVIDENCE["debug"]["Data"]["instanceId"]
+    assert evidence_mod.folder_key_of(instance, "2026-11-18T13:00:00Z") == (
+        EVIDENCE["instance_list"]["Data"][0]["FolderKey"]
+    )
+
+
+def test_an_instance_missing_from_the_list_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    empty = json.dumps({"Result": "Success", "Data": [], "Pagination": {"HasMore": False}})
+    monkeypatch.setattr(
+        evidence_mod, "_run", lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, empty, "")
+    )
+    monkeypatch.setattr(evidence_mod, "LIST_SLEEP_S", 0)
+    with pytest.raises(SystemExit, match="is not in"):
+        evidence_mod.folder_key_of("00000000-0000-0000-0000-000000000000", "2026-11-18T13:00:00Z")

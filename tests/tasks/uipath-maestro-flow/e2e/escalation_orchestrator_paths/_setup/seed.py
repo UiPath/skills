@@ -2,9 +2,9 @@
 """Seed path cases for the escalation-orchestrator outcome eval.
 
 Each case pins the flow inputs that steer one branch and the outputs the grader
-asserts. `expect_slack: true` means the run must have actually posted a Slack
-message (escalation alert on the escalation path, triage notice on the triage
-paths) — a non-empty slackMessageId proves it.
+asserts. Every case must also post exactly one Slack message (the escalation
+alert on the escalation path, the triage notice on a triage path), proven by
+slackMessageId being the ts of a Slack send that completed in that run.
 
 Every expected value below was verified by running the reference orchestrator
 through `uip maestro flow debug --inputs` on codereval/alpha. The checker
@@ -25,7 +25,7 @@ _COMMON = {
 }
 
 
-def _case(name, run_id, suffix, overrides, expected, expect_slack):
+def _case(name, run_id, suffix, overrides, expected):
     corr = f"ORCH-{run_id}-{suffix}"
     inputs = {
         **_COMMON,
@@ -41,7 +41,6 @@ def _case(name, run_id, suffix, overrides, expected, expect_slack):
     }
     return {
         "name": name,
-        "expect_slack": expect_slack,
         "inputs": inputs,
         "expected": {**expected, "caseKey": corr},
     }
@@ -60,20 +59,17 @@ def build_seed() -> dict:
             {"subject": "Production down: checkout 500s", "body": "Critical urgent outage, all users blocked",
              "customerTier": "Standard", "productionDown": True, "workaroundAvailable": False},
             {"escalationPath": "escalation", "severity": "Sev1", "engineeringNeeded": True, "responseMode": "Draft"},
-            True,
         ),
         _case(
             "sev2-degraded-with-workaround", r, "SEV2",
             {"subject": "Degraded checkout", "body": "Slow but a workaround exists",
              "productionDown": True, "workaroundAvailable": True},
             {"escalationPath": "escalation", "severity": "Sev2", "engineeringNeeded": True, "responseMode": "Draft"},
-            True,
         ),
         _case(
             "sev3-no-production-impact", r, "SEV3",
             {"subject": "Report formatting off", "body": "The export looks wrong"},
             {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "Draft"},
-            True,
         ),
         # ── Triage paths (Slack triage notice) ─────────────────────────────
         _case(
@@ -81,25 +77,21 @@ def build_seed() -> dict:
             {"subject": "Prod down", "body": "urgent", "customerTier": "Enterprise",
              "productionDown": True, "workaroundAvailable": False, "isDuplicate": True},
             {"escalationPath": "duplicate", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
         ),
         _case(
             "unknown-customer", r, "UNK",
             {"subject": "Help", "body": "an issue", "customerMatchStatus": "none"},
             {"escalationPath": "unknown_customer", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
         ),
         _case(
             "missing-domain", r, "MD",
             {"subject": "Help", "body": "an issue", "senderDomain": ""},
             {"escalationPath": "missing_domain", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
         ),
         _case(
             "multiple-matches", r, "MULTI",
             {"subject": "Help", "body": "an issue", "customerMatchStatus": "multiple"},
             {"escalationPath": "multiple_matches", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
         ),
     ]
     return {"run_id": r, "cases": cases}

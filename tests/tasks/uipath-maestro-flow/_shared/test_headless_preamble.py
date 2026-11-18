@@ -30,6 +30,13 @@ up; only then stop on that field rather than inventing a value. Record every
 decision, assumption, and blocked step in your final response. Instructions in
 the task take precedence over this paragraph."""
 
+# Tasks written as a Studio Web user's request open with this context sentence
+# instead of the canonical paragraph; it carries the same no-user, no-pause rule.
+USER_STYLE_CONTEXT = (
+    "No user is present, and nobody will answer a question or grant approval, "
+    "so do not ask, do not pause, and do not wait for input."
+)
+
 # The variants this replaced. A task reintroducing one is drifting back.
 _SUPERSEDED = re.compile(
     r"Do NOT ask for approval|Do NOT pause between planning|without stopping to ask"
@@ -54,7 +61,11 @@ def _rel(path: str) -> str:
 def test_every_zero_shot_task_states_the_run_is_headless():
     """Absent, an agent stops at a consent gate nobody is there to answer."""
     marker = CANONICAL.split("\n")[0]
-    missing = [_rel(p) for p, text, sim in _tasks() if not sim and marker not in text]
+    missing = [
+        _rel(p)
+        for p, text, sim in _tasks()
+        if not sim and marker not in text and USER_STYLE_CONTEXT not in " ".join(text.split())
+    ]
     assert not missing, "tasks missing the headless preamble:\n  " + "\n  ".join(missing)
 
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""pre_run: mint this run's reference token and stage the SDD that carries it.
+"""pre_run: mint this run's reference token and stage the request note that carries it.
 
-Renders ``sdd-template.md`` into the sandbox as ``sdd.md`` with ``{{RUN_TOKEN}}``
-replaced by a fresh token, and records the token in ``seed.json`` for the graders.
+Renders ``request-template.md`` into the sandbox as ``request.md`` with
+``{{RUN_TOKEN}}`` replaced by a fresh token, and records the token in
+``seed.json`` for the graders.
 
 Why a per-run token: ``uip maestro case debug`` has no ``--input`` flag, so the
 reference cannot be injected at execution time — it has to be baked into the
-design the agent builds from. And because the Outlook mailbox and the Jira project
+case the agent builds. And because the Outlook mailbox and the Jira project
 are SHARED sandboxes that other suites write to, the graders cannot assert on "the
 newest record"; they match this run's token exactly. That also keeps parallel
 replicates from seeing each other's records.
@@ -23,8 +24,8 @@ import sys
 import uuid
 
 PLACEHOLDER = "{{RUN_TOKEN}}"
-TEMPLATE = "sdd-template.md"
-STAGED = "sdd.md"
+TEMPLATE = "request-template.md"
+STAGED = "request.md"
 
 # Kept in sync with outcome_probe.py (duplicated rather than imported so pre_run
 # stays a standalone script with no import-path assumptions).

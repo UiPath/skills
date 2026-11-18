@@ -1,0 +1,157 @@
+"""check_slack_alert_run.py grades the run's Slack post and named outputs.
+
+`fixtures/Process.bpmn` and `fixtures/run_seed.json` are the agent's process and
+the seed from Studio Web run adhoc-2026-11-17_15-00-15 (passed). The runtime
+payloads follow the shape `debug-instance variables-all` returns: PascalCase
+Globals, each element's own `Outputs`, the Slack step's `Response` carrying
+`ts`, `channel` and `message.text`.
+"""
+
+from __future__ import annotations
+
+import copy
+import importlib.util
+import json
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+FIXTURES = HERE / "fixtures"
+
+
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+checker = _load("check_slack_alert_run", HERE / "check_slack_alert_run.py")
+old = _load("old_check_escalation_slack_alert", HERE.parents[1] / "_shared" / "check_escalation_slack_alert.py")
+from _shared.bpmn_live import DebugEvidence  # noqa: E402
+
+BPMN_TEXT = (FIXTURES / "Process.bpmn").read_text()
+SEED = json.loads((FIXTURES / "run_seed.json").read_text())
+CASE = SEED["cases"][0]
+CORR = CASE["inputs"]["correlationId"]
+TS = "1763405123.456789"
+
+
+def _process(text: str = BPMN_TEXT) -> ET.Element:
+    return ET.fromstring(text.encode()).find(f"{{{checker.BPMN_NS}}}process")
+
+
+def _debug(slack_status="Completed"):
+    return {
+        "InstanceId": "inst-1",
+        "FinalStatus": "Completed",
+        "ElementExecutions": [
+            {"ElementId": "start", "ElementType": "StartEvent", "Status": "Completed"},
+            {"ElementId": "classify", "ElementType": "ScriptTask", "Status": "Completed"},
+            {"ElementId": "sendSlackAlert", "ElementType": "SendTask", "Status": slack_status},
+            {"ElementId": "done", "ElementType": "EndEvent", "Status": "Completed"},
+        ],
+    }
+
+
+def _variables(*, text=None, channel="C0B2FDZD1M3", message_id=TS, next_steps_key="nextSteps"):
+    text = text or f"Escalation alert | Severity: Sev1 | Correlation ID: {CORR} | Next steps: Page on-call."
+    response = {"ok": True, "channel": channel, "ts": TS, "message": {"text": text, "ts": TS}}
+    outputs = {"Severity": "Sev1", "EngineeringNeeded": True, "CaseKey": CORR, "SlackMessageId": message_id}
+    return {
+        "Variables": [
+            {
+                "ParentElementId": None,
+                "Globals": {
+                    "CorrelationId": CORR,
+                    "SeverityValue": "Sev1",
+                    "EngineeringNeededValue": True,
+                    "PostedSlackMessageId": TS,
+                    **outputs,
+                },
+                "Elements": [
+                    {"ElementId": "classify", "Outputs": {"Response": {
+                        "severity": "Sev1", "engineeringNeeded": True, next_steps_key: "Page on-call.", "correlationId": CORR}}},
+                    {"ElementId": "sendSlackAlert", "Outputs": {"Response": response}},
+                    {"ElementId": "done", "Outputs": outputs},
+                ],
+            }
+        ]
+    }
+
+
+def test_real_shape_passes():
+    assert checker.assert_outcome(_process(), CASE, _debug(), _variables()) == TS
+
+
+def test_rule_is_encoded_in_the_real_process():
+    checker.assert_rule_encoded(BPMN_TEXT)
+    with pytest.raises(checker.CheckFailure, match="never names"):
+        checker.assert_rule_encoded(BPMN_TEXT.replace("Sev2", "SevX").replace("Sev3", "SevY"))
+
+
+def test_a_next_steps_field_name_the_request_never_gives_is_not_required():
+    """The old grader required the classifier script to return `nextSteps`
+    by that exact key; the request only asks for next steps in the message."""
+    variables = _variables(next_steps_key="followUp")
+    with pytest.raises(old.CheckFailure, match="nextSteps"):
+        old.bind_classifier(variables, ("classify",), "Sev1")
+    checker.assert_outcome(_process(), CASE, _debug(), variables)
+
+
+def test_slack_step_found_by_connector_key_alone():
+    assert checker.slack_ids(_process()) == {"sendSlackAlert"}
+
+
+def test_message_id_must_be_the_posted_ts():
+    with pytest.raises(checker.CheckFailure, match="not the ts"):
+        checker.assert_outcome(_process(), CASE, _debug(), _variables(message_id="1700000000.000001"))
+
+
+def test_wrong_channel_fails():
+    with pytest.raises(checker.CheckFailure, match="channel"):
+        checker.assert_outcome(_process(), CASE, _debug(), _variables(channel="C999"))
+
+
+def test_message_without_the_correlation_id_fails():
+    with pytest.raises(checker.CheckFailure, match="does not carry"):
+        checker.assert_outcome(_process(), CASE, _debug(), _variables(text="Severity: Sev1"))
+
+
+def test_a_slack_step_that_did_not_complete_fails():
+    with pytest.raises(checker.CheckFailure, match="no Slack step completed"):
+        checker.assert_outcome(_process(), CASE, _debug(slack_status="Faulted"), _variables())
+
+
+def test_bot_identity_fails():
+    bot = BPMN_TEXT.replace('{"send_as":"user"}', '{"send_as":"bot"}')
+    with pytest.raises(checker.CheckFailure, match="as 'user'"):
+        checker.assert_outcome(_process(bot), CASE, _debug(), _variables())
+
+
+def test_wrong_severity_fails():
+    variables = _variables()
+    scope = variables["Variables"][0]
+    scope["Globals"]["Severity"] = "Sev2"
+    scope["Elements"][2]["Outputs"]["Severity"] = "Sev2"
+    with pytest.raises(checker.CheckFailure, match="severity"):
+        checker.assert_outcome(_process(), CASE, _debug(), variables)
+
+
+def test_main_in_a_studio_web_layout(tmp_path, monkeypatch):
+    project = tmp_path / "EscalationSlackAlert" / "EscalationSlackAlert"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text('{"Name": "EscalationSlackAlert", "ProjectType": "ProcessOrchestration"}')
+    (project / "Process.bpmn").write_text(BPMN_TEXT)
+    (tmp_path / "seed.json").write_text(json.dumps(SEED))
+    monkeypatch.chdir(tmp_path)
+    sent = []
+    monkeypatch.setattr(checker, "import_exact", lambda bpmn, project_dir, solution: project_dir)
+    monkeypatch.setattr(checker, "run_debug", lambda p, inputs, log, **k: (sent.append(inputs), (_debug(), "inst-1"))[1])
+    monkeypatch.setattr(checker, "debug_evidence", lambda i: DebugEvidence(_variables(), "", [], []))
+    checker.main()
+    assert sent == [CASE["inputs"]]

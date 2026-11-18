@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.200.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="EscalationSlackAlert" name="EscalationSlackAlert" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="senderEmail" name="senderEmail" type="string" elementId="start" />
+        <uipath:input id="subject" name="subject" type="string" elementId="start" />
+        <uipath:input id="body" name="body" type="string" elementId="start" />
+        <uipath:input id="customerTier" name="customerTier" type="string" elementId="start" />
+        <uipath:input id="productionDown" name="productionDown" type="boolean" elementId="start" />
+        <uipath:input id="workaroundAvailable" name="workaroundAvailable" type="boolean" elementId="start" />
+        <uipath:input id="correlationId" name="correlationId" type="string" elementId="start" />
+        <uipath:inputOutput id="severityValue" name="severityValue" type="json" elementId="classify" />
+        <uipath:inputOutput id="engineeringNeededValue" name="engineeringNeededValue" type="json" elementId="classify" />
+        <uipath:inputOutput id="nextStepsValue" name="nextStepsValue" type="json" elementId="classify" />
+        <uipath:inputOutput id="sendSlackAlert_response" name="sendSlackAlert_response" type="json" elementId="sendSlackAlert" />
+        <uipath:inputOutput id="sendSlackAlert_Error" name="sendSlackAlert_Error" type="json" elementId="sendSlackAlert" />
+        <uipath:inputOutput id="postedSlackMessageId" name="postedSlackMessageId" type="string" elementId="sendSlackAlert" />
+        <uipath:inputOutput id="correlationIdValue" name="correlationIdValue" type="string" elementId="classify" />
+        <uipath:output id="severity" name="severity" type="string" elementId="done" />
+        <uipath:output id="engineeringNeeded" name="engineeringNeeded" type="boolean" elementId="done" />
+        <uipath:output id="caseKey" name="caseKey" type="string" elementId="done" />
+        <uipath:output id="slackMessageId" name="slackMessageId" type="string" elementId="done" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="slack" name="is-sandboxes Slack connection" type="string" default="849e85d8-1aa9-4d52-8bbd-20041c8f05d8" resource="Connection" resourceKey="849e85d8-1aa9-4d52-8bbd-20041c8f05d8" propertyAttribute="ConnectionId" />
+        <uipath:binding id="shared" name="is-sandboxes Slack folder" type="string" default="5da18ec0-7de1-4e57-aaf1-ddc8a369c199" resource="Connection" resourceKey="849e85d8-1aa9-4d52-8bbd-20041c8f05d8" propertyAttribute="folderKey" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="start" name="Manual escalation intake">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="5e5bbaa7-4341-f156-8e96-2f0e184653f1" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_start_classify</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="classify" name="Classify escalation severity and next steps" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="severityValue" type="string" source="=result.response.severity" var="severityValue" />
+          <uipath:output name="engineeringNeededValue" type="boolean" source="=result.response.engineeringNeeded" var="engineeringNeededValue" />
+          <uipath:output name="nextStepsValue" type="string" source="=result.response.nextSteps" var="nextStepsValue" />
+          <uipath:output name="correlationIdValue" type="string" source="=result.response.correlationId" var="correlationIdValue" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_classify</bpmn:incoming>
+      <bpmn:outgoing>Flow_classify_sendSlackAlert</bpmn:outgoing>
+      <bpmn:script>
+const isSev1 = vars.customerTier === 'Enterprise' &amp;&amp; vars.productionDown === true &amp;&amp; vars.workaroundAvailable === false;
+const isSev2 = vars.productionDown === true &amp;&amp; vars.workaroundAvailable === true;
+const severity = isSev1 ? 'Sev1' : (isSev2 ? 'Sev2' : 'Sev3');
+const engineeringNeeded = severity === 'Sev1' || severity === 'Sev2';
+const nextSteps = isSev1
+  ? 'Page the on-call engineering team immediately, open a major incident, and provide customer updates.'
+  : (isSev2
+    ? 'Notify engineering to monitor and fix the production issue while the workaround is communicated.'
+    : 'Acknowledge the escalation, monitor for impact, and follow up with the customer as needed.');
+return { severity, engineeringNeeded, nextSteps, correlationId: vars.correlationId };
+</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sendTask id="sendSlackAlert" name="Post escalation alert to Slack">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-salesforce-slack" />
+            <uipath:input name="connection" type="string" value="=bindings.slack" />
+            <uipath:input name="resourceKey" type="string" value="849e85d8-1aa9-4d52-8bbd-20041c8f05d8" />
+            <uipath:input name="folderKey" type="string" value="=bindings.shared" />
+            <uipath:input name="objectName" type="string" value="send_message_to_channel_v2" />
+            <uipath:input name="method" type="string" value="POST" />
+            <uipath:input name="path" type="string" value="/send_message_to_channel_v2" />
+            <uipath:input name="metadata" type="json"><![CDATA[{"activityPropertyConfiguration":{"configuration":"=jsonString:{\"essentialConfiguration\":{\"customFieldsRequestDetails\":null,\"executionType\":null,\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"unifiedTypesCompatible\":true,\"savedFilterTrees\":null,\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"path\":\"/send_message_to_channel_v2\"}}","uiPathActivityTypeId":"37a305b2-89b1-315d-b73f-1778839a6c47","errorState":{"issues":[]}},"activityMetadata":{"activity":{"displayName":"Send Message to Channel","description":"Send messages to public or private Slack channels.","category":"","configuration":"{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}","uiPathActivityTypeId":"37a305b2-89b1-315d-b73f-1778839a6c47","isEnabled":true}},"inputMetadata":{},"telemetryData":{"connectorKey":"uipath-salesforce-slack","connectorName":"","objectName":"send_message_to_channel_v2","objectDisplayName":"Send Message to Channel"}}]]></uipath:input>
+            <uipath:input name="activityConfigurationVersion" type="string" value="v2" />
+          </uipath:context>
+          <uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{}]]></uipath:input>
+          <uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{"send_as":"user"}]]></uipath:input>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"channel":"C0B2FDZD1M3","messageToSend":"=\"Escalation alert | Severity: \" + vars.severityValue + \" | Correlation ID: \" + vars.correlationIdValue + \" | Next steps: \" + vars.nextStepsValue"}]]></uipath:input>
+          <uipath:output name="response" type="jsonSchema" source="=response" var="sendSlackAlert_response">{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"app_id":{"title":"App ID","type":"string"},"blocks[*].block_id":{"title":"Blocks block ID","type":"string"},"blocks[*].text.emoji":{"title":"Blocks text emoji","type":"boolean"},"blocks[*].text.text":{"title":"Blocks text text","type":"string"},"blocks[*].text.type":{"title":"Type","type":"string"},"blocks[*].type":{"title":"Blocks type","type":"string"},"channel":{"title":"Channel name/ID","type":"string"},"icons.emoji":{"title":"Icons emoji","type":"string"},"message.app_id":{"title":"Message app ID","type":"string"},"message.attachments[*].actions[*].confirm.dismiss_text":{"title":"Dismiss Text","type":"string"},"message.attachments[*].actions[*].confirm.ok_text":{"title":"Ok Text","type":"string"},"message.attachments[*].actions[*].confirm.text":{"title":"Message attachments actions confirm text","type":"string"},"message.attachments[*].actions[*].confirm.title":{"title":"Title","type":"string"},"message.attachments[*].actions[*].id":{"title":"Message attachments actions ID","type":"string"},"message.attachments[*].actions[*].name":{"title":"Name","type":"string"},"message.attachments[*].actions[*].style":{"title":"Style","type":"string"},"message.attachments[*].actions[*].text":{"title":"Message attachments actions text","type":"string"},"message.attachments[*].actions[*].type":{"title":"Message attachments actions type","type":"string"},"message.attachments[*].actions[*].value":{"title":"Value","type":"string"},"message.attachments[*].callback_id":{"title":"Call Back Id","type":"string"},"message.attachments[*].color":{"title":"Color","type":"string"},"message.attachments[*].fallback":{"title":"Fall Back","type":"string"},"message.attachments[*].id":{"title":"Id","type":"number"},"message.attachments[*].text":{"title":"Message attachments text","type":"string"},"message.blocks[*].block_id":{"title":"Message blocks block ID","type":"string"},"message.blocks[*].text.emoji":{"title":"Message blocks text emoji","type":"boolean"},"message.blocks[*].text.text":{"title":"Message blocks text","type":"string"},"message.blocks[*].text.type":{"title":"Message blocks text type","type":"string"},"message.blocks[*].type":{"title":"Message blocks type","type":"string"},"message.bot_id":{"title":"Bot Id","type":"string"},"message.bot_profile.app_id":{"title":"Application Id","type":"string"},"message.bot_profile.deleted":{"title":"Deleted","type":"boolean"},"message.bot_profile.icons.image_36":{"title":"Image 3 6","type":"string"},"message.bot_profile.icons.image_48":{"title":"Image 4 8","type":"string"},"message.bot_profile.icons.image_72":{"title":"Image 7 2","type":"string"},"message.bot_profile.id":{"title":"Message bot profile ID","type":"string"},"message.bot_profile.name":{"title":"Message bot profile name","type":"string"},"message.bot_profile.team_id":{"title":"Team Id","type":"string"},"message.bot_profile.updated":{"title":"Updated","type":"number"},"message.icons.emoji":{"title":"Message icons emoji","type":"string"},"message.metadata.event_payload.id":{"title":"Message metadata event payload ID","type":"string"},"message.metadata.event_payload.title":{"title":"Message metadata event payload title","type":"string"},"message.metadata.event_type":{"title":"Message metadata event type","type":"string"},"message.root.app_id":{"title":"Message root app ID","type":"string"},"message.root.blocks[*].block_id":{"title":"Message root blocks block ID","type":"string"},"message.root.blocks[*].elements[*].elements[*].text":{"title":"Message root blocks elements text","type":"string"},"message.root.blocks[*].elements[*].elements[*].type":{"title":"Message root blocks elements elements type","type":"string"},"message.root.blocks[*].elements[*].type":{"title":"Message root blocks elements type","type":"string"},"message.root.blocks[*].type":{"title":"Message root blocks type","type":"string"},"message.root.bot_id":{"title":"Message root bot ID","type":"string"},"message.root.icons.emoji":{"title":"Message root icons emoji","type":"string"},"message.root.is_locked":{"title":"Message root is locked","type":"boolean"},"message.root.latest_reply":{"title":"Message root latest reply","type":"string"},"message.root.metadata.event_type":{"title":"Message root metadata event type","type":"string"},"message.root.reply_count":{"title":"Message root reply count","type":"number"},"message.root.reply_users[*]":{"title":"Message root reply users","type":"string"},"message.root.reply_users_count":{"title":"Message root reply users count","type":"number"},"message.root.subscribed":{"title":"Message root subscribed","type":"boolean"},"message.root.subtype":{"title":"Message root subtype","type":"string"},"message.root.text":{"title":"Message root text","type":"string"},"message.root.thread_ts":{"title":"Message root thread ts","type":"string"},"message.root.ts":{"title":"Message root ts","type":"string"},"message.root.type":{"title":"Message root type","type":"string"},"message.root.username":{"title":"Message root username","type":"string"},"message.subtype":{"title":"Message subtype","type":"string"},"message.team":{"title":"Team","type":"string"},"message.text":{"title":"Message text","type":"string"},"message.thread_ts":{"title":"Message thread ts","type":"string"},"message.ts":{"title":"Message ts","type":"string"},"message.type":{"title":"Message type","type":"string"},"message.user":{"title":"User","type":"string"},"message.username":{"title":"Message username","type":"string"},"metadata.event_payload.id":{"title":"Metadata event payload ID","type":"string"},"metadata.event_payload.title":{"title":"Metadata event payload title","type":"string"},"metadata.event_type":{"title":"Metadata event type","type":"string"},"ok":{"title":"Ok","type":"boolean"},"response_metadata.warnings[*]":{"title":"Response metadata warnings","type":"string"},"root.app_id":{"title":"Root app ID","type":"string"},"root.blocks[*].block_id":{"title":"Root blocks block ID","type":"string"},"root.blocks[*].elements[*].elements[*].text":{"title":"Root blocks elements text","type":"string"},"root.blocks[*].elements[*].elements[*].type":{"title":"Root blocks elements elements type","type":"string"},"root.blocks[*].elements[*].type":{"title":"Root blocks elements type","type":"string"},"root.blocks[*].type":{"title":"Root blocks type","type":"string"},"root.bot_id":{"title":"Root bot ID","type":"string"},"root.icons.emoji":{"title":"Root icons emoji","type":"string"},"root.is_locked":{"title":"Root is locked","type":"boolean"},"root.latest_reply":{"title":"Root latest reply","type":"string"},"root.metadata.event_type":{"title":"Root metadata event type","type":"string"},"root.reply_count":{"title":"Root reply count","type":"number"},"root.reply_users[*]":{"title":"Root reply users","type":"string"},"root.reply_users_count":{"title":"Root reply users count","type":"number"},"root.subscribed":{"title":"Root subscribed","type":"boolean"},"root.subtype":{"title":"Root subtype","type":"string"},"root.text":{"title":"Root text","type":"string"},"root.thread_ts":{"title":"Root thread ts","type":"string"},"root.ts":{"title":"Root ts","type":"string"},"root.type":{"title":"Root type","type":"string"},"root.username":{"title":"Root username","type":"string"},"subtype":{"title":"Subtype","type":"string"},"thread_ts":{"title":"Message timestamp","type":"string"},"ts":{"title":"Message timestamp","type":"string"},"username":{"title":"Bot name","type":"string"}}}</uipath:output>
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="sendSlackAlert_Error">{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}</uipath:output>
+          <uipath:output name="postedSlackMessageId" type="string" source="=response.ts" var="postedSlackMessageId" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_classify_sendSlackAlert</bpmn:incoming>
+      <bpmn:outgoing>Flow_sendSlackAlert_done</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="done" name="Escalation triaged">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="severity" type="string" source="=vars.severityValue" var="severity" />
+          <uipath:output name="engineeringNeeded" type="boolean" source="=vars.engineeringNeededValue" var="engineeringNeeded" />
+          <uipath:output name="caseKey" type="string" source="=vars.correlationIdValue" var="caseKey" />
+          <uipath:output name="slackMessageId" type="string" source="=vars.postedSlackMessageId" var="slackMessageId" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_sendSlackAlert_done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_classify" sourceRef="start" targetRef="classify" />
+    <bpmn:sequenceFlow id="Flow_classify_sendSlackAlert" sourceRef="classify" targetRef="sendSlackAlert" />
+    <bpmn:sequenceFlow id="Flow_sendSlackAlert_done" sourceRef="sendSlackAlert" targetRef="done" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="EscalationSlackAlert">
+      <bpmndi:BPMNShape id="S_classify" bpmnElement="classify"><dc:Bounds x="338" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_done" bpmnElement="done"><dc:Bounds x="638" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_sendSlackAlert" bpmnElement="sendSlackAlert"><dc:Bounds x="488" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_start" bpmnElement="start"><dc:Bounds x="252" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_classify_sendSlackAlert" bpmnElement="Flow_classify_sendSlackAlert"><di:waypoint x="438" y="232" /><di:waypoint x="488" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_sendSlackAlert_done" bpmnElement="Flow_sendSlackAlert_done"><di:waypoint x="588" y="232" /><di:waypoint x="638" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_start_classify" bpmnElement="Flow_start_classify"><di:waypoint x="288" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.200.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="Process_1" name="BillingInvoiceLookup">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="invoiceNumber" name="invoiceNumber" type="string" elementId="Event_start" />
+        <uipath:inputOutput id="normalizedInvoiceNumber" name="normalizedInvoiceNumber" type="json" elementId="normalizeInvoiceNumber" />
+        <uipath:inputOutput id="queryResponse" name="queryResponse" type="json" elementId="queryBillingDisputeERP" />
+        <uipath:inputOutput id="queryError" name="queryError" type="json" elementId="queryBillingDisputeERP" />
+        <uipath:inputOutput id="matchedInvoiceNumberValue" name="matchedInvoiceNumberValue" type="string" elementId="shapeLookupOutputs" />
+        <uipath:inputOutput id="lineItemCountValue" name="lineItemCountValue" type="number" elementId="shapeLookupOutputs" />
+        <uipath:output id="matchedInvoiceNumber" name="matchedInvoiceNumber" type="string" elementId="done" />
+        <uipath:output id="lineItemCount" name="lineItemCount" type="number" elementId="done" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="dataFabric" name="Data Service connection" type="string" default="0f6156da-7a1c-4cd8-910e-d7fd338baef7" resource="Connection" resourceKey="0f6156da-7a1c-4cd8-910e-d7fd338baef7" propertyAttribute="ConnectionId" />
+        <uipath:binding id="dataFabricFolder" name="Data Service folder" type="string" default="c4359cde-55f0-4f0e-9322-c6cdce74ab4c" resource="Connection" resourceKey="0f6156da-7a1c-4cd8-910e-d7fd338baef7" propertyAttribute="folderKey" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="9d609e82-8b20-8606-86ec-da87f213fe31" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Event_start_normalizeInvoiceNumber</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="normalizeInvoiceNumber" name="Normalize invoice number" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="normalizedInvoiceNumber" type="json" source="=result.response" var="normalizedInvoiceNumber" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Event_start_normalizeInvoiceNumber</bpmn:incoming>
+      <bpmn:outgoing>Flow_normalizeInvoiceNumber_queryBillingDisputeERP</bpmn:outgoing>
+      <bpmn:script>var value = vars.invoiceNumber == null ? "" : String(vars.invoiceNumber).trim().toUpperCase(); if (value.indexOf("MCS-") !== 0) value = "MCS-" + value; return value;</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sendTask id="queryBillingDisputeERP" name="Query BillingDisputeERP line items">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-uipath-dataservice" />
+            <uipath:input name="connection" type="string" value="=bindings.dataFabric" />
+            <uipath:input name="resourceKey" type="string" value="0f6156da-7a1c-4cd8-910e-d7fd338baef7" />
+            <uipath:input name="folderKey" type="string" value="=bindings.dataFabricFolder" />
+            <uipath:input name="objectName" type="string" value="QueryEntityRecordsCurated" />
+            <uipath:input name="method" type="string" value="POST" />
+            <uipath:input name="path" type="string" value="/v2/{entityName}/qer" />
+            <uipath:input name="metadata" type="json"><![CDATA[{"activityPropertyConfiguration":{"configuration":"=jsonString:{\"essentialConfiguration\":{\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"entityName\",\"BillingDisputeERP\"]]},\"executionType\":null,\"operation\":\"list\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"unifiedTypesCompatible\":true,\"savedFilterTrees\":null,\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"path\":\"/v2/{entityName}/qer\"}}","uiPathActivityTypeId":"703065b9-a310-33b8-9d4d-12df0a6f520b","errorState":{"issues":[]}},"activityMetadata":{"activity":{"displayName":"Query Entity Records","description":"Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.","category":"UiPath Data Fabric","configuration":"{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}","uiPathActivityTypeId":"703065b9-a310-33b8-9d4d-12df0a6f520b","isEnabled":true}},"inputMetadata":{},"telemetryData":{"connectorKey":"uipath-uipath-dataservice","connectorName":"UiPath Data Fabric","objectName":"QueryEntityRecordsCurated","objectDisplayName":"Query Entity Records"}}]]></uipath:input>
+            <uipath:input name="activityConfigurationVersion" type="string" value="v2" />
+          </uipath:context>
+          <uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{"entityName":"BillingDisputeERP"}]]></uipath:input>
+          <uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{"queryExpression":"=js:`invoiceNumber = '${vars.normalizedInvoiceNumber}'`","start":0,"limit":100,"expansionLevel":3,"isAscending":true}]]></uipath:input>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="response" type="jsonSchema" source="=response" var="queryResponse">{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{}}</uipath:output>
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="queryError">{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}</uipath:output>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_normalizeInvoiceNumber_queryBillingDisputeERP</bpmn:incoming>
+      <bpmn:outgoing>Flow_queryBillingDisputeERP_shapeLookupOutputs</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:scriptTask id="shapeLookupOutputs" name="Shape invoice lookup outputs" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="matchedInvoiceNumberValue" type="string" source="=result.response.matchedInvoiceNumber" var="matchedInvoiceNumberValue" />
+          <uipath:output name="lineItemCountValue" type="number" source="=result.response.lineItemCount" var="lineItemCountValue" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_queryBillingDisputeERP_shapeLookupOutputs</bpmn:incoming>
+      <bpmn:outgoing>Flow_shapeLookupOutputs_done</bpmn:outgoing>
+      <bpmn:script>var rows = vars.queryResponse || []; var first = rows.length &gt; 0 ? rows[0] : null; return { matchedInvoiceNumber: first &amp;&amp; first.invoiceNumber != null ? String(first.invoiceNumber) : "", lineItemCount: rows.length };</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="done" name="Lookup complete">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="matchedInvoiceNumber" type="string" source="=vars.matchedInvoiceNumberValue" var="matchedInvoiceNumber" />
+          <uipath:output name="lineItemCount" type="number" source="=vars.lineItemCountValue" var="lineItemCount" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_shapeLookupOutputs_done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Event_start_normalizeInvoiceNumber" sourceRef="Event_start" targetRef="normalizeInvoiceNumber" />
+    <bpmn:sequenceFlow id="Flow_normalizeInvoiceNumber_queryBillingDisputeERP" sourceRef="normalizeInvoiceNumber" targetRef="queryBillingDisputeERP" />
+    <bpmn:sequenceFlow id="Flow_queryBillingDisputeERP_shapeLookupOutputs" sourceRef="queryBillingDisputeERP" targetRef="shapeLookupOutputs" />
+    <bpmn:sequenceFlow id="Flow_shapeLookupOutputs_done" sourceRef="shapeLookupOutputs" targetRef="done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="256" y="144" width="96" height="96" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="245" width="96" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_normalizeInvoiceNumber" bpmnElement="normalizeInvoiceNumber">
+        <dc:Bounds x="402" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_queryBillingDisputeERP" bpmnElement="queryBillingDisputeERP">
+        <dc:Bounds x="552" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_shapeLookupOutputs" bpmnElement="shapeLookupOutputs">
+        <dc:Bounds x="702" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_done" bpmnElement="done">
+        <dc:Bounds x="852" y="174" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="S_Flow_Event_start_normalizeInvoiceNumber" bpmnElement="Flow_Event_start_normalizeInvoiceNumber">
+        <di:waypoint x="352" y="192" />
+        <di:waypoint x="402" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_normalizeInvoiceNumber_queryBillingDisputeERP" bpmnElement="Flow_normalizeInvoiceNumber_queryBillingDisputeERP">
+        <di:waypoint x="502" y="192" />
+        <di:waypoint x="552" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_queryBillingDisputeERP_shapeLookupOutputs" bpmnElement="Flow_queryBillingDisputeERP_shapeLookupOutputs">
+        <di:waypoint x="652" y="192" />
+        <di:waypoint x="702" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_Flow_shapeLookupOutputs_done" bpmnElement="Flow_shapeLookupOutputs_done">
+        <di:waypoint x="802" y="192" />
+        <di:waypoint x="852" y="192" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

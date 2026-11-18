@@ -7,7 +7,11 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The checker lives in the suite's `_shared`; `_shared.case_check` resolves from
+# the suite root.
+SUITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SUITE, "_shared"))
+sys.path.insert(0, SUITE)
 
 from check_expense_runnable_structure import (  # noqa: E402
     _assert_required_external_bindings,

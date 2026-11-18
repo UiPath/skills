@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""ExpenseReimbursementRunnable: run the case once and check the path it took.
+
+Runs ``uip maestro case debug`` on the live tenant (``run_debug`` refreshes the
+solution resources first and requires finalStatus Completed), then reads the
+run's ``elementExecutions`` against the built caseplan:
+
+  - every happy-path stage the design names (Submission, Manager Approval,
+    Finance Approval, Payment, Approved) ran to Completed, so the expense ended
+    approved and paid;
+  - the Rejected and Withdrawn lanes did not run;
+  - no element of the run failed.
+
+Stages are found by the names the design document gives them, not by id.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import (  # noqa: E402
+    _get_ci,
+    existing_caseplan,
+    find_stages,
+    read_caseplan,
+    run_debug,
+)
+
+EXPECTED_CASEPLAN = os.path.join(
+    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
+)
+HAPPY_PATH = ("Submission", "Manager Approval", "Finance Approval", "Payment", "Approved")
+NOT_ON_PATH = ("Rejected", "Withdrawn")
+DONE = {"completed", "successful"}
+# Element states that mean the element never started.
+NOT_STARTED = {"", "notstarted", "pending", "skipped"}
+FAILED = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (text or "").lower())
+
+
+def _fail(message: str) -> None:
+    sys.exit(f"FAIL: {message}")
+
+
+def stage_statuses(plan: dict, payload: dict) -> dict[str, list[str]]:
+    """Stage label -> the statuses its executions reported (empty when it never ran)."""
+    by_id: dict[str, list[str]] = {}
+    for execution in _get_ci(payload, "elementExecutions", "ElementExecutions") or []:
+        if isinstance(execution, dict):
+            element = str(_get_ci(execution, "elementId", "ElementId") or "")
+            by_id.setdefault(element, []).append(
+                str(_get_ci(execution, "status", "Status") or "")
+            )
+    return {
+        (stage.get("data") or {}).get("label") or stage.get("id"): by_id.get(stage.get("id"), [])
+        for stage in find_stages(plan, include_exception=True)
+    }
+
+
+def _stage(statuses: dict[str, list[str]], name: str) -> str | None:
+    wanted = _norm(name)
+    matches = [label for label in statuses if wanted in _norm(label)]
+    if len(matches) != 1:
+        _fail(f"expected one stage named like {name!r}; stages: {sorted(statuses)}")
+    return matches[0]
+
+
+def check_path(plan: dict, payload: dict) -> list[str]:
+    """Return the happy-path stage labels; exit with FAIL when the run strayed."""
+    failed = [
+        f"{_get_ci(e, 'elementId', 'ElementId')} ({_get_ci(e, 'elementType', 'ElementType')}) "
+        f"{_get_ci(e, 'status', 'Status')}"
+        for e in _get_ci(payload, "elementExecutions", "ElementExecutions") or []
+        if isinstance(e, dict) and FAILED.search(str(_get_ci(e, "status", "Status") or ""))
+    ]
+    if failed:
+        _fail(f"elements failed during the run: {failed}")
+
+    statuses = stage_statuses(plan, payload)
+    happy = []
+    for name in HAPPY_PATH:
+        label = _stage(statuses, name)
+        if not any(status.lower() in DONE for status in statuses[label]):
+            _fail(
+                f"happy-path stage {label!r} did not complete in the run "
+                f"(statuses {statuses[label] or 'none: never entered'})"
+            )
+        happy.append(label)
+    for name in NOT_ON_PATH:
+        label = _stage(statuses, name)
+        ran = [status for status in statuses[label] if status.lower() not in NOT_STARTED]
+        if ran:
+            _fail(f"stage {label!r} ran on the approved path (statuses {ran})")
+    return happy
+
+
+def main() -> None:
+    plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
+    payload = run_debug(timeout=720)
+    happy = check_path(plan, payload)
+    print(
+        "OK: the expense ran Completed through "
+        + " -> ".join(happy)
+        + "; Rejected and Withdrawn did not run"
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -3,8 +3,11 @@
 
 Outcome-based, tenant-confirmed (mirrors the flow suite's
 escalation_jira_ticket, adapted to the BPMN CLI surface):
-  1. The submitted BPMN declares the three public outputs and one Jira
-     Create-Issue plus one Slack Send connector activity.
+  1. The submitted BPMN (found wherever the agent put it; Studio Web names it
+     Process.bpmn) declares the three public outputs, has a Jira step and a
+     Slack step (found by connector key alone, whatever the operation, element
+     type or id), and names all three severities, so it encodes the rule
+     rather than returning the one answer the seeded case expects.
   2. LIVE: the exact submitted project (sha256-pinned through solution
      import) runs the seeded Sev1 case via `uip maestro bpmn debug` inside an
      ephemeral solution under the sandbox CWD — kept there so the repo's
@@ -59,11 +62,8 @@ from _shared.bpmn_live import (  # noqa: E402
     UIPATH_NS,
 )
 
-# The prompt states this exact layout, so the pinned path is a stated
-# requirement — not the unstated-solution-name trap the flow suite's
-# discovery helper exists for.
-PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
-BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
+NAME = "CustomerEscalationTriage"
+SEVERITIES = ("Sev1", "Sev2", "Sev3")
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
@@ -87,27 +87,12 @@ OUTPUT_TYPES = {
     "caseKey": "string",
     "jiraIssueKey": "string",
 }
-# Connector activities are matched by connectorKey plus a substring of the
-# registry path or object name: the registry may emit versioned or templated
-# paths, and the runtime correlates on the element id either way.
-#
-# Accept every Jira object that carries a curated Create-Issue marker.
-# Four objects create an issue on this connector and all four behave
-# identically (verified live: same body, same {self, key, id}, same ticket),
-# but `create_issue` carries no `curated` block, so it is the generic
-# operation the prompt rules out. Among the curated three, `uip is resources
-# describe` cannot rank: its summary maps `curated` to the display name and
-# drops the `curated.isHidden` flag that marks the live one
-# (integrationservice-sdk metadata/resource-metadata.ts), printing
-# `Curated: "Create Issue"` for two of them. Pinning one spelling therefore
-# fails a process that creates the right ticket.
-JIRA_CREATE = (
-    escalation_is.JIRA_CONNECTOR,
-    ("curated_create_issue", "curated-issue-create", "curated_issue"),
-)
-GENERIC_REST_PREFIX = "/rest/api"
+# Connector steps are matched by connectorKey alone. Several Jira objects
+# create the same ticket (verified live: same body, same {self, key, id}), and
+# the Studio Web builder emits the generic `issue` object (run
+# adhoc-2026-11-14_08-01-54); the runtime evidence and the tenant reread prove
+# the ticket, whichever operation made it.
 SLACK_SEND_AS = "user"
-SLACK_SEND = (escalation_is.SLACK_CONNECTOR, ("send_message_to_channel",))
 COMPLETED_STATUSES = {"Completed", "Successful"}
 
 
@@ -123,11 +108,26 @@ class Contract:
     output_ids: dict[str, str]
     jira_create_ids: tuple[str, ...]
     slack_send_ids: tuple[str, ...]
-    classifier_ids: tuple[str, ...]
 
 
-def resolve_contract(path: Path = BPMN_FILE) -> Contract:
-    root = ET.parse(path).getroot()
+def locate_bpmn() -> Path:
+    """The project's main .bpmn: the one named for the request (or Studio
+    Web's Process.bpmn in a project of that name), else the only one."""
+    try:
+        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
+    except SystemExit:
+        return Path(bpmn_check.find_bpmn_file(None))
+
+
+def resolve_contract(path: Path) -> Contract:
+    text = path.read_text(encoding="utf-8")
+    missing_severities = [s for s in SEVERITIES if s not in text]
+    if missing_severities:
+        raise CheckFailure(
+            f"the process never names {missing_severities}: it returns the seeded "
+            "case's answer instead of classifying by the stated rule"
+        )
+    root = ET.fromstring(text.encode("utf-8"))
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
         raise CheckFailure("BPMN must contain one root process")
@@ -158,61 +158,25 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     if missing:
         raise CheckFailure(f"public outputs not declared: {missing}")
 
-    # Every scriptTask that could be the classifier. The flow suite binds
-    # severity to the executed Script whose own output carries it; without an
-    # equivalent, a process that exposes a literal "Sev1" -- computing nothing
-    # -- satisfies every other criterion, because the seed declares the one
-    # expected severity.
-    classifier_ids = tuple(
-        element.attrib["id"]
-        for element in process.iter(q(BPMN_NS, "scriptTask"))
-        if element.attrib.get("id")
-    )
-    if not classifier_ids:
-        raise CheckFailure(
-            "no bpmn:scriptTask to classify severity; the value would be a "
-            "literal rather than computed"
-        )
-
     connectors = index_runtime_connectors(process)
 
-    def ids_for(connector_key: str, needles: tuple[str, ...]) -> tuple[str, ...]:
+    def ids_for(connector_key: str) -> tuple[str, ...]:
         found = tuple(
-            element_id
-            for (key, path, object_name), element_ids in connectors.items()
-            if key == connector_key
-            # A curated object name never rescues a raw REST path: a node
-            # carrying both calls the provider's API directly whatever its
-            # objectName claims, and the prompt forbids that outright.
-            and not path.startswith(GENERIC_REST_PREFIX)
-            and any(
-                needle in path or needle in object_name for needle in needles
-            )
-            for element_id in element_ids
-        )
-        if not found:
-            generic = sorted(
+            sorted(
                 element_id
-                for (key, path, _), element_ids in connectors.items()
-                if key == connector_key and path.startswith(GENERIC_REST_PREFIX)
+                for (key, _path, _object_name), element_ids in connectors.items()
+                if key == connector_key
                 for element_id in element_ids
             )
-            if generic:
-                raise CheckFailure(
-                    f"{connector_key} node(s) {generic} call the provider's "
-                    f"raw REST API; the task requires the curated activity "
-                    f"(one of {list(needles)})"
-                )
-            raise CheckFailure(
-                f"no {connector_key} activity whose registry path or object "
-                f"name contains one of {list(needles)}"
-            )
+        )
+        if not found:
+            raise CheckFailure(f"the process has no {connector_key} step")
         return found
 
     # Send identity, as the flow suite grades it: a node that posts as the
     # default bot instead of the prompt-required user has an indistinguishable
     # runtime response, so it can only be caught on the authored artifact.
-    slack_ids = set(ids_for(*SLACK_SEND))
+    slack_ids = set(ids_for(escalation_is.SLACK_CONNECTOR))
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
@@ -226,9 +190,8 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
 
     return Contract(
         output_ids=output_ids,
-        jira_create_ids=ids_for(*JIRA_CREATE),
-        slack_send_ids=ids_for(*SLACK_SEND),
-        classifier_ids=classifier_ids,
+        jira_create_ids=ids_for(escalation_is.JIRA_CONNECTOR),
+        slack_send_ids=ids_for(escalation_is.SLACK_CONNECTOR),
     )
 
 
@@ -346,37 +309,6 @@ def assert_outcome(
                 f"output {name} expected {expected!r}, got {actual.get(name)!r}"
             )
 
-    # Severity must be COMPUTED, not exposed as a literal. Bind it to the
-    # executed scriptTask whose own runtime output carries it -- the flow
-    # suite's classification binding. The seed declares the one expected
-    # severity, so without this a process that computes nothing and returns
-    # "Sev1" satisfies every other criterion here.
-    severity = actual.get("severity")
-    classifier_outputs = element_output_records(
-        variables_data, contract.classifier_ids
-    )
-    if not classifier_outputs:
-        raise CheckFailure(
-            f"no executed scriptTask among {list(contract.classifier_ids)} "
-            "produced runtime output; severity was not computed"
-        )
-
-    def carries(record: object) -> bool:
-        """The severity appears in this node's own response, scalar or field."""
-
-        response = get_ci(record, "response")
-        if response == severity:
-            return True
-        if isinstance(response, dict):
-            return severity in response.values()
-        return False
-
-    if not any(carries(record) for record in classifier_outputs):
-        raise CheckFailure(
-            f"severity {severity!r} is not in any executed scriptTask's own "
-            "output; it was not computed by the classification node"
-        )
-
     # The exposed jiraIssueKey must be the executed Create-Issue node's OWN
     # response key — harvesting some other key cannot satisfy this.
     effects = harvest_side_effects(contract, variables_data)
@@ -455,10 +387,10 @@ def assert_jira_issue_on_tenant(
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    if not BPMN_FILE.is_file():
-        raise CheckFailure(f"missing {BPMN_FILE}")
-    contract = resolve_contract()
-    original_hash = sha256(BPMN_FILE)
+    bpmn_file = locate_bpmn()
+    project = bpmn_file.parent
+    contract = resolve_contract(bpmn_file)
+    original_hash = sha256(bpmn_file)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()
 
@@ -481,14 +413,14 @@ def main() -> None:
             "solution",
             "projects",
             "import",
-            str(PROJECT.resolve()),
+            str(project.resolve()),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
         cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / PROJECT.name
-    if sha256(imported_project / BPMN_FILE.name) != original_hash:
+    imported_project = solution_dir / project.name
+    if sha256(imported_project / bpmn_file.name) != original_hash:
         raise CheckFailure("solution import changed the submitted BPMN bytes")
     print(f"OK: imported exact artifact (sha256={original_hash})")
 

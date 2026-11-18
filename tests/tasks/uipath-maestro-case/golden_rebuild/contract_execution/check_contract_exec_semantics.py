@@ -471,6 +471,27 @@ def _assert_dataflow(plan: dict, index: dict, fixture: dict):
     _assert_literals(tasks, fixture)
 
 
+def _label_set(value) -> list[str] | None:
+    if not isinstance(value, str):
+        return value
+    return sorted(label.strip() for label in value.split(",") if label.strip())
+
+
+def _assert_envelope(logical, task: dict, envelope: dict[str, str]):
+    """Priority, title and labels of an action task, as the SDD states them."""
+    data = task.get("data") or {}
+    for field, expected in envelope.items():
+        actual = data.get(field)
+        if field == "labels":
+            # A label list, not a sentence: "contract,intake" is the same two labels.
+            actual, expected = _label_set(actual), _label_set(expected)
+        if actual != expected:
+            _fail(
+                f"{logical!r} data.{field} must be {envelope[field]!r}; "
+                f"got {data.get(field)!r}"
+            )
+
+
 def _assert_literals(tasks: dict, fixture: dict):
     for logical, task in tasks.items():
         name = logical[1]
@@ -494,13 +515,7 @@ def _assert_literals(tasks: dict, fixture: dict):
 
         envelope = fixture["envelopes"].get(name)
         if envelope is not None:
-            data = task.get("data") or {}
-            for field, expected in envelope.items():
-                if data.get(field) != expected:
-                    _fail(
-                        f"{logical!r} data.{field} must be {expected!r}; "
-                        f"got {data.get(field)!r}"
-                    )
+            _assert_envelope(logical, task, envelope)
 
         case_id = inputs.get("caseId")
         if case_id is not None and str(case_id.get("value") or ""):

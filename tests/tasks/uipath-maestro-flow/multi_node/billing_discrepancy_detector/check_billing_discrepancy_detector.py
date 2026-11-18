@@ -21,7 +21,6 @@ _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
-sys.path.insert(0, os.path.join(_d, "_shared"))
 from _shared.flow_check import (  # noqa: E402
     ENTITY_QUERY_HINTS,
     _fail_with_capture,
@@ -32,7 +31,7 @@ from _shared.flow_check import (  # noqa: E402
     completed_node_ids_of_type,
     run_debug,
 )
-from advisory_flow_utils import entity_name, entity_reads  # noqa: E402
+from _shared.advisory_flow_utils import entity_name, entity_reads  # noqa: E402
 
 INPUTS = {
     "invoiceNumber": "MCS-2026-04872",

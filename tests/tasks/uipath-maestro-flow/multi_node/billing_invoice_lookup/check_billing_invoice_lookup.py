@@ -1,63 +1,77 @@
 #!/usr/bin/env python3
-"""BillingInvoiceLookup: the agent builds + validates only; this check runs
-`uip maestro flow debug` itself for three malformed invoice-number forms and
-asserts each resolves, via a real entity query, to invoice MCS-2026-04872
-with 8 line items.
+"""BillingInvoiceLookup: debug the flow against the live BillingDisputeERP
+entity and assert what each run DID and returned.
 
-The flow normalizes a raw `invoiceNumber` (trim, uppercase, ensure the "MCS-"
-prefix) and queries the seeded `BillingDisputeERP` entity. An entity query node
-is required (anti-hardcode): you cannot fake `lineItemCount == 8` for three
-different inputs without actually querying. The seeded invoice has exactly 8
-line items, so the count is a deterministic oracle.
+Three messy forms of two real invoices. The live entity holds 8 line items for
+MCS-2026-04872 and 4 for MCS-2026-04903 (one row per line item), so the counts
+differ per invoice and a hardcoded answer cannot pass every case.
+
+Each run must:
+- complete an entity query (the lookup really ran against the tenant);
+- return `matchedInvoiceNumber` = the cleaned-up invoice number, read by name
+  (the raw input is also in the payload, so a whole-payload search would match
+  the echo);
+- return `lineItemCount` = the number of rows that invoice has.
 """
 import os
 import sys
 
-# Walk up to the skill's tests root (the dir holding the _shared package) so
-# this resolves regardless of how deeply the task is nested under tests/tasks/.
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
     ENTITY_QUERY_HINTS,
+    _fail_with_capture,
     assert_flow_has_any_node_type,
-    assert_output_value,
+    _fail,
+    assert_named_equals,
+    assert_output_nonempty,
+    completed_node_ids_of_type,
     find_project_dir,
     read_flow_input_vars,
     run_debug,
 )
 
-EXPECTED_INVOICE = "MCS-2026-04872"
-EXPECTED_LINE_COUNT = 8
-
-# raw input form the caller might send -> human label for failure messages
+# raw input the caller sends -> (invoice it must resolve to, its live line-item count, label)
 CASES = [
-    ("2026-04872", "missing MCS- prefix"),
-    ("mcs-2026-04872", "wrong casing"),
-    (" MCS-2026-04872", "leading whitespace"),
+    ("2026-04872", "MCS-2026-04872", 8, "missing MCS- prefix"),
+    ("mcs-2026-04903", "MCS-2026-04903", 4, "wrong casing"),
+    ("  MCS-2026-04872 ", "MCS-2026-04872", 8, "surrounding whitespace"),
 ]
 
 
-def main():
-    # Must actually query the entity — blocks hardcoding the answer, which
-    # would otherwise pass since all three cases expect the same output.
-    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
-
+def input_var():
     in_vars = read_flow_input_vars(find_project_dir())
     if not in_vars:
-        sys.exit("FAIL: flow declares no input variable for the invoice number")
-    var = in_vars[0]
+        sys.exit("FAIL: the flow declares no input for the invoice number")
+    return next((v for v in in_vars if v.lower() == "invoicenumber"), in_vars[0])
 
-    for raw, label in CASES:
-        inputs = {var: raw}
-        print(f"[{label}] debug inputs: {inputs}")
-        payload = run_debug(inputs=inputs, timeout=180)
-        assert_output_value(payload, EXPECTED_INVOICE)
-        assert_output_value(payload, EXPECTED_LINE_COUNT)
-        print(f"OK: [{label}] -> {EXPECTED_INVOICE}, {EXPECTED_LINE_COUNT} line items")
 
-    print(f"OK: all {len(CASES)} malformed forms normalized and queried correctly")
+def check_run(payload, invoice, count, label):
+    queried = set()
+    for hint in ENTITY_QUERY_HINTS:
+        queried |= completed_node_ids_of_type(payload, hint)
+    if not queried:
+        _fail_with_capture(f"[{label}] no entity query completed in the debug run")
+    assert_named_equals(payload, "matchedInvoiceNumber", invoice, case_sensitive=True)
+    got = assert_output_nonempty(payload, "lineItemCount")
+    try:
+        ok = float(str(got).strip()) == count
+    except ValueError:
+        ok = False
+    if not ok:
+        _fail(f"[{label}] output 'lineItemCount': expected {count}, got {got!r}")
+    print(f"OK: [{label}] query {sorted(queried)} completed -> {invoice}, {count} line items")
+
+
+def main():
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+    var = input_var()
+    for raw, invoice, count, label in CASES:
+        print(f"[{label}] debug inputs: {{{var!r}: {raw!r}}}")
+        check_run(run_debug(inputs={var: raw}, timeout=180), invoice, count, label)
+    print(f"OK: all {len(CASES)} messy forms were cleaned up and looked up correctly")
 
 
 if __name__ == "__main__":

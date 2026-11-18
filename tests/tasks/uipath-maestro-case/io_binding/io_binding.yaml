@@ -1,15 +1,20 @@
 task_id: skill-case-io-binding-matrix
 description: >
-  Build and debug a Case Management definition that exercises the common
-  task-level I/O binding patterns, using existing tenant API workflows as the
-  deterministic execution resources. The
-  deterministic Golden Expense echo workflow covers literal, case-variable,
-  cross-task, expression, bare, renamed, nested, literal-assignment,
-  variable-copy, computed, and metadata bindings. Two sequential NameToAge
-  tasks retain the equal-name output regression and require collision-safe
-  task-output IDs. No inline API sibling is created.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry, path-to-ga]
-
+  Build a Case from an approved sdd.md whose eight sequential tasks call two
+  existing tenant API workflows and pass values between them in the common
+  task-level I/O binding forms (literal, case-variable, cross-task, expression,
+  bare, renamed, nested, literal-assignment, variable-copy, computed, metadata,
+  and two equal-name outputs that need collision-safe ids), asked the way a
+  Studio Web user would ask it. The Golden Expense API workflow echoes its
+  input, so every value is known in advance. The grader runs the case once
+  under `uip maestro case debug` and reads the debug instance back
+  (`uip maestro case instance variables-all`): the eight tasks completed in the
+  SDD's order, each received the value its binding names (not the text of an
+  unresolved reference), and the case variables the SDD names hold the
+  expected values. Static checks keep what the SDD states (task names,
+  resources, folders, run once, no inline API project) and accept any binding,
+  id or output-row layout. That the agent ran its own test run is advisory.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry, path-to-ga, outcome-graded]
 run_limits:
   expected_turns: 220
   task_timeout: 4800
@@ -34,38 +39,48 @@ reference:
   directory: ..
 
 initial_prompt: |
-  Build a UiPath Case Management solution named "IoBindingCase" containing a
-  project also named "IoBindingCase" from the approved `sdd.md` staged in this
-  workspace. Use that file as the sole source of truth: do not rewrite,
-  summarize, simplify, or redesign it.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No user
+  is present, and nobody will answer a question or grant approval, so do not
+  ask, do not pause, and do not wait for input.
 
-  Treat all build and continuation gates as pre-approved.
-  Build end-to-end in one pass and finish with `uip maestro case validate`
-  passing. Bind the exact existing resources and folders written in the SDD;
-  do not create an inline API workflow or add an API project to the solution.
-  Bind every SDD Outputs row into the case plan, including both
-  `estimatedAge -> estimatedAge` rows. Discover the undeclared top-level
-  `APIOutput1` resource output and auto-mint it as a bare output; do not
-  invent an operator-free Outputs row in sdd.md.
+  Build the case "IoBindingCase" from the approved design in sdd.md in this
+  folder. Follow it as written: don't rewrite, shorten or redesign it. The case
+  runs eight API workflows that already exist on the tenant, one after
+  another, and passes values between them, its case variables and its outputs
+  exactly as the design says. Use the API workflows and folders the design
+  names; don't build new ones.
 
-  Do not run `uip maestro case debug` yourself; the test harness runs it
-  after structural grading. Leave exactly one .uipx in the workspace,
-  registering exactly one project: the CaseManagement project built from this
-  SDD. Delete any other solution directory created along the way.
+  <!-- helper:start -->
+  Echo literal's APIOutput1 has no Outputs row in the design because it is the
+  workflow's own result, which Echo prior output reads; don't add a row for it.
+  <!-- helper:end -->
+
+  Build and do a test run of the automation.
 
 success_criteria:
+  # The plan is found wherever the agent put it (any solution or project name).
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "p=$(ls IoBindingCase/IoBindingCase/caseplan.case IoBindingCase/IoBindingCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
-    timeout: 60
+    description: "uip maestro case validate passes on the case plan the agent built"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import find_caseplan; print(find_caseplan())' \"$REFERENCE_DIR\") && uip maestro case validate \"$p\" --output json"
+    timeout: 90
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
   - type: run_command
-    description: "The task-level I/O matrix, including equal-name ID collision handling, is structurally correct and debugs successfully"
-    command: "python3 $REFERENCE_DIR/_shared/check_io_binding_case.py"
-    timeout: 1080
+    description: "Effects: one debug run in which the eight SDD tasks completed in order, each received the value its binding names, and renamedResult, literalResult, copiedResult, computedResult, metadataResult and customReferenceCopy hold the expected values"
+    command: "python3 $REFERENCE_DIR/io_binding/check_io_binding_run.py"
+    timeout: 1200
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
