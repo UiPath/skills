@@ -54,7 +54,7 @@ A skeleton is not a working process and must never be reported as one.
    `fork` branches take no label: every branch runs.
 7. **Declare the variables the decisions read, for real**, with `.var()`, or `.input()` for a value the process is given at start.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
-   A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
+   A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it; the start event's input mapping (below) is the one payload a skeleton writes.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
    What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`; the start event receives it, so never draw a box whose only job is to receive, read or capture it.
    A decision that reads an input reads the variable the start event maps it into ([Process contract](bpmn-runtime.md#variables-and-the-process-contract)); write that mapping in the skeleton too.
@@ -213,7 +213,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 A skeleton validates as **Valid** with one warning per declared variable it reads — each variable a decision reads, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
 That is correct for a skeleton, whose producers are blank boxes.
 When an error path merges onto a box (rule 9), `check` also warns `[FAKE_JOIN] "<box>" has <n> incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
-Act only on errors, and do not report these warnings: they are expected on a skeleton, so they get no line in the reply.
+Act only on errors and on a `VARIABLE_NOT_SET` warning, which means a decision reads an input without the start event's mapping (rule 7); do not report the expected warnings above: they get no line in the reply.
 
 ## Find the resources
 
