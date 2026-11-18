@@ -58,16 +58,50 @@ CASEPLAN_EDITS = [
     "sed -i.bak -e 's/a/b/' P/P/caseplan.case",
     "perl -pi -e 's/foo/bar/; s/baz/qux/' P/P/caseplan.case",
     "cd P && sed -i 's/a/b/' P/caseplan.json",
+    "sed -i 's/a/b/' \"P/P/caseplan.json\"",
+    "sed -i 's/a/b/' 'P/P/caseplan.json'",
+    "sed -i \"s/a/b/\" \"$DIR/caseplan.json\"",
+    "sed -E -i 's/a/b/' P/caseplan.json",
+    "sed -e 's/a/b/' -i P/caseplan.json",
+    "sed --in-place 's/a/b/' P/caseplan.json",
+    "perl -p -i -e 's/a/b/' P/caseplan.case",
+    "sed -i 's/a/b/' P/entry-points.json",
+    "sed -i 's/a/b/' registry-resolved.json",
+    "python3 -c \"open('P/P/caseplan.json','w').write('{}')\"",
+    "python3 - <<'X'\nimport json\nopen('P/caseplan.json','w').write('{}')\nX",
+    "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
+    "ruby -e \"File.write('P/caseplan.json','{}')\"",
 ]
 
 NOT_CASEPLAN_EDITS = [
     # 2026-11-18 nightly false positive: the in-place edit targets the .case.ts source.
     "sed -i 's/Old/New/' .flow-sdk/CMGoldenExpense.case.ts; cp CMGoldenExpense/caseplan.case .flow-sdk/",
     "sed -i 's/Old/New/' X.case.ts && cat P/caseplan.json",
+    "sed -i 's/a/b/' caseplan.case.ts",
     "sed -n '1,40p' P/P/caseplan.json",
+    "sed --quiet '1,5p' P/caseplan.json",
     "perl -ne 'print if /stage/' P/P/caseplan.json",
     "python3 -c \"import json; print(json.load(open('P/P/caseplan.json')))\"",
+    "node -e \"console.log(require('crypto').randomUUID())\"",
 ]
+
+# Known misses, kept visible: the guard names the artifact on the command line, so an
+# indirect path or a separate script file escapes it. The redirection/helper-script
+# criterion in artifact_safety_guard catches `python fix.py`; cm_golden_expense has none.
+DOCUMENTED_MISSES = [
+    "sed -i 's/a/b/' P/*.json",
+    "F=P/caseplan.json; sed -i 's/a/b/' $F",
+    "python3 fix.py P/caseplan.json",
+]
+
+
+def test_both_rule14_guards_share_one_pattern() -> None:
+    assert SAFETY == GOLDEN
+
+
+@pytest.mark.parametrize("command", DOCUMENTED_MISSES)
+def test_rule14_documented_misses_stay_documented(command: str) -> None:
+    assert not _hits(SAFETY, command), "now caught: move it to CASEPLAN_EDITS"
 
 
 @pytest.mark.parametrize("command", CASEPLAN_EDITS)
@@ -85,19 +119,12 @@ def test_rule14_guards_allow_reads_and_source_edits(pattern: str, command: str) 
 @pytest.mark.parametrize(
     "command",
     [
-        "sed -i 's/a/b/' registry-resolved.json",
         "python3 -c \"import json;f=open('registry-resolved.json','w');f.write('{}')\"",
-        "python3 -c \"open('P/P/caseplan.json','w').write('{}')\"",
-        "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
         "sed -i 's/a/b/' P/P/bindings_v2.json",
     ],
 )
-def test_safety_guard_covers_every_skill_artifact(command: str) -> None:
+def test_rule14_guard_covers_every_skill_artifact(command: str) -> None:
     assert _hits(SAFETY, command)
-
-
-def test_safety_guard_allows_uuid_subprocess() -> None:
-    assert not _hits(SAFETY, "node -e \"console.log(require('crypto').randomUUID())\"")
 
 
 @pytest.mark.parametrize(

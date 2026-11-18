@@ -144,7 +144,8 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not edit caseplan.json in place with a script (Rule 14: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
     tool_name: "Bash"
-    command_pattern: '(perl|sed)\s+-\S*i\S*\s(?:''[^'']*''|"[^"]*"|[^;&|\n''"])*?\bcaseplan\.(json|case)|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.(json|case)'
+    # Identical to the artifact_safety_guard Rule 14 guard, pinned with fixtures by _shared/test_rule14_guard_patterns.py.
+    command_pattern: '((sed|perl)\s+(?:-\S+\s+(?:(?:''[^'']*''|"[^"]*")\s+)?)*?(?:-(?!-)\S*i\S*|--in-place\S*)\s(?:''[^'']*''|"[^"]*"|[^;&|\n''"])*?(?:[''"][^''"\n]*?)?\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.])|awk\b[^\n]*-i\s*inplace[^\n]*\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.])|python[0-9]?\b(?=[^\n]*\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.]))[^\n]*(open\s*\([^)]*,[^)]*[wax]|\.write(_text|_bytes)?\s*\()|python[0-9]?\s+-\s*<<(?=[\s\S]*\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.]))[\s\S]*(open\s*\([^)]*,[^)]*[wax]|\.write(_text|_bytes)?\s*\()|(node|nodejs)\s+(-e|--eval)\b(?=[^\n]*\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.]))[^\n]*(fs\.|require\s*\(\s*[''"](node:)?fs[''"]\s*\)\s*\.)(write|append|truncate|rm|unlink|rename)|ruby\s+-e\b(?=[^\n]*\b(caseplan\.(json|case)|registry-resolved\.json|bindings_v2\.json|entry-points\.json)(?![\w.]))[^\n]*File\.(write|open\s*\([^)]*,[^)]*[wa]))'
     weight: 2.0
     pass_threshold: 1.0
 
