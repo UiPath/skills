@@ -137,6 +137,11 @@ def _find_flow() -> str:
     return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
 
 
+# The generic list operation is `list-records` in the registry and in libraries
+# built since builder-sdk#2053; older libraries called it `list-all-records`.
+GENERIC_LIST_SLUGS = (".list-records", ".list-all-records")
+
+
 def _is_groups_operation(node: dict) -> bool:
     node_type = str(node.get("type") or "").lower()
     if CONNECTOR_KEY not in node_type:
@@ -148,7 +153,7 @@ def _is_groups_operation(node: dict) -> bool:
     object_name = detail.get("objectName") or (detail.get("pathParameters") or {}).get("objectName")
     endpoint = str(detail.get("endpoint") or "").rstrip("/").lower()
     return (
-        node_type.endswith(".list-all-records")
+        node_type.endswith(GENERIC_LIST_SLUGS)
         and str(object_name or "").lower() == "groups"
         and (not endpoint or endpoint.endswith("/groups"))
     )
