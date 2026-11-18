@@ -197,7 +197,7 @@ DOCUMENTED_MISSES = [
     ],
     ids=["python", "node", "sed", "sed-unterminated", "sed-repeated", "shell-var", "py-var"],
 )
-def test_rule14_guard_stays_linear_on_long_commands(command: str) -> None:
+def test_guard_is_linear(command: str) -> None:
     import time
 
     start = time.perf_counter()
@@ -205,24 +205,24 @@ def test_rule14_guard_stays_linear_on_long_commands(command: str) -> None:
     assert time.perf_counter() - start < 5.0
 
 
-def test_both_rule14_guards_share_one_pattern() -> None:
+def test_guards_share_pattern() -> None:
     assert SAFETY == GOLDEN
 
 
 @pytest.mark.parametrize("command", DOCUMENTED_MISSES)
-def test_rule14_documented_misses_stay_documented(command: str) -> None:
+def test_documented_misses(command: str) -> None:
     assert not _hits(SAFETY, command), "now caught: move it to CASEPLAN_EDITS"
 
 
 @pytest.mark.parametrize("command", CASEPLAN_EDITS)
 @pytest.mark.parametrize("pattern", [SAFETY, GOLDEN], ids=["safety", "golden"])
-def test_rule14_guards_catch_caseplan_edits(pattern: str, command: str) -> None:
+def test_guards_catch_edits(pattern: str, command: str) -> None:
     assert _hits(pattern, command)
 
 
 @pytest.mark.parametrize("command", NOT_CASEPLAN_EDITS)
 @pytest.mark.parametrize("pattern", [SAFETY, GOLDEN], ids=["safety", "golden"])
-def test_rule14_guards_allow_reads_and_source_edits(pattern: str, command: str) -> None:
+def test_guards_allow_reads(pattern: str, command: str) -> None:
     assert not _hits(pattern, command)
 
 
@@ -233,7 +233,7 @@ def test_rule14_guards_allow_reads_and_source_edits(pattern: str, command: str) 
         "sed -i 's/a/b/' P/P/bindings_v2.json",
     ],
 )
-def test_rule14_guard_covers_every_skill_artifact(command: str) -> None:
+def test_guard_covers_artifacts(command: str) -> None:
     assert _hits(SAFETY, command)
 
 
@@ -246,7 +246,7 @@ def test_rule14_guard_covers_every_skill_artifact(command: str) -> None:
         "\"$UIP\" maestro case instances incidents 1 --output json",
     ],
 )
-def test_faulted_read_accepts_singular_and_plural(command: str) -> None:
+def test_faulted_read_both_forms(command: str) -> None:
     assert _hits(FAULTED_READ, command)
 
 
