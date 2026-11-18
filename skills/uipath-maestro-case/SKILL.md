@@ -89,6 +89,7 @@ export default casePlan('loan-approval')
       .required()
       .entryWhen(rule('current-stage-entered')))
     .task('Manager Approval', t => t
+      // Literal recipient is baked into the plan; test or unknown assignee: references/case-runtime.md § Action recipients
       .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com', app: { name: 'LoanApproval', folder: 'Shared' } })
       .entryWhen(rule('selected-tasks-completed', { tasks: ['Check Policy'] }))))
   .stage('Decision', s => s
