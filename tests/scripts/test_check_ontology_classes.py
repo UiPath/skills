@@ -10,8 +10,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GRADER = ROOT / "tests/tasks/uipath-ontology-modeler/_shared/check_ontology.py"
-GOLDEN = ROOT / "tests/tasks/uipath-ontology-modeler/_shared/fixtures/orders-golden/orders.ofn"
+GRADER = ROOT / "tests/tasks/uipath-ontology/_shared/check_ontology.py"
+GOLDEN = ROOT / "tests/tasks/uipath-ontology/_shared/fixtures/orders-golden/orders.ofn"
 
 
 def run_classes(tmp_path: Path, schema: str | None, *args: str) -> subprocess.CompletedProcess:

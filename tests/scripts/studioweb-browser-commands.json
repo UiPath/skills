@@ -441,7 +441,7 @@
       "mcp serve": 2
     }
   },
-  "uipath-ontology-modeler": {
+  "uipath-ontology": {
     "allow": [
       {
         "file": "SKILL.md",
@@ -816,7 +816,7 @@
       {
         "file": "references/scenarios/ontology-solution.md",
         "command": "ont",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology-modeler stops in Studio Web)."
+        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
       }
     ],
     "ceiling": {

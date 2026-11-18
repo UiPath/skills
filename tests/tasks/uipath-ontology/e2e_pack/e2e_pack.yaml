@@ -1,4 +1,4 @@
-task_id: skill-ontology-modeler-e2e-pack
+task_id: skill-ontology-e2e-pack
 description: >
   E2E (Standalone mode): from a plain-language orders domain, a simulated
   domain owner confirms the model and the agent builds the local solution
@@ -8,7 +8,7 @@ description: >
   the service verdict Done, the package lists schema and mapping,
   and nothing was published or deployed. Needs a CLI that ships `uip ont`
   (cli#5710, cli#5798) and a login whose tenant serves ontology validation.
-tags: [uipath-ontology-modeler, e2e, mode:build, lifecycle:generate, feature:entities, outcome-graded]
+tags: [uipath-ontology, e2e, mode:build, lifecycle:generate, feature:entities, outcome-graded]
 
 reference:
   directory: ..
@@ -50,9 +50,9 @@ simulation:
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent loaded the uipath-ontology-modeler skill"
-    skill_name: uipath-ontology-modeler
-    expected_skill: uipath-ontology-modeler
+    description: "Agent loaded the uipath-ontology skill"
+    skill_name: uipath-ontology
+    expected_skill: uipath-ontology
     weight: 1.0
     pass_threshold: 1.0
 
@@ -119,7 +119,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Modeler stops after pack: no publish, deploy or activate"
+    description: "The skill stops after pack: no publish, deploy or activate"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|activate)'
     weight: 2.0

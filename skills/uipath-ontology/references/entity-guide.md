@@ -69,7 +69,7 @@ Entity names are unique across the solution. A matching definition is reused. A 
 
 ## Local create order
 
-1. **Connections.** The connections of federated sources are already in the solution (the modeler's connection stage).
+1. **Connections.** The connections of federated sources are already in the solution (Stage 3's connection import).
 2. **Choice sets, with their values.**
 3. **Entities with no `RELATIONSHIP` fields.**
 4. **Entities in dependency order:** a referenced entity before any entity that references it.
@@ -112,7 +112,7 @@ uip df entities create SalesOrder --local --body '<BODY>' --output json
 - A `RELATIONSHIP` field carries `"referenceEntityName": "<E>"`, a native local entity in the same solution, and optionally `"referenceFieldName"` (default `Id`).
 - A choice-set field carries `"choiceSetName": "<C>"`, a local choice set in the same solution.
 - Other field keys: `name`, `type`, `displayName`, `description`, `isRequired`, `isUnique`, `lengthLimit`, `decimalPrecision`, `minValue`, `maxValue`, `defaultValue`.
-- A target that is not in the solution is refused with `REFERENCE_TARGET_NOT_FOUND` or `CHOICE_SET_NOT_FOUND`, a federated target with `RELATIONSHIP_TARGET_FEDERATED`, and a field that would close a reference cycle with `RELATIONSHIP_CYCLE`. Fix the create order or the name; the codes are in the modeler's recovery table.
+- A target that is not in the solution is refused with `REFERENCE_TARGET_NOT_FOUND` or `CHOICE_SET_NOT_FOUND`, a federated target with `RELATIONSHIP_TARGET_FEDERATED`, and a field that would close a reference cycle with `RELATIONSHIP_CYCLE`. Fix the create order or the name; the codes are in the recovery table in [errors-guide.md](errors-guide.md).
 - If the CLI does not know `referenceEntityName` or `choiceSetName` at all, or has no local choice sets or federated entities, the CLI build is too old: stop and tell the user.
 
 Change an existing entity with `uip df entities update <E> --local --body '<CHANGE>' --output json`, where the body takes `addFields`, `updateFields` and `removeFields` plus `displayName` and `description`. A changed field type is rejected when the entity is deployed into a folder that already holds it. A federated entity cannot be updated: delete it and create it again. After any create or update, validate and fix what is reported with `uip df entities update <E> --local`.

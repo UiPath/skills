@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract guards for the ontology skill (uipath-ontology-modeler)."""
+"""Contract guards for the ontology skill (uipath-ontology)."""
 
 import json
 import re
@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "skills"
-MODELER_DIR = SKILLS / "uipath-ontology-modeler"
+MODELER_DIR = SKILLS / "uipath-ontology"
 SOLUTION_DIR_SKILL = SKILLS / "uipath-solution"
 
 NEGATION = re.compile(r"\b(never|not|no|don't|do not|without|instead of|refuse|reject|stop)\b", re.I)
@@ -78,14 +78,14 @@ def test_section_ignores_headings_inside_code_fences():
 
 def test_skill_registered_as_preview_and_authoring_is_gone():
     status = json.loads(read(ROOT / "assets/skill-status.json"))["skills"]
-    assert status["uipath-ontology-modeler"]["status"] == "preview"
+    assert status["uipath-ontology"]["status"] == "preview"
     assert "uipath-ontology-authoring" not in status
     assert not (SKILLS / "uipath-ontology-authoring").exists()
 
 
 def test_frontmatter_identity_and_redirects():
     m = frontmatter(read(MODELER_DIR / "SKILL.md"))
-    assert m["name"] == "uipath-ontology-modeler"
+    assert m["name"] == "uipath-ontology"
     assert m["description"].startswith("UiPath Ontology") and len(m["description"]) <= 1024
     assert "→uipath-solution" in m["description"] and "TRIGGER" not in m["description"]
     assert m["user-invocable"] is True and m["allowed-tools"]
@@ -101,8 +101,8 @@ def test_frontmatter_identity_and_redirects():
 
 def test_codeowners_cover_ontology_paths():
     owners = read(ROOT / "CODEOWNERS")
-    for p in ("/skills/uipath-ontology-modeler/", "/skill-flavors/studioweb/uipath-ontology-modeler/",
-              "/tests/tasks/uipath-ontology-modeler/",
+    for p in ("/skills/uipath-ontology/", "/skill-flavors/studioweb/uipath-ontology/",
+              "/tests/tasks/uipath-ontology/",
               "/tests/scripts/test_ontology_skill_contract.py", "/tests/scripts/test_ontology_solution_golden.py"):
         assert re.search(rf"^{re.escape(p)}\s+@", owners, re.M), p
 
@@ -129,9 +129,9 @@ def test_markdown_links_stay_inside_the_skill():
 
 
 def test_activation_rows_route_every_input_to_the_one_skill():
-    path = ROOT / "tests/tasks/activation/uipath-ontology-modeler.jsonl"
+    path = ROOT / "tests/tasks/activation/uipath-ontology.jsonl"
     rows = [json.loads(l) for l in read(path).splitlines() if l.strip()]
-    assert {r["expected_skill"] for r in rows} == {"uipath-ontology-modeler"}
+    assert {r["expected_skill"] for r in rows} == {"uipath-ontology"}
     prompts = [r["prompt"].lower() for r in rows]
     assert any(re.search(r"\bsdd\b|\bpdd\b|design document|specification", p) for p in prompts)
     assert any(re.search(r"\.ofn|\.ttl|yarrrml", p) for p in prompts)
@@ -485,7 +485,7 @@ def test_saved_model_is_written_resumed_and_kept_current():
 def test_planner_hands_ontology_requests_to_the_modeler():
     # The planner claims every PDD/SDD; without this redirect "an ontology from this PDD" never reaches the modeler.
     fm = frontmatter(read(SKILLS / "uipath-planner/SKILL.md"))
-    assert "ontology, even from a PDD/SDD→uipath-ontology-modeler" in fm["description"]
+    assert "ontology, even from a PDD/SDD→uipath-ontology" in fm["description"]
     assert "A PDD always routes here, even for one RPA process, but not an ontology." in fm["when_to_use"]
     # the skill listing keeps only the first 1536 chars of description + when_to_use
     assert len(fm["description"]) <= 1024 and len(fm["description"]) + len(fm["when_to_use"]) + 1 <= 1536
@@ -511,11 +511,11 @@ def test_update_keeps_the_saved_model_current():
 
 
 def test_document_evals_live_under_the_one_skill():
-    tasks = ROOT / "tests/tasks/uipath-ontology-modeler"
+    tasks = ROOT / "tests/tasks/uipath-ontology"
     for f in ("smoke_sdd_document/smoke_sdd_document.yaml", "e2e_sdd_to_pack/e2e_sdd_to_pack.yaml"):
         y = yaml.safe_load(read(tasks / f))
         triggered = [c["skill_name"] for c in y["success_criteria"] if c["type"] == "skill_triggered"]
-        assert triggered == ["uipath-ontology-modeler"], f
+        assert triggered == ["uipath-ontology"], f
         assert any(c.get("path") == "maintenance/input/model.md" for c in y["success_criteria"]), f
     assert "Group" in read(tasks / "_sdd_crews/maintenance-sdd.md") and "| File |" in read(tasks / "_sdd_crews/maintenance-sdd.md")
     assert not (ROOT / "tests/tasks/uipath-ontology-authoring").exists()

@@ -1,4 +1,4 @@
-task_id: skill-ontology-modeler-sdd-document
+task_id: skill-ontology-sdd-document
 description: >
   Smoke (Document mode): from a small equipment-maintenance SDD, the agent
   confirms the model table by table with a simulated domain owner, saves it to
@@ -10,7 +10,7 @@ description: >
   renamed before any create, that the file field stays FILE, that the saved
   model holds the confirmed tables, and that no Data Fabric write ran without
   --local. No login needed beyond `uip login status`.
-tags: [uipath-ontology-modeler, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
+tags: [uipath-ontology, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
 
 sandbox:
   template_sources:
@@ -47,9 +47,9 @@ simulation:
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent loaded the uipath-ontology-modeler skill for the SDD"
-    skill_name: uipath-ontology-modeler
-    expected_skill: uipath-ontology-modeler
+    description: "Agent loaded the uipath-ontology skill for the SDD"
+    skill_name: uipath-ontology
+    expected_skill: uipath-ontology
     weight: 1.5
     pass_threshold: 1.0
 

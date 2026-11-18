@@ -1,6 +1,6 @@
 # Ontology Artifacts Guide
 
-The modeler writes the ontology's artifact files into `WORKDIR` and attaches them to the Ontology resource with `uip ont files add`. The CLI packages them into the deployable zip. This guide lists the files, their types and how many of each the ontology takes.
+The skill writes the ontology's artifact files into `WORKDIR` and attaches them to the Ontology resource with `uip ont files add`. The CLI packages them into the deployable zip. This guide lists the files, their types and how many of each the ontology takes.
 
 | File | Artifact type | Media type | Count |
 |---|---|---|---|

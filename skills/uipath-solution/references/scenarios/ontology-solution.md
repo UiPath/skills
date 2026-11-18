@@ -31,7 +31,7 @@ uip df entities list --folder-key <DEPLOY_FOLDER_KEY> --output json
 
 - `TypeIncompatible` on an upgrade (`ReferenceEntity: existing=EntityAttachment`): an entity with a `FILE` field; see [local-entity-file-field.md](local-entity-file-field.md).
 - `EntityConflict`: a changed field type was merged into a same-name entity in the target folder. Tell the user; never change a field type silently.
-- `InstallError` naming an entity, column or choice set as "Missing in the target folder": the solution lacks it. Hand back to `uipath-ontology-modeler` to add it locally and pack, then redeploy; without that skill, tell the user which entity, column or choice set the solution lacks.
+- `InstallError` naming an entity, column or choice set as "Missing in the target folder": the solution lacks it. Hand back to `uipath-ontology` to add it locally and pack, then redeploy; without that skill, tell the user which entity, column or choice set the solution lacks.
 - `InstallError` for a rename onto a name another ontology holds in that folder: the new name is taken, and the previous version stays installed. Choose another name with `config set <config.json> <Ontology> name <NewName>`, then redeploy.
 
 A federated entity's connection ships in the solution; its `NeedsSetupToActivate` after deploy is handled as in [pack-and-deploy.md Step 4](../pack-and-deploy.md#step-4-deploy-to-orchestrator).

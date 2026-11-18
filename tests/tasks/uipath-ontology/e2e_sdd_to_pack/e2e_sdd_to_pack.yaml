@@ -1,4 +1,4 @@
-task_id: skill-ontology-modeler-e2e-sdd-to-pack
+task_id: skill-ontology-e2e-sdd-to-pack
 description: >
   E2E (Document mode): from the equipment-maintenance SDD, a simulated domain
   owner confirms each table; the skill saves the confirmed model, builds the
@@ -9,7 +9,7 @@ description: >
   schema and mapping, and nothing was published or deployed.
   Needs a CLI that ships `uip ont` (cli#5710, cli#5798) and a login whose
   tenant serves ontology validation.
-tags: [uipath-ontology-modeler, e2e, mode:build, lifecycle:generate, feature:entities, feature:conversational, outcome-graded]
+tags: [uipath-ontology, e2e, mode:build, lifecycle:generate, feature:entities, feature:conversational, outcome-graded]
 
 sandbox:
   template_sources:
@@ -48,9 +48,9 @@ simulation:
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent loaded the uipath-ontology-modeler skill for the SDD"
-    skill_name: uipath-ontology-modeler
-    expected_skill: uipath-ontology-modeler
+    description: "Agent loaded the uipath-ontology skill for the SDD"
+    skill_name: uipath-ontology
+    expected_skill: uipath-ontology
     weight: 1.5
     pass_threshold: 1.0
 

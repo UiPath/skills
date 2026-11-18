@@ -1,13 +1,13 @@
 ---
-name: uipath-ontology-modeler
-description: "UiPath Ontology modeler (.ofn, .yarrrml.yml, optional summary/context .json and SHACL .ttl). Always invoke to build or update an ontology, even from an SDD or PDD. Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: an SDD, PDD or design document, a plain-language domain, or existing artifact files to clone or rebuild. For publish/deploy/activate of the packed solution→uipath-solution. For PDD→automation SDD design→uipath-planner. For Data Fabric entity or record work outside an ontology→uipath-platform."
+name: uipath-ontology
+description: "UiPath Ontology (.ofn, .yarrrml.yml, optional summary/context .json and SHACL .ttl). Always invoke to build or update an ontology, even from an SDD or PDD. Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: an SDD, PDD or design document, a plain-language domain, or existing artifact files to clone or rebuild. For publish/deploy/activate of the packed solution→uipath-solution. For PDD→automation SDD design→uipath-planner. For Data Fabric entity or record work outside an ontology→uipath-platform."
 when_to_use: "User provides an SDD, PDD or design/domain specification and wants an ontology from it; describes classes, fields, and relationships and wants an ontology; or supplies .ofn/.ttl/.yarrrml.yml files to clone or turn into a solution. Also: 'list the ontologies in folder X', 'show the deployed ontology Y'."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
 ---
 
 
-# UiPath Ontology Modeler
+# UiPath Ontology
 
 Builds an ontology as a **local UiPath solution**: one ontology resource plus the local Data Fabric entities, choice sets and federated entities it reads, all linked by name. The CLI keeps one zip per ontology; the skill never builds, reads or edits it. Nothing is created on the tenant before deploy.
 
@@ -43,7 +43,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the saved model, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
 10. **An entity change is a local edit** (`uip df entities update <E> --local`), followed by validate.
 11. **Validation needs `uip login`.** `uip ont validate --local` always calls the ontology service; stop if it can't be reached. `uip ont artifacts check` is the offline per-file check.
-12. **Stop after pack.** The modeler ends with `uip solution pack` and `uip ont files list --package`; publish and deploy belong to `uipath-solution`.
+12. **Stop after pack.** The skill ends with `uip solution pack` and `uip ont files list --package`; publish and deploy belong to `uipath-solution`.
 13. **Save the confirmed model to `<WORKDIR>/input/model.md`** after each confirmation, and save every later fix to it before the next step ([Saved model](#saved-model)). It survives a compacted or ended session.
 14. **Ontology names are unique per folder.** Never rename the ontology resource while authoring; a new name means a new resource. Change its display name, description and entities only with `uip ont update --local`, and its files only with `uip ont files add|remove`.
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
@@ -225,7 +225,7 @@ Save `model.md` with `CONFIRMED_THROUGH: built` and give the [Report](#report). 
 - The entities and choice sets are created in the target folder at deploy from their local resources, or merged into a same-name entity there.
 - The federated connections, each needing sign-in after deploy (`NeedsSetupToActivate`), unless the deployer links each one in the deployment configuration to an existing signed-in connection of the same connector.
 - A solution already deployed is upgraded in place, never deployed again: see [Updating an existing solution](#updating-an-existing-solution).
-- The post-deploy check in the deployment folder belongs to `uipath-solution`. The modeler runs nothing after this stage.
+- The post-deploy check in the deployment folder belongs to `uipath-solution`. The skill runs nothing after this stage.
 
 ## Updating an existing solution
 

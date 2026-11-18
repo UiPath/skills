@@ -92,10 +92,10 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-insights": 100,  # 61/61
     "uipath-process-mining": 100,  # 19/19
     "uipath-rules": 100,  # 30/30
-    # uipath-ontology-modeler: measured 52/52 (actions/runs/44280682981), with the planner's ontology redirect
+    # uipath-ontology: measured 52/52 as uipath-ontology-modeler (actions/runs/44280682981), before the rename, with the planner's ontology redirect
     # in place. Its rows include 25 SDD/PDD/design-document prompts the planner also claims, so this gate is
-    # what keeps them reaching the modeler.
-    "uipath-ontology-modeler": 100,
+    # what keeps them reaching it.
+    "uipath-ontology": 100,
 }
 
 DROP_PP = 10

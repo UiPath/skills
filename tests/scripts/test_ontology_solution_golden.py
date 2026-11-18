@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Golden path: the uipath-ontology-modeler flow, CLI only, for a SalesOrder/Customer ontology.
+"""Golden path: the uipath-ontology flow, CLI only, for a SalesOrder/Customer ontology.
 
-Follows skills/uipath-ontology-modeler/SKILL.md stage by stage: login status, solution init, the
+Follows skills/uipath-ontology/SKILL.md stage by stage: login status, solution init, the
 local choice set and its values, the native entities (a RELATIONSHIP and a CHOICE_SET_SINGLE field),
 a federated entity over a local native entity, entities validate, artifacts check, ont create,
 files add, validate (with the XF-019 fix loop), pack, files list --package, then the packed
@@ -36,7 +36,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "tests" / "tasks" / "uipath-ontology-modeler" / "_shared" / "fixtures" / "orders-golden"
+FIXTURE = ROOT / "tests" / "tasks" / "uipath-ontology" / "_shared" / "fixtures" / "orders-golden"
 UIP_CLI = os.environ.get("UIP_CLI")
 EMBEDDED_METADATA = os.environ.get("UIP_GOLDEN_EMBEDDED_METADATA") == "1"
 

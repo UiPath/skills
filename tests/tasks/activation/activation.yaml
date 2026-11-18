@@ -26,7 +26,7 @@ dataset:
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
     - uipath-mcp-servers.jsonl
-    - uipath-ontology-modeler.jsonl
+    - uipath-ontology.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
     - uipath-process-mining.jsonl
@@ -243,8 +243,8 @@ success_criteria:
     stop_early:
       on_pass: stop
   - type: skill_triggered
-    description: "uipath-ontology-modeler activation"
-    skill_name: uipath-ontology-modeler
+    description: "uipath-ontology activation"
+    skill_name: uipath-ontology
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

@@ -1,4 +1,4 @@
-task_id: skill-ontology-modeler-artifacts-only
+task_id: skill-ontology-artifacts-only
 description: >
   Smoke (Artifacts-only mode): from a confirmed plain-language orders domain,
   the agent writes the ontology schema and YARRRML mapping (no SHACL
@@ -8,7 +8,7 @@ description: >
   an xsd range on typed properties, the schema comment lists the choice-set
   values, no constraints file, no GUIDs, and no solution or Data Fabric write
   ran. Needs a CLI that ships `uip ont` (cli#5710); no login.
-tags: [uipath-ontology-modeler, smoke, mode:build, lifecycle:generate]
+tags: [uipath-ontology, smoke, mode:build, lifecycle:generate]
 
 reference:
   directory: ..
@@ -29,9 +29,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent loaded the uipath-ontology-modeler skill"
-    skill_name: uipath-ontology-modeler
-    expected_skill: uipath-ontology-modeler
+    description: "Agent loaded the uipath-ontology skill"
+    skill_name: uipath-ontology
+    expected_skill: uipath-ontology
     weight: 1.5
     pass_threshold: 1.0
 
