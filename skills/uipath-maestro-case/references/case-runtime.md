@@ -38,24 +38,24 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Action recipients and the go-live trap
 
 <!-- RULE:case.recipient.literal-at-go-live -->
-- An action task's `recipient` is a literal email address baked into the plan.
-  Safe for testing; a trap for go-live. Going live requires editing every
-  action's recipient in the source and publishing a new case version.
-
-  Write the recipient as a plain email address. Do not write an `=` expression
-  in `recipient`: no case plan in use carries one, runtime resolution is
-  unconfirmed, and `case check` does not read `recipient`, so a wrong
-  expression passes `check` and `validate`.
-
-  When the recipient is a test address, tell the user before publishing:
-  1. Every action routes to that test address until someone edits each
-     recipient in the source.
-  2. Going live means changing each recipient and publishing a new version.
+- Write an action task's `recipient` as a plain email address. A bare string
+  compiles to `{ type: 2, value: <email> }`, a single user by email
+  (`RecipientType` in the SDK's `case-sdk.d.ts`). Types `0`, `1` and `3` are
+  reserved for other assignee kinds and no staged example exercises them.
+  Do not write an `=` expression in `recipient`: `case check` does not read
+  `recipient`, so it cannot report a wrong path, and runtime support for an
+  expression there is untested.
 
 <!-- RULE:case.recipient.no-silent-default -->
-- Do not set a recipient to the user's own email without saying so.
-  State the address, that it is baked into the plan, and what changing it
-  requires. The user decides whether to publish with that recipient.
+- The address is baked into the plan. Going live with a different assignee
+  means editing every action's `recipient` in the source and publishing a new
+  case version. Before publishing, for each recipient the user did not name as
+  the production assignee (a test mailbox, the user's own email, a
+  placeholder), tell the user:
+  1. The address, and which actions route to it.
+  2. That it stays until someone edits each `recipient` and republishes.
+
+  The user decides whether to publish with that recipient.
 
 ## Script tasks
 
