@@ -6,7 +6,7 @@ Preferences for rebuilding a set of existing automations in UiPath. They apply t
 
 - **Office applications.** Word, Excel and Outlook work goes through UiPath's activities for that application wherever one does the step.
 - **Excel through its activities, never its window.** Clicks, keystrokes, menus or copy and paste on the Excel window are rebuilt with the Excel activities inside Use Excel File, never as UI automation on Excel. Excel runs hidden whenever no step needs its window.
-- **Starting and closing applications.** An application starts through its Use Application/Browser card, not Start Process. It closes softly through the card: close it, wait up to `SoftCloseWaitSeconds` (default 5; a Config setting in processes, a constant in libraries) for its window to go, then kill only what is still open, in the robot's own session.
+- **Closing applications.** An application closes softly through its Use Application/Browser card: close it, wait up to `SoftCloseWaitSeconds` (default 5; a Config setting in processes, a constant in libraries) for its window to go, then kill only what is still open, in the robot's own session.
 - **Mail** goes through the Microsoft 365 activities; no desktop Outlook.
 - **Modern activities** (Excel, Take Screenshot), the REFramework's own files included. A classic activity only where no modern one does the step, with the reason in its annotation.
 
@@ -46,14 +46,9 @@ Preferences for rebuilding a set of existing automations in UiPath. They apply t
 ## 7. Processes and configuration
 
 - **Logging** goes to the Orchestrator job log (Log Message), not through the source's logging components.
-- **REFramework `Config.json`** has separate `Settings`, `Assets` and `Credential` sections; a section nothing uses is left out.
-- **REFramework transactions**: the framework sets each item's outcome and handles its retries; the rebuild adds no mechanism of its own for either.
 - **Workbook flows**: one queue item per workbook, its rows records in a Data Fabric entity. Flows of the same shape use the same model.
 - **Lists worked in one run**: rows one robot works through in one run are a For Each, not a get-next over a "taken" flag; a queue only where items run in parallel or must survive a crash.
-- **Robots coordinate through queues.** A queue item is locked while one robot works on it, so the automation keeps no locks of its own; a source component that coordinates robots with its own lock is split so the queue does it.
 - **Exceptions**: a catch routes by exception type, never by message text; a Try Catch that only rethrows is removed. The source's error codes stay in the failure notifications.
-- **Queries** filter on the server; a per-row loop reads once before it and writes in batch. A filter applied after the read is annotated with why.
-- **Counts, limits and timeouts**: in Config in processes, in `Constants.cs` in libraries; a value fixed on purpose is annotated.
 
 ## 8. Hand-off
 
@@ -63,11 +58,10 @@ Preferences for rebuilding a set of existing automations in UiPath. They apply t
 - **Reports**, in this order:
   1. **Overview**: a one-page Markdown description of the process: how the source works, what it was migrated to and why.
   2. **Workflow map**: each source process and component to its UiPath workflow file.
-  3. **Variables**: per process and workflow, the scope and name in the source and in the migration.
-  4. **Design decisions**: each design decision with its reason.
-  5. **Defect register**: each source defect carried over, with its source file and migrated workflow.
-  6. **TODO list**: only what the migration could not do and a person must do, with the source place (file, process or component, step), the migrated place (project, workflow file, activity) and why. Every TODO left in a project is listed.
-  7. **Deployment open items**: set-up, queues and entities, triggers, assets with their default values (the values found in the source), credential assets, settings, and deployment notes (robot software, live checks); each asset, setting and credential names the workflows that use it.
-  8. **Structural deviations**: what differs in the UiPath implementation and why, with the source's workflow and step names, split into Added, Removed (not migrated) and Changed.
-  9. **Process components**, last: diagrams of the source's and the migration's processes and queues, each node named by its real process name; for each Data Fabric entity, why it exists, what it holds and which projects use it.
+  3. **Design decisions**: each design decision with its reason.
+  4. **Defect register**: each source defect carried over, with its source file and migrated workflow.
+  5. **TODO list**: only what the migration could not do and a person must do, with the source place (file, process or component, step), the migrated place (project, workflow file, activity) and why. Every TODO left in a project is listed.
+  6. **Deployment open items**: set-up, queues and entities, triggers, assets with their default values (the values found in the source), credential assets, settings, and deployment notes (robot software, live checks); each asset, setting and credential names the workflows that use it.
+  7. **Structural deviations**: what differs in the UiPath implementation and why, with the source's workflow and step names, split into Added, Removed (not migrated) and Changed.
+  8. **Process components**, last: diagrams of the source's and the migration's processes and queues, each node named by its real process name; for each Data Fabric entity, why it exists, what it holds and which projects use it.
 - **Live checks**: one row per UI library ("verify this library's screens on the live application"), not one per target.

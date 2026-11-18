@@ -29,18 +29,17 @@ Report keys, all optional except `title`:
 
 The badge of a tab is the number of rows (all groups added up); a report that only has diagrams shows the number of diagrams; a Markdown report shows no badge. `id` becomes the page anchor (`#workflow-map`); it defaults to a slug of `title`. Text is always escaped, so a cell cannot carry HTML. Line breaks in a cell are kept. Tabs switch with the left and right arrow keys, and each tab button points (`aria-controls`) to its section.
 
-## The nine reports, in order
+## The eight reports, in order
 
 1. **Overview**: a Markdown page of about 600 to 1000 words: what the solution does, how it runs from start to finish, what changed from the source and why, what operations need to know, where to look next. Headings, short paragraphs and a few bullet lists; no migration internals.
 2. **Workflow map**.
-3. **Variables**.
-4. **Design decisions**: the decisions taken about how the solution is built, each with its reason and where it applies; columns Topic, Decision, Why, Applies to. No configuration answers, preferences or review findings: their values are under Deployment open items.
-5. **Defect register**.
-6. **TODO list**. Live checks: one row per UI library ("verify this library's screens on the live application"), not one per target.
-7. **Deployment open items**: groups Set-up, Packages, Queues, Entities, Triggers, Assets, Credential assets, Settings, Deployment notes, and a Type column. An Entities row has the field list and, after one plain line, the entity's definition JSON. In Assets, Credential assets and Settings, Used by names each process with the workflows that use the value, at most three, then `+N more`, or `(not used in any workflow)`.
-8. **Structural deviations**: groups Added, Removed, Changed.
-9. **Process components**: an original and a migrated diagram of processes and queues only, no libraries or components they call, the nodes carrying the process names (the source's name in the original, the UiPath project name in the migrated); then the groups Components and links, and Queues and data stores. The second holds the queue rows and one row per Data Fabric entity: why it exists, what it holds, which projects use it.
+3. **Design decisions**: the decisions taken about how the solution is built, each with its reason and where it applies; columns Topic, Decision, Why, Applies to. No configuration answers, preferences or review findings: their values are under Deployment open items.
+4. **Defect register**.
+5. **TODO list**. Live checks: one row per UI library ("verify this library's screens on the live application"), not one per target.
+6. **Deployment open items**: groups Set-up, Packages, Queues, Entities, Triggers, Assets, Credential assets, Settings, Deployment notes, and a Type column. An Entities row has the field list and, after one plain line, the entity's definition JSON. In Assets, Credential assets and Settings, Used by names each process with the workflows that use the value, at most three, then `+N more`, or `(not used in any workflow)`.
+7. **Structural deviations**: groups Added, Removed, Changed.
+8. **Process components**: an original and a migrated diagram of processes and queues only, no libraries or components they call, the nodes carrying the process names (the source's name in the original, the UiPath project name in the migrated); then the groups Components and links, and Queues and data stores. The second holds the queue rows and one row per Data Fabric entity: why it exists, what it holds, which projects use it.
 
 The sample shows the Overview with placeholder prose and each of the others with its columns and two or three placeholder rows. "Removed (not migrated)" in Structural deviations is the empty-state example; typing a word that matches nothing in a filter shows the other empty state.
 
-The Excel file holds the eight data reports, one sheet each. The Overview is also written as a `.md` file beside the report, and so are the open items, in a second `.md` file generated from the same rows as their two tabs: Deployment open items, with the entities' definition JSON in code blocks, and the TODO list grouped by project.
+The Excel file holds the seven data reports, one sheet each. The Overview is also written as a `.md` file beside the report, and so are the open items, in a second `.md` file generated from the same rows as their two tabs: Deployment open items, with the entities' definition JSON in code blocks, and the TODO list grouped by project.

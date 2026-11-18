@@ -87,7 +87,7 @@ tbody tr:hover td{background:var(--sel)}
 .mm-err{color:#ffb3b3;padding:6px 12px;font-size:12px}
 @media (max-width:1000px){.mm-grid{grid-template-columns:1fr}}
 </style></head><body>
-<header><h1 id="page-title"><span>Sample</span> hand-off report</h1><p class="sub-title" id="page-subtitle">Standalone sample of the hand-off page: nine reports, each with a filter. All names and values below are placeholders.</p><div class="note" id="page-notice" hidden></div><div class="tabs" role="tablist" id="tab-list"></div></header>
+<header><h1 id="page-title"><span>Sample</span> hand-off report</h1><p class="sub-title" id="page-subtitle">Standalone sample of the hand-off page: eight reports, each with a filter. All names and values below are placeholders.</p><div class="note" id="page-notice" hidden></div><div class="tabs" role="tablist" id="tab-list"></div></header>
 <main id="report-main"><noscript><div class="empty">This page needs JavaScript to show its reports.</div></noscript></main>
 
 <!-- ===================== DATA: the only place a generator fills in report content ===================== -->
@@ -110,17 +110,6 @@ tbody tr:hover td{background:var(--sel)}
         ["<Process name>", "Process", "<Section name>", "Sample.Project", "Process", "Sample/Main.xaml", "<Plain-words description of what the workflow does>", "in_Config (In)", "<How the source step was rebuilt>", "Done"],
         ["<Component name>", "Component", "<Action name>", "Sample.Library", "Library", "Sample/DoSomething.xaml", "<Plain-words description of what the workflow does>", "in_Item (In), out_Result (Out)", "<How the source action was rebuilt>", {"text": "In progress", "tone": "warn"}],
         ["<Process name 2>", "Process", "(whole process)", "Sample.OtherProject", "Process", "Sample.OtherProject/Main.xaml", "<Plain-words description>", "-", "<Note>", "Done"]
-      ]
-    },
-    {
-      "id": "variables",
-      "title": "Variables",
-      "intro": "For each process and workflow: the variables as named in the source and in the migration.",
-      "columns": ["Source process / component", "Source section or action", "Name in the export", "Scope in the export", "Type in the export", "Initial value in the export", "UiPath project", "UiPath workflow", "Name in the migration", "Scope in the migration", "Type in the migration", {"name": "Remark", "wide": true}],
-      "rows": [
-        ["<Process name>", "<Section name>", "<Source variable>", "Section", "String", "", "Sample.Project", "Sample/Main.xaml", "str_SampleValue", "Workflow", "String", ""],
-        ["<Process name>", "<Section name>", "<Another variable>", "Process", "Boolean", "False", "Sample.Project", "Sample/Main.xaml", "bool_SampleFlag", "Workflow", "Boolean", "<Remark>"],
-        ["<Component name>", "<Action name>", "<Third variable>", "Action", "Number", "0", "Sample.Library", "Sample/DoSomething.xaml", "int_SampleCount", "Workflow", "Int32", ""]
       ]
     },
     {
