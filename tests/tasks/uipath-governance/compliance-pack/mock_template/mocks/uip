@@ -40,17 +40,14 @@ skips hidden files, and these belong in the eval report):
     deleted policies, tenant assignments), so later reads reflect them.
   - `calls.jsonl` — seeded empty; one record per invocation
     `{ts, tool, argv, exit, Result, Code[, error]}`, for run_command graders.
-  - `login-tenant` — optional, written by a task's pre_run before the agent
-    starts: the sandbox login's tenant id(s), one per line, from
-    `$UIPATH_TENANT_ID` and `~/.uipath/.auth`. Such an id is the recorded
-    login's tenant: login replies show it and state calls on it count as the
-    login's tenant. Read only from this snapshot, never from the agent's env or
-    `~/.uipath/.auth`, so an id the agent writes later still 404s.
 
 A target id the recorded login cannot see — empty (`~/.uipath/.auth` is not
 present in the CI sandbox), malformed, the org id passed as a tenant, or an
 invented GUID — gets the same HTTP 404 the live API returned, so an agent has
-to recover a real tenant id the way it would for real (see `login-tenant`).
+to recover a real tenant id the way it would for real. The sandbox's own login
+tenant (`$UIPATH_TENANT_ID` and/or `~/.uipath/.auth`, the source the skill
+names) is the exception: it counts as the recorded login's tenant, so login
+replies show it and state calls on it act on the recorded tenant.
 
 `mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
 sandbox. Linux smoke only (no `windows` tag), hence no `uip.cmd` twin.
@@ -69,7 +66,6 @@ FIXTURES = os.path.join(MOCK_DIR, "fixtures")
 SCENARIO_PATH = os.path.join(MOCK_DIR, "scenario")
 STATE_PATH = os.path.join(MOCK_DIR, "state.json")
 LOG_PATH = os.path.join(MOCK_DIR, "calls.jsonl")
-LOGIN_TENANT_PATH = os.path.join(MOCK_DIR, "login-tenant")
 LOCK_PATH = os.path.join(MOCK_DIR, "state.lock")  # serialises concurrent calls' read-modify-write of state.json
 
 # Neutral on purpose: wording about auth or connectivity would read as the
@@ -166,16 +162,17 @@ def save_state(state):
 
 
 def sandbox_tenants():
-    """The pre_run snapshot of the sandbox's login tenant ids (one per line), env first."""
+    """The sandbox login's tenant ids, env first: `$UIPATH_TENANT_ID`, then `~/.uipath/.auth`."""
+    ids = [os.environ.get("UIPATH_TENANT_ID", "")]
     try:
-        with open(LOGIN_TENANT_PATH) as fh:
-            lines = [line.strip() for line in fh]
+        with open(os.path.expanduser("~/.uipath/.auth")) as fh:
+            ids += [line.split("=", 1)[1] for line in fh if line.startswith("UIPATH_TENANT_ID=")]
     except OSError:
-        return []
+        pass
     # Never alias the org id or a tenant the recorded login already shows.
     known = {t["TenantId"] for t in fixture("tenant-list")["Data"]}
     known.add(fixture("login-status")["Data"]["OrganizationId"])
-    return [t for t in lines if t and t not in known]
+    return [t.strip() for t in ids if t.strip() and t.strip() not in known]
 
 
 def canonical_target(scope, target_id):
