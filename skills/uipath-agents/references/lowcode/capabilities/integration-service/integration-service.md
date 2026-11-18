@@ -269,7 +269,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 
 **Always pass `--all-folders`.** Without it the CLI searches only the default scope (usually the personal workspace) and reports "No connections found" for connections that live in shared folders. `--all-folders` is mutually exclusive with `--folder` / `--folder-key`.
 
-Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), recommend the connection that can see it: Step 6, "Fields that load after a selection", shows how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`.
+Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), the connection must be able to see it; Step 6, "Fields that load after a selection", says how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`.
 
 This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resources refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resources list --kind Connection`, because refresh reads from the cache this command writes.
 
@@ -312,7 +312,7 @@ The response includes a `metadataFile` path. Read that cached JSON file to get:
 2. Describe again, passing each chosen value with `-f <field>=<value>` (repeatable), for example `-f fields.project.key=AB -f fields.issuetype.id=10048`.
 3. In the tool, set those reference fields as `static` parameters with the chosen values, and build the remaining fields from this second describe.
 
-If the listing for a value the user named returns 404 (for example `No project could be found with key 'AB'`), that connection's site does not have it. Run the same listing on each other enabled connection for the connector, and use the one that finds it: in the tool's `connection`, in `solutionProperties.resourceKey` and when adding the connection to the solution. If no connection finds it, tell the user and stop. Never fall back to the raw object: its fields do not load either, and the Agent Builder does not offer it.
+If the listing for a value the user named returns not found (a Jira project key, for example), the chosen connection cannot see it: its site lacks it, or its account has no access. Run the same listing on the other enabled connections for the connector, and tell the user which connections can see the value so they can pick one. If no one can answer, use the one that can see it and say so in your reply. Use the chosen connection everywhere: the tool's `connection`, `solutionProperties.resourceKey`, and the connection added to the solution. If no connection can see the value, tell the user and stop.
 
 If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned. To verify a connection's health beforehand, run `uip is connections ping "<connection-id>" --output json`.
 
