@@ -57,10 +57,10 @@ A skeleton is not a working process and must never be reported as one.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
    What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`; the start event receives it, so never draw a box whose only job is to receive, read or capture it.
-   A decision that reads an input reads the variable the start event maps it into ([Process contract](bpmn-runtime.md#variables-and-the-process-contract)); write that mapping, the one payload a skeleton writes, with the `.var()` scoped to `Event_start`.
+   A decision or a per-item box's collection that reads an input reads the variable the start event maps it into ([Process contract](bpmn-runtime.md#variables-and-the-process-contract)); write that mapping, the one payload a skeleton writes, with the `.var()` scoped to `Event_start`.
    Data a person supplies after the process has started is a real step: draw its box (`[Action app]`).
 8. **Mark a step that runs once per item on its own box.**
-   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start).
+   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start, read through the start event's mapping).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
@@ -210,7 +210,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 
 ### Expected findings — do not chase them
 
-A skeleton validates as **Valid** with `Variable "vars.<id>" is read but never assigned; it will be empty at run time` warnings.
+A skeleton may validate as **Valid** with `Variable "vars.<id>" is read but never assigned; it will be empty at run time` warnings.
 That is correct for a skeleton, whose producers are blank boxes.
 When an error path merges onto a box (rule 9), `check` also warns `[FAKE_JOIN] "<box>" has <n> incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
 Act only on errors and on a `VARIABLE_NOT_SET` warning, which means a decision reads an input without the start event's mapping (rule 7); do not report the expected warnings above: they get no line in the reply.
