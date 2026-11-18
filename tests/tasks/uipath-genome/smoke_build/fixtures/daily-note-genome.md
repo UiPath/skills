@@ -27,9 +27,11 @@ Each weekday morning this automation writes a one-line text note, `Daily note fo
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| DailyNote-Morning | Time trigger | Starts the process every weekday at 08:00 |
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---|---|---|---|---|
+| DailyNote-Morning | this process | Time | weekdays 08:00, the tenant's time zone | 1 |
 
 ## Interface
 
@@ -38,6 +40,10 @@ Runs unattended with no arguments; the output is the note file Workflow step 3 w
 ## Configuration Questions
 
 1. Which folder receives the note? (constant; default: `Notes`, relative to the process folder)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 
