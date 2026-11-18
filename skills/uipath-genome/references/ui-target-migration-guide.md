@@ -102,7 +102,7 @@ A reachable application — the target or a comparable instance — is a **windf
 
 The file opens with a short paragraph for the engineer, in the voice of the open-items files ([open-items-guide.md](open-items-guide.md) rule 1): what the rows are, that the read-only rows come first, that the `run` rows run only on a test instance or on data that can be restored, and how a row is closed.
 
-The offline migration reads its definitions back against [selector-matching-guide.md § Checking a definition](selector-matching-guide.md), fixes what fails, and labels every element `offline-unverified` until a live check confirms it. A structural pass proves shape, not that anything matches the screen.
+The offline migration reads its definitions back against [selector-translation-guide.md § Checking a definition](selector-translation-guide.md), fixes what fails, and labels every element `offline-unverified` until a live check confirms it. A structural pass proves shape, not that anything matches the screen.
 
 ## Anti-patterns
 
