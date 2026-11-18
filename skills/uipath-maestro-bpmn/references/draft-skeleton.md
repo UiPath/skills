@@ -210,7 +210,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 
 ### Expected findings — do not chase them
 
-A skeleton validates as **Valid** with one warning per declared variable it reads — each `.var()` a decision reads that no node assigns, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
+A skeleton validates as **Valid** with one warning per `.var()` it reads that no node assigns — each such variable a decision reads, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
 That is correct for a skeleton, whose producers are blank boxes.
 When an error path merges onto a box (rule 9), `check` also warns `[FAKE_JOIN] "<box>" has <n> incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
 Act only on errors and on a `VARIABLE_NOT_SET` warning, which means a decision reads an input without the start event's mapping (rule 7); do not report the expected warnings above: they get no line in the reply.
