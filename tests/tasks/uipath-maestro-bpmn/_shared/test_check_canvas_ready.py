@@ -20,6 +20,10 @@ def _row(source: str) -> str:
     return f'<bpmn:extensionElements><uipath:output name="x" source=\'{source}\' var="x"/></bpmn:extensionElements>'
 
 
+# Every case but "no authored expression" also carries one =js: expression.
+COMPUTED = f'<bpmn:scriptTask id="calc">{_row("=js:vars.amount * 2")}</bpmn:scriptTask>'
+
+
 def _grade(tmp_path: Path, body: str) -> subprocess.CompletedProcess[str]:
     project = tmp_path / "P"
     project.mkdir()
@@ -38,6 +42,8 @@ HITL_ARGS = (
     '<bpmn:extensionElements><uipath:input name="HitlTaskArguments" type="json">'
     '<![CDATA[{"x":"=vars.amount"}]]></uipath:input></bpmn:extensionElements>'
 )
+
+NONE = '<bpmn:task id="t"/>'
 
 CASES = [
     ("form field read on a human task", f'<bpmn:userTask id="review">{_row("=decision")}</bpmn:userTask>', True),
@@ -62,6 +68,14 @@ CASES = [
     ),
     ("computed result read", f'<bpmn:scriptTask id="t">{_row("=result.a + result.b")}</bpmn:scriptTask>', False),
     ("computed iterator read", f'<bpmn:scriptTask id="t">{_row("=iterator[0] + vars.tot")}</bpmn:scriptTask>', False),
+    (
+        "literal names and documentation",
+        '<bpmn:scriptTask id="t" name="=vars.missing"><bpmn:documentation>=vars.total * 2</bpmn:documentation>'
+        '<bpmn:extensionElements><uipath:output name="=vars.x" source="=js:vars.total" var="x"/>'
+        "</bpmn:extensionElements></bpmn:scriptTask>",
+        True,
+    ),
+    ("no authored expression", NONE, False),
     ("agent output read", f'<bpmn:serviceTask id="t">{_row("=Decision")}</bpmn:serviceTask>', True),
     (
         "canvas-written reads",
@@ -79,7 +93,7 @@ CASES = [
 
 @pytest.mark.parametrize("body,ok", [(b, ok) for _, b, ok in CASES], ids=[c[0] for c in CASES])
 def test_js_check(tmp_path: Path, body: str, ok: bool) -> None:
-    result = _grade(tmp_path, body)
+    result = _grade(tmp_path, body if body == NONE else COMPUTED + body)
     out = result.stdout + result.stderr
     assert (result.returncode == 0) is ok, out
-    assert ok or "not written as =js:" in out, out
+    assert ok or "not written as =js:" in out or "no =js: expression" in out, out

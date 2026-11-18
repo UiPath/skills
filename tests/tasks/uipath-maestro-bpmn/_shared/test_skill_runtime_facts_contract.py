@@ -108,7 +108,7 @@ CANVAS_IMPORT = "InvoiceApproval.bpmn.ts"
 FORM_VALUE = re.compile(r"value: '=vars\.[\w.\[\]<>]+'|source: '=vars\.\w+',\s*var:")
 # Plain forms the skill names on purpose: the wrong form it warns against, the
 # hint `check` prints, and the start-event row and human-task form value the canvas writes plain.
-QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "not the `=vars.<id>` its message names", "`value` (`=vars.<id>`:", "`value` stays `=vars.<id>`", "(`=vars.<inputId>`)")
+QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "`value` (`=vars.<id>`:", "(`=vars.<inputId>`)")
 
 
 def _strip(line: str, phrases: tuple[str, ...]) -> str:
@@ -118,7 +118,7 @@ def _strip(line: str, phrases: tuple[str, ...]) -> str:
 
 
 @pytest.mark.parametrize("path", [p for p in DOCS if p.name != CANVAS_IMPORT], ids=_id)
-def test_authored_expressions_are_javascript(path: Path) -> None:
+def test_authored_exprs_are_js(path: Path) -> None:
     hits = [
         line.strip()
         for line in path.read_text(encoding="utf-8").splitlines()
