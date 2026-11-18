@@ -60,6 +60,8 @@ CASES = [
         '<![CDATA[{"x":"=vars.total * 2"}]]></uipath:input></bpmn:extensionElements></bpmn:serviceTask>',
         False,
     ),
+    ("computed result read", f'<bpmn:scriptTask id="t">{_row("=result.a + result.b")}</bpmn:scriptTask>', False),
+    ("computed iterator read", f'<bpmn:scriptTask id="t">{_row("=iterator[0] + vars.tot")}</bpmn:scriptTask>', False),
     ("agent output read", f'<bpmn:serviceTask id="t">{_row("=Decision")}</bpmn:serviceTask>', True),
     (
         "canvas-written reads",

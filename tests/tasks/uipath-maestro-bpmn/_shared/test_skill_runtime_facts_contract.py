@@ -105,7 +105,7 @@ PLAIN_EXPR = re.compile(r"[\"'`]=(vars\.|metadata\.|true\b|false\b|null\b|\d|\")
 # the wrong form once, to warn against it; the canvas writes a start-event row
 # that maps a process input, and a human-task form field's value, plain.
 CANVAS_IMPORT = "InvoiceApproval.bpmn.ts"
-FORM_VALUE = re.compile(r"value: '=vars\.[\w.\[\]<>]+'")
+FORM_VALUE = re.compile(r"value: '=vars\.[\w.\[\]<>]+'|source: '=vars\.\w+',\s*var:")
 # Plain forms the skill names on purpose: the wrong form it warns against, the
 # hint `check` prints, and the start-event row and human-task form value the canvas writes plain.
 QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "not the `=vars.<id>` its message names", "`value` (`=vars.<id>`:", "`value` stays `=vars.<id>`", "(`=vars.<inputId>`)")

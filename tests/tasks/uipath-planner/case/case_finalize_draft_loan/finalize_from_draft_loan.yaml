@@ -152,8 +152,10 @@ success_criteria:
     tool_name: "Bash"
     # mv/rm must be a standalone command word with the SDD as one of its own
     # operands: a bare `rm\b` matched "platform" and `[^\n]*` spans the whole
-    # JSON-serialized command, so prose in a heredoc tripped it.
-    command_pattern: '(^|[\s;&|("''`]|\\n)(mv|rm)[ \t]+([^\s;&|\\]+[ \t]+)*[^\s;&|\\]*sdd(\.draft)?\.md'
+    # JSON-serialized command, so prose in a heredoc tripped it. The operand
+    # must END at `.md`: `rm sdd.md.orig sdd.md.rej` (patch leftovers) is not
+    # a delete of the SDD.
+    command_pattern: '(^|[\s;&|("''`]|\\n)(mv|rm)[ \t]+([^\s;&|\\]+[ \t]+)*[^\s;&|\\]*sdd(\.draft)?\.md($|[\s;&|)"''`]|\\)'
     weight: 1.0
     pass_threshold: 1.0
 

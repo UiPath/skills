@@ -62,6 +62,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   (`=vars.<inputId>`), and a human-task form field's `value` (`=vars.<id>`: its runtime evaluates
   UiPath expressions, not JavaScript). An imported file's existing plain `=` expressions are C#
   (`examples/InvoiceApproval.bpmn.ts`): leave them as they are, and copy none of them.
+  In a plain `=` you keep or edit, `.length` reads back `null` with no incident: use `.Count`.
+  `.length` works only inside `=js:`.
 - A `.task()`'s `set` values are strings: an `=js:` expression or a literal. `set: { done: true }`
   fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=js:true'`.
 
