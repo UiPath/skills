@@ -102,8 +102,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   every declaration into one flat namespace and resolves `vars.<id>` there whatever it
   says, and an id is unique across the whole document — so two elements cannot each own
   a `response`. What it decides is which element the declaration BELONGS to, which is
-  what the canvas and `uip maestro bpmn validate` read (1.203 requires one). For a process input, see
-  `bpmn.variables.inputs-through-start`.
+  what the canvas and `uip maestro bpmn validate` read (1.203 requires one). For a
+  process input, see `bpmn.variables.inputs-through-start`.
 
 <!-- RULE:bpmn.variables.array-forms -->
 - `.vars([…])`, `.bindings([…])` and `.schemas([…])` take the whole block at once, with
