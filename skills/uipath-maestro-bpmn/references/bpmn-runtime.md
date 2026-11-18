@@ -238,7 +238,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   | `Api` | `.executeApiWorkflow()` |
   | `ProcessOrchestration` | `.startAgenticProcess()` |
   | `CaseManagement` | `.startCaseProcess()` |
-  | `WebApp` (an Action App) | `.humanTask()` with an inline form, per [Human tasks](#human-task-outcomes): the SDK cannot yet bind the app |
+  | `WebApp` (an Action App) | `.humanTask(id, { app: '<Name>', folder: '<FOLDER_PATH>' })`, per [Human tasks](#human-task-outcomes) |
   | `Flow` | `.activity(id, 'Orchestrator.StartFlowProcess', { context: { name, folderPath } })`, or `…StartFlowProcessAsync` |
   | `Function` (a Coded Function, not an agent) | `.activity(id, 'Orchestrator.ExecuteFunctionAsync', { context: { name, folderPath } })` (Preview) |
   | An agent behind an Integration Service connection | `.externalAgent()`, with its own connection binding |
@@ -343,11 +343,9 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Human task outcomes
 
 <!-- RULE:bpmn.hitl.inline-form-default -->
-- Write every human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+- Write a human task as an inline form unless the request names a deployed Action App: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
   The form travels in the `.bpmn`, so nothing on the tenant has to exist.
-  The SDK cannot yet write a working app-backed task: `.humanTask(id, { app })` writes a v1 `Actions.HITL` task with only an `appId`, which `uip maestro bpmn validate` rejects with `MISSING_BINDING` / `MISSING_RESOURCE` and which the engine does not read.
-  When the request names a deployed Action App, author the inline form anyway, tell the user the task is not bound to their app, and point them to the Studio Web designer to switch it to the app.
-  Never swap a human task for a plain `.task()` to get past that — use the form.
+  Never swap a human task for a plain `.task()` — use the form.
 - A field's `direction` is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back); its `type` is the data type:
   `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=vars.amount' }`. `type: 'input'` fails `check` with `TS2322`.
   The call refuses a form that breaks any of these:
@@ -358,16 +356,27 @@ make from syntax alone. Exact signatures remain in the generated API.
   - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
 - The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
   With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
-  Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()` or to `app`.
+  Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()`, or to `app` unless the user names a deployed app.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
+
+<!-- RULE:bpmn.hitl.app-task -->
+- When the request names a deployed Action App, bind it: `.humanTask(id, { app: 'InvoiceApproval', folder: 'Shared', title, input, outputs: { decision: '=Action' } })`.
+  `app` is the app's NAME and `folder` its Orchestrator folder path, never an app id; read both from `uip solution resources list --kind App --search "<term>" --output json` (`Name`, `Folder`).
+  The SDK writes the v2 `Actions.HITL` task Studio Web saves: `name` and `folderPath` as `=bindings.<id>` references to two `resource="app"` bindings keyed `<folder>.<app>`, which it declares for you.
+  Either value may instead be an `=bindings.<id>` reference to an `app` binding you declared.
+  The app defines its own outcomes; read the one picked with `outputs: { decision: '=Action' }`.
+  `app` with no `folder` is refused (`BPMN_HUMAN_TASK_APP_NO_FOLDER`), and so are `appVersion`, `actions` and `key` (`BPMN_HUMAN_TASK_APP_V1_FIELDS`): the engine reads none of them.
+  `check` warns `HITL_APP_V1` on a decompiled v1 task with an `appId`: the engine never reads it and the run fails with 170000. Rewrite it as `.humanTask(id, { app, folder })`.
 
 <!-- RULE:bpmn.hitl.no-completer-identity -->
 - An inline-form task returns only its form fields and `Action`, never who completed it: the
   `hitlTask` object with `CompletedByUser`, `AssignedToUser` and `CompletionTime` comes only from an
-  Action App task, which the SDK cannot bind yet. So never build a control on identity (four-eyes,
-  "a different approver", an audit "who") from a field the user types. Build the routing, and tell
-  the user the identity check needs the task switched to an Action App in Studio Web, or
-  enforced by task assignment (assignee groups) in Action Center.
+  Action App task. So never build a control on identity (four-eyes, "a different approver", an
+  audit "who") from a field the user types. When the user names a deployed Action App, write the
+  task as `.humanTask(id, { app, folder })` (the app-task rule above) and read the completer from
+  its typed response, `vars.<id>_processResponse.CompletedByUser` (empty in local runs).
+  Otherwise build the routing, and tell the user the identity check needs a deployed Action App
+  to name, or task assignment (assignee groups) in Action Center.
 
 <!-- RULE:bpmn.hitl.task-settings -->
 - `title` (the task title), `priority` (`Low`, `Medium`, `High`, `Critical`) and `labels` (a
