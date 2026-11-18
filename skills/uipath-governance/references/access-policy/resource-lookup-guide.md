@@ -147,10 +147,10 @@ uip or folders list --output json
 
 Parse `.Data[]` for `Path` (e.g. `"Shared"`, `"Prod/Agents"`) and `Key` (the UUID). Either value works as `--folder-path` / `--folder-key` on subsequent calls. Prefer `--folder-path` in chat transcripts — it is human-readable.
 
-Filter client-side with `--output-filter` and an explicit `--limit`. If `Pagination.HasMore` is true, repeat with `--offset 500`, `--offset 1000`, and so on before treating the lookup as complete:
+Filter client-side with `--output-filter` and an explicit `--limit`. If `Pagination.HasMore` is true, repeat with `--offset 1000`, `--offset 2000`, and so on before treating the lookup as complete:
 
 ```bash
-uip or folders list --limit 500 \
+uip or folders list --limit 1000 \
   --output json \
   --output-filter "[?contains(Path, 'Prod')]"
 ```

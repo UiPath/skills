@@ -11,7 +11,7 @@ uip or jobs list --limit 50 --folder-key <key> --state Faulted \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 
-Filtered lists and logs need an explicit `--limit`. The examples use 50 jobs/logs and 500 folders/queues per page. Inspect the envelope's `Pagination.HasMore`; for a complete lookup, repeat with `--offset` increased by the limit until it is false. An empty filtered `Data` does not prove absence while more pages remain.
+Filtered lists and logs need an explicit `--limit`. The examples use 50 jobs/logs per page, and 1000 folders/queues per page when the lookup must cover the whole set (1000 is the most a `uip or` list accepts). Inspect the envelope's `Pagination.HasMore`; for a complete lookup, repeat with `--offset` increased by the limit until it is false. An empty filtered `Data` does not prove absence while more pages remain.
 
 If `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, or fetch a minimal field set first and re-fetch more only when a gap forces it.
 
@@ -32,7 +32,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    **Step A — User named a folder.** Resolve its key:
    ```
-   uip or folders list --limit 500 --output json \
+   uip or folders list --limit 1000 --output json \
      --output-filter "[?Name=='<name>'].{Key:Key,Path:Path,Type:Type}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
@@ -44,7 +44,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    1. Run folders list ONCE to get candidates:
       ```
-      uip or folders list --limit 500 --output json \
+      uip or folders list --limit 1000 --output json \
         --output-filter "[].{Key:Key,Name:Name,Path:Path,Type:Type}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
