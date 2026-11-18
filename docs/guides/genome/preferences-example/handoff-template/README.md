@@ -1,6 +1,6 @@
 # Hand-off report template
 
-`handoff-report-template.html` is a standalone sample of the hand-off page the [example preferences](../migration-preferences.md) ask for: one file, a calm dark-blue theme, a tab per report with a count badge, a filter box (match count, Clear button), sticky table headers and Mermaid diagrams. Open it in a browser to see it with placeholder data. Without JavaScript the page shows only a short "needs JavaScript" line; diagrams use Mermaid 10.9.1 from a public CDN, and without a network the diagram text is shown instead.
+`handoff-report-template.html` is a standalone sample of the hand-off page the [example preferences](../migration-preferences.md) ask for: one file in UiPath's Apollo light and dark themes as Orchestrator uses them (System, the default, follows the operating system; Light and Dark are picked in the header and remembered in the browser), a tab per report with a count badge, a filter box (match count, Clear button), sticky table headers and Mermaid diagrams. Open it in a browser to see it with placeholder data. Without JavaScript the page shows only a short "needs JavaScript" line; diagrams use Mermaid 10.9.1 from a public CDN, and without a network the diagram text is shown instead.
 
 A generator fills in three places and touches nothing else:
 

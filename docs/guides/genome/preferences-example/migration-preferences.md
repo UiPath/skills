@@ -53,7 +53,7 @@ Preferences for rebuilding a set of existing automations in UiPath. They apply t
 ## 8. Hand-off
 
 - **Audience**: the team that runs and maintains the automations, with general automation knowledge. The documents are simple and friendly and leave out migration internals.
-- **Format**: one report per solution, as an HTML page and an Excel file. The HTML page has a tab per report, each with a filter, in a calm dark-blue theme. Two Markdown files sit beside them: the Overview, and the open items (Deployment open items and the TODO list).
+- **Format**: one report per solution, as an HTML page and an Excel file. The HTML page has a tab per report, each with a filter, in UiPath's Apollo light and dark themes as Orchestrator uses them. Two Markdown files sit beside them: the Overview, and the open items (Deployment open items and the TODO list).
 - **Template**: [handoff-report-template.html](handoff-template/handoff-report-template.html); how to fill it: [README](handoff-template/README.md).
 - **Reports**, in this order:
   1. **Overview**: a one-page Markdown description of the process: how the source works, what it was migrated to and why.
