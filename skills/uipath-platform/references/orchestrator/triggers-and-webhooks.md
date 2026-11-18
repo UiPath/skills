@@ -23,7 +23,7 @@ Automate job execution with time, queue, and API triggers, and set up webhooks f
 
 The CLI uses `--type` to select the trigger kind. Defaults to `time` if omitted.
 
-Integration Service event triggers (connector events such as "Email Received") are not reachable by any `--type`: `list` omits them and `get` / `update` / `delete` return not found. See [IS Trigger Lifecycle](../integration-service/triggers.md#trigger-lifecycle-create-enable-fire-disable-delete).
+Integration Service event triggers (connector events such as "Email Received") use `--type event`: `list`, `get`, `update` with `--enabled` / `--disabled` only, and `delete`. `create --type event` is refused; the trigger comes from deploying its automation. No other `--type` reaches them. See [IS Trigger Lifecycle](../integration-service/triggers.md#trigger-lifecycle-create-enable-fire-disable-delete).
 
 | Type | Purpose | Required options |
 |------|---------|-----------------|
