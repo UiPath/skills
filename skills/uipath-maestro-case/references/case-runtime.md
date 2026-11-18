@@ -51,22 +51,22 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:case.recipient.no-silent-default -->
 - Action `recipient` values and SLA escalation targets (`toUser`, `toGroup`)
   are baked into the plan. Going live with a different assignee means editing
-  each one in the source and publishing a new case version. Before publishing,
-  for each recipient or escalation target the user did not name as the
-  production assignee (a test mailbox, the user's own email, a placeholder
-  such as `<UNRESOLVED: ...>`), tell the user:
-  1. The address or group, and which actions or escalations route to it.
+  each one in the source and publishing a new case version.
+
+  In the final summary of every build or edit, list each recipient and
+  escalation target the user did not name as the production assignee (a test
+  mailbox, the user's own email, a placeholder such as `<UNRESOLVED: ...>`):
+  1. The address or group (for an escalation, its `value`), and which actions
+     or escalations route to it.
   2. That it stays until someone edits each one and republishes.
 
-  `uip maestro case debug`, `uip solution upload`, `uip solution publish` and
-  `uip solution deploy run` all route real tasks to these recipients. Check,
-  compile and validate do not; run them as usual. Before any of the four:
-  1. A recipient or escalation target that is still `<UNRESOLVED: ...>`:
-     never run it.
-  2. A real or test address or group the user did not confirm: the user decides. A
-     request that already says to debug or publish is that decision; list the
-     recipients in the final summary and go ahead. When no user can answer and
-     the request does not say so, list them and do not run it.
+  Only `uip maestro case debug` and `uip solution deploy run` start case
+  instances, so only they create real tasks for these recipients. Before
+  either:
+  1. A recipient or escalation target still `<UNRESOLVED: ...>`: do not run it.
+  2. An address or group the user did not confirm: ask. A request or
+     pre-approval that names the debug or deploy step is the user's answer.
+     When no user can answer and nothing names that step, do not run it.
 
 ## Script tasks
 
