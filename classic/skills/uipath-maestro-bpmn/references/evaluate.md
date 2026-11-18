@@ -100,7 +100,7 @@ A simulation stands in for a component during a run, keyed by component id: the
 element id from the `.bpmn`, or the tool name for an agent's tool. A simulation
 is scoped to one **data point inside one set**, so all three commands require
 `--set` and `--data-point`. `add` also requires `--strategy` and
-`--component-type` (`connector`, `agent`, `subprocess`).
+`--component-type` (`connector`, `agent`, `hitl`, `process`).
 
 Always use the BPMN simulation commands shown below — **never the `maestro flow
 eval` verb** on a BPMN project. The flow verb skips the `--output-schema`

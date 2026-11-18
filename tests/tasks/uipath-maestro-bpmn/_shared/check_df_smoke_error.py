@@ -66,6 +66,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     _project_files,
+    is_scratch_bpmn,
     body_object,
     entry_point_files,
     NS,
@@ -173,9 +174,6 @@ def is_query_node(task: ET.Element, object_name: str, entity: str) -> bool:
     return bool(_LIST_OP_RE.match(operation)) or method == "GET"
 
 
-SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
-
-
 def candidate_files() -> tuple[list[Path], list[Path]]:
     """(graded, skipped): the ``.bpmn`` files this grader may pass on, and
     the project files it deliberately ignores.
@@ -191,8 +189,9 @@ def candidate_files() -> tuple[list[Path], list[Path]]:
     ``DataFabricSmokeError_error.bpmn`` beside an empty scaffold that was the
     project's only entry point; that project must fail.
     """
+    cwd = Path.cwd()
     every = sorted(
-        p for p in Path.cwd().rglob("*.bpmn") if not (SKIP_PARTS & set(p.parts))
+        p for p in cwd.rglob("*.bpmn") if not is_scratch_bpmn(p.relative_to(cwd))
     )
     # As find_bpmn_file: the project guard disambiguates when a project
     # exists; a bare .bpmn with no project.uiproj anywhere (batch-10 run

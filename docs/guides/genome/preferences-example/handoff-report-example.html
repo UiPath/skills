@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Example hand-off report</title>
+<!--
+  HAND-OFF REPORT EXAMPLE: a standalone page with placeholder data, no data of any project.
+  Open it in a browser to see it. Light and dark UiPath Apollo themes (System, the default, follows the
+  operating system); diagrams use Mermaid from a public CDN, and without a network their text is shown.
+
+  A generator fills in exactly three places and touches nothing else:
+    1. the title element of the head (the browser tab title);
+    2. h1#page-title (the accent-coloured part in a span) and p#page-subtitle (the header);
+    3. the JSON block script#report-data (all report content). Inside the JSON, write < > & as
+       \u003c \u003e \u0026, so a value can never close the script tag.
+
+  The data block:
+    { "notice": optional text above the tabs, "footer": optional text under the last report,
+      "reports": [ { "title": tab name (required), "id": anchor (default: a slug of the title),
+                     "intro": optional sentence, ...one of the bodies below } ] }
+  Report bodies:
+    columns + rows    a table with a filter. A column is a string or {name, wide}. A cell is a string,
+                      a number or {text, tone: "warn"} (amber). One cell per column; the first column
+                      is shown in the accent colour. "empty": text for a table with no rows.
+    columns + groups  [{name, rows, empty}]: each group a sub-tab with its own count and filter.
+    diagrams          [{title, mermaid}] side by side, with or without a table or groups after them;
+                      "notes": [{title, items}], "legend": [text], "table_title": heading above the table.
+    markdown          a page of Markdown: headings, paragraphs, lists, bold, italic, code, links
+                      (http, https, mailto, #). Everything else, HTML included, shows as plain text.
+                      No filter and no count; the same text is also written to a .md file beside the page.
+  All text is escaped, so a cell cannot carry HTML; line breaks in a cell are kept. A tab's badge counts
+  its rows (all groups added up), or its diagrams; a Markdown tab has none.
+
+  The reports this example holds, in order (the preferences' Hand-off item says what each contains):
+    Overview (Markdown, about 600 to 1000 words, no migration internals); Workflow map;
+    Design decisions (Topic, Decision, Why, Applies to; no configuration answers or preferences);
+    Defect register; TODO list; Deployment open items (groups Set-up, Packages, Queues, Entities,
+    Triggers, Assets, Credential assets, Settings, Deployment notes; an Entities row ends with the
+    entity's definition JSON; Used by names each process with at most three workflows, then +N more,
+    or "(not used in any workflow)"); Structural deviations (groups Added, Removed (not migrated),
+    Changed); Process components (an original and a migrated diagram of processes and queues only,
+    then the groups Components and links, and Queues and data stores).
+  The Excel file holds the seven data reports, one sheet each; the Overview, and the open items
+  (Deployment open items and the TODO list by project), are also written as two .md files.
+-->
+<script>/* theme before first paint: System (default), Light or Dark, remembered in this browser */
+(function(){var k='handoff-theme',t='auto',m=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;try{var v=localStorage.getItem(k);if(v=='light'||v=='dark')t=v}catch(e){}
+function apply(){var d=t=='dark'||(t=='auto'&&!!m&&m.matches),r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d)}
+apply();window.handoffTheme={get:function(){return t},set:function(v){t=v;try{localStorage.setItem(k,v)}catch(e){}apply();document.dispatchEvent(new Event('themechange'))}};
+if(m&&m.addEventListener)m.addEventListener('change',function(){if(t=='auto'){apply();document.dispatchEvent(new Event('themechange'))}})})();</script>
+<style>
+/* UiPath Apollo classic themes, light and dark, as Orchestrator uses them. The theme class on <html> picks the set. */
+:root{--font:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;--mono:"JetBrains Mono Variable","Cascadia Mono",Consolas,monospace;--bg:#fff;--panel:#f4f5f7;--fill:#52606914;--sel:#e9f1fa;--line:#cfd8dd;--line2:#a4b1b8;--fg:#273139;--fg2:#526069;--fg3:#8a97a0;--accent:#0067df;--warn:#9e6100;--err:#a6040a;color-scheme:light}
+:root.dark{--bg:#182027;--panel:#273139;--fill:#cfd8dd14;--sel:#374652;--line:#526069;--line2:#8a97a0;--fg:#f4f5f7;--fg2:#cfd8dd;--fg3:#a4b1b8;--accent:#66adff;--warn:#ffe19e;--err:#ff8484;color-scheme:dark}
+:root{--panel2:var(--bg);--accent2:var(--accent);--tint:color-mix(in oklab,var(--accent) 12%,transparent);--accentbg:color-mix(in oklab,var(--accent) 24%,transparent);--warn-tint:color-mix(in oklab,var(--warn) 16%,transparent)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+header{position:relative;padding:26px 32px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.theme{position:absolute;top:24px;right:32px;display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:12px}
+.theme select{background:var(--bg);color:var(--fg);border:1px solid var(--line2);border-radius:6px;padding:4px 8px;font:inherit}
+h1{margin:0 0 4px;font-size:22px;font-weight:600;letter-spacing:.2px}
+h1 span{color:var(--accent)}
+.sub-title{margin:0 0 18px;color:var(--fg3);max-width:1000px}
+.note{margin:0 0 14px;padding:8px 12px;max-width:1000px;background:var(--warn-tint);border-left:3px solid var(--warn);border-radius:4px;color:var(--fg2)}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-top:6px}
+.tab{appearance:none;background:transparent;border:0;border-bottom:3px solid transparent;color:var(--fg3);padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:8px;transition:background .15s,color .15s}
+.tab:hover{background:var(--panel);color:var(--fg)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tab[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);background:var(--panel2)}
+.badge{background:var(--panel);color:var(--fg2);border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600}
+.tab[aria-selected=true] .badge{background:var(--accentbg);color:var(--accent)}
+main{padding:20px 32px 40px}
+section{display:none}
+section.on{display:block}
+.intro{margin:0 0 14px;color:var(--fg2);max-width:1100px}
+.bar{display:flex;align-items:center;gap:14px;margin:0 0 14px;flex-wrap:wrap}
+.find{position:relative}
+.find input{width:380px;max-width:90vw;background:var(--panel);border:1px solid var(--line2);color:var(--fg);border-radius:8px;padding:9px 12px 9px 34px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.find input::placeholder{color:var(--fg3)}
+.find input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+.find:before{content:"";position:absolute;left:12px;top:50%;width:10px;height:10px;margin-top:-7px;border:2px solid var(--fg3);border-radius:50%}
+.find:after{content:"";position:absolute;left:23px;top:50%;width:6px;height:2px;margin-top:5px;background:var(--fg3);transform:rotate(45deg)}
+.count{color:var(--fg3);font-size:12px}
+.clear{background:transparent;border:1px solid var(--line2);color:var(--fg2);border-radius:6px;padding:6px 10px;font:inherit;cursor:pointer}
+.clear:hover{background:var(--sel)}
+.wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:calc(100vh - 260px);background:var(--panel2)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th{position:sticky;top:0;z-index:2;background:var(--panel);color:var(--fg2);text-align:left;font-weight:600;padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:pre-wrap;overflow-wrap:break-word;max-width:520px;color:var(--fg)}
+td:first-child{color:var(--accent2);font-family:var(--mono);font-size:12px}
+td.wide{min-width:260px}
+td.warn{color:var(--warn)}
+tbody tr:hover td{background:var(--fill)}
+.empty{padding:28px;text-align:center;color:var(--fg3)}
+.subs{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+.sub{appearance:none;background:var(--panel);border:1px solid var(--line2);color:var(--fg2);padding:6px 14px;font:inherit;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.sub:hover{background:var(--sel)}
+.sub:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sub[aria-selected=true]{background:var(--accentbg);border-color:var(--accent);color:var(--fg)}
+.panel{display:none}.panel.on{display:block}
+.foot{margin:26px 0 0;color:var(--fg3);font-size:12px}
+.md{max-width:760px;font-size:14px;line-height:1.65;color:var(--fg2)}
+.md h2{margin:0 0 14px;font-size:21px;font-weight:600;color:var(--fg)}
+.md h3{margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:16px;font-weight:600;color:var(--accent2)}
+.md h4{margin:20px 0 8px;font-size:14px;font-weight:600;color:var(--fg)}
+.md h5{margin:16px 0 6px;font-size:13px;font-weight:600;color:var(--fg3)}
+.md p{margin:0 0 12px}
+.md ul,.md ol{margin:0 0 14px;padding-left:22px}
+.md li{margin:5px 0}
+.md strong{color:var(--fg);font-weight:600}
+.md code{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--accent2)}
+.md a{color:var(--accent)}
+.md hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+@media (max-width:700px){header,main{padding-left:14px;padding-right:14px}.tab{padding:8px 10px}}
+.mm-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin:0 0 14px}
+.mm-col{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--panel2);overflow:hidden}
+.mm-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+.mm-head h2{margin:0;font-size:14px;font-weight:600;flex:1 1 auto}
+.mm-head button{background:transparent;border:1px solid var(--line2);color:var(--fg2);border-radius:6px;padding:3px 9px;font:inherit;cursor:pointer}
+.mm-head button:hover{background:var(--sel)}
+.mm-view{overflow:auto;max-height:78vh;padding:10px;background:var(--bg)}
+.mm-view svg{display:block;margin:0 auto;max-width:none;height:auto}
+.mm-src{margin:0;padding:12px;overflow:auto;max-height:78vh;font:12px/1.4 var(--mono);color:var(--fg2);white-space:pre}
+.mm-note{margin:14px 0 6px;color:var(--fg2)}
+.mm-note h3{margin:0 0 6px;font-size:14px;color:var(--fg)}
+.mm-note ul{margin:0;padding-left:20px}.mm-note li{margin:3px 0}
+.mm-leg{margin:10px 0 0;color:var(--fg3);font-size:12px;max-width:1100px}
+.mm-err{color:var(--err);padding:6px 12px;font-size:12px}
+@media (max-width:1000px){.mm-grid{grid-template-columns:1fr}}
+</style></head><body>
+<header><label class="theme">Theme <select id="theme-pick"><option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><h1 id="page-title"><span>Example</span> hand-off report</h1><p class="sub-title" id="page-subtitle">Standalone example of the hand-off page: eight reports, each with a filter. All names and values below are placeholders.</p><div class="note" id="page-notice" hidden></div><div class="tabs" role="tablist" id="tab-list"></div></header>
+<main id="report-main"><noscript><div class="empty">This page needs JavaScript to show its reports.</div></noscript></main>
+
+<!-- ===================== DATA: the only place a generator fills in report content ===================== -->
+<script type="application/json" id="report-data">
+{
+  "notice": "Placeholder notice: shown above the tabs when a generator needs to flag something (for example, work still in progress). Remove the field to hide it.",
+  "footer": "Generated on <date> by <generator>.",
+  "reports": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "markdown": "# <Solution name> overview\n\n## What the solution does\n\n<One or two short paragraphs in plain words: the business purpose, who sends the requests, what the solution does with them and what the business receives.>\n\n## How it runs from start to finish\n\n### <First flow>\n\n1. **<First process>** <what it does and what it hands on>.\n2. **<Second process>** <what it does>.\n3. <The last step: the output the business receives>.\n\n### Supporting processes\n\n- **<Shared process>**: <what it does and when it runs>.\n- **<Shared library>**: <what it does for the processes that call it>.\n\n## What changed from the source, and why\n\n- **<Topic>.** <What changed, and the reason, in one or two sentences.>\n- **<Another topic>.** <What changed, and the reason.>\n\n## What operations need to know\n\n- **Schedules** <who decides them and when>.\n- **Robot machine** <what must be installed, for example `<application>`>.\n- **Retries** <how many attempts an item gets>.\n\n## Where to look next\n\nThe other tabs hold the detail, for example the *Workflow map* and the *Deployment open items*. A link looks like this: [link text](https://example.com)."
+    },
+    {
+      "id": "workflow-map",
+      "title": "Workflow map",
+      "intro": "Each source process and component, and the UiPath workflow file that replaces it.",
+      "columns": ["Source process / component", "Source kind", "Source section or action", "UiPath project", "Project type", "Workflow file", {"name": "What the workflow does", "wide": true}, "Arguments", {"name": "How it was migrated", "wide": true}, "Status"],
+      "rows": [
+        ["<Process name>", "Process", "<Section name>", "Sample.Project", "Process", "Sample/Main.xaml", "<Plain-words description of what the workflow does>", "in_Config (In)", "<How the source step was rebuilt>", "Done"],
+        ["<Component name>", "Component", "<Action name>", "Sample.Library", "Library", "Sample/DoSomething.xaml", "<Plain-words description of what the workflow does>", "in_Item (In), out_Result (Out)", "<How the source action was rebuilt>", {"text": "In progress", "tone": "warn"}],
+        ["<Process name 2>", "Process", "(whole process)", "Sample.OtherProject", "Process", "Sample.OtherProject/Main.xaml", "<Plain-words description>", "-", "<Note>", "Done"]
+      ]
+    },
+    {
+      "id": "design-decisions",
+      "title": "Design decisions",
+      "intro": "The design decisions taken about how the solution is built, each with its reason.",
+      "columns": ["Topic", {"name": "Decision", "wide": true}, {"name": "Why", "wide": true}, "Applies to"],
+      "rows": [
+        ["<Topic>", "<The design decision taken>", "<Why it was taken>", "All processes"],
+        ["<Another topic>", "<Another decision>", "<Why>", "Sample.Project"],
+        ["<Third topic>", "<Another decision>", "<Why>", "Sample.Library"]
+      ]
+    },
+    {
+      "id": "defect-register",
+      "title": "Defect register",
+      "intro": "Each defect found in the source and carried into the migration.",
+      "columns": ["Source file (process or component)", "Source section", "Source step", {"name": "What the source does", "wide": true}, "UiPath project", "Migrated workflow", {"name": "What the rebuild does", "wide": true}, "State"],
+      "rows": [
+        ["<Process name>", "<Section name>", "<Step name>", "<What the source does wrongly>", "Sample.Project", "Sample/Main.xaml", "<What the rebuild does instead>", "Fixed in the rebuild"],
+        ["<Component name>", "<Section name>", "<Step name>", "<What the source does wrongly>", "Sample.Library", "Sample/DoSomething.xaml", "<What the rebuild does instead>", {"text": "Open: reading to confirm", "tone": "warn"}]
+      ]
+    },
+    {
+      "id": "todo-list",
+      "title": "TODO list",
+      "intro": "Only what the migration could not do and a person must do.",
+      "columns": ["Kind", "Source place (file, process or component, section, step)", "Migrated place (project, workflow file, activity)", {"name": "What a person must do", "wide": true}, {"name": "Why", "wide": true}, "State", "Project status"],
+      "rows": [
+        ["Test on a robot machine", "<Source file>, <Process name>, <Section name>", "Sample.Project, Sample/Main.xaml, <Activity>", "<What the person must do>", "<Why it could not be done during the migration>", {"text": "Open", "tone": "warn"}, "Done"],
+        ["Decision to confirm", "<Source file>, <Component name>", "Sample.Library", "<What to confirm>", "<Why>", {"text": "Open", "tone": "warn"}, {"text": "In progress", "tone": "warn"}],
+        ["Left in project", "(none)", "Sample.Project, Sample/Main.xaml, <Activity>", "<Text of the TODO left in the project>", "<Why>", {"text": "Open", "tone": "warn"}, "Done"]
+      ]
+    },
+    {
+      "id": "deployment-open-items",
+      "title": "Deployment open items",
+      "intro": "What must be set up before the processes run: queues, triggers, assets, credential assets, settings and notes.",
+      "columns": ["Type", "Item", {"name": "Default or value", "wide": true}, "Used by / applies to", {"name": "Notes", "wide": true}],
+      "groups": [
+        {"name": "Set-up", "empty": "Nothing to set up.", "rows": [
+          ["", "<Orchestrator folder>", "<Name to create>", "All projects", "<Note>"]
+        ]},
+        {"name": "Packages", "empty": "No package to publish.", "rows": [
+          ["Library", "Sample.Library", "<Version>", "Sample.Project", "<Note>"],
+          ["Process", "Sample.Project", "<Version>", "(none)", "<Note>"]
+        ]},
+        {"name": "Queues", "empty": "No queue to create.", "rows": [
+          ["", "Sample.Queue", "-", "Sample.Project", "<Note>"]
+        ]},
+        {"name": "Entities", "empty": "No Data Fabric entity to create.", "rows": [
+          ["", "SampleRequestRow (Sample Request Row)", "Name (text, 255 characters, required); Status (text, 50 characters); Comment (long text, 10,000 characters)", "Sample.Project", "<One plain line: where to create the entity and what a record holds.>\n\nCreate the entity in the tenant from this definition:\n{\n  \"displayName\": \"Sample Request Row\",\n  \"description\": \"<One record per row of a request workbook.>\",\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"type\": \"STRING\",\n      \"displayName\": \"Name\",\n      \"description\": \"<What the field holds.>\",\n      \"lengthLimit\": 255,\n      \"isRequired\": true\n    },\n    {\n      \"name\": \"Status\",\n      \"type\": \"STRING\",\n      \"displayName\": \"Status\",\n      \"description\": \"<What the field holds.>\",\n      \"lengthLimit\": 50\n    },\n    {\n      \"name\": \"Comment\",\n      \"type\": \"MULTILINE_TEXT\",\n      \"displayName\": \"Comment\",\n      \"description\": \"<What the field holds.>\",\n      \"lengthLimit\": 10000\n    }\n  ]\n}"]
+        ]},
+        {"name": "Triggers", "empty": "No trigger to create.", "rows": []},
+        {"name": "Assets", "empty": "No asset to create.", "rows": [
+          ["Text", "Sample_Asset", "<Default value found in the source>", "Sample.Project (LoginApp, Upload, SendMail, +2 more)", "<Note>"],
+          ["Boolean", "Sample_Flag", "False", "Sample.Library (SendMail), Sample.Project (not used in any workflow)", "<Note>"]
+        ]},
+        {"name": "Credential assets", "empty": "No credential asset to create.", "rows": [
+          ["", "Sample_Credential", "(set the user name and password)", "Sample.Project (LoginApp)", "<Note>"]
+        ]},
+        {"name": "Settings", "empty": "No project setting to change.", "rows": [
+          ["", "<Project setting>", "<Value to set>", "Sample.Project (Main, SendMail)", "<Note>"]
+        ]},
+        {"name": "Deployment notes", "empty": "No deployment note.", "rows": [
+          ["Live check", "<Check to do on the robot machine>", "-", "Sample.Project", "<Note>"]
+        ]}
+      ]
+    },
+    {
+      "id": "structural-deviations",
+      "title": "Structural deviations",
+      "intro": "What is missing or different in the UiPath implementation, and why. Added, Removed (not migrated) and Changed are separate lists.",
+      "columns": ["Source process / component", {"name": "Source workflow and step (as in the export)", "wide": true}, {"name": "UiPath workflow and step", "wide": true}, "Change", {"name": "Why", "wide": true}],
+      "groups": [
+        {"name": "Added", "rows": [
+          ["(whole solution)", "(none)", "<New workflow or step that did not exist in the source>", "Added", "<Why it was added>"],
+          ["<Process name>", "(none)", "<Another new step>", "Added", "<Why>"]
+        ]},
+        {"name": "Removed (not migrated)", "empty": "Nothing was removed in this sample. (This is the empty-state example.)", "rows": []},
+        {"name": "Changed", "rows": [
+          ["<Process name>", "<Source workflow and step>", "<UiPath workflow and step>", "Changed", "<Why it changed>"],
+          ["<Component name>", "<Source workflow and step>", "<UiPath workflow and step>", "Replaced", "<Why>"],
+          ["(whole solution)", "<Source step>", "<UiPath step>", "Changed", "<Why>"]
+        ]}
+      ]
+    },
+    {
+      "id": "process-components",
+      "title": "Process components",
+      "intro": "A diagram of the processes and queues of the original source implementation and of the migrated one, then the same processes, queues and links as a table, and the queues and data stores in a list of their own.",
+      "diagrams": [
+        {"title": "Original source implementation", "mermaid": "flowchart TB\n  S1[\"(timer) Sample.Source.Process.Alpha<br/>placeholder description\"]\n  S2[\"Sample.Source.Process.Beta<br/>placeholder description\"]\n  S3[(\"Sample.Queue\")]\n  S1 -->|\"adds items\"| S3\n  S3 -->|\"takes items\"| S2"},
+        {"title": "Migrated implementation", "mermaid": "flowchart TB\n  M1[\"Sample.Project.Alpha.Process<br/>placeholder description\"]\n  M3[(\"Sample.Queue\")]\n  M4[\"Sample.Project.Beta.Process<br/>placeholder description\"]\n  M5[\"Sample.Project.Gamma.Process<br/>placeholder description\"]\n  M1 -->|\"adds items\"| M3\n  M3 -->|\"takes items\"| M4\n  M4 -->|\"starts\"| M5"}
+      ],
+      "notes": [
+        {"title": "Changed vs the source", "items": ["<A placeholder note about what differs between the two diagrams.>", "<A second placeholder note.>"]}
+      ],
+      "legend": ["Legend: <placeholder>. Solid arrow: adds to or takes from a queue, or starts a process.", "Zoom: Fit, minus, plus and 100% resize the diagram of a column; each column scrolls. Source shows the diagram text. Without a network the source is shown instead of the diagram."],
+      "table_title": "Components, links, queues and data stores",
+      "columns": ["Diagram", "Type", "Name or from", "To", {"name": "Detail", "wide": true}],
+      "groups": [
+        {"name": "Components and links", "rows": [
+          ["Original source implementation", "Component", "Sample.Source.Process.Alpha", "", "Process (timer): placeholder description"],
+          ["Original source implementation", "Link", "Sample.Source.Process.Alpha", "Sample.Queue", "adds items"],
+          ["Migrated implementation", "Component", "Sample.Project.Alpha.Process", "", "Orchestrator process: placeholder description"],
+          ["Migrated implementation", "Link", "Sample.Project.Alpha.Process", "Sample.Queue", "adds items"]
+        ]},
+        {"name": "Queues and data stores", "rows": [
+          ["Migrated implementation", "Orchestrator queue", "Sample.Queue", "", "<Why the queue exists, what an item holds, and which projects use it.>"],
+          ["Migrated implementation", "Data Fabric entity", "SampleRequestRow (Sample Request Row)", "", "<Why it exists, what it holds, and which projects use it (each imports the entity and needs it associated).>"]
+        ]}
+      ]
+    }
+  ]
+}
+</script>
+<!-- ===================== END OF DATA ===================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" integrity="sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr" crossorigin="anonymous"></script><script>
+(function(){
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'report'}
+var main=document.getElementById('report-main'),tabList=document.getElementById('tab-list'),data;
+try{data=JSON.parse(document.getElementById('report-data').textContent)}catch(e){main.innerHTML='<div class="empty">The report data could not be read ('+esc(e.message)+').</div>';return}
+var reports=(data&&data.reports)||[];
+if(data.notice){var nt=document.getElementById('page-notice');nt.textContent=data.notice;nt.hidden=false}
+/* ---- build the markup from the data ---- */
+function colOf(c){return typeof c=='object'&&c?c:{name:c}}
+function cellHtml(c,col){
+  var t=c,cls=[];
+  if(c&&typeof c=='object'){t=c.text;if(c.tone)cls.push(c.tone)}
+  if(col&&col.wide)cls.push('wide');
+  return '<td'+(cls.length?' class="'+cls.join(' ')+'"':'')+'>'+esc(t).replace(/\.(?=[A-Za-z_])/g,'.<wbr>')+'</td>'}
+function panelHtml(cols,rows,emptyMsg){
+  cols=cols.map(colOf);
+  return '<div class="panel"><div class="wrap"><table><thead><tr>'+cols.map(function(c){return '<th>'+esc(c.name)+'</th>'}).join('')+'</tr></thead><tbody>'
+    +rows.map(function(r){return '<tr>'+r.map(function(c,i){return cellHtml(c,cols[i])}).join('')+'</tr>'}).join('')
+    +'</tbody></table><div class="empty" data-empty="'+esc(emptyMsg||'')+'" style="display:none"></div></div></div>'}
+/* ---- Markdown report: a small renderer; the text is escaped first, so no HTML in it is ever taken as markup ---- */
+function mdInline(s){
+  var t=esc(String(s==null?'':s).replace(/\u0000/g,'')),codes=[];
+  t=t.replace(/`([^`]+)`/g,function(m,c){codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
+  t=t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,function(m,txt,url){return /^(https?:\/\/|mailto:|#)/i.test(url)?'<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>':txt+' ('+url+')'});
+  t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  t=t.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?![*\w])/g,'$1<em>$2</em>');
+  t=t.replace(/(^|[^\w])_([^_\s][^_]*?)_(?!\w)/g,'$1<em>$2</em>');
+  return t.replace(/\u0000(\d+)\u0000/g,function(m,i){return '<code>'+codes[i]+'</code>'})}
+function mdHtml(src){
+  var out=[],para=[],list=null;
+  function endPara(){if(para.length){out.push('<p>'+mdInline(para.join(' '))+'</p>');para=[]}}
+  function endList(){if(list){out.push('</'+list+'>');list=null}}
+  String(src==null?'':src).replace(/\r\n?/g,'\n').split('\n').forEach(function(raw){
+    var l=raw.replace(/\s+$/,''),m;
+    if(!l.trim()){endPara();endList();return}
+    if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){endPara();endList();out.push('<hr>');return}
+    if((m=/^(#{1,4})\s+(.*)$/.exec(l))){endPara();endList();var n=m[1].length+1;out.push('<h'+n+'>'+mdInline(m[2])+'</h'+n+'>');return}
+    if((m=/^\s*[-*+]\s+(.*)$/.exec(l))){endPara();if(list!='ul'){endList();out.push('<ul>');list='ul'}out.push('<li>'+mdInline(m[1])+'</li>');return}
+    if((m=/^\s*\d+[.)]\s+(.*)$/.exec(l))){endPara();if(list!='ol'){endList();out.push('<ol>');list='ol'}out.push('<li>'+mdInline(m[1])+'</li>');return}
+    if(list&&/^\s+\S/.test(l)){out[out.length-1]=out[out.length-1].replace(/<\/li>$/,' '+mdInline(l.trim())+'</li>');return}
+    endList();para.push(l.trim())});
+  endPara();endList();return out.join('')}
+function diagramsHtml(r){
+  var cards=r.diagrams.map(function(d,k){
+    return '<div class="mm-col"><div class="mm-card"><div class="mm-head"><h2>'+esc(d.title)+'</h2>'
+      +'<button data-z="fit" title="Fit to the column width">Fit</button><button data-z="-">&minus;</button><button data-z="+">+</button><button data-z="100" title="Natural size">100%</button><button data-z="src" title="Show or hide the diagram source">Source</button></div>'
+      +'<div class="mm-err"></div><div class="mm-view" style="display:none"></div><pre class="mm-src">'+esc(d.mermaid)+'</pre></div></div>'}).join('');
+  var h='<div class="mm-grid">'+cards+'</div>';
+  (r.notes||[]).forEach(function(n){h+='<div class="mm-note"><h3>'+esc(n.title)+'</h3><ul>'+(n.items||[]).map(function(i){return '<li>'+esc(i)+'</li>'}).join('')+'</ul></div>'});
+  (r.legend||[]).forEach(function(l){h+='<p class="mm-leg">'+esc(l)+'</p>'});
+  return h}
+var tabsHtml='',secsHtml='';
+reports.forEach(function(r,i){
+  var id=r.id||slug(r.title),groups=r.groups||null,count,body='';
+  var isMd=typeof r.markdown=='string';
+  count=isMd?null:groups?groups.reduce(function(n,g){return n+g.rows.length},0):r.rows?r.rows.length:(r.diagrams?r.diagrams.length:0);
+  if(r.intro)body+='<p class="intro">'+esc(r.intro)+'</p>';
+  if(isMd)body+='<article class="md">'+mdHtml(r.markdown)+'</article>';
+  if(r.diagrams&&r.diagrams.length)body+=diagramsHtml(r);
+  if(groups||r.columns){
+    if(r.table_title)body+='<div class="mm-note"><h3>'+esc(r.table_title)+'</h3></div>';
+    if(groups)body+='<div class="subs" role="tablist">'+groups.map(function(g){return '<button class="sub" role="tab" aria-selected="false">'+esc(g.name)+'<span class="badge">'+g.rows.length+'</span></button>'}).join('')+'</div>';
+    body+='<div class="bar"><div class="find"><input type="search" placeholder="Filter '+esc(String(r.title).toLowerCase())+' (every word must match)" aria-label="Filter '+esc(String(r.title).toLowerCase())+'"></div><span class="count"></span><button class="clear" style="visibility:hidden">Clear</button></div>';
+    if(groups)groups.forEach(function(g){body+=panelHtml(r.columns,g.rows,g.empty||r.empty)});
+    else body+=panelHtml(r.columns,r.rows||[],r.empty)}
+  tabsHtml+='<button class="tab" role="tab" id="tab'+i+'" aria-controls="'+esc(id)+'" aria-selected="false">'+esc(r.title)+(count==null?'':'<span class="badge">'+count+'</span>')+'</button>';
+  secsHtml+='<section id="'+esc(id)+'" role="tabpanel" aria-labelledby="tab'+i+'">'+body+'</section>'});
+tabList.innerHTML=tabsHtml;
+main.innerHTML=secsHtml+(data.footer?'<p class="foot">'+esc(data.footer)+'</p>':'');
+/* ---- behaviour ---- */
+var tabs=[].slice.call(document.querySelectorAll('.tab')),secs=[].slice.call(document.querySelectorAll('main section'));
+var mmCount=0;
+function fitSvg(card,mode){var v=card.querySelector('.mm-view'),svg=v&&v.querySelector('svg');if(!svg)return;var w=card._w||1000;card._fit=(mode=='fit'||mode=='init');
+  if(mode=='fit')card._z=Math.max(200,v.clientWidth-24);else if(mode=='init')card._z=Math.min(w,Math.max(200,v.clientWidth-24));else if(mode=='100')card._z=w;else if(mode=='+')card._z=(card._z||w)*1.25;else if(mode=='-')card._z=Math.max(150,(card._z||w)/1.25);
+  svg.style.width=card._z+'px';svg.style.maxWidth='none';svg.removeAttribute('height')}
+function renderMaps(sec){
+  if(sec._mmDone)return;var cards=[].slice.call(sec.querySelectorAll('.mm-card'));
+  if(!window.mermaid){cards.forEach(function(c){var e=c.querySelector('.mm-err');if(e)e.textContent='Mermaid could not be loaded (no network?): the diagram source is shown instead.'});return}
+  sec._mmDone=true;
+  try{var cs=getComputedStyle(document.documentElement),tv=function(n){return cs.getPropertyValue(n).trim()};mermaid.initialize({startOnLoad:false,theme:'base',themeVariables:{darkMode:document.documentElement.classList.contains('dark'),background:tv('--bg'),primaryColor:tv('--panel'),primaryBorderColor:tv('--line2'),primaryTextColor:tv('--fg'),secondaryColor:tv('--sel'),tertiaryColor:tv('--bg'),lineColor:tv('--fg2'),textColor:tv('--fg'),edgeLabelBackground:tv('--bg'),clusterBkg:tv('--panel'),clusterBorder:tv('--line2'),fontFamily:tv('--font')},securityLevel:'strict',flowchart:{htmlLabels:true,useMaxWidth:false,curve:'basis'}})}catch(e){}
+  cards.forEach(function(c){
+    var src=c.querySelector('.mm-src'),view=c.querySelector('.mm-view'),err=c.querySelector('.mm-err');
+    if(!src.textContent.trim())return;
+    Promise.resolve(mermaid.render('mmsvg'+(mmCount++),src.textContent)).then(function(r){
+      view.innerHTML=r.svg;var svg=view.querySelector('svg'),vb=svg.viewBox&&svg.viewBox.baseVal;c._w=vb&&vb.width?vb.width:svg.getBoundingClientRect().width;
+      view.style.display='block';src.style.display='none';err.textContent='';fitSvg(c,'init');
+      if(!c._bound)[].forEach.call(c.querySelectorAll('[data-z]'),function(b){c._bound=true;b.addEventListener('click',function(){var z=b.getAttribute('data-z');if(z=='src'){var on=src.style.display=='none';src.style.display=on?'block':'none';view.style.display=on?'none':'block'}else fitSvg(c,z)})});
+    }).catch(function(e){err.textContent='The diagram could not be rendered ('+(e&&e.message?e.message:e)+'): the source is shown instead.';src.style.display='block'});
+  });
+  if(!sec._rs){sec._rs=true;window.addEventListener('resize',function(){cards.forEach(function(c){if(c._z&&c._fit)fitSvg(c,'init')})})}
+}
+function show(i){tabs.forEach(function(t,k){t.setAttribute('aria-selected',k==i);t.tabIndex=k==i?0:-1});secs.forEach(function(s,k){s.classList.toggle('on',k==i)});try{history.replaceState(null,'','#'+secs[i].id)}catch(e){}if(secs[i].querySelector('.mm-card'))renderMaps(secs[i])}
+tabs.forEach(function(t,k){t.addEventListener('click',function(){show(k)});t.addEventListener('keydown',function(e){var n=e.key=='ArrowRight'?k+1:e.key=='ArrowLeft'?k-1:-1;if(n>=0&&n<tabs.length){show(n);tabs[n].focus()}})});
+var start=0;if(location.hash){secs.forEach(function(s,k){if('#'+s.id==location.hash)start=k})}
+if(secs.length)show(start);
+var pick=document.getElementById('theme-pick');if(pick&&window.handoffTheme){pick.value=handoffTheme.get();pick.addEventListener('change',function(){handoffTheme.set(pick.value)})}
+document.addEventListener('themechange',function(){secs.forEach(function(s){if(s._mmDone){s._mmDone=false;if(s.classList.contains('on'))renderMaps(s)}})});
+secs.forEach(function(sec){
+  if(!sec.querySelector('input'))return;
+  var inp=sec.querySelector('input'),cnt=sec.querySelector('.count'),clr=sec.querySelector('.clear'),subs=[].slice.call(sec.querySelectorAll('.sub')),panels=[].slice.call(sec.querySelectorAll('.panel'));
+  var cache=panels.map(function(p){var rows=[].slice.call(p.querySelectorAll('tbody tr'));return {p:p,rows:rows,txt:rows.map(function(r){return r.textContent.toLowerCase()}),emp:p.querySelector('.empty')}});
+  var cur=0,timer;
+  function run(){var c=cache[cur],q=inp.value.trim().toLowerCase(),n=0,w=q.split(/\s+/).filter(Boolean);
+    c.rows.forEach(function(r,i){var ok=w.every(function(x){return c.txt[i].indexOf(x)>=0});r.style.display=ok?'':'none';if(ok)n++});
+    cnt.textContent=n==c.rows.length?c.rows.length+' rows':n+' of '+c.rows.length+' rows';
+    c.emp.textContent=c.rows.length?'No row matches the filter.':(c.emp.getAttribute('data-empty')||'Nothing to list here.');
+    c.emp.style.display=n?'none':'block';clr.style.visibility=q?'visible':'hidden'}
+  function pick(k){cur=k;cache.forEach(function(c,i){c.p.classList.toggle('on',i==k)});subs.forEach(function(s,i){s.setAttribute('aria-selected',i==k)});run()}
+  subs.forEach(function(s,k){s.addEventListener('click',function(){pick(k)})});
+  inp.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(run,120)});
+  clr.addEventListener('click',function(){inp.value='';run();inp.focus()});pick(0);
+});
+})();
+</script></body></html>

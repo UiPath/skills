@@ -234,7 +234,7 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
 
 10. **Continue to flow wiring if the prompt asked for it.** If the original request also describes wiring the agent into a Maestro Flow (phrases like *"use that agent in a flow"*, *"build a flow that calls it"*, *"hand off to maestro flow"*, *"wire the agent in as a node"*), deploy is not the final step. Do the hand-off **with a tool call, not narration** — invoke the `Skill` tool with `skill: uipath-maestro-flow` directly; do NOT emit a text-only "now switching to the flow skill" message in place of the invocation.
 
-    For a Published coded agent, the flow project lives in its OWN directory, NOT as a sibling of the coded agent. After loading the `uipath-maestro-flow` skill, refresh the registry (`uip maestro flow registry pull --force`) so the just-deployed agent is discoverable, then author the flow per the `uipath-maestro-flow` skill's workflow. Done when the requested `.flow` file exists and `uip maestro flow validate` passes on it.
+    For a Published coded agent, the flow project lives in its OWN directory, NOT as a sibling of the coded agent. After loading the `uipath-maestro-flow` skill, author the flow per the `uipath-maestro-flow` skill's workflow. If the flow registry misses the just-deployed agent, run `uip maestro flow registry pull --force` and look again (registry reads are cached for 30 minutes). Done when the requested `.flow` file exists and `uip maestro flow validate` passes on it.
 
 Read the relevant reference file at each step — do not guess.
 
@@ -266,7 +266,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 <!--skill-flavor:flow-project-creation:end-->
 
 <!--skill-flavor:agent-scaffold-solution-root:start-->
-3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`) — `uip codedagent new` scaffolds into the **current directory**, it does NOT create a subfolder, so create the agent folder first and run everything inside it:
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`), create the agent folder first and run everything inside it — the venv and the framework package that selects the template must exist there before `new`. `uip codedagent new` scaffolds into the current directory; only when run from the solution root itself (the directory holding the `.uipx`) does it create `<AgentName>/`.
 <!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash
@@ -341,7 +341,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
 ## Framework Selection
 
-> **First — is this an agent at all?** If the task is deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files), it's a **Coded Function** — not an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill (Python or TypeScript/JavaScript) instead of this one. Coded Functions use typed I/O (Pydantic `BaseModel` in Python, `defineSchema<T>()` in TS) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
+> **First — is this an agent at all?** Apply [SKILL.md](../../SKILL.md) § Project Type Detection step 1: deterministic logic with no LLM reasoning (validate data, call an API with custom auth, transform records, upload/download files) is a **Coded Function** — not an agent — even when the user calls it an agent. Use the [`uipath-functions`](/uipath:uipath-functions) skill (Python or TypeScript/JavaScript) instead of this one, and do not run `uip codedagent new` / `init`. Coded Functions use typed I/O (Pydantic `BaseModel` in Python, `defineSchema<T>()` in TS) and a `functions` map in `uipath.json`; what distinguishes an agent is LLM reasoning and a framework graph.
 
 If the task needs LLM reasoning, infer the framework from the user's prompt when possible. If ambiguous, ask them to choose:
 

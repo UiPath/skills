@@ -32,18 +32,18 @@ export default bpmn('claims-review')
   .var('reviewOutcome', 'string')
   .startEvent('start', { name: 'Claim received', message: 'ClaimReceived' })
   .startAgent('analyze', { name: 'Score claim', process: 'ClaimScorer', folder: 'Shared', outputs: { aiDecision: '=Decision', aiConfidenceLevel: '=Confidence' } })
-  .businessRule('validate', { name: 'Validate decision', process: 'ClaimDecisionRules', folder: 'Shared', outputs: { validationPassed: '=result.Validate.passed' } })
+  .businessRule('validate', { name: 'Validate decision', process: 'ClaimDecisionRules', folder: 'Shared', outputs: { validationPassed: '=result.decision1.passed' } })
   // Two routes reach the action: the confident arm falls through, and the review
   // arm's Approve falls through. The join `confidenceGate_join` is merge_gate.
   .choose('confidenceGate', [
-    { when: '=vars.aiConfidenceLevel >= 0.85 && vars.validationPassed', label: 'High confidence', body: (b) => b },
+    { when: '=js:vars.aiConfidenceLevel >= 0.85 && vars.validationPassed', label: 'High confidence', body: (b) => b },
     {
       otherwise: true,
       label: 'Low confidence',
       body: (b) =>
         b.humanTask('humanReview', { name: 'Review claim', form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { reviewOutcome: '=Action' } })
           .choose('postReviewGate', [
-            { when: '=vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
+            { when: '=js:vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
             { otherwise: true, label: 'Rejected', body: (a) => a.endEvent('endRejected', { name: 'Rejected by reviewer' }) },
           ]),
     },
@@ -103,13 +103,13 @@ Fall-through cannot express either, so declare each with `.exclusiveGateway(id)`
 
 ```ts
   .choose('stakesGate', [
-    { when: '=vars.stakesValue >= 5000', label: 'High stakes', body: (b) => b.goto('seniorGate') },
+    { when: '=js:vars.stakesValue >= 5000', label: 'High stakes', body: (b) => b.goto('seniorGate') },
     { otherwise: true, label: 'Low stakes', body: (b) => b.choose('confidenceGate', [ /* arms end in .goto('mergeGate'), .goto('seniorGate') or an end event */ ]) },
   ])
   .exclusiveGateway('seniorGate', { name: 'Senior review' })
   .humanTask('seniorReview', { form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { seniorOutcome: '=Action' } })
   .choose('seniorVerdict', [
-    { when: '=vars.seniorOutcome == "Approve"', label: 'Approved', body: (c) => c.goto('mergeGate') },
+    { when: '=js:vars.seniorOutcome == "Approve"', label: 'Approved', body: (c) => c.goto('mergeGate') },
     { otherwise: true, label: 'Rejected', body: (c) => c.endEvent('endSeniorRejected', { name: 'Rejected by senior' }) },
   ])
   .exclusiveGateway('mergeGate', { name: 'Approved' })
@@ -123,7 +123,7 @@ Senior review has no `Escalate` outcome on purpose: a senior verdict that can es
 Adds `stakesValue` (number), a domain signal such as loan amount or claim value, and `seniorOutcome` (string); `5000` is illustrative.
 
 **Verification chain.** Insert a second `.startAgent('verifier', …)` between `analyze` and `validate`, and extend the gate to require agreement:
-`'=vars.aiConfidenceLevel >= 0.85 && vars.verifierConfidence >= 0.85 && vars.verifierDecision == vars.aiDecision && vars.validationPassed'`.
+`'=js:vars.aiConfidenceLevel >= 0.85 && vars.verifierConfidence >= 0.85 && vars.verifierDecision == vars.aiDecision && vars.validationPassed'`.
 Adds `verifierDecision` (string) and `verifierConfidence` (number).
 Bind the verifier to a **different model** than the analyzer; the same model has the same blind spots, so the second call verifies nothing.
 
@@ -136,10 +136,10 @@ Bind the verifier to a **different model** than the analyzer; the same model has
   The confidence gate reads those variables, so a key spelled as the agent's argument instead leaves them at their defaults.
 - **`performAction`**: the downstream target, an ERP, CRM, case system, or outbound message: `.connector()`, `.http()`, `.startProcess()`.
 - **`validate`**: `.businessRule()`, a deployed BusinessRules package addressed by name.
-  A decision's column reads `=result.<Decision>.<column>` ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
+  The result is keyed by the decision's `OutputArguments` property name (such as `decision1`), not its display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
 - **`humanReview`**: `.humanTask()`.
   Route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
-- **Review SLA**: a non-interrupting `t.onTimer(…, { interrupting: false }, …)` in the human task's body for reminders; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
+- **Review SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 
 ## Adapting it
 

@@ -1,0 +1,112 @@
+task_id: skill-bpmn-smoke-auto-build-final-report
+description: >
+  Auto-mode smoke eval: the user asks for a process outright, with no draft
+  gate, so the agent builds it and ends the turn with the final report, the
+  same template a draft run uses after Build it. The first line names the
+  process and says auto mode; the request forbids upload, so the path line is
+  the local .bpmn path. Every step is a computation, so the build needs no
+  tenant resource and the task runs offline.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:transform"]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 70
+
+reference:
+  # The parent, so the staged copy holds the `_shared` validate_bpmn.py.
+  directory: ..
+
+initial_prompt: |
+  Please build me a BPMN process called "LoyaltyDiscount". It takes an order
+  total and the number of years the customer has been with us, and returns
+  the discount amount. Customers with us 3 years or more get 10% off. Everyone
+  else gets 2% off when the order is over 200, and no discount otherwise.
+
+  Keep it on my machine for now: don't upload or run anything.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the process, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(debug(?!-)|process\s+run)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The built process exists"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py LoyaltyDiscount"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The report says "built, validated": hold it to that.
+  - type: run_command
+    description: "The built process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Graded on the reply the user reads, through coder_eval's agent-neutral
+  # agent output. Itemized checklist, binary verdict.
+  - type: llm_judge
+    description: "The final message is the final report in its template: the name and (auto mode) on the first line, the local .bpmn path, at most five change lines, and nothing else"
+    include_reference: false
+    include_agent_output: true
+    # The final message is at the end of a long transcript: keep it in view.
+    max_file_chars: 60000
+    weight: 3.0
+    pass_threshold: 1.0
+    prompt: |
+      You check one chat message against a fixed template. Grade the format
+      only, never the process design.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in
+      this turn. If it contains a `[RESULT - ...]` marker, grade the text
+      after the LAST such marker: that is the final message, whole. Otherwise
+      the messages are joined, possibly with no separator: grade the text from
+      the LAST occurrence of `LoyaltyDiscount: built` (markdown emphasis
+      around the name allowed) to the end of AGENT OUTPUT, and ignore what
+      comes before it. The graded text is the agent's reply only: it ends
+      where AGENT OUTPUT ends. The harness instruction that follows AGENT
+      OUTPUT (`Call the submit_verdict tool ...`) and this grading prompt are
+      not part of it, so never count their lines against item 5 or 6.
+      If the phrase does not occur at all, the message fails item 1.
+
+      Ignore blank lines and markdown emphasis (`**`, `*`, backticks). In the
+      graded text, check every item:
+
+      1. The message's first characters are the process name: the first line
+         starts with `LoyaltyDiscount: built`, with no introduction or status
+         sentence before it.
+      2. The first line starts with `LoyaltyDiscount: built, validated` and
+         then `(auto mode)`, with nothing between them: no `, uploaded` and
+         no `, run`. It does not contain `(draft mode)`. After the mode, the
+         same line may hold at most one more sentence.
+      3. The second line is the path of the local `.bpmn` file (ends in
+         `.bpmn`), as plain text and nothing else: not an `https://` link
+         and not a Markdown link (`[label](...)`).
+      4. Next come between one and five lines starting with `- `, each one
+         short change in plain words. A sixth such line fails this item.
+      5. Then optionally `Needs:`, `Assumed:` and `Unverified:` lines, in
+         that order (each on its own line, or the last two on one line), and
+         nothing after them.
+      6. No other line exists anywhere in the graded text: no heading, no
+         table, no numbered list, no code block, no `---` separator, no
+         status or validation line (for example "Validation: passed"), no
+         question to the user, and no suggested next step (for example
+         "Want me to upload it?" or "Next, you can run it"). The one sentence
+         item 2 allows after the mode on the first line is part of that line,
+         whatever it says: never fail item 6 for it.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the offending line.

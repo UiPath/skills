@@ -75,12 +75,14 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    # Consulting the node manifest, by either arm's path: v1 pulls then searches it; the
-    # builder SDK reads types from its package and reaches for `registry search` / `get`
-    # only for a name it does not know. `pull` alone named the v1 mechanism.
-    description: "Advisory: agent consulted the node manifest before authoring (registry pull, search or get)"
+    # Consulting the node manifest, by either arm's path: v1 pulls then searches it with
+    # `uip maestro bpmn registry`; the builder SDK reads types from its package and
+    # resolves a connector through `uip maestro registry prepare` / `describe` (or
+    # `search` / `get` for a name it does not know). Matching only the v1 spelling
+    # scored every v2 run 0 here (R14 and R15, builder-sdk#1882).
+    description: "Advisory: agent consulted the node manifest before authoring (registry pull, search, get, prepare or describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)\b'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+(bpmn\s+)?registry\s+(pull|search|get|prepare|describe)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0

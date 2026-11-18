@@ -2,10 +2,11 @@
 """Grade how an Extract document node sits in its flow, from the ``.flow`` JSON.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name <NAME> [--node-id ID] <CHECK> [--only] [VALUE ...]
+    python3 $REFERENCE_DIR/_shared/check_extract_document.py (--flow-name <NAME> | --flow <PATH>) [--node-id ID] <CHECK> [--only] [VALUE ...]
 
 ``--flow-name NAME`` selects the discovered ``NAME.flow``, as in
-``flow_contains.py``. The node under test is the
+``flow_contains.py``. ``--flow PATH`` reads that file and discovers nothing:
+use it when the task seeds the project at a known path. The node under test is the
 ``uipath.ixp.extract-document-builder`` node ``--node-id`` names, or the first
 one in the flow. Its taxonomy is its ``inputs.schemaDocument``, the document
 ``nodes schema get`` prints. ``unchanged`` and ``extends`` compare it with the
@@ -54,6 +55,10 @@ Checks:
     edge in|out PORT     an edge enters or leaves the node on PORT
     no-other-ixp         no other uipath.ixp.* node: no published model, no
                          processor, no second Extract document node
+    processor            the node's inputs.processorKey is a GUID and, when
+                         the flow sits in a solution, the solution holds an
+                         idpProcessor resource with that key under
+                         resources/ (outside one, pack writes it later)
 
 Exit 0 and ``OK: ...`` on stdout when the check holds. Otherwise exit 1 and a
 ``FAIL: ...`` line on stderr naming what was found instead.
@@ -86,6 +91,8 @@ FIELD_KEYS = {*EXACT_KEYS, *PATTERN_KEYS, "repeats"}
 ID_KEYS = ("x-uipath-field-group-id", "x-uipath-field-id", "x-uipath-parent-field-group-id")
 MAX_DIFFERENCES = 10
 ONLY_CHECKS = ("fields", "defs")
+GUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)
+PROCESSOR_RESOURCE_KIND = "idpprocessor"
 
 
 def _read_schema_document(node: dict) -> dict:
@@ -365,6 +372,52 @@ def check_no_other_ixp(flow: dict, node: dict, _: argparse.Namespace) -> str | N
     return f"other uipath.ixp.* nodes: {', '.join(others)}" if others else None
 
 
+def _find_solution_dir(flow_path: str) -> str | None:
+    directory = os.path.dirname(os.path.abspath(flow_path))
+    while True:
+        if any(name.endswith(".uipx") for name in os.listdir(directory)):
+            return directory
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
+
+
+def _list_processor_keys(solution_dir: str) -> list[str]:
+    """Keys of the idpProcessor resources, matched on ``kind`` as the CLI does: the
+    file's path comes from the processor's name and type, and the platform moves
+    wrong-cased files, so only the resource header identifies it."""
+    keys = []
+    for root, _, names in os.walk(os.path.join(solution_dir, "resources")):
+        for name in names:
+            if not name.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(root, name), encoding="utf-8") as fh:
+                    resource = json.load(fh).get("resource") or {}
+            except (OSError, ValueError, AttributeError):
+                continue
+            if str(resource.get("kind", "")).lower() == PROCESSOR_RESOURCE_KIND:
+                keys.append(str(resource.get("key")))
+    return keys
+
+
+def check_processor(_: dict, node: dict, args: argparse.Namespace) -> str | None:
+    key = (node.get("inputs") or {}).get("processorKey")
+    if not isinstance(key, str) or not GUID.fullmatch(key):
+        return f"inputs.processorKey is {json.dumps(key)}, not a GUID"
+    solution_dir = _find_solution_dir(args.flow_path)
+    if solution_dir is None:
+        return None
+    keys = _list_processor_keys(solution_dir)
+    if key in keys:
+        return None
+    return (
+        f"no idpProcessor resource under {os.path.join(solution_dir, 'resources')} has key {key} "
+        f"(idpProcessor keys: {', '.join(keys) or 'none'})"
+    )
+
+
 CHECKS = {
     "fields": check_fields,
     "has-instructions": check_has_instructions,
@@ -375,6 +428,7 @@ CHECKS = {
     "file-ref": check_file_ref,
     "edge": check_edge,
     "no-other-ixp": check_no_other_ixp,
+    "processor": check_processor,
 }
 
 
@@ -405,7 +459,9 @@ def _find_usage_error(args: argparse.Namespace) -> str | None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--flow-name", required=True, help="flow name, without .flow")
+    which = parser.add_mutually_exclusive_group(required=True)
+    which.add_argument("--flow-name", help="flow name, without .flow")
+    which.add_argument("--flow", help="path to the .flow file; skips discovery")
     parser.add_argument("--node-id", help="the Extract document node under test; the first one when omitted")
     parser.add_argument("--only", action="store_true", help="fields, defs: and nothing else")
     parser.add_argument("check", choices=sorted(CHECKS))
@@ -417,10 +473,16 @@ def main(argv: list[str]) -> int:
         print(f"FAIL: {usage}", file=sys.stderr)
         return 2
     try:
-        paths = [p for p in find_flow_files() if flow_file_is_named(p, args.flow_name)]
+        if args.flow:
+            if not os.path.isfile(args.flow):
+                raise SystemExit(f"FAIL: no .flow file at {args.flow}")
+            paths = [args.flow]
+        else:
+            paths = [p for p in find_flow_files() if flow_file_is_named(p, args.flow_name)]
         if not paths:
             raise SystemExit(f"FAIL: no discovered .flow file is named {args.flow_name}.flow")
-        with open(paths[0], encoding="utf-8") as fh:
+        args.flow_path = paths[0]
+        with open(args.flow_path, encoding="utf-8") as fh:
             flow = json.load(fh)
         node = _find_extract_node(flow, args.node_id)
         if node is None:

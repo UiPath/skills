@@ -615,6 +615,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Cause:** `catch.retry` missing from `catch` (placed on the activity instead), `when` rejected the error (`$<catch.as>.status` not in the list), or the executor predates task-level retry. A call inside a retrying `try` never falls back to `httpRetryConfig`.
 - **Fix:** Check the shape and status filter in [http-retry-config.md](http-retry-config.md#task-level-retry-catchretry); for an executor gap, report it rather than editing the policy.
 
+### `Failed to execute HTTP call to <URL>: HTTP Status: <STATUS>` with a JSON body
+
+- **Cause:** `bodyParameters.body` is a `JSON.stringify(...)` string, which the activity encodes again, so the API receives a quoted JSON string instead of the object. Retrying does not help.
+- **Fix:** Set `body` to the object; see [connector-activity-discovery.md](connector-activity-discovery.md#http-kind).
+
 ### `"Script execution failed timed out"`
 
 <!--skill-flavor:script-budget-symptom:start-->

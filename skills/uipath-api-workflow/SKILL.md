@@ -251,6 +251,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not read later workflow inputs from `$input.<name>`.
 - **Do NOT** treat a file input or a File to Base64 result as a string — both are `JobAttachment` references. Inline a file's content only with `<ref>.serializeData()` inside an HTTP body / Response, never in an Assign or script — and inside a JSON body field only on the File to Base64 output (`$workflow.input.document.serializeData()` nested in a body fails with "Raw bytes cannot be embedded in JSON"). See rule 23.
 - **Do NOT** write `$helpers.fileToBase64(...)` / `$helpers.base64ToFile(...)` — the helpers live under `$helpers.file.`; `validate` rejects the task and the runtime says `is not a function`. See rule 23.
+- **Do NOT** wrap an HTTP Request JSON body in `JSON.stringify` — the activity encodes `body` itself; pass the object. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md#http-kind).
 <!--skill-flavor:runtime-execution-antipattern:start-->
 - Do not run autonomously or authenticated vendor calls without consent.
 <!--skill-flavor:runtime-execution-antipattern:end-->

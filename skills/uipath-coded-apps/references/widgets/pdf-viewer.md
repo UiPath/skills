@@ -20,29 +20,22 @@ Package: [`@uipath/ui-widgets-pdf-viewer`](https://www.npmjs.com/package/@uipath
 4. **Bucket sources scope the folder with EXACTLY ONE of** `folderId` (number), `folderKey` (GUID — what coded apps usually have), or `folderPath` (e.g. `"Shared/Finance"`).
 5. **`sdk` is required for `bucket`/`entity` sources** — pass the app's initialized instance from `useAuth()`. Missing sdk doesn't throw; the widget renders its own error card.
 6. **Required scopes:** bucket source → `OR.Buckets.Read` (or `OR.Buckets`); entity source → `DataFabric.Data.Read`. `url`/`data` sources need no scopes (for `url`, CORS/same-origin rules apply — the browser fetches it). See [../oauth-scopes.md](../oauth-scopes.md).
-7. **Never point pdf.js at a CDN worker.** The worker ships in the package and is version-locked to it; the platform CSP blocks external hosts anyway. Production builds need zero config — the worker is emitted as a same-origin asset. **Vite dev needs an `optimizeDeps` PAIR** (pre-bundling rewrites the widget's `import.meta.url` worker resolution):
+7. **Never point pdf.js at a CDN worker — and register the packaged worker once at app startup.** The worker ships in the package and is version-locked to it; a CDN copy drifts and can be blocked by a customer network or CSP. The widget's own worker lookup is not enough: with widget `1.0.2`, a Vite 8 production build with `base: './'` renders no PDF (`Setting up fake worker failed`), and Vite 7 dev requests the worker from `node_modules/.vite/deps/` and gets a 404. Add this file and import it from `src/main.tsx` — it is required in dev and in the built app, on Vite 7 and 8:
 
    ```typescript
-   optimizeDeps: {
-     // Keep the widget's import.meta.url intact so its packaged worker resolves.
-     exclude: ['@uipath/ui-widgets-pdf-viewer'],
-     // REQUIRED with the exclude: the widget imports react-pdf, whose ESM build
-     // imports CommonJS deps ('warning') that only interop when pre-bundled.
-     // Exclude alone blank-pages the app at module load:
-     // "does not provide an export named 'default'".
-     include: ['react-pdf'],
-   },
-   ```
-
-   Alternative (no exclude): override the worker once at app startup, after importing the widget:
-
-   ```typescript
+   // src/pdfWorker.ts
    import { pdfjs } from 'react-pdf';
-   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-     'pdfjs-dist/build/pdf.worker.min.mjs',
-     import.meta.url,
-   ).toString();
+   import workerUrl from '@uipath/ui-widgets-pdf-viewer/pdf.worker.min.mjs?url';
+
+   pdfjs.GlobalWorkerOptions.workerSrc = new URL(workerUrl, import.meta.url).toString();
    ```
+
+   ```typescript
+   // src/main.tsx
+   import './pdfWorker';
+   ```
+
+   `react-pdf` here is the copy the widget installs — do not add a different `react-pdf` version to the app; a second copy would not share the setting. Do **not** add `optimizeDeps.exclude: ['@uipath/ui-widgets-pdf-viewer']` to `vite.config.ts` — it blank-pages the app at module load (`lodash/get.js … does not provide an export named 'default'`). No other `vite.config.ts` change is needed.
 
    Verify by rendering a PDF in dev AND in the built app — a green build does not prove the worker resolves.
 8. **Inline `source` object literals are safe.** The widget keys sources internally, so a new object per render does NOT retrigger fetches (the classic react-pdf `file`-prop identity trap is solved inside).
@@ -115,7 +108,7 @@ function InvoiceViewer({ entityId, recordId }: { entityId: string; recordId: str
 
 ## Anti-patterns
 
-- **Do not configure a CDN `workerSrc`** — CSP blocks it and versions drift; the packaged worker is the supported path.
+- **Do not configure a CDN `workerSrc`** — versions drift and a customer network or CSP can block it; register the packaged worker as in Critical Rule 7.
 - **Do not fetch the PDF yourself for bucket/entity sources** — pass the source descriptor; the widget resolves the read-URI/attachment. If you already hold bytes from another flow, pass them as `{ data }`.
 - **Do not use this widget for DU validation review** — that is [validation-station.md](validation-station.md); this one has no bounding boxes or field editing.
 - **Do not pass two folder identifiers in a bucket source** — exactly one of `folderId`/`folderKey`/`folderPath`.

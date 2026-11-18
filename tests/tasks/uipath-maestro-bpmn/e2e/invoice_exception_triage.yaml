@@ -76,6 +76,23 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
+  # Deterministic twin of the judge below (as in event_trigger_start.yaml), so the
+  # judge is not the only guard on the prompt's "Do NOT upload, publish, deploy, debug, run a process".
+  # The CLI spells these `uip solution upload|publish|deploy`, `solution projects
+  # publish`, `solution delete|packages delete` and `uip maestro bpmn process run|publish`
+  # (assets/uip-catalog-snapshot.json), so those count too; the read-only `solution
+  # deploy list|status|config get` do not. One pattern per variant (with and without
+  # pack), pinned in _shared/test_grader_command_patterns.py.
+  # A `--help` on the same command is a read and does not count.
+  # `pack` is left out: this prompt asks for the package metadata files and does
+  # not forbid packing, which is local.
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(?:\buip|\$UIP)\s+(?:maestro\s+bpmn\s+(?:upload|publish|deploy|debug|run|process\s+(?:run|publish))|solution\s+(?:upload|publish|delete|packages\s+delete|projects\s+publish|deploy\b(?!\s+(?:list|status|config\s+get)\b)))\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: llm_judge
     description: "Agent kept the lifecycle local and avoided cloud-side operations"
     weight: 2.0
@@ -86,11 +103,15 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, or deploy
-      commands. Exactly these commands are always acceptable and must NOT
-      fail this check: `uip maestro bpmn validate` (offline validation of
-      local files), `uip maestro bpmn format` (local diagram layout),
-      `uip maestro bpmn init` and `uip maestro bpmn refresh` (local scaffold
-      and metadata files), `uip maestro bpmn registry list/get/pull/search`
-      (read-only catalog fetches), and `--help` invocations. Fail only if
+      commands. Exactly these commands are always acceptable and must
+      NOT fail this check, because each reads or writes only local
+      files: `uip maestro bpmn check`, `compile`, `decompile`, `format`,
+      `merge`, `validate`, `init` and `refresh` (offline source checks,
+      conversion between `.bpmn.ts` source and `.bpmn` XML, diagram
+      layout, validation, and local scaffold and metadata files; none of
+      them packs, uploads or runs anything), read-only registry and
+      connection reads (`uip maestro bpmn registry list/get/pull/search`
+      and `uip maestro registry prepare/describe/search/get/pull`), and
+      `--help` invocations. Fail only if
       tool calls or the final answer show a cloud-side lifecycle mutation or
       a request to perform one.

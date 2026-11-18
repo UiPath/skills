@@ -6,8 +6,10 @@ Use this when the request asks for evaluation assets, or for a BPMN process to b
 Every `eval` command takes `--path <path>`: a Maestro BPMN project directory (`<Project>`, the directory `init` wrote), or a solution directory with exactly one BPMN project.
 It defaults to `.`.
 
+<!--skill-flavor:eval-host:start-->
 **Local `add` / `list` / `remove` edit project files and need no login.**
 Every `run` verb (`start`, `status`, `results`, `list`, `compare`) needs `uip login`; `run start` also deploys (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)).
+<!--skill-flavor:eval-host:end-->
 
 **Spellings.** `--help` lists each group by its plural name and `create` / `delete` (`evaluators create`, `sets delete`, `simulations create`, `runs start`).
 The singular names and `add` / `remove` used below (`evaluator add`, `set remove`, `simulation add`, `run start`) are aliases of the same commands; use them as written here.
@@ -21,7 +23,7 @@ uip maestro bpmn eval --help --output json
 ## Before the first eval command
 
 The eval commands read the compiled project, not the source.
-Compile `<Name>.bpmn.ts` into `<Project>/<Name>.bpmn`, then `format`, `refresh` and `validate` it as in the [validation loop](../SKILL.md#validation-loop).
+Bring `<Project>/<Name>.bpmn` up to date with the [validation loop](../SKILL.md#validation-loop) (compile and `format` a new process, `merge` an existing one), so `refresh` and `validate` have run.
 `refresh` writes `entry-points.json`, which is where the eval commands look up the entry point and its declared inputs and outputs.
 A component a simulation targets must already be an element of that compiled `.bpmn`.
 
@@ -80,7 +82,7 @@ Create the others in Studio Web; this differs from Flow.
 
 A data point's input and output keys are validated against the entry point's declared schema in the project's **`entry-points.json`**, by the names a caller uses, not the ids in the `.bpmn`.
 An undeclared key fails with `Input "<name>" is not a declared input of the BPMN process. Declared inputs: …`.
-Declare the missing contract in the source with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), compile, `format`, run `uip maestro bpmn refresh <Project>`, then run `eval add` again.
+Declare the missing contract in the source with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), then run the [validation loop](../SKILL.md#validation-loop) again and run `eval add` again.
 Validation is best-effort: when the entry point declares no inputs or outputs it is skipped rather than rejecting keys.
 Build expected outputs from real records, not invented ones: an invented key matches no record and the eval scores a fault instead of an answer.
 
@@ -91,6 +93,9 @@ A simulation is scoped to one **data point inside one set**, so all three comman
 `add` also requires `--strategy` and `--component-type`: `agent`, `connector`, `hitl`, `process`, or `Node` (the type Studio Web writes), matched exactly, case included.
 A `uip` with cli#5928 rejects any other value, such as `subprocess`, with exit 3; an older one accepted any text.
 
+`--mock-value` is the element's raw `result`: its top-level keys are the ones the element's `outputs` read as `=result.<key>`.
+Match them: an output read as `=result.response.ok` needs `{"response":{"ok":true}}`, and an `Actions.HITL` task whose output reads `=result.Action` needs `{"Action":"<outcome name>", "<fieldId>": <value>}`.
+
 Always use the BPMN simulation commands shown below, **never the `maestro flow eval` verb** on a BPMN project.
 The flow verb skips the `--output-schema` requirement described below, so a flow-verb `Llm` simulation silently bypasses the one behavior that makes BPMN simulations correct.
 
@@ -98,7 +103,7 @@ The flow verb skips the `--output-schema` requirement described below, so a flow
 # Static — returns --mock-value verbatim
 uip maestro bpmn eval simulation add <component-id> \
   --set "Smoke Tests" --data-point <id> \
-  --strategy Static --component-type connector --mock-value '{"ok":true}' \
+  --strategy Static --component-type connector --mock-value '{"response":{"ok":true}}' \
   --path <Project> --output json
 
 # Llm — generates from instructions; --output-schema is REQUIRED

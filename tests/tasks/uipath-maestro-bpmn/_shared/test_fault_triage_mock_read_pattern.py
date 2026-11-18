@@ -99,9 +99,11 @@ def _pattern() -> re.Pattern[str]:
     guards = [
         c
         for c in task["success_criteria"]
-        if c["type"] == "command_executed" and c.get("max_count") == 0
+        if c["type"] == "command_executed"
+        and c.get("max_count") == 0
+        and "mocked inputs" in c["description"]
     ]
-    assert len(guards) == 1, "expected exactly one must-not-run guard"
+    assert len(guards) == 1, "expected exactly one mock-read guard"
     return re.compile(guards[0]["command_pattern"], re.DOTALL)
 
 
