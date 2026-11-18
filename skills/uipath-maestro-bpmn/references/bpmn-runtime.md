@@ -50,7 +50,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.expression.js-for-methods -->
 - A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
-  `vars.x` reads work, a JS method call does not. `=vars.d.toLowerCase() == "approve"` passes
+  `vars.x` reads work, a JS method call does not, and a JS property such as `.length` reads back `null` with no incident (use `.Count`). `=vars.d.toLowerCase() == "approve"` passes
   validate, then faults the run (incident `400302`); in a gateway `when` it evaluates `false` and the
   run takes the wrong branch. Prefix any expression that calls a JavaScript
   method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
