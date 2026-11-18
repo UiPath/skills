@@ -119,7 +119,7 @@ tbody tr:hover td{background:var(--fill)}
 .mm-head button{background:transparent;border:1px solid var(--line2);color:var(--fg2);border-radius:6px;padding:3px 9px;font:inherit;cursor:pointer}
 .mm-head button:hover{background:var(--sel)}
 .mm-view{overflow:auto;max-height:78vh;padding:10px;background:var(--bg)}
-.mm-view svg{display:block;max-width:none;height:auto}
+.mm-view svg{display:block;margin:0 auto;max-width:none;height:auto}
 .mm-src{margin:0;padding:12px;overflow:auto;max-height:78vh;font:12px/1.4 var(--mono);color:var(--fg2);white-space:pre}
 .mm-note{margin:14px 0 6px;color:var(--fg2)}
 .mm-note h3{margin:0 0 6px;font-size:14px;color:var(--fg)}
@@ -344,7 +344,7 @@ main.innerHTML=secsHtml+(data.footer?'<p class="foot">'+esc(data.footer)+'</p>':
 var tabs=[].slice.call(document.querySelectorAll('.tab')),secs=[].slice.call(document.querySelectorAll('main section'));
 var mmCount=0;
 function fitSvg(card,mode){var v=card.querySelector('.mm-view'),svg=v&&v.querySelector('svg');if(!svg)return;var w=card._w||1000;card._fit=(mode=='fit'||mode=='init');
-  if(mode=='fit')card._z=Math.max(200,v.clientWidth-24);else if(mode=='init')card._z=Math.max(v.clientWidth-24,w*0.55);else if(mode=='100')card._z=w;else if(mode=='+')card._z=(card._z||w)*1.25;else if(mode=='-')card._z=Math.max(150,(card._z||w)/1.25);
+  if(mode=='fit')card._z=Math.max(200,v.clientWidth-24);else if(mode=='init')card._z=Math.min(w,Math.max(200,v.clientWidth-24));else if(mode=='100')card._z=w;else if(mode=='+')card._z=(card._z||w)*1.25;else if(mode=='-')card._z=Math.max(150,(card._z||w)/1.25);
   svg.style.width=card._z+'px';svg.style.maxWidth='none';svg.removeAttribute('height')}
 function renderMaps(sec){
   if(sec._mmDone)return;var cards=[].slice.call(sec.querySelectorAll('.mm-card'));
