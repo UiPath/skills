@@ -42,20 +42,24 @@ make from syntax alone. Exact signatures remain in the generated API.
   compiles to `{ type: 2, value: <email> }`, a single user by email
   (`RecipientType` in the SDK's `case-sdk.d.ts`). Types `0`, `1` and `3` are
   reserved for other assignee kinds and no staged example exercises them.
+  Brownfield: decompile emits `{ type, value }` for a non-email recipient; keep
+  it as is and do not rewrite it to a string.
   Do not write an `=` expression in `recipient`: `case check` does not read
   `recipient`, so it cannot report a wrong path, and runtime support for an
   expression there is untested.
 
 <!-- RULE:case.recipient.no-silent-default -->
-- The address is baked into the plan. Going live with a different assignee
-  means editing every action's `recipient` in the source and publishing a new
-  case version. Before publishing, for each recipient the user did not name as
-  the production assignee (a test mailbox, the user's own email, a
-  placeholder), tell the user:
-  1. The address, and which actions route to it.
-  2. That it stays until someone edits each `recipient` and republishes.
+- Action `recipient` values and SLA escalation targets (`toUser`, `toGroup`)
+  are baked into the plan. Going live with a different assignee means editing
+  each one in the source and publishing a new case version. Before publishing,
+  for each recipient or escalation target the user did not name as the
+  production assignee (a test mailbox, the user's own email, a placeholder),
+  tell the user:
+  1. The address, and which actions or escalations route to it.
+  2. That it stays until someone edits each one and republishes.
 
-  The user decides whether to publish with that recipient.
+  The user decides whether to publish with that recipient. When no user can
+  answer, list these recipients in the final summary and do not publish.
 
 ## Script tasks
 
