@@ -133,7 +133,7 @@ One change, every file in its row, same PR.
 | New scaffolding question | builder `configuration-questions-guide.md` |
 | New report line | builder `completion-report-guide.md` |
 | Rule for a build in parts | builder `execution-parts-guide.md` |
-| UiPath selector fact: what a tag or attribute holds, how the driver computes or matches it | the UI Automation package's Selector Reference, as a docs change in the package's repository; until a released package carries it, a row of builder `package-doc-errata-guide.md` |
+| UiPath selector fact (what a tag or attribute holds, how the driver computes or matches it) or activity behaviour (what an activity waits for, how it matches its input) | the UI Automation package's Selector Reference, or the activity's doc and the package guide it links, as a docs change in the package's repository; until a released package carries it, a row of builder `package-doc-errata-guide.md` |
 | Selector translation rule | the builder's selector guide of its technology; `selector-translation-guide.md` when it holds for every technology |
 | Build pattern for a composite interaction across technologies | builder `composite-interactions-guide.md` |
 | Where a UI check goes | builder `ui-verification-guide.md` |

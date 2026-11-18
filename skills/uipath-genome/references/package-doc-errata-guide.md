@@ -49,6 +49,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Doc | Installed docs say | What the build does |
 |---|---|---|
 | Selector Reference | nothing: the package guide's § Documentation routes to no Selector Reference, and the docs hold no per-tag attribute reference | Reads the reference in a project that installs the latest stable UI Automation: another project of the run, else a scratch project in the working folder, outside every project of the build. What the pinned version's driver does differently is settled by its own selector tools in the live phases |
+| Call Transaction, Select Menu Item, SAP Automation Guide | nothing on what Call Transaction waits for, how Select Menu Item matches each level, how a transaction is left, or how a tab, a combo box entry or a table row is selected | Reads them where it reads the Selector Reference |
 
 ## Tools — defects seen in builds, until fixed
 

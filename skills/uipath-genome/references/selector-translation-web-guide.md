@@ -51,7 +51,7 @@ On a single-page web application, one scope for its tab (rule 9) is the differen
 
 **`url` values are case-sensitive** (the `html` attribute reference), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape.
 
-**One browser window can hold two scopes.** A page's scope is the tab's `html` tag alone, whatever the source attached by — a window title, a window class: a `wnd` tag before an `html` narrows nothing (the Selector Reference's tags per technology). An element the source recorded through UI Automation in the same browser window — the tab strip, a toolbar button, a dialog the browser draws, page content read through UI Automation — is a `uia` target under the browser's `wnd` scope, on a screen of its own.
+**One browser window can hold two scopes.** A page's scope is the tab's `html` tag alone, whatever the source attached by — a window title, a window class: a `wnd` tag before an `html` narrows nothing (the Selector Reference's tags per technology). An element the source recorded through UI Automation in the same browser window — the tab strip, a toolbar button, a dialog the browser draws, page content read through UI Automation — is a `uia` target under the browser's `wnd` scope, on a screen of the browser's own application, not the page host's ([ui-target-migration-guide.md § Object Repository identity](ui-target-migration-guide.md) rule 2).
 
 ## Rule 10 — web
 
@@ -139,6 +139,6 @@ On a live pass a tag drops `uipath-visible` only where the page, in every state 
 | A `data-*` type identifier is the only discriminator and the selector carries `idx` | attributes | 7, 14 |
 | `tag='DIV'` that no source recording and no known role vouches for, on a control the source typed as a button, input, checkbox or link — and the mirror case, a type-implied `tag` that contradicts the tag the source recorded | attributes + source control type + the recorded tag | 14 |
 | A caption-only target on a control whose source row also carried a role identifier (the id was dropped as a wrapper's when the role is a leaf's) | attributes + the source row's identifiers | 14 |
-| More than one distinct `ScopeSelectorArgument` per host across the project, unless a second tab of the host tells them apart; `url` values differing only by case; a web scope with `title` and no `url`, or with no title fragment where every page's title shares one | all definitions + the titles the source recorded | 9 |
+| More than one distinct `html` scope (`ScopeSelectorArgument`) per host across the project, unless a second tab of the host tells them apart; `url` values differing only by case; a web scope with `title` and no `url`, or with no title fragment where every page's title shares one | all definitions + the titles the source recorded | 9 |
 | `colName` written as the bare caption on a grid whose headers carry hidden suffixes | live attribute listing on one cell | 8 |
 | A control the source located by a positional web path, carried as `idx`, as ancestor tags or with the path's indexes dropped | attributes + the source's path | 7 |

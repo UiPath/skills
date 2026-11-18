@@ -1,6 +1,6 @@
 # Selector Translation — SAP GUI
 
-SAP GUI's side of [selector-translation-guide.md](selector-translation-guide.md): what the rules add for SAP GUI for Windows and SAP GUI for Java, and how the SAP activities act on what a selector finds. Read whole with that guide when the target catalog holds SAP GUI controls, together with the SAP GUI attribute reference of the UI Automation package's Selector Reference (that guide names where it is read): the SAP session attributes of `wnd`, the `<sap>` schema with each attribute's matching behaviour, the attributes each kind of element takes, and the ids that hold or shift between screens. Rule numbers are that guide's.
+SAP GUI's side of [selector-translation-guide.md](selector-translation-guide.md): what the rules add for SAP GUI for Windows and SAP GUI for Java, and which SAP activity drives a control in place of a selector. Read whole with that guide when the target catalog holds SAP GUI controls, together with the SAP GUI attribute reference of the UI Automation package's Selector Reference (that guide names where it is read): the SAP session attributes of `wnd`, the `<sap>` schema with each attribute's matching behaviour, the attributes each kind of element takes, and the ids that hold or shift between screens. Rule numbers are that guide's.
 
 ## Rule 1 — SAP GUI
 
@@ -32,19 +32,9 @@ A SAP session window is identified by `app`, `cls` and its title, which is the c
 
 ## Acting on SAP GUI controls
 
-**Toolbars and menus.** Application-toolbar buttons and menu positions shift between screens (the SAP GUI attribute reference): drive them with the SAP activities (Click Toolbar Button, Select Menu Item, Call Transaction), not with selectors, when the tooltip or menu text is known, and otherwise target the id on the screen the source pressed it on, flagged `positional`.
-
-**Call Transaction** waits until the session reports the transaction it names, failing early only on a status-bar error it lists, so `/n` alone never succeeds: it lands on a start screen reporting `SESSION_MANAGER`, `SMEN` or `S000`, and the activity times out. A call of `SESSION_MANAGER` is no stand-in: from inside a transaction SAP answers it with a "Cannot start transaction SESSION_MANAGER" dialog, and the activity then succeeds where the start screen reports `SESSION_MANAGER` and times out where it reports `SMEN`. A transaction is left by typing `/n` into `tbar[0]/okcd` and pressing Enter with hardware events, as Simulate types no special keys.
-
-**Select Menu Item**'s item is the menu path in captions, as the session window's `items` list it (`System/Status...`); each level is matched exactly, case included, and a `*` or `?` matches within its own level only.
-
-**Tabs.** A tab (`tabp…`) is selected by a single click, which under Simulate needs no on-screen rectangle; under Simulate a double click on a tab fails. A tab found by its caption is Select Item on its tab strip (`tabs…`), which matches the caption exactly, case included.
+**Toolbars and menus.** Application-toolbar buttons and menu positions shift between screens (the SAP GUI attribute reference): drive them with the SAP activities (Click Toolbar Button, Select Menu Item, Call Transaction), not with selectors, when the tooltip or menu text is known, and otherwise target the id on the screen the source pressed it on, flagged `positional`. How each activity matches and waits, how a transaction is left, and how a tab, a combo box entry or a table row is selected: the activity docs and the UI Automation package's SAP Automation Guide.
 
 **Rows by content.** A row found by content in a table control or ALV grid is the SAP Table Cell Scope activity, whose row filter is a cell selector of the `<sap>` schema (`text` beside a column attribute); its row modes and limits are the package's own (its activity doc and SAP guide).
-
-**Row selection.** A row is selected through its row element (`tableRow` alone), whose `checked` attribute is the row's selection: Check on it sets the selection whatever it was (`Action` Check selects, Uncheck deselects), while a click toggles it — a click on a table control's row element selects the row on either front end and under either input method, and a second Simulate click deselects it. A click on one of its cells selects nothing; its row-selector cell (`tableCol='-1'`) selects the row except under Simulate on SAP GUI for Windows.
-
-**Combo boxes.** A combo box's `items` and `selecteditem` are the entries' captions, never their keys. Select Item takes an entry's caption or its key, exact — case and spaces included — or as a `*` pattern, so an entry a source chose by key is selected by that key, and a caption copied with padding or a key in front matches nothing. The blank entry is one space on SAP GUI for Windows and the empty text on SAP GUI for Java, whose `items` leave it out.
 
 ## Checks
 
