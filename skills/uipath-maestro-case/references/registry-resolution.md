@@ -105,15 +105,18 @@ unresolved ("names no resource"): that id, not a name, identifies the
 connector operation. Resolve each such task before authoring it:
 
 1. `uip maestro registry search --activity-type-id <ACTIVITY_TYPE_ID> --output json`.
-   If it answers that it needs a pulled connector library, run
-   `uip maestro registry pull --output json`, then search again.
-2. Bind the `nodeType` it returns. When several rows share the id (the event
-   and trigger forms of one operation), take the form the task type needs.
-3. On `total: 0`, run `uip maestro registry pull --force --output json` once and
-   search again. Still `0`: author the task as `.unresolved('connector')` or
-   `.unresolved('wait-for-connector')` and record the miss as in step 6.
-   Never bind another operation in its place, even one on the same connector
-   with the same object name.
+   - Answer "needs a pulled connector library": run
+     `uip maestro registry pull --output json`, then search again.
+   - `ConfigError` naming `search-activity-type-id`: the builder SDK predates
+     the flag. Upgrade it as the message says; never retry without the flag.
+2. Bind the `NodeType` of the returned operation. Several rows sharing the id
+   are the event and trigger forms of one operation: take the form the task
+   type needs.
+3. `Data.Total` is `0`: run `uip maestro registry pull --force --output json`
+   once, then search again. Still `0`: author the task as
+   `.unresolved('connector')` or `.unresolved('wait-for-connector')` and record
+   the miss as in step 6 of [Steps](#steps). Never bind another operation in
+   its place, even one on the same connector with the same object name.
 4. Never list a connector to pick an operation by name
-   (`registry search --connector <key>` with no id): a long list is cut off,
-   and two operations can share an object name.
+   (`registry search --connector <CONNECTOR_KEY>` with no id): a long list is
+   cut off, and two operations can share an object name.
