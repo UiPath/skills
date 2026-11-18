@@ -8,7 +8,7 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
    text, or a string inside a JSON body), is JavaScript: it starts with `=js:`.
    The designer opens a plain `=` expression in its C# editor.
    Exempt, as the canvas writes them: a row `source` reading the node's own
-   result (`=result…`, `=response…`, `=Error`, a field such as `=Action`),
+   result (`=result…`, `=response…`, `=Error`, a form or agent field such as `=Action`),
    `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
    script envelope (`=vars`, `=metadata`), a human-task form input
    (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
@@ -68,6 +68,7 @@ def main() -> None:
     inputs = {v.get("id") for v in root.iter(f"{{{NS['uipath']}}}input") if v.get("elementId")}
     starts = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}startEvent")}
     declared = {e.get("id") for e in root.iter() if e.get("id") and e.get("elementId")}
+    forms = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}userTask")}
 
     bad: list[str] = []
 
@@ -88,7 +89,7 @@ def main() -> None:
             return
         if RESULT_READ.match(value) or ENVELOPE.match(value):
             return
-        if BARE_FIELD.match(value) and where.endswith("@source") and value[1:] not in declared:
+        if BARE_FIELD.match(value) and where.endswith("@source") and (owner in forms or value[1:] not in declared):
             return
         if "[HitlTaskArguments]" in where and FORM_INPUT.match(value):
             return

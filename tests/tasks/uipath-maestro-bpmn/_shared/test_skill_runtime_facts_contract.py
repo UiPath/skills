@@ -105,9 +105,10 @@ PLAIN_EXPR = re.compile(r"[\"'`]=(vars\.|metadata\.|true\b|false\b|null\b|\d|\")
 # the wrong form once, to warn against it; the canvas writes a start-event row
 # that maps a process input, and a human-task form field's value, plain.
 CANVAS_IMPORT = "InvoiceApproval.bpmn.ts"
+FORM_VALUE = re.compile(r"value: '=vars\.[\w.\[\]<>]+'")
 # Plain forms the skill names on purpose: the wrong form it warns against, the
 # hint `check` prints, and the start-event row and human-task form value the canvas writes plain.
-QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "not the `=vars.<id>` its message names", "`value` (`=vars.<id>`:", "(`=vars.<inputId>`)")
+QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "not the `=vars.<id>` its message names", "`value` (`=vars.<id>`:", "`value` stays `=vars.<id>`", "(`=vars.<inputId>`)")
 
 
 def _strip(line: str, phrases: tuple[str, ...]) -> str:
@@ -121,8 +122,8 @@ def test_authored_expressions_are_javascript(path: Path) -> None:
     hits = [
         line.strip()
         for line in path.read_text(encoding="utf-8").splitlines()
-        if PLAIN_EXPR.search(_strip(line, QUOTED_PLAIN))
-        and not re.search(r"start-event row|direction: 'input'|`value: '=vars", line)
+        if PLAIN_EXPR.search(re.sub(FORM_VALUE, "", _strip(line, QUOTED_PLAIN)))
+        and "start-event row" not in line
     ]
     assert not hits, f"{_id(path)} writes a plain `=` expression (opens in the C# editor): {hits}"
 
