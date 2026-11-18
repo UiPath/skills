@@ -123,7 +123,6 @@ def test_authored_expressions_are_javascript(path: Path) -> None:
         line.strip()
         for line in path.read_text(encoding="utf-8").splitlines()
         if PLAIN_EXPR.search(re.sub(FORM_VALUE, "", _strip(line, QUOTED_PLAIN)))
-        and "start-event row" not in line
     ]
     assert not hits, f"{_id(path)} writes a plain `=` expression (opens in the C# editor): {hits}"
 
