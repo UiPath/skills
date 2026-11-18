@@ -22,8 +22,9 @@ reference:
 initial_prompt: |
   hey, can you create a BPMN draft for our expense claims? call it
   "ExpenseClaims". someone submits a claim, if it's over 500 dollars their
-  manager has to approve it, otherwise it's approved automatically, and then
-  our "Pay Expense" robot pays it out. don't upload it
+  manager has to approve it, otherwise it's approved automatically, then
+  our "Pay Expense" robot pays it out and we email the employee that it's
+  been paid. don't upload it
 
 success_criteria:
   - type: run_command
@@ -47,6 +48,13 @@ success_criteria:
     description: "Agent did not upload, as the request forbids"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Claude only (vacuous on other agents): agent did not ask the user mid-turn with AskUserQuestion"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
     weight: 1.0
     pass_threshold: 1.0
 
