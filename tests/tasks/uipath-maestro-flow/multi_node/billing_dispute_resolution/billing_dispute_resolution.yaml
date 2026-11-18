@@ -112,7 +112,7 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, no discrepancy (invoice MCS-2026-04872 line 4, billed exactly at contract): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
+    description: 'Effects, no discrepancy (invoice MCS-2026-04872 line 5, billed at the ERP contractedRate of $185): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py no-discrepancy
     timeout: 1800
     expected_exit_code: 0

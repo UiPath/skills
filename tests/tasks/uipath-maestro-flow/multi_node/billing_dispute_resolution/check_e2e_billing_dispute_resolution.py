@@ -15,9 +15,9 @@ billed unitPrice with the row's contractedRate):
                    invoice), run the writer, and return a credit of 4950 and an
                    email draft that cites the invoice number and that credit.
 
-  no-discrepancy   Invoice MCS-2026-04872, line 4 (Solutions Architect
-                   Consulting): 4 hours billed at $325, exactly the contract.
-                   There is nothing to credit, so the run must complete WITHOUT
+  no-discrepancy   Invoice MCS-2026-04872, line 5 (Custom Integration Build):
+                   14 hours billed at $185, and the ERP row's contractedRate is
+                   $185. There is nothing to credit, so the run must complete WITHOUT
                    posting and without running the writer (no email drafted),
                    and still return an explanation.
 
@@ -95,12 +95,12 @@ CASES = {
         "dispute": {
             "type": "pricing",
             "disputedLineItems": [
-                {"lineNumber": 4, "description": "Solutions Architect Consulting",
-                 "quantity": 4, "unitPrice": 325, "amount": 1300,
-                 "reason": "We believe this rate is too high"},
+                {"lineNumber": 5, "description": "Custom Integration Build",
+                 "quantity": 14, "unitPrice": 185, "amount": 2590,
+                 "reason": "We believe the hourly rate is too high"},
             ],
-            "disputedAmount": 1300,
-            "customerStatement": "The consulting rate looks higher than we expected.",
+            "disputedAmount": 2590,
+            "customerStatement": "The integration hourly rate looks higher than we expected.",
         },
     },
 }
@@ -130,6 +130,11 @@ def _flow():
 
 def _ids_of(flow, sub):
     return {n["id"] for n in flow.get("nodes") or [] if sub in str(n.get("type", ""))}
+
+
+def _agent_ids(flow):
+    """Inline agents and existing tenant agents (`uipath.core.agent.<key>`)."""
+    return _ids_of(flow, "uipath.agent.autonomous") | _ids_of(flow, "uipath.core.agent.")
 
 
 def _downstream(flow, starts):
@@ -166,6 +171,17 @@ def _outputs(flow, payload):
         if v.get("direction") == "out" and v["id"].lower() not in inputs:
             outs[v["id"]] = (v.get("type"), _named_global(payload, v["id"])[0])
     return outs
+
+
+def _texts(value):
+    """Every string in an output, including inside an object such as {subject, body}."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [t for v in value.values() for t in _texts(v)]
+    if isinstance(value, (list, tuple)):
+        return [t for v in value for t in _texts(v)]
+    return []
 
 
 def _as_number(value):
@@ -229,7 +245,7 @@ def check_overcharge(flow, payload):
         )
     print(f"OK: FinancialPostingFunction replied for {invoice}: {sorted(replies)[:1]}")
 
-    writers = _ids_of(flow, "uipath.agent.autonomous") & _downstream(flow, posted)
+    writers = _agent_ids(flow) & _downstream(flow, posted)
     if not writers & _executed_ids(payload, completed=True):
         _fail_with_capture("the writer agent after posting did not complete: no email was drafted")
     print(f"OK: writer agent completed ({sorted(writers)})")
@@ -238,7 +254,7 @@ def check_overcharge(flow, payload):
     numbers = [n for _t, val in outs.values() if (n := _as_number(val)) is not None]
     if not any(abs(n - credit) < 0.005 for n in numbers):
         _fail_with_capture(f"no returned output is the credit of {credit} (90 h x $55): {outs}")
-    texts = [val for _t, val in outs.values() if isinstance(val, str)]
+    texts = [t for _t, val in outs.values() for t in _texts(val)]
     if not any(invoice in t and any(s in t for s in _amount_spellings(credit)) for t in texts):
         _fail_with_capture(f"no returned text cites both {invoice} and the credit of {credit}: {outs}")
     print(f"OK: the flow returned a credit of {credit} and a draft citing {invoice} and that credit")
@@ -253,13 +269,13 @@ def check_no_discrepancy(flow, payload):
         )
     print("OK: nothing was posted")
 
-    writers = _ids_of(flow, "uipath.agent.autonomous") & _downstream(flow, api)
+    writers = _agent_ids(flow) & _downstream(flow, api)
     if writers & executed:
         _fail_with_capture(f"the writer agent ran ({sorted(writers & executed)}): an email was drafted")
     print("OK: no email was drafted")
 
     outs = _outputs(flow, payload)
-    if not any(isinstance(val, str) and val.strip() for _t, val in outs.values()):
+    if not any(t.strip() for _t, val in outs.values() for t in _texts(val)):
         _fail_with_capture(f"the flow returned no explanation: {outs}")
     print("OK: the flow returned an explanation")
 

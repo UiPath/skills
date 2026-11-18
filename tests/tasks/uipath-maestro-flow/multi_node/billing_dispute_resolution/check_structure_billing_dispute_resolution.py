@@ -93,7 +93,8 @@ def assert_topology(nodes_by_id, edges):
     triggers = of("core.trigger")
     ixp = of("uipath.ixp")
     reads = {i for hint in ENTITY_QUERY_HINTS for i in of(hint)}
-    agents = of("uipath.agent.autonomous")
+    # The writer may be an existing tenant agent (`uipath.core.agent.<key>`).
+    agents = of("uipath.agent.autonomous") | of("uipath.core.agent.")
     ctx = of("uipath.agent.resource.context.index")
     api = of("uipath.core.api-workflow")
     ends = of("core.control.end")
@@ -101,7 +102,7 @@ def assert_topology(nodes_by_id, edges):
     need(triggers, "no trigger node (core.trigger.*)")
     need(ixp, "no IxP extraction node (uipath.ixp.*)")
     need(len(reads) >= 2, f"expected ≥2 entity-read nodes (ERP+CRM), found {len(reads)}")
-    need(len(agents) >= 2, f"expected ≥2 inline agents (analyst+writer), found {len(agents)}")
+    need(len(agents) >= 2, f"expected ≥2 agents (analyst+writer), found {len(agents)}")
     need(api, "no API-workflow node (FinancialPostingFunction)")
 
     from_trigger = reach(triggers)

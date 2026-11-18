@@ -171,3 +171,38 @@ def test_no_discrepancy_fails_when_it_was_posted(effects):
         effects.check_no_discrepancy(_flow(), _payload(ALL_NODES, {"rationale": "credited anyway"}))
     assert "FinancialPostingFunction ran" in str(exc.value)
 
+
+
+def test_overcharge_reads_a_draft_returned_as_an_object(effects):
+    """A flow may return the email as {subject, body} (delegate run, 2026-11-18)."""
+    effects.check_overcharge(_flow(), _payload(ALL_NODES, {
+        **POSTED,
+        "creditAmount": 4950,
+        "resolutionEmailBody": {"subject": "Invoice MCS-2026-04903",
+                                "body": "We approved a credit of $4,950.00 for invoice MCS-2026-04903."},
+    }))
+
+
+def _with_tenant_agent_writer(flow):
+    """The writer as an existing tenant agent, as a Studio Web build did."""
+    flow = copy.deepcopy(flow)
+    for n in flow["nodes"]:
+        if n["id"] == "autonomousAgent3":
+            n["type"] = "uipath.core.agent.31cfa36d-dbc7-4be3-bbf7-000000000000"
+    return flow
+
+
+def test_structure_accepts_an_existing_tenant_agent_as_the_writer():
+    _topology(_with_tenant_agent_writer(_flow()))
+
+
+def test_no_discrepancy_catches_a_tenant_agent_writer_that_ran(effects):
+    flow = _with_tenant_agent_writer(_flow())
+    with pytest.raises(SystemExit) as exc:
+        effects.check_no_discrepancy(flow, _payload(REJECT_PATH + ["autonomousAgent3"], {"rationale": "x"}))
+    assert "writer agent ran" in str(exc.value)
+
+
+def test_no_discrepancy_disputes_a_line_billed_at_its_contracted_rate(effects):
+    line = effects.submission("no-discrepancy")["dispute"]["disputedLineItems"][0]
+    assert (line["lineNumber"], line["quantity"], line["unitPrice"], line["amount"]) == (5, 14, 185, 2590)
