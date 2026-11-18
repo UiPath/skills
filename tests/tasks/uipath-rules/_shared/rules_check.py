@@ -242,10 +242,14 @@ def literal(text: str) -> object:
     return text
 
 
-def evaluate(table: ET.Element, inputs: dict) -> dict | None:
-    """The single result the table's hit policy returns, keyed by output name."""
+def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict | None:
+    """The single result the table's hit policy returns, keyed by output name.
+
+    An output entry that is one of `names` returns that name's value, as a
+    decision that passes an upstream result through does.
+    """
+    names = names or {}
     columns = input_columns(table)
-    names = output_names(table)
     hits = []
     for rule in table.findall("dmn:rule", NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
@@ -253,7 +257,8 @@ def evaluate(table: ET.Element, inputs: dict) -> dict | None:
             fail("a rule's input entries do not match the input columns")
         if all(unary_test(cell, inputs[column]) for cell, column in zip(cells, columns) if column in inputs):
             values = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:outputEntry", NS)]
-            hits.append({name: literal(value) for name, value in zip(names, values)})
+            hits.append({column: names[value.strip()] if value.strip() in names else literal(value)
+                         for column, value in zip(output_names(table), values)})
     policy = table.get("hitPolicy", "UNIQUE")
     if policy == "UNIQUE" and len(hits) > 1:
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")

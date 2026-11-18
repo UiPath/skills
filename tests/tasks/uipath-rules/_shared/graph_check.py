@@ -119,7 +119,7 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             if not found:
                 fail(f"decision {decision.get('name')!r} reads {column!r}, which is not an input or decision it requires")
             values[column] = value
-        hits[decision_id] = evaluate(table, values)
+        hits[decision_id] = evaluate(table, values, context)
 
     for decision_id in by_id:
         run(decision_id, ())
