@@ -95,8 +95,8 @@ When a reference tells you to run a command that is not available, use the Studi
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
    `refresh` and `validate` — in that order, every time
    ([Validation loop](#validation-loop)). Lay out the whole diagram only when the
-   target held no process yet (empty, or only a template's start event and its end event, if any) or the
-   user asked to replace it; else add a shape only where they report one missing.
+   target held no process yet (empty, or one start event and at most one end event) or the
+   user chose *replace* in [Critical Rule 12](#critical-rules) step 2; else add a shape only where they report one missing.
    `compile` writes no diagram, and `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
    is empty.
@@ -137,9 +137,10 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5. Only for a template or a replaced process (--relayout), or when step 4 reports BPMN_PARSE_ERROR
-#    with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE (no flag): lay out the diagram, then run step 4 again
+# 5a. Only when step 1 seeded a template or the user chose *replace*: lay out the whole diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn --relayout
+# 5b. Only when step 4 reports BPMN_PARSE_ERROR with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: add the missing shapes, then run step 4 again
+uip maestro bpmn format <Name>.bpmn
 ```
 
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
@@ -152,24 +153,22 @@ uip maestro bpmn format <Name>.bpmn --relayout
   When `merge` cannot open the baseline, run `mkdir -p <Draft>/baseline`, decompile `.flow-sdk/original/<Name>.bpmn`
   to `<Draft>/<Name>.baseline.bpmn.ts`, compile that to `<Draft>/baseline/<Name>.bpmn`,
   and run step 3's `merge` again.
-- **Step 5 without `--relayout` keeps the user's layout.** `merge` keeps every shape
+- **Step 5b keeps the user's layout.** `merge` keeps every shape
   of the target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
   `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`; a target with no diagram at all reports
-  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run `format <Name>.bpmn`
-  with no flag: it adds the missing shapes and edges and moves nothing else. Then
-  run step 4 again.
-- **A template or a replaced process takes `format --relayout`.** When step 1's
-  source has no node besides one start event and at most one end event (the template
-  Studio Web or `init` writes), or the user asked to replace the process, there is no
-  layout of the user's to keep: `merge` leaves the template's shapes where they were
-  and places the new elements around them, step 4 still passes, and `format` with no
-  flag changes nothing. Run step 5 with `--relayout` (Studio Web's Tidy up of the
-  whole diagram) and step 4 after the merge. Never pass `--relayout` on any other
-  process: it moves every shape the user placed.
+  `BPMN_PARSE_ERROR` with `No diagrams found`. Only then run step 5b: it adds the
+  missing shapes and edges and keeps every shape already drawn.
+- **A template or a replaced process takes step 5a.** When step 1's source has no
+  node besides one start event and at most one end event (the template Studio Web or
+  `init` writes), or the user chose *replace* (Critical Rule 12 step 2), there is no
+  layout of the user's to keep, and step 5b changes nothing after the merge. Run
+  step 5a (Studio Web's Tidy up of the whole diagram) and step 4 after the merge.
+  If `format` rejects `--relayout` (`unknown option`), run it with no flag. Never pass
+  `--relayout` on any other process: it moves every shape the user placed.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
-  compile it straight to `<Name>.bpmn`, then run step 5 and step 4.
+  compile it straight to `<Name>.bpmn`, then run step 5a and step 4.
 - **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish with

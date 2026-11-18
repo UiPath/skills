@@ -599,22 +599,24 @@ binding half, which is the same for every connector-backed node.
   `Orchestrator.Start*Process` type with a process binding.
 
 <!-- RULE:bpmn.brownfield.format -->
-- Do not `format` a merged process. `merge` keeps every shape and edge of the
+- Do not relay out a merged process. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
   no room for a new shape and shifts the shapes below it, and reroutes an existing edge
   whose flow the edit rewired), and draws the shapes of the elements the
-  edit added. `format` lays out the whole diagram again, so it drops the user's
+  edit added. `format --relayout` lays out the whole diagram again, and so does plain
+  `format` on a CLI whose `format --help` lists no `--relayout`: both drop the user's
   pools, lanes, colors and placement.
-  Run `format` only when `refresh` or `validate` reports
+  Run `format` without `--relayout` only when `refresh` or `validate` reports
   `BPMN_PARSE_ERROR` with `No diagrams found` (the original had no diagram, so there is no
   layout to lose), `MISSING_DI_SHAPE` or `MISSING_DI_EDGE` (an older SDK's `merge`
   draws no shapes for new elements), run
-  `refresh` and `validate` again, and, when the original had a diagram (`MISSING_DI_SHAPE` /
-  `MISSING_DI_EDGE`), tell the user that the canvas layout was reset.
-  A merge into a template that holds only one start event and one end event (as `init`
-  writes) builds a new process: run `format --relayout` (a CLI whose `format --help`
-  lists no `--relayout` lays out the whole diagram on plain `format`), then `refresh`
-  and `validate` again.
+  `refresh` and `validate` again, and, on a CLI without `--relayout`, when the original
+  had a diagram (`MISSING_DI_SHAPE` / `MISSING_DI_EDGE`), tell the user that the canvas
+  layout was reset.
+  A merge into a template that holds only one start event and at most one end event (as
+  Studio Web or `init` writes), or into a process the user chose to replace, builds a
+  new process: run `format --relayout` (plain `format` where the CLI lacks the flag),
+  then `refresh` and `validate` again.
 
 ## Contract metadata
 
