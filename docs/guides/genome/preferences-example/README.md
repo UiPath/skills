@@ -1,18 +1,16 @@
-# Build preferences: an example
+# Preferences file: an example
 
-A preferences file holds the answers you give every build the same way and the rules of your own practice: naming, project layout, which activities to use, how to configure and log, and what the hand-off looks like. It expands step 3 of [Working with UiPath genomes](../working-with-uipath-genome.md#3--build). Name it in the build request:
+A preferences file holds your team's standing answers and development standards: naming, project structure, which activities to use, logging, error handling, what the hand-off looks like. Its shape is the planner's `preferences-template.md`: standing answers, one line per build question it answers; standards, the rules every build follows beyond the genome; and the questions it leaves open. More in [Working with UiPath genomes](../working-with-uipath-genome.md#before-you-start).
 
-> Build `<name>-genome.md` with the preferences in `migration-preferences.md`.
-
-The build reads it as your answers file:
+Give it once. `uipath-planner` asks for it when it writes or extracts a genome, applies it there and names it on the genome's `Preferences:` line; `uipath-genome` reads it before its first question:
 
 - A question it answers is not asked; the completion report records the answer as "(from the answers file)".
-- A rule it states that no question asks is recorded the same way, and every part of the build follows it.
-- A rule that conflicts with a rule of the skill comes back to you as a question, with both statements. The build never settles it on its own.
+- A standard it states is followed by every part of the build.
+- A preference that conflicts with a rule of either skill comes back to you as a question, with both statements.
 
 ## The example
 
 - [migration-preferences.md](migration-preferences.md): preferences for migrating existing automations to UiPath.
-- [handoff-template/](handoff-template/README.md): the HTML hand-off page that § 8 of the preferences asks for. It is a standalone sample with placeholder data, plus how a build fills it.
+- [handoff-template/](handoff-template/README.md): the HTML hand-off page its Standards 8 asks for. It is a standalone sample with placeholder data, plus how a build fills it.
 
 Copy both, then change what does not fit your practice.

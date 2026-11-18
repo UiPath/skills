@@ -211,7 +211,7 @@ Three things hold in every run:
 
 - **What you have about the process.** A process document first (a PDD, an SOP, a runbook), then the automation itself, and any test evidence, recordings or tickets. The agent asks for them once and reads only what you give it.
 - **Claude Code with the [UiPath skills](https://github.com/UiPath/skills).** Run `/uipath:install-permissions` once, so routine `uip` commands stop asking for approval.
-- **A preferences file, when your team has standards.** It holds your standing answers: naming, project structure, logging, the template, where settings live. Give it once, and every genome and build follows it. Start one from the planner's `preferences-template.md`.
+- **A preferences file, when your team has standards.** It holds your standing answers: naming, project structure, logging, the template, where settings live. Give it once, and every genome and build follows it. Start one from the planner's `preferences-template.md`; a filled-in example, with a hand-off report template: [Preferences file: an example](preferences-example/README.md).
 - **For live runs:** the target apps installed and signed in on this machine, the UiPath browser extension, and the Windows session unlocked.
 - **A test environment.** Live runs create real records. Everything else stays on this machine, with one exception the build asks about: the Data Fabric entities it needs are created in the connected tenant. Nothing is published or deployed unless you ask.
 
