@@ -74,6 +74,11 @@ CASEPLAN_EDITS = [
     "python3 -c \"from pathlib import Path;Path('P/caseplan.json').write_text('{}')\"",
     "node -e \"const fs=require('fs');fs.renameSync('t','P/caseplan.json')\"",
     "/bin/bash -lc 'sed -i \"s/a/b/\" \"$P/caseplan.json\"'",
+    "python3 -c \"import shutil;shutil.copy('t','P/caseplan.json')\"",
+    "python3 -c \"import os;os.replace('t','P/caseplan.json')\"",
+    "node -e \"require('fs').promises.writeFile('P/caseplan.json','x')\"",
+    "node -e \"const fs=require('fs');fs.copyFileSync('t','P/caseplan.json')\"",
+    "ruby -i -pe 'gsub(/a/,\"b\")' P/caseplan.json",
     "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
     "ruby -e \"File.write('P/caseplan.json','{}')\"",
 ]
@@ -88,6 +93,10 @@ NOT_CASEPLAN_EDITS = [
     "python3 -c \"print(len(json.load(open('P/caseplan.json'))))\" && python3 -c \"open('/tmp/n','w').write('1')\"",
     "python3 - <<'X'\nd=json.load(open('P/caseplan.json'))\nX\npython3 - <<'Y'\nopen('/tmp/a','w').write('1')\nY",
     "node -e \"const d=require('fs').readFileSync('P/caseplan.json');require('fs').writeFileSync('/tmp/x',d)\"",
+    "node -e \"fs.writeFileSync('/tmp/o', fs.readFileSync('P/caseplan.json'))\"",
+    # Copying the plan aside before editing is the documented baseline step.
+    "python3 -c \"import shutil;shutil.copy('P/caseplan.json','/tmp/b')\"",
+    "node -e \"require('fs').copyFileSync('P/caseplan.json','.flow-sdk/original/caseplan.json.bak')\"",
     "sed -i 's/Old/New/' X.case.ts && cat P/caseplan.json",
     "sed -i 's/a/b/' caseplan.case.ts",
     "sed -n '1,40p' P/P/caseplan.json",
@@ -105,6 +114,10 @@ DOCUMENTED_MISSES = [
     "sed -i 's/a/b/' P/*.json",
     "F=P/caseplan.json; sed -i 's/a/b/' $F",
     "python3 -c \"p='P/caseplan.json'; open(p,'w').write('{}')\"",
+    "python3 -c \"open(os.path.join(d,'caseplan.json'),'w')\"",
+    "python3 -c \"open('P/caseplan.json',encoding='utf8',mode='w')\"",
+    "python3 -c \"Path('P/caseplan.json').open('w')\"",
+    "python3 -c \"(Path('P')/'caseplan.json').write_text('x')\"",
     "python3 fix.py P/caseplan.json",
     "echo '{}' > P/caseplan.json",
     "jq '.a=1' P/caseplan.json > t && mv t P/caseplan.json",
@@ -117,8 +130,9 @@ DOCUMENTED_MISSES = [
         "python3 -c \"" + "open('caseplan.json'" * 4000,
         "node -e " + "fs.write(caseplan.json" * 4000,
         "sed -i " + "'x' " * 4000 + "f",
+        "sed -i -e " + "'s/a/b/ \\\" " * 4000,
     ],
-    ids=["python", "node", "sed"],
+    ids=["python", "node", "sed", "sed-unterminated"],
 )
 def test_rule14_guard_stays_linear_on_long_commands(command: str) -> None:
     import time
@@ -166,6 +180,7 @@ def test_rule14_guard_covers_every_skill_artifact(command: str) -> None:
         "uip maestro case instances list --folder-path Shared --output json",
         "uip maestro case instance incidents 123 --output json",
         "uip maestro case processes incidents abc --output json",
+        "\"$UIP\" maestro case instances incidents 1 --output json",
     ],
 )
 def test_faulted_read_accepts_singular_and_plural(command: str) -> None:
@@ -177,6 +192,8 @@ def test_faulted_read_accepts_singular_and_plural(command: str) -> None:
     [
         ("uip maestro case instances retry 123", True),
         ("uip maestro case instance cancel 123", True),
+        ("\"$UIP\" maestro case instances retry 1", True),
+        ("\"$UIP\" maestro case instances list --output json", False),
         ("uip maestro case instances list --output json", False),
     ],
 )
