@@ -48,6 +48,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 14. **Ontology names are unique per folder.** Never rename the ontology resource while authoring; a new name means a new resource. Change its display name, description and entities only with `uip ont update --local`, and its files only with `uip ont files add|remove`.
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
 16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
+17. **No `uip ont`, no build.** When a `uip ont` command fails with `unknown command 'ont'`, the installed `uip` predates the ontology tool. Stop, tell the user to update `uip` and re-run, and report what is done so far (the saved model, the local entities). Never pack, refresh or import resources to work around it: a package without the ontology is not the result.
 
 ## Paths
 
@@ -264,6 +265,7 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 | `XF-019` | Copy the choice-set value names exactly into `sh:in`, or add the missing value locally |
 | `NAME_RESERVED` (in `Instructions`) | Rename the entity (`SalesOrder`, not `Order`), confirm, and use the name everywhere |
 | `BLOCKED_AMBIGUITY` | A class-to-entity, join or identifier has no unique answer: stop and ask |
+| `unknown command 'ont'` | The installed `uip` has no ontology tool: stop and ask the user to update `uip` (Critical Rule 17); never pack without the ontology |
 
 ## Inspecting a deployed ontology
 

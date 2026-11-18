@@ -103,11 +103,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "The entities and choice set were created with the local CLI, not written by hand"
+    description: "The choice set was created with the local CLI, not written by hand"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+df\s+(entities|choice-sets)\s+create[^;&|\n]*--local\b'
-    min_count: 2
-    weight: 2.0
+    command_pattern: '(uip|\$UIP)\s+df\s+choice-sets\s+create[^;&|\n]*--local\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The entities were created with the local CLI, not written by hand"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+entities\s+create[^;&|\n]*--local\b'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_not_executed

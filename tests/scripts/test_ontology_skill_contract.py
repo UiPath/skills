@@ -500,6 +500,14 @@ def test_update_keeps_the_saved_model_current():
     assert "Update, not resume." in section(t, "Saved model")
 
 
+def test_a_missing_ont_command_stops_the_build():
+    t = read(MODELER_DIR / "SKILL.md")
+    rule = next(l for l in section(t, "Critical Rules").splitlines() if l.startswith("17."))
+    assert "unknown command 'ont'" in rule and "Never pack" in rule
+    assert "`unknown command 'ont'`" in section(t, "Errors")
+    assert "`unknown command 'ont'`" in errors_guide()
+
+
 def test_document_evals_live_under_the_one_skill():
     tasks = ROOT / "tests/tasks/uipath-ontology"
     for f in ("smoke_sdd_document/smoke_sdd_document.yaml", "e2e_sdd_to_pack/e2e_sdd_to_pack.yaml"):
