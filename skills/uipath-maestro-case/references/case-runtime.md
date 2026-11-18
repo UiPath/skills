@@ -55,15 +55,18 @@ make from syntax alone. Exact signatures remain in the generated API.
   for each recipient or escalation target the user did not name as the
   production assignee (a test mailbox, the user's own email, a placeholder
   such as `<UNRESOLVED: ...>`), tell the user:
-  1. The address, and which actions or escalations route to it.
+  1. The address or group, and which actions or escalations route to it.
   2. That it stays until someone edits each one and republishes.
 
-  The user decides whether to publish with that recipient. A request that
-  already says to publish is that decision; list the recipients in the final
-  summary and go ahead. Otherwise, when no user can answer, list them and do
-  not run
-  `uip solution upload`, `uip solution publish` or `uip solution deploy run`.
-  Check, compile and validate are not publishing; run them as usual.
+  `uip maestro case debug`, `uip solution upload`, `uip solution publish` and
+  `uip solution deploy run` all route real tasks to these recipients. Check,
+  compile and validate do not; run them as usual. Before any of the four:
+  1. A recipient or escalation target that is still `<UNRESOLVED: ...>`:
+     never run it.
+  2. A real or test address or group the user did not confirm: the user decides. A
+     request that already says to debug or publish is that decision; list the
+     recipients in the final summary and go ahead. When no user can answer and
+     the request does not say so, list them and do not run it.
 
 ## Script tasks
 
