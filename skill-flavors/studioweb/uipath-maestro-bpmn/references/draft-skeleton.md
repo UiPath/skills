@@ -6,7 +6,7 @@
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 5 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
    Merge keeps the shapes the user already has on the canvas. An empty target is the one exception: compile straight over it, then lay it out with `format`.
-   A target that held only the template's start and end event takes `format <Name>.bpmn --relayout` after the merge, then `refresh` and `validate` again: it has no layout of the user's to keep.
+   A target that held only a template's start event, with or without an end event, takes `format <Name>.bpmn --relayout` after the merge, then `refresh` and `validate` again: it has no layout of the user's to keep.
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
 

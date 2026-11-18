@@ -95,7 +95,7 @@ When a reference tells you to run a command that is not available, use the Studi
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
    `refresh` and `validate` — in that order, every time
    ([Validation loop](#validation-loop)). Lay out the whole diagram only when the
-   target held no process yet (empty, or the template's start and end event) or the
+   target held no process yet (empty, or only a template's start event and its end event, if any) or the
    user asked to replace it; else add a shape only where they report one missing.
    `compile` writes no diagram, and `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
@@ -160,9 +160,9 @@ uip maestro bpmn format <Name>.bpmn --relayout
   with no flag: it adds the missing shapes and edges and moves nothing else. Then
   run step 4 again.
 - **A template or a replaced process takes `format --relayout`.** When step 1's
-  source has no node besides one start event and one end event (the template Studio
-  Web or `init` writes), or the user asked to replace the process, there is no layout
-  of the user's to keep: `merge` leaves the template's two shapes where they were
+  source has no node besides one start event and at most one end event (the template
+  Studio Web or `init` writes), or the user asked to replace the process, there is no
+  layout of the user's to keep: `merge` leaves the template's shapes where they were
   and places the new elements around them, step 4 still passes, and `format` with no
   flag changes nothing. Run step 5 with `--relayout` (Studio Web's Tidy up of the
   whole diagram) and step 4 after the merge. Never pass `--relayout` on any other
