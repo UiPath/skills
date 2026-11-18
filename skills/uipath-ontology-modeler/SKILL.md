@@ -23,7 +23,7 @@ Builds an ontology as a **local UiPath solution**: one ontology resource plus th
 | Document | An SDD, PDD, design document or domain specification (file, Confluence URL or pasted text) | Stages 1–9 in order; Stage 2 confirms the model one table at a time per [document-guide.md](references/document-guide.md) |
 | Standalone | Plain-language domain description | Stages 1–9 in order |
 | Files | The user supplies the artifact files (clone or rebuild) | Copy the supplied files into `WORKDIR`, derive the entity definitions from the mapping (Stage 2), then Stages 3 and 4, then `artifacts check` on the supplied files (Stage 5), then Stages 6–9 |
-| Artifacts only | The user wants the artifact files, no solution | Stages 1, 2 and 5. The artifacts are written from the confirmed entity definitions; no solution and no entities (Stages 3–4 are skipped). Stops after Stage 5 |
+| Artifacts only | The user wants the artifact files, no solution. The input may be a document, a description or files; a document is confirmed table by table as in Document mode | Stages 1, 2 and 5. The artifacts are written from the confirmed entity definitions; no solution and no entities (Stages 3–4 are skipped). Stops after Stage 5 |
 
 In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`), never symlinks or subfolders. When cloning, rename `{oldName}` to `{name}` in file names, IRIs and `PREFIX ont:` lines, and remove every Data Fabric id from the mapping (keep `table: <Entity>`).
 
@@ -37,7 +37,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 3. **Every `uip df` create or update carries `--local`.** No tenant folder scope on any `uip df` command.
 4. **Duplicate check before any create** (`uip df choice-sets list --local`, `uip df entities list --local`). Reuse a matching definition; when it differs, ask before changing it. Never a silent update.
 5. **The only remote import is a federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path "<CONNECTION_FOLDER>"`. No entity or choice-set import, re-import or refresh.
-6. **`uip login status` runs first, except in Artifacts-only mode** (offline; see Stage 1). The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
+6. **`uip login status` runs first, except in Artifacts-only mode** (offline; see Stage 1). Being logged out never blocks Stage 2: the model is confirmed and saved without a tenant, and login is asked for before Stage 3. The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
 7. **A relationship is one `RELATIONSHIP` field on the referencing entity**; its inverse lives only in the schema (`InverseObjectProperties`). A federated target means a plain-column join. See [relationships-guide.md](references/relationships-guide.md).
 8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
 9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the saved model, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
@@ -85,7 +85,9 @@ ANNOTATIONS: confirmed labels, comments, synonyms, value domains, grain, and cla
 
 **Every change goes into the file first.** A fix after a failed step (a renamed entity after `NAME_RESERVED`, a class folded into a property after `XF-009`, a user's correction) is saved to `model.md` before the next command, so a retry or a new session starts from it.
 
-**Resume.** When `WORKDIR` already holds `input/model.md`, the folder is this skill's own earlier work. Show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue or start over; overwrite it only when the user starts over. Continuing after `model` re-runs Stages 3–9: an existing `SOLUTION_DIR` is not created again, the duplicate check (Critical Rule 4) reuses the entities and choice sets already authored, and an ontology the solution already has (`uip ont get <Name> --local`) is not created again: `files add` replaces its files. A `WORKDIR` holding files but no `input/model.md` was not written by this skill: ask for another folder.
+**Update, not resume.** When `model.md` reads `CONFIRMED_THROUGH: built` and the user asks to change that ontology, follow [Updating an existing solution](#updating-an-existing-solution); do not offer to resume or start over.
+
+**Resume.** When `WORKDIR` already holds `input/model.md` short of `built`, the folder is this skill's own earlier work. Show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue or start over; overwrite it only when the user starts over. Continuing after `model` re-runs Stages 3–9: an existing `SOLUTION_DIR` is not created again, the duplicate check (Critical Rule 4) reuses the entities and choice sets already authored, and an ontology the solution already has (`uip ont get <Name> --local`) is not created again: `files add` replaces its files. A `WORKDIR` holding files but no `input/model.md` was not written by this skill: ask for another folder.
 
 ## Report
 
@@ -113,7 +115,7 @@ Entities come before artifacts: a federated entity's fields are known only after
 uip login status --output json
 ```
 
-Artifacts-only mode skips this stage: `artifacts check` is offline. In every other mode, when not logged in, ask the user to run `uip login` and wait. The connection import, a federated entity's `create --local` over a connector source (it reads the connection and the connector metadata) and service validation need it. Native entities, choice sets and a federated entity over local native sources only do not. Nothing is created on the tenant.
+Artifacts-only mode skips this stage: `artifacts check` is offline. In every other mode, when not logged in, say so and go on to Stage 2: confirming and saving the model needs no tenant. Before Stage 3, ask the user to run `uip login` and wait. The connection import, a federated entity's `create --local` over a connector source (it reads the connection and the connector metadata) and service validation need it. Native entities, choice sets and a federated entity over local native sources only do not. Nothing is created on the tenant.
 
 ### Stage 2 — Model and confirm
 
@@ -226,6 +228,8 @@ Save `model.md` with `CONFIRMED_THROUGH: built` and give the [Report](#report). 
 - The post-deploy check in the deployment folder belongs to `uipath-solution`. The modeler runs nothing after this stage.
 
 ## Updating an existing solution
+
+The saved model is the record of what was built. When `<WORKDIR>/input/model.md` exists, read it with the current state, save each change to it before running that change, and set `CONFIRMED_THROUGH: built` again after the pack. When it does not exist (a solution built elsewhere), write it from the current state before the first change.
 
 1. Read the current state:
    ```bash

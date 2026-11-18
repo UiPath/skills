@@ -491,6 +491,25 @@ def test_planner_hands_ontology_requests_to_the_modeler():
     assert len(fm["description"]) <= 1024 and len(fm["description"]) + len(fm["when_to_use"]) + 1 <= 1536
 
 
+def test_review_does_not_wait_for_login():
+    t = read(MODELER_DIR / "SKILL.md")
+    s1 = section(t, "Stage 1")
+    assert "go on to Stage 2" in s1 and "Before Stage 3" in s1
+    assert "never blocks Stage 2" in section(t, "Critical Rules")
+
+
+def test_a_document_can_ask_for_artifacts_only():
+    row = next(l for l in read(MODELER_DIR / "SKILL.md").splitlines() if l.startswith("| Artifacts only |"))
+    assert "document" in row and "Document mode" in row
+
+
+def test_update_keeps_the_saved_model_current():
+    t = read(MODELER_DIR / "SKILL.md")
+    up = section(t, "Updating an existing solution")
+    assert "input/model.md" in up and "save each change" in up and "CONFIRMED_THROUGH: built" in up
+    assert "Update, not resume." in section(t, "Saved model")
+
+
 def test_document_evals_live_under_the_one_skill():
     tasks = ROOT / "tests/tasks/uipath-ontology-modeler"
     for f in ("smoke_sdd_document/smoke_sdd_document.yaml", "e2e_sdd_to_pack/e2e_sdd_to_pack.yaml"):
