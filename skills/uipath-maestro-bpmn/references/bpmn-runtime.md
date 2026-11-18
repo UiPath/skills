@@ -603,8 +603,9 @@ binding half, which is the same for every connector-backed node.
   original where the user put it (it grows a lane, pool or expanded sub-process that has
   no room for a new shape and shifts the shapes below it, and reroutes an existing edge
   whose flow the edit rewired), and draws the shapes of the elements the
-  edit added. `format --relayout` lays out the whole diagram again, and so does plain
-  `format` on a CLI whose `format --help` lists no `--relayout`: both drop the user's
+  edit added. `format --relayout` lays out the whole diagram again: it keeps pools, lanes
+  and colors but moves every shape the user placed. Plain `format` on a CLI whose
+  `format --help` lists no `--relayout` lays it out again too, and drops the user's
   pools, lanes, colors and placement.
   Run `format` without `--relayout` only when `refresh` or `validate` reports
   `BPMN_PARSE_ERROR` with `No diagrams found` (the original had no diagram, so there is no
