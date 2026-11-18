@@ -77,3 +77,4 @@
 {"id": "uipath-troubleshoot-077", "prompt": "My coded app authenticates but every call returns 403 Forbidden while another user's works — figure out why.", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-078", "prompt": "After signing in, my coded app comes back with ?code= in the URL but isAuthenticated() is still false and it loops to login. What's wrong?", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-079", "prompt": "My coded action app opens in Action Center but the form fields are blank — getTask returns nothing. Diagnose.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-080", "prompt": "My Integration Service event trigger was working yesterday but today new Salesforce contacts don't start any jobs. Why did it stop firing?", "expected_skill": "uipath-troubleshoot"}

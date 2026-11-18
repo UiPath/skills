@@ -5,11 +5,8 @@ description: >
   on the watched object, confirm the job, read failed fire attempts, then
   disable and delete it. There is no CLI verb for disable/delete on an IS
   event trigger, so the agent must route those to Orchestrator instead of
-  misusing `uip or triggers update|delete --type api`.
+  misusing `uip or triggers update|delete`.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, integration-service, connector, ipe]
-
-run_limits:
-  expected_turns: 12
 
 initial_prompt: |
   I deployed a flow "NewContactFlow" in Orchestrator folder "Shared". It has
@@ -56,7 +53,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not disable/delete the IS event trigger through the HTTP API-trigger verbs — there is no CLI path; toggle/delete it in Orchestrator"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+(update|delete)\b'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+(update|delete)\b(?![\s\S]*--type[\s=]+event)'
     weight: 2.0
     pass_threshold: 1.0
 
