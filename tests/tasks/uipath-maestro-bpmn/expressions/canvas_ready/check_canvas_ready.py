@@ -12,7 +12,8 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
    `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
    script envelope (`=vars`, `=metadata`), a human-task form input
    (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
-   a process input (`=vars.<inputId>`).
+   a process input (`=vars.<inputId>`). Names, ids, documentation and
+   annotations are literal text and not scanned; at least one `=js:` must exist.
 2. No element reads a variable that is not set where it runs. A process input
    belongs to the start event, so reading `vars.<inputId>` downstream is "A
    variable is unresolved" on the canvas; `validate` reports it only as a
@@ -34,9 +35,13 @@ from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
 RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
+# A form or agent output field (`=Decision`); also lets an undeclared typo such as `=totl` pass.
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")
 FORM_INPUT = re.compile(r"^=vars\.[\w.\[\]]+$")
+# Literal text, never evaluated: a node or row name, an id, documentation, an annotation.
+LITERAL_ATTRS = {"id", "name"}
+LITERAL_TEXT = {"documentation", "text"}
 
 
 def local(tag: str) -> str:
@@ -71,6 +76,7 @@ def main() -> None:
     forms = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}userTask")}
 
     bad: list[str] = []
+    authored = 0
 
     def scan(value: str, owner: str | None, where: str) -> None:
         value = value.strip()
@@ -83,6 +89,9 @@ def main() -> None:
                 for s in strings(parsed):
                     scan(s, owner, where)
                 return
+        nonlocal authored
+        if value.startswith("=js:"):
+            authored += 1
         if not value.startswith("=") or value.startswith("=js:"):
             return
         if owner in starts and re.fullmatch(r"=vars\.(\w+)", value) and value[6:] in inputs:
@@ -98,8 +107,9 @@ def main() -> None:
     def walk(element: ET.Element, owner: str | None) -> None:
         owner = element.get("id") or owner
         for attr, value in element.attrib.items():
-            scan(value, owner, f"{local(element.tag)}@{local(attr)}")
-        if element.text:
+            if local(attr) not in LITERAL_ATTRS:
+                scan(value, owner, f"{local(element.tag)}@{local(attr)}")
+        if element.text and local(element.tag) not in LITERAL_TEXT:
             name = element.get("name")
             scan(element.text, owner, local(element.tag) + (f"[{name}]" if name else ""))
         for child in element:
@@ -112,6 +122,8 @@ def main() -> None:
             "expressions not written as =js: (the designer opens them as C#):\n  "
             + "\n  ".join(sorted(set(bad)))
         )
+    if "js" in checks and not authored:
+        fail("no =js: expression: the process computes nothing")
 
     if "scope" not in checks:
         print(f"OK: {path} writes every authored expression as =js:")
