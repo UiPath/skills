@@ -104,6 +104,9 @@ CASEPLAN_EDITS = [
     "F=a/caseplan.json; cp /tmp/x $F",
     "jq . a/caseplan.json > /tmp/p.json && mv /tmp/p.json a/caseplan.json",
     "cp new.json P/caseplan.json",
+    # A glob or a find that can reach an artifact (caught on main).
+    "sed -i 's/a/b/' P/*.json",
+    "find P -name caseplan.json -exec sed -i 's/a/b/' {} +",
     "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
     "ruby -e \"File.write('P/caseplan.json','{}')\"",
 ]
@@ -125,6 +128,7 @@ NOT_CASEPLAN_EDITS = [
     "F=P/caseplan.json; sed -n '1,5p' $F",
     "cp P/caseplan.json /tmp/backup.json",
     "mkdir -p .flow-sdk/original && cp P/caseplan.case .flow-sdk/original/",
+    "sed -i 's/x/y/g' src/*.ts",
     # Copying the plan aside before editing is the documented baseline step.
     "python3 -c \"import shutil;shutil.copy('P/caseplan.json','/tmp/b')\"",
     "node -e \"require('fs').copyFileSync('P/caseplan.json','.flow-sdk/original/caseplan.json.bak')\"",
@@ -137,12 +141,9 @@ NOT_CASEPLAN_EDITS = [
     "node -e \"console.log(require('crypto').randomUUID())\"",
 ]
 
-# Known misses, kept visible: a glob, a `find -exec`, a separate script file, and shell
-# redirection. The redirection/helper-script criterion in artifact_safety_guard catches
+# Known misses, kept visible: a separate script file and shell redirection. The redirection/helper-script criterion in artifact_safety_guard catches
 # `python fix.py`, `> caseplan.json` and `tee`; cm_golden_expense has no such criterion.
 DOCUMENTED_MISSES = [
-    "sed -i 's/a/b/' P/*.json",
-    "find P -name caseplan.json -exec sed -i 's/a/b/' {} +",
     "python3 fix.py P/caseplan.json",
     "echo '{}' > P/caseplan.json",
 ]
