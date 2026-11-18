@@ -140,7 +140,7 @@ Repeat for each confirmed section, in document order.
 
 **Ask.** Follows the review level from Framing. `Every section`: approve the section's rows, or answer the blocking questions (critical rule 9); apply the answers, show the table again, repeat until approved. `Ask me only when unclear`: show the rows and the diff, then continue unless the section has a blocking question; ask those questions, apply the answers, and show the table again. At every level a never-assume item is asked, not assumed (question triage).
 
-**Write.** The rows in the `.dmn` and each new citation in `cites.json`. Explain a row only in its annotation column, never in an XML comment (critical rule 7). Do not write `uipdm:sourceRefs` yet; Finish writes them once the boxes are resolved. A clause that states the outcome for the whole policy (a disposition or fallback clause) is cited on the default row it decides, or on the approving row when there is no default row.
+**Write.** The rows in the `.dmn` and each new citation in `cites.json`. Explain a row only in its annotation column, never in an XML comment (critical rule 7). Write a range in one cell as an interval, never as a comma list (critical rule 7). Do not write `uipdm:sourceRefs` yet; Finish writes them once the boxes are resolved. A clause that states the outcome for the whole policy (a disposition or fallback clause) is cited on the default row it decides, or on the approving row when there is no default row.
 
 **Done when.** The section is approved (`Every section`) or its blocking questions are answered, and the diff shows no change to earlier rows or only changes shown to the user.
 
