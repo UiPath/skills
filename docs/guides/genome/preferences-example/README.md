@@ -10,17 +10,6 @@ The build reads it as your answers file:
 - A rule it states that no question asks is recorded the same way, and every part of the build follows it.
 - A rule that conflicts with a rule of the skill comes back to you as a question, with both statements. The build never settles it on its own.
 
-## What belongs in it
-
-Preferences: choices about how to build that hold for every project, whatever the process. XAML or coded, Visual Basic or C#, where settings live, how files and projects are named, which activities replace which kind of source step, what the hand-off holds.
-
-Leave out:
-
-- **Workarounds** for a defect in a tool or a product version. They age, and the build keeps applying them after the defect is fixed.
-- **Facts about one process or one application.** They belong in the genome, where the build reads them per step.
-- **Facts about the source platform.** The framework migration guide holds them.
-- **Credentials and other secrets.**
-
 ## The example
 
 - [migration-preferences.md](migration-preferences.md): preferences for migrating existing automations to UiPath.

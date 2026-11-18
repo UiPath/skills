@@ -240,7 +240,7 @@ tbody tr:hover td{background:var(--sel)}
 </script>
 <!-- ===================== END OF DATA ===================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script><script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" integrity="sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr" crossorigin="anonymous"></script><script>
 (function(){
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'report'}
@@ -320,7 +320,7 @@ function renderMaps(sec){
   if(sec._mmDone)return;var cards=[].slice.call(sec.querySelectorAll('.mm-card'));
   if(!window.mermaid){cards.forEach(function(c){var e=c.querySelector('.mm-err');if(e)e.textContent='Mermaid could not be loaded (no network?): the diagram source is shown instead.'});return}
   sec._mmDone=true;
-  try{mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'loose',flowchart:{htmlLabels:true,useMaxWidth:false,curve:'basis'}})}catch(e){}
+  try{mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'strict',flowchart:{htmlLabels:true,useMaxWidth:false,curve:'basis'}})}catch(e){}
   cards.forEach(function(c){
     var src=c.querySelector('.mm-src'),view=c.querySelector('.mm-view'),err=c.querySelector('.mm-err');
     if(!src.textContent.trim())return;
