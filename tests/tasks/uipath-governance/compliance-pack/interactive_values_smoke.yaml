@@ -20,6 +20,9 @@ sandbox:
 pre_run:
   - command: 'printf inactive > mocks/scenario'
     timeout: 10
+  # Snapshot the sandbox's own login tenant id(s) before the agent starts (see mocks/uip).
+  - command: '{ printenv UIPATH_TENANT_ID; grep "^UIPATH_TENANT_ID=" "$HOME/.uipath/.auth" | cut -d= -f2-; } > mocks/login-tenant 2>/dev/null || true'
+    timeout: 10
 
 initial_prompt: |
   As part of our ISO 42001 work I want to restrict which URLs and applications

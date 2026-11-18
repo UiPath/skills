@@ -14,6 +14,7 @@ import re
 import shutil
 import stat
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -175,6 +176,47 @@ def test_ids_the_login_cannot_see_404_as_tenants(sb, target):
     assert body["Message"].startswith("HTTP 404")
     assert sb.state().get("enabled", []) == []
     code, _, _ = sb.uip("gov", "aops-policy", "deployment", "tenant", "get", target)
+    assert code == 1
+
+
+@pytest.mark.parametrize("in_env, in_auth", [(True, False), (False, True), (True, True)])
+def test_pre_run_login_tenant_snapshot_is_the_recorded_tenant(sb, tmp_path, in_env, in_auth):
+    # A sandbox with its own login hands the agent that tenant id (env and/or
+    # ~/.uipath/.auth); the task's pre_run snapshots it, and only the snapshot counts.
+    env_id, auth_id = "0a1b2c3d-0000-4000-8000-0000000000aa", "0a1b2c3d-0000-4000-8000-0000000000bb"
+    invented, home = "deadbeef-0000-4000-8000-000000000000", tmp_path / "home"
+    (home / ".uipath").mkdir(parents=True)
+    (home / ".uipath" / ".auth").write_text(f"UIPATH_TENANT_ID={auth_id}\n" if in_auth else "")
+    sb.env["HOME"] = str(home)
+    sb.env.pop("UIPATH_TENANT_ID", None)
+    if in_env:
+        sb.env["UIPATH_TENANT_ID"] = env_id
+    for step in yaml.safe_load((PACK_DIR / "apply_commands_smoke.yaml").read_text())["pre_run"]:
+        subprocess.run(step["command"], shell=True, cwd=sb.root, env=sb.env, check=True)
+    snapshot = [t for t, on in ((env_id, in_env), (auth_id, in_auth)) if on]
+    # Ids the agent writes after pre_run are ignored.
+    (home / ".uipath" / ".auth").write_text(f"UIPATH_TENANT_ID={invented}\n")
+    sb.env["UIPATH_TENANT_ID"] = invented
+    login = sb.ok("login", "status")
+    assert login["TenantId"] == snapshot[0] and login["ExpirationDate"] > time.strftime("%Y-%m-%dT%H:%M:%S")
+    assert snapshot[0] in tenant_ids(sb) and TENANT not in tenant_ids(sb)
+    for tid in snapshot:
+        sb.ok("gov", "compliance-packs", "state", "coverage", "tenant", tid, PACK)
+        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", tid, PACK)
+        assert sb.ok("gov", "aops-policy", "deployment", "tenant", "get", tid)["Identifier"] == tid
+    assert set(sb.state()["enabled"]) == {TENANT}
+    for target in ("", ORG, invented, snapshot[0].upper()):
+        code, _, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", target, PACK)
+        assert code == 1
+    assert subprocess.run(["python3", "mocks/check_state.py", "enabled"], cwd=sb.root).returncode == 0
+
+
+def test_pre_run_snapshot_never_aliases_the_org_or_a_visible_tenant(sb):
+    (sb.mocks / "login-tenant").write_text(f"{ORG}\n{TENANT_2}\n\n")
+    assert sb.ok("login", "status")["TenantId"] == TENANT
+    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT_2, PACK)
+    assert sb.state()["enabled"] == [TENANT_2]
+    code, _, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", ORG, PACK)
     assert code == 1
 
 
