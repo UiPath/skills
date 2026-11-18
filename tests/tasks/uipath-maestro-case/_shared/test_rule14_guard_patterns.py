@@ -117,6 +117,8 @@ CASEPLAN_EDITS = [
     "python3 -c \"open('P/caseplan.json','r+b')\"",
     "python3 -c \"p='P/caseplan.json'; open(p,'r+')\"",
     "python3 -c \"Path('P/caseplan.json').open('r+')\"",
+    "python3 -c \"p='P/caseplan.json'; os.replace('/tmp/t', p)\"",
+    "python3 -c \"p='P/caseplan.json';" + "x=1;" * 700 + "open(p,'w')\"",
     "find . -name '*.json' -exec perl -pi -e 's/a/b/' {} \\;",
     # A glob or a find that can reach an artifact (caught on main).
     "sed -i 's/a/b/' P/*.json",
@@ -154,6 +156,10 @@ NOT_CASEPLAN_EDITS = [
     "cp P/caseplan.json bak/caseplan.json",
     # A plan read, then a scratch write through a variable never assigned an artifact path.
     "python3 -c \"import json; d=json.load(open('P/caseplan.json')); out='/tmp/s.txt'; open(out,'w').write(str(d))\"",
+    # A variable whose name ends in the tracked one, and the backup idiom on a tracked path.
+    "python3 -c \"p='P/caseplan.json'; tmp=Path('/tmp/x'); tmp.write_text('x')\"",
+    "python3 -c \"p='P/caseplan.json'; shutil.copy(p, p+'.bak')\"",
+    "node -e \"const p='P/caseplan.json';require('fs').writeFileSync(p+'.out','x')\"",
     "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('P/caseplan.json'));const o='/tmp/x.json';fs.writeFileSync(o,JSON.stringify(d))\"",
     "python3 -c \"open('P/caseplan.json','rb').read()\"",
     "python3 -c \"open('P/caseplan.json', encoding='utf8').read()\"",
