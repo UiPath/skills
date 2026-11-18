@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -240,6 +241,16 @@ def ixp_node_identifiers(document: dict[str, Any]) -> list[str]:
             identifiers.append(node_type)
             identifiers.append(str((node.get("inputs") or {}).get("modelName") or ""))
     return identifiers
+
+
+def sanitize_registry_segment(name: str) -> str:
+    """The registry's tail-segment sanitization: lowercase, non-alnum runs → '-'.
+
+    NodeTypes embed the deployment name in this form (`falconry_licences-x` →
+    `falconry-licences-x`), so a raw name never substring-matches its own
+    NodeType when it carries an underscore.
+    """
+    return re.sub(r"[^a-z0-9]+", "-", name.lower())
 
 
 def matches_fixture_domain(*fields: str | None) -> bool:
