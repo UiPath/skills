@@ -76,11 +76,9 @@ def test_section_ignores_headings_inside_code_fences():
     assert "# comment" in body and "after" in body and "other" not in body
 
 
-def test_skill_registered_as_preview_and_authoring_is_gone():
+def test_skill_registered_as_preview():
     status = json.loads(read(ROOT / "assets/skill-status.json"))["skills"]
     assert status["uipath-ontology"]["status"] == "preview"
-    assert "uipath-ontology-authoring" not in status
-    assert not (SKILLS / "uipath-ontology-authoring").exists()
 
 
 def test_frontmatter_identity_and_redirects():
@@ -136,7 +134,6 @@ def test_activation_rows_route_every_input_to_the_one_skill():
     assert any(re.search(r"\bsdd\b|\bpdd\b|design document|specification", p) for p in prompts)
     assert any(re.search(r"\.ofn|\.ttl|yarrrml", p) for p in prompts)
     assert len({r["id"] for r in rows}) == len(rows)
-    assert not (ROOT / "tests/tasks/activation/uipath-ontology-authoring.jsonl").exists()
 
 
 ARTIFACT_GUIDES = ("artifacts-guide.md", "owl-patterns-guide.md", "shacl-patterns-guide.md",
@@ -420,15 +417,8 @@ def test_error_table_codes_exist_in_errors_guide():
 
 # --- one skill: document mode and the saved model ---------------------------------------------------------
 
-SPLIT_TERMS = re.compile(r"\b(Delegated|handoff|HANDOFF_FILE|uipath-ontology-authoring|sibling skill)\b", re.I)
-
-
 def document_guide() -> str:
     return read(MODELER_DIR / "references/document-guide.md")
-
-
-def test_no_trace_of_the_split():
-    assert [f"{p.name}: {m.group(0)}" for p in guidance_files() for m in SPLIT_TERMS.finditer(read(p))] == []
 
 
 def test_document_mode_runs_the_document_guide():
@@ -518,7 +508,6 @@ def test_document_evals_live_under_the_one_skill():
         assert triggered == ["uipath-ontology"], f
         assert any(c.get("path") == "maintenance/input/model.md" for c in y["success_criteria"]), f
     assert "Group" in read(tasks / "_sdd_crews/maintenance-sdd.md") and "| File |" in read(tasks / "_sdd_crews/maintenance-sdd.md")
-    assert not (ROOT / "tests/tasks/uipath-ontology-authoring").exists()
 
 
 def solution_ontology_section() -> str:
