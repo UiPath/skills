@@ -3,9 +3,11 @@ description: >
   A record fetched by a key that arrives as a process input. Jira's curated
   "Get Issue" also needs `project` and `issuetype`, design-time lookups the
   connector resolves against the connection; filling them from inputs is
-  `check`'s LOOKUP_RUNTIME_VALUE and fails at run time; pinning them reads one
-  project only. The step must read the issue by its key alone (the generic Retrieve Issue, `get-record` on
-  `curated_issue`). Graded on the compiled BPMN, validate-only.
+  `check`'s LOOKUP_RUNTIME_VALUE (the caller holds only the key, not the ids
+  they need); pinning them reads one project only. The step must read the
+  issue by its key alone (the generic Retrieve Issue, `get-record` on
+  `curated_issue`). Graded on the compiled BPMN, validate-only; the summary
+  output mapping is not graded here.
 tags:
   - uipath-maestro-bpmn
   - integration

@@ -4,16 +4,16 @@
 A curated "get" operation can declare lookup fields that select its field set
 (Jira Get Issue: `project`, `issuetype`). Those are resolved at design time,
 against the connection; a run-time expression there is `check`'s
-`LOOKUP_RUNTIME_VALUE`, and the connector rejects it when the process runs.
+`LOOKUP_RUNTIME_VALUE` warning: it must carry the id the connector stores,
+which a caller holding only the key does not have.
 A value pinned there instead reads only that one project. When the key
 arrives at run time and may name any record, the step that reads it must take
 the key alone: the connector's generic Retrieve (`get-record` with an
 `object`) does.
 
-Passes when some node of the connector:
-  1. reads the record by a path parameter whose value is a run-time
-     expression (the process input), and
-  2. sends none of the named lookup fields, run-time or pinned.
+Passes when no node of the connector sends a named lookup field (run-time
+or pinned) and some node reads the record by a run-time key: a path
+parameter, or a `jql` query (JQL by key reads any project too).
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_runtime_record_key.py <NAME_HINT> <CONNECTOR_KEY> <LOOKUP>[,<LOOKUP>...]
@@ -46,22 +46,24 @@ def main() -> None:
     if not nodes:
         fail(f"no {connector_key} connector node in {path}")
 
-    problems = []
+    bad_nodes, ok = [], []
     for node in nodes:
         node_id = node.attrib.get("id", "<unknown>")
-        keyed = [k for k, v in path_parameters(node).items() if runtime(v)]
-        if not keyed:
-            problems.append(f"{node_id}: no path parameter reads a run-time value")
-            continue
-        params = {**query_parameters(node), **path_parameters(node)}
+        query = query_parameters(node)
+        params = {**query, **path_parameters(node)}
         bad = {f: params[f] for f in lookups if params.get(f, "").strip()}
         if bad:
-            problems.append(f"{node_id}: sends design-time lookup(s) {bad}; the key alone must select the record")
+            bad_nodes.append(f"{node_id}: sends design-time lookup(s) {bad}; the key alone must select the record")
             continue
-        print(f"OK: {node_id} reads the record by run-time {keyed} alone")
-        return
-    fail("; ".join(problems))
-
+        keys = {**path_parameters(node), **{q: v for q, v in query.items() if q == "jql"}}
+        keyed = [k for k, v in keys.items() if runtime(v)]
+        if keyed:
+            ok.append(f"{node_id} reads the record by run-time {keyed} alone")
+    if bad_nodes:
+        fail("; ".join(bad_nodes))
+    if not ok:
+        fail(f"no {connector_key} node reads the record by a run-time key")
+    print("OK: " + "; ".join(ok))
 
 if __name__ == "__main__":
     main()
