@@ -285,7 +285,7 @@
       "rpa pack": 1,
       "rpa packages inspect": 1,
       "rpa run": 4,
-      "rpa uia": 6,
+      "rpa uia": 2,
       "rpa validate": 1
     }
   },
