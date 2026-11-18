@@ -1,6 +1,6 @@
 task_id: skill-pm-query-group-by-sugar
 description: >
-  Critical Rule 6: query field ids come from `query info`, not column names, and
+  Critical Rule 7: query field ids come from `query info`, not column names, and
   the `--group-by/--metric` sugar resolves human names so the agent never has to
   hand-write the aggregate AST. Tests that the agent reaches for the sugar (or at
   least discovers ids via `query info`) rather than inventing a raw `--body-json`
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used a valid AggregationFunction in the metric spec"
     tool_name: "Bash"
-    command_pattern: '--metric\s+\S*:(average|count|sum|min|max)\b'
+    command_pattern: '--metric\s+\S*:(any|average|count|distinct_count|forall|forany|max|median|min|percentage|sum)\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

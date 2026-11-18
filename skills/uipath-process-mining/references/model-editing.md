@@ -28,14 +28,14 @@ uip pm apps model fields remove <app-id> <field-id>
   shows for the event-log column (`F__Event_log__Team__<hash>`). Without `--table`,
   `fields set` therefore also takes a display name or column, and edits the field when
   exactly one matches (`Data.Field` is its id). Several matches, or `fields remove`
-  (which always wants the exact id), fail with the matching ids listed. Confirm a
+  (which always wants the exact id), fail with the matching ids listed. With `--table`, the
+  value is always taken as a field id, never resolved as a name. Confirm a
   removal target with the user first (Critical Rule 11).
 - **New data columns are picked up for you.** The model lists a data column only once
   it has been reconciled with the last successful `transformations apply` or
   `ingestions create`. When `fields set`/`remove` miss, they add the data's new columns
   to the model first (`dataModelChanged` → `applyCurrentDatamodel`, which only adds) and
   try once more. Success reports them as `Data.AddedFromData: ["Cases.Extra_metric"]`.
-
 - **Upsert semantics.** If `<field-id>` exists, its `--kind` / `--display-name` are updated, and
   passing `--expression` turns it into (or updates) a **calculated field**. If it does not exist, a
   new **calculated field** is created in `--table` — so `--table` + `--expression` (+ `--kind`) are

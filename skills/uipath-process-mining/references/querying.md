@@ -29,8 +29,7 @@ uip pm query run <app> --group-by Open_year --metric Event_count:average --metri
 `--group-by <cols>` (comma-separated names or ids) and `--metric <col:fn[:alias]>`
 (repeatable) resolve human column names to ids via `query info`, build the body,
 and **transpose the engine's columnar response into rows** (great with `--output
-table`). `fn` ∈ `any | average | count | distinct_count | forall | forany | max |
-median | min | percentage | sum`. The sugar and a raw `--body`/`--body-json` are
+table`). `fn` is one of the `aggregation` values of the raw body below. The sugar and a raw `--body`/`--body-json` are
 mutually exclusive. A name is matched against each field's column, case-insensitively,
 and the first table in `query info` that has it wins (`Cases` first).
 
@@ -43,8 +42,9 @@ and the first table in `query info` that has it wins (`Cases` first).
 
 - `aggregation` is the **`AggregationFunction` enum**, read case-insensitively:
   `any`, `average`, `count`, `distinct_count`, `forall`, `forany`, `max`, `median`,
-  `min`, `percentage`, `sum` in this legacy form. Invalid values (e.g. `maximum`) 400
-  with a raw .NET enum-convert error.
+  `min`, `percentage`, `sum`. These are the values the `{ id, argument, aggregation }`
+  aggregate form takes; for a percentile use `query percentile`. Invalid values (e.g.
+  `maximum`) 400 with a raw .NET enum-convert error.
 - The response `Data` is **columnar**: one entry per group field and per
   aggregate, keyed by the id, each `{ "values": [...per group...], "ungrouped":
   <grand total>, "stackValues": null }`. Group and aggregate arrays are
