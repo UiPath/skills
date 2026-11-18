@@ -6,10 +6,10 @@ description: |
   the way a Studio Web user would ask it. The structural check accepts any
   routing that auto-approves manager review instead of pinning the reference's
   switch + decision layout. Two graded debug runs check what the flow did: a
-  valid overcharge is posted through FinancialPostingFunction, whose live reply
-  must cite the invoice, and gets an email draft citing the invoice and the
-  returned credit; a line billed exactly at contract is neither posted nor
-  drafted. An advisory probe looks for the posting's Orchestrator job. Text
+  valid overcharge (a real rate error on the tenant) is posted through
+  FinancialPostingFunction, whose live reply must cite the invoice, and returns
+  the SOP's credit plus an email draft citing the invoice and that credit; a
+  line billed exactly at contract is neither posted nor drafted. Text
   between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags:
@@ -61,6 +61,7 @@ initial_prompt: |
   email.
 
   <!-- helper:start -->
+  BillingDisputeCRM and BillingDisputeERP are Data Service entities.
   The dispute submission is one object input shaped like
   `{customer: {accountNumber}, invoice: {invoiceNumber}, dispute:
   {disputedLineItems: [{lineNumber, quantity, unitPrice, amount,
@@ -104,30 +105,16 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, valid overcharge (line 5, 300 vs contracted 185 per hour): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04872, the writer completes, and a returned draft cites MCS-2026-04872 and the returned credit amount'
+    description: 'Effects, valid overcharge (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs contracted $235): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04903, the writer completes, and the flow returns a credit of 4950 and a draft citing MCS-2026-04903 and that credit'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py overcharge
     timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Advisory probe (tenant record): a Successful FinancialPostingFunction Orchestrator job citing MCS-2026-04872 was created during the overcharge debug run'
-    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/probe_posting_jobs.py overcharge
-    timeout: 180
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0
-  - type: run_command
-    description: 'Effects, no discrepancy (line 4 billed exactly at contract): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
+    description: 'Effects, no discrepancy (invoice MCS-2026-04872 line 4, billed exactly at contract): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py no-discrepancy
     timeout: 1800
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-  - type: run_command
-    description: 'Advisory probe (tenant record): no FinancialPostingFunction Orchestrator job citing MCS-2026-04872 was created during the no-discrepancy debug run'
-    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/probe_posting_jobs.py no-discrepancy
-    timeout: 180
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0

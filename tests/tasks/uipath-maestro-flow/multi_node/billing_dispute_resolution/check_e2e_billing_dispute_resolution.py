@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """Effects check for BillingDisputeResolution.
 
-Debugs the flow once against the live tenant and asserts what the run DID,
-read from the debug trace, for one of two disputes on invoice MCS-2026-04872:
+Debugs the flow once against the live tenant and asserts what the run DID, read
+from the debug trace. Both cases use rows the tenant's BillingDisputeERP really
+holds, and the invoice PDF that matches them, so the right outcome follows from
+the tenant's own Billing Dispute SOP (its "Incorrect rate" rule compares the
+billed unitPrice with the row's contractedRate):
 
-  overcharge       Line 5 (Custom Integration Build) billed 14 x 300 = 4200
-                   against a contracted 14 x 185 = 2590. The dispute is valid,
-                   so the run must: extract the invoice (IxP), complete both
-                   lookups, run the analyst, POST through
+  overcharge       Invoice MCS-2026-04903, line 2 (DevOps Engineering): 90 hours
+                   billed at $290 against a contracted $235, so the customer is
+                   owed (290 - 235) x 90 = $4,950. The run must: extract the
+                   invoice (IxP), complete both lookups, POST through
                    FinancialPostingFunction (whose live reply must cite the
-                   invoice), run the writer, and return an email
-                   draft that cites the invoice number and the credit amount
-                   the flow returns.
+                   invoice), run the writer, and return a credit of 4950 and an
+                   email draft that cites the invoice number and that credit.
 
-  no-discrepancy   Line 4 (Solutions Architect Consulting) billed 4 x 325 = 1300,
-                   exactly the contract. There is nothing to credit, so the run
-                   must complete WITHOUT posting and without running the writer
-                   (no email drafted), and still return an explanation.
+  no-discrepancy   Invoice MCS-2026-04872, line 4 (Solutions Architect
+                   Consulting): 4 hours billed at $325, exactly the contract.
+                   There is nothing to credit, so the run must complete WITHOUT
+                   posting and without running the writer (no email drafted),
+                   and still return an explanation.
 
 The email is never sent: the structural check forbids a send-email node.
-
-Each run leaves its time window in `.grading/posting_window_<case>.json` for
-the advisory Orchestrator job probe (`probe_posting_jobs.py`).
 
 Usage: check_e2e_billing_dispute_resolution.py overcharge|no-discrepancy
 """
@@ -30,7 +30,6 @@ import glob
 import json
 import os
 import sys
-from datetime import datetime, timezone
 
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
@@ -49,44 +48,14 @@ from _shared.flow_check import (  # noqa: E402
     run_debug,
 )
 
-INVOICE = "MCS-2026-04872"
+_HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Self-contained billing-dispute submission event (matches the flow's
-# webhookPayload input schema). Disputed amount is above the credit-approval
-# threshold so the analyst has a substantive, escalation-worthy dispute to reason
-# about. Line items are present so the discrepancy script has data even on the
-# headless lane where IxP extraction does not run.
+# A billing-dispute submission event (the shape the prompt's helper block
+# describes). Each case replaces customer, invoice and dispute.
 WEBHOOK_PAYLOAD = {
     "event": "billing_dispute_submitted",
     "timestamp": "2026-04-02T15:04:05Z",
     "disputeId": "DSP-2026-00341",
-    "customer": {
-        "companyName": "Northwind Electronics Corp.",
-        "accountNumber": "ACCT-98201-NE",
-        "contactName": "Lisa Huang",
-        "contactEmail": "lisa.huang@northwindelectronics.com",
-        "address": {"street": "100 Market St", "city": "Seattle", "state": "WA", "zipCode": "98101"},
-    },
-    "invoice": {
-        "invoiceNumber": INVOICE,
-        "invoiceDate": "2026-03-01",
-        "dueDate": "2026-03-31",
-        "billingPeriod": {"start": "2026-02-01", "end": "2026-02-28"},
-        "totalAmount": 24175.80,
-        "currency": "USD",
-        "vendor": {"name": "Contoso Cloud Services", "address": "1 Cloud Way, Redmond WA",
-                   "email": "billing@contoso.example"},
-    },
-    "dispute": {
-        "type": "duplicate_charge",
-        "disputedLineItems": [
-            {"description": "Premium support tier", "quantity": "14", "unitPrice": 300,
-             "amount": 4200, "lineNumber": 3, "reason": "Billed at $300/unit vs contracted $290/unit"},
-        ],
-        "disputedAmount": 11000,
-        "acceptedAmount": 13175.80,
-        "customerStatement": "We were charged a higher unit price than our contract specifies.",
-    },
     "attachments": [],
     "config": {
         "billingOpsChannel": "#billing-ops",
@@ -99,31 +68,56 @@ WEBHOOK_PAYLOAD = {
     },
 }
 
-PDF = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"invoice-{INVOICE}.pdf")
-WINDOW_FILE = ".grading/posting_window_{case}.json"
-
-DISPUTES = {
+CASES = {
     "overcharge": {
-        "type": "pricing",
-        "disputedLineItems": [
-            {"lineNumber": 5, "description": "Custom Integration Build",
-             "quantity": 14, "unitPrice": 300, "amount": 4200,
-             "reason": "Billed at $300/hour vs the contracted $185/hour"},
-        ],
-        "disputedAmount": 4200,
-        "customerStatement": "We were charged a higher hourly rate than our contract specifies.",
+        "invoice": "MCS-2026-04903",
+        "credit": 4950,
+        "customer": {"companyName": "Atlas Manufacturing Group", "accountNumber": "ACCT-71044-AT"},
+        "invoiceDetails": {"invoiceDate": "2026-03-31", "dueDate": "2026-04-30",
+                           "totalAmount": 27796.00, "currency": "USD"},
+        "dispute": {
+            "type": "pricing",
+            "disputedLineItems": [
+                {"lineNumber": 2, "description": "DevOps Engineering",
+                 "quantity": 90, "unitPrice": 290, "amount": 26100,
+                 "reason": "Billed at $290/hour; our SOW AT-2026-008 contracts $235/hour"},
+            ],
+            "disputedAmount": 26100,
+            "customerStatement": "We were billed a higher hourly rate than our contract specifies.",
+        },
     },
     "no-discrepancy": {
-        "type": "pricing",
-        "disputedLineItems": [
-            {"lineNumber": 4, "description": "Solutions Architect Consulting",
-             "quantity": 4, "unitPrice": 325, "amount": 1300,
-             "reason": "We believe this rate is too high"},
-        ],
-        "disputedAmount": 1300,
-        "customerStatement": "The consulting rate looks higher than we expected.",
+        "invoice": "MCS-2026-04872",
+        "credit": None,
+        "customer": {"companyName": "Northwind Electronics Corp.", "accountNumber": "ACCT-98201-NE"},
+        "invoiceDetails": {"invoiceDate": "2026-03-01", "dueDate": "2026-03-31",
+                           "totalAmount": 30425.00, "currency": "USD"},
+        "dispute": {
+            "type": "pricing",
+            "disputedLineItems": [
+                {"lineNumber": 4, "description": "Solutions Architect Consulting",
+                 "quantity": 4, "unitPrice": 325, "amount": 1300,
+                 "reason": "We believe this rate is too high"},
+            ],
+            "disputedAmount": 1300,
+            "customerStatement": "The consulting rate looks higher than we expected.",
+        },
     },
 }
+
+
+def submission(case):
+    """The dispute submission for a case, in the helper block's shape."""
+    c = CASES[case]
+    payload = copy.deepcopy(WEBHOOK_PAYLOAD)
+    payload["customer"] = copy.deepcopy(c["customer"])
+    payload["invoice"] = {"invoiceNumber": c["invoice"], **c["invoiceDetails"]}
+    payload["dispute"] = copy.deepcopy(c["dispute"])
+    return payload
+
+
+def invoice_pdf(case):
+    return os.path.join(_HERE, f"invoice-{CASES[case]['invoice']}.pdf")
 
 
 def _flow():
@@ -174,6 +168,17 @@ def _outputs(flow, payload):
     return outs
 
 
+def _as_number(value):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).replace(",", "").replace("$", "").strip())
+    except ValueError:
+        return None
+
+
 def _amount_spellings(amount):
     spellings = {f"{amount:.2f}", f"{amount:,.2f}"}
     if float(amount).is_integer():
@@ -181,7 +186,7 @@ def _amount_spellings(amount):
     return spellings
 
 
-def _debug(flow_dispute):
+def _debug(case):
     project_dir = find_project_dir()
     file_vars = read_flow_file_input_vars(project_dir)
     obj_vars = [v for v in read_flow_input_vars(project_dir) if v not in file_vars]
@@ -189,26 +194,16 @@ def _debug(flow_dispute):
         sys.exit("FAIL: the flow declares no object input for the dispute submission")
     if not file_vars:
         sys.exit("FAIL: the flow declares no file input for the invoice PDF")
-    payload_in = copy.deepcopy(WEBHOOK_PAYLOAD)
-    payload_in["dispute"] = flow_dispute
-    print(f"debug inputs: object={obj_vars[0]} attachment={file_vars[0]}")
-    started = _now()
-    payload = run_debug(inputs={obj_vars[0]: payload_in}, attachments={file_vars[0]: PDF}, timeout=840)
-    return payload, {"startedAt": started, "endedAt": _now(), "jobKey": _get_ci(payload, "jobKey", "JobKey")}
-
-
-def _now():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _stamp_window(case, window):
-    """Leave the debug run's time window for the advisory job probe."""
-    os.makedirs(".grading", exist_ok=True)
-    with open(WINDOW_FILE.format(case=case), "w") as f:
-        json.dump({"case": case, "invoice": INVOICE, **window}, f)
+    print(f"debug inputs: object={obj_vars[0]} attachment={file_vars[0]} invoice={CASES[case]['invoice']}")
+    return run_debug(
+        inputs={obj_vars[0]: submission(case)},
+        attachments={file_vars[0]: invoice_pdf(case)},
+        timeout=840,
+    )
 
 
 def check_overcharge(flow, payload):
+    invoice, credit = CASES["overcharge"]["invoice"], CASES["overcharge"]["credit"]
     if not _completed(flow, payload, "uipath.ixp"):
         _fail_with_capture("the IxP extraction did not complete")
     reads = set()
@@ -228,11 +223,11 @@ def check_overcharge(flow, payload):
     # the flow posted. Matched on the value, not a field name: the tenant copy
     # and the repo source name the field differently.
     replies = node_output_leaves(payload, posted)
-    if not any(INVOICE in r for r in replies):
+    if not any(invoice in r for r in replies):
         _fail_with_capture(
-            f"FinancialPostingFunction's reply does not cite {INVOICE}: {sorted(replies)[:5]}"
+            f"FinancialPostingFunction's reply does not cite {invoice}: {sorted(replies)[:5]}"
         )
-    print(f"OK: FinancialPostingFunction replied for {INVOICE}: {sorted(replies)[:1]}")
+    print(f"OK: FinancialPostingFunction replied for {invoice}: {sorted(replies)[:1]}")
 
     writers = _ids_of(flow, "uipath.agent.autonomous") & _downstream(flow, posted)
     if not writers & _executed_ids(payload, completed=True):
@@ -240,20 +235,13 @@ def check_overcharge(flow, payload):
     print(f"OK: writer agent completed ({sorted(writers)})")
 
     outs = _outputs(flow, payload)
-    credits = [val for typ, val in outs.values()
-               if isinstance(val, (int, float)) and not isinstance(val, bool) and val > 0]
-    if not credits:
-        _fail_with_capture(f"no positive credit amount among the returned outputs: {outs}")
-    texts = [val for typ, val in outs.values() if isinstance(val, str)]
-    drafts = [
-        t for t in texts
-        if INVOICE in t and any(s in t for c in credits for s in _amount_spellings(c))
-    ]
-    if not drafts:
-        _fail_with_capture(
-            f"no returned text cites both {INVOICE} and the credit amount {credits}: {outs}"
-        )
-    print(f"OK: returned email draft cites {INVOICE} and the credit amount {credits}")
+    numbers = [n for _t, val in outs.values() if (n := _as_number(val)) is not None]
+    if not any(abs(n - credit) < 0.005 for n in numbers):
+        _fail_with_capture(f"no returned output is the credit of {credit} (90 h x $55): {outs}")
+    texts = [val for _t, val in outs.values() if isinstance(val, str)]
+    if not any(invoice in t and any(s in t for s in _amount_spellings(credit)) for t in texts):
+        _fail_with_capture(f"no returned text cites both {invoice} and the credit of {credit}: {outs}")
+    print(f"OK: the flow returned a credit of {credit} and a draft citing {invoice} and that credit")
 
 
 def check_no_discrepancy(flow, payload):
@@ -277,12 +265,11 @@ def check_no_discrepancy(flow, payload):
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in DISPUTES:
-        sys.exit(f"usage: {os.path.basename(__file__)} {'|'.join(DISPUTES)}")
+    if len(sys.argv) != 2 or sys.argv[1] not in CASES:
+        sys.exit(f"usage: {os.path.basename(__file__)} {'|'.join(CASES)}")
     case = sys.argv[1]
     flow = _flow()
-    payload, window = _debug(DISPUTES[case])
-    _stamp_window(case, window)
+    payload = _debug(case)
     (check_overcharge if case == "overcharge" else check_no_discrepancy)(flow, payload)
 
 

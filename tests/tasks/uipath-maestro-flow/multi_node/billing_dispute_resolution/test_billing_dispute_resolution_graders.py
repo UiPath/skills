@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for the BillingDisputeResolution structure, effects and job-probe graders.
+"""Unit tests for the BillingDisputeResolution structure and effects graders.
 
 The structure check must accept both reference shapes and the routing the
 short prompt allows (manager review going straight to posting), and reject a
@@ -104,14 +104,14 @@ def effects(monkeypatch):
 
 
 POSTED = {"financialpostingfunction12.output": {
-    "result": "Credit memo posted successfully. Invoice: 'MCS-2026-04872'. Status: posted."}}
+    "result": "Credit memo posted successfully. Invoice: 'MCS-2026-04903'. Status: posted."}}
 
 
 def test_overcharge_passes_when_posted_and_the_draft_cites_invoice_and_credit(effects):
     effects.check_overcharge(_flow(), _payload(ALL_NODES, {
         **POSTED,
-        "creditAmount": 1610,
-        "resolutionEmailBody": "We credited $1,610.00 on invoice MCS-2026-04872.",
+        "creditAmount": 4950,
+        "resolutionEmailBody": "We credited $4,950.00 on invoice MCS-2026-04903.",
     }))
 
 
@@ -119,8 +119,8 @@ def test_overcharge_fails_when_the_posting_reply_is_for_another_invoice(effects)
     with pytest.raises(SystemExit) as exc:
         effects.check_overcharge(_flow(), _payload(ALL_NODES, {
             "financialpostingfunction12.output": {"result": "Credit memo posted. Invoice: 'MCS-2026-00001'."},
-            "creditAmount": 1610,
-            "resolutionEmailBody": "We credited $1,610.00 on invoice MCS-2026-04872.",
+            "creditAmount": 4950,
+            "resolutionEmailBody": "We credited $4,950.00 on invoice MCS-2026-04903.",
         }))
     assert "reply does not cite" in str(exc.value)
 
@@ -135,10 +135,28 @@ def test_overcharge_fails_when_the_draft_misses_the_credit_amount(effects):
     with pytest.raises(SystemExit) as exc:
         effects.check_overcharge(_flow(), _payload(ALL_NODES, {
             **POSTED,
-            "creditAmount": 1610,
-            "resolutionEmailBody": "We reviewed invoice MCS-2026-04872 and issued a credit.",
+            "creditAmount": 4950,
+            "resolutionEmailBody": "We reviewed invoice MCS-2026-04903 and issued a credit.",
         }))
-    assert "credit amount" in str(exc.value)
+    assert "cites both" in str(exc.value)
+
+
+def test_overcharge_fails_when_the_credit_is_not_the_sops(effects):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(_flow(), _payload(ALL_NODES, {
+            **POSTED,
+            "creditAmount": 1610,
+            "resolutionEmailBody": "We credited $1,610.00 on invoice MCS-2026-04903.",
+        }))
+    assert "credit of 4950" in str(exc.value)
+
+
+def test_submission_uses_each_cases_invoice_and_account(effects):
+    over, none = effects.submission("overcharge"), effects.submission("no-discrepancy")
+    assert (over["invoice"]["invoiceNumber"], over["customer"]["accountNumber"]) == ("MCS-2026-04903", "ACCT-71044-AT")
+    assert (none["invoice"]["invoiceNumber"], none["customer"]["accountNumber"]) == ("MCS-2026-04872", "ACCT-98201-NE")
+    for case in ("overcharge", "no-discrepancy"):
+        assert os.path.isfile(effects.invoice_pdf(case))
 
 
 def test_no_discrepancy_passes_on_the_rejection_path(effects):
@@ -153,26 +171,3 @@ def test_no_discrepancy_fails_when_it_was_posted(effects):
         effects.check_no_discrepancy(_flow(), _payload(ALL_NODES, {"rationale": "credited anyway"}))
     assert "FinancialPostingFunction ran" in str(exc.value)
 
-
-WINDOW = {"invoice": "MCS-2026-04872", "startedAt": "2026-11-18T10:00:00Z", "endedAt": "2026-11-18T10:05:00Z"}
-
-
-def _job(created, state="Successful", invoice="MCS-2026-04872"):
-    return {"key": "k", "state": state, "creationTime": created,
-            "inputArguments": json.dumps({"invoiceNumber": invoice})}
-
-
-def test_probe_keeps_only_jobs_in_the_window_for_the_invoice():
-    probe = _load("probe_posting_jobs.py")
-    jobs = [_job("2026-11-18T10:02:00Z"), _job("2026-11-18T09:59:00Z"),
-            _job("2026-11-18T10:05:30.5Z"), _job("2026-11-18T10:03:00Z", invoice="MCS-2026-05128")]
-    kept = probe.jobs_in_window(jobs, WINDOW)
-    assert [j["creationTime"] for j in kept] == ["2026-11-18T10:02:00Z", "2026-11-18T10:05:30.5Z"]
-
-
-def test_probe_verdicts():
-    probe = _load("probe_posting_jobs.py")
-    assert probe.verdict("overcharge", [_job("t")]) is None
-    assert "no Successful" in probe.verdict("overcharge", [_job("t", state="Faulted")])
-    assert probe.verdict("no-discrepancy", []) is None
-    assert "must not post" in probe.verdict("no-discrepancy", [_job("t")])
