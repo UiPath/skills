@@ -27,7 +27,7 @@ Which you author depends on which side of the queue Maestro is on; author both, 
 `start` → `fetchSource` → the enqueue → `endQueued`, with no conditions.
 One item at a time is `.queueItem(id, { queue, folder, item })`; `folder` is required.
 A batch is `.activity(id, 'Orchestrator.BulkAddQueueItems', { inputs })`, since it has no typed method; read its fields with `uip maestro bpmn registry get Orchestrator.BulkAddQueueItems --output json`.
-One variable, `sourceItems`, is the bulk input: declare it `object` if it is a process `.input`, because `refresh` refuses a `jsonSchema` process input or output; a `.var(…, 'jsonSchema')` is fine.
+One variable, `sourceItems`, is the bulk input: declare it `object` if it is a process `.input`, because `refresh` refuses a `jsonSchema` process input or output; a `.var(…, 'jsonSchema')` is fine. As a process input, the enqueue reads it through the start event's mapping ([Process contract](../bpmn-runtime.md#variables-and-the-process-contract)).
 
 ### Performer: Maestro processes the items
 
