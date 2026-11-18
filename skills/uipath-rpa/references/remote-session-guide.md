@@ -38,7 +38,7 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
 2. Live Authoring is unavailable on attended-only robots.
 3. Live Authoring is unavailable on robots that can run only background jobs.
 
-For a Serverless robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11). A Robot signed in with interactive sign-in becomes a target only when the user asks to convert that user account (§ Interactive Sign-In Robot with a User Account (On Request Only)).
+For a Serverless robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11). A Robot signed in with interactive sign-in without unattended credentials becomes a target only when the user asks to convert that user account (§ Interactive Sign-In Robot with a User Account (On Request Only)); one that already has them (`hasCredentials: true`) is a target as is.
 
 ## Critical Rules
 
@@ -52,7 +52,7 @@ For a Serverless robot, tell the user Live Authoring is not supported on it and 
 8. **`exec` verdict = the trailing JSON envelope.** The command's stdout and stderr stream to local stdout ahead of the envelope; read the command output from the streamed lines and the verdict from `Result` / `Message` only (§ Execute a Shell Command on the Remote).
 9. **Use `--output json`** on every command whose output is parsed, and **pass `--project-dir "<PROJECT_DIR>"` on every `uip rpa remote` command.** The target is stored per project; without the flag the current directory is used, and outside a project folder every command fails with `Not a UiPath project at '<DIR>': project.json is missing.`
 10. **Run/debug verdict = outer `Result` / inner `HasErrors`** — same as local runs, never log-entry levels (SKILL.md Common Rule 8a).
-11. **No usable target → ask the user whether to prepare one in Orchestrator. Never prepare one unasked.** **Offer an Unattended Robot with a robot account — the preferred approach.** Use a user account (Interactive Sign-In Robot) only on the user's request. User agrees → § Prepare a Remote Target in Orchestrator. User declines → ask for another folder or target, or stop. Never configure a robot or machine that fails a checklist item.
+11. **No usable target → ask the user whether to prepare one in Orchestrator. Never prepare one unasked.** **Offer an Unattended Robot with a robot account — the preferred approach.** Use a user account (Interactive Sign-In Robot) only on the user's request. User agrees → § Prepare a Remote Target in Orchestrator. User declines → ask for another folder or target, or stop.
 
 ## Session Lifecycle
 
