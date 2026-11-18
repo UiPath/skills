@@ -52,7 +52,8 @@ A group too large for one context is built in parts (§ What a Build Adds item 1
                         offline guide
               headings: source-fact table; selector-translation-guide; pack source and selectors guides; owning skill's catalogs
       Turn 2  sections: source facts § Configuration, § Step 10, § Step 11, § shared, § Deviations;
-                        selector-translation-guide and its SAP GUI guide; pack § Composite actions,
+                        selector-translation-guide and its SAP GUI guide, the package's Selector Reference and
+                        its SAP GUI attribute reference; pack § Composite actions,
                         § Realised at execution, § Component Detection naming, selectors § SAP GUI; catalog sections matching the part's activity kinds
               discovery for the part's activity kinds (skeleton)
       Turn 3  per-activity docs, the docs they link, and shapes; references the turn-2 reads route to
