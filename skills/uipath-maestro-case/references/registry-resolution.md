@@ -97,3 +97,26 @@ three folders plus `Use a placeholder`. The user picks `Finance/Prod`, so that
 entry becomes
 `"selected": {"name": "InvoiceCheck", "identifierField": "entityKey", "identifier": "<entityKey>", "folder": "Finance/Prod"}`
 with `"gateDecision": "pick:InvoiceCheck"`.
+
+## Connector operations
+
+`sdd resolve` leaves every task whose SDD block states an `Activity Type ID`
+unresolved ("names no resource"): that id, not a name, identifies the
+connector operation. Resolve each such task before authoring it:
+
+1. `uip maestro registry search --activity-type-id <ACTIVITY_TYPE_ID> --output json`.
+   If it answers that it needs a pulled connector library, run
+   `uip maestro registry pull --output json`, then search again.
+2. Bind the `nodeType` it returns. When several rows share the id (the event
+   and trigger forms of one operation), take the form the task type needs.
+3. On `total: 0`, run `uip maestro registry pull --force --output json` once and
+   search again. Still `0`: author the task as `.unresolved('connector')` or
+   `.unresolved('wait-for-connector')` and record the miss as in step 6.
+   Never bind another operation in its place, even one on the same connector
+   with the same object name.
+4. Never list a connector to pick an operation by name
+   (`registry search --connector <key>` with no id): a long list is cut off,
+   and two operations can share an object name.
+
+`uip maestro case validate --strict --sdd` reports a task that carries any
+other id as `STRICT_SDD_ACTIVITY_TYPE_ID_MISMATCH`.
