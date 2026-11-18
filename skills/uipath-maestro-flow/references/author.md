@@ -80,7 +80,7 @@ Inputs, outputs, and vars take one of the six types the Flow CLI and Workbench o
 - **Never replace a registered connector with `mock()` or a script because it is not configured.** Write `connector(...)`, run the `prepare` named by `check`, and if no live connection exists, report "prepare pending" as an open question. Reviewers and Studio Web need the real connector.
 - **Never reuse a reference id from another flow/session** (mailbox folder, Slack channel, Jira project). IDs are scoped to the account behind the connection: a reused one compiles, validates, and faults at runtime. Resolve again with a `lookup()` token and the `prepare` named by `check`.
 - **Never write an unresolved reference field.** On lookup failure (401/403 expired grant or 5xx), do not substitute display name, alias, or remembered value; stop and report the failed resolve.
-- **Never reference parent values inside a subflow.** Pass them through `subflow(child, {...})` and read with `input(...)`; `check` does not catch a child reading the parent's `$vars.start.output.*`, which compiles and resolves to nothing.
+- **Never reference parent values inside a subflow.** Pass them through `subflow(child, {...})` and read with `input(...)`. On `@uipath/maestro-builder-sdk` 6.100.0 or later, `check` on the calling flow reports a child's `$vars.start.output.<name>` or `input('<name>')` for any `<name>` the child does not declare, the parent's inputs included, as `SUBFLOW_PARENT_SCOPE_READ`; an older SDK compiles it, and it resolves to nothing.
 - **Never debug a script with `console.log`.** `console.log` and its
   siblings exist but do nothing, so the output goes nowhere
   ([script runtime](script.md#the-javascript-runtime)). Return the value to
