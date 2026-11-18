@@ -92,6 +92,11 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-insights": 100,  # 61/61
     "uipath-process-mining": 100,  # 19/19
     "uipath-rules": 100,  # 30/30
+    # uipath-ontology-modeler: provisional, not yet measured. Its 52 rows include 25 SDD/PDD/design-document
+    # prompts that the planner also claims, so this gate is what proves they reach the modeler. 80 puts the
+    # floor at 70%, the suite's recall.yes threshold in activation.yaml. Replace with the measured figure
+    # (nearest 5%, rounded down) after the first gate run.
+    "uipath-ontology-modeler": 80,
 }
 
 DROP_PP = 10
