@@ -3,8 +3,8 @@ description: >
   Agent authors a Business Rules project from a policy document with eight
   results, four of which build on others, offline. Grades skill activation,
   `uip rules validate` run by the grader, each dependent result coming from a
-  decision that requires the ones it builds on, and every result's value on
-  216 cases.
+  decision that requires the ones it builds on, no two cards overlapping at
+  the size the designer draws them, and every result's value on 216 cases.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -41,7 +41,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Each dependent result comes from a decision that requires the ones it builds on"
+    description: "Each dependent result comes from a decision that requires the ones it builds on, and no two cards overlap on the canvas"
     command: "python3 $REFERENCE_DIR/integration/graph_large_policy/check_graph_large_policy.py structure"
     timeout: 30
     expected_exit_code: 0
