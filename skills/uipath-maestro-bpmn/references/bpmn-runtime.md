@@ -546,7 +546,7 @@ binding half, which is the same for every connector-backed node.
   On `MERGE_OPTION_CONFLICT`, drop the decompile option given to `merge`; the stamp already records it.
   Needs `@uipath/maestro-builder-sdk` 6.95.0 or later; on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
 <!--skill-flavor:brownfield-merge-form:end-->
-  Then `refresh` and `validate` the target as in the validation loop; do not `format` it unless `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE` (see `bpmn.brownfield.format`).
+  Then `refresh` and `validate` the target as in the validation loop; do not `format` it unless `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, or the target was a template or a process the user chose to replace (see `bpmn.brownfield.format`).
 
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.
@@ -684,7 +684,8 @@ binding half, which is the same for every connector-backed node.
 <!-- RULE:bpmn.layout.separate -->
 - Compile emits semantic XML with no diagram, and `validate` refuses a file without
   one: `format` every newly compiled process; a merged one only when `refresh` or `validate`
-  reports a missing diagram or shape (`bpmn.brownfield.format`).
+  reports a missing diagram or shape, or it merged into a template or a process the user
+  chose to replace (`bpmn.brownfield.format`).
 
 ## Product boundary
 
