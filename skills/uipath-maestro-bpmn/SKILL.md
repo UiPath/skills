@@ -167,7 +167,7 @@ A request for a draft, an outline or a sketch, or one whose wording leans toward
 ## Draft first
 
 When the user asks for a draft or to see the shape before it is built — *create a draft*, *outline it*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or plan mode — build a skeleton of bare tasks and stop at an approval gate: read **[`references/draft-skeleton.md`](references/draft-skeleton.md)**.
-A request for a draft, an outline or a sketch is this gate even when it describes the whole process, and a request whose wording leans toward a draft without saying it (*a rough version*, *a first pass*, *a quick mock-up*) gets the draft; a request with none of these cues is a build, and so are a brownfield edit and a "draft project" asking for source files to import later, with no upload or run.
+A request for a draft, an outline or a sketch is this gate even when it describes the whole process, and a request whose wording leans toward a draft without saying it (*a rough version*, *a first pass*, *a quick mock-up*) gets the draft unless it also says outright to build, wire, validate or deploy the whole process; a request with none of these cues is a build, and so are a brownfield edit and a "draft project" asking for source files to import later, with no upload or run.
 <!--skill-flavor:draft-upload-summary:start-->
 Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; the validated `<Name>.bpmn` in the project `init` wrote is.
 The skeleton keeps the stub's `Event_start` id, so its loop skips `refresh` (step 7 above), and it makes no `registry` calls.
