@@ -152,6 +152,9 @@ NOT_CASEPLAN_EDITS = [
     "cp caseplan.json orig-caseplan.json",
     "cp P/caseplan.json .flow-sdk/original/caseplan.json",
     "cp P/caseplan.json bak/caseplan.json",
+    # A plan read, then a scratch write through a variable never assigned an artifact path.
+    "python3 -c \"import json; d=json.load(open('P/caseplan.json')); out='/tmp/s.txt'; open(out,'w').write(str(d))\"",
+    "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('P/caseplan.json'));const o='/tmp/x.json';fs.writeFileSync(o,JSON.stringify(d))\"",
     "python3 -c \"open('P/caseplan.json','rb').read()\"",
     "python3 -c \"open('P/caseplan.json', encoding='utf8').read()\"",
     "cp P/caseplan.json \"backups/caseplan.json\"",
