@@ -42,6 +42,17 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `--connection-id and --clear-connection cannot be combined: …` | Pass one of the two. |
 | `` `selfhosted` MCP servers are registered by the runtime that serves them and cannot be updated here. `` | Change the server in its runtime and restart the runtime. |
 
+## Check
+
+| Text | Fix |
+|------|-----|
+| `MCP server check isn't supported on the connected environment.` (`ErrorCode: not_supported`) | The environment has no read-only check yet: check the connection with `uip is connections ping <ConnectionId> --force-refresh`, and the tools with `refresh-tools` after saying it is a write (SKILL.md Checking a Server). |
+| `The check covers Remote and Swagger servers, not <TYPE>.` | Only `remote` and `swagger` servers have the check: for `coded` / `command`, `refresh-tools` starts a job that lists the tools. |
+| `Data.Status: Unreachable` (`Retry: RetryLater`) | Agent Gateway got no answer: check the URL (`mcp get`), and that the host is reachable from the internet or the server uses Relay. |
+| `Data.Status: Unauthorized` | The server answered 401 or 403 (`Data.HttpStatus`): check the server's headers and the connection in `Data.Connection`. |
+| `Data.Status: ConnectionFailed` | No token from the connection in `Data.Connection`: `uip is connections ping <ConnectionId> --force-refresh`; an expired connection needs its owner to sign in again. |
+| `Data.Status: Failed` | The server answered, but not as a working MCP server (remote), or the spec or API probe failed (swagger, `Data.Spec` / `Data.Api`): fix what `Message` names. |
+
 ## Refresh
 
 | Text | Fix |

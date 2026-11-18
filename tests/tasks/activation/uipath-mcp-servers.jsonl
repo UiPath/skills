@@ -53,3 +53,4 @@
 {"id": "uipath-mcp-servers-060", "prompt": "Set my own per-user connection on the remote MCP server github-mcp", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-061", "prompt": "Switch the prompt injection guardrail on my AgentHub MCP server from block to log", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-062", "prompt": "Which judge models can an LLM-as-judge guardrail on an Agent Gateway MCP server use?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-063", "prompt": "Is my remote MCP server vendor-mcp in Agent Gateway working? Check it without changing anything", "expected_skill": "uipath-mcp-servers"}
