@@ -6,11 +6,13 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
 
 1. Every expression the author wrote, in any field (an attribute, an element's
    text, or a string inside a JSON body), is JavaScript: it starts with `=js:`.
-   The designer opens a value that starts with a plain `=` in its C# editor.
+   The designer opens a plain `=` expression in its C# editor.
    Exempt, as the canvas writes them: a row `source` reading the node's own
-   result (`=result…`, `=response…`, `=Error`, a form field such as `=Action`),
-   `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, and the start-event row that maps a process
-   input (`=vars.<inputId>`).
+   result (`=result…`, `=response…`, `=Error`, a field such as `=Action`),
+   `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
+   script envelope (`=vars`, `=metadata`), a human-task form input
+   (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
+   a process input (`=vars.<inputId>`).
 2. No element reads a variable that is not set where it runs. A process input
    belongs to the start event, so reading `vars.<inputId>` downstream is "A
    variable is unresolved" on the canvas; `validate` reports it only as a
@@ -32,7 +34,9 @@ from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
 RESULT_READ = re.compile(r"^=(result|response|Error|bindings\.|iterator|jsonString:)")
-BARE_FIELD = re.compile(r"^=[A-Za-z_]\w*$")
+BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
+ENVELOPE = re.compile(r"^=(vars|metadata)$")
+FORM_INPUT = re.compile(r"^=vars\.[\w.\[\]]+$")
 
 
 def local(tag: str) -> str:
@@ -63,6 +67,7 @@ def main() -> None:
 
     inputs = {v.get("id") for v in root.iter(f"{{{NS['uipath']}}}input") if v.get("elementId")}
     starts = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}startEvent")}
+    declared = {e.get("id") for e in root.iter() if e.get("id") and e.get("elementId")}
 
     bad: list[str] = []
 
@@ -81,7 +86,11 @@ def main() -> None:
             return
         if owner in starts and re.fullmatch(r"=vars\.(\w+)", value) and value[6:] in inputs:
             return
-        if RESULT_READ.match(value) or BARE_FIELD.match(value):
+        if RESULT_READ.match(value) or ENVELOPE.match(value):
+            return
+        if BARE_FIELD.match(value) and where.endswith("@source") and value[1:] not in declared:
+            return
+        if "[HitlTaskArguments]" in where and FORM_INPUT.match(value):
             return
         bad.append(f"{owner}: {where} {value!r}")
 
@@ -90,7 +99,8 @@ def main() -> None:
         for attr, value in element.attrib.items():
             scan(value, owner, f"{local(element.tag)}@{local(attr)}")
         if element.text:
-            scan(element.text, owner, local(element.tag))
+            name = element.get("name")
+            scan(element.text, owner, local(element.tag) + (f"[{name}]" if name else ""))
         for child in element:
             walk(child, owner)
 

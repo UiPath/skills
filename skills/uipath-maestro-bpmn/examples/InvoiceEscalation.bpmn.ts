@@ -92,9 +92,9 @@ export default bpmn('invoice-escalation')
       title: '=js:"Invoice " + vars.invoiceId',
       form: {
         fields: [
-          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=js:vars.invoiceId' },
-          { id: 'vendor', label: 'Vendor', type: 'object', direction: 'input', value: '=js:vars.vendorLookup_response' },
-          { id: 'purchaseOrder', label: 'Purchase order', type: 'object', direction: 'input', value: '=js:vars.poLookup_response' },
+          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceId' },
+          { id: 'vendor', label: 'Vendor', type: 'object', direction: 'input', value: '=vars.vendorLookup_response' },
+          { id: 'purchaseOrder', label: 'Purchase order', type: 'object', direction: 'input', value: '=vars.poLookup_response' },
         ],
         outcomes: ['Approve', 'Reject', 'Needs info'],
       },

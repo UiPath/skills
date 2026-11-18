@@ -20,6 +20,7 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (Workflow step 4).
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (Workflow step 4).
 4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (Workflow step 5). `check` lints the SDK source only; it never replaces `validate`.
+   Write every expression you author as `=js:` (`'=js:vars.total * 0.9'`), end-event rows included: `check` and `validate` accept a plain `=`, but the designer opens it as C# ([Expressions](references/bpmn-runtime.md#variables-and-the-process-contract)).
 5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (Workflow steps 6–7).
    After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 6. A different target system (Document Understanding → agent, Outlook → Gmail) changes a node's type and binding, not the graph; reshape only when the process differs.
@@ -124,7 +125,7 @@ A discovery-only request (discover types or save registry evidence, no authoring
    every error it prints (it exits non-zero) before you compile. `compile` writes what
    the source says; `check` is what reports a probable mistake, such as a `vars.<id>`
    read of a variable nothing declares (`EXPR_UNDECLARED_REF`) or a declared variable
-   read without `vars.` (`EXPR_BARE_VAR_REF`). For two of these, a read in an
+   read without `vars.` (`EXPR_BARE_VAR_REF`; write the fix as `=js:vars.<id>`, not the `=vars.<id>` its message names). For two of these, a read in an
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
    Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.

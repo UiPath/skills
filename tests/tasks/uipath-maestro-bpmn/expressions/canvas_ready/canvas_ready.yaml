@@ -1,12 +1,10 @@
 task_id: skill-bpmn-expr-canvas-ready
 description: >
-  Expression-authoring eval from the 2026-11-17 Autopilot dogfood (issues 6 and
-  7): a process that reads its start inputs downstream must open on the Studio
-  Web canvas clean. Every authored expression is `=js:` (a plain `=` opens in the
-  C# editor), and each input is read through the start event's mapping, not as
-  `vars.<inputId>` downstream (canvas: "A variable is unresolved"; validate:
-  VARIABLE_NOT_SET warning). compile and validate accept both mistakes, so the
-  grader checks the XML and validate's warnings. Authoring only, no cloud effects.
+  Expression-authoring eval from the 2026-11-17 Autopilot dogfood (issue 7):
+  every expression authored in a small checkout process is `=js:` (the designer
+  opens a plain `=` expression in its C# editor). compile and validate accept
+  plain `=`, so the grader checks the compiled XML. Authoring only, no cloud
+  effects.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate"]
 
 run_limits:

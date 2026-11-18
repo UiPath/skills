@@ -48,17 +48,20 @@ make from syntax alone. Exact signatures remain in the generated API.
   seeds every declaration by id. The start-event mapping that bridges each input into
   an internal variable is the canvas's spelling, not a requirement.
 
-<!-- RULE:bpmn.expression.js-for-methods -->
+<!-- RULE:bpmn.expression.js-everywhere -->
 - Write every expression you author as `=js:` JavaScript, in any field: `set`, a `when`, a row
-  `source`, a connector or form input, a loop `collection` or `completion`, a timer `date`
+  `source`, a connector input, a loop `collection` or `completion`, a timer `date`
   (`'=js:vars.total * 0.9'`, `'=js:vars.tier == "gold"'`). A plain `=` passes `check`, `compile` and
-  `validate`, but it is C#: the designer opens it in its C# editor, and a JavaScript method in it
-  (`=vars.d.toLowerCase() == "approve"`) faults the run (incident `400302`), or in a gateway `when`
-  evaluates `false` and takes the wrong branch. Local `flow-debug` does not show this
-  ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
+  `validate`, but it is C#: the designer opens any plain expression beyond a bare variable read in its
+  C# editor, and a JavaScript method in it (`=vars.d.toLowerCase() == "approve"`) faults the run
+  (incident `400302`), or in a gateway `when` evaluates `false` and takes the wrong branch. Local
+  `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
   Leave plain only what the canvas writes plain: a row `source` reading the node's own result
-  (`=result…`, `=response…`, `=Error`, a form field such as `=Action`), `=bindings.<id>`,
-  `=iterator[0]`, and the start-event row that maps a process input (`=vars.<inputId>`).
+  (`=result…`, `=response…`, `=Error`, a form field such as `=Action`, an agent output such as
+  `=Decision`), `=bindings.<id>`, `=iterator[0]`, the start-event row that maps a process input
+  (`=vars.<inputId>`), and a human-task form field's `value` (`=vars.<id>`: its runtime evaluates
+  UiPath expressions, not JavaScript). An imported file's existing plain `=` expressions are C#
+  (`examples/InvoiceApproval.bpmn.ts`): leave them as they are, and copy none of them.
 - A `.task()`'s `set` values are strings: an `=js:` expression or a literal. `set: { done: true }`
   fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=js:true'`.
 
@@ -327,8 +330,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   The SDK cannot yet write a working app-backed task: `.humanTask(id, { app })` writes a v1 `Actions.HITL` task with only an `appId`, which `uip maestro bpmn validate` rejects with `MISSING_BINDING` / `MISSING_RESOURCE` and which the engine does not read.
   When the request names a deployed Action App, author the inline form anyway, tell the user the task is not bound to their app, and point them to the Studio Web designer to switch it to the app.
   Never swap a human task for a plain `.task()` to get past that — use the form.
-- A field's `direction` is `input` (shown, `value: '=js:vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back); its `type` is the data type:
-  `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=js:vars.amount' }`. `type: 'input'` fails `check` with `TS2322`.
+- A field's `direction` is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back); its `type` is the data type:
+  `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=vars.amount' }`. `type: 'input'` fails `check` with `TS2322`.
   The call refuses a form that breaks any of these:
   - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
   - No field is called `Action`; that is the outcome picked.
