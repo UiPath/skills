@@ -33,7 +33,7 @@ One variable, `sourceItems`, is the bulk input: declare it `object` if it is a p
 
 The performer's start event **is** the queue trigger, so this shape always begins the process.
 It cannot be inserted into an existing path or nested in a sub-process.
-The start stays a plain `.startEvent()`: the queue binding is configured outside the BPMN, and the registry has no queue-trigger type.
+The start carries no trigger type, only the input mapping: the queue binding is configured outside the BPMN, and the registry has no queue-trigger type.
 
 ```ts
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
@@ -66,7 +66,7 @@ Neither needs discovery.
 
 | Node | Builder | Role |
 | --- | --- | --- |
-| `start` | plain `.startEvent()` | Mechanism |
+| `start` | `.startEvent()` mapping `queueItem` into `item` | Mechanism |
 | `perItemAction` | the work | Placeholder |
 | `outcomeGate` | `.choose()` | Mechanism |
 | `setSuccessful`, `setFailed` | `.activity(id, 'Orchestrator.SetTransactionStatus', …)` | Mechanism |

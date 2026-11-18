@@ -45,10 +45,11 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
-  "A variable is unresolved" on the canvas, and `validate` passes with at most a `VARIABLE_NOT_SET`
-  warning (none for a loop's collection): fix it, never wave it off. On the start event, map each input the steps read into a
-  variable scoped to that event, as the canvas does, and read that variable downstream. When the
-  start event already maps the input (a canvas-made process), read that row's `var`; add no second row.
+  "A variable is unresolved" on the canvas, and `validate` passes with at most a
+  `VARIABLE_NOT_SET` warning (none for a loop's collection): fix it, never wave it off. On the
+  start event, map each input the steps read into a variable scoped to that event, as the canvas
+  does, and read that variable downstream. When the start event already maps the input (a
+  canvas-made process), read that row's `var`; add no second row.
   ```ts
   .input('amount', 'number')
   .var('amountIn', 'number', { elementId: 'start' })
@@ -78,9 +79,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   under `Amount`. Leave `name` off unless the caller's key is meant to differ from the id.
 
 <!-- RULE:bpmn.variables.node-output-declares-itself -->
-- **Do not declare a variable for a node's own output.** An output row declares the
-  variable it fills: the compiler derives a declaration from the row, attributed to that
-  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the same
+- **Do not declare a variable for a node's own output.** A start-event row is the exception:
+  it does not declare its variable, so its `.var()` stays (see
+  `bpmn.variables.inputs-through-start` above). An output row declares the variable it
+  fills: the compiler derives a declaration from the row, attributed to that node, with the
+  row's `name` and `type`. Writing a `.var()` beside the node for the same
   id states the same thing twice and makes it the author's declaration instead of the
   node's. Where the variable carries a JSON Schema, put it on the ROW as `varSchema` —
   the platform writes the shape on the declaration and not on the row, so `varSchema` is
