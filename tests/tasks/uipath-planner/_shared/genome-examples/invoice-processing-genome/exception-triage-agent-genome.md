@@ -30,9 +30,11 @@ Given an invoice record, its discrepancies, and the PO summary, the agent decide
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| AP_Invoices | Storage bucket | Optional read of full extraction output |
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the full extraction output | component 2 | step 2, when it needs line detail |
 
 ## Interface
 
@@ -45,6 +47,10 @@ Given an invoice record, its discrepancies, and the PO summary, the agent decide
 1. Which model runs the agent? (constant; default: the tenant's default reasoning model)
 2. Above which price variance is a mismatch treated as a commercial dispute rather than a data error? (constant; default: 10%)
 3. Should the agent read the full extraction JSON from the bucket, or only the discrepancies passed in? (constant; default: discrepancies only; bucket read on `unmatched-line`)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 
