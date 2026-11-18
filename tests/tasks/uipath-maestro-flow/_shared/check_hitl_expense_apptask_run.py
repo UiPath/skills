@@ -100,7 +100,11 @@ def run(project_dir: str) -> None:
         ids = live.wait_for_ids(debug, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
         task, notes = live.find_run_task(
-            ids, lambda _row, bundle: live.has_text(bundle, expense), deadline, debug
+            ids,
+            lambda _row, bundle: live.has_text(bundle, expense),
+            deadline,
+            debug,
+            folder_paths=live.node_folder_paths(node),
         )
         if task is None:
             live.fail(

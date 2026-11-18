@@ -211,6 +211,45 @@ def test_the_match_vocabulary_is_read_from_the_flows_comparisons():
         "one": "single", "none": "no_match", "several": "ambiguous"}
 
 
+# The classify Script of the 2026-11-18 claude-code run (adhoc-2026-11-18_15-14-51),
+# cut to the match handling: membership in a list, no `===` on the match.
+MEMBERSHIP_SCRIPT = """
+  const s = $vars.start.output;
+  const domain = String(s.senderDomain ?? "").trim();
+  const match = String(s.match ?? "").trim().toLowerCase();
+  const noMatch = ["none", "no", "zero", "0", ""].indexOf(match) >= 0;
+  const severalMatches = ["several", "multiple", "many"].indexOf(match) >= 0 || Number(match) > 1;
+
+  let path;
+  if (!domain) path = "missing_domain";
+  else if (noMatch) path = "unknown_customer";
+  else if (severalMatches) path = "multiple_matches";
+  else if (s.duplicate === true) path = "duplicate";
+  else path = "escalation";
+  return { path };
+"""
+
+
+@pytest.mark.parametrize("seed", ["0", "1", "2", "3"])
+def test_the_match_vocabulary_is_read_from_a_membership_list_not_the_path_it_sets(seed):
+    """The run fed "multiple_matches" (the path) as the match input under one
+    hash seed, so the flow took the duplicate path; under others it fed "several"."""
+    import subprocess
+    import sys
+
+    ins = [("match", "string") if i == "customerMatchStatus" else (i, t) for i, t in INS]
+    flow = _flow(TWO_BRANCH, ins=ins, script=MEMBERSHIP_SCRIPT)
+    code = (
+        "import importlib.util, json, sys\n"
+        f"spec = importlib.util.spec_from_file_location('g', {os.path.join(HERE, 'check_escalation_orchestrator_paths.py')!r})\n"
+        "g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)\n"
+        "print(json.dumps(g.match_words(json.loads(sys.stdin.read()))))\n"
+    )
+    out = subprocess.run([sys.executable, "-c", code], input=json.dumps(flow), capture_output=True,
+                         text=True, check=True, env={**os.environ, "PYTHONHASHSEED": seed})
+    assert json.loads(out.stdout) == {"one": "single", "none": "none", "several": "several"}
+
+
 def test_the_match_vocabulary_falls_back_to_the_inputs_description():
     flow = _flow(TWO_BRANCH, script="return {};")
     var = next(v for v in flow["variables"]["globals"] if v["id"] == "customerMatchStatus")

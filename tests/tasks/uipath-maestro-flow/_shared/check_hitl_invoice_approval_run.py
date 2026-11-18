@@ -56,13 +56,20 @@ def outcome_plan(hitl: dict) -> tuple[list[str], set[str], set[str]]:
 
 
 def completion_data(hitl: dict, existing: object) -> dict:
+    """The task's form data plus an answer for each empty output field, keyed
+    the way Action Center shows the fields (first letter upper-cased:
+    `comment` -> `Comment`), the shape a completion that resumed the run used
+    (run adhoc-2026-11-18_14-31-31)."""
     data = dict(existing) if isinstance(existing, dict) else {}
     for f in ((hitl.get("inputs") or {}).get("schema") or {}).get("fields") or []:
-        fid = f.get("id")
-        if not fid or f.get("direction") not in ("output", "inOut") or data.get(fid) not in (None, ""):
+        fid = str(f.get("id") or "")
+        if not fid or f.get("direction") not in ("output", "inOut"):
+            continue
+        key = next((k for k in data if k.lower() == fid.lower()), fid[:1].upper() + fid[1:])
+        if data.get(key) not in (None, ""):
             continue
         kind = str(f.get("type") or "").lower()
-        data[fid] = 0 if kind in ("number", "integer", "float", "double") else (
+        data[key] = 0 if kind in ("number", "integer", "float", "double") else (
             True if kind == "boolean" else TEXT_ANSWER
         )
     return data
@@ -113,7 +120,11 @@ def main() -> None:
         ids = live.wait_for_ids(run, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
         task, notes = live.find_run_task(
-            ids, lambda _row, bundle: live.has_text(bundle, invoice), deadline, run
+            ids,
+            lambda _row, bundle: live.has_text(bundle, invoice),
+            deadline,
+            run,
+            folder_paths=live.node_folder_paths(hitl),
         )
         if task is None:
             out = run.stdout()[-1500:] if run.proc.poll() is not None else "(still running)"

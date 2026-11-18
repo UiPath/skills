@@ -19,9 +19,11 @@ description: >
   reads 32.0.4 (UiPath/cli#5001, in @dev since 1.205.0-dev.9162). Passes on the
   skill as it stands (2026-10-09, one run each with and without #3817's
   brownfield commit): the guard is against regressions in edits to Designer
-  plans, not a test of that commit. Pre-run copies the fixture into /solution/
-  so Studio Web's in-page SDK can reach it (it restricts check/compile/decompile
-  to /solution/ and /tmp/).
+  plans, not a test of that commit. The fixture stays in the workspace: the
+  Studio Web harness opens its .uipx as the session's solution (projects under
+  /solution/, where the in-page SDK compiles) and exports edits back, so the
+  graders read the workspace copy. Moving it to /solution/ in pre_run left
+  Studio Web on an empty solution (2026-11-18).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
@@ -38,18 +40,15 @@ sandbox:
     - type: template_dir
       path: fixtures
 
-# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs,
-# then copies the fixture into /solution/ where Studio Web's sandbox can reach it.
+# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
     timeout: 300
-  - command: "mkdir -p /solution && mv ExpenseDesignerSaved /solution/ExpenseDesignerSaved"
-    timeout: 30
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in a Studio Web project that
   already contains the expense-reporting case (solution
-  /solution/ExpenseDesignerSaved, case project CMGoldenExpense). No user is
+  ExpenseDesignerSaved, case project CMGoldenExpense). No user is
   present, and nobody will answer a question or grant approval, so do not ask,
   do not pause, and do not wait for input.
 
@@ -74,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate --strict passes on the Designer's plan file"
-    command: "uip maestro case validate /solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json"
+    command: "uip maestro case validate ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json"
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -82,19 +81,16 @@ success_criteria:
 
   - type: run_command
     description: "No second plan file was created beside caseplan.case"
-    command: "test ! -e /solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.json && test ! -e /solution/ExpenseDesignerSaved/CMGoldenExpense/case.stage.json && test ! -e /solution/ExpenseDesignerSaved/CMGoldenExpense/default.stage.json"
+    command: "test ! -e ExpenseDesignerSaved/CMGoldenExpense/caseplan.json && test ! -e ExpenseDesignerSaved/CMGoldenExpense/case.stage.json && test ! -e ExpenseDesignerSaved/CMGoldenExpense/default.stage.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # json_check cannot reach /solution/ (absolute paths are outside the sandbox).
-  # run_command shells into /solution/ and asserts the same JMESPath values.
   - type: run_command
     description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, nothing else was added or removed"
     command: >
-      python3 -c "
-      import json,sys; d=json.load(open('/solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
+      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
       s7=[n for n in d['nodes'] if n['data'].get('label')=='Stage 7 - user select'][0];
       tasks=[t for ts in s7['data'].get('tasks',[]) for t in ts];
       cooloff=[t for t in tasks if t['displayName']=='Final cool-off' and t['type']=='wait-for-timer'];
@@ -112,8 +108,7 @@ success_criteria:
   - type: run_command
     description: "What the Designer wrote survives: schema 32.0.4, layout, the trigger's entryPointId, both connector tasks at configuration v2"
     command: >
-      python3 -c "
-      import json,sys; d=json.load(open('/solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
+      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
       trigger=[n for n in d['nodes'] if n['id']=='trigger_1'][0];
       epid=trigger['data']['inputs'].get('entryPointId','');
       v2ctx=[c for n in d['nodes'] for ts in n['data'].get('tasks',[]) for t in ts for c in t.get('data',{}).get('context',[]) if c.get('name')=='activityConfigurationVersion' and c.get('value')=='v2'];

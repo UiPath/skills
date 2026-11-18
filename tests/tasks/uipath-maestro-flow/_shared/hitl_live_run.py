@@ -10,9 +10,18 @@ early when the Orchestrator job reports `Suspended` (maestro-tool 1.204
    folder, job key and instance id from its stderr log lines
    (`Personal folder — key: <k>, id: <n>`, `Debug session started — jobKey: <k>`,
    `Debug instance created — instanceId: <id>`);
-2. polls `uip tasks list` in that folder for an open task this run created
-   (the job key on the row, or a per-run marker in the task data);
-3. completes it with the chosen outcome (`uip tasks complete`);
+2. polls `uip tasks list` for an open task this run created (`CreatorJobKey`
+   on the row is the run's job key, or a per-run marker is in the task data).
+   A quick form's task lands in the run's personal folder, an app task in the
+   app's own folder (`Shared/uipath-agents/ExpenseReviewSol`, folder 3278005,
+   not personal folder 2863967: run adhoc-2026-11-18_14-40-01), so the
+   caller's folder paths are listed too, and now and then every folder;
+3. completes it with the chosen outcome (`uip tasks complete`). `--data`
+   replaces the task's data, so it carries only the form's own fields: the
+   `Data` object inside the record `uip tasks data get` prints, plus the
+   answers. Sending the whole record faulted the run with 170001 "Failure
+   mapping the data from the task result" (same flow, flat data: Completed;
+   run adhoc-2026-11-18_14-31-31);
 4. waits for the run to finish: the CLI's own envelope when it is still
    polling, else `uip maestro flow debug-instance status` / `variables`, and
    returns a payload shaped like `run_debug`'s `Data` (`finalStatus`,
@@ -44,6 +53,7 @@ PIMS_TERMINAL = {"completed", "faulted", "cancelled", "canceled", "failed"}
 TASK_POLL_SECONDS = 10
 STATUS_POLL_SECONDS = 5
 MAX_CANDIDATES = 25
+ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
 
 
 def fail(message: str) -> None:
@@ -220,10 +230,16 @@ def wait_for_ids(run: DebugRun, deadline: float) -> RunIds:
     return run.refresh_ids()
 
 
-def list_tasks(folder_id: str | None, *, as_admin: bool = False) -> list[dict]:
+def list_tasks(
+    folder_id: str | None, *, as_admin: bool = False, folder_path: str | None = None
+) -> list[dict]:
+    """`uip tasks list` rows of one folder (by id or path), or of every folder
+    the grader can see when neither is given."""
     args = ["tasks", "list"]
     if folder_id:
         args += ["--folder-id", str(folder_id)]
+    elif folder_path:
+        args += ["--folder-path", folder_path]
     if as_admin:
         args.append("--as-admin")
     data = uip_json(args, timeout=120)
@@ -232,8 +248,35 @@ def list_tasks(folder_id: str | None, *, as_admin: bool = False) -> list[dict]:
 
 
 def task_data(task_id: str, folder_id: str) -> Any:
-    data = uip_json(["tasks", "data", "get", str(task_id), "--folder-id", str(folder_id)])
-    return _get_ci(data or {}, "Data")
+    """The task's form data. `uip tasks data get` prints the whole task record
+    (Status, Action, TaskSource, Id, ...) with the form data under `Data`."""
+    envelope = uip_json(["tasks", "data", "get", str(task_id), "--folder-id", str(folder_id)])
+    return form_data(_get_ci(envelope or {}, "Data"))
+
+
+def form_data(record: Any) -> Any:
+    if isinstance(record, dict) and isinstance(_get_ci(record, "Data"), dict):
+        return _get_ci(record, "Data")
+    return record
+
+
+def node_folder_paths(node: dict) -> list[str]:
+    """Folder paths a HITL node names (an app task's `inputs.app.folderPath`)."""
+    found: list[str] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            for k, v in value.items():
+                if str(k).lower() == "folderpath" and isinstance(v, str) and "/" in v:
+                    found.append(v)
+                else:
+                    walk(v)
+        elif isinstance(value, list):
+            for v in value:
+                walk(v)
+
+    walk(node.get("inputs") or {})
+    return list(dict.fromkeys(found))
 
 
 def find_run_task(
@@ -242,13 +285,16 @@ def find_run_task(
     deadline: float,
     run: DebugRun,
     *,
+    folder_paths: tuple[str, ...] | list[str] = (),
     lister: Callable[..., list[dict]] = list_tasks,
     data_reader: Callable[[str, str], Any] = task_data,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[FoundTask | None, list[str]]:
     """Poll for the open task this run created. A row carrying the run's job
-    key, or an open row whose data `matches`, is the run's task. Returns the
-    task (or None) and what was seen, for the failure message."""
+    key, or an open row whose data `matches`, is the run's task. Lists the
+    run's folder and `folder_paths` each poll, and every folder each
+    ALL_FOLDERS_EVERY-th poll (job-key matches only there). Returns the task
+    (or None) and what was seen, for the failure message."""
     seen_data: dict[str, Any] = {}
     notes: list[str] = []
     polls = 0
@@ -259,7 +305,15 @@ def find_run_task(
         rows = lister(folder) if folder else []
         if not rows and polls % 3 == 0:
             rows = lister(folder, as_admin=True) if folder else lister(None)
+        for path in folder_paths:
+            rows = [*rows, *lister(None, folder_path=path)]
         job = (ids.job_key or "").lower()
+        if job and polls % ALL_FOLDERS_EVERY == 0:
+            known = {str(_get_ci(r, "Id")) for r in rows}
+            rows = [*rows] + [
+                r for r in lister(None)
+                if job in row_job_keys(r) and str(_get_ci(r, "Id")) not in known
+            ]
         open_rows = sorted(
             (r for r in rows if is_open(r)),
             key=lambda r: int(_get_ci(r, "Id") or 0),
@@ -276,8 +330,8 @@ def find_run_task(
             if row in by_job or matches(row, bundle):
                 return FoundTask(row, data, row_folder), notes
         notes = [
-            f"poll {polls}: folder {folder}, {len(rows)} task(s), {len(open_rows)} open, "
-            f"{len(by_job)} on job {ids.job_key}"
+            f"poll {polls}: folder {folder} + {list(folder_paths)}, {len(rows)} task(s), "
+            f"{len(open_rows)} open, {len(by_job)} on job {ids.job_key}"
         ]
         if time.monotonic() + TASK_POLL_SECONDS >= deadline:
             return None, notes

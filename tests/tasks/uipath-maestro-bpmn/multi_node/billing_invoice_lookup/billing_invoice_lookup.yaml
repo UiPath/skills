@@ -46,8 +46,9 @@ post_run:
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
-  project. No user is present, and nobody will answer a question or grant
-  approval, so do not ask, do not pause, and do not wait for input.
+  (Maestro BPMN) project. No user is present, and nobody will answer a
+  question or grant approval, so do not ask, do not pause, and do not wait
+  for input.
 
   Build a process called "BillingInvoiceLookup" that looks up a disputed
   invoice's line items, even when the caller types the invoice number

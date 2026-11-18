@@ -101,6 +101,8 @@ STATE_WORDS = {
                 "morethanone", "2"},
 }
 DEFAULT_WORD = {"one": "single", "none": "none", "several": "multiple"}
+# The five paths the prompt names, normalized.
+PATH_WORDS = {"missingdomain", "unknowncustomer", "multiplematches", "duplicate", "escalation"}
 COUNT = {"one": 1, "none": 0, "several": 2}
 _Q = "[\"'`]"
 _LIT = rf"{_Q}([^\"'`\n]{{1,40}}){_Q}"
@@ -123,7 +125,8 @@ def match_words(flow: dict) -> dict[str, str]:
     """The literal the flow compares the match input with, per state.
 
     Read from the flow's own code: comparisons of a match-named identifier
-    (the input, an object field, or a local copied from it) first, then the
+    (the input, an object field, or a local copied from it), or its membership
+    in a list, first, then the
     input's description, then literals near those identifiers, then
     "single"/"none"/"multiple"."""
     code = "\n".join(io.texts(flow.get("nodes") or []))
@@ -137,12 +140,19 @@ def match_words(flow: dict) -> dict[str, str]:
         if any(re.search(rf"(?<![\w$]){re.escape(i)}(?![\w$])", rhs) for i in idents):
             idents.add(alias)
     compared, near = [], []
-    for ident in idents:
+    # Sorted: a set's order changes with the hash seed, and so would the pick.
+    for ident in sorted(idents):
         e = rf"(?<![\w$]){re.escape(ident)}(?![\w$])"
         compared += re.findall(rf"{e}(?:\s*\.\s*\w+\(\s*\))*\s*[!=]==?\s*{_LIT}", code)
         compared += re.findall(rf"{_LIT}\s*[!=]==?\s*{e}", code)
+        # Membership: `["several", "multiple"].indexOf(match)` or `.includes(match)`.
+        for listed in re.findall(rf"\[([^\[\]]{{1,300}})\]\s*\.\s*(?:indexOf|includes)\(\s*{e}", code):
+            compared += re.findall(_LIT, listed)
         for m in re.finditer(e, code):
             near += re.findall(_LIT, code[max(0, m.start() - 200): m.end() + 400])
+    # A path the prompt names ("multiple_matches") is an output set near the
+    # match check, so it is the last guess for how the input is spelled.
+    near.sort(key=lambda literal: io.normalize(literal) in PATH_WORDS)
     described = [w for v in _match_vars(flow) for w in re.findall(r"[\w-]+", str(v.get("description") or ""))]
     words: dict[str, str] = {}
     for literal in [*compared, *described, *near]:
