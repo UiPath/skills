@@ -228,7 +228,8 @@ def grade_chain() -> None:
     check_chain(root, "interestRate", "riskBand")
     check_graph_cases(root, LOAN_CASES)
     check_whole_file_contract(project, dmn_file, LOAN_INPUTS, LOAN_OUTPUTS)
-    print(f"OK: two chained decisions, the contract is current, and all {len(LOAN_CASES)} cases match")
+    check_no_overlap(root)
+    print(f"OK: two chained decisions, the contract is current, no cards overlap, and all {len(LOAN_CASES)} cases match")
 
 
 if __name__ == "__main__":

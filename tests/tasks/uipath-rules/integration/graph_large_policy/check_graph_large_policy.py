@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
-from graph_check import check_chain, check_graph_cases  # noqa: E402
+from graph_check import check_chain, check_graph_cases, check_no_overlap  # noqa: E402
 from rules_check import fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "UnderwritingRules"
@@ -68,7 +68,8 @@ def check_structure() -> None:
     _, root = load_graph(find_project(PROJECT))
     for downstream, upstream in CHAINS:
         check_chain(root, downstream, upstream)
-    print(f"OK: all {len(CHAINS)} dependencies are requirements between decisions")
+    check_no_overlap(root)
+    print(f"OK: all {len(CHAINS)} dependencies are requirements between decisions, and no cards overlap")
 
 
 def check_behavior() -> None:
