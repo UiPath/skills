@@ -4,7 +4,7 @@
 2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target.
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
-   When the seeded source has `.metadata({ entryPointId: false })`, delete that key, or `refresh` fails.
+   When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 5 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
    Merge keeps the shapes the user already has on the canvas. An empty target is the one exception: compile straight over it, then lay it out with `format`.
    `validate` must report `Status: Valid`.
