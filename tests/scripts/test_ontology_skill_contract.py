@@ -410,6 +410,57 @@ def test_handoff_and_return_blocks_identical_in_both_skills():
         assert fenced_block_starting(m, first) == fenced_block_starting(a, first)
 
 
+# Authoring restates rules the modeler owns (skills never read each other's files); these pin the copies equal.
+def table_after(text: str, header_start: str) -> str:
+    return text[text.index(header_start):].split("\n\n", 1)[0]
+
+
+def df_types(table: str) -> set[str]:
+    return set(re.findall(r"`([A-Z][A-Z_]+)`", table))
+
+
+def test_authoring_type_table_matches_modeler_entity_guide():
+    a = read(AUTHORING_DIR / "SKILL.md")
+    e = read(MODELER_DIR / "references/entity-guide.md")
+    assert df_types(table_after(a, "| User says |")) == df_types(table_after(e, "| Schema range |"))
+    for t in (a, e):
+        assert "Never use `UUID`, `INTEGER` or `DATETIME`" in t
+
+
+def test_authoring_name_and_folder_checks_match_modeler():
+    a, m = read(AUTHORING_DIR / "SKILL.md"), read(MODELER_DIR / "SKILL.md")
+    e = read(MODELER_DIR / "references/entity-guide.md")
+    assert "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" in a and "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" in m
+    assert "^[a-zA-Z][a-zA-Z0-9_]{2,99}$" in a and "^[a-zA-Z][a-zA-Z0-9_]{2,99}$" in e
+    for t in (a, m):
+        assert re.search(r"neither (is )?inside the other", t)
+
+
+def test_error_table_codes_exist_in_errors_guide():
+    guide = errors_guide()
+    a, m = read(AUTHORING_DIR / "SKILL.md"), read(MODELER_DIR / "SKILL.md")
+    rows = [l for sec in (section(a, "Common errors"), section(m, "Errors")) for l in sec.splitlines()
+            if l.startswith("| ") and not l.startswith("| Signal") and not l.startswith("| Error")]
+    codes = {c for l in rows for c in re.findall(r"`([A-Za-z]+(?:[-_][A-Z0-9]+)+|[A-Z][a-z]+(?:[A-Z][a-z]+)+)`",
+                                                 l.split("|")[1])}
+    assert codes and [c for c in codes if not re.search(rf"\b{re.escape(c)}\b", guide)] == []
+
+
+def test_authoring_backing_and_junction_rules_match_modeler():
+    a = read(AUTHORING_DIR / "SKILL.md")
+    assert "XF-009" in section(a, "Step 2")
+    assert "two `RELATIONSHIP` fields" in a
+    assert "two `RELATIONSHIP` fields" in section(read(MODELER_DIR / "references/relationships-guide.md"),
+                                                  "Many-to-many")
+
+
+def test_authoring_saves_the_confirmed_model():
+    a = read(AUTHORING_DIR / "SKILL.md")
+    assert "HANDOFF_FILE = <BASE_DIR>/<ONTOLOGY_NAME>-handoff.md" in section(a, "Step 1")
+    assert "CONFIRMED_THROUGH" in section(a, "Step 1") and "HANDOFF_FILE" in section(a, "Step 5")
+    assert "HANDOFF_FILE` is inside neither `WORKDIR` nor `SOLUTION_DIR`" in a
+
+
 def test_authoring_phases_then_delegation():
     t = read(AUTHORING_DIR / "SKILL.md")
     marks = ("Step 1 — Collect", "Step 2 — Define business concepts", "Step 3 — Define properties and relationships",

@@ -21,14 +21,15 @@ Scope: SDD/PDD/domain specification → confirmed domain model (Steps 2–4) →
 
 ## Critical Rules
 
-1. **Never call a service and never run `uip ont` or `uip df` writes.** The modeler runs the CLI. Publish, deploy and activate belong to `uipath-solution`.
-2. **Wait for explicit user confirmation** after each of Steps 2, 3 and 4 before moving on.
-3. **Validate paths in Step 1** before delegating: absolute paths, `ONTOLOGY_NAME` matches `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`, `WORKDIR` and `SOLUTION_DIR` are different folders (neither inside the other, and not the same path), and `SOLUTION_DIR` is either absent or an existing solution folder with exactly one `.uipx`.
+1. **Never call a service and never run `uip ont` or `uip df` writes.** The modeler runs the CLI and writes every artifact. Publish, deploy and activate belong to `uipath-solution`. The only file this skill writes is `HANDOFF_FILE` (Critical Rule 9).
+2. **Wait for explicit user confirmation** after each of Steps 2, 3 and 4, then save `HANDOFF_FILE` before moving on.
+3. **Validate paths in Step 1** before delegating: absolute paths, `ONTOLOGY_NAME` matches `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`, `WORKDIR` and `SOLUTION_DIR` are different folders (neither inside the other, and not the same path), `SOLUTION_DIR` is either absent or an existing solution folder with exactly one `.uipx`, and `HANDOFF_FILE` is inside neither `WORKDIR` nor `SOLUTION_DIR`.
 4. **Capture facts and rules apart.** Record domain facts (meaning, grain, value domains) in `ANNOTATIONS`, required/range/value-list rules in `DOMAIN_MODEL` constraints, and query or join guidance as a separate note in `DOMAIN_MODEL`. The modeler places each in its artifact.
 5. **No ids.** Entities, choice sets and connections are referenced by name; never pass or write an entity, field, choice-set, connection or folder id. What the document states about an entity is authoritative.
 6. **Do not read or import the modeler's files.** Delegate at runtime with the contract below; if the modeler is unavailable, stop with the prepared model.
 7. **The ontology name is unique per folder.** Tell the user; a same-name ontology the solution does not own is a deploy conflict that the deployer settles with `Replace` or `RenameInSolution`.
 8. **The modeler authors the entities and choice sets locally in the solution.** Nothing is created on the tenant before deploy.
+9. **Save the confirmed model to `HANDOFF_FILE`** (`<BASE_DIR>/<ONTOLOGY_NAME>-handoff.md`) after each confirmed step: the handoff block filled so far, in a `text` fenced block, under a first line `CONFIRMED_THROUGH: Step <N>`. It survives a compacted or ended session; Step 1 resumes from it and Step 5 delegates from it.
 
 ## Delegated modeler contract
 
@@ -71,7 +72,9 @@ If a class, field, join column, choice-set value or identifier cannot be inferre
 
 ## Step 1 — Collect the document and paths
 
-Ask in one message:
+**Resume first.** When the user names an ontology whose `HANDOFF_FILE` already exists, show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue from the next step or start over. Overwrite it only after the user chooses to start over.
+
+Otherwise, ask in one message:
 
 | Input | Notes |
 |---|---|
@@ -89,11 +92,12 @@ Derive once, resolve to absolute paths, validate per Critical Rule 3, and confir
 ONTOLOGY_IRI = https://ontology.uipath.com/<ONTOLOGY_NAME>#
 WORKDIR      = <BASE_DIR>/<ONTOLOGY_NAME>/
 SOLUTION_DIR = <BASE_DIR>/<SOLUTION_NAME>/   (or the existing solution folder)
+HANDOFF_FILE = <BASE_DIR>/<ONTOLOGY_NAME>-handoff.md
 ```
 
 When `SOLUTION_NAME` equals `ONTOLOGY_NAME`, both paths are the same folder: propose `<ONTOLOGY_NAME>-solution` instead and confirm it.
 
-The IRI must be identical in every artifact and is immutable. Do not create files yourself; the modeler creates `WORKDIR` and everything in it.
+The IRI must be identical in every artifact and is immutable. The only file you write is `HANDOFF_FILE`; the modeler creates `WORKDIR` and everything in it.
 
 ---
 
@@ -183,6 +187,7 @@ Data property naming: always `{ClassName}.{propName}` camelCase, never `has{Prop
 | date + time / timestamp | `xsd:dateTime` | `DATETIME_WITH_TZ` |
 | date only | `xsd:date` | `DATE` |
 | true/false, flag | `xsd:boolean` | `BOOLEAN` |
+| file, attachment, scan, document | `xsd:string` | `FILE` (every later upgrade reports `TypeIncompatible`; `uipath-solution` finishes that upgrade) |
 | one of a fixed list of values | `xsd:string` | `CHOICE_SET_SINGLE` |
 | several of a fixed list | `xsd:string` | `CHOICE_SET_MULTIPLE` |
 | link to another class | — | `RELATIONSHIP` |
@@ -219,11 +224,11 @@ Present one table at a time (classes, then data properties, then object properti
 
 ## Step 5 — Build the solution (delegate to `uipath-ontology-modeler`)
 
-Delegate with the contract above: `ONTOLOGY_NAME`, `ONTOLOGY_IRI`, `DISPLAY_NAME`, `DESCRIPTION`, `WORKDIR`, `SOLUTION_DIR`, `CLASS_MAP`, `ENTITY_DEFINITIONS` (Data Fabric types; names in place of ids), `CHOICE_SETS`, `RELATIONSHIPS` with `relationshipField`, `FEDERATED_SOURCES` with each `connectionName`, `MAPPING_STATUS: generate`, the confirmed `DOMAIN_MODEL` (Steps 2–3) and `ANNOTATIONS` (Step 4).
+Read `HANDOFF_FILE` (`CONFIRMED_THROUGH: Step 4`) and delegate its block with the contract above: `ONTOLOGY_NAME`, `ONTOLOGY_IRI`, `DISPLAY_NAME`, `DESCRIPTION`, `WORKDIR`, `SOLUTION_DIR`, `CLASS_MAP`, `ENTITY_DEFINITIONS` (Data Fabric types; names in place of ids), `CHOICE_SETS`, `RELATIONSHIPS` with `relationshipField`, `FEDERATED_SOURCES` with each `connectionName`, `MAPPING_STATUS: generate`, the confirmed `DOMAIN_MODEL` (Steps 2–3) and `ANNOTATIONS` (Step 4).
 
 Invoke the `uipath-ontology-modeler` skill (Skill tool) and pass the filled handoff block as its input, in Delegated mode. Do not run its stages yourself.
 
-> If `uipath-ontology-modeler` is not available, stop and return: "Building the ontology solution requires the uipath-ontology-modeler sibling skill. The domain model is prepared; activate that skill and retry the delegation."
+> If `uipath-ontology-modeler` is not available, stop and return: "Building the ontology solution requires the uipath-ontology-modeler sibling skill. The confirmed domain model is saved at <HANDOFF_FILE>; activate that skill and retry the delegation."
 
 Require `UNRESOLVED_AMBIGUITIES: []`, a `PACKAGE_PATH`, a `PACKED_FILES` listing, and `VALIDATION: Done`. Report `SOLUTION_DIR`, `PACKAGE_PATH`, the ontology name, the entities, choice sets and connections, and the packed files.
 
@@ -231,7 +236,7 @@ When the return falls short:
 
 | Return | Action |
 |---|---|
-| `UNRESOLVED_AMBIGUITIES` not empty | Ask the user each listed decision, update the confirmed model, delegate again |
+| `UNRESOLVED_AMBIGUITIES` not empty | Ask the user each listed decision, update the confirmed model and `HANDOFF_FILE`, delegate again |
 | `VALIDATION` not `Done` | Show the remaining ERRORs; fix the model per Common errors and delegate again. After 2 delegations that fail the same way, stop and report |
 | No `PACKAGE_PATH` or `PACKED_FILES` | The build stopped before pack: report the modeler's last error; never report the solution as packed |
 
@@ -256,7 +261,8 @@ When the return falls short:
 ## Anti-patterns
 
 - Running `uip ont` or `uip df` writes, or writing artifact files, yourself: the modeler owns them (Critical Rule 1).
-- Moving to the next step before the user confirms the current table (Critical Rule 2).
+- Moving to the next step before the user confirms the current table and `HANDOFF_FILE` is saved (Critical Rule 2).
+- Keeping the confirmed model only in the conversation: a compacted session loses it (Critical Rule 9).
 - Declaring a class for an actor or system named only in narrative: fold it into a property's `rdfs:comment` (Step 2).
 - Replacing a stated relationship or value list with a `STRING` field (Step 3).
 - Delegating with open ambiguities: stop with `BLOCKED_AMBIGUITY` instead.
