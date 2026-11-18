@@ -1,6 +1,6 @@
 # Citation Guide
 
-A row's position in the policy comes from a verbatim quote that code resolves to a box. The model never produces coordinates (critical rule 6).
+A row's position in the policy comes from a verbatim quote that code resolves to a box. The model never produces coordinates (extraction rule 6).
 
 ## Record a citation (Extraction)
 
@@ -27,7 +27,7 @@ A rule that comes from a user's answer or a call, not from the document, has no 
 ## Resolve (Finish)
 
 ```bash
-node "<SKILL_DIR>/scripts/resolve-refs.mjs" --dom <DOM_JSON> --cites <TEMP_DIR>/cites.json
+node "<SKILL_DIR>/scripts/extraction/resolve-refs.mjs" --dom <DOM_JSON> --cites <TEMP_DIR>/cites.json
 ```
 
 Stdout is one JSON object: `status`, `resolved`, `unresolved`, `ambiguous` (counts), and `results[]`. Each result has `id` and `status`:
@@ -40,16 +40,6 @@ Stdout is one JSON object: `status`, `resolved`, `unresolved`, `ambiguous` (coun
 
 Exit 2 is a usage error: fix the arguments. Run it once more after fixing quotes; never hand-edit a box.
 
-## uipdm elements this skill writes
+## uipdm elements
 
-Declare `xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model"` on `<definitions>`.
-
-| Element | Where | When |
-|---|---|---|
-| `<uipdm:inputVariable source sourceType [sourceMapping] [dataType]>` with `<uipdm:constraint>` children | `inputData/extensionElements`, before `<variable>` | Every input. `sourceType` is `document` or `system`. `constraint` lists the values the policy names for a categorical input. |
-| `<uipdm:sourceRefs><uipdm:sourceRef page box [blockId]/></uipdm:sourceRefs>` | `rule/extensionElements`, before the first `<inputEntry>`; in a multi-decision file, also the decision's `extensionElements` | A row or decision whose citation resolved. One `sourceRef` per resolved citation; with no `dom.json`, one page-only `sourceRef` (`box` omitted) per cited page. |
-| `<uipdm:qualityWarning [conditionId] [field]>text</uipdm:qualityWarning>` | `definitions/extensionElements`, repeated | An unresolved citation, an ambiguity resolved by assumption, a cell that could not be translated. |
-
-`box` is four plain decimals `left,top,width,height` in the digitizer's page units, no spaces. With no digitizer positions (open-source PDF path), write `inputVariable` and `qualityWarning`, and write each cited page as a page-only `<uipdm:sourceRef page="<N>"/>` (no `box`, no `blockId`; one per distinct page the row cites). Do not put the quote in the file. Add one `uipdm:qualityWarning` saying the citations carry a page and no source box, and list them in the Finish summary as carrying no box.
-
-The uipdm schema check runs through the uipath-rules skill when it documents one (critical rule 10); `validate` accepts these elements without checking them against the schema.
+Elements, their placement, the page-only form for a run with no digitizer positions, and the schema check are in the [uipdm guide](../uipdm-guide.md). Extraction adds: write `uipdm:sourceRefs` only in Finish (Extraction records `cites.json` and nothing else); with no `dom.json`, write one page-only `sourceRef` per distinct page a row cites; do not put the quote in the file; and list the citations that carry no box in the Finish summary.

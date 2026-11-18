@@ -1,16 +1,19 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a spreadsheet or description; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution. For extracting rules from a source document (policy, PDF, scan, text, amendments)→uipath-rules-extraction."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a spreadsheet or description; extract rules from a source document (policy, PDF, scan, text, amendments, supporting documents) in checkpointed phases with page and quote citations and uipdm source refs; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For field extraction from invoices or forms→uipath-ixp. For solution pack/publish/deploy→uipath-solution."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill
 ---
 
 # UiPath Business Rules
 
 A Business Rules project holds one DMN decision table. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
 
+`<SKILL_DIR>` is the folder that contains this SKILL.md.
+
 ## When to Use This Skill
 
 - Create a business rule (decision table) from a spreadsheet or description
+- Generate rules from a policy, guideline, or other document, section by section, with a citation per row; build one from a base policy plus amendments or supporting documents; draft one from a single policy with IXP rules extraction (Quick draft)
 - Edit the rows, columns, or hit policy of a `.dmn` in a BusinessRules project
 - Validate or debug a rule that returns the wrong output
 - List deployed rules or read a deployed rule's inputs and outputs
@@ -22,6 +25,9 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 3. **One decision per file, and its logic is a decision table.** When the user asks for chained decisions, a decision requirements diagram, business knowledge models, or a literal expression, say authoring them is not supported yet, then offer to flatten the logic into one table or to create one rules project per decision and let the calling process chain them. Never write the unsupported element.
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
+10. **Write a numeric range in one cell as one interval.** `(25..60]`, never `> 25, <= 60`: a comma in a cell means "or", so the comma form matches every number.
+11. **Check the uipdm elements a `.dmn` carries.** `validate` does not read `uipdm:` elements. After `validate`, run `python3 "<SKILL_DIR>/scripts/check-uipdm.py" <DMN_FILE>` ([uipdm guide](references/uipdm-guide.md)) and fix what it reports. Editing a rule that carries them keeps each row's `sourceRefs` unless the edit changes what the row cites. Never write `review`, `ruleState`, `parkedRule`, `scoreBand`, `conditionState` or `agentAssessment`; a policy gives no source for them.
+12. **A rule built from a source document follows the extraction guides.** When the request gives a policy, PDF, scan, text, amendments, or supporting documents to extract rules from, read [extraction/rules-guide.md](references/extraction/rules-guide.md) and then [extraction/phase-guide.md](references/extraction/phase-guide.md) before any other step. They add the "extraction rules" (cited as `extraction rule N`) on top of rules 1-11.
 <!--skill-flavor:lifecycle-rules:start-->
 6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
@@ -57,7 +63,7 @@ Show the table as Markdown before authoring and after each change. Ask only what
 
 ### 3. Author the table
 
-Replace the scaffolded table with the reviewed design.
+Replace the scaffolded table with the reviewed design. A rule built from a document also carries its uipdm elements ([uipdm guide](references/uipdm-guide.md)).
 
 ### 4. Refresh and validate
 
@@ -66,7 +72,7 @@ uip rules refresh <PROJECT_DIR> --output json
 uip rules validate <PROJECT_DIR> --output json
 ```
 
-Fix every error in `Data.Diagnostics`, then run both again.
+Fix every error in `Data.Diagnostics`, then run both again. A file with `uipdm:` elements also gets the check in rule 11.
 
 ### 5. Verify
 
@@ -83,6 +89,10 @@ uip traces spans get <TRACE_ID> --output json
 
 `<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `Data.traceId` is present only when tracing is on for the tenant (the default); without it, compare the inputs against each row by hand. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the whole solution folder and overwrites its Studio Web solution; pull Studio Web edits first.
 <!--skill-flavor:verify:end-->
+
+## Rules from a Source Document
+
+The extraction guides turn a base policy document, plus any amendments or supporting documents, into a `.dmn` draft in checkpointed phases (Framing, Intake, Understanding, Inputs and structure, Extraction, Finish). Rule 12 routes to them. They reuse everything above: the table, the lifecycle, and `validate`.
 
 ## Editing an Existing Rule
 
@@ -110,8 +120,19 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 | Reference | When to read |
 |---|---|
 | [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
+| [Extraction rules guide](references/extraction/rules-guide.md) | The rule is built from a source document; read first |
+| [Extraction phase guide](references/extraction/phase-guide.md) | The rule is built from a source document; once, before Framing, then keep it in context |
+| [Checkpoint guide](references/extraction/checkpoint-guide.md) | Showing an extraction phase result or asking its question |
+| [Citation guide](references/extraction/citation-guide.md) | Extraction (recording citations) and Finish (resolving them) |
+| [One-shot guide](references/extraction/one-shot-guide.md) | Only when the user picked `Quick draft (IXP)` |
+| [uipdm guide](references/uipdm-guide.md) | The rule is built from a document, or a `.dmn` already carries `uipdm:` elements |
+| [uipdm.xsd](references/uipdm.xsd) | Read by `scripts/check-uipdm.py`; not read directly |
+| `scripts/check-uipdm.py` | After `validate`, when the `.dmn` carries `uipdm:` elements |
+| `scripts/extraction/` | `resolve-refs.mjs` at Finish and `one-shot.mjs` for Quick draft, run as the extraction guides say |
 
 ## Anti-patterns
 
+- Writing a range as a comma list (`> 25, <= 60`) instead of an interval
+- Editing a row of a rule that carries `uipdm:` elements and dropping that row's `sourceRefs`
 - Guessing an input value's JSON shape instead of reading the input argument's `typeRef`
 - Naming an output with spaces or a leading digit; `validate` rejects it

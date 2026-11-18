@@ -1,3 +1,0 @@
-<!--skill-flavor:lifecycle-handoff:start-->
-10. **Use the uipath-rules skill for the project lifecycle when it is installed.** Before the first `uip rules` command, invoke it with the Skill tool and follow its guidance for `refresh` and `validate`, and run its uipdm schema check when it documents one. When it is absent, or documents no uipdm check, create the project with the `CreateProjects` host tool, run `uip rules refresh` and `uip rules validate` yourself, skip the schema check, and tell the user it was skipped. Never run `uip rules init` or `uip rules debug` here: `init` creates a folder that never becomes a Studio Web project, and `debug` is unavailable.
-<!--skill-flavor:lifecycle-handoff:end-->

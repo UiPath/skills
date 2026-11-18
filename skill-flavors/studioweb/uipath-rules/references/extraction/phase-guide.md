@@ -9,5 +9,5 @@
    - Pass one input object keyed by input-argument name for each sampled input set: one for the first-listed row, one for the default row, and for each threshold one just inside and one just outside.
    - Run the all-criteria-pass set first, then a set with an optional input omitted: FEEL errors on null inputs surface in those two runs.
    - Check that the omitted-input set returns the insufficient-information outcome, and read the run's trace to see which rules fired.
-   - The runs show that the rule evaluates and that a missing input does not raise a FEEL error; they do not judge correctness (critical rule 15). Stop after 3 fix rounds on one failure (critical rule 12).
+   - The runs show that the rule evaluates and that a missing input does not raise a FEEL error; they do not judge correctness (extraction rule 12). Stop after 3 fix rounds on one failure (uipath-rules critical rule 7).
 <!--skill-flavor:verify:end-->

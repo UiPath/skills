@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The uipdm extension namespace (SPEC §6): what a DecisionModel carries that DMN 1.5 has no home for.
+  Its elements appear only inside DMN <extensionElements>, which the DMN 1.5 XSD declares as
+  xsd:any namespace="##other" processContents="lax" — so a DMN document is valid without this
+  schema, and a validator that has it checks these elements strictly.
+
+  Normative. src/policy_engine_worker/dmn/uipdm.py, the element names the DMN reader accepts, is
+  generated from this file (scripts/uipdm_from_xsd.py); tests/test_uipdm.py fails if it drifts.
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model"
+            targetNamespace="http://uipath.com/schema/1.0/dmn-ext/decision-model"
+            elementFormDefault="qualified">
+
+  <!-- definitions/extensionElements, repeated: what emission found — parked rules, untranslatable
+       cells, unreachable outcomes. The text is what a log reads; conditionId and field, when the
+       finding is about one condition's test of one field, are what a consumer acts on (an emitter
+       that leaves a condition it could not read empty names it here). -->
+  <xsd:element name="qualityWarning" type="uipdm:tQualityWarning"/>
+  <xsd:complexType name="tQualityWarning">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="conditionId" type="xsd:string"/>
+        <xsd:attribute name="field" type="xsd:string"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <!-- A rule or condition decision's extensionElements, or an inline condition's first column's:
+       where in the policy document the rule or condition was read. -->
+  <xsd:element name="sourceRefs" type="uipdm:tSourceRefs"/>
+  <xsd:complexType name="tSourceRefs">
+    <xsd:sequence>
+      <xsd:element name="sourceRef" type="uipdm:tSourceRef" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="tSourceRef">
+    <xsd:attribute name="page" type="xsd:integer" use="required"/>
+    <xsd:attribute name="blockId" type="xsd:integer"/>
+    <!-- x,y,width,height in page coordinates. Absent when the run cited a page without a region. -->
+    <xsd:attribute name="box" type="uipdm:tBox"/>
+  </xsd:complexType>
+  <xsd:simpleType name="tBox">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- inputData/extensionElements: the case document (or system) a field's value comes from, and
+       the values the policy names for it. Not <allowedValues>, which an engine enforces. -->
+  <xsd:element name="inputVariable" type="uipdm:tInputVariable"/>
+  <xsd:complexType name="tInputVariable">
+    <xsd:sequence>
+      <xsd:element name="constraint" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="source" type="xsd:string"/>
+    <xsd:attribute name="sourceType" type="uipdm:tSourceType"/>
+    <xsd:attribute name="sourceMapping" type="xsd:string"/>
+    <!-- The authored data_type, written only where typeRef cannot say it: a categorical field with
+         no constraints, or a string one that has some. -->
+    <xsd:attribute name="dataType" type="uipdm:tDataType"/>
+  </xsd:complexType>
+  <xsd:simpleType name="tDataType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="boolean"/>
+      <xsd:enumeration value="numeric"/>
+      <xsd:enumeration value="date"/>
+      <xsd:enumeration value="datetime"/>
+      <xsd:enumeration value="time"/>
+      <xsd:enumeration value="duration"/>
+      <xsd:enumeration value="string"/>
+      <xsd:enumeration value="categorical"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="tSourceType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="document"/>
+      <xsd:enumeration value="system"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- definitions/extensionElements, or a rule decision's: whether a person confirmed it. -->
+  <xsd:element name="review" type="uipdm:tReview"/>
+  <xsd:complexType name="tReview">
+    <xsd:attribute name="confirmed" type="xsd:boolean" use="required"/>
+  </xsd:complexType>
+
+  <!-- A condition decision's extensionElements: whether an agent may assess the condition at run
+       time, and any notes for it. -->
+  <xsd:element name="agentAssessment" type="uipdm:tAgentAssessment"/>
+  <xsd:complexType name="tAgentAssessment">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="enabled" type="xsd:boolean" use="required"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <!-- A condition decision's extensionElements: the condition's authored score. A scored model's
+       tables derive it for a condition a rule uses; this is the one place it survives for one no
+       rule uses, or in a direct model. -->
+  <xsd:element name="conditionState" type="uipdm:tConditionState"/>
+  <xsd:complexType name="tConditionState">
+    <xsd:attribute name="score" type="xsd:decimal" use="required"/>
+  </xsd:complexType>
+
+  <!-- A rule decision's extensionElements: what the tables cannot say. ANY and FIRST read the same
+       in a direct model, and a rule with at most one member reads as ALL whatever it was authored as;
+       `output` is carried here for a rule nested in another, which the final decision does not vote
+       for; `member`s list the rule's authored members, in order, and are written only when the
+       list names a parked rule (which is not in the tables). -->
+  <xsd:element name="ruleState" type="uipdm:tRuleState"/>
+  <xsd:complexType name="tRuleState">
+    <xsd:sequence>
+      <xsd:element name="member" type="uipdm:tMember" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="operator" type="uipdm:tOperator" use="required"/>
+    <xsd:attribute name="output" type="xsd:string"/>
+  </xsd:complexType>
+  <xsd:complexType name="tMember">
+    <xsd:attribute name="kind" type="uipdm:tMemberKind" use="required"/>
+    <xsd:attribute name="id" type="xsd:string" use="required"/>
+  </xsd:complexType>
+  <xsd:simpleType name="tMemberKind">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="condition"/>
+      <xsd:enumeration value="rule"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="tOperator">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="ANY"/>
+      <xsd:enumeration value="ALL"/>
+      <xsd:enumeration value="FIRST"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- definitions/extensionElements, repeated: a rule authored with enabled="false". It is not a
+       decision in the DRG (it takes no part in the outcome), and a reader puts it back at `position`,
+       its index among the model's rules. -->
+  <xsd:element name="parkedRule" type="uipdm:tParkedRule"/>
+  <xsd:complexType name="tParkedRule">
+    <xsd:sequence>
+      <xsd:element name="member" type="uipdm:tMember" minOccurs="0" maxOccurs="unbounded"/>
+      <xsd:element name="annotation" type="uipdm:tAnnotation" minOccurs="0" maxOccurs="unbounded"/>
+      <xsd:element name="sourceRefs" type="uipdm:tSourceRefs" minOccurs="0"/>
+    </xsd:sequence>
+    <xsd:attribute name="ruleId" type="xsd:string" use="required"/>
+    <xsd:attribute name="position" type="xsd:nonNegativeInteger" use="required"/>
+    <xsd:attribute name="label" type="xsd:string"/>
+    <xsd:attribute name="operator" type="uipdm:tOperator" use="required"/>
+    <xsd:attribute name="output" type="xsd:string"/>
+    <xsd:attribute name="appliesWhen" type="xsd:string"/>
+    <xsd:attribute name="sourceText" type="xsd:string"/>
+    <xsd:attribute name="confirmed" type="xsd:boolean"/>
+  </xsd:complexType>
+  <xsd:complexType name="tAnnotation">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <!-- definitions/extensionElements, repeated: a score band of a direct model, which has no band
+       decision to hold it. -->
+  <xsd:element name="scoreBand" type="uipdm:tScoreBand"/>
+  <xsd:complexType name="tScoreBand">
+    <xsd:attribute name="minScore" type="xsd:decimal" use="required"/>
+    <xsd:attribute name="maxScore" type="xsd:decimal"/>
+    <xsd:attribute name="outcome" type="xsd:string" use="required"/>
+  </xsd:complexType>
+
+</xsd:schema>

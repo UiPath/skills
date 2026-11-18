@@ -1,6 +1,6 @@
 """Unit tests for policy_check.py. Run with ``pytest`` from any directory.
 
-The grader is the answer key for the uipath-rules-extraction tasks, so what
+The grader is the answer key for the uipath-rules extraction tasks, so what
 these pin is that a correct reading of the policy passes every scenario, that
 each plausible misreading fails at least one, and that the box check accepts
 real word-run boxes and rejects invented ones.
@@ -62,12 +62,6 @@ def test_word_runs_accept_real_boxes_and_reject_invented_ones():
     assert "1536,380,576,44" in runs[1]          # "at least 90 days of service" (page 1)
     assert "1536,380,577,44" not in runs[1]      # one pixel off is an invented box
     assert "1536,380,576,44" not in runs[2]      # right box, wrong page
-
-
-def test_vendored_rules_check_matches_the_uipath_rules_original():
-    original = Path(__file__).resolve().parent.parent.parent / "uipath-rules" / "_shared" / "rules_check.py"
-    if original.exists():  # the grader sandbox stages only this skill's folder
-        assert original.read_bytes() == (Path(__file__).resolve().parent / "rules_check.py").read_bytes()
 
 
 def test_quoted_string_lists_and_commas_inside_quotes():

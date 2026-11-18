@@ -58,7 +58,7 @@ export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
   "uipath-agents", "uipath-functions", "uipath-api-workflow", "uipath-coded-apps",
   "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
-  "uipath-solution", "uipath-human-in-the-loop", "uipath-rules", "uipath-rules-extraction",
+  "uipath-solution", "uipath-human-in-the-loop", "uipath-rules",
 ]);
 export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / Deployment, never in Build With or Components
   "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",

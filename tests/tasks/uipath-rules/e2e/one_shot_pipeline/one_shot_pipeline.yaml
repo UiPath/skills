@@ -7,7 +7,7 @@ description: >
   the prompt named, and that its citations are boxes without quotes. The pipeline's outcomes are not graded
   against scenarios: the skill states the result is not checked clause by clause. Needs the logged-in user's Personal
   folder and IXPModels.Create in it; one billed pipeline run per replicate.
-tags: [uipath-rules-extraction, e2e, "mode:build", "lifecycle:generate"]
+tags: [uipath-rules, e2e, "mode:build", "lifecycle:generate"]
 
 run_limits:
   task_timeout: 1800
@@ -35,9 +35,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-rules-extraction skill"
-    skill_name: "uipath-rules-extraction"
-    expected_skill: "uipath-rules-extraction"
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
     weight: 1.0
     pass_threshold: 1.0
 

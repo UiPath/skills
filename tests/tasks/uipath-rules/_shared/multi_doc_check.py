@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grading for the multi-document uipath-rules-extraction tasks.
+"""Grading for the multi-document uipath-rules extraction tasks.
 
 The agent turns `policy/` (a base travel-expense policy, two amendments, an SOP, a
 FAQ and a rate schedule) into a BusinessRules project named TravelExpenseRules,

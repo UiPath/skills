@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared grading for the uipath-rules-extraction tasks.
+"""Shared grading for the uipath-rules document-extraction tasks.
 
 The agent turns `policy/document.md` (a remote-work equipment reimbursement
 policy) into a BusinessRules project named ReimbursementRules. Modes:
@@ -18,7 +18,7 @@ policy) into a BusinessRules project named ReimbursementRules. Modes:
             words in _setup/policy_digitized/dom.json, on the page it names.
 
 The DMN is authored by the agent under test and parsed with stdlib ElementTree.
-Single-decision tables only; helpers come from the vendored rules_check.py.
+Single-decision tables only; helpers come from rules_check.py in this folder.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import rules_check as rc  # noqa: E402  (a copy of ../../uipath-rules/_shared/rules_check.py; test_policy_check.py pins them equal)
+import rules_check as rc  # noqa: E402
 
 PROJECT_NAME = "ReimbursementRules"
 INPUTS = {"serviceDays": "number", "requestAmount": "number",

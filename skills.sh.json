@@ -13,7 +13,6 @@
         "uipath-maestro-bpmn",
         "uipath-maestro-case",
         "uipath-rules",
-        "uipath-rules-extraction",
         "uipath-coded-apps",
         "uipath-api-workflow",
         "uipath-human-in-the-loop",
