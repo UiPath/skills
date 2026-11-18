@@ -6,7 +6,7 @@ How the skill finds and verifies the Activity Migrator: Helm's, through `uip`, e
 
 | Item | Value |
 |---|---|
-| Helm | The migrator ships inside every Windows Helm: `UiPath.Studio.Helm.exe migrate analyze\|upgrade\|bulk\|version <args>`. `uip` installs Helm with its RPA tool, from the npm packages `@uipath/studio-helm-win32-x64` and `@uipath/studio-helm-win32-arm64`, which are optional dependencies of `@uipath/rpa-tool`. The Studio MSI carries the same Helm |
+| Helm | The migrator ships inside every Windows Helm and runs from Helm's folder with Helm's DLLs: `UiPath.Upgrade.exe analyze\|upgrade\|bulk\|version <args>`, next to `UiPath.Studio.Helm.exe`, is Helm's own apphost under another name, and `uip` runs it (a Helm without it runs the migrator as `UiPath.Studio.Helm.exe migrate <verb> <args>`). `uip` installs Helm with its RPA tool, from the npm packages `@uipath/studio-helm-win32-x64` and `@uipath/studio-helm-win32-arm64`, which are optional dependencies of `@uipath/rpa-tool`. The Studio MSI carries the same Helm |
 | `uip` commands | `uip rpa project migrate analyze\|upgrade\|bulk\|version <args>` hands its arguments to Helm's migrator unchanged. stdout, stderr and the exit code are the migrator's; stdout is SARIF with `--output-format sarif`. The commands take no `uip` options of their own (no `--format`, `--output`, `--verbose`): everything goes to the migrator. There is no install step |
 | Public download | `https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip`, the standalone `UiPath.Upgrade.exe`. The fallback when `uip` cannot supply the migrator |
 | Also available from | Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool; Customer Portal (`https://customerportal.uipath.com/`) |

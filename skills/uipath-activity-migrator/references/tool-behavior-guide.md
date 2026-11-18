@@ -19,8 +19,8 @@ Core options come first, then one block per active extension. A flag named anywh
 
 ## Output streams
 
-- `--output-format sarif`: stdout is the SARIF 2.1.0 log, sometimes preceded by stray `info:` lines from extension steps. Redirect it to a file; the summarizer skips the leading lines, a raw JSON parse does not. Console logging is otherwise suppressed and no browser opens.
-- `--output-format console` (the default): a text summary plus an HTML report that the tool opens in the browser. Never use it from the agent.
+- `--output-format sarif`: stdout is the SARIF 2.1.0 log, sometimes preceded by stray `info:` lines from extension steps. Redirect it to a file; the summarizer skips the leading lines, a raw JSON parse does not. Console logging is otherwise suppressed and no browser opens. The HTML report is still written; under `uip` the SARIF run's `htmlReport` property is its `file:///` link.
+- `--output-format console` (the default): a text summary and the HTML report. Under `uip` the tool prints the report's `file:///` link and opens the browser only with `--open-report` (`bulk`: the combined report); the standalone archive opens it every time. Never use console output from the agent.
 - stderr: normally empty. It carries the command-line validation errors and the `Error: <message>` line of a startup crash, the two cases where stdout holds no log at all. Steps 3 and 4 redirect it to `analyze-latest.err` / `upgrade-latest.err` in `.upgrade` so it survives a background run and can be read after the fact.
 
 ## The `.upgrade` folder
