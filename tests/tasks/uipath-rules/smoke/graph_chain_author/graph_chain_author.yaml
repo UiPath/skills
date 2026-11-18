@@ -4,7 +4,8 @@ description: >
   offline: a credit-risk band, and an interest rate that reads the band. Grades
   skill activation, `uip rules validate` run by the grader, the rate decision
   requiring the band decision, both decisions' values on the policy cases, the
-  whole-file entry point carrying the contract, and every row being named.
+  whole-file entry point carrying the contract, no two cards overlapping at
+  the size the designer draws them, and every row being named.
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -53,7 +54,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The rate decision requires the band decision, both return the policy's values, and the whole-file entry point carries the contract"
+    description: "The rate decision requires the band decision, both return the policy's values, the whole-file entry point carries the contract, and no two cards overlap on the canvas"
     command: "python3 $REFERENCE_DIR/_shared/graph_check.py chain"
     timeout: 30
     expected_exit_code: 0
