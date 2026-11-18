@@ -60,7 +60,7 @@ Layout in a component genome inside a process — one block per flow the compone
 ```markdown
 ### Flow {N} — {unit of work}: {producer} → {consumer}
 
-**Role:** {producer | consumer | consumer of Flow {M} and producer of this flow (chain)} — {one sentence: what this component does with the items}.
+**Role:** {producer | consumer | producer and consumer (it works the items it adds) | consumer of Flow {M} and producer of this flow (chain)} — {one sentence: what this component does with the items}.
 {the As-is rows that concern the role (rule 9), the outcomes table and counts for a consumer, its configuration split and traceability}
 Split options: per the process genome, Flow {N}.
 ```
