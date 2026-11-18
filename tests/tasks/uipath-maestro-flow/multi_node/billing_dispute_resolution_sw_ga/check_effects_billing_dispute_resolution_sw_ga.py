@@ -8,7 +8,8 @@ read from the debug trace, for one of two disputes on invoice MCS-2026-04872:
                    against a contracted 14 x 185 = 2590. The dispute is valid,
                    so the run must: extract the invoice (IxP), complete both
                    lookups, run the analyst, POST through
-                   FinancialPostingFunction, run the writer, and return an email
+                   FinancialPostingFunction (whose live reply must cite the
+                   invoice), run the writer, and return an email
                    draft that cites the invoice number and the credit amount
                    the flow returns.
 
@@ -19,6 +20,9 @@ read from the debug trace, for one of two disputes on invoice MCS-2026-04872:
 
 The email is never sent: the structural check forbids a send-email node.
 
+Each run leaves its time window in `.grading/posting_window_<case>.json` for
+the advisory Orchestrator job probe (`probe_posting_jobs_sw_ga.py`).
+
 Usage: check_effects_billing_dispute_resolution_sw_ga.py overcharge|no-discrepancy
 """
 import copy
@@ -26,6 +30,7 @@ import glob
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
@@ -38,6 +43,7 @@ from _shared.flow_check import (  # noqa: E402
     _get_ci,
     _named_global,
     find_project_dir,
+    node_output_leaves,
     read_flow_file_input_vars,
     read_flow_input_vars,
     run_debug,
@@ -48,6 +54,7 @@ sys.path.insert(0, _V1_DIR)
 from check_e2e_billing_dispute_resolution import INVOICE, WEBHOOK_PAYLOAD  # noqa: E402
 
 PDF = os.path.join(_V1_DIR, f"invoice-{INVOICE}.pdf")
+WINDOW_FILE = ".grading/posting_window_{case}.json"
 
 DISPUTES = {
     "overcharge": {
@@ -139,7 +146,20 @@ def _debug(flow_dispute):
     payload_in = copy.deepcopy(WEBHOOK_PAYLOAD)
     payload_in["dispute"] = flow_dispute
     print(f"debug inputs: object={obj_vars[0]} attachment={file_vars[0]}")
-    return run_debug(inputs={obj_vars[0]: payload_in}, attachments={file_vars[0]: PDF}, timeout=840)
+    started = _now()
+    payload = run_debug(inputs={obj_vars[0]: payload_in}, attachments={file_vars[0]: PDF}, timeout=840)
+    return payload, {"startedAt": started, "endedAt": _now(), "jobKey": _get_ci(payload, "jobKey", "JobKey")}
+
+
+def _now():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _stamp_window(case, window):
+    """Leave the debug run's time window for the advisory job probe."""
+    os.makedirs(".grading", exist_ok=True)
+    with open(WINDOW_FILE.format(case=case), "w") as f:
+        json.dump({"case": case, "invoice": INVOICE, **window}, f)
 
 
 def check_overcharge(flow, payload):
@@ -156,6 +176,17 @@ def check_overcharge(flow, payload):
     if not posted:
         _fail_with_capture("FinancialPostingFunction did not complete: a valid overcharge was not posted")
     print(f"OK: FinancialPostingFunction completed ({sorted(posted)})")
+
+    # The deployed function echoes the invoice it was sent ("Credit memo posted
+    # successfully. Invoice: '<n>'. …"), so its live reply proves which invoice
+    # the flow posted. Matched on the value, not a field name: the tenant copy
+    # and the repo source name the field differently.
+    replies = node_output_leaves(payload, posted)
+    if not any(INVOICE in r for r in replies):
+        _fail_with_capture(
+            f"FinancialPostingFunction's reply does not cite {INVOICE}: {sorted(replies)[:5]}"
+        )
+    print(f"OK: FinancialPostingFunction replied for {INVOICE}: {sorted(replies)[:1]}")
 
     writers = _ids_of(flow, "uipath.agent.autonomous") & _downstream(flow, posted)
     if not writers & _executed_ids(payload, completed=True):
@@ -204,7 +235,8 @@ def main():
         sys.exit(f"usage: {os.path.basename(__file__)} {'|'.join(DISPUTES)}")
     case = sys.argv[1]
     flow = _flow()
-    payload = _debug(DISPUTES[case])
+    payload, window = _debug(DISPUTES[case])
+    _stamp_window(case, window)
     (check_overcharge if case == "overcharge" else check_no_discrepancy)(flow, payload)
 
 

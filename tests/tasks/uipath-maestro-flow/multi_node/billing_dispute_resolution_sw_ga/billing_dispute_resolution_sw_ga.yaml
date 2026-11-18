@@ -101,12 +101,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, valid overcharge (line 5, 300 vs contracted 185 per hour): IxP and both lookups complete, FinancialPostingFunction completes, the writer completes, and a returned draft cites MCS-2026-04872 and the returned credit amount'
+    description: 'Effects, valid overcharge (line 5, 300 vs contracted 185 per hour): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04872, the writer completes, and a returned draft cites MCS-2026-04872 and the returned credit amount'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution_sw_ga/check_effects_billing_dispute_resolution_sw_ga.py overcharge
     timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+  - type: run_command
+    description: 'Advisory probe (tenant record): a Successful FinancialPostingFunction Orchestrator job citing MCS-2026-04872 was created during the overcharge debug run'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution_sw_ga/probe_posting_jobs_sw_ga.py overcharge
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
     description: 'Effects, no discrepancy (line 4 billed exactly at contract): the run completes without running FinancialPostingFunction or the writer, and returns an explanation'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution_sw_ga/check_effects_billing_dispute_resolution_sw_ga.py no-discrepancy
@@ -114,3 +121,10 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  - type: run_command
+    description: 'Advisory probe (tenant record): no FinancialPostingFunction Orchestrator job citing MCS-2026-04872 was created during the no-discrepancy debug run'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution_sw_ga/probe_posting_jobs_sw_ga.py no-discrepancy
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
