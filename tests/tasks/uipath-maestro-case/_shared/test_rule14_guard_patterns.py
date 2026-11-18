@@ -69,13 +69,25 @@ CASEPLAN_EDITS = [
     "sed -i 's/a/b/' registry-resolved.json",
     "python3 -c \"open('P/P/caseplan.json','w').write('{}')\"",
     "python3 - <<'X'\nimport json\nopen('P/caseplan.json','w').write('{}')\nX",
+    "python3 <<EOF\nopen('P/caseplan.json', mode='w')\nEOF",
+    "python3 -c \"import json;json.dump({},open('P/caseplan.json','w'))\"",
+    "python3 -c \"from pathlib import Path;Path('P/caseplan.json').write_text('{}')\"",
+    "node -e \"const fs=require('fs');fs.renameSync('t','P/caseplan.json')\"",
+    "/bin/bash -lc 'sed -i \"s/a/b/\" \"$P/caseplan.json\"'",
     "node -e \"require('fs').writeFileSync('P/P/caseplan.json','{}')\"",
     "ruby -e \"File.write('P/caseplan.json','{}')\"",
 ]
 
 NOT_CASEPLAN_EDITS = [
-    # 2026-11-18 nightly false positive: the in-place edit targets the .case.ts source.
+    # 2026-11-18 nightly false positive. The .case.ts source is the authored file
+    # (SKILL.md step 5: author the source, compile back into the plan), so a scripted
+    # edit of it is not an artifact write.
     "sed -i 's/Old/New/' .flow-sdk/CMGoldenExpense.case.ts; cp CMGoldenExpense/caseplan.case .flow-sdk/",
+    # A read of the plan plus a scratch write in the same command is not an artifact write.
+    "python3 -c \"import json;d=json.load(open('P/caseplan.json'));open('/tmp/stages.txt','w').write(str(d))\"",
+    "python3 -c \"print(len(json.load(open('P/caseplan.json'))))\" && python3 -c \"open('/tmp/n','w').write('1')\"",
+    "python3 - <<'X'\nd=json.load(open('P/caseplan.json'))\nX\npython3 - <<'Y'\nopen('/tmp/a','w').write('1')\nY",
+    "node -e \"const d=require('fs').readFileSync('P/caseplan.json');require('fs').writeFileSync('/tmp/x',d)\"",
     "sed -i 's/Old/New/' X.case.ts && cat P/caseplan.json",
     "sed -i 's/a/b/' caseplan.case.ts",
     "sed -n '1,40p' P/P/caseplan.json",
@@ -85,14 +97,35 @@ NOT_CASEPLAN_EDITS = [
     "node -e \"console.log(require('crypto').randomUUID())\"",
 ]
 
-# Known misses, kept visible: the guard names the artifact on the command line, so an
-# indirect path or a separate script file escapes it. The redirection/helper-script
-# criterion in artifact_safety_guard catches `python fix.py`; cm_golden_expense has none.
+# Known misses, kept visible. The guard needs the artifact name inside the edit itself, so
+# an indirect path, a separate script file, or shell redirection escapes it. The
+# redirection/helper-script criterion in artifact_safety_guard catches `python fix.py`,
+# `> caseplan.json` and `tee`; cm_golden_expense has no such criterion.
 DOCUMENTED_MISSES = [
     "sed -i 's/a/b/' P/*.json",
     "F=P/caseplan.json; sed -i 's/a/b/' $F",
+    "python3 -c \"p='P/caseplan.json'; open(p,'w').write('{}')\"",
     "python3 fix.py P/caseplan.json",
+    "echo '{}' > P/caseplan.json",
+    "jq '.a=1' P/caseplan.json > t && mv t P/caseplan.json",
 ]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "python3 -c \"" + "open('caseplan.json'" * 4000,
+        "node -e " + "fs.write(caseplan.json" * 4000,
+        "sed -i " + "'x' " * 4000 + "f",
+    ],
+    ids=["python", "node", "sed"],
+)
+def test_rule14_guard_stays_linear_on_long_commands(command: str) -> None:
+    import time
+
+    start = time.perf_counter()
+    _hits(SAFETY, command)
+    assert time.perf_counter() - start < 5.0
 
 
 def test_both_rule14_guards_share_one_pattern() -> None:
