@@ -20,6 +20,8 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 
 **Write the file to disk now, before generating any Phase 3 section.** This is an action, not advice: Step 1 does not begin until a file write has created the SDD file (Step 2 item 7 resolves the path and the Solution-scope file set). Do NOT hold the entire SDD in context and write only at the very end.
 
+**A requested draft is still the template.** A user who asks for a draft (`sdd.draft.md`, "a draft to review", "keep it compact", "don't polish or validate it yet") sets depth, not shape: write the product template's headings and blocks — for Case Management every `### Stage <N>:` / `### Secondary Stage:` block with its entry and exit tables, every business rule as an executable condition — with shorter prose and `[SME REVIEW]` markers where detail is missing. Never collapse stages into one summary table or leave a rule only in prose; the finalize step preserves the draft's inventory verbatim and cannot rebuild a structure the draft never had.
+
 **First, run the collision check — the skeleton write is the write that can clobber.** Before writing anything, apply the re-run handling in Step 2 item 6: if a target file already exists, resolve it with that structured question (keep / regenerate / resume / write as `-v2-`) and honour the answer here. "Keep the existing SDD and stop" ends `design` with no write at all; "Resume generation" patches the existing draft instead of overwriting it. Only "Regenerate" and the no-file-exists case write a fresh skeleton. Item 6 then has nothing left to ask. A caller's `existing-output: replace` is the answer "Regenerate": ask nothing ([caller-request-guide.md](caller-request-guide.md)).
 
 The skeleton write contains, in this order:
