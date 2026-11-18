@@ -38,7 +38,7 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
 2. Live Authoring is unavailable on attended-only robots.
 3. Live Authoring is unavailable on robots that can run only background jobs.
 
-For a Serverless robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11). A Robot signed in with interactive sign-in without unattended credentials becomes a target only when the user asks to convert that user account (§ Interactive Sign-In Robot with a User Account (On Request Only)); one that already has them (`hasCredentials: true`) is a target as is.
+For a Serverless robot, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3). A background-only robot becomes a target once prepared — ask the user whether to prepare it (Rule 11). A Robot signed in with interactive sign-in without unattended credentials becomes a target only when the user asks to convert that user account (§ Interactive Sign-In Robot with a User Account (On Request Only)); one that already has them (`hasCredentials: true`) is a target as is, while that account is signed in on the machine (§ Interactive Sign-In Robot with a User Account (On Request Only) item 5).
 
 ## Critical Rules
 
@@ -138,7 +138,7 @@ Prepare a target only when the user asks for it or agrees when asked (Rule 11). 
 ### Unattended Robot with a Robot Account (Recommended)
 
 1. **Robot account assigned directly to the shared folder**, with a role that can run jobs. No robot account → ask the user whether to create one; robot accounts are created in Identity (the `uipath-admin` skill), then assigned to the folder (`uipath-platform`).
-2. **Foreground automation enabled** — the robot's unattended setup holds Windows credentials (the Windows account it runs as). Without them the robot is background-only: `hasCredentials: false` in `remote targets`, and the session fails with `Foreground process requires you to have an unattended robot with credentials defined`. Credentials come from the user or an administrator (item 4 of § Rules for Preparing a Target).
+2. **Foreground automation enabled** — the robot's unattended setup holds the real Windows credentials of the account it runs as, so the Robot can start a Windows session or join an existing one; the remote session runs in it. Without them the robot is background-only: `hasCredentials: false` in `remote targets`, and the session fails with `Foreground process requires you to have an unattended robot with credentials defined`. Credentials come from the user or an administrator (item 4 of § Rules for Preparing a Target).
 3. **Machine in the same folder with an unattended license** — the machine or machine template is assigned to the folder and has at least one unattended runtime.
 4. **Robot 26.10.0+ connected as unattended** — its host shows `Available` in `remote targets`.
 
@@ -149,13 +149,13 @@ Only when the user asks to convert a user account to unattended — the user's o
 1. **Machine assigned to the shared folder** — assign that account's Personal Workspace machine to the shared folder too; it stays in the Personal Workspace.
 2. **User account assigned directly to that folder** with a role that can run jobs (e.g. Automation User). Access through a group is not enough — the robot appears in `remote targets` only after a direct assignment.
 3. **Unattended license allocated to the machine** — at least one unattended runtime. While the Robot is online, Orchestrator licenses the machine right away.
-4. **The account's `Enterprise robot setup` = `Custom Windows Credentials`**, password `password` — a fixed value that enables foreground automation and is never used to sign in. Never ask the user or the account owner for the real password. Username by the machine's OS:
+4. **The account's `Enterprise robot setup` = `Custom Windows Credentials`**, password `password` — a fixed value: the Robot joins the account's existing session (item 5) and does not use the password. Never ask the user or the account owner for the real password. Username by the machine's OS:
    - **macOS** → `.\user`, every time.
    - **Windows** → the Windows account that account is signed in to Windows with, as `DOMAIN\user`: the output of `whoami` in a terminal on that machine while that account is signed in to Windows. Agent runs on that machine under that account → run `whoami` itself; otherwise ask the user (or the account owner) to run it and share the output.
    - **OS unknown** → ask the user.
 
    Orchestrator rejects `.` as the username.
-5. **Robot 26.10.0+ signed in with that account** — another user's account → its owner signs in on their machine (item 7 of § Rules for Preparing a Target); its host shows `Available` in `remote targets`.
+5. **Robot 26.10.0+ signed in with that account, and that account signed in on the machine** — on Windows, signed in to Windows. The Robot does not start a session for this account; it joins the open one, so the account stays signed in for as long as remote work runs. Signed out → ask the user (or the account owner) to sign in on the machine before any remote session starts. Another user's account → its owner signs in on their machine (item 7 of § Rules for Preparing a Target). Its host shows `Available` in `remote targets`.
 
 ### Verify the Prepared Target
 
