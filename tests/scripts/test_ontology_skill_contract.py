@@ -94,6 +94,9 @@ def test_frontmatter_identity_and_redirects():
     assert re.search(r"SDD, PDD or design document", m["description"])
     assert "plain-language domain" in m["description"] and "artifact files" in m["description"]
     assert "SDD" in m["when_to_use"]
+    # its own claim, so an ontology request with a PDD/SDD is not left to the planner's "always invoke for PDD/SDD"
+    assert "Always invoke to build or update an ontology, even from an SDD or PDD." in m["description"]
+    assert len(m["description"]) + len(m["when_to_use"]) + 1 <= 1536
 
 
 def test_codeowners_cover_ontology_paths():
@@ -477,6 +480,15 @@ def test_saved_model_is_written_resumed_and_kept_current():
     assert "CONFIRMED_THROUGH: model" in section(t, "Stage 2")
     assert "CONFIRMED_THROUGH: built" in section(t, "Stage 9")
     assert "save the change to `model.md`" in section(t, "Stage 4")
+
+
+def test_planner_hands_ontology_requests_to_the_modeler():
+    # The planner claims every PDD/SDD; without this redirect "an ontology from this PDD" never reaches the modeler.
+    fm = frontmatter(read(SKILLS / "uipath-planner/SKILL.md"))
+    assert "ontology, even from a PDD/SDD→uipath-ontology-modeler" in fm["description"]
+    assert "A PDD always routes here, even for one RPA process, but not an ontology." in fm["when_to_use"]
+    # the skill listing keeps only the first 1536 chars of description + when_to_use
+    assert len(fm["description"]) <= 1024 and len(fm["description"]) + len(fm["when_to_use"]) + 1 <= 1536
 
 
 def test_document_evals_live_under_the_one_skill():
