@@ -37,36 +37,46 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Action recipients and the go-live trap
 
-<!-- RULE:case.recipient.literal-at-go-live -->
-- Write an action task's `recipient` as a plain email address. A bare string
-  compiles to `{ type: 2, value: <email> }`, a single user by email
-  (`RecipientType` in the SDK's `case-sdk.d.ts`). Types `0`, `1` and `3` are
-  reserved for other assignee kinds and no staged example exercises them.
-  Brownfield: decompile emits `{ type, value }` for a non-email recipient; keep
-  it as is and do not rewrite it to a string.
-  Do not write an `=` expression in `recipient`: `case check` does not read
-  `recipient`, so it cannot report a wrong path, and runtime support for an
-  expression there is untested.
+<!-- RULE:case.recipient.externalize -->
+- A literal `recipient: '<email>'` compiles to `{ Type: 2, Value: <email> }`
+  and bakes the address into the plan: going live means editing every action
+  and publishing a new version. When the request names a test, placeholder or
+  not-yet-known assignee, wire it through a case input instead:
+
+  ```ts
+  .input({ approver: { type: 'string', default: '<TEST_EMAIL>' } }, { from: manual })
+  // ...
+  .action({ ..., recipient: { type: 3, value: '=vars.approver' } })
+  ```
+
+  Going live then means changing the input default, or passing the real
+  address when the case starts; the actions stay unchanged.
+  Recipient types are `0` user id, `1` group name, `2` email, `3` expression.
+  Type `3` evaluates `value` and assigns the result as a user when it is an
+  email, and as a group name otherwise. An expression needs type `3`: a bare
+  string `'=vars.approver'` is type `2` and is looked up as a literal email.
+  `case check` warns `STRICT_RECIPIENT_EXPRESSION_TYPE` on that, and
+  `case validate --strict` fails.
+  Brownfield: keep a decompiled `{ type, value }` recipient as is.
 
 <!-- RULE:case.recipient.no-silent-default -->
-- Action `recipient` values and SLA escalation targets (`toUser`, `toGroup`)
-  are baked into the plan. Going live with a different assignee means editing
-  each one in the source and publishing a new case version.
+- In the final summary of every build or edit, list each assignee the user did
+  not name as the production assignee: an input default, a literal
+  `recipient`, or an SLA escalation target (`toUser`, `toGroup`). These include
+  a test mailbox, the user's own email, and `<UNRESOLVED: ...>`. For each one,
+  give the address or group, the actions or escalations it routes, and what
+  going live changes: the input default, or each literal in the source plus a
+  new published version.
 
-  In the final summary of every build or edit, list each recipient and
-  escalation target the user did not name as the production assignee (a test
-  mailbox, the user's own email, a placeholder such as `<UNRESOLVED: ...>`):
-  1. The address or group (for an escalation, its `value`), and which actions
-     or escalations route to it.
-  2. That it stays until someone edits each one and republishes.
-
-  Only `uip maestro case debug` and `uip solution deploy run` start case
-  instances, so only they create real tasks for these recipients. Before
-  either:
-  1. A recipient or escalation target still `<UNRESOLVED: ...>`: do not run it.
+  A command that starts a case instance creates real tasks for these
+  assignees. Examples are `uip maestro case debug`, `uip maestro case process
+  run`, and `uip solution deploy run` or `activate` on a case with a trigger.
+  `upload`, `publish`, `check`, `compile` and `validate` start none. Before a
+  command that starts an instance:
+  1. An assignee still `<UNRESOLVED: ...>`: do not run it.
   2. An address or group the user did not confirm: ask. A request or
-     pre-approval that names the debug or deploy step is the user's answer.
-     When no user can answer and nothing names that step, do not run it.
+     pre-approval that names that step is the user's answer. When no user can
+     answer and nothing names that step, do not run it.
 
 ## Script tasks
 
