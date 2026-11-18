@@ -33,7 +33,7 @@ Each phase's reads go out in at most three turns: turn 1 every file read whole a
 
 ## Source Guides
 
-A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md), as [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) states for `extract`. Any other source is read through the framework migration pack: resolve it, select the framework row, run its script and read its source guide in full before Step 1, exactly as [source-frameworks-guide.md](source-frameworks-guide.md) states. No pack, or no row matches → stop as that section says. Do not improvise an extraction from an unknown framework.
+A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md), as [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) states for `extract`. Any other source is read through the framework migration pack: resolve it, select the framework row, run its script and read its source guide in full before Step 1, exactly as [source-frameworks-guide.md](source-frameworks-guide.md) states. No pack, or no row matches → as that section says. Do not improvise an extraction from an unknown framework.
 
 ## Pipeline
 
