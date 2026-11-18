@@ -301,7 +301,7 @@ your account. Re-check the key with 'uip or folders list --output json'."
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
 ```
 
-Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem on any version — the session lacks `OR.Default`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
+Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem — on `uip` 1.206.0 and older it usually means the session lacks `OR.Default`; on a newer `uip` it means the app is assigned to no folder. See [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 #### Storing the resolved key
 

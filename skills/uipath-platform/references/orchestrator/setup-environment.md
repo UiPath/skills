@@ -67,7 +67,7 @@ uip or folders create "Invoicing" --parent "Finance" -d "Invoice processing" --o
 Verify the folder structure before proceeding.
 
 ```bash
-# Folders the current user can access (an external app: every folder its scopes reach)
+# Folders the current user can access (an external app without OR.Default: every folder its scopes reach)
 uip or folders list --output json
 
 # All folders in the tenant (requires admin permissions)
@@ -94,7 +94,7 @@ uip or folders delete <folder-key-guid> --output json
 
 The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, a user gets only the folders they are assigned to, directly or through a group.
 
-An external application (client credentials) whose token has no `OR.Default` scope works differently: Orchestrator applies its scopes in every folder, and its folder roles play no part. Plain `folders list` then returns every folder those scopes reach, plus its own debug folders. On `uip` 1.206.0 and older it returned only the folders of the tenant's shared service account (often none, or an unrelated `Monitor-Apps`), so an empty or one-row answer there does not mean the app has no folders: use `--all` or `folders get <path>`.
+An external application (client credentials) whose token has no `OR.Default` scope works differently: Orchestrator applies its scopes in every folder, and its folder roles play no part. Plain `folders list` then returns every folder those scopes reach, plus any `DebugSolution` folders a debug run left under the tenant's service account (the identity Orchestrator runs such a token as). On `uip` 1.206.0 and older it returned only the folders of the tenant's shared service account (often none, or an unrelated `Monitor-Apps`), so an empty or one-row answer there does not mean the app has no folders: use `--all` or `folders get <path>`.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
