@@ -441,16 +441,6 @@
       "mcp serve": 2
     }
   },
-  "uipath-ontology-authoring": {
-    "allow": [
-      {
-        "file": "SKILL.md",
-        "command": "ont",
-        "reason": "The studioweb flavor stops this skill before delegation (host-support-extra): the local solution build needs the local uip CLI, so these mentions are never run in Studio Web."
-      }
-    ],
-    "ceiling": {}
-  },
   "uipath-ontology-modeler": {
     "allow": [
       {

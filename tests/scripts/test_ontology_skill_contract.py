@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract guards for the ontology skills (modeler and authoring)."""
+"""Contract guards for the ontology skill (uipath-ontology-modeler)."""
 
 import json
 import re
@@ -10,7 +10,6 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "skills"
 MODELER_DIR = SKILLS / "uipath-ontology-modeler"
-AUTHORING_DIR = SKILLS / "uipath-ontology-authoring"
 SOLUTION_DIR_SKILL = SKILLS / "uipath-solution"
 
 NEGATION = re.compile(r"\b(never|not|no|don't|do not|without|instead of|refuse|reject|stop)\b", re.I)
@@ -34,7 +33,7 @@ def body(text: str) -> str:
 
 
 def guidance_files() -> list[Path]:
-    return [*MODELER_DIR.rglob("*.md"), *AUTHORING_DIR.rglob("*.md")]
+    return list(MODELER_DIR.rglob("*.md"))
 
 
 def unnegated_lines(path: Path, pattern: re.Pattern) -> list[str]:
@@ -77,38 +76,37 @@ def test_section_ignores_headings_inside_code_fences():
     assert "# comment" in body and "after" in body and "other" not in body
 
 
-def test_skills_registered_as_preview():
+def test_skill_registered_as_preview_and_authoring_is_gone():
     status = json.loads(read(ROOT / "assets/skill-status.json"))["skills"]
-    for name in ("uipath-ontology-modeler", "uipath-ontology-authoring"):
-        assert status[name]["status"] == "preview"
+    assert status["uipath-ontology-modeler"]["status"] == "preview"
+    assert "uipath-ontology-authoring" not in status
+    assert not (SKILLS / "uipath-ontology-authoring").exists()
 
 
 def test_frontmatter_identity_and_redirects():
     m = frontmatter(read(MODELER_DIR / "SKILL.md"))
-    a = frontmatter(read(AUTHORING_DIR / "SKILL.md"))
-    assert m["name"] == "uipath-ontology-modeler" and a["name"] == "uipath-ontology-authoring"
-    for fm in (m, a):
-        assert fm["description"].startswith("UiPath Ontology") and len(fm["description"]) <= 1024
-        assert "→uipath-solution" in fm["description"] and "TRIGGER" not in fm["description"]
-        assert fm["user-invocable"] is True and fm["allowed-tools"]
-    assert "→uipath-ontology-authoring" in m["description"]
-    assert "→uipath-ontology-modeler" in a["description"] and "→uipath-planner" in a["description"]
-    assert "→uipath-platform" in m["description"]
+    assert m["name"] == "uipath-ontology-modeler"
+    assert m["description"].startswith("UiPath Ontology") and len(m["description"]) <= 1024
+    assert "→uipath-solution" in m["description"] and "TRIGGER" not in m["description"]
+    assert m["user-invocable"] is True and m["allowed-tools"]
+    assert "→uipath-planner" in m["description"] and "→uipath-platform" in m["description"]
+    # one skill takes all three inputs
+    assert re.search(r"SDD, PDD or design document", m["description"])
+    assert "plain-language domain" in m["description"] and "artifact files" in m["description"]
+    assert "SDD" in m["when_to_use"]
 
 
 def test_codeowners_cover_ontology_paths():
     owners = read(ROOT / "CODEOWNERS")
-    for p in ("/skills/uipath-ontology-modeler/", "/skills/uipath-ontology-authoring/",
-              "/skill-flavors/studioweb/uipath-ontology-modeler/", "/skill-flavors/studioweb/uipath-ontology-authoring/",
-              "/tests/tasks/uipath-ontology-modeler/", "/tests/tasks/uipath-ontology-authoring/",
+    for p in ("/skills/uipath-ontology-modeler/", "/skill-flavors/studioweb/uipath-ontology-modeler/",
+              "/tests/tasks/uipath-ontology-modeler/",
               "/tests/scripts/test_ontology_skill_contract.py", "/tests/scripts/test_ontology_solution_golden.py"):
         assert re.search(rf"^{re.escape(p)}\s+@", owners, re.M), p
 
 
 def test_skills_ship_no_code():
-    for d in (MODELER_DIR, AUTHORING_DIR):
-        assert not (d / "scripts").exists()
-        assert [p for p in d.rglob("*") if p.suffix in {".py", ".js", ".mjs", ".sh", ".ps1"}] == []
+    assert not (MODELER_DIR / "scripts").exists()
+    assert [p for p in MODELER_DIR.rglob("*") if p.suffix in {".py", ".js", ".mjs", ".sh", ".ps1"}] == []
 
 
 def test_no_rest_or_sdk_patterns_in_any_guide():
@@ -117,7 +115,7 @@ def test_no_rest_or_sdk_patterns_in_any_guide():
 
 
 def test_markdown_links_stay_inside_the_skill():
-    for skill_dir in (MODELER_DIR, AUTHORING_DIR):
+    for skill_dir in (MODELER_DIR,):
         for md in skill_dir.rglob("*.md"):
             for link in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", read(md)):
                 if re.match(r"[a-z]+:", link):
@@ -127,13 +125,15 @@ def test_markdown_links_stay_inside_the_skill():
                 assert target.exists(), f"{md.name} -> {link}"
 
 
-def test_activation_rows_route_files_to_the_modeler():
-    rows = {}
-    for skill in ("uipath-ontology-modeler", "uipath-ontology-authoring"):
-        path = ROOT / "tests/tasks/activation" / f"{skill}.jsonl"
-        rows[skill] = [json.loads(l)["prompt"].lower() for l in read(path).splitlines() if l.strip()]
-    assert all(re.search(r"sdd|pdd|design document|specification", p) for p in rows["uipath-ontology-authoring"])
-    assert not any(re.search(r"\bsdd\b|\bpdd\b", p) for p in rows["uipath-ontology-modeler"])
+def test_activation_rows_route_every_input_to_the_one_skill():
+    path = ROOT / "tests/tasks/activation/uipath-ontology-modeler.jsonl"
+    rows = [json.loads(l) for l in read(path).splitlines() if l.strip()]
+    assert {r["expected_skill"] for r in rows} == {"uipath-ontology-modeler"}
+    prompts = [r["prompt"].lower() for r in rows]
+    assert any(re.search(r"\bsdd\b|\bpdd\b|design document|specification", p) for p in prompts)
+    assert any(re.search(r"\.ofn|\.ttl|yarrrml", p) for p in prompts)
+    assert len({r["id"] for r in rows}) == len(rows)
+    assert not (ROOT / "tests/tasks/activation/uipath-ontology-authoring.jsonl").exists()
 
 
 ARTIFACT_GUIDES = ("artifacts-guide.md", "owl-patterns-guide.md", "shacl-patterns-guide.md",
@@ -265,10 +265,10 @@ def fenced_block_starting(text: str, first_line: str) -> str:
     raise AssertionError(f"no fenced block starts with: {first_line}")
 
 
-HANDOFF_FIELDS = ("ONTOLOGY_NAME", "ONTOLOGY_IRI", "DISPLAY_NAME", "DESCRIPTION", "WORKDIR", "SOLUTION_DIR",
+MODEL_FIELDS = ("ONTOLOGY_NAME", "ONTOLOGY_IRI", "DISPLAY_NAME", "DESCRIPTION", "WORKDIR", "SOLUTION_DIR",
                   "CLASS_MAP", "ENTITY_DEFINITIONS", "CHOICE_SETS", "RELATIONSHIPS", "FEDERATED_SOURCES",
                   "MAPPING_STATUS", "DOMAIN_MODEL", "ANNOTATIONS")
-RETURN_FIELDS = ("SOLUTION_DIR", "PACKAGE_PATH", "ONTOLOGY_NAME", "ENTITIES", "CHOICE_SETS", "CONNECTIONS",
+REPORT_FIELDS = ("SOLUTION_DIR", "PACKAGE_PATH", "ONTOLOGY_NAME", "ENTITIES", "CHOICE_SETS", "CONNECTIONS",
                  "PACKED_FILES", "VALIDATION", "UNRESOLVED_AMBIGUITIES")
 # Source: the CLI plan's per-file ids, cross-file XF ids, service ids and error codes. XF-011 is retired
 # (MAP-012 replaces it); XF-016/XF-018 don't exist; the folder-scope and suffixed-name rules have no meaning
@@ -363,12 +363,14 @@ def test_validation_needs_login_and_no_offline_flag():
     assert "uip login" in row
 
 
-def test_handoff_and_return_blocks_have_exact_fields():
+def test_saved_model_and_report_blocks_have_exact_fields():
     t = read(MODELER_DIR / "SKILL.md")
-    h = fenced_block_starting(t, "ONTOLOGY_NAME: exact slug"); r = fenced_block_starting(t, "SOLUTION_DIR: absolute path")
-    assert tuple(re.findall(r"^([A-Z_]+):", h, re.M)) == HANDOFF_FIELDS
-    assert tuple(re.findall(r"^([A-Z_]+):", r, re.M)) == RETURN_FIELDS
+    h = fenced_block_starting(section(t, "Saved model"), "ONTOLOGY_NAME: exact slug")
+    r = fenced_block_starting(section(t, "Report"), "SOLUTION_DIR: absolute path")
+    assert tuple(re.findall(r"^([A-Z_]+):", h, re.M)) == MODEL_FIELDS
+    assert tuple(re.findall(r"^([A-Z_]+):", r, re.M)) == REPORT_FIELDS
     assert not ID_TERMS.search(h) and not GUID.search(h)
+    assert "domains (groups)" in next(l for l in h.splitlines() if l.startswith("ANNOTATIONS:"))
 
 
 def errors_guide() -> str:
@@ -404,93 +406,88 @@ def test_skill_links_resolve():
             assert (p.parent / link).is_file(), f"{p}: {link}"
 
 
-def test_handoff_and_return_blocks_identical_in_both_skills():
-    m, a = read(MODELER_DIR / "SKILL.md"), read(AUTHORING_DIR / "SKILL.md")
-    for first in ("ONTOLOGY_NAME: exact slug", "SOLUTION_DIR: absolute path"):
-        assert fenced_block_starting(m, first) == fenced_block_starting(a, first)
-
-
-# Authoring restates rules the modeler owns (skills never read each other's files); these pin the copies equal.
-def table_after(text: str, header_start: str) -> str:
-    return text[text.index(header_start):].split("\n\n", 1)[0]
-
-
-def df_types(table: str) -> set[str]:
-    return set(re.findall(r"`([A-Z][A-Z_]+)`", table))
-
-
-def test_authoring_type_table_matches_modeler_entity_guide():
-    a = read(AUTHORING_DIR / "SKILL.md")
-    e = read(MODELER_DIR / "references/entity-guide.md")
-    assert df_types(table_after(a, "| User says |")) == df_types(table_after(e, "| Schema range |"))
-    for t in (a, e):
-        assert "Never use `UUID`, `INTEGER` or `DATETIME`" in t
-
-
-def test_authoring_name_and_folder_checks_match_modeler():
-    a, m = read(AUTHORING_DIR / "SKILL.md"), read(MODELER_DIR / "SKILL.md")
-    e = read(MODELER_DIR / "references/entity-guide.md")
-    assert "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" in a and "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" in m
-    assert "^[a-zA-Z][a-zA-Z0-9_]{2,99}$" in a and "^[a-zA-Z][a-zA-Z0-9_]{2,99}$" in e
-    for t in (a, m):
-        assert re.search(r"neither (is )?inside the other", t)
-
-
 def test_error_table_codes_exist_in_errors_guide():
     guide = errors_guide()
-    a, m = read(AUTHORING_DIR / "SKILL.md"), read(MODELER_DIR / "SKILL.md")
-    rows = [l for sec in (section(a, "Common errors"), section(m, "Errors")) for l in sec.splitlines()
-            if l.startswith("| ") and not l.startswith("| Signal") and not l.startswith("| Error")]
+    rows = [l for l in section(read(MODELER_DIR / "SKILL.md"), "Errors").splitlines()
+            if l.startswith("| ") and not l.startswith("| Signal")]
     codes = {c for l in rows for c in re.findall(r"`([A-Za-z]+(?:[-_][A-Z0-9]+)+|[A-Z][a-z]+(?:[A-Z][a-z]+)+)`",
                                                  l.split("|")[1])}
     assert codes and [c for c in codes if not re.search(rf"\b{re.escape(c)}\b", guide)] == []
 
 
-def test_authoring_backing_and_junction_rules_match_modeler():
-    a = read(AUTHORING_DIR / "SKILL.md")
-    assert "XF-009" in section(a, "Step 2")
-    assert "two `RELATIONSHIP` fields" in a
-    assert "two `RELATIONSHIP` fields" in section(read(MODELER_DIR / "references/relationships-guide.md"),
-                                                  "Many-to-many")
+# --- one skill: document mode and the saved model ---------------------------------------------------------
+
+SPLIT_TERMS = re.compile(r"\b(Delegated|handoff|HANDOFF_FILE|uipath-ontology-authoring|sibling skill)\b", re.I)
 
 
-def test_authoring_saves_the_confirmed_model():
-    a = read(AUTHORING_DIR / "SKILL.md")
-    assert "HANDOFF_FILE = <BASE_DIR>/<ONTOLOGY_NAME>-handoff.md" in section(a, "Step 1")
-    assert "CONFIRMED_THROUGH" in section(a, "Step 1") and "HANDOFF_FILE" in section(a, "Step 5")
-    assert "HANDOFF_FILE` is inside neither `WORKDIR` nor `SOLUTION_DIR`" in a
+def document_guide() -> str:
+    return read(MODELER_DIR / "references/document-guide.md")
 
 
-def test_authoring_phases_then_delegation():
-    t = read(AUTHORING_DIR / "SKILL.md")
-    marks = ("Step 1 — Collect", "Step 2 — Define business concepts", "Step 3 — Define properties and relationships",
-             "Step 4 — Define labels, descriptions, and synonyms", "Step 5 — Build the solution")
-    pos = [t.index(x) for x in marks]
+def test_no_trace_of_the_split():
+    assert [f"{p.name}: {m.group(0)}" for p in guidance_files() for m in SPLIT_TERMS.finditer(read(p))] == []
+
+
+def test_document_mode_runs_the_document_guide():
+    t = read(MODELER_DIR / "SKILL.md")
+    row = next(l for l in t.splitlines() if l.startswith("| Document |"))
+    assert "SDD" in row and "document-guide.md" in row
+    assert "document-guide.md" in section(t, "Stage 2")
+    assert "document-guide.md" in section(t, "Reference Navigation")
+
+
+def test_document_guide_confirms_three_tables_in_order():
+    g = document_guide()
+    marks = ("## Read the document", "## Table 1 — Business concepts", "## Table 2 — Properties and relationships",
+             "## Table 3 — Labels, descriptions and synonyms")
+    pos = [g.index(m) for m in marks]
     assert pos == sorted(pos)
-    assert "If `uipath-ontology-modeler` is not available" in t and "Stop after pack" in t
+    assert "| Domain |" in section(g, "Table 1") and "XF-009" in section(g, "Table 1")
+    assert "model.md" in g and "one table at a time" in g
 
 
-def test_authoring_runs_no_cli_writes_and_reads_no_sibling_files():
-    t = read(AUTHORING_DIR / "SKILL.md")
-    assert not re.search(r"uip\s+(df|ont)\s+\S+\s+(create|update|add)", t)
-    assert not re.search(r"uip solution (init|pack|publish|deploy)", t)
-    assert "../uipath-ontology-modeler" not in t
-    assert "SOLUTION_DIR" in section(t, "Step 1")
+def test_document_guide_links_the_rules_instead_of_copying_them():
+    g = document_guide()
+    assert "entity-guide.md#xsd-to-data-fabric-type" in g and "relationships-guide.md#many-to-many" in g
+    assert "| User says |" not in g and "Never use `UUID`" not in g  # the type table lives in entity-guide.md only
+    assert "sh:minCount" not in g and "sh:maxCount" not in g  # constraints go into schema comments
 
 
-def test_authoring_phase_4_covers_df_types_choice_sets_and_connections():
-    sec = section(read(AUTHORING_DIR / "SKILL.md"), "Step 3")
-    for term in ("Data Fabric type", "choice set", "relationshipField", "connectionName", "federated"):
-        assert term in sec, term
+def test_document_guide_checks_refused_names_at_approval():
+    t1 = section(document_guide(), "Table 1")
+    for name in ("Order", "Group", "Case", "Class", "New"):
+        assert f"`{name}`" in t1 or f'"{name}"' in t1, name
 
 
-def test_authoring_has_no_stale_claims():
-    t = read(AUTHORING_DIR / "SKILL.md")
-    for stale in ("SVC-002", "XF-011", "--offline", "not supported", "in the tenant", "in the deployment folder",
-                  "UseExisting", "RenameExisting", "MergeConfiguration"):
-        assert stale not in t, stale
-    assert "unique per folder" in t and "Replace" in t and "RenameInSolution" in t
-    assert not ID_TERMS.search(t) and not GUID.search(t)
+def test_file_field_upgrade_cost_is_told_before_confirmation():
+    for t in (section(document_guide(), "Table 2"), section(read(MODELER_DIR / "SKILL.md"), "Stage 2"),
+              read(MODELER_DIR / "references/entity-guide.md")):
+        assert "FILE" in t and "not applied" in t
+
+
+def test_saved_model_is_written_resumed_and_kept_current():
+    t = read(MODELER_DIR / "SKILL.md")
+    sm = section(t, "Saved model")
+    assert "<WORKDIR>/input/model.md" in sm and "CONFIRMED_THROUGH" in sm
+    for step in ("concepts", "properties", "labels", "model", "built"):
+        assert f"`{step}`" in sm, step
+    assert "Resume." in sm and "start over" in sm and "Critical Rule 4" in sm and "files add" in sm
+    assert "Every change goes into the file first" in sm and "NAME_RESERVED" in sm
+    assert "input/model.md" in section(t, "Critical Rules")
+    assert "CONFIRMED_THROUGH: model" in section(t, "Stage 2")
+    assert "CONFIRMED_THROUGH: built" in section(t, "Stage 9")
+    assert "save the change to `model.md`" in section(t, "Stage 4")
+
+
+def test_document_evals_live_under_the_one_skill():
+    tasks = ROOT / "tests/tasks/uipath-ontology-modeler"
+    for f in ("smoke_sdd_document/smoke_sdd_document.yaml", "e2e_sdd_to_pack/e2e_sdd_to_pack.yaml"):
+        y = yaml.safe_load(read(tasks / f))
+        triggered = [c["skill_name"] for c in y["success_criteria"] if c["type"] == "skill_triggered"]
+        assert triggered == ["uipath-ontology-modeler"], f
+        assert any(c.get("path") == "maintenance/input/model.md" for c in y["success_criteria"]), f
+    assert "Group" in read(tasks / "_sdd_crews/maintenance-sdd.md") and "| File |" in read(tasks / "_sdd_crews/maintenance-sdd.md")
+    assert not (ROOT / "tests/tasks/uipath-ontology-authoring").exists()
 
 
 def solution_ontology_section() -> str:
@@ -570,17 +567,6 @@ def test_modeler_models_domains_and_writes_source_systems():
     assert "domain" in s2
     s5 = section(t, "Stage 5")
     assert ":domain" in s5 and "system:" in s5
-
-
-def test_authoring_asks_for_a_domain_per_class():
-    s2 = section(read(AUTHORING_DIR / "SKILL.md"), "Step 2")
-    assert "| Domain |" in s2
-
-
-def test_handoff_annotations_carry_domains_in_both_skills():
-    for d in (MODELER_DIR, AUTHORING_DIR):
-        line = next(l for l in read(d / "SKILL.md").splitlines() if l.startswith("ANNOTATIONS:"))
-        assert "domains (groups)" in line, d
 
 
 def test_modeler_update_bumps_version_and_hands_off_an_upgrade():

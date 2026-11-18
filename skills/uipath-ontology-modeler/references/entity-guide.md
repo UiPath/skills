@@ -22,7 +22,7 @@ For field options beyond this table, delegate to `uipath-platform` (Data Fabric)
 | object property | `RELATIONSHIP` | one field on the referencing entity. See [relationships-guide.md](relationships-guide.md) |
 | value list, one value | `CHOICE_SET_SINGLE` | single-select: one value per row; names a local choice set |
 | value list, several values | `CHOICE_SET_MULTIPLE` | multi-select: several values per row; names a local choice set |
-| file attachment | `FILE` | the property range is `xsd:string`. Every later upgrade reports `TypeIncompatible` on this field; `uipath-solution` finishes that upgrade |
+| file attachment | `FILE` | the property range is `xsd:string`. Every later upgrade reports `TypeIncompatible` on this field; `uipath-solution` finishes that upgrade by keeping the installed entity, so fields added to or changed on it in a later version are not applied. Tell the user before they confirm the field |
 
 Never use `UUID`, `INTEGER` or `DATETIME`: the Data Fabric UI renders them broken and `--local` refuses them. Never substitute `STRING` for a relationship or a choice set.
 
@@ -47,7 +47,7 @@ Record an `ENTITY_SOURCE` per entity. What the user gives is authoritative.
 | `described` | The user described fields in words | Keep every stated name, type and required flag. Fill gaps (display names, lengths) and show them |
 | `generated` | You proposed the entity from the domain | Show it and get one confirmation |
 
-A delegated handoff's `ENTITY_DEFINITIONS` are already confirmed: use them verbatim. In every other case ask before changing anything the user stated. The schema and mapping follow the entity and field names exactly (case-sensitive). Every `$(column)` in the mapping is a field of the entity named in that mapping's `table:`, or a system field.
+Entity definitions already confirmed in the saved model (`input/model.md`) are used verbatim. Otherwise ask before changing anything the user stated. The schema and mapping follow the entity and field names exactly (case-sensitive). Every `$(column)` in the mapping is a field of the entity named in that mapping's `table:`, or a system field.
 
 Preview the full schema (entities, fields, choice sets and values) before every create.
 

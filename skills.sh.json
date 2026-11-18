@@ -19,7 +19,6 @@
         "uipath-ixp",
         "uipath-connector-builder",
         "uipath-functions",
-        "uipath-ontology-authoring",
         "uipath-ontology-modeler"
       ]
     },

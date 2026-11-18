@@ -26,7 +26,6 @@ dataset:
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
     - uipath-mcp-servers.jsonl
-    - uipath-ontology-authoring.jsonl
     - uipath-ontology-modeler.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
@@ -239,13 +238,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-bundles activation"
     skill_name: uipath-bundles
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-    stop_early:
-      on_pass: stop
-  - type: skill_triggered
-    description: "uipath-ontology-authoring activation"
-    skill_name: uipath-ontology-authoring
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

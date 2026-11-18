@@ -296,7 +296,7 @@ jobs:
         run: pip install pytest pyyaml
 
       # Frontmatter, registry, CODEOWNERS and content contract of the two
-      # ontology skills (uipath-ontology-modeler, uipath-ontology-authoring).
+      # ontology skill (uipath-ontology-modeler).
       # The golden flow skips unless UIP_CLI points at a build with `uip ont`;
       # listing it here keeps it collected and import-clean.
       - name: Run contract guards

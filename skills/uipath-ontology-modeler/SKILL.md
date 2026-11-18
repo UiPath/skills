@@ -1,7 +1,7 @@
 ---
 name: uipath-ontology-modeler
-description: "UiPath Ontology modeler (.ofn, .yarrrml.yml, optional summary/context .json and SHACL .ttl). Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: plain-language domain, existing artifact files to clone or rebuild, or an authoring handoff. For SDD/PDD/design documents→uipath-ontology-authoring. For publish/deploy/activate of the packed solution→uipath-solution. For Data Fabric entity or record work outside an ontology→uipath-platform."
-when_to_use: "User describes classes, fields, and relationships and wants an ontology; supplies .ofn/.ttl/.yarrrml.yml files to clone or turn into a solution; or uipath-ontology-authoring delegates a confirmed handoff. Also: 'list the ontologies in folder X', 'show the deployed ontology Y'."
+description: "UiPath Ontology modeler (.ofn, .yarrrml.yml, optional summary/context .json and SHACL .ttl). Models a domain and builds the ontology and its local entities as a UiPath solution with the local (`--local`) `uip ont` and `uip df entities` commands, validates with the ontology service, then packs; also reads a deployed ontology (`uip ont get|list --folder-path`). Input: an SDD, PDD or design document, a plain-language domain, or existing artifact files to clone or rebuild. For publish/deploy/activate of the packed solution→uipath-solution. For PDD→automation SDD design→uipath-planner. For Data Fabric entity or record work outside an ontology→uipath-platform."
+when_to_use: "User provides an SDD, PDD or design/domain specification and wants an ontology from it; describes classes, fields, and relationships and wants an ontology; or supplies .ofn/.ttl/.yarrrml.yml files to clone or turn into a solution. Also: 'list the ontologies in folder X', 'show the deployed ontology Y'."
 allowed-tools: Bash, Read, Write, Edit
 user-invocable: true
 ---
@@ -13,16 +13,16 @@ Builds an ontology as a **local UiPath solution**: one ontology resource plus th
 
 ## When to Use This Skill
 
+- The user supplies an SDD, PDD, design document or domain specification and wants an ontology built from it.
 - The user describes a domain (classes, fields, relationships, value lists) in plain language and wants an ontology.
 - The user supplies `.ofn`, SHACL `.ttl` or `.yarrrml.yml` files to clone, rebuild or turn into a solution.
-- `uipath-ontology-authoring` delegates a confirmed handoff.
-- An SDD, PDD or design document → `uipath-ontology-authoring`. Publish or deploy of the packed solution → `uipath-solution`.
+- Publish or deploy of the packed solution → `uipath-solution`.
 
 | Mode | Input | Stages |
 |---|---|---|
+| Document | An SDD, PDD, design document or domain specification (file, Confluence URL or pasted text) | Stages 1–9 in order; Stage 2 confirms the model one table at a time per [document-guide.md](references/document-guide.md) |
 | Standalone | Plain-language domain description | Stages 1–9 in order |
 | Files | The user supplies the artifact files (clone or rebuild) | Copy the supplied files into `WORKDIR`, derive the entity definitions from the mapping (Stage 2), then Stages 3 and 4, then `artifacts check` on the supplied files (Stage 5), then Stages 6–9 |
-| Delegated | Confirmed handoff from `uipath-ontology-authoring` | Stages 1–9 in order; Stage 2 starts from the confirmed handoff |
 | Artifacts only | The user wants the artifact files, no solution | Stages 1, 2 and 5. The artifacts are written from the confirmed entity definitions; no solution and no entities (Stages 3–4 are skipped). Stops after Stage 5 |
 
 In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`), never symlinks or subfolders. When cloning, rename `{oldName}` to `{name}` in file names, IRIs and `PREFIX ont:` lines, and remove every Data Fabric id from the mapping (keep `table: <Entity>`).
@@ -40,11 +40,11 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 6. **`uip login status` runs first, except in Artifacts-only mode** (offline; see Stage 1). The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
 7. **A relationship is one `RELATIONSHIP` field on the referencing entity**; its inverse lives only in the schema (`InverseObjectProperties`). A federated target means a plain-column join. See [relationships-guide.md](references/relationships-guide.md).
 8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
-9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the handoff, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
+9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the saved model, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
 10. **An entity change is a local edit** (`uip df entities update <E> --local`), followed by validate.
 11. **Validation needs `uip login`.** `uip ont validate --local` always calls the ontology service; stop if it can't be reached. `uip ont artifacts check` is the offline per-file check.
 12. **Stop after pack.** The modeler ends with `uip solution pack` and `uip ont files list --package`; publish and deploy belong to `uipath-solution`.
-13. **The handoff block is identical in this skill and `uipath-ontology-authoring`.**
+13. **Save the confirmed model to `<WORKDIR>/input/model.md`** after each confirmation, and save every later fix to it before the next step ([Saved model](#saved-model)). It survives a compacted or ended session.
 14. **Ontology names are unique per folder.** Never rename the ontology resource while authoring; a new name means a new resource. Change its display name, description and entities only with `uip ont update --local`, and its files only with `uip ont files add|remove`.
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
 16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
@@ -60,9 +60,9 @@ SOLUTION_DIR   <SOLUTION_PARENT>/<SOLUTION_NAME>/ absent (new) or holding exactl
 
 `WORKDIR` and `SOLUTION_DIR` are separate and absolute: neither is inside the other, and they are never the same path. When the user names the solution after the ontology under the same base directory, propose `<ONTOLOGY_NAME>-solution` as `SOLUTION_NAME` and confirm it. Write files only inside `WORKDIR`; change `SOLUTION_DIR` only through `uip` commands. Quote every path. File names, types and counts are in [artifacts-guide.md](references/artifacts-guide.md).
 
-## Delegated handoff contract
+## Saved model
 
-Require one complete handoff and reject an incomplete one before writing files. `MAPPING_STATUS: supplied` means check and use the supplied mapping; `generate` means write it, and is invalid while a class-to-entity, field, join or identifier choice is ambiguous.
+The confirmed model lives in `<WORKDIR>/input/model.md`, the only file this skill writes besides the artifacts and `input/entities/`. Its first line is `CONFIRMED_THROUGH: <step>`: `concepts`, `properties` or `labels` while Document mode confirms its tables, `model` once the whole model is confirmed (every mode), `built` once Stage 8 has packed. Below it, one `text` fenced block with these fields, filled as far as confirmed:
 
 ```text
 ONTOLOGY_NAME: exact slug (unique per folder; the solution's own ontology is upgraded in place, a same-name ontology the solution does not own is a deploy conflict)
@@ -81,7 +81,15 @@ DOMAIN_MODEL: confirmed classes, properties, relationships, constraints
 ANNOTATIONS: confirmed labels, comments, synonyms, value domains, grain, and class domains (groups): class -> domain label
 ```
 
-Return:
+`MAPPING_STATUS: supplied` means check and use the supplied mapping (Files mode); `generate` means write it, and is invalid while a class-to-entity, field, join or identifier choice is ambiguous.
+
+**Every change goes into the file first.** A fix after a failed step (a renamed entity after `NAME_RESERVED`, a class folded into a property after `XF-009`, a user's correction) is saved to `model.md` before the next command, so a retry or a new session starts from it.
+
+**Resume.** When `WORKDIR` already holds `input/model.md`, the folder is this skill's own earlier work. Show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue or start over; overwrite it only when the user starts over. Continuing after `model` re-runs Stages 3–9: an existing `SOLUTION_DIR` is not created again, the duplicate check (Critical Rule 4) reuses the entities and choice sets already authored, and an ontology the solution already has (`uip ont get <Name> --local`) is not created again: `files add` replaces its files. A `WORKDIR` holding files but no `input/model.md` was not written by this skill: ask for another folder.
+
+## Report
+
+At the end, report:
 
 ```text
 SOLUTION_DIR: absolute path of the packed solution folder
@@ -109,11 +117,11 @@ Artifacts-only mode skips this stage: `artifacts check` is offline. In every oth
 
 ### Stage 2 — Model and confirm
 
-Collect only what is missing: the domain or source files, any entity definitions the user has, `ONTOLOGY_NAME`, optional display name and description, the solution (new name or existing folder) and the base directory. Resolve every path to an absolute path and reject a name that fails the `ONTOLOGY_NAME` pattern, nested `WORKDIR` and `SOLUTION_DIR`, or a `WORKDIR` holding files you did not write. In Delegated mode, apply the same checks to the handoff and start from its confirmed model.
+Collect only what is missing: the document, domain or source files, any entity definitions the user has, `ONTOLOGY_NAME`, optional display name and description, the solution (new name or existing folder) and the base directory. Resolve every path to an absolute path and reject a name that fails the `ONTOLOGY_NAME` pattern, or nested `WORKDIR` and `SOLUTION_DIR`. A `WORKDIR` that already holds `input/model.md` is resumed ([Saved model](#saved-model)); one holding other files is refused.
 
-Show one reviewable model: classes with grain, entity name and domain (the business area the viewer groups the class under, 3–7 per ontology; see [owl-patterns-guide.md](references/owl-patterns-guide.md#domain-annotation)) (never `Order` or `Group`, which the CLI refuses: propose `SalesOrder`-style names, see [entity-guide.md](references/entity-guide.md)), data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names.
+In Document mode, read the document and confirm the model in three tables per [document-guide.md](references/document-guide.md), saving `model.md` after each (run `mkdir -p "<WORKDIR>/input"` before the first save). In the other modes, show one reviewable model: classes with grain, entity name and domain (the business area the viewer groups the class under, 3–7 per ontology; see [owl-patterns-guide.md](references/owl-patterns-guide.md#domain-annotation)) (never `Order` or `Group`, which the CLI refuses: propose `SalesOrder`-style names, see [entity-guide.md](references/entity-guide.md)), data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names. In every mode, when the model has a `FILE` field, tell the user before they confirm that later upgrades keep that entity as installed, so fields added to or changed on it are not applied ([entity-guide.md](references/entity-guide.md#xsd-to-data-fabric-type)).
 
-After confirmation, run `mkdir -p "<WORKDIR>/input/entities"` and write one entity definition per entity to `<WORKDIR>/input/entities/<Entity>.json` (Files mode derives them from the supplied mapping), with names in place of ids. Stage 4 creates each entity from its file, so write every file, Delegated mode included.
+After confirmation, run `mkdir -p "<WORKDIR>/input/entities"`, save `model.md` with `CONFIRMED_THROUGH: model`, and write one entity definition per entity to `<WORKDIR>/input/entities/<Entity>.json` (Files mode derives them from the supplied mapping), with names in place of ids. Stage 4 creates each entity from its file, so write every file.
 
 ### Stage 3 — Init the solution and import connections
 
@@ -147,7 +155,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
    uip df choice-sets create <C> --local --display-name "<DISPLAY_NAME>" --output json
    uip df choice-set-values create <C> <VALUE> --local --output json
    ```
-3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Delegated mode the handoff is the confirmation: create without a preview, and ask only when a create changes a confirmed name or type (`NAME_RESERVED`, a refused type):
+3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Document mode the confirmed tables are the preview: create without one. When a create changes a confirmed name or type (`NAME_RESERVED`, a refused type), ask, then save the change to `model.md`:
    ```bash
    cd "<SOLUTION_DIR>" && uip df entities create <E> --local --body "$(cat "<WORKDIR>/input/entities/<E>.json")" --output json
    ```
@@ -159,7 +167,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
 
 ### Stage 5 — Write the artifacts against the created entities
 
-Write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md), after one batch confirmation (Delegated mode: none; the handoff confirmed the model). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
+Write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md), after one batch confirmation. The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
 
 Two annotations the ontology viewer reads, written in every ontology:
 
@@ -209,7 +217,7 @@ Show the dry-run listing first. `PACKAGE_PATH` is the zip the real pack reports 
 
 ### Stage 9 — Stop after pack and hand off to `uipath-solution`
 
-Return the block above. When the user asks to deploy, hand off to `uipath-solution` with:
+Save `model.md` with `CONFIRMED_THROUGH: built` and give the [Report](#report). When the user asks to deploy, hand off to `uipath-solution` with:
 
 - The ontology name, unique per folder. The solution's own ontology upgrades normally. A same-name ontology the solution does not own is a deploy conflict: the deployer chooses `Replace` or gives a new `name` in the deployment configuration (`RenameInSolution`). A rename onto a name another ontology holds fails the install (`InstallError`): choose another name.
 - The entities and choice sets are created in the target folder at deploy from their local resources, or merged into a same-name entity there.
@@ -268,6 +276,7 @@ uip ont get <Name> --folder-path "<FOLDER_PATH>" --output json
 
 | Need | Read |
 |---|---|
+| Modeling from an SDD, PDD or design document: the three confirmation tables and how document phrases map to the model | [document-guide.md](references/document-guide.md) |
 | Artifact files, types, counts, write order | [artifacts-guide.md](references/artifacts-guide.md) |
 | Entity bodies, field types, reserved names, choice sets, federated bodies, create order | [entity-guide.md](references/entity-guide.md) |
 | Which entity holds a relationship, inverses, cycles, federated targets, many-to-many | [relationships-guide.md](references/relationships-guide.md) |
