@@ -42,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent grouped by the process events table's activity field (or a variable read from query info)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+run\b[^;&|\n]*--group-by[\s=]+["'']?(PF__Process_Events__\S*Activity|\$)'
+    command_pattern: 'uip\s+pm\s+query\s+run\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--group-by[\s=]+["'']?(PF__Process_Events__\S*Activity|\$)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -50,11 +50,11 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must NOT group by the plain Activity column, which lands on the refused Event_log table"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+run\b[^;&|\n]*--group-by[\s=]+["'']?Activity\b'
+    command_pattern: 'uip\s+pm\s+query\s+run\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--group-by[\s=]+["'']?Activity\b'
     weight: 2.5
 
   - type: command_not_executed
     description: "Agent must NOT query a field of the raw Event_log table"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+run\b[^;&|\n]*F__Event_log__'
+    command_pattern: 'uip\s+pm\s+query\s+run\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*F__Event_log__'
     weight: 2.0

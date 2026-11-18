@@ -54,7 +54,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran percentile against the process field id (or a variable holding it from query info)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+percentile\b[^;&|\n]*--field[\s=]+["'']?(PF__|\$)'
+    command_pattern: 'uip\s+pm\s+query\s+percentile\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--field[\s=]+["'']?(PF__|\$)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -62,5 +62,5 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must NOT pass a guessed name instead of the throughput field id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+percentile\b[^;&|\n]*--field[\s=]+(?!\s)(?!["'']?(PF__|\$))'
+    command_pattern: 'uip\s+pm\s+query\s+percentile\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--field[\s=]+(?!\s)(?!["'']?(PF__|\$))'
     weight: 2.5
