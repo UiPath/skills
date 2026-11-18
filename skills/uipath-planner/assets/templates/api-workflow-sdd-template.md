@@ -212,7 +212,7 @@ flowchart LR
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
-| <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <STEPS> |
+| <CONNECTOR_NAME> | <SYSTEM_NAME> | <ACCESS_METHOD> | <STEPS> |
 
 ---
 
