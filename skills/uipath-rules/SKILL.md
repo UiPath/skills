@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Business Rules
 
-A Business Rules project holds one DMN decision table. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
+A Business Rules project holds one `.dmn` rule of one or more decision tables. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
 
 ## When to Use This Skill
 
@@ -19,7 +19,7 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 
 1. **Write DMN 1.5.** Use the MODEL and DMNDI namespaces `https://www.omg.org/spec/DMN/20230324/...` and DC/DI `http://www.omg.org/spec/DMN/20180521/...`. When editing a file on an older DMN version, rewrite it to these namespaces.
 2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`.
-3. **One decision per file, and its logic is a decision table.** When the user asks for chained decisions, a decision requirements diagram, business knowledge models, or a literal expression, say authoring them is not supported yet, then offer to flatten the logic into one table or to create one rules project per decision and let the calling process chain them. Never write the unsupported element.
+3. **Every decision's logic is a decision table.** A rule may hold several decisions linked by `informationRequirement`. When the user asks for a business knowledge model, knowledge source, decision service, import, or literal expression, say authoring it is not supported yet, then offer to express the logic as decision tables. Never write the unsupported element.
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
