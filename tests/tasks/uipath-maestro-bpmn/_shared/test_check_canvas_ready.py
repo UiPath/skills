@@ -54,6 +54,24 @@ CASES = [
         '<bpmn:sequenceFlow id="f"><bpmn:conditionExpression>=vars.amount &gt; 5</bpmn:conditionExpression></bpmn:sequenceFlow>',
         False,
     ),
+    (
+        "plain expression in a JSON body",
+        '<bpmn:serviceTask id="t"><bpmn:extensionElements><uipath:input name="body" type="json">'
+        '<![CDATA[{"x":"=vars.total * 2"}]]></uipath:input></bpmn:extensionElements></bpmn:serviceTask>',
+        False,
+    ),
+    ("agent output read", f'<bpmn:serviceTask id="t">{_row("=Decision")}</bpmn:serviceTask>', True),
+    (
+        "canvas-written reads",
+        f'<bpmn:serviceTask id="t">{_row("=bindings.b1")}{_row("=iterator[0]")}{_row("=jsonString:{}")}</bpmn:serviceTask>',
+        True,
+    ),
+    (
+        "script envelope",
+        '<bpmn:scriptTask id="t"><bpmn:extensionElements><uipath:input name="args" type="json">'
+        '<![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input></bpmn:extensionElements></bpmn:scriptTask>',
+        True,
+    ),
 ]
 
 
