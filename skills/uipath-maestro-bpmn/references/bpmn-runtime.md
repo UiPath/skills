@@ -611,6 +611,10 @@ binding half, which is the same for every connector-backed node.
   draws no shapes for new elements), run
   `refresh` and `validate` again, and, when the original had a diagram (`MISSING_DI_SHAPE` /
   `MISSING_DI_EDGE`), tell the user that the canvas layout was reset.
+  A merge into a template that holds only one start event and one end event (as `init`
+  writes) builds a new process: run `format --relayout` (a CLI whose `format --help`
+  lists no `--relayout` lays out the whole diagram on plain `format`), then `refresh`
+  and `validate` again.
 
 ## Contract metadata
 
