@@ -1,0 +1,76 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "mcp-guardrails create --help",
+      "file": "help_mcp_guardrails_create.txt"
+    },
+    {
+      "match": "mcp-guardrails list --help",
+      "file": "help_mcp_guardrails_list.txt"
+    },
+    {
+      "match": "mcp-guardrails get --help",
+      "file": "help_mcp_guardrails_get.txt"
+    },
+    {
+      "match": "mcp-guardrails --help",
+      "file": "help_mcp_guardrails.txt"
+    },
+    {
+      "match": "guardrail-models list --help",
+      "file": "help_guardrail_models_list.txt"
+    },
+    {
+      "match": "guardrail-models --help",
+      "file": "help_guardrail_models.txt"
+    },
+    {
+      "match": "--help",
+      "passthrough": true
+    },
+    {
+      "match": "agenthub mcp list",
+      "file": "agenthub_mcp_list.json"
+    },
+    {
+      "match": "agenthub mcp get vendor-mcp",
+      "file": "mcp_get.json"
+    },
+    {
+      "match": "agenthub guardrail-models list",
+      "file": "guardrail_models_list.json"
+    },
+    {
+      "match": "mcp-guardrails list",
+      "file": "mcp_guardrails_list_created.json",
+      "after": "mcp_guardrails_create.json"
+    },
+    {
+      "match": "mcp-guardrails list",
+      "file": "mcp_guardrails_list_empty.json"
+    },
+    {
+      "match": "mcp-guardrails get",
+      "file": "mcp_guardrails_get_created.json",
+      "after": "mcp_guardrails_create.json"
+    },
+    {
+      "match": "mcp-guardrails get",
+      "file": "mcp_guardrails_get_none.json",
+      "exit_code": 1
+    },
+    {
+      "match": "--dry-run",
+      "file": "mcp_guardrails_create_dryrun.json"
+    },
+    {
+      "match": "mcp-guardrails create",
+      "file": "mcp_guardrails_create.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

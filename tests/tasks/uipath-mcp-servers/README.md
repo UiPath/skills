@@ -20,6 +20,8 @@ tests/tasks/uipath-mcp-servers/
 ├── update-cross-folder-retarget/      # mocked
 ├── user-connection-set/               # mocked
 ├── user-connection-explore/           # mocked
+├── guardrail-create/                  # mocked
+├── guardrail-update/                  # mocked
 ├── user-connection-status/            # mocked
 │   ├── task.yaml
 │   └── fixtures/mocks/responses/
@@ -47,7 +49,7 @@ The e2e tasks grade the server the agent left on the tenant (`mcp get`, `mcp-too
 
 ## Coverage
 
-Rule numbers reference the SKILL.md Critical Rules (1-11).
+Rule numbers reference the SKILL.md Critical Rules (1-12).
 
 | Scenario | Tier | Rules | Key assertion |
 |---|---|---|---|
@@ -60,6 +62,8 @@ Rule numbers reference the SKILL.md Critical Rules (1-11).
 | `user-connection-set`          | smoke (mock) | 2, Per-User Connections | `mcp-user-connections set` for the named user (`--user-email` / `--user-id`) and connection (`--connection-name` / `--connection-id`) in the server's folder, never `--me`, and no `mcp update` (graded from the mock call log by `check_user_connection_set.py`) |
 | `user-connection-explore`      | smoke (mock) | 2, Per-User Connections | the user's connection is in their personal workspace, so `set` by name fails until the agent runs `uip or folders explore --owner <email>` (or the workspace by name or key; approved in the prompt); then `set` for that user and connection, then `uip or folders stop-exploring`, in that order, and no other workspace explored (graded from the mock call log by `check_user_connection_explore.py`; the manifest's `after` rules switch the `set` and `is connections list` answers once the explore ran) |
 | `user-connection-status`       | smoke (mock) | Per-User Connections | `mcp-user-connections list` shows the user's own connection as `RequiresAuth`; nothing changed; LLM judge: the user re-authenticates their own connection |
+| `guardrail-create`             | smoke (mock) | Guardrails | one executed `mcp-guardrails create --validator pii-detection --action block` on the server in Shared, with exactly the catalog names USSocialSecurityNumber and InternationalBankingAccountNumber (not in the CLI's help) and the user's `--reason` (graded from the call log); no `mcp update`, no guardrail delete |
+| `guardrail-update`             | smoke (mock) | Guardrails | every executed `mcp-guardrails update --validator pii-detection` passes Email and CreditCardNumber both (`--entity` replaces the selection) and changes no action, reason or Email threshold; no delete, create or `mcp update` |
 | `e2e-command-server`           | e2e (live)   | 2, 7          | `mcp get` shows a command server running `npx` with `@modelcontextprotocol/server-everything`; async `refresh-tools` with a folder flag |
 | `e2e-platform-server`          | e2e (live)   | 2, 7, 9       | `mcp get` shows the `testmanager` service; `mcp-tools list` returns exactly `Get_test_sets` and `Get_test_cases` |
 | `e2e-remote-server`            | e2e (live)   | 2, 7          | `mcp get` shows the DeepWiki URI; sync `refresh-tools` with a folder flag stored tools (`mcp-tools list`) |

@@ -1,0 +1,72 @@
+                       uip agenthub mcp-guardrails create                       
+Add a built-in guardrail to an MCP server. Settings you leave out take the Agent Gateway defaults.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-guardrails create [options]                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --validator <validator>        The built-in validator.                       │
+│ --dry-run                      Print the mutation plan without creating it.  │
+│ --mcp <slug>                   Parent MCP server slug, not its display name. │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ --action <action>              What a violation does: log lets the call      │
+│                                through, block stops it.                      │
+│ --reason <text>                With --action block: the message the caller   │
+│                                gets. Required except for prompt-injection.   │
+│ --severity <level>             With --action log: the severity logged.       │
+│ --entity <name>                pii-detection / harmful-content: an entity to │
+│                                detect. Repeatable, or comma-separated;       │
+│                                replaces the selection.                       │
+│ --entity-threshold             pii-detection (0-1) / harmful-content (0, 2,  │
+│ <entity=value>                 4, 6): the threshold of a selected entity.    │
+│                                Repeatable.                                   │
+│ --threshold <value>            prompt-injection (0-1) / llm-as-judge (0, 2,  │
+│                                4, 6): the detection threshold.               │
+│ --instructions <text>          llm-as-judge: what the judge checks for.      │
+│ --model <name>                 llm-as-judge: the judge model, from `uip      │
+│                                agenthub guardrail-models list`.              │
+│ --positive-example <text>      llm-as-judge: an input that passes.           │
+│                                Repeatable, up to 3.                          │
+│ --negative-example <text>      llm-as-judge: an input that violates.         │
+│                                Repeatable, up to 3.                          │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Block calls that carry emails or card numbers                                │
+│                                                                              │
+│   $ uip agenthub mcp-guardrails create --validator pii-detection --mcp vendor-mcp --action block --entity Email --entity CreditCardNumber --reason "Personal data is not allowed" --folder-path Shared │
+│                                                                              │
+│   validator  pii-detection                                                   │
+│   action     block                                                           │
+│   enabled    true                                                            │
+│   scope      server                                                          │
+│   settings:                                                                  │
+│     action  block                                                            │
+│     reason  Personal data is not allowed                                     │
+│     entities  Email, CreditCardNumber                                        │
+│     entityThresholds:                                                        │
+│       Email             0.7                                                  │
+│       CreditCardNumber  0.7                                                  │
+│   id         3f6c1d2e-8a4b-4c7d-9e1f-0a2b3c4d5e6f                            │
+│   name       PII Detection                                                   │
+│   managed    true                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,38 @@
+task_id: skill-mcp-servers-guardrail-update
+description: |
+  Add credit card numbers to an MCP server's PII guardrail and keep everything else. Exercises the Guardrails guide's Changing a Rule: `--entity` replaces the whole selection, so `uip agenthub mcp-guardrails update --validator pii-detection` must pass Email and CreditCardNumber both; passing only the new entity drops Email. The action, reason and Email threshold stay as stored, the rule is changed in place (not deleted and created again), and the server itself is not updated. The CLI's help example for update is a different change (prompt-injection to log).
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:configure']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: The PII guardrail on the AgentHub MCP server vendor-mcp (Shared folder)
+  catches email addresses today. Make it also catch credit card numbers, and keep
+  everything else about it as it is.
+success_criteria:
+- type: run_command
+  description: 'Every executed `mcp-guardrails update` names --validator pii-detection, --mcp vendor-mcp, the Shared folder and exactly the entities Email and CreditCardNumber, and changes no action, reason or Email threshold; no executed delete, create or `mcp update`'
+  command: python3 $REFERENCE_DIR/check_guardrail_update.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT delete or re-create the guardrail
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp-guardrails\s+(delete|create)\b(?![^\n]*--(dry-run|help))'
+- type: command_not_executed
+  description: Agent did NOT change the server itself
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+mcp\s+update\b(?![^\n]*--(dry-run|help|print-schema))'
+run_limits: {max_turns: 60}

@@ -1,0 +1,44 @@
+                        uip agenthub mcp-guardrails list                        
+List an MCP server's guardrails. Rules the CLI does not manage show with managed: false.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-guardrails list [options]                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --limit <number>               Page size, up to 10000.                       │
+│ --offset <number>              Row offset into the result set.               │
+│ --mcp <slug>                   Parent MCP server slug, not its display name. │
+│ --folder-key <key>             Orchestrator folder key (GUID). Use           │
+│                                --folder-path for the folder name or          │
+│                                fully-qualified path.                         │
+│ --folder-path <path>           Orchestrator folder display name or           │
+│                                fully-qualified path (e.g. 'Shared' or        │
+│                                'Foo/Shared'). Resolved to the folder key via │
+│                                the Orchestrator SDK.                         │
+│ --login-validity <minutes>     Interactive-login token lifetime.             │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ List a server's guardrails                                                   │
+│                                                                              │
+│   $ uip agenthub mcp-guardrails list --mcp vendor-mcp --folder-path Shared   │
+│                                                                              │
+│   items:                                                                     │
+│     val…  act…  ena…  sco…  settings             id         name  man…  cur… │
+│     ────  ────  ────  ────  ───────────────────  ─────────  ────  ────  ──── │
+│     pii…  blo…  true  ser…  {"action":"block",…  3f6c1d2e…  PII…  true  true │
+│   total  1                                                                   │
+│   count  1                                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
