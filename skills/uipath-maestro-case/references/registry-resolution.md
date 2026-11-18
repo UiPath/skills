@@ -117,6 +117,3 @@ connector operation. Resolve each such task before authoring it:
 4. Never list a connector to pick an operation by name
    (`registry search --connector <key>` with no id): a long list is cut off,
    and two operations can share an object name.
-
-`uip maestro case validate --strict --sdd` reports a task that carries any
-other id as `STRICT_SDD_ACTIVITY_TYPE_ID_MISMATCH`.
