@@ -77,6 +77,10 @@ rules:
   # Its advice (move triggers into description) conflicts with the 1,024-char cap and LISTING-BUDGET's Codex share,
   # until the skills maintainers decide whether Codex and Delegate routing is a target.
   AGENT-ROUTING-TEXT-LOST: info
+  # Every skill that declares `allowed-tools` grants bare Bash on purpose: skills run uip, npm, dotnet, python and git,
+  # so `Bash(uip:*)` would bring the prompts back. Scoping it is the skills maintainers' security call, not a
+  # per-skill fix; keep it visible.
+  SEC-BROAD-BASH: info
   DESC-FRONT-LOAD:
     extra_terms:
       uipath-troubleshoot: [investigation, diagnos, root cause]
