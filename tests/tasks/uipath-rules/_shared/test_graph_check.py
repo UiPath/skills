@@ -75,6 +75,11 @@ class TestEvaluateGraph:
         with pytest.raises(SystemExit):
             gc.evaluate_graph(root, {"creditScore": 650, "income": 60000, "loanAmount": 1})
 
+    def test_output_entry_passes_an_upstream_result_through(self):
+        root = edited_root("<text>12.5</text>", "<text>risk</text>")
+        outputs = gc.evaluate_graph(root, {"creditScore": 500, "income": 0, "loanAmount": 1})
+        assert outputs == {"riskBand": "High", "interestRate": "High"}
+
     def test_upstream_without_a_match_reads_as_null(self):
         root = edited_root("<text>&gt;= 700</text>", "<text>&gt;= 900</text>")
         outputs = gc.evaluate_graph(root, {"creditScore": 750, "income": 0, "loanAmount": 1})
