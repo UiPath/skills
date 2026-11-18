@@ -1,6 +1,6 @@
 # Licensing (`uip platform`)
 
-Manage UiPath organization licensing — tenant allocations, user/group bundle assignments, and consumables reporting.
+Manage UiPath organization licensing — tenant allocations, user/group bundle assignments, consumables reporting, per-user consumption and top-ups, and folder outcome billing.
 
 > For full option details on any command, use `--help` (e.g., `uip platform tenants licenses get --help`).
 
@@ -15,12 +15,12 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 | `--organization <account-id>` | All commands | Override org account GUID. Defaults to org from current login. |
 | `--output json` | All commands | Emit structured JSON. Always use when parsing programmatically. |
 | `--input <path>` | `set` commands | Path to JSON file with the desired allocation. Body shape differs per command — see each workflow doc. |
-| `--limit <n>` | `groups rules` list commands | Max results to return (default 50). |
-| `--offset <n>` | `groups rules` list commands | Results to skip (default 0). |
-| `--sort-by <field>` | `groups rules` list commands | Sort field (e.g. `name`). |
-| `--sort-order <Asc\|Desc>` | `groups rules` list commands | Sort direction. Exact strings `Asc` or `Desc` (case-sensitive). |
+| `--limit <n>` | `groups rules` list commands, `users usage list` | Max results to return (default 50). |
+| `--offset <n>` | `groups rules` list commands, `users usage list` | Results to skip (default 0). |
+| `--sort-by <field>` | `groups rules` list commands, `users usage list` | Sort field (e.g. `name`, `email`). |
+| `--sort-order <Asc\|Desc>` | `groups rules` list commands | Sort direction. Exact strings `Asc` or `Desc` (case-sensitive). `users usage list` takes `asc`/`desc`, case-insensitive. |
 
-**Response envelope.** All commands emit `{Result, Code, Data, ...}`. `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, etc.). Paginated commands add a `Pagination` block — increment `--offset` by `--limit` until `Returned < Limit`.
+**Response envelope.** All commands emit `{Result, Code, Data, ...}`. `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, `UserUsageList`, `TopUpStarted`, `TenantFolderOutcomeBilling`, etc.). Paginated commands add a `Pagination` block — increment `--offset` by `--limit` until `Returned < Limit`.
 
 **Saving a response to a file.** Redirect **stdout only**: `uip platform ... --output json > available.json`. Never send `2>&1` into the artifact — `groups rules details` writes its rule summary to stderr, and merging the streams puts that header above the JSON so the file no longer parses. If you need stderr for an auth or lookup error, capture it separately (`2> details.err`). Never hand-assemble the artifact from other commands' output either: the file must be one raw envelope, parseable on its own.
 
@@ -33,6 +33,8 @@ All `uip platform` licensing commands share a set of cross-cutting options:
 | Tenant Allocations | [tenant-allocations.md](tenant-allocations.md) | `tenants licenses get/set` — allocate license units to tenant pools |
 | User & Group Licenses | [user-licenses-allocations.md](user-licenses-allocations.md) | `users licenses get/set/available`, `groups rules get/details/set` — assign bundles directly or via group rules |
 | Consumables Report | [consumables-report.md](consumables-report.md) | `licenses consumables get --mode {summary,daily,folders}` — consumption reporting. `get` is mandatory; summary/daily/folders are `--mode` values, not subcommands (there is no `licenses summary` verb) |
+| User Usage & Top-ups | [user-usage-topups.md](user-usage-topups.md) | `users usage list/get` — per-user percent-of-pool consumption; `users top-ups create/get` — admin grant with auto-resolved pool and async job; `users top-ups request` — self-service request (notified / auto-granted / refused with a 422 outcome) |
+| Folder Outcome Billing | [folder-outcome-billing.md](folder-outcome-billing.md) | `tenants folder-outcome-billing get/set` — per-folder Fully Loaded Transactions switch; `set` needs the `Platform.FltEligible` entitlement |
 | Diagnose | [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md) | Symptom-first triage — entitlement gaps, allocations that did not take effect, reports that read wrong. Layer-first ladder + failure-mode lookup |
 
 ---
@@ -90,6 +92,9 @@ Each concept is covered authoritatively in the linked workflow guide:
 - **Quotas in group rules** — `groups rules set` accepts optional `quota` per entry. See [user-licenses-allocations.md](user-licenses-allocations.md).
 - **Bundle window vs custom date range** — each consumable has its own window; `--start-date`/`--end-date` overrides. See [consumables-report.md](consumables-report.md).
 - **Idempotent tenant allocation** — `tenants licenses set` is an overlay, not a delta. See [tenant-allocations.md](tenant-allocations.md).
+- **Per-user consumption is percent-of-pool** — `null` is N/A, `0` is unused; the top-up source pool is resolved by the CLI (`PLTU`, else `AGU`), never chosen by the caller. See [user-usage-topups.md](user-usage-topups.md).
+- **Self-service top-up outcomes** — `NotificationSent`/`AutoGranted` succeed; `NotEligible`, `NoActiveDistribution`, `AlreadyGranted`, `AllowanceAvailable` are refusals (422) that do not clear on retry. See [user-usage-topups.md](user-usage-topups.md).
+- **Outcome billing is a per-folder write gated by entitlement** — `get` works without `Platform.FltEligible`, `set` does not. See [folder-outcome-billing.md](folder-outcome-billing.md).
 
 ---
 

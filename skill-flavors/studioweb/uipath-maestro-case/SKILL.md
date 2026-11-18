@@ -31,10 +31,10 @@ Some commands in the references do not work in Studio Web. Use this table:
 
 | Command | In Studio Web |
 | --- | --- |
-| `uip maestro case check`, `compile`, `decompile` | Work, inside the page. |
+| `uip maestro case check`, `compile`, `decompile` | Work, inside the page. Studio Web's in-page SDK restricts these to files under `/solution/` or `/tmp/`; a plan elsewhere gets `ENOENT` or a path-rejection error. Move or copy the project to `/solution/` first. |
 | `uip maestro case validate` | Works, with `--strict` and `--sdd`. |
 | `uip maestro case sdd convert` | **Do not use as a build path.** Output has flat connector inputs (`CASE_MGMT_CONNECTOR_INPUT_FLATTENED`), unresolved cross-task references, and no `registry prepare` — `validate` will reject it. If used as a seed, decompile its output, author the TypeScript source, then check → compile → validate. Never submit the convert output directly. |
-| `uip maestro case registry pull` | Works — **this is the one you need** for case resource discovery (action apps, processes, agents). Pulls tenant resource indexes to `~/.uip/case-resources/`. Not the same as `uip maestro registry pull` below. |
+| `uip maestro case registry pull` | Works — **this is the one you need** for case resource discovery (action apps, processes, agents). Pulls tenant resource indexes to `/home/.uip/case-resources/`: the CLI's home here is `/home`, not the shell's `~` (`/solution`), so read `~/.uip/case-resources/` in the references as that path. Not the same as `uip maestro registry pull` below. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | **No-op in Studio Web** (the connector library of the session is always loaded). Not the same as `uip maestro case registry pull` above — that one pulls case resources and works. |
 | `uip solution resources add`, `list` | Work. |

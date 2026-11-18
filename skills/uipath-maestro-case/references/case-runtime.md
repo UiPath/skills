@@ -85,6 +85,40 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
   `.outputs({ v: '=response.body' })` maps one to a case variable.
 
+## Document extraction
+
+<!-- RULE:case.docextraction.discovery -->
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
+  After discovery, add the deployment to the solution:
+  `uip solution resources add --source remote --kind IxpDeployment
+  --name "<DeploymentTitle>" --folder-key "<FOLDER_KEY>" --output json`
+<!--skill-flavor:docextraction-refresh:start-->
+  Then refresh:
+  `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`
+<!--skill-flavor:docextraction-refresh:end-->
+
+<!-- RULE:case.docextraction.check -->
+- Compile refuses a missing `deploymentKey`; `check` reports blank model,
+  deployment, folder, folderKey, and file individually.
+
+<!-- RULE:case.docextraction.legacy -->
+- Decompile emits `.savedDocumentExtraction()` for the older flat format.
+  It is read-only: no `.outputs()`, no deployment edit. `check` warns
+  `DOCUMENT_EXTRACTION_OLDER_SHAPE`.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+  On an older `uip`, report the floor requirement and stop. Do not rewrite
+  bindings or strip the extraction task to silence the error.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
@@ -142,8 +176,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `escalationId: "any"` wildcard, makes the rule at-risk; one to an
   `sla-breached` escalation is Breached. The wildcard is valid and fires on
   every at-risk escalation of that SLA (in SDK source,
-  `escalation: ANY_ESCALATION`). Do not author it; name the escalation the
-  requirement means. Repair an existing rule by the requirement's status, never
+  `escalation: ANY_ESCALATION`). In `caseplan.json` do not write `"any"` by
+  hand; in `.case.ts` use `ANY_ESCALATION` only when the requirement means
+  every at-risk escalation. When the SDD names one escalation, name it.
+  Repair an existing rule by the requirement's status, never
   by what the plan already carries: a breach response drops the reference and
   leaves a plain breach rule on the SLA; repointing it at an at-risk escalation
   keeps it at-risk, which fires at a different time. Only an at-risk response
@@ -246,6 +282,24 @@ make from syntax alone. Exact signatures remain in the generated API.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
+
+## Metadata fidelity
+
+<!-- RULE:case.metadata.intsvc-activity-config -->
+- A new case carries `metadata.intsvcActivityConfig: "v2"`. `case init` writes
+  it on a new case; `decompile` → `compile` preserves whatever the plan's
+  metadata carried. Never add `"v2"` to a decompiled plan that lacks
+  it — a V1 plan must stay V1. Tasks that call Integration Service use V2 I/O
+  negotiation when the marker is present.
+
+<!-- RULE:case.variable.closed-types -->
+- Case variable `type` values are a closed set: `string`, `integer`, `float`,
+  `double`, `boolean`, `datetime`, `date`, `time`, `object`, `file`, `array`,
+  `jsonSchema`. These apply to `variables.inputs`, `variables.outputs`, and
+  `variables.inputOutputs`. Do not use `number` (that is a Flow SDK type, not
+  a Case type); use `integer` for whole numbers, `float` or `double` for
+  decimals. `case validate` warns `number` (`CASE_MGMT_VARIABLE_TYPE_ALIAS`);
+  write `double`.
 
 ## Brownfield editing
 
