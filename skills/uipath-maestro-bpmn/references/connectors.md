@@ -98,8 +98,8 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 
 When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
 An unknown key, a wrong value type (`CONNECTOR_INPUT`) or a runtime value in an id field (`LOOKUP_RUNTIME_VALUE`) is a mistake in your source: fix it there, since `prepare` doesn't touch the source.
-When a step reads a record by a key the process is given and the operation also needs lookups nobody supplies (Jira `get-issue`'s `project`, `issuetype`), never derive them from the key or pin one value: use a generic Retrieve (`get-record` with `object:`) whose only input is the key.
-Find one with `uip maestro registry search retrieve <RECORD> --connector <CONNECTOR_KEY> --limit 50` and read each row's field reference: a generic Retrieve on the curated operation's own object can need the same lookups, so pick the row whose only required input is the key.
+When a step reads a record by a key the process is given and the operation also needs lookups nobody supplies (Jira `get-issue`'s `project`, `issuetype`), never derive them from the key or pin one value yourself: use a generic Retrieve (`object:`) whose required inputs are all plain, none a lookup.
+List the connector's Retrieves with `uip maestro registry search retrieve --connector <CONNECTOR_KEY> --limit 50` and read each row's field reference. With none, ask the user which value each lookup takes.
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
