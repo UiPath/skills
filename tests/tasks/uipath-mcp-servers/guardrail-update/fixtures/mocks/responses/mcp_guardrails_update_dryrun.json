@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/servers/vendor-mcp/guardrails"
+        },
+        {
+          "Verb": "DELETE",
+          "Target": "/api/servers/vendor-mcp/guardrails/5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f"
+        }
+      ],
+      "Resolved": {
+        "Name": "PII Detection",
+        "GuardrailType": "builtInValidator",
+        "ActionType": "block",
+        "IsEnabled": true,
+        "Configuration": "{\"validatorType\":\"pii_detection\",\"validatorParameters\":[{\"$parameterType\":\"enum-list\",\"id\":\"entities\",\"value\":[\"Email\",\"CreditCardNumber\"]},{\"$parameterType\":\"map-enum\",\"id\":\"entityThresholds\",\"value\":{\"Email\":0.7,\"CreditCardNumber\":0.7}}],\"actionConfig\":{\"reason\":\"Personal data is not allowed\"}}",
+        "Selector": {
+          "Scopes": [
+            "Server"
+          ]
+        }
+      }
+    }
+  }
+}

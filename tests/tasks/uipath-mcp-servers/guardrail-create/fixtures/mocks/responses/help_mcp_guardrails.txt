@@ -1,0 +1,34 @@
+                          uip agenthub mcp-guardrails                           
+Manage the built-in guardrails of an MCP server: PII detection, prompt injection,
+harmful content and LLM as judge. A server has at most one rule per validator; it
+screens every tool call, before the tool runs and on its result.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub mcp-guardrails [options] [command]                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ create   Add a built-in guardrail to an MCP server. Settings you leave out   │
+│          take the Agent Gateway defaults.                                    │
+│ delete   Remove an MCP server's guardrail of one validator.                  │
+│ get      Get an MCP server's guardrail of one validator, with its settings.  │
+│ help     display help for command                                            │
+│ list     List an MCP server's guardrails. Rules the CLI does not manage show │
+│          with managed: false.                                                │
+│ update   Change an MCP server's guardrail of one validator. Settings you     │
+│          leave out are kept.                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘

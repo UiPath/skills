@@ -1,0 +1,14 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubGuardrailModelsList",
+  "Data": {
+    "Items": [
+      {
+        "Name": "gpt-4o-2024-11-20",
+        "DisplayName": "GPT-4o"
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}
