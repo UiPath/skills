@@ -117,6 +117,10 @@ Use the plain method, not an `admin.*` variant, unless asked:
 
 `targetConnector` requires both bindings.
 
+## Dotted keys in the body
+
+A response body key containing `.` is split into nested objects when a script or `=js:` expression reads it (`body.time['5.3.0']` is `undefined`, the run `Completed`). Do not read such keys from the body (an npm registry record's `time` map has them); pick a field without dots, or a source that has none. [Script](script.md#dotted-keys-in-values) has the workaround for values a script builds.
+
 ## Failure fields
 
 The envelope shape and how to read it: [error-handling.md](error-handling.md#reading-the-failure).
