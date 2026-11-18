@@ -61,10 +61,10 @@ def test_failed_validate_lists_the_warnings_from_instructions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
-    instructions = "Found 1 error(s):\n  - [warning] [(xml)] unresolved reference <X>\n  - [error] [(xml)] BPMN_PARSE_ERROR: bad"
+    instructions = "Found 1 error(s):\n  - [warning] [Task_a] VARIABLE_NOT_SET: x\n  - [error] [Gateway_1] MISSING_CONDITION_EXPRESSION: y"
     _validate_prints(monkeypatch, json.dumps({"Result": "Failure", "Instructions": instructions}))
 
-    assert _write(tmp_path, monkeypatch) == "LoyaltyDiscount.bpmn:\n- [warning] [(xml)] unresolved reference <X>"
+    assert _write(tmp_path, monkeypatch) == "LoyaltyDiscount.bpmn:\n- [warning] [Task_a] VARIABLE_NOT_SET: x"
 
 
 @pytest.mark.parametrize("error", [FileNotFoundError("uip"), subprocess.TimeoutExpired("uip", 60)])
@@ -90,4 +90,21 @@ def test_parser_note_on_compiled_output_is_left_out(tmp_path: Path, monkeypatch:
 
 
 def test_no_built_process_is_unknown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)
+
+
+@pytest.mark.parametrize(
+    "instructions",
+    [
+        "Could not read file: LoyaltyDiscount.bpmn",
+        "Found 1 error(s):\n  - [error] [(xml)] XML_NOT_WELL_FORMED: unexpected end of file",
+        "Found 1 error(s):\n  - [warning] [(xml)] unresolved reference <X>\n  - [error] [(xml)] BPMN_PARSE_ERROR: bad",
+    ],
+)
+def test_validate_that_stops_before_its_rules_is_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, instructions: str
+) -> None:
+    (tmp_path / "LoyaltyDiscount.bpmn").write_text("<bpmn:definitions/>")
+    _validate_prints(monkeypatch, json.dumps({"Result": "Failure", "Instructions": instructions}))
+
     assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)

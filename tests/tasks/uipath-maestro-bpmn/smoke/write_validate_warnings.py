@@ -16,6 +16,7 @@ Exits 0 whenever the file is written: this criterion only records.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -29,6 +30,10 @@ NO_WARNINGS = "none"
 UNKNOWN = "unknown"
 WARNING_LINE = "[warning]"
 PARSER_NOTE = "[(xml)] unknown attribute"
+# A failed validate lists warnings only once its rules ran: a thrown error or an
+# XML parse failure stops it earlier, and its Instructions hold no warning list.
+RULES_RAN = re.compile(r"^Found \d+ error\(s\):")
+PARSE_LEVEL = ("[(xml)]", "BPMN_PARSE_ERROR", "XML_NOT_WELL_FORMED")
 
 
 class Unreadable(Exception):
@@ -61,9 +66,12 @@ def warnings_of(path: Path, timeout: float) -> str:
         return _kept(str(data.get("Warnings") or ""))
 
     instructions = out.get("Instructions")
-    if not isinstance(instructions, str):
-        raise Unreadable(f"validate failed with no Instructions (exit {proc.returncode})")
-    return _kept("\n".join(line for line in instructions.splitlines() if WARNING_LINE in line))
+    if not isinstance(instructions, str) or not RULES_RAN.match(instructions.strip()):
+        raise Unreadable(f"validate stopped before its warning rules ran (exit {proc.returncode})")
+    lines = instructions.splitlines()
+    if any("[error]" in line and any(p in line for p in PARSE_LEVEL) for line in lines):
+        raise Unreadable("validate could not parse the file")
+    return _kept("\n".join(line for line in lines if WARNING_LINE in line))
 
 
 def main() -> int:
