@@ -159,8 +159,8 @@ A discovery-only request (discover types or save registry evidence, no authoring
    When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 9. **End every build with the final report.**
-   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**.
-   It ends the turn too when validation fails only because tenant resources are missing.
+   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**, also when validation fails only because tenant resources are missing: read it in full once `validate` passes or fails only that way, before any upload or other closing tool call.
+   Resume only: when the turn carries no new user instruction and only continues after an interruption that came after the report or a gate reply was written, resend that message unchanged and whole and do nothing else. Any new user message (*Build it*, *Change it: …*, a question) is a normal turn.
 
 ## Draft first
 

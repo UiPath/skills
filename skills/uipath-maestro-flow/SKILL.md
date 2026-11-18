@@ -16,11 +16,10 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compile
 2. Before writing a node, read its `Reference` in [Supported node types](#supported-node-types), including signature, example, and hazards.
 3. Choose every node from a registry search, never a brand name.
 4. Ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers; never fold it into a stated value. When the request says no one will answer (headless, CI), use the most defensible stated value and list it under Open questions as **[REQUIRED]**.
-5. Bind every declared output on every path. `check` misses missing outputs; the run returns `undefined`.
-6. Handle an error only when the request specifies what should happen.
-7. Never re-run `flow debug` to inspect a failed run.
-8. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
-9. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
+5. Handle an error only when the request specifies what should happen.
+6. Never re-run `flow debug` to inspect a failed run.
+7. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
+8. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
 
 ## Project layout
 
@@ -39,7 +38,7 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. Omit `--sdk-source` for a flow that will hold an Extract document node; that flow is CLI-authored throughout ([`references/extract-document-node.md`](references/extract-document-node.md)).
+Do not hand-write the skeleton. `--sdk-source` decompiles the trigger-only artifact into `.flow-sdk/<Name>.flow.ts`, creates the folder, and preserves the product-assigned flow id/name; a hand-written `flow('<name>')` invents an id. The first `compile -o` overwrites the stub. `init` answering "already exists and is not empty. Use --force to overwrite" means it exists: never pass `--force`; edit it. An Extract document node is `dynamicExtract()` ([`references/document-pipeline.md`](references/document-pipeline.md)); it needs SDK 6.118.0 or later, else use the CLI.
 
 When the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; bare "automate invoice intake" means a plain Flow. Nothing after `init` changes: it writes `runtimeOptions.profile` to `operate.json` and a `.maestro_automate` marker; `compile -o` rewrites only `.flow`, so both survive.
 
@@ -182,11 +181,11 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 | API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) | `examples/BirdCountLookup.flow.ts` |
 | Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) | `examples/NeighborhoodWalkPlanner.flow.ts` |
 | Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) | `examples/PlantNameAdvisor.flow.ts` |
-| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or CLI when absent from library | [external-agent.md](references/external-agent.md) | — |
+| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`; `registry prepare` first when absent from library | [external-agent.md](references/external-agent.md) | — |
 | Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
 | IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
 | Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
-| Extract document | `uipath.ixp.extract-document-builder` | CLI only | [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
+| Extract document | `uipath.ixp.extract-document-builder` | `dynamicExtract(...)` | [document-pipeline.md](references/document-pipeline.md), [extract-document-node.md](references/extract-document-node.md) | `examples/SeedPacketReader.flow.ts` |
 | Published function | `uipath.core.function.<key>` | `publishedFunction(...)` | [published-function.md](references/published-function.md) | `examples/TideTableConverter.flow.ts` |
 | Conversation message wait | `uipath.conversational.wait-for-message` | `waitForMessage(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
 | Conversational agent | `uipath.agent.conversational` | `conversationalAgent(...)` | [conversational.md](references/conversational.md) | `examples/LibraryDeskChat.flow.ts` |
@@ -197,7 +196,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 
 ## Authoring a flow
 
-[Critical Rules](#critical-rules) govern node choice, open decisions, outputs, and errors; details are in **[`references/author.md`](references/author.md)**. A requested canvas arrangement uses `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
+[Critical Rules](#critical-rules) govern node choice, open decisions, and errors; details are in **[`references/author.md`](references/author.md)**. A requested canvas arrangement uses `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 

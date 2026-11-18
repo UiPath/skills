@@ -9,7 +9,9 @@ description: >
   connection resource. Verifies design-time artifacts only (no
   runtime connector invocation). Cloud auth required — depends on
   the staging tenant having the `uipath-uipath-airdk` (GenAI
-  Activities) connector available.
+  Activities) connector available. The prompt names the connector and its
+  Web Search activity: "a GenAI tool" alone let agents pick the built-in
+  DeepRAG tool instead, which grades nothing about IS.
 tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
@@ -21,8 +23,9 @@ reference:
 
 initial_prompt: |
   Create a UiPath low-code agent "ResearchAgent" that can look things up.
-  Give it a GenAI tool so it can research questions on demand. The solution
-  should be named "ResearchSol".
+  Give it the Web Search activity from the UiPath GenAI Activities Integration
+  Service connector as a tool, so it can research questions on demand. The
+  solution should be named "ResearchSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

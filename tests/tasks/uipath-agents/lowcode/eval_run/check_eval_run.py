@@ -13,8 +13,10 @@ does NOT catch — it surfaces only in the cloud eval worker, after upload:
   3. Test cases whose `evalSetId` does not match the parent set's `id`.
   4. Test-case `inputs` that do not conform to `entry-points.json`.
 
-It also enforces that the agent authored its OWN evaluator and eval set rather
-than reusing the scaffolded defaults the fixture ships.
+It also enforces that the agent authored its OWN evaluator rather than reusing
+the scaffolded defaults, and that a set holding the test cases references it.
+The cases may live in the scaffolded default set or in a set the agent created:
+the prompt asks for neither.
 """
 
 from __future__ import annotations
@@ -68,9 +70,10 @@ def load_all(directory: Path, label: str) -> list[tuple[Path, dict]]:
     return docs
 
 
-def check_evaluators(evaluators: list[tuple[Path, dict]]) -> dict[str, dict]:
+def check_evaluators(evaluators: list[tuple[Path, dict]]) -> tuple[dict[str, dict], set[str]]:
     by_id: dict[str, dict] = {}
     authored = []
+    authored_ids: set[str] = set()
 
     for path, doc in evaluators:
         eid = doc.get("id")
@@ -105,6 +108,7 @@ def check_evaluators(evaluators: list[tuple[Path, dict]]) -> dict[str, dict]:
 
         if name not in DEFAULT_EVALUATOR_NAMES:
             authored.append(name)
+            authored_ids.add(eid)
 
     if not authored:
         fail(
@@ -113,20 +117,31 @@ def check_evaluators(evaluators: list[tuple[Path, dict]]) -> dict[str, dict]:
             f"closeness to the expected answer"
         )
     print(f"OK: {len(by_id)} evaluators, agent-authored: {authored}")
-    return by_id
+    return by_id, authored_ids
 
 
-def check_eval_sets(sets: list[tuple[Path, dict]], evaluators: dict[str, dict], schema_props: set) -> None:
-    authored = [
-        (path, doc) for path, doc in sets if doc.get("name") not in DEFAULT_SET_NAMES
+def check_eval_sets(
+    sets: list[tuple[Path, dict]],
+    evaluators: dict[str, dict],
+    authored_evaluators: set[str],
+    schema_props: set,
+) -> None:
+    # The prompt never asks for a new set, so the test cases may live in the
+    # scaffolded default set or in one the agent created. Grade every set that
+    # carries cases; an agent-created set is graded even when empty.
+    graded = [
+        (path, doc)
+        for path, doc in sets
+        if doc.get("name") not in DEFAULT_SET_NAMES or doc.get("evaluations") or doc.get("testCases")
     ]
-    if not authored:
+    if not graded:
         fail(
-            f"No evaluation set beyond the scaffolded {sorted(DEFAULT_SET_NAMES)} — the task "
-            f"asked the agent to create its own"
+            f"No evaluation set holds test cases — the scaffolded {sorted(DEFAULT_SET_NAMES)} is "
+            f"empty and the agent created none"
         )
 
-    for path, doc in authored:
+    scored_by_authored = False
+    for path, doc in graded:
         set_id = doc.get("id")
         set_name = doc.get("name")
         if not set_id:
@@ -187,7 +202,17 @@ def check_eval_sets(sets: list[tuple[Path, dict]], evaluators: dict[str, dict], 
                 f"output — the task asked for cases covering different categories"
             )
 
+        if authored_evaluators & set(refs):
+            scored_by_authored = True
         print(f"OK: eval set {set_name!r} — {len(cases)} cases, {len(refs)} evaluator ref(s), all resolving")
+
+    # Reusing the default set is fine, but then it must be rewired: the user
+    # said the scaffolded scorer "doesn't tell me much".
+    if not scored_by_authored:
+        fail(
+            "No eval set with test cases references the agent-authored evaluator — the cases "
+            "would be scored only by the scaffolded defaults"
+        )
 
 
 def entry_point_inputs(agent_dir: Path) -> set:
@@ -214,8 +239,10 @@ def entry_point_inputs(agent_dir: Path) -> set:
 def main() -> None:
     agent_dir = find_agent_dir()
     schema_props = entry_point_inputs(agent_dir)
-    evaluators = check_evaluators(load_all(agent_dir / "evals" / "evaluators", "evaluators"))
-    check_eval_sets(load_all(agent_dir / "evals" / "eval-sets", "eval sets"), evaluators, schema_props)
+    evaluators, authored_evaluators = check_evaluators(load_all(agent_dir / "evals" / "evaluators", "evaluators"))
+    check_eval_sets(
+        load_all(agent_dir / "evals" / "eval-sets", "eval sets"), evaluators, authored_evaluators, schema_props
+    )
     print("PASS: low-code eval suite is correctly shaped")
 
 
