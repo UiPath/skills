@@ -97,3 +97,44 @@ def test_js_check(tmp_path: Path, body: str, ok: bool) -> None:
     out = result.stdout + result.stderr
     assert (result.returncode == 0) is ok, out
     assert ok or "not written as =js:" in out or "no =js: expression" in out, out
+
+
+def _scope(tmp_path: Path, data: dict) -> subprocess.CompletedProcess[str]:
+    """Run --check scope against a stub `uip` that prints the given validate Data."""
+    import json
+    import os
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    stub = bin_dir / "uip"
+    stub.write_text(f"#!/bin/sh\ncat <<'EOF'\n{json.dumps({'Result': 'Success', 'Data': data})}\nEOF\n")
+    stub.chmod(0o755)
+    project = tmp_path / "P"
+    project.mkdir()
+    (project / "project.uiproj").write_text("{}")
+    (project / "P.bpmn").write_text(f'<bpmn:definitions {NS}><bpmn:process id="p"/></bpmn:definitions>')
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    return subprocess.run(
+        [sys.executable, str(GRADER), "P.bpmn", "--check", "scope"],
+        cwd=tmp_path, capture_output=True, text=True, timeout=30, env=env,
+    )
+
+
+SCOPE_CASES = [
+    ("no warnings", {"Status": "Valid"}, True),
+    ("unrelated warning", {"Status": "Valid", "Warnings": "1 warning(s):\n  - [(xml)] unknown attribute <type>"}, True),
+    (
+        "input read downstream",
+        {"Status": "Valid", "Warnings": "1 warning(s):\n  - [Event_done] VARIABLE_NOT_SET: Variable 'amount' is not set at this point in the flow"},
+        False,
+    ),
+    ("warnings in a new shape", {"Status": "Valid", "Warnings": [{"code": "VARIABLE_NOT_SET"}]}, False),
+    ("unreadable warning line", {"Status": "Valid", "Warnings": "1 warning(s):\n  VARIABLE_NOT_SET at Event_done"}, False),
+    ("no status", {}, False),
+]
+
+
+@pytest.mark.parametrize("data,ok", [(d, ok) for _, d, ok in SCOPE_CASES], ids=[c[0] for c in SCOPE_CASES])
+def test_scope_check_fails_closed(tmp_path: Path, data: dict, ok: bool) -> None:
+    result = _scope(tmp_path, data)
+    assert (result.returncode == 0) is ok, result.stdout + result.stderr

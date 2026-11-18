@@ -138,10 +138,21 @@ def main() -> None:
         data = json.loads(proc.stdout).get("Data") or {}
     except ValueError:
         fail(f"validate printed no JSON: {(proc.stdout or proc.stderr)[-800:]}")
-    report = json.dumps(data)
-    unset = re.findall(r"\[([^\]]+)\] (VARIABLE_NOT_SET|VARIABLE_DOES_NOT_EXIST)[^\\\"]*", report)
+    # Fail closed: a report this grader cannot read must not pass as "no unset reads".
+    if data.get("Status") != "Valid":
+        fail(f"validate did not report Status Valid: {json.dumps(data)[-1200:]}")
+    warnings = data.get("Warnings") or ""
+    if not isinstance(warnings, str):
+        fail(f"validate Warnings is not the text this grader reads: {warnings!r}"[:1200])
+    lines = [line.strip() for line in warnings.splitlines() if line.strip()]
+    if lines and not re.fullmatch(r"\d+ warning\(s\):", lines[0]):
+        fail(f"unrecognized validate Warnings header: {lines[0]!r}")
+    found = [re.fullmatch(r"- \[([^\]]+)\] (\w+)\b.*", line) for line in lines[1:]]
+    if not all(found):
+        fail(f"unrecognized validate warning line(s): {[l for l, m in zip(lines[1:], found) if not m]}")
+    unset = [m.groups() for m in found if m.group(2) in {"VARIABLE_NOT_SET", "VARIABLE_DOES_NOT_EXIST"}]
     if unset:
-        fail(f"variables read where they are not set: {sorted(set(unset))}\n{report[-1200:]}")
+        fail(f"variables read where they are not set: {sorted(set(unset))}\n{warnings[-1200:]}")
     print(f"OK: {path} writes =js: expressions and reads only variables set upstream")
 
 
