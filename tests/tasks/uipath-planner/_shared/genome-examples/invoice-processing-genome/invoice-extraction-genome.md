@@ -34,12 +34,29 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| AP_InvoiceIntake | Queue | Entry point A writes one item per invoice |
-| AP_Invoices | Storage bucket | PDFs and extraction results |
-| SAP_AP_Robot | Credential asset | SAP GUI login |
-| AP_Mailbox | Integration Service connection (Exchange Online) | Mailbox access |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| AP_InvoiceIntake | one invoice | as in the process genome's Handoffs row 1 | *[Inferred: process D1]* | *[Inferred: process D2]* | step 3 | component 1 |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SAP_AP_Robot | the robot's SAP account | SAP GUI | steps 6 and 9 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction results | steps 3 and 5 | step 5, and components 1 and 3 |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| AP_Mailbox | Exchange Online | the shared AP mailbox | step 2 |
 
 ## Interface
 
@@ -54,6 +71,10 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 3. What tolerance applies to line and total mismatches? (constant; default: 1% or €5, whichever is greater)
 4. Which SAP company codes are in scope? (setting; default: 1000, 2000)
 5. Which SAP transaction posts incoming invoices? (constant; default: the standard incoming-invoice transaction)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 

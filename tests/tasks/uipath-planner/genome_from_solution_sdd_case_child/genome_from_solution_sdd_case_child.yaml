@@ -1,8 +1,7 @@
 task_id: skill-planner-genome-from-solution-sdd-case-child
 description: >
   Integration: the uipath-planner skill's `author` verb writes ONE genome for a ready, autonomous solution
-  SDD whose root lists two child SDDs: an RPA project (handoff with `Tasks file`) and a Case Management case
-  (the same `Tasks file` row as the root). The case child does not stop the genome; it becomes one `uipath-maestro-case`
+  SDD whose root lists two child SDDs: an RPA project and a Case Management case. The case child does not stop the genome; it becomes one `uipath-maestro-case`
   component whose Interface names the case child SDD as its build input, and the case is never redesigned.
   Gates on the process genome named after the root (core profile, both skills in Components), on the case
   component pointing at its SDD, on the case SDD staying byte-identical with no caseplan written, on the
@@ -74,7 +73,7 @@ success_criteria:
     description: "The case child SDD is unchanged"
     command: >-
       node -e "const h = require('crypto').createHash('sha256').update(require('fs').readFileSync('supplier-onboarding-case-sdd.md', 'utf8').replace(/\r/g, '')).digest('hex');
-      process.exit(h === 'c58c5a337f7ae5c1b7d779d8c016bd8a0aa5c92e04df0faaf807aae51446498f' ? 0 : 1)"
+      process.exit(h === '678ad684f2521e940ceca2f7c2515c6c34c9a3c8c0a45f9c4dced511eaee3982' ? 0 : 1)"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

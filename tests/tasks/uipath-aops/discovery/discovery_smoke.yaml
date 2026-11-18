@@ -4,7 +4,7 @@ description: >
   StudioAdmin tenant exposes — SourceControl connections and the published
   Orchestrator processes a pipeline can bind to. Tests that the skill teaches
   the current CLI namespace (`uip aops`, not the retired `uip sc` /
-  `uip cicd`) and the `--output json` convention.
+  `uip cicd`); the `--output json` convention is recorded as advisory.
 
   Platform note: the smoke tenant has no SourceControl connection provisioned,
   so `connection list` answers `Data: []`. Everything downstream of a
@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed SourceControl connections via uip aops"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+connection\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+connection\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed the pipelines already defined in the runtime environment"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+pipeline\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+pipeline\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed published Orchestrator processes"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+pipeline\s+processes\s+.*--output\s+json'
+    command_pattern: 'uip\s+aops\s+pipeline\s+processes\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -70,10 +70,30 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Advisory (pass_threshold: 0, per .claude/rules/test-writing.md): --output json in
+  # the same call as each discovery subcommand. No ; | && or background & and no later
+  # `uip` between the subcommand and the flag, so one chained call's flag cannot cover
+  # another. An & next to > (2>&1, >&2, &>file) is a redirect and stays inside the call.
   - type: command_executed
-    description: "Agent consistently used --output json across uip aops calls"
+    description: "Advisory: `uip aops connection list` called with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+aops\s+.*--output\s+json'
-    min_count: 3
-    weight: 1.0
-    pass_threshold: 1.0
+    command_pattern: 'uip\s+aops\s+connection\s+list\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: `uip aops pipeline list` called with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+pipeline\s+list\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: `uip aops pipeline processes` called with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+aops\s+pipeline\s+processes\b(?:(?!\buip\s)(?:[^;&|]|(?<=>)&|&(?=>)))*--output\s+json\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0

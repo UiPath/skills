@@ -3,16 +3,17 @@
 elements Studio Web saves, pick the entity `_setup/ensure_folder_entity.py`
 recorded, and `refresh` wrote the trigger's package resources.
 
-Checks performed:
-  1. The process declares `<uipath:intsvcActivityConfig version="v2" />`.
-  2. A bpmn:startEvent carries Intsvc.EventTrigger on uipath-uipath-dataservice
+Checks performed (no process-level `<uipath:intsvcActivityConfig>` marker is
+required: each node's own `activityConfigurationVersion` decides how Studio
+Web opens it, and the builder SDK does not write the marker):
+  1. A bpmn:startEvent carries Intsvc.EventTrigger on uipath-uipath-dataservice
      for EntityTriggers_V3 / UPDATED_V3, with `activityConfigurationVersion`
      v2, a V2 `connection` (not V1 `connectionId`), a `uipath:entryPointId`,
      design-time metadata, and the entity on `folderEntityName`.
-  3. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
+  2. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
      for CreateEntityRecord_V3, V2 the same way, picking the
      entity and setting `title` to `V2Test`.
-  4. `bindings_v2.json` beside the .bpmn has an EventTrigger resource whose
+  3. `bindings_v2.json` beside the .bpmn has an EventTrigger resource whose
      EntryPointUniqueId is the trigger's entry point id, and the entity
      resource; `entry-points.json` lists the trigger start.
 """
@@ -81,9 +82,6 @@ def main() -> None:
     entity = {fixture["name"].lower(), fixture["key"].lower()}
 
     path, root = parse_bpmn()
-    markers = root.findall(".//uipath:intsvcActivityConfig", NS)
-    if not any(m.attrib.get("version") == "v2" for m in markers):
-        fail(f'{path}: the process does not declare <uipath:intsvcActivityConfig version="v2" />')
     bindings = root_bindings(root)
 
     trigger = one(

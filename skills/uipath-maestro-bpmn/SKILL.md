@@ -20,11 +20,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 2. Seed an existing process, or the stub `bpmn init` wrote, with `bpmn decompile`; never hand-write the skeleton (Workflow step 4).
 3. Leave a `.preserve({ … })` call that `decompile` wrote alone; it carries state nothing else derives (Workflow step 4).
 4. Run `uip maestro bpmn check <Name>.bpmn.ts --source` before every compile, and fix every error it prints first (Workflow step 5). `check` lints the SDK source only; it never replaces `validate`.
+   Author every expression as `=js:` ([exceptions](references/bpmn-runtime.md#variables-and-the-process-contract)).
 5. After each compile of a new process, run `format`, then `refresh`, then `validate`, in that order (Workflow steps 6–7).
    After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 6. A different target system (Document Understanding → agent, Outlook → Gmail) changes a node's type and binding, not the graph; reshape only when the process differs.
 7. You author the process; you never take part in it. Where a step reasons, classifies or extracts at run time, place and bind the node that does it (a UiPath agent, Document Understanding, a business rule); never do that work while authoring or hardcode its result. A bare "agent" in a request means a UiPath agent, never you.
-8. A process given as an image is transcribed 1:1, every item a node and every connector a flow, from a confirmed inventory: read [Authoring from an image](references/image-transcription-guide.md) first.
+8. Build a design you are given (an approved SDD, a BPMN diagram, an image) 1:1: every item a node, every connector a flow, each rule on the element the design names for it, each stated default kept (a value the design calls unknown until assessed stays unknown, never `false` or available). Never merge, drop or collapse its nodes on your own, for example into one script task; ask first. A gap in the design is a question for the user, never a step you invent; add only what it needs to compile or validate (start and end events, a join). A retry loop the design draws becomes the activity's `retry` option (rule 9). In a draft, ask at the gate and name each addition in its reply; in a build, name each on the final report's `Assumed:` line. When the request says nobody will answer, take the most literal reading of the design and name each choice the same way. An image needs a confirmed inventory first: read [Authoring from an image](references/image-transcription-guide.md).
 9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
 10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
 11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in the `BPMN.Variables` payload of every end event that finishes the process (root scope, not a sub-process body); a task that writes an `.output()` directly returns `null` to the caller, and every check passes. Likewise a step reads an `.input()` only through the start event: read the `.var()` that event's `BPMN.Variables` payload maps it into (add the row and a `.var()` scoped to the start event when none exists); a later `vars.<inputId>` read is "A variable is unresolved" on the canvas and at most a `VARIABLE_NOT_SET` warning in `validate` ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
@@ -124,7 +125,7 @@ A discovery-only request (discover types or save registry evidence, no authoring
    every error it prints (it exits non-zero) before you compile. `compile` writes what
    the source says; `check` is what reports a probable mistake, such as a `vars.<id>`
    read of a variable nothing declares (`EXPR_UNDECLARED_REF`) or a declared variable
-   read without `vars.` (`EXPR_BARE_VAR_REF`). For two of these, a read in an
+   read without `vars.` (`EXPR_BARE_VAR_REF`; fix: `=js:vars.<id>`). For two of these, a read in an
    `errorMapping` condition and a bare `=amount`, `check` is the only offline gate:
    `bpmn validate` accepts both.
    Needs `@uipath/maestro-builder-sdk` 6.86.0 or later; an older `compile` refuses the read itself.
@@ -193,7 +194,7 @@ Match one name — do not read either end to end — then read the span it gives
 |---|---|---|---|
 | Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Discover types or save registry evidence only, no authoring | `registry` pull, list, search, get | [Discovery only](references/bpmn-runtime.md#registry-extension-types) | — |
-| Build or draft from an image: sketch, whiteboard photo, diagram screenshot | transcribed 1:1 | [Authoring from an image](references/image-transcription-guide.md) | — |
+| Build or draft from a given design: approved SDD, BPMN diagram, sketch, whiteboard photo, diagram screenshot | built 1:1 | [Critical Rule 8](#critical-rules); an image: [Authoring from an image](references/image-transcription-guide.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
@@ -257,7 +258,7 @@ export default bpmn('approval')
     t.onError(true, { errorVar: 'failure' }, (b) => b.endEvent('failed', { name: 'Approval failed' }));
   })
   .choose('approved', [
-    { when: '=vars.action == "Approved"', label: 'Yes', body: (b) => b.task('post') },
+    { when: '=js:vars.action == "Approved"', label: 'Yes', body: (b) => b.task('post') },
     { otherwise: true, label: 'No', body: (b) => b.task('reject') },
   ])
   .endEvent('done')
@@ -278,7 +279,7 @@ export default bpmn('approval')
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
   An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, with nothing more written. It holds a JSON string: read a field through `JSON.parse(vars.failures_Error)` ([Events and timers](references/bpmn-runtime.md#events-and-timers)). That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
-  A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
+  A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=js:vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
   An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.
