@@ -98,8 +98,16 @@ pre_run:
       call("req.link", "tm", "requirements", "testcases", "--project-key", P,
            "--requirement-id", req["Id"], "--add-testcase-ids", tc["Id"])
       eid, _ = seed_failed_run(ts, tc)
-      did = (call("defect.create", "tm", "defects", "create", "--project-key", P,
-                  "--execution-id", eid, "--test-case-id", tc["Id"]).get("Data") or {}).get("Id")
+      env = call("defect.create", "tm", "defects", "create", "--project-key", P,
+                 "--execution-id", eid, "--test-case-id", tc["Id"])
+      if env.get("ErrorCode") == "permission_denied":
+          # Automation Suite refuses `defects create` for the eval login while
+          # every other verb works. The smoke gate drops TENANT NOT READY tasks.
+          print("TENANT NOT READY — this is an environment failure, not an agent "
+                "failure: `uip tm defects create` answers 403 for this login "
+                f"({(env.get('Message') or '')[:160]})", file=sys.stderr, flush=True)
+          sys.exit(1)
+      did = (env.get("Data") or {}).get("Id")
       if not did:
           fail("could not raise the fixture defect")
       call("defect.link", "tm", "defects", "update", "--project-key", P,
