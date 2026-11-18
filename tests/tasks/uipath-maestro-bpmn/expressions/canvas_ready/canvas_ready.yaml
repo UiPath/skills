@@ -1,0 +1,53 @@
+task_id: skill-bpmn-expr-canvas-ready
+description: >
+  Expression-authoring eval from the 2026-11-17 Autopilot dogfood (issues 6 and
+  7): a process that reads its start inputs downstream must open on the Studio
+  Web canvas clean. Every authored expression is `=js:` (a plain `=` opens in the
+  C# editor), and each input is read through the start event's mapping, not as
+  `vars.<inputId>` downstream (canvas: "A variable is unresolved"; validate:
+  VARIABLE_NOT_SET warning). compile and validate accept both mistakes, so the
+  grader checks the XML and validate's warnings. Authoring only, no cloud effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Can you build me a little BPMN process for checkout? When it starts it gets the
+  order total and the customer's loyalty tier. Gold customers get 10% off,
+  everyone else gets 2%. It should hand back the final price and how much the
+  customer saved.
+
+  Make it a local project called CheckoutDiscount and validate it. Don't upload,
+  publish or run anything, and don't stop to ask me questions.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN source was authored"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CheckoutDiscount"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Emitted BPMN validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every authored expression is =js: (a plain = opens in the C# editor)"
+    command: "python3 $REFERENCE_DIR/expressions/canvas_ready/check_canvas_ready.py CheckoutDiscount.bpmn --check js"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
