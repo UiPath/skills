@@ -5,7 +5,7 @@
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 4 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
-   Merge keeps the shapes the user already has on the canvas. An empty target, a template (one start event and at most one end event) or a process the user chose to *replace* ([Critical Rule 12](../SKILL.md#critical-rules) step 2) has none to keep: compile an empty target straight over it instead of merging, then for all three run `format <Name>.bpmn --relayout` (loop step 5a), then `refresh` and `validate` again.
+   Merge keeps the shapes the user already has on the canvas. An empty target, a template (one start event and at most one end event) or a process the user chose to *replace* ([Critical Rule 12](../SKILL.md#critical-rules) step 2) has none to keep: compile an empty target straight over it instead of merging and skip step 4 there; then for all three run `format <Name>.bpmn --relayout` (loop step 5a), then `refresh` and `validate` again.
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
 
