@@ -77,6 +77,8 @@ BPMN yet (no agent targets — the CLI rejects `--parent`, UiPath/cli#5169).
 | `evaluate/simulation/simulation_crud.yaml` | `evaluate/simulation/simulation_crud.yaml` | Static + Llm sims; **Llm requires explicit `--output-schema`** (BPMN cannot auto-resolve it, unlike Flow) |
 | `evaluate/child_simulation/child_simulation_crud.yaml` | — | not ported: `--parent` child tool simulations are not supported for BPMN yet (no agent targets; CLI rejects `--parent`) |
 | `evaluate/inline_agent_eval/inline_agent_eval.yaml` | — | not ported: inline agents are Flow-only (BPMN agents are published via `Orchestrator.StartAgentJob`) |
+| `evaluate/eval_run/eval_run.yaml.disabled` | `evaluate/eval_run/eval_run.yaml` | rewritten, not ported: the Flow task is disabled (eval job hangs on the eval tenant) and prescribes every flag in its prompt. The BPMN task runs one set with a passing and a deliberately failing case and covers `run start` / `status` / `results` / `--only-failed` / `--export-format csv`; the grader re-reads `run results` live. The process takes no inputs, because `bpmn debug --inputs` values do not reach the runtime (see `debug/live_debug_e2e`) |
+| — | `evaluate/eval_run_compare/eval_run_compare.yaml` | BPMN-only: rerun without redeploy (`run start --solution-id --project-id`), `run list`, `run compare --compare-to`; the grader calls `run list` live |
 
 Divergences from the Flow tasks, forced by the BPMN eval contract (verified
 against `maestro-tool` on `main`): every `Llm` simulation passes
@@ -84,8 +86,10 @@ against `maestro-tool` on `main`): every `Llm` simulation passes
 element id that exists in the `.bpmn` (`locateComponent` rejects an id that is
 not a real element); the entry point is a start-event id and CLI-authored sets
 are always `flow`-scoped. Graders are near-verbatim ports — the
-on-disk eval JSON shapes are the shared eval-sdk's, so they match Flow's. Tasks
-pending a `run-coder-eval.yml` run to record pass ids.
+on-disk eval JSON shapes are the shared eval-sdk's, so they match Flow's.
+`local_crud` and `no_auto_upload` passed in run 44227004201 (codex, `main`);
+`evaluator_type_choice` and `simulation_crud` pass in the PR smoke job.
+`eval_run` and `eval_run_compare` are pending a `run-coder-eval.yml` run.
 
 ### Parked (branch `test/bpmn-port-parked`, all `skip: true`)
 

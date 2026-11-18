@@ -1,0 +1,149 @@
+task_id: skill-bpmn-eval-run-compare-e2e
+description: >
+  Covers the eval-run verbs eval_run/ leaves out: `run list`, `run compare
+  --compare-to`, and a rerun against the copy already in Studio Web
+  (`run start --solution-id --project-id`, which skips the package and
+  upload). The agent builds the same deterministic ProductCheck process as
+  eval_run/ (no inputs; returns 6 * 7 as `product`) with one exact-match case,
+  runs the set, reruns it WITHOUT redeploying the local copy, lists the set's
+  runs and compares the second run against the first. The runs grader calls
+  `run list` live, so both recorded run ids must exist on the tenant and be
+  Completed. Kept separate from eval_run/ because each tenant eval run takes
+  minutes and this task needs two.
+tags: [uipath-maestro-bpmn, e2e, mode:operate, lifecycle:setup, feature:eval, studio-web-unsupported, studio-web-unsupported:local-only-solution]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  expected_turns: 50
+  max_turns: 120
+  turn_timeout: 1800
+  task_timeout: 6000
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  I want to know whether an evaluation of a small Maestro BPMN process gives
+  the same score twice in a row.
+
+  Build a Maestro BPMN project called "ProductCheck" inside a solution of the
+  same name. The process takes no inputs: a script task multiplies 6 by 7, and
+  the process returns the result as an integer output named `product`. Make
+  sure it validates.
+
+  Score it with an evaluator named `product-match` that requires the output to
+  match exactly, and put one case named `correct`, with no inputs and expecting
+  `{"product":42}`, in an eval set named `Product Checks`.
+
+  Run the set against Studio Web; you have my consent to upload and deploy this
+  project for that first run. Then run the set a second time against the copy
+  that first run put in Studio Web: do not upload or redeploy my local copy
+  again. After both runs have finished:
+    - show me every run recorded for the set,
+    - compare the second run against the first.
+
+  Save the raw JSON the CLI prints, unedited, under `eval-evidence/`:
+  `run-1.json` and `run-2.json` (from starting each run), `runs.json` (the list
+  of runs) and `compare.json`.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "ProductCheck BPMN artifact exists"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py ProductCheck"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "product-match exact-match evaluator and Product Checks set with the correct case"
+    command: "python3 $REFERENCE_DIR/evaluate/check_eval_run.py --check artifacts --data-points correct"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started exactly two eval runs"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+runs?\s+(start|create)\b'
+    exclude_pattern: '--help'
+    min_count: 2
+    max_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # evaluate.md: passing BOTH ids "skips the package and upload entirely and
+  # runs the existing cloud project". Either flag order.
+  - type: command_executed
+    description: "The rerun passed both --solution-id and --project-id, so it did not redeploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+runs?\s+(start|create)\b(?=[^\n;&|]*--solution-id)(?=[^\n;&|]*--project-id)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload the solution as a separate step"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the set's runs"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+runs?\s+list\b'
+    exclude_pattern: '--help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent compared one run against the other"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+eval\s+runs?\s+compare\b[^;&|\n]*--compare-to'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Calls `run list` live and looks for both ids recorded in run-1/run-2.json.
+  - type: run_command
+    description: "Live run list reports both recorded runs, distinct and Completed"
+    command: "python3 $REFERENCE_DIR/evaluate/check_eval_run.py --check runs"
+    timeout: 240
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Saved comparison is a successful compare of the two recorded runs"
+    command: "python3 $REFERENCE_DIR/evaluate/check_eval_run.py --check compare"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
