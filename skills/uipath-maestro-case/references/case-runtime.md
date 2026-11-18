@@ -53,13 +53,17 @@ make from syntax alone. Exact signatures remain in the generated API.
   are baked into the plan. Going live with a different assignee means editing
   each one in the source and publishing a new case version. Before publishing,
   for each recipient or escalation target the user did not name as the
-  production assignee (a test mailbox, the user's own email, a placeholder),
-  tell the user:
+  production assignee (a test mailbox, the user's own email, a placeholder
+  such as `<UNRESOLVED: ...>`), tell the user:
   1. The address, and which actions or escalations route to it.
   2. That it stays until someone edits each one and republishes.
 
-  The user decides whether to publish with that recipient. When no user can
-  answer, list these recipients in the final summary and do not publish.
+  The user decides whether to publish with that recipient. A request that
+  already says to publish is that decision; list the recipients in the final
+  summary and go ahead. Otherwise, when no user can answer, list them and do
+  not run
+  `uip solution upload`, `uip solution publish` or `uip solution deploy run`.
+  Check, compile and validate are not publishing; run them as usual.
 
 ## Script tasks
 
