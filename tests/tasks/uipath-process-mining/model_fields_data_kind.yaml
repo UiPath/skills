@@ -71,22 +71,26 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Shape-tolerant: walks the whole document, so a placeholder model passes
-  # as long as the field is `duration` and every 864000000 constant is too.
+  # Walks the whole document (a placeholder model's exact nesting varies):
+  # records each field's kind by id, then requires every comparison against
+  # the 864000000 constant to have a duration constant AND reference a field
+  # whose kind is duration — so an unrelated duration field can't satisfy it.
   - type: run_command
-    description: "The pushed model retypes the field to duration and every comparison constant with it"
+    description: "The pushed model retypes the compared field and its comparison constant to duration"
     command: |-
       python3 -c "import json, sys
-      kinds, types = [], []
-      def walk(n):
+      kinds, cmps = {}, []
+      def walk(n, key=None):
           if isinstance(n, dict):
-              if n.get('kind') == 'duration': kinds.append(n)
-              if str(n.get('value')) == '864000000': types.append(n.get('dataType'))
-              for v in n.values(): walk(v)
+              if 'kind' in n: kinds[n.get('id', key)] = n['kind']
+              for c, o in ((n.get('left'), n.get('right')), (n.get('right'), n.get('left'))):
+                  if isinstance(c, dict) and str(c.get('value')) == '864000000' and isinstance(o, dict):
+                      cmps.append((c.get('dataType'), o.get('reference')))
+              for k, v in n.items(): walk(v, k)
           elif isinstance(n, list):
               for v in n: walk(v)
       walk(json.load(open('model.json')))
-      sys.exit(0 if kinds and types and all(t == 'duration' for t in types) else 1)"
+      sys.exit(0 if cmps and all(t == 'duration' and kinds.get(r) == 'duration' for t, r in cmps) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

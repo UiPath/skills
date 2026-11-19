@@ -96,11 +96,25 @@ field and every comparison against it in ONE whole-model write, which is validat
    `metrics list` show the ids to look for.
 2. In `model.json`: set the field's `kind` to `duration`, and the `dataType` of every constant compared
    to it to `duration` — in metrics' `expression` and in calculated fields' `expression`. Keep the
-   constant's `value`: a duration constant is milliseconds, as before (10 days = `864000000`).
+   constant's `value`: a duration constant is milliseconds, as before (10 days = `864000000`). The
+   slice of the file this touches (abridged — keep every other key `model get` returned, including
+   the `view` section with the dashboards):
+   ```json
+   { "data": {
+       "tables": [ { "id": "Cases", "fields": [
+         { "id": "<FIELD_ID>", "display": "Throughput time", "kind": "numeric" } ] } ],
+       "metrics": [ { "id": "<METRIC_ID>", "display": "% On time",
+         "expression": { "type": "aggregate", "aggregation": "PERCENTAGE",
+           "argument": { "type": "operator", "operation": "lt",
+             "left":  { "type": "reference", "referenceType": "field", "reference": "<FIELD_ID>" },
+             "right": { "type": "constant", "dataType": "numeric", "value": 864000000 } } } } ] } }
+   ```
+   Both `"numeric"` values become `"duration"`.
 3. `uip pm apps model update <APP_ID> --file model.json --etag '<ETAG>'`. On 409/412 re-`get` and
    redo step 2 on the new model.
-4. `uip pm apps publish <APP_ID>`, then re-ingest (`uip pm ingestions create <APP_ID> --wait`) — the
-   data kind changed.
+4. Re-ingest `dev` so its data matches the new kind (`uip pm ingestions create <APP_ID> --wait`),
+   then `uip pm apps publish <APP_ID>`; when it answers `IngestionNeeded: true`, run
+   `uip pm ingestions create <APP_ID> --stage published --wait`.
 
 Do not "fix" the refusal by deleting the metric or calculated field: that removes something the user
 did not ask to remove (Critical Rule 11).
