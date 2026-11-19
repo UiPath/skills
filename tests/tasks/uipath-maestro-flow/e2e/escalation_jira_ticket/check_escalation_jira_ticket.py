@@ -76,7 +76,13 @@ def _fail(msg: str) -> None:
 
 
 def _grader_error(msg: str) -> None:
-    sys.exit(f"GRADER ERROR: {msg}")
+    sys.stderr.write(f"GRADER ERROR: {msg}\n")
+    sys.exit(io.GRADER_ERROR_EXIT)
+
+
+def _note_unread(unread: list[str]) -> None:
+    if unread:
+        print(f"NOTE: could not read back {unread} from Jira; ownership unknown, not journaled for teardown")
 
 
 def feed(flow: dict, case: dict) -> dict:
@@ -106,7 +112,8 @@ def _record_partial(exc: BaseException, conn: str, ref: str, project: str) -> li
         partial += "".join(
             s.decode() if isinstance(s, bytes) else (s or "") for s in (exc.stdout, exc.stderr)
         )
-    owned, _unread = _owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", partial), ref)
+    owned, unread = _owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", partial), ref)
+    _note_unread(unread)
     if owned:
         _record(owned)
     return list(owned)
@@ -207,6 +214,7 @@ def check_case(flow: dict, payload: dict, case: dict, conn: str, project: str) -
     if not owned:
         _fail(f"{case['name']}: no {project} key the Jira steps returned ({returned}) reads back as a "
               f"ticket whose title carries the case reference {ref!r}")
+    _note_unread(unread)
     created = sorted(owned)
     _record(created)
 

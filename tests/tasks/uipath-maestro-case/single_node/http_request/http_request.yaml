@@ -19,7 +19,7 @@ sandbox:
       path: ../../_setup
       mount_point: _setup
 run_limits:
-  task_timeout: 1500
+  task_timeout: 4600  # turn 1500 + criteria 2940 + margin
   max_turns: 120
   turn_timeout: 1500
 

@@ -96,6 +96,22 @@ def journal(keys) -> None:
         JOURNAL.write_text("\n".join(merged) + "\n")
 
 
+def partial_text(log_file: Path) -> str:
+    return log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
+
+
+def journal_owned_in(text: str, seed: dict) -> None:
+    """The issue may exist although the CLI stopped waiting or a read failed:
+    journal any key in `text` that is provably this run's, best effort."""
+    found = list(dict.fromkeys(re.findall(rf"\b{re.escape(seed['project_key'])}-\d+\b", text)))
+    if not found:
+        return
+    try:
+        journal(owned_keys(found, seed["correlationId"]))
+    except (SystemExit, Exception):  # noqa: BLE001 -- keep the real failure
+        pass
+
+
 def owned_keys(keys, correlation: str) -> dict[str, dict]:
     """key -> fields for the keys whose Jira issue's summary carries this run's
     correlationId."""
@@ -147,18 +163,15 @@ def main() -> None:
     try:
         debug_data, instance_id = run_debug(imported, seed["inputs"], log_file, timeout=480)
     except CheckFailure:
-        # The issue may exist even though the CLI stopped waiting: journal any
-        # key in the partial log that is provably this run's, then fail.
-        partial = log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
-        found = list(dict.fromkeys(re.findall(rf"\b{re.escape(seed['project_key'])}-\d+\b", partial)))
-        try:
-            journal(owned_keys(found, correlation) if found else [])
-        except (SystemExit, Exception):  # noqa: BLE001 -- best effort; keep the real failure
-            pass
+        journal_owned_in(partial_text(log_file), seed)
         raise
     print(f"OK: debug finished (instance {instance_id})")
 
-    variables_data, variables_text = fetch_variables(instance_id)
+    try:
+        variables_data, variables_text = fetch_variables(instance_id)
+    except CheckFailure:
+        journal_owned_in(json.dumps(debug_data, default=str), seed)
+        raise
     ran = set(completed_ids(debug_data)) & step_ids
     keys = created_keys(variables_data, step_ids)
     journal(keys)  # before any assertion: the issue exists whatever the verdict

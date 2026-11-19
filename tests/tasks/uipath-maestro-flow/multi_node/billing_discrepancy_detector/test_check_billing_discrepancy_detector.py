@@ -2,8 +2,8 @@
 
 Only `run_debug` is replaced. The flow on disk is the task's reference flow
 (ERP and CRM Data Service reads), with its variables renamed the way an agent
-working from the v3 prompt might name them, so the mapping by meaning and the
-reading by value run for real. Payloads are in the `Data` shape
+might name them, so the mapping by meaning and the reading by value run for
+real. Payloads are in the `Data` shape
 `uip maestro flow debug --output json` returns.
 """
 
@@ -20,7 +20,7 @@ CHECKER = HERE / "check_billing_discrepancy_detector.py"
 REFERENCE_FLOW = HERE / "BillingDiscrepancyDetector.reference.flow"
 READS = ("erpQuery", "crmQuery")  # the reference's ERP and CRM reads
 
-# The reference's prompt-given names -> names the v3 prompt leaves to the agent.
+# The reference's names -> names an agent might pick instead.
 RENAMES = {
     "invoiceNumber": "invoiceNo",
     "accountNumber": "customerAccount",

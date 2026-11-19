@@ -172,12 +172,13 @@ success_criteria:
 
   # The run parks at the request check (a required human task), so it cannot
   # complete; the grader follows the instance until the opening path is
-  # decided, then cancels it. timeout covers refresh (180 s) + debug (1500 s) +
-  # follow-up (480 s) + cancel (180 s) + margin (360 s).
+  # decided, then cancels it. timeout covers refresh (180 s) + 2 debug calls at
+  # most (2 x 1500 s, retries share that cap) + retry sleep (15 s) + follow-up
+  # (480 s) + cancel (180 s) + margin (85 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug enters the case-entered stage, completes its required ContractOperationsApi counterparty pull, opens its required request-check human task, and fails no required task or stage"
     command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_run.py"
-    timeout: 2700
+    timeout: 4300
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

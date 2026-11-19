@@ -235,7 +235,7 @@ def test_one_failed_read_is_retried(grader, monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize("failure", ["raises", "returns_none"])
-def test_a_persistent_read_error_is_a_grader_error_and_journals_nothing(grader, monkeypatch, tmp_path, failure):
+def test_a_persistent_read_error_is_a_grader_error_and_journals_nothing(grader, monkeypatch, tmp_path, capsys, failure):
     def broken(conn, key):
         if failure == "raises":
             raise RuntimeError("uip is resources run get returned invalid JSON")
@@ -244,7 +244,41 @@ def test_a_persistent_read_error_is_a_grader_error_and_journals_nothing(grader, 
     monkeypatch.setattr(grader.jira_is, "issue_absent", lambda conn, key: False)
     with pytest.raises(SystemExit) as exc:
         _check(grader, _payload())
-    assert "GRADER ERROR" in str(exc.value) and "CE-3481" in str(exc.value)
+    assert exc.value.code == grader.io.GRADER_ERROR_EXIT
+    err = capsys.readouterr().err
+    assert "GRADER ERROR" in err and "CE-3481" in err
+    assert not (tmp_path / ".created_keys").exists()
+
+
+def test_an_unread_key_beside_an_owned_one_is_noted_not_journaled(grader, monkeypatch, tmp_path, capsys):
+    grader.issues["CE-3490"] = {"summary": _summary(CASE, "Sev1")}
+    real = grader.jira_is.get_issue
+
+    def read(conn, key):
+        if key == "CE-3490":
+            raise RuntimeError("invalid JSON")
+        return real(conn, key)
+
+    monkeypatch.setattr(grader.jira_is, "get_issue", read)
+    monkeypatch.setattr(grader.jira_is, "issue_absent", lambda conn, key: False)
+    payload = _payload()
+    payload["variables"]["globals"]["openTicket.output"] = {"key": "CE-3481", "other": "CE-3490"}
+    _check(grader, payload)
+    out = capsys.readouterr().out
+    assert "NOTE" in out and "CE-3490" in out
+    assert (tmp_path / ".created_keys").read_text().split() == ["CE-3481"]
+
+
+def test_a_partial_output_key_that_cannot_be_read_is_noted_not_journaled(grader, monkeypatch, tmp_path, capsys):
+    def broken(conn, key):
+        raise RuntimeError("invalid JSON")
+
+    monkeypatch.setattr(grader.jira_is, "get_issue", broken)
+    monkeypatch.setattr(grader.jira_is, "issue_absent", lambda conn, key: False)
+    monkeypatch.setattr(grader, "get_last_debug_raw", lambda: "created CE-3481")
+    assert grader._record_partial(SystemExit(1), "conn", REF, "CE") == []
+    out = capsys.readouterr().out
+    assert "NOTE" in out and "CE-3481" in out
     assert not (tmp_path / ".created_keys").exists()
 
 

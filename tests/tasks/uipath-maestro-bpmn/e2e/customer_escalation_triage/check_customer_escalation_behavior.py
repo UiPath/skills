@@ -423,11 +423,16 @@ def assert_jira_issue_on_tenant(
 
 
 
-def journal_partial_log(seed: dict, log_file: Path, jira_connection_id: str) -> None:
-    """Journal the Jira keys in an interrupted run's log whose summary carries
-    this run's correlationId."""
+def journal_partial_log(
+    seed: dict, log_file: Path, jira_connection_id: str, debug_data: object = None
+) -> None:
+    """Journal the Jira keys in an interrupted run's log, and in its debug
+    response when the debug finished, whose summary carries this run's
+    correlationId."""
 
     partial = log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
+    if debug_data is not None:
+        partial += "\n" + json.dumps(debug_data, default=str)
     project_key = seed["inputs"]["jiraProjectKey"]
     for key in dict.fromkeys(re.findall(rf"\b{re.escape(project_key)}-\d+\b", partial)):
         try:
@@ -446,6 +451,7 @@ def run_and_read(
     have created records, journal them from the partial log before re-raising."""
 
     log_file = LIVE_RUN_DIR / "debug.log"
+    debug_data = None
     try:
         debug_data, instance_id = run_debug(imported_project, seed["inputs"], log_file)
         print(f"OK: debug completed (instance {instance_id})")
@@ -457,7 +463,7 @@ def run_and_read(
         _payload, variables_data = payload_data(variables, "variables-all")
     except (CheckFailure, subprocess.TimeoutExpired):
         try:
-            journal_partial_log(seed, log_file, jira_connection_id)
+            journal_partial_log(seed, log_file, jira_connection_id, debug_data)
         except (CheckFailure, subprocess.TimeoutExpired, OSError):
             pass
         raise

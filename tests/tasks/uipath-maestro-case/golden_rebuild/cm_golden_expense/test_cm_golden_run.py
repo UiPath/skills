@@ -252,6 +252,83 @@ def test_a_second_cancelled_debug_is_returned_not_retried_again(fake, monkeypatc
     assert sum(1 for c in stub.calls if c[1:4] == ["maestro", "case", "debug"]) == 2
 
 
+def _debug_calls(stub) -> int:
+    return sum(1 for c in stub.calls if c[1:4] == ["maestro", "case", "debug"])
+
+
+def test_a_start_fault_then_a_cancelled_debug_is_two_calls_in_all(fake, monkeypatch: pytest.MonkeyPatch) -> None:
+    import _shared.case_check as case_check
+
+    fault = {"Result": "Failure", "Message": "Failed during start-instance: 503 Service Unavailable"}
+    cancelled = {"Result": "Failure", "Data": {"instanceId": "inst-a", "finalStatus": "Cancelled"}}
+    stub = fake(fault, follow_up=[])
+    replies = iter([fault, cancelled, cancelled])
+    run = stub.run
+
+    def scripted(cmd, timeout, what):
+        if cmd[1:4] == ["maestro", "case", "debug"]:
+            stub.debug_stdout = next(replies)
+        return run(cmd, timeout, what)
+
+    monkeypatch.setattr(case_check, "_run", scripted)
+
+    result = case_run_path.debug_case()
+
+    assert result["status"] == "Cancelled"
+    assert _debug_calls(stub) == case_run_path.MAX_DEBUG_CALLS
+
+
+def test_a_cancelled_debug_then_a_start_fault_is_two_calls_in_all(fake, monkeypatch: pytest.MonkeyPatch) -> None:
+    import _shared.case_check as case_check
+
+    fault = {"Result": "Failure", "Message": "Failed during start-instance: 503 Service Unavailable"}
+    cancelled = {"Result": "Failure", "Data": {"instanceId": "inst-a", "finalStatus": "Cancelled"}}
+    stub = fake(cancelled, follow_up=[])
+    replies = iter([cancelled, fault, fault])
+    run = stub.run
+
+    def scripted(cmd, timeout, what):
+        if cmd[1:4] == ["maestro", "case", "debug"]:
+            stub.debug_stdout = next(replies)
+        return run(cmd, timeout, what)
+
+    monkeypatch.setattr(case_check, "_run", scripted)
+
+    with pytest.raises(SystemExit, match="did not start an instance"):
+        case_run_path.debug_case()
+
+    assert _debug_calls(stub) == case_run_path.MAX_DEBUG_CALLS
+
+
+GOLDEN_TASKS = [
+    ("cm_golden_expense", "cm_golden_expense.yaml"),
+    ("contract_execution", "contract_execution.yaml"),
+]
+REFRESH_S, FOLLOW_UP_S, CANCEL_S, DEBUG_S = 180, 480, 180, 1500
+
+
+@pytest.mark.parametrize("folder,name", GOLDEN_TASKS)
+def test_the_run_check_timeout_covers_every_debug_call(folder: str, name: str) -> None:
+    import yaml
+
+    task = yaml.safe_load((Path(__file__).resolve().parent.parent / folder / name).read_text())
+    check = next(c for c in task["success_criteria"] if c.get("command", "").endswith("_run.py"))
+    calls = case_run_path.MAX_DEBUG_CALLS
+    worst = (REFRESH_S + calls * DEBUG_S + (calls - 1) * case_run_path.RETRY_SLEEP_S
+             + FOLLOW_UP_S + CANCEL_S)
+
+    assert check["timeout"] > worst
+
+
+def test_the_task_timeout_outlasts_the_turn_and_every_criterion() -> None:
+    import yaml
+
+    task = yaml.safe_load((Path(__file__).resolve().parent / "cm_golden_expense.yaml").read_text())
+    criteria = sum(c.get("timeout", 0) for c in task["success_criteria"])
+
+    assert task["run_limits"]["task_timeout"] > task["run_limits"]["turn_timeout"] + criteria
+
+
 def _chained(task_id: str, task_type: str, after: list[str], required: bool = True) -> dict:
     return {
         "id": task_id, "type": task_type, "displayName": task_id, "isRequired": required,

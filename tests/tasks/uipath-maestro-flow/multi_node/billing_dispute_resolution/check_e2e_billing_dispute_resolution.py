@@ -140,9 +140,9 @@ def submission_roles(case):
     c = CASES[case]
     return {
         "account number": {"value": c["account"], "keywords": [
-            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct", "customer"]},
+            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct", "^customer$"]},
         "invoice number": {"value": c["typed"], "keywords": [
-            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum", "invoice"]},
+            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum", "^invoice$"]},
         "disputed lines": {"value": [line_item(case)], "keywords": ["lineitems", "lines", "items", "disputes"]},
     }
 
@@ -358,9 +358,14 @@ def main():
     flow = _load_flow("**/project.uiproj")
     inputs, attachments = build_inputs(flow, case)
     print(f"debug inputs: {inputs} attachments: {attachments}")
-    # retries=1: a re-run would post the credit twice.
-    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840, retries=1)
-    (check_overcharge if case == "overcharge" else check_reject)(flow, payload)
+    if case == "overcharge":
+        # retries=1: a transient-error re-run would post the credit twice. The
+        # unreadable-outputs re-run in run_debug is not bounded by `retries`.
+        payload = run_debug(inputs=inputs, attachments=attachments, timeout=840, retries=1)
+        check_overcharge(flow, payload)
+        return
+    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840)
+    check_reject(flow, payload)
 
 
 if __name__ == "__main__":

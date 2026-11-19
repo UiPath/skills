@@ -695,3 +695,13 @@ def test_invoice_completion_data_leaves_booleans_unapproved_on_a_rejection():
     rejected = invoice.completion_data(hitl, {}, "no", invoice.Decision.REJECT)
     assert approved == {"Comments": "ok", "Escalate": True}
     assert rejected == {"Comments": "no", "Escalate": False}
+
+
+def test_a_missing_uip_leaves_no_debug_dir_behind(tmp_path, monkeypatch):
+    scratch = tmp_path / "tmp"
+    scratch.mkdir()
+    monkeypatch.setattr("tempfile.tempdir", str(scratch))
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    with pytest.raises(FileNotFoundError):
+        live.start_debug(str(tmp_path), {}, 30)
+    assert list(scratch.iterdir()) == []

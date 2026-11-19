@@ -1,7 +1,6 @@
 """Checker-level tests for check_coded_agent.py.
 
-The flow on disk is the one a passing nightly built (2026-11-17_04-23-30,
-claude-code): a manual trigger, a `uipath.core.agent.<key>` node
+The flow on disk is one a passing agent built: a manual trigger, a `uipath.core.agent.<key>` node
 `countApprovers` and an end node, with `sentence` in and `approvedCount` out.
 Only `run_debug` is replaced, with payloads in the `Data` shape
 `uip maestro flow debug --output json` returns.

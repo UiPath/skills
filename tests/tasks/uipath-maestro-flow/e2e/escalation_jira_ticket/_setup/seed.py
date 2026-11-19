@@ -20,8 +20,9 @@ A fresh case reference per run is in each ticket title, which is how the
 grader proves the ticket it reads back is this run's.
 
 Resolving the connection and the CE project's Task type here is the
-preflight: when the Jira connection cannot read the project (403 Forbidden), the run ends as ERROR before the agent starts, instead of
-a FAILURE scored against the agent.
+preflight: when the Jira connection cannot read the project (403 Forbidden),
+the run ends as ERROR before the agent starts, instead of a FAILURE scored
+against the agent.
 """
 
 from __future__ import annotations

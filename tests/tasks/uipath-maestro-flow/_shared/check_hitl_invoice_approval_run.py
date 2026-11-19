@@ -3,16 +3,16 @@
 for real, act as the finance manager, and check what the run did.
 
 The flow is debugged twice, each with a fresh invoice number so the run's task
-is told apart from any other open task in the folder:
+is told apart from any other open task in the folder. In both runs the run
+created an Action Center task whose data shows that invoice number, the vendor,
+the total amount and the currency. Then:
 
-1. The run created an Action Center task whose data shows that invoice number,
-   the vendor, the total amount and the currency.
-2. Approve run: the grader completes the task with the Approve outcome. The
+1. Approve run: the grader completes the task with the Approve outcome. The
    run then completed; the HITL step completed; a step reachable only from
    Approve completed when there is one, and no step reachable only from
    Reject ran. The named outputs: status = "posted", sapDocumentNumber =
    "SAP-<invoice>".
-3. Reject run: the grader completes it with Reject. The run then completed;
+2. Reject run: the grader completes it with Reject. The run then completed;
    the HITL step completed; no step reachable only from Approve ran and no
    posting step ran. The named outputs: status = "rejected",
    sapDocumentNumber empty.
@@ -137,10 +137,6 @@ def run_once(
     return payload, invoice
 
 
-def sap_steps(flow: dict) -> set[str]:
-    return live.posting_steps(flow, SAP_MARKER)
-
-
 def main() -> None:
     project_dir = find_project_dir()
     flow = live.load_flow(project_dir)
@@ -159,7 +155,7 @@ def main() -> None:
 
     approve_only = only_from(approve_ports, reject_ports)
     reject_only = only_from(reject_ports, approve_ports)
-    early = sorted(sap_steps(flow) & live.bypassing(flow, hitl_id))
+    early = sorted(live.posting_steps(flow, SAP_MARKER) & live.bypassing(flow, hitl_id))
     if early:
         live.fail(f"the SAP posting step(s) {early} can run without the finance manager's approval: "
                   f"the trigger reaches them without passing through {hitl_id}")
@@ -188,7 +184,7 @@ def main() -> None:
     ran_approved = sorted(approve_only & done)
     if ran_approved:
         _fail_with_capture(f"steps reachable only from Approve ran after a rejection: {ran_approved}")
-    ran_posting = sorted(sap_steps(flow) & done)
+    ran_posting = sorted(live.posting_steps(flow, SAP_MARKER) & done)
     if ran_posting:
         _fail_with_capture(f"the SAP posting step(s) {ran_posting} ran after a rejection")
     assert_named_equals(payload, "status", "rejected")

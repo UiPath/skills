@@ -18,7 +18,7 @@ description: >
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry, path-to-ga, outcome-graded]
 run_limits:
   expected_turns: 220
-  task_timeout: 4800
+  task_timeout: 8100  # turn 3600 + criteria 4380 + margin
   max_turns: 280
   turn_timeout: 3600
 

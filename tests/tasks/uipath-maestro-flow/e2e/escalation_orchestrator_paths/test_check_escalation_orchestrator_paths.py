@@ -147,7 +147,7 @@ def _one_slack_payload(case: dict, n: int, **kw) -> dict:
     return _payload(case, ["notify"], f"17866475{n:02d}.771239", executed=("start", "classify", "end"), **kw)
 
 
-# ── The seed against the v3 prompt's rules ──────────────────────────────────
+# ── The seed against the prompt's rules ──────────────────────────────────
 
 
 def _v3_rules(inputs: dict) -> tuple[str, str, bool]:

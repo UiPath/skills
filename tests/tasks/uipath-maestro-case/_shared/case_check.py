@@ -665,6 +665,15 @@ _DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
 _DEBUG_RETRY_SLEEP_S = 15
 
 
+def retry_after_cancelled() -> None:
+    print(
+        "NOTE: retrying `uip maestro case debug` once — the debug instance "
+        "was cancelled mid-run, which is the tenant's fault and not the plan's.",
+        flush=True,
+    )
+    time.sleep(_DEBUG_RETRY_SLEEP_S)
+
+
 def debug_fault_is_transient(output: str) -> str | None:
     """Name the tenant-side fault in a failed ``case debug`` output, else None.
 
@@ -951,12 +960,7 @@ def run_debug(
     if status == "Cancelled":
         # Same tenant-side fault as the non-zero-exit path, reported through a
         # clean exit. One retry, announced, then it counts.
-        print(
-            "NOTE: retrying `uip maestro case debug` once — the debug instance "
-            "was cancelled mid-run, which is the tenant's fault and not the plan's.",
-            flush=True,
-        )
-        time.sleep(_DEBUG_RETRY_SLEEP_S)
+        retry_after_cancelled()
         payload = start_debug(
             timeout=timeout,
             project_glob=project_glob,

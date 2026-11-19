@@ -62,10 +62,6 @@ def app_hitl(flow: dict) -> dict | None:
     return None
 
 
-def posting_ids(flow: dict) -> set[str]:
-    return live.posting_steps(flow, POSTING_MARKER)
-
-
 def structure(project_dir: str) -> None:
     flow = live.load_flow(project_dir)
     node = app_hitl(flow)
@@ -75,7 +71,7 @@ def structure(project_dir: str) -> None:
             "no human-in-the-loop step backed by the deployed ExpenseReviewApp "
             f"(human steps found: {types})"
         )
-    if not posting_ids(flow):
+    if not live.posting_steps(flow, POSTING_MARKER):
         live.fail("the existing SAP posting step is gone")
     print(f"OK: {node.get('id')} ({node.get('type')}) uses ExpenseReviewApp; the posting step is kept")
 
@@ -136,7 +132,7 @@ def run(project_dir: str) -> None:
     if node is None:
         live.fail("no human-in-the-loop step backed by ExpenseReviewApp to run")
     hitl_id = str(node.get("id"))
-    posting = posting_ids(flow)
+    posting = live.posting_steps(flow, POSTING_MARKER)
     early = sorted(posting & live.bypassing(flow, hitl_id))
     if early:
         live.fail(f"the SAP posting step(s) {early} can run without the manager's review: "

@@ -313,3 +313,17 @@ def test_assert_rule_encoded_reports_the_missing_severities() -> None:
 def test_assert_rule_encoded_rejects_malformed_xml() -> None:
     with pytest.raises(bpmn_live.CheckFailure, match="not well-formed"):
         bpmn_live.assert_rule_encoded("<bpmn:definitions")
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [("Yes", True), (" TRUE ", True), ("no", False), ("False", False), (True, True), (False, False)],
+)
+def test_norm_value_reads_boolean_words(value, expected) -> None:
+    assert bpmn_live.norm_value(value) is expected
+
+
+@pytest.mark.parametrize("number", [0, 1, 1.0, 0.0])
+@pytest.mark.parametrize("boolean", [True, False])
+def test_norm_value_keeps_numbers_apart_from_booleans(number, boolean) -> None:
+    assert bpmn_live.norm_value(number) != bpmn_live.norm_value(boolean)

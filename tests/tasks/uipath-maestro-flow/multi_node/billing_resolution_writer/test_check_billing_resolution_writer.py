@@ -2,10 +2,10 @@
 
 Only `run_debug` is replaced. The flow on disk is the task's reference flow
 (an inline agent and a Slack send-message-to-channel node), with its variables
-renamed the way an agent working from the v3 prompt might name them, so the
-mapping by meaning, the trace lookups and the Slack read-back run for real.
+renamed the way an agent might name them, so the mapping by meaning, the trace
+lookups and the Slack read-back run for real.
 
-Payloads follow a Studio Web run of this task: the agent's `{subject, body}`
+Payloads follow the Studio Web shape: the agent's `{subject, body}`
 at `<agent>.output`, the Slack response `{ts, channel, message: {text,
 bot_profile}}` at `<send>.output` (posted by the bot), and the flow's outputs
 as globals.

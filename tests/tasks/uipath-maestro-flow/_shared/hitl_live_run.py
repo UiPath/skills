@@ -24,9 +24,9 @@ early when the Orchestrator job reports `Suspended`. Neither ends `Completed`. T
    returns a payload shaped like `run_debug`'s `Data` (`finalStatus`,
    `elementExecutions`, `variables`), so the `flow_check` assertions read it.
 
-After `bound_calls_by(deadline)`, no `uip` call outlives the deadline by more
-than MIN_CALL_SECONDS, so a grader's criterion timeout can be sized from its
-deadlines; `cancel` is exempt, since it must run after a missed deadline.
+After `bound_calls_by(deadline)`, each bounded `uip` call outlives the deadline
+by at most MIN_CALL_SECONDS, so a grader's criterion timeout can be sized from
+its deadlines; `cancel` is exempt, since it must run after a missed deadline.
 
 Used by the uipath-human-in-the-loop e2e tasks only.
 """
@@ -237,7 +237,13 @@ def start_debug(project_dir: str, inputs: dict, cli_timeout: int) -> DebugRun:
     print(f"debug inputs: {inputs}")
     stdout_file = open(stdout_path, "w")
     stderr_file = open(stderr_path, "w")
-    proc = subprocess.Popen(cmd, stdout=stdout_file, stderr=stderr_file, env=env)
+    try:
+        proc = subprocess.Popen(cmd, stdout=stdout_file, stderr=stderr_file, env=env)
+    except BaseException:
+        stdout_file.close()
+        stderr_file.close()
+        shutil.rmtree(out_dir, ignore_errors=True)
+        raise
     return DebugRun(proc, stdout_path, stderr_path, stdout_file=stdout_file, stderr_file=stderr_file, out_dir=out_dir)
 
 

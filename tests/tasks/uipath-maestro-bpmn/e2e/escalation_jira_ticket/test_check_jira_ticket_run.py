@@ -142,6 +142,24 @@ def test_a_ticket_without_this_runs_correlation_id_fails_but_is_still_journalled
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
 
 
+def test_a_variables_read_failure_still_journals_this_runs_key(tmp_path, monkeypatch):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+    debug = {**_debug("createJiraIssue"), "Output": f"created CE-4242 and CE-9 for {CORR}"}
+    monkeypatch.setattr(checker, "run_debug", lambda *a, **k: (debug, "inst-1"))
+
+    def unreadable(instance_id):
+        raise checker.CheckFailure("variables read timed out")
+
+    monkeypatch.setattr(checker, "fetch_variables", unreadable)
+    monkeypatch.setattr(
+        checker.jira_is, "get_issue",
+        lambda conn, key: {"summary": f"[Sev1] {CORR} down" if key == "CE-4242" else "someone else's"},
+    )
+    with pytest.raises(checker.CheckFailure, match="variables read"):
+        checker.main()
+    assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
+
+
 def test_jira_issue_key_output_must_be_the_created_key(tmp_path, monkeypatch):
     _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", exposed_key="CE-1")
     with pytest.raises(checker.CheckFailure, match="jiraIssueKey"):

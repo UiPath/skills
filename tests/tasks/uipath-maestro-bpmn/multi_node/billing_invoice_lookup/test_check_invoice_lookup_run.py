@@ -10,7 +10,6 @@ GlobalDefinitions naming them, the query's rows under the query element's
 
 from __future__ import annotations
 
-import copy
 import importlib.util
 import sys
 import xml.etree.ElementTree as ET

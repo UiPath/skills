@@ -49,27 +49,27 @@ Assertion map (Flow -> BPMN):
                     e2e/customer_escalation_triage/check_customer_escalation_package.py
                     (PORTING-BRIEF's pointer)
 
-  advisory:  exactly ONE entity-read node
+  exactly ONE entity-read node
                                           -> len(reads) != 1 check (advisory)
-  advisory:  no raw HTTP fallback
+  no raw HTTP fallback
                                           -> no Intsvc.HttpExecution node check (advisory)
-  advisory:  entity slot carries ENTITY
+  entity slot carries ENTITY
                                           -> entity_ok() (advisory)
-  advisory:  filter COMPUTED from input, not constant
+  filter COMPUTED from input, not constant
                                           -> filter_reference_ids() + derives_from(ref, {input_id}) (advisory)
                     T  does not pin the filter to one named column (Flow's
                     `column="invoiceNumber"`): no local Data Service connection
                     exists to `describe` the entity's real filter field name
                     (BATCH1-ADDENDUM), so any input at any depth that derives
                     from the declared input is accepted.
-  advisory:  canonical answer + raw test inputs
+  canonical answer + raw test inputs
                     never appear as literals -> raw substring scan on the .bpmn
                     text (I: a whole-file text scan, matching this suite's own
                     convention in check_jira_get_issue.py's `JIRA_KEY not in raw`
                     / `issue_key not in raw` checks) (advisory)
-  advisory:  outputs declared with contract's
+  outputs declared with contract's
                     names AND types -> declared_outputs() (advisory)
-  advisory:  outputs READ FROM the query step
+  outputs READ FROM the query step
                     -> derives_from(output_id, query_out_vars) over the
                     var-source graph built from every `<uipath:output var=
                     source=>` in the document, T: transitive derivation through
@@ -78,7 +78,7 @@ Assertion map (Flow -> BPMN):
                     `vars.<id>` reads when its output's `source` starts with
                     `=result` (a script's return value cannot be traced through
                     `source=` alone -- see build_var_graph()) (advisory)
-  advisory:  connection resolution -- SPLIT
+  connection resolution -- SPLIT
                     across two artifact stages, since BPMN resolves a
                     connection binding in two steps Flow's compiler collapsed
                     into one:
@@ -541,8 +541,9 @@ def connection_binding_wired(root: ET.Element, task: ET.Element) -> bool:
 
 
 def connection_and_folder_distinct(root: ET.Element, task: ET.Element) -> bool | None:
-    """Connection and folder bindings stay X sends the folder key as --connection-id, answering 401". Fully
-    visible pre-pack: a folder-scoped connector activity declares TWO bindings
+    """Connection and folder bindings must differ: the same value sends the folder key as --connection-id and answers 401.
+
+    Fully visible pre-pack: a folder-scoped connector activity declares TWO bindings
     sharing one `resourceKey` (registry-workflow.md §4), so this compares their
     `default` values directly in the authored XML. Returns None when the
     activity is not folder-scoped (no sibling folderKey binding) -- nothing to

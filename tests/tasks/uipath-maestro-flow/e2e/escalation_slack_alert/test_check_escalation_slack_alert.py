@@ -1,10 +1,9 @@
 """Unit tests for the EscalationSlackAlert effects grader.
 
 Flows carry `variables.globals` and a real `send-message-to-channel` node as
-agents built them on the 2026-11-17/18 nightlies; one uses those runs' input
-names, the other names a v3 agent might pick. Payloads have the shape
-`uip maestro flow debug --output json` returned on 2026-11-17 (adhoc
-15-00-15, the resolution writer's Slack send): `elementExecutions`, the
+agents build them; one uses the input names of a named-variable prompt, the
+other names an agent might pick. Payloads have the shape
+`uip maestro flow debug --output json` returns: `elementExecutions`, the
 declared outputs in `variables.globals`, inputs as `start.output.<id>`, and the
 Slack node's response under `<id>.output` with `ts`, `channel` and
 `message.text`/`message.blocks`.
@@ -52,7 +51,7 @@ SLACK_NODE = {
         }
     },
 }
-# The input names the 2026-11-18 nightly agent declared (named-variable prompt).
+# The input names an agent declares for a named-variable prompt.
 NIGHTLY_IO = (
     [("senderEmail", "string"), ("subject", "string"), ("body", "string"), ("customerTier", "string"),
      ("productionDown", "boolean"), ("workaroundAvailable", "boolean"), ("correlationId", "string")],

@@ -40,6 +40,7 @@ from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     completed_ids,
     connector_context,
+    declarations,
     element_output_records,
     fetch_incidents,
     fetch_variables,
@@ -47,6 +48,8 @@ from _shared.bpmn_live import (  # noqa: E402
     import_exact,
     index_runtime_connectors,
     named_values,
+    norm_value,
+    normalized_identifier,
     q,
     run_debug,
 )
@@ -61,16 +64,6 @@ VISITED = 2
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
 
 
-ENGINEERING_BOOLEANS = {"true": True, "yes": True, "false": False, "no": False}
-
-
-def _norm(value):
-    if isinstance(value, str):
-        text = value.strip().casefold()
-        return ENGINEERING_BOOLEANS.get(text, text)
-    return value
-
-
 def _loose(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(text).lower())
 
@@ -78,6 +71,7 @@ def _loose(text: str) -> str:
 _NO_RESPONSE = {
     "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
     "noresponseneeded", "notapplicable", "notneeded", "draftnotneeded",
+    "nothing", "nil", "empty",
 }
 _NEGATED_DRAFT = re.compile(
     r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|drafted|response)\b"
@@ -87,8 +81,10 @@ _NEGATED_DRAFT = re.compile(
     r"|\bnone\s+(?:needed|required)\b"
     r"|^(?:n a|none|no|false|skipped|skip|not applicable|not required|not needed)$"
 )
-_DRAFT = re.compile(r"\bdraft(?:ed)?\b|^(?:true|yes)$")
-_EITHER_OR = re.compile(r"\bor\b")
+_LABELLED_NO = re.compile(r"\b(?:draft|response)(?:\s+response)?\s*[:=\-\u2013]\s*(?:no|none|false|nil)\W*$")
+_DRAFT = re.compile(r"\bdraft(?:ed)?\b|\bresponse\b|^(?:true|yes)$")
+_EITHER_OR = re.compile(r"\bor\b|[/|]")
+_NOT_APPLICABLE = re.compile(r"\bn/a\b")
 _NONE_WORD = re.compile(r"\b(?:none|no|n a|na|false)\b")
 
 
@@ -100,17 +96,27 @@ def _words(text: str) -> str:
 def response_mode(value) -> str | None:
     """'draft' or 'none' by meaning: the request no longer names the values, only
     that a draft response is written for escalations that need engineering.
-    A negation counts only when it governs the draft ("No draft", "Draft not
-    needed"), so "Draft, no edits required" is still 'draft'. "Draft or none"
-    and anything else unrecognized is None."""
+    An unset value (null, "", "-") is none. A negation counts only when it
+    governs the draft ("No draft", "Draft: no", "Draft not needed"), so "Draft,
+    no edits required" is still 'draft'. "Draft or none", "Draft/None" and
+    anything else unrecognized is None."""
+    if value is None:
+        return "none"
     if isinstance(value, bool):
         return "draft" if value else "none"
     if not isinstance(value, str):
         return None
-    text = _words(value)
-    negated = _loose(value) in _NO_RESPONSE or _NEGATED_DRAFT.search(text) is not None
+    raw = _NOT_APPLICABLE.sub("n a", value.strip().lower())
+    text = _words(raw)
+    if not text:
+        return "none"
+    negated = (
+        _loose(value) in _NO_RESPONSE
+        or _NEGATED_DRAFT.search(text) is not None
+        or _LABELLED_NO.search(raw) is not None
+    )
     drafted = _DRAFT.search(text) is not None
-    if _EITHER_OR.search(text) and drafted and (negated or _NONE_WORD.search(text)):
+    if _EITHER_OR.search(raw) and drafted and (negated or _NONE_WORD.search(text)):
         return None
     if negated:
         return "none"
@@ -137,6 +143,10 @@ def slack_ids(process: ET.Element) -> set[str]:
     return ids
 
 
+def is_declared(process: ET.Element, name: str) -> bool:
+    return any(normalized_identifier(d.attrib.get("name", "")) == normalized_identifier(name) for d in declarations(process))
+
+
 def verify_case(process, slack: set[str], case: dict, debug_data, variables_data) -> str:
     name = case["name"]
     final_status = get_ci(debug_data, "FinalStatus")
@@ -150,9 +160,10 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
             ok = any(isinstance(v, str) and v.strip() == expected[field] for v in values)
         elif field == "responseMode":
             wanted = response_mode(expected[field])
-            ok = wanted is not None and any(response_mode(v) == wanted for v in values)
+            observed = values or ([None] if is_declared(process, field) else [])
+            ok = wanted is not None and any(response_mode(v) == wanted for v in observed)
         else:
-            ok = any(_norm(v) == _norm(expected[field]) for v in values)
+            ok = any(norm_value(v) == norm_value(expected[field]) for v in values)
         if not ok:
             raise CheckFailure(f"{name}: output {field!r}: expected {expected[field]!r}, got {values!r}")
 

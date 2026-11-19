@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared parsing helpers for the same-ground Flow advisory checkers."""
+"""Entity-read and agent-node helpers shared by the Flow graders."""
 
 from __future__ import annotations
 

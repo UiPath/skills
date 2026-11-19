@@ -1,9 +1,8 @@
 """Checker-level tests for check_billing_invoice_lookup.py.
 
 Only `run_debug` is replaced. The flow on disk is the task's reference flow,
-with its variables renamed the way an agent working from the v3 prompt might
-name them, so the mapping by meaning and the trace lookups run for real. The
-fake debug answers each input the way the live tenant does (8 rows for
+with its variables renamed the way an agent might name them, so the mapping by
+meaning and the trace lookups run for real. The fake debug answers each input the way the live tenant does (8 rows for
 MCS-2026-04872, 4 for MCS-2026-04903, 5 for MCS-2026-05128, none for 99999),
 in the `Data` shape `uip maestro flow debug --output json` returns.
 """

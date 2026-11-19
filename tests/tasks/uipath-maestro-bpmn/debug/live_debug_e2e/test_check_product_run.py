@@ -12,7 +12,6 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
-import shutil
 from pathlib import Path
 
 import pytest

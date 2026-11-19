@@ -109,6 +109,11 @@ def test_engineering_needed_no_fails_where_true_is_expected(value):
         checker.assert_outcome(_process(), CASE, _debug(), _variables(engineering=value))
 
 
+def test_engineering_needed_number_is_not_a_boolean():
+    with pytest.raises(checker.CheckFailure, match="engineeringNeeded"):
+        checker.assert_outcome(_process(), CASE, _debug(), _variables(engineering=1))
+
+
 def test_slack_step_found_by_connector_key_alone():
     assert checker.slack_ids(_process()) == {"sendSlackAlert"}
 

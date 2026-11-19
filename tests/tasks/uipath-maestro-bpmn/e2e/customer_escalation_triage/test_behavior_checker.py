@@ -477,19 +477,19 @@ class PartialRunJournalTests(unittest.TestCase):
         '{"channel": "C0B2FDZD1M3", "ts": "1763405123.456789"}\n'
     )
 
-    def _run(self, *, debug_error=None, variables_error=None):
+    def _run(self, *, debug_error=None, variables_error=None, debug_data=None, log=None):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             live = root / "live"
             live.mkdir()
-            (live / "debug.log").write_text(self.PARTIAL_LOG, encoding="utf-8")
+            (live / "debug.log").write_text(self.PARTIAL_LOG if log is None else log, encoding="utf-8")
             journal = root / "ids.jsonl"
             summaries = {"CE-7": "[Sev1] ESC-BPMN-test escalation", "CE-8": "someone else's"}
 
             def debug(*args, **kwargs):
                 if debug_error:
                     raise debug_error
-                return good_debug_data(), "instance-1"
+                return (debug_data or good_debug_data()), "instance-1"
 
             def cli(*args, **kwargs):
                 if variables_error:
@@ -523,6 +523,15 @@ class PartialRunJournalTests(unittest.TestCase):
         records, error = self._run(variables_error=subprocess.TimeoutExpired("uip", 120))
         self.assertIsInstance(error, subprocess.TimeoutExpired)
         self.assertEqual(records["jira_issue"], ["CE-7"])
+
+    def test_a_variables_read_failure_journals_keys_from_the_debug_response(self):
+        debug_data = {**good_debug_data(), "Output": "created CE-7 and CE-8"}
+        records, error = self._run(
+            variables_error=subprocess.TimeoutExpired("uip", 120), debug_data=debug_data, log=""
+        )
+        self.assertIsInstance(error, subprocess.TimeoutExpired)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+        self.assertNotIn("slack_message", records)
 
     def test_a_clean_read_journals_nothing_here(self):
         records, error = self._run()

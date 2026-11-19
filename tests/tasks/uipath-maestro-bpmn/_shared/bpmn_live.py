@@ -275,6 +275,20 @@ def declarations(process: ET.Element) -> list[ET.Element]:
     return [] if variables is None else list(variables)
 
 
+BOOLEAN_WORDS = {"true": True, "yes": True, "false": False, "no": False}
+
+
+def norm_value(value: Any) -> Any:
+    """Comparable form: strings case-folded, true/yes/false/no read as booleans,
+    numbers kept apart from booleans (1 is not True)."""
+    if isinstance(value, str):
+        text = value.strip().casefold()
+        return BOOLEAN_WORDS.get(text, text)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return ("number", value)
+    return value
+
+
 def named_values(process: ET.Element, variables_data: Any, name: str) -> list[Any]:
     """Every non-null runtime value of the output called `name`: its declared
     ids in Globals (the runtime may re-case them), any Globals key whose

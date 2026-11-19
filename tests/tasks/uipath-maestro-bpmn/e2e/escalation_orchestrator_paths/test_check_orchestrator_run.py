@@ -117,7 +117,8 @@ def test_wrong_severity_fails():
 @pytest.mark.parametrize(
     "value",
     ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "Draft, no edits required",
-     "Draft ready, not sent", "Draft - no review needed", "drafted", "true", "Yes", "YES"],
+     "Draft ready, not sent", "Draft - no review needed", "drafted", "true", "Yes", "YES",
+     "Response required", "Response", "response needed"],
 )
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]
@@ -137,7 +138,8 @@ def test_sev3_needs_no_draft_response():
      "No response needed", "none", "Draft: none", "none (draft not required)", "Do not draft",
      "Don't draft", "Without a draft", "Draft: false", False, "not drafted", "not_drafted", "undrafted",
      "draft_response_not_needed", "Response not required", "none required", "skipped", "false", "No response",
-     "Not required", "Not needed", "no", "No."],
+     "Not required", "Not needed", "no", "No.", None, "", "   ", "-", "nothing", "nil", "empty", "Nil", "Empty",
+     "draft response: none", "Draft: no", "draft - no", "Draft = none", "Draft response: false", "response: no"],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -147,7 +149,8 @@ def test_a_negated_response_mode_reads_as_none(value):
         checker.verify_case(PROCESS, SLACK, sev1, _debug(sev1), _variables(sev1, responseMode=value))
 
 
-@pytest.mark.parametrize("value", ["", "   ", "maybe", "pending", "draft or none", "None or draft"])
+@pytest.mark.parametrize("value", ["maybe", "pending", "draft or none", "None or draft", "Draft/None", "draft|none", "none | draft",
+                                   "Draft / No", "response/none"])
 def test_an_unrecognized_response_mode_matches_neither_mode(value):
     for case in (SEED["cases"][0], next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")):
         with pytest.raises(checker.CheckFailure, match="responseMode"):
@@ -250,6 +253,13 @@ def test_a_slack_step_posting_as_the_bot_fails():
 def test_engineering_needed_yes_no_reads_as_a_boolean(value, expected):
     case = next(c for c in SEED["cases"] if c["expected"]["engineeringNeeded"] is expected)
     assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, engineeringNeeded=value))
+
+
+@pytest.mark.parametrize("value, expected", [(1, True), (0, False)])
+def test_engineering_needed_number_is_not_a_boolean(value, expected):
+    case = next(c for c in SEED["cases"] if c["expected"]["engineeringNeeded"] is expected)
+    with pytest.raises(checker.CheckFailure, match="engineeringNeeded"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, engineeringNeeded=value))
 
 
 def test_engineering_needed_yes_fails_where_none_is_needed():

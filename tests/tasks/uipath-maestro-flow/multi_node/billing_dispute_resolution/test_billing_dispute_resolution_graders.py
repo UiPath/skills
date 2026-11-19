@@ -174,6 +174,18 @@ def test_a_bare_string_read_of_invoice_or_customer_gets_the_scalar(effects, path
     assert str(inputs["sub"][path]).strip().upper() == value
 
 
+@pytest.mark.parametrize("path", ["customerStatement", "customerName", "invoiceDate"])
+def test_a_longer_field_keeps_its_submission_value(effects, path):
+    flow = {"nodes": [{"id": "s", "type": "core.action.script",
+                       "inputs": {"script": f"return $vars.sub.{path};"}}],
+            "variables": {"globals": [
+                {"id": "pdf", "direction": "in", "type": "file"},
+                {"id": "sub", "direction": "in", "type": "object"}]}}
+    inputs, _ = effects.build_inputs(flow, "overcharge")
+    assert "ACCT-71044-AT" not in str(inputs["sub"].get(path))
+    assert "MCS-2026-04903" not in str(inputs["sub"].get(path)).upper()
+
+
 def test_a_submission_spread_over_separate_inputs_is_mapped(effects):
     flow = {"nodes": [], "variables": {"globals": [
         {"id": "pdf", "direction": "in", "type": "file"},
@@ -336,10 +348,12 @@ def test_reject_catches_a_tenant_agent_writer_that_ran(effects, flow):
     assert "writer agent ran" in str(exc.value)
 
 
-def test_main_debugs_once_so_the_credit_is_not_posted_twice(effects, flow, monkeypatch):
+@pytest.mark.parametrize("case, retries", [("overcharge", 1), ("reject", None)])
+def test_only_the_posting_case_debugs_once(effects, flow, monkeypatch, case, retries):
     seen = {}
     monkeypatch.setattr(effects, "_load_flow", lambda glob: flow)
     monkeypatch.setattr(effects, "run_debug", lambda **kw: seen.update(kw) or _payload(REJECT_PATH, REJECTED))
-    monkeypatch.setattr("sys.argv", ["check", "reject"])
+    monkeypatch.setattr(effects, "check_overcharge", lambda f, p: None)
+    monkeypatch.setattr("sys.argv", ["check", case])
     effects.main()
-    assert seen["retries"] == 1
+    assert seen.get("retries") == retries

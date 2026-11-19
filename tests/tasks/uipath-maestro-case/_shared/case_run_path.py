@@ -32,24 +32,37 @@ from _shared.case_check import _get_ci as _ci  # noqa: E402
 
 CANCELLED = "Cancelled"
 RETRY_SLEEP_S = 15
+MAX_DEBUG_CALLS = 2
 
 
-def _debug_once(cmd: list[str], timeout: int) -> tuple:
-    """Run ``cmd``, retrying once on a transient start fault. Returns ``(proc, envelope, data)``."""
+def _debug_attempt(cmd: list[str], timeout: int) -> tuple:
+    """Run ``cmd`` once. Returns ``(proc, envelope, data)``."""
+    from _shared.case_check import _parse_json, _run  # noqa: PLC0415
+
+    r = _run(cmd, timeout=timeout, what="uip maestro case debug")
+    envelope = _parse_json(r.stdout) or {}
+    data = _ci(envelope, "Data") if isinstance(_ci(envelope, "Data"), dict) else {}
+    return r, envelope, data
+
+
+def _debug_with_retry(cmd: list[str], timeout: int) -> tuple:
+    """Run ``cmd``, retrying a transient start fault or a Cancelled run within one shared budget of ``MAX_DEBUG_CALLS``."""
     from _shared.case_check import (  # noqa: PLC0415
-        _parse_json,
-        _run,
         debug_fault_is_transient,
+        retry_after_cancelled,
     )
 
-    for attempt in (1, 2):
-        r = _run(cmd, timeout=timeout, what="uip maestro case debug")
-        envelope = _parse_json(r.stdout) or {}
-        data = _ci(envelope, "Data") if isinstance(_ci(envelope, "Data"), dict) else {}
+    for call in range(1, MAX_DEBUG_CALLS + 1):
+        last = call == MAX_DEBUG_CALLS
+        r, envelope, data = _debug_attempt(cmd, timeout)
         if _ci(data, "instanceId", "InstanceId"):
-            return r, envelope, data
+            status = str(_ci(data, "finalStatus", "FinalStatus", "lastStatus", "LastStatus") or "")
+            if status != CANCELLED or last:
+                return r, envelope, data
+            retry_after_cancelled()
+            continue
         fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
-        if fault is None or attempt == 2:
+        if fault is None or last:
             sys.exit(
                 f"FAIL: case debug did not start an instance (exit {r.returncode})\n"
                 f"stdout: {r.stdout[-3000:]}\nstderr: {r.stderr[-3000:]}"
@@ -59,10 +72,10 @@ def _debug_once(cmd: list[str], timeout: int) -> tuple:
 
 
 def debug_case(timeout: int = 1500) -> dict:
-    """Run the case once. Returns ``{status, instance_id, executions, envelope, stderr}``.
+    """Run the case. Returns ``{status, instance_id, executions, envelope, stderr}``.
 
     Fails (exit) only when the run never started: no project, refresh failure,
-    or output that names no instance.
+    or output that names no instance. At most ``MAX_DEBUG_CALLS`` debug calls.
     """
     from _shared.case_check import (  # noqa: PLC0415
         _run,
@@ -88,12 +101,7 @@ def debug_case(timeout: int = 1500) -> dict:
             sys.exit(f"FAIL: solution resources refresh exit {r.returncode}\n{r.stdout}\n{r.stderr}")
 
     cmd = ["uip", "maestro", "case", "debug", project_dir, "--log-level", "debug", "--output", "json"]
-    r, envelope, data = _debug_once(cmd, timeout)
-    if str(_ci(data, "finalStatus", "FinalStatus", "lastStatus", "LastStatus") or "") == CANCELLED:
-        print("NOTE: retrying `uip maestro case debug` once — the debug instance "
-              "was cancelled mid-run, which is the tenant's fault and not the plan's.", flush=True)
-        time.sleep(RETRY_SLEEP_S)
-        r, envelope, data = _debug_once(cmd, timeout)
+    r, envelope, data = _debug_with_retry(cmd, timeout)
 
     instance_id = str(_ci(data, "instanceId", "InstanceId"))
     executions = [row for row in _ci(data, "elementExecutions", "ElementExecutions", default=[]) or []

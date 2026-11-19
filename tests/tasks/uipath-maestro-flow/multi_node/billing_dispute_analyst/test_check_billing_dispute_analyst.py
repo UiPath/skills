@@ -2,11 +2,10 @@
 
 Only `run_debug` is replaced. The flow on disk is the task's reference flow (an
 inline agent wired to the SOP context index), with its variables renamed the
-way an agent working from the v3 prompt might name them, so the mapping by
-meaning and the trace lookups run for real. Payloads are in the `Data` shape
-`uip maestro flow debug --output json` returns; a Studio Web run of this task
-returned an agent output and an SOP-citing rationale ("Under SOP §5.1, ...")
-in that shape.
+way an agent might name them, so the mapping by meaning and the trace lookups
+run for real. Payloads are in the `Data` shape `uip maestro flow debug
+--output json` returns, with an agent output and an SOP-citing rationale
+("Under SOP §5.1, ...").
 """
 
 from __future__ import annotations

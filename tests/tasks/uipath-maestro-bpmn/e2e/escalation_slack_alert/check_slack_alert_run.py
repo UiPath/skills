@@ -42,6 +42,7 @@ from _shared.bpmn_live import (  # noqa: E402
     import_exact,
     index_runtime_connectors,
     named_values,
+    norm_value,
     q,
     require_clean_run,
     run_debug,
@@ -54,22 +55,12 @@ SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-slack-alert-live")
 
 
-ENGINEERING_BOOLEANS = {"true": True, "yes": True, "false": False, "no": False}
-
-
-def _norm(value):
-    if isinstance(value, str):
-        text = value.strip().casefold()
-        return ENGINEERING_BOOLEANS.get(text, text)
-    return value
-
-
 def assert_named(process, variables_data, name: str, expected, *, case_sensitive: bool = False) -> None:
     values = named_values(process, variables_data, name)
     if case_sensitive:
         ok = any(isinstance(v, str) and v.strip() == expected for v in values)
     else:
-        ok = any(_norm(v) == _norm(expected) for v in values)
+        ok = any(norm_value(v) == norm_value(expected) for v in values)
     if not ok:
         raise CheckFailure(f"output {name!r}: expected {expected!r}, got {values!r}")
 
