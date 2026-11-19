@@ -150,7 +150,12 @@ success_criteria:
   - type: command_not_executed
     description: "Rule 13: the draft is never renamed or deleted (a cp seed is outcome-graded by sdd_check + inventory + draft-survives)"
     tool_name: "Bash"
-    command_pattern: '(mv|rm)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
+    # mv/rm must be a standalone command word with the SDD as one of its own
+    # operands: a bare `rm\b` matched "platform" and `[^\n]*` spans the whole
+    # JSON-serialized command, so prose in a heredoc tripped it. The operand
+    # must END at `.md`: `rm sdd.md.orig sdd.md.rej` (patch leftovers) is not
+    # a delete of the SDD.
+    command_pattern: '(^|[\s;&|("''`]|\\n)(mv|rm)[ \t]+([^\s;&|\\]+[ \t]+)*[^\s;&|\\]*sdd(\.draft)?\.md($|[\s;&|)"''`]|\\)'
     weight: 1.0
     pass_threshold: 1.0
 

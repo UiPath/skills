@@ -160,7 +160,7 @@ uip or feeds list --output json
 Feed IDs are used with:
 - `uip or packages list --feed-id <id>` -- browse packages in a specific feed
 - Omit `--feed-id` to use the default tenant feed
-- `uip or libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--limit 500 --output-filter "<JMESPath>"`; page with `--offset` while `Pagination.HasMore` is true.
+- `uip or libraries list` queries the default tenant feed; `--feed-id <id>` targets another feed. Filter results client-side via `--limit 1000 --output-filter "<JMESPath>"`; page with `--offset` while `Pagination.HasMore` is true.
 
 ---
 

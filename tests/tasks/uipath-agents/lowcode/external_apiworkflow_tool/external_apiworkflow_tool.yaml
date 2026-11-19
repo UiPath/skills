@@ -50,18 +50,20 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
-    description: "Agent discovered the API workflow identity with uip solution resources list --kind Process"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Process'
+    description: "Agent discovered the API workflow identity with uip solution resources list --kind Process (or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b.*--kind\s+Process|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Process)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the API workflow configuration with uip solution resources get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    description: "Agent fetched the API workflow configuration with uip solution resources get (or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

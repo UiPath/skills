@@ -140,8 +140,7 @@
 /tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /tests/tasks/uipath-planner/check_genome/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 /.claude/rules/genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/docs/guides/live-healing-pass.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
-/docs/guides/working-with-uipath-genome.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/docs/guides/genome/ @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
@@ -225,6 +224,8 @@
 # Extract document — the node and the taxonomy it carries inline
 /skills/uipath-maestro-flow/references/extract-document-node.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/extract-document-taxonomy.md @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/references/extract-document-node.md @astridstaicu @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/references/extract-document-taxonomy.md @astridstaicu @UiPath/communications-mining @cezara98t @UiPath/maestro-cli-team
 
 # Chat — inline conversational agent node + the conversation trigger and message nodes
 /skills/uipath-maestro-flow/references/conversational.md @UiPath/jarvis @UiPath/maestro-cli-team

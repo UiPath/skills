@@ -50,11 +50,11 @@ For each tool name you plan to put in `matchNames`:
 
 ### Step 3 — Add a guardrail to agent.json
 
-For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–6). For the `escalate` action (Action Center app + recipient), follow [escalation-guide.md](escalation-guide.md).
+For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and [builtin-examples-guide.md](builtin-examples-guide.md) for worked examples (Examples 1–6). For the `escalate` action (Action Center app + recipient), follow [escalation-guide.md](escalation-guide.md).
 
 For custom rules (word/number/boolean/always), see [custom-rules-guide.md](custom-rules-guide.md) for the full schema, rule types, field selectors, and worked examples.
 
-Copy the complete example that matches the request and adapt the values — e.g., [Example 1](#example-1-block-pii-in-agent-and-tool-outputs) for a built-in PII block guardrail. Generate a fresh UUID for `id`. Placement in `agent.json` is shown in [agent.json with Guardrails](#agentjson-with-guardrails).
+Copy the complete example that matches the request and adapt the values — e.g., [Example 1](builtin-examples-guide.md#example-1-block-pii-in-agent-and-tool-outputs) for a built-in PII block guardrail. Generate a fresh UUID for `id`. Placement in `agent.json` is shown in [agent.json with Guardrails](#agentjson-with-guardrails).
 
 ### Step 4 — Refresh and validate
 
@@ -322,204 +322,26 @@ File-capable built-in validators take an optional `{ "$parameterType": "enum", "
 
 1. Add it only when the validator's `Parameters` in `uip agent guardrails list --output json` contains `Id: "detectionScope"` — absent means text only on this tenant.
 2. The default is always `Text` ("Text only"): omitted means text only for every validator. Allowed scopes and stages do not change.
-3. Guard attached input files at Agent scope with `Files` ([Example 6](#example-6-block-pii-inside-attached-files)); guard a produced output file with a Post validator at Agent scope and `Files`.
+3. Guard attached input files at Agent scope with `Files` ([Example 6](builtin-examples-guide.md#example-6-block-pii-inside-attached-files)); guard a produced output file with a Post validator at Agent scope and `Files`.
 4. Custom guardrails never read file contents (the `always` rule's `applyTo` picks input or output, not text or files). BYO guardrails have no file support.
 
 Scope × stage coverage, supported types and caps, Tool scope on Analyze Files, the output-file recipe, Flow inline agents, testing, and degradation behaviour: [files-guide.md](files-guide.md).
 
 ## BYO (bring-your-own) guardrails
 
-A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of, or alongside, UiPath's own built-in implementation. A tenant admin registers these at Admin → AI Trust Layer → Guardrails Configurations or via `uip guardrails byo-configurations create`; see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform) for the admin-side lifecycle commands (`uip guardrails byo-configurations list|create|update|delete`).
-
-- **No file support for BYO guardrails.** BYO entries carry no `detectionScope` parameter and the external provider receives the text payload only — do not set `detectionScope: "Files"` / `"Both"` on a guardrail pinned with `byoValidatorName`.
-- **`Validator` is not unique.** A tenant with a BYOG `harmful_content` configuration sees **two** entries named `harmful_content` in `uip agent guardrails list` output — one built-in, one BYO. Use `IsByo` to tell them apart; never assume a single match.
-- **Filter to BYO-only entries** with `uip agent guardrails list --byo --output json` when the user specifically wants to see or target a BYO-backed validator.
-- **BYO entries carry extra fields**: `ByoValidatorName`, `ByoConnectionId`, `ByoConfigurationId`, `ByoConnectorName`, `ByoConnectorKey`, `FolderKey` — alongside the same `Parameters`/`AllowedScopes`/`GuardrailStages`/`Status` shape a built-in entry has.
-- **To author a guardrail against a specific BYO configuration**, build the `builtInValidator` guardrail exactly as for a built-in validator (same `validatorType`, same `validatorParameters` from that entry's `Parameters`), and add `byoValidatorName` set to that entry's `ByoValidatorName`. Omit it to use the built-in implementation. (`ByoConfigurationId` is the configuration's own admin-side id — useful for cross-referencing `uip guardrails byo-configurations list`, but it is not what the guardrail JSON carries; `ByoValidatorName` is unique per tenant and is the value that pins it.)
-- **`Status: "Disabled"` on a BYO entry** means the tenant switched that specific configuration off — the entry still shows (it doesn't vanish), so a disabled BYOG configuration is distinguishable from one that was never set up. Do not author a guardrail against a `Disabled` BYO entry; treat it the same as `Unauthorised` (skip, tell the user).
+A tenant-registered external provider (a "BYOG" configuration) can fulfil a validator instead of, or alongside, UiPath's built-in implementation. Such a tenant lists more than one entry with the same `Validator` name: tell them apart with `IsByo`, and pin a BYO configuration with `byoValidatorName`. BYO guardrails have no file support. Read [byo-guide.md](byo-guide.md) before authoring a guardrail on a tenant whose `uip agent guardrails list` output has an `IsByo: true` entry.
 
 ## Full Examples
 
-### Example 1: Block PII in Agent and Tool Outputs
+Complete guardrail objects live in [builtin-examples-guide.md](builtin-examples-guide.md). Read it and copy the example that matches the request:
 
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "name": "PII detection guardrail",
-  "description": "This validator is designed to detect personally identifiable information using Azure Cognitive Services",
-  "validatorType": "pii_detection",
-  "validatorParameters": [
-    {
-      "$parameterType": "enum-list",
-      "id": "entities",
-      "value": ["Email", "PhoneNumber", "CreditCardNumber", "USSocialSecurityNumber"]
-    },
-    {
-      "$parameterType": "map-enum",
-      "id": "entityThresholds",
-      "value": {
-        "Email": 0.8,
-        "PhoneNumber": 0.7,
-        "CreditCardNumber": 0.9,
-        "USSocialSecurityNumber": 0.9
-      }
-    }
-  ],
-  "action": {
-    "$actionType": "block",
-    "reason": "PII detected in output — execution blocked."
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Agent", "Tool"],
-    "matchNames": ["MyToolName"]
-  }
-}
-```
-
-### Example 2: Log Harmful Content at Agent Level
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  "name": "Harmful content guardrail",
-  "description": "Logs harmful content violations at agent level without blocking",
-  "validatorType": "harmful_content",
-  "validatorParameters": [
-    {
-      "$parameterType": "enum-list",
-      "id": "harmfulContentEntities",
-      "value": ["Hate", "SelfHarm", "Sexual", "Violence"]
-    },
-    {
-      "$parameterType": "map-enum",
-      "id": "harmfulContentEntityThresholds",
-      "value": {
-        "Hate": 2,
-        "SelfHarm": 2,
-        "Sexual": 4,
-        "Violence": 2
-      }
-    }
-  ],
-  "action": {
-    "$actionType": "log",
-    "severityLevel": "Warning"
-  },
-  "enabledForEvals": false,
-  "selector": {
-    "scopes": ["Agent"]
-  }
-}
-```
-
-### Example 3: Prompt Injection Detection
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "e5f6a7b8-c9d0-1234-efab-567890123456",
-  "name": "Prompt injection guardrail",
-  "description": "This validator is provided by Noma Security and is built to detect malicious attack attempts (e.g. prompt injection, jailbreak) in LLM calls.",
-  "validatorType": "prompt_injection",
-  "validatorParameters": [
-    {
-      "$parameterType": "number",
-      "id": "threshold",
-      "value": 0.5
-    }
-  ],
-  "action": {
-    "$actionType": "log",
-    "severityLevel": "Info"
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Llm"]
-  }
-}
-```
-
-### Example 4: User Prompt Attack Detection — Block Jailbreaks
-
-No required parameters — binary detection via Azure Prompt Shield; `detectionScope` is the only optional one (see [Files and attachments](#files-and-attachments-detectionscope)). Llm PreExecution only.
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "f1a2b3c4-d5e6-7890-abcd-ef0123456789",
-  "name": "User prompt attack guardrail",
-  "description": "Detects jailbreak attempts and indirect prompt injection via Azure Prompt Shield",
-  "validatorType": "user_prompt_attacks",
-  "validatorParameters": [],
-  "action": {
-    "$actionType": "block",
-    "reason": "Adversarial input detected — execution blocked."
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Llm"]
-  }
-}
-```
-
-### Example 5: Intellectual Property Detection — Block Copyrighted Text and Code
-
-PostExecution only — no content exists to check before the LLM generates output. To check a file the agent produces instead of its text, see [files-guide.md § Recipe 3](files-guide.md#recipe-3--guard-a-file-the-agent-produces).
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "a2b3c4d5-e6f7-8901-bcde-f01234567890",
-  "name": "IP detection guardrail",
-  "description": "Detects copyrighted text and licensed GitHub code in LLM output",
-  "validatorType": "intellectual_property",
-  "validatorParameters": [
-    {
-      "$parameterType": "enum-list",
-      "id": "ipEntities",
-      "value": ["Text", "Code"]
-    }
-  ],
-  "action": {
-    "$actionType": "block",
-    "reason": "Protected material detected in output — execution blocked."
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Llm"]
-  }
-}
-```
-
-### Example 6: Block PII Inside Attached Files
-
-`detectionScope: "Files"` — only the run's attachments are evaluated; Agent PreExecution blocks before the model runs. Requires a `job-attachment` input field ([../../agent-definition.md](../../agent-definition.md) § File Attachments). Full recipe and variants: [files-guide.md](files-guide.md).
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "<UUID>",
-  "name": "PII in uploaded documents",
-  "description": "Blocks runs whose attached files contain customer identifiers",
-  "validatorType": "pii_detection",
-  "validatorParameters": [
-    { "$parameterType": "enum-list", "id": "entities", "value": ["Email", "CreditCardNumber"] },
-    { "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
-  ],
-  "action": { "$actionType": "block", "reason": "An attached file contains personal data." },
-  "enabledForEvals": true,
-  "selector": { "scopes": ["Agent"] }
-}
-```
-
-### Custom-rule, filter, and escalation examples
-
-Moved to the owning guides:
-
-- Custom word rules (block / log / specific fields with titles) and the filter redaction example → [custom-rules-guide.md § Examples](custom-rules-guide.md#examples)
+- [Example 1: Block PII in Agent and Tool Outputs](builtin-examples-guide.md#example-1-block-pii-in-agent-and-tool-outputs)
+- [Example 2: Log Harmful Content at Agent Level](builtin-examples-guide.md#example-2-log-harmful-content-at-agent-level)
+- [Example 3: Prompt Injection Detection](builtin-examples-guide.md#example-3-prompt-injection-detection)
+- [Example 4: User Prompt Attack Detection — Block Jailbreaks](builtin-examples-guide.md#example-4-user-prompt-attack-detection--block-jailbreaks)
+- [Example 5: Intellectual Property Detection — Block Copyrighted Text and Code](builtin-examples-guide.md#example-5-intellectual-property-detection--block-copyrighted-text-and-code)
+- [Example 6: Block PII Inside Attached Files](builtin-examples-guide.md#example-6-block-pii-inside-attached-files)
+- Custom word rules and the filter redaction example → [custom-rules-guide.md § Examples](custom-rules-guide.md#examples)
 - Escalate PII violations to Action Center → [escalation-guide.md](escalation-guide.md#example-escalate-pii-violations-to-action-center--multiple-tool-targets)
 
 ## agent.json with Guardrails
@@ -594,6 +416,8 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
 - [escalation-guide.md](escalation-guide.md) — `escalate` action schema, app verification workflow, worked example
 - [custom-rules-guide.md](custom-rules-guide.md) — custom (deterministic) guardrail schema, rule types, field selectors, worked examples
+- [builtin-examples-guide.md](builtin-examples-guide.md) — complete built-in validator guardrail objects (Examples 1–6)
+- [byo-guide.md](byo-guide.md) — bring-your-own (BYOG) entries, `IsByo`, `byoValidatorName`, disabled configurations
 - [files-guide.md](files-guide.md) — `detectionScope`, scope × stage file coverage, supported types and caps, input/output-file recipes
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema the file guardrails inspect
 - [../built-in-tools/analyze-attachments.md](../built-in-tools/analyze-attachments.md) — the tool whose `attachments[]` a Tool-scoped file guardrail sees

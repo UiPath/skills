@@ -5,6 +5,7 @@ message the author sees and the exit code the grader gets. The checker is Node; 
 Run: pytest tests/tasks/uipath-planner/_shared/test_genome_check_findings.py -v
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -180,6 +181,19 @@ def test_designed_in_sdd_that_cannot_be_read_fails_strict_only(check, tmp_path):
     assert "Designed in: x-sdd.md or a child SDD it lists cannot be read" in out
 
 
+def test_designed_in_fingerprint_taken_over_the_whole_sdd_still_matches(check, tmp_path):
+    body = "# SDD\n\n## Action Required — SME Review Items\n\n**D1. Which folder?**\n\n## 1. Overview\n\nBody.\n"
+    (tmp_path / "x-sdd.md").write_text(body, encoding="utf-8")
+    whole = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    assert whole != sdd_fingerprint(tmp_path / "x-sdd.md")
+    text = designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {whole}")
+    assert check(text, profile="strict")[0] == 0
+    (tmp_path / "x-sdd.md").write_text(body.replace("Body.", "Changed."), encoding="utf-8")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Designed in: sdd-sha256 does not match x-sdd.md" in out
+
+
 def test_designed_in_root_sdd_with_an_unreadable_child_fails_strict(check, tmp_path):
     (tmp_path / "x-sdd.md").write_text("| **Project SDD role** | root |\n\n[Child](child-sdd.md)\n", encoding="utf-8")
     (tmp_path / "child-sdd.md").write_text("# Child\n", encoding="utf-8")
@@ -311,12 +325,13 @@ def _decided(text: str, line: str) -> str:
     return re.sub(r"^(\*\*Evidence:\*\*.*)$", lambda m: m.group(1) + "\n" + line, text, count=1, flags=re.M)
 
 
-def test_a_decided_split_lists_its_option_alone(check):
-    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    text = _decided(text, "**Decided:** B, one requisition line — the SDD §10")
+def test_a_decided_split_keeps_every_row(check):
+    text = _decided(COMPONENT, "**Decided:** B, one requisition row — the SDD §10")
     rc, out = check(text, profile="strict")
-    assert "lacks option(s)" not in out and "alternative units of work named" not in out, out
+    assert "lacks option(s)" not in out and "Split options row" not in out and "'Decided:'" not in out, out
+    rc, out = check(re.sub(r"^\| one requisition row \| [AC] \|.*\n", "", text, flags=re.M), profile="strict")
+    assert rc == 1
+    assert "unit 'one requisition row' lacks option(s) ['A', 'C']" in out
 
 
 def test_a_decided_option_needs_its_row(check):
@@ -333,22 +348,13 @@ def test_a_decided_line_names_its_option_first(check):
     assert "the 'Decided:' line does not start with the option letter" in out
 
 
-def _decided_b(line: str) -> str:
-    """COMPONENT with the B row of 'one requisition line' alone and the given Decided: line."""
-    text = re.sub(r"^\| one requisition line \| [AC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    return _decided(text, line)
-
-
 def test_a_decided_b_line_with_a_project_chain_passes(check):
-    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
+    rc, out = check(_decided(COMPONENT, "**Decided:** B, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer → ReqReporter"), profile="strict")
     assert "'Decided:'" not in out, out
 
 
 def test_a_decided_chain_on_option_a_fails_strict(check):
-    text = re.sub(r"^\| one requisition line \| [BC] \|.*$", "", COMPONENT, flags=re.M)
-    text = re.sub(r"^\| (?!one requisition line)[^|]+ \| [ABC] \|.*$", "", text, flags=re.M)
-    text = _decided(text, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
+    text = _decided(COMPONENT, "**Decided:** A, one requisition line — the SDD §10: ReqDispatcher → ReqPerformer")
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
     assert rc == 1
@@ -356,7 +362,7 @@ def test_a_decided_chain_on_option_a_fails_strict(check):
 
 
 def test_a_decided_chain_naming_one_project_fails_strict(check):
-    rc, out = check(_decided_b("**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
+    rc, out = check(_decided(COMPONENT, "**Decided:** B, one requisition line — the SDD §10: ReqDispatcher"), profile="strict")
     assert rc == 1
     assert "the 'Decided:' project chain 'ReqDispatcher' does not name two or more projects separated by ' → '" in out
 
@@ -367,13 +373,13 @@ def test_a_decided_chain_naming_one_project_fails_strict(check):
     "InvoiceDispatcher → InvoicePerformer, InvoiceReporter",
 ])
 def test_a_decided_chain_not_separated_by_arrows_fails_strict(check, chain):
-    rc, out = check(_decided_b(f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
+    rc, out = check(_decided(COMPONENT, f"**Decided:** B, one requisition line — the SDD §10: {chain}"), profile="strict")
     assert rc == 1
     assert f"the 'Decided:' project chain '{chain}' separates its projects with '->', ',' or ' and ' — separate them with ' → '" in out
 
 
 def test_a_decided_source_quoting_the_request_is_no_chain(check):
-    rc, out = check(_decided_b('**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
+    rc, out = check(_decided(COMPONENT, '**Decided:** B, one requisition line — the request: "retry lines individually"'), profile="strict")
     assert "project chain" not in out, out
 
 
@@ -547,14 +553,14 @@ def test_steps_without_bold_names_fail_strict_only(check):
 
 
 def test_empty_configuration_questions_fail_core(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
     rc, out = check(COMPONENT.replace(cq, "## Configuration Questions\n\n"))
     assert rc == 1
     assert "Configuration Questions section is empty" in out
 
 
 def test_configuration_questions_without_list_or_stub_fail_strict_only(check):
-    cq = section(COMPONENT, "## Configuration Questions", "## Workflow")
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
     text = COMPONENT.replace(cq, "## Configuration Questions\n\nAsk the owner.\n\n")
     assert check(text)[0] == 0
     rc, out = check(text, profile="strict")
@@ -642,13 +648,39 @@ def test_component_without_part_of_line_fails_strict_only(process_tree, check_pr
     assert "invoice-extraction-genome.md: component inside a process genome lacks the 'Part of:' line" in out
 
 
-def test_handoffs_table_needs_two_rows(check_process):
-    def one_row(text):
-        return re.sub(r"(## Handoffs\n)(.*?)(?=^## )", r"\1\n| From | To |\n|---|---|\n| a | b |\n\n", text, flags=re.S | re.M)
-
-    rc, out = check_process(transform=one_row)
+def test_a_process_deployment_missing_a_bullet_fails_strict(check_process):
+    drop = lambda t: re.sub(r"^- \*\*Kept out of the logs:\*\*[^\n]*\n", "", t, count=1, flags=re.M)
+    assert check_process(transform=drop)[0] == 0
+    rc, out = check_process(profile="strict")
     assert rc == 1
-    assert "Handoffs table: 1 rows, expected >= 2" in out
+    assert "invoice-processing-genome.md: Deployment: no bullet for ['Kept out of the logs']" in out
+
+
+def handoff_rows(rows):
+    table = "| From | To |\n|---|---|\n" + "".join(f"| a{i} | b{i} |\n" for i in range(rows))
+    return lambda text: re.sub(r"(## Handoffs\n)(.*?)(?=^## )", rf"\1\n{table}\n", text, flags=re.S | re.M)
+
+
+def test_handoffs_table_needs_a_row(check_process):
+    rc, out = check_process(transform=handoff_rows(0))
+    assert rc == 1
+    assert "Handoffs table: 0 rows, expected >= 1" in out
+
+
+def test_one_handoff_row_is_enough(check_process):
+    _, out = check_process(transform=handoff_rows(1))
+    assert "Handoffs table" not in out
+
+
+def test_process_criteria_floor_is_the_core_floor(check_process):
+    def three_criteria(text):
+        head, body = text.split("## Acceptance Criteria\n", 1)
+        crit, rest = body.split("\n## ", 1)
+        kept = [l for l in crit.splitlines() if not re.match(r"[4-9]\. ", l)]
+        return head + "## Acceptance Criteria\n" + "\n".join(kept) + "\n\n## " + rest
+
+    _, out = check_process(profile="strict", transform=three_criteria)
+    assert "acceptance criteria" not in out
 
 
 def test_process_shape_and_tokens_are_asserted(check_process):
@@ -791,3 +823,150 @@ def test_script_runs_as_a_command(tmp_path):
     rc, out = cli("component", genome, "--profile", "strict")
     assert rc == 0
     assert out.startswith("OK (strict)")
+
+
+def open_decisions(text):
+    return section(text, "## Open Decisions", "## Workflow")
+
+
+def test_a_mark_naming_no_entry_fails_strict_only(check):
+    text = COMPONENT.replace("*[Inferred: D1]*", "*[Inferred]*", 1)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "mark(s) name no Open Decisions entry or Configuration Question" in out
+
+
+def test_a_mark_naming_a_missing_entry_fails_strict(check):
+    rc, out = check(COMPONENT.replace("*[Inferred: D1]*", "*[Inferred: D9]*", 1), profile="strict")
+    assert rc == 1
+    assert "names entry 9, which Open Decisions does not have" in out
+
+
+def test_a_decided_entry_keeps_no_marker(check):
+    od = open_decisions(COMPONENT)
+    first = re.search(r"^1\. [^\n]*$", od, re.M).group(0)
+    decided = first.split("? (", 1)[0] + "? (decided 2026-11-16: the robot machines' local time zone)"
+    rc, out = check(COMPONENT.replace(first, decided), profile="strict")
+    assert rc == 1
+    assert "which is decided: a settled point keeps no marker" in out
+
+
+def test_open_decisions_never_skip_a_number(check):
+    od = open_decisions(COMPONENT)
+    rc, out = check(COMPONENT.replace(od, od.replace("\n2. ", "\n3. ", 1)), profile="strict")
+    assert rc == 1
+    assert "entry 3 follows entry 1" in out
+
+
+def test_an_entry_in_no_known_form_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    first = re.search(r"^1\. [^\n]*$", od, re.M).group(0)
+    rc, out = check(COMPONENT.replace(first, "1. Which time zone? (maybe the local one)"), profile="strict")
+    assert rc == 1
+    assert "Open Decisions entry 1 is none of" in out
+
+
+def test_a_withdrawn_configuration_question_keeps_its_number(check):
+    cq = section(COMPONENT, "## Configuration Questions", "## Open Decisions")
+    first = re.search(r"^1\. [^\n]*$", cq, re.M).group(0)
+    rc, out = check(COMPONENT.replace(first, "1. Withdrawn: the requisitions no longer arrive by mail."), profile="strict")
+    assert "configuration question 1 does not name its kind" not in out
+
+
+def test_an_sdd_written_from_the_genome_goes_stale_when_the_genome_changes(tmp_path):
+    genome = tmp_path / "sample-genome.md"
+    genome.write_text(COMPONENT, encoding="utf-8")
+    fingerprint = subprocess.run(["node", str(FINGERPRINT), "--genome", str(genome)], capture_output=True, text=True, check=True).stdout.strip()
+    sdd = tmp_path / "sample-sdd.md"
+    sdd.write_text(f"# SDD\n\n## Planner Handoff\n\n| Field | Value |\n|---|---|\n| **Genome** | `sample-genome.md` · genome-sha256 {fingerprint} |\n", encoding="utf-8")
+    assert cli("component", genome, "--profile", "strict")[0] == 0
+    genome.write_text(COMPONENT.replace("## Tags\n", "## Tags\n\nchanged\n", 1), encoding="utf-8")
+    rc, out = cli("component", genome, "--profile", "strict")
+    assert rc == 1
+    assert "sample-sdd.md: genome-sha256 does not match the genome" in out
+    sdd.write_text("# SDD\n\n| **Genome** | `sample-genome.md` |\n", encoding="utf-8")
+    assert "has no 'Genome' handoff row carrying its genome-sha256 fingerprint" in cli("component", genome, "--profile", "strict")[1]
+
+
+def test_an_open_entry_the_genome_never_names_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    last = int(re.findall(r"^(\d+)\. ", od, re.M)[-1])
+    extra = f"{last + 1}. Who reads the run summary? (reading; answered by: whoever knows the process; reading: the finance team) — step 13\n"
+    text = COMPONENT.replace(od, od.rstrip("\n") + "\n" + extra + "\n", 1)
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"Open Decisions entry {last + 1} is named nowhere in the genome" in out
+
+
+# --- Platform Dependencies ---------------------------------------------------------------------
+
+def platform_dependencies(text):
+    return section(text, "## Platform Dependencies", "## Interface")
+
+
+def swap_tables(text, first, second):
+    pd = platform_dependencies(text)
+    blocks = re.split(r"(?=^### )", pd, flags=re.M)
+    i, j = (next(n for n, b in enumerate(blocks) if b.startswith(f"### {name}\n")) for name in (first, second))
+    blocks[i], blocks[j] = blocks[j], blocks[i]
+    return text.replace(pd, "".join(blocks), 1)
+
+
+def test_platform_dependencies_kinds_out_of_order_fail_strict_only(check):
+    text = swap_tables(COMPONENT, "Queues", "Assets")
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: '### Queues' out of the kinds' order" in out
+
+
+def test_a_kind_after_another_service_fails_strict(check):
+    service = "### Action Center\n\n| Resource | Used by | Purpose |\n|---|---|---|\n| Approvals | step 9 | the approver's task |\n\n"
+    rc, out = check(COMPONENT.replace("### Triggers\n", service + "### Triggers\n", 1), profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: '### Triggers' after '### Action Center'" in out
+
+
+def test_platform_dependencies_with_neither_tables_nor_stub_fails_strict(check):
+    pd = platform_dependencies(COMPONENT)
+    rc, out = check(COMPONENT.replace(pd, "## Platform Dependencies\n\nSome resources.\n\n", 1), profile="strict")
+    assert rc == 1
+    assert "Platform Dependencies: neither a table per kind nor the stub line" in out
+    stub = COMPONENT.replace(pd, "## Platform Dependencies\n\nNo Orchestrator or Integration Service resources required.\n\n", 1)
+    assert "Platform Dependencies: neither a table per kind" not in check(stub, profile="strict")[1]
+
+
+# --- Open Decisions: numbers and the forms that name an entry ------------------------------------
+
+def test_a_repeated_entry_number_fails_strict(check):
+    od = open_decisions(COMPONENT)
+    last = re.findall(r"^\d+\. [^\n]*$", od, re.M)[-1]
+    rc, out = check(COMPONENT.replace(last, last + "\n" + last, 1), profile="strict")
+    assert rc == 1
+    assert f"Open Decisions: entry {last.split('.')[0]} appears more than once" in out
+
+
+def test_a_cell_reference_names_no_entry(check):
+    od = open_decisions(COMPONENT)
+    n = int(re.findall(r"^(\d+)\. ", od, re.M)[-1]) + 1
+    extra = f"{n}. Who reads the run summary? (reading; answered by: whoever knows the process; reading: the finance team) — step 13\n"
+    text = COMPONENT.replace(od, od.rstrip("\n") + "\n" + extra + "\n", 1).replace("## Interface", f"The totals go to cell D{n} of the summary sheet.\n\n## Interface", 1)
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"Open Decisions entry {n} is named nowhere in the genome" in out
+
+
+def test_a_mark_naming_a_missing_configuration_question_fails_strict(check):
+    rc, out = check(COMPONENT.replace("## Interface", "A value read at start *[Inferred: CQ99]*.\n\n## Interface", 1), profile="strict")
+    assert rc == 1
+    assert "*[Inferred: CQ99]* names Configuration Question 99, which this genome does not have" in out
+
+
+def test_a_process_mark_naming_a_missing_process_entry_fails_strict(process_tree, check_process):
+    target = process_tree.parent / PROCESS_DIR.name / "invoice-extraction-genome.md"
+    text = target.read_text(encoding="utf-8")
+    target.write_text(text.replace("## Interface", "A value the process decides *[Inferred: process D9]*.\n\n## Interface", 1), encoding="utf-8")
+    rc, out = check_process(profile="strict")
+    assert rc == 1
+    assert "*[Inferred: process D9]* names entry 9, which the process genome's Open Decisions does not have" in out

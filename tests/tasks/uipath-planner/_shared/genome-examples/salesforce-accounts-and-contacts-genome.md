@@ -11,7 +11,7 @@
 
 ## Overview
 
-Completes the hands-on steps of the Trailhead module "Accounts and Contacts for Lightning Experience" in a Salesforce org by driving the Lightning web interface as a learner would. It creates the account Get Cloudy with its phone, account number, site, type, industry and billing city and state. It then adds the contacts Alan Johnson and Leung Chan from that account's page, opens Leung Chan's record and logs a call with a short comment. Every record value is fixed in the automation, so each run enters the same data. It serves a Trailhead learner, or a demonstration of browser automation on Lightning *[Inferred]*.
+Completes the hands-on steps of the Trailhead module "Accounts and Contacts for Lightning Experience" in a Salesforce org by driving the Lightning web interface as a learner would. It creates the account Get Cloudy with its phone, account number, site, type, industry and billing city and state. It then adds the contacts Alan Johnson and Leung Chan from that account's page, opens Leung Chan's record and logs a call with a short comment. Every record value is fixed in the automation, so each run enters the same data. It serves a Trailhead learner, or a demonstration of browser automation on Lightning *[Inferred: D1]*.
 
 The run starts as a job with no input and works in a browser already signed in to the org. It attaches to the open Salesforce tab, or opens the org's home page when no such tab is open, and never signs in itself. Nothing on screen is confirmed beyond finding the next element. The run writes one log line at its start and one after the last record is saved.
 
@@ -41,6 +41,15 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 2. Which browser does the run use? (setting; default: Chrome)
 3. How does the run get a signed-in Salesforce session, and as which user? (setting; default: the browser's existing signed-in session, as the source expects — no sign-in step and no credential asset; a sign-in instead needs one credential asset for the Salesforce user)
 
+## Open Decisions
+
+1. Who is this automation for? (reading; answered by: whoever knows the process; reading: a Trailhead learner or a demonstration of browser automation on Lightning, since the source project does not say) — Overview
+2. Does the contact form opened from the account's page link the contact to Get Cloudy, and does Save & New keep that link? (reading; answered by: the Salesforce org's owner; reading: yes to both, since the run never enters the account in the form and Salesforce behaviour is not in the project) — step 4, substeps a and c
+3. Which Log a Call button does the run click on Leung Chan's page, given that the tab still holds a hidden one from the account page? (reading; answered by: the Salesforce org's owner; reading: the visible button on the contact's page, since the hidden copy would fail the step or log the call on the account; the project cannot show this offline) — step 6, substep b; Error Handling, Step 6; Source Map
+4. What happens when the browser is not signed in to the org? (reading; answered by: the environment's owners; reading: the first action of step 3 finds no tab and the job ends faulted after its 30-second search, since the sign-in page lies outside the org's Lightning address) — Error Handling, Step 2
+5. What happens when a failed run is rerun, given the org's duplicate rules? (reading; answered by: the Salesforce org's owner; reading: the rerun creates another Get Cloudy account and new contacts, and the org's duplicate rules may warn or block, since the project holds no duplicate handling) — Error Handling, Global
+6. How does a target that is not found self-heal? (reading; answered by: the environment's owners; reading: it follows the job's Healing Agent setting in Orchestrator, since the project sets none) — Error Handling, Global
+
 ## Workflow
 
 Each value below is entered by clicking its field, emptying it, then typing the value.
@@ -61,16 +70,16 @@ Each value below is entered by clicking its field, emptying it, then typing the 
    g. Save the form. Salesforce opens the new account's record page, where step 4 acts.
    h. The run does not look for an existing Get Cloudy account first: every run creates a new one.
 4. **Add the contact Alan Johnson** (input: Get Cloudy's record page; output: saved contact Alan Johnson; an empty contact form open):
-   a. On the account's record page, choose New Contact. The form opens from the account, which links the contact to Get Cloudy; the run never enters the account in the form *[Inferred]*.
+   a. On the account's record page, choose New Contact. The form opens from the account, which links the contact to Get Cloudy; the run never enters the account in the form *[Inferred: D2]*.
    b. Set First Name to `Alan`, Last Name to `Johnson`, Title to `Sales Manager`, Phone to `<CONTACT_PHONE>` and Email to `alan@gogetcloudy.com`.
-   c. Choose Save & New: Alan Johnson is saved and an empty contact form takes its place, still linked to Get Cloudy *[Inferred]*.
+   c. Choose Save & New: Alan Johnson is saved and an empty contact form takes its place, still linked to Get Cloudy *[Inferred: D2]*.
 5. **Add the contact Leung Chan** (input: the empty contact form; output: saved contact Leung Chan; Get Cloudy's record page open):
    a. Wait 1 second for the new form to settle, then set First Name to `Leung`.
    b. Set Last Name to `Chan`, Title to `Marketing Manager` and Email to `leung@gogetcloudy.com`; Phone stays empty.
    c. Save the form; the run is back on Get Cloudy's record page.
 6. **Log a call on Leung Chan** (input: Get Cloudy's record page; output: a call logged on Leung Chan's record):
    a. Open Leung Chan's contact record from the contact card named `Leung Chan` on the account's page.
-   b. On the contact's record page, choose Log a Call. Act on this page's visible button: the tab still holds a hidden Log a Call button from the account page *[Inferred]*.
+   b. On the contact's record page, choose Log a Call. Act on this page's visible button: the tab still holds a hidden Log a Call button from the account page *[Inferred: D3]*.
    c. Set Comments to `Discussed account setup and confirmed contact details.`; every other field of the call keeps what Salesforce fills in.
    d. Save the call.
 7. **Output** (input: none; output: completion log line): Writes the information log line `Trailhead unit steps completed: account 'Get Cloudy' created with contacts Alan Johnson and Leung Chan, and a call was logged on Leung Chan's record` and ends. The run returns nothing; its results are the account, the two contacts and the logged call in Salesforce.
@@ -82,19 +91,19 @@ No business rules beyond the Workflow substeps.
 ## Error Handling
 
 ### Step 2: Attach to Salesforce in the browser
-- Browser not signed in: the run has no sign-in step. The org's sign-in page is outside the org's Lightning address, so the first action of step 3 finds no tab, fails after its 30-second search and the job ends faulted *[Inferred]*.
+- Browser not signed in: the run has no sign-in step. The org's sign-in page is outside the org's Lightning address, so the first action of step 3 finds no tab, fails after its 30-second search and the job ends faulted *[Inferred: D4]*.
 
 ### Step 5: Add the contact Leung Chan
 - New form after Save & New: a fixed 1-second wait before the first field is typed; no other step adds a wait of its own.
 
 ### Step 6: Log a call on Leung Chan
-- Two Log a Call buttons in the tab: the action has to take the visible one on the contact's page. Taking the account page's hidden one fails the step, or logs the call on the account instead of on Leung Chan *[Inferred]*.
+- Two Log a Call buttons in the tab: the action has to take the visible one on the contact's page. Taking the account page's hidden one fails the step, or logs the call on the account instead of on Leung Chan *[Inferred: D3]*.
 
 ### Global
 - Every UI action waits for the page to become interactive and searches up to 30 seconds for its element, pausing 0.2 seconds before and 0.3 seconds after acting.
 - No step confirms a save (no message or record check). Finding the next element is the only sign the previous save worked.
-- Unhandled exception: no step catches or retries a failure. The first failed action ends the job faulted, without the completion log line. Records saved before the failure stay in Salesforce. A rerun starts again at step 3 and creates another Get Cloudy account and new contacts; whether the org's duplicate rules warn about them or block them depends on the org *[Inferred]*.
-- UI self-healing of a target that is not found follows the job's Healing Agent setting in Orchestrator *[Inferred]*.
+- Unhandled exception: no step catches or retries a failure. The first failed action ends the job faulted, without the completion log line. Records saved before the failure stay in Salesforce. A rerun starts again at step 3 and creates another Get Cloudy account and new contacts; whether the org's duplicate rules warn about them or block them depends on the org *[Inferred: D5]*.
+- UI self-healing of a target that is not found follows the job's Healing Agent setting in Orchestrator *[Inferred: D6]*.
 - Browser dialogs are not dismissed automatically; the pages used raise none.
 
 ## Transactional Shape
@@ -147,5 +156,5 @@ crm, salesforce, salesforce-lightning, trailhead, chrome, browser-automation, da
 | 3 | `Main.xaml` | none | 0 | `NClick_1`, `NClick_2`, `NTypeInto_1`–`NTypeInto_6`, `NSelectItem_1`, `NSelectItem_2`, `NClick_3`; values are activity literals |
 | 4 | `Main.xaml` | none | 0 | `NClick_4`, `NTypeInto_7`–`NTypeInto_11`, `NClick_5`; the contact form's field targets sit in the related-list create panel, which is the basis for the account link inferred in 4a and 4c |
 | 5 | `Main.xaml` | none | 0 | `NTypeInto_12`–`NTypeInto_15`, `NClick_6`; `NTypeInto_12` carries the 1-second delay before; no phone action for this contact |
-| 6 | `Main.xaml` | none | 0 | `NClick_7`, `NClick_8`, `NTypeInto_16`, `NClick_9`. The Log a Call target takes the second matching button by position among interactive elements; `project-context.md` attributes the first match to a hidden copy the account page leaves in the tab. The target is consistent with that note but cannot be verified offline (6b *[Inferred]*). The position depends on the tab's history: an attached tab that visited other record pages may hold a different number of copies |
+| 6 | `Main.xaml` | none | 0 | `NClick_7`, `NClick_8`, `NTypeInto_16`, `NClick_9`. The Log a Call target takes the second matching button by position among interactive elements; `project-context.md` attributes the first match to a hidden copy the account page leaves in the tab. The target is consistent with that note but cannot be verified offline (6b *[Inferred: D3]*). The position depends on the tab's history: an attached tab that visited other record pages may hold a different number of copies |
 | 7 | `Main.xaml` | none | 0 | Log line `LogMessage_2` |

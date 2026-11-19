@@ -2,59 +2,47 @@
 
 *Commands: `uip maestro flow nodes schema get` and `uip maestro flow nodes schema set`.*
 
-An Extract document node (`uipath.ixp.extract-document-builder`) decides what to pull out of a document from a taxonomy it carries inline, at `inputs.schemaDocument` in the `.flow` file. The taxonomy names the field groups, the fields under them, each field's data type, and the instructions the model reads. The taxonomy is the extraction model's brief. Writing a good one is most of the work of making the node useful, and these two commands are how it is read and replaced.
+An Extract document node (`uipath.ixp.extract-document-builder`) extracts from the inline taxonomy at `inputs.schemaDocument` in the `.flow`: groups, fields, field types, and model instructions. Read or replace it with:
 
 ```bash
 uip maestro flow nodes schema get <file> --node-id <id> --output json
 uip maestro flow nodes schema set <file> --node-id <id> --schema @<taxonomy.json> --output json
 ```
 
-Both edit the `.flow` on disk and need no login. `--schema` takes the document as a JSON string, or reads it from a file when the value starts with `@`.
+Both commands edit the `.flow` without login. `--schema` accepts JSON or a file when its value starts with `@`.
 
-**These commands are new.** A CLI that predates them answers `error: unknown command 'schema'` with `"Result": "ValidationError"`. That means the installed `uip` is older than the commands, not that the node or the flow is wrong — so tell the user to update their CLI.
+**These commands are new.** If the CLI returns `error: unknown command 'schema'` with `"Result": "ValidationError"`, tell the user to update `uip`; this is not a bad node or flow.
 
-This guide assumes the node already exists. Adding it, wiring `fileRef`, when it applies over a published IXP model, and why these commands do not survive a project with a `.flow-sdk/` directory (the next compile overwrites the taxonomy) are in [extract-document-node.md](extract-document-node.md).
+This guide assumes the node exists. For adding it, wiring `fileRef`, when it applies over a published IXP model, and why these commands do not survive a `.flow-sdk/` project (the next compile overwrites the taxonomy), see [extract-document-node.md](extract-document-node.md).
 
 ## Starting from a flow in Studio Web
 
 <!--skill-flavor:extract-brownfield:start-->
-Users can start off with a flow in Studio Web, and ask you to continue working on it. You should then work on a local copy: pull it down, edit it, push it back.
+For a Studio Web flow, work on a local copy: download, edit, and upload it. Identify it by solution id or the Studio Web URL's `solutionId` query parameter. If neither was provided, ask for either; if Studio Web was not mentioned and no local `.flow` exists, ask whether the flow is in Studio Web. **When in doubt, ask, rather than working it out.** Nothing lists Studio Web: `uip solution` downloads, uploads, and deletes only by id. Search endpoints and stored CLI credentials are not ways around asking; say either a link or an id works, and continue once it arrives.
 
-Pulling it down requires the flow's solution id, and where that comes from depends on what the user has already said.
-
-The user may provide either the URL of the flow in Studio Web - which contains the `solutionId` query parameter, or the solution id on its own. Either is enough to identify the solution to download.
-
-If the user has not provided either of these and they are referring to a flow in Studio Web, ask them for either the URL or the solution id before proceeding.
-
-If the user has not mentioned Studio Web at all, but no local `.flow` turns up, clarify with the user whether the flow lives in Studio Web.
-
-**When in doubt, ask, rather than working it out.** Nothing enumerates what is in Studio Web: `uip solution` downloads, uploads and deletes by id, and the ids it prints come from solutions already to hand. So there is no listing to find, and the places that look like a way around it — the platform's search endpoint, the CLI's stored credentials — are not paths to take. Ask for a link or an id, say that either works, and carry on once it arrives.
-
-Then pull it down:
+Run:
 
 ```bash
 uip login status --output json
 uip solution download <solution-id>
 ```
 
-The download writes a directory named after the id, with the flow project inside it, and every command in this guide runs against the `.flow` in that project. Where login has expired, say so and ask the user to log in with `uip login`.
+The download creates a directory named for the id containing the flow project. Run this guide's commands against its `.flow`. If login expired, report it and ask the user to log in with `uip login`.
 
-Push the finished taxonomy back with `uip solution upload` from the downloaded solution's root, so the flow they opened in Studio Web is updated with the changes, and tell them where to find it.
+Push the finished taxonomy with `uip solution upload` from the downloaded solution root and tell the user where to find the updated flow.
 <!--skill-flavor:extract-brownfield:end-->
 
 ### The documents uploaded to the node
 
 <!--skill-flavor:extract-eval-files-path:start-->
-Sample documents a user uploaded through Studio Web come down with the solution, under the flow project:
+Studio Web sample documents are downloaded under:
 
 ```
 <Project>/evals/<dataset-id>/eval-files/
 ```
 <!--skill-flavor:extract-eval-files-path:end-->
 
-The dataset directory is a GUID, so list `evals/` rather than guessing it. These are the documents to design the taxonomy from, and reading them needs one step first.
-
-**They are not the files their names claim.** Each keeps its original extension but holds text in a wrapper:
+List `evals/` rather than guessing its GUID dataset directory. Files retain their extensions but contain:
 
 ```
 BINARY_FILE:application/pdf:2073
@@ -62,7 +50,7 @@ BINARY_FILE:application/pdf:2073
 JVBERi0xLjMKJe…
 ```
 
-A header line gives the media type and the byte count, then a separator, then the payload. Reading one directly returns that text instead of a document, and decoding the whole file fails because of the first two lines. Drop them, then decode:
+Drop the first two lines and decode before reading:
 
 ```bash
 mkdir -p decoded
@@ -71,13 +59,11 @@ for f in <Project>/evals/*/eval-files/*; do
 done
 ```
 
-With more than one dataset under `evals/`, two files can share a name and overwrite each other — decode per dataset directory when that happens.
-
-Read the decoded copies.
+Decode per dataset directory when multiple datasets contain duplicate filenames, then read the decoded copies.
 
 ## At a glance
 
-Read the user's sample documents, design the taxonomy from what is on the page, write it, and fix whatever the write rejects.
+Read sample documents, design and write the taxonomy, fix rejections, and validate:
 
 ```bash
 uip maestro flow nodes schema get Flow/Flow.flow --node-id extractDocument1 --output json   # what is there now
@@ -85,26 +71,21 @@ uip maestro flow nodes schema set Flow/Flow.flow --node-id extractDocument1 --sc
 uip maestro flow validate Flow/Flow.flow --output json
 ```
 
-`set` replaces the whole document rather than patching it ([What `set` does for you](#what-set-does-for-you)). Read the documents before designing: a taxonomy written from the user's sentence alone misses the fields that are actually on the page, and invents ones that are not.
+`set` replaces the whole document, not a patch ([What `set` does for you](#what-set-does-for-you)). Read documents first: relying only on the user's sentence misses actual fields and invents absent ones.
 
 ## The loop
 
-1. **Collect the samples.** Check for documents uploaded to the node; they need decoding first ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). With none, ask for a few representative documents, even when the user listed the fields — variety over volume. With none supplied, design from the stated fields and say so in the report.
-2. **Read them.** One full `Read` per decoded document returns text and image for both digital and scanned files, so no PDF tooling is needed.
-3. **Design the taxonomy** against the rules below and write it to a JSON file.
-4. **Write it:** `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
-5. **Fix what it rejects.** Exit 3 means the document is a schema but breaks a rule; `Data.Issues` lists each problem with the path it is at. Correct those and run the same command again.
-6. **Validate the flow:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-7. **Report** what was created, and pass on `Data.ProcessorSync`: it says whether this schema reaches the node's processor when the solution next packs or publishes. Name the file in `Data.ResourceFile` too: the write puts this schema there as well, and it has to be kept with the `.flow`. Taking the node live is the user's step.
+1. **Collect samples.** Check and decode uploaded documents ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Without samples, ask for representative documents even if fields were listed; if none are supplied, design from the stated fields and say so in the report.
+2. **Read them.** Perform one full `Read` per decoded document; it returns text and image for digital and scanned files, so PDF tooling is unnecessary.
+3. **Design** the taxonomy under the rules below and write it to a JSON file.
+4. **Write:** run `uip maestro flow nodes schema set <file> --node-id <id> --schema @<path> --output json`.
+5. **Fix rejections.** Exit 3 means a rule-violating schema; fix each problem `Data.Issues` lists at its path and rerun the same command.
+6. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
+7. **Report** what was created, `Data.ProcessorSync`, and `Data.ResourceFile`. The write stores the schema in that file too; keep it with the `.flow`. Taking the node live is the user's decision.
 
 ## The document
 
-The document has two members that matter:
-
-- `prompt` — the overall extraction instructions, applying to everything.
-- `outputSchema` — an OpenAI structured-outputs JSON Schema. Its top-level `properties` are the field groups; its `$defs` are the field types.
-
-`config` is a copy of the node's model settings. Leave it out of anything you write: `set` rebuilds it from `inputs.modelConfig`, so a `config` you send is discarded.
+The written document has `prompt` (overall extraction instructions) and `outputSchema` (an OpenAI structured-outputs JSON Schema whose top-level `properties` are groups and `$defs` are field types). Do not write `config`: `set` rebuilds it from `inputs.modelConfig`, so supplied `config` is discarded.
 
 Here's a worked invoice taxonomy example, which illustrates the format specification:
 
@@ -174,120 +155,95 @@ Here's a worked invoice taxonomy example, which illustrates the format specifica
 
 ### Field groups
 
-Each entry of `outputSchema.properties` is a field group, and its shape says how often it occurs.
+Each `outputSchema.properties` entry is a group. A single-occurrence group is `"type": ["object", "null"]` with fields directly under `properties`; a repeating group is `"type": "array"` with fields under `items.properties`. Model repeating tables as arrays.
 
-A group that occurs **once** per document — a header, a summary block — is `"type": ["object", "null"]` and holds its fields directly under `properties`. A group that **repeats** — line items, transactions, payments — is `"type": "array"` and holds its fields under `items.properties`. Getting this wrong costs accuracy: a repeating table modelled as a single group returns only one row.
-
-**Nesting is by name.** A group keyed `Invoice > Line Items` is a child of the group keyed `Invoice`. Both sit at the top level of `properties`; the hierarchy lives in the key, separated by a space-greater-than-space. The stored document also carries a back-reference to the parent's id, but you do not write it — `set` derives it from the key and fills it in.
-
-Start with one group named for the document type, and put each table or section under it as a child. That mirrors how the document reads and gives the model a frame for where to look.
+Nesting is by property name: `Invoice > Line Items` is a child of `Invoice`; both remain top-level properties, separated by space-greater-than-space. `set` derives and stores the parent back-reference, so do not write it. Start with one document-type group and put each table or section beneath it.
 
 ### Field types
 
-A field does not carry its data type. It points at an entry in `outputSchema.$defs` with a `$ref`, and the entry says what the value looks like. A node arrives with six entries already defined:
+Fields use `$ref` entries in `outputSchema.$defs`; the node initially provides:
 
 | Use it for | `$defs` key | Returns |
 | --- | --- | --- |
-| A value copied off the page exactly as printed | `ft-exact-text` | the text, verbatim |
-| A value that is derived, summarised, or where plain text is right but a stricter type is not certain | `ft-inferred-text` | text |
-| A date | `ft-date` | a calendar date |
-| A count or other quantity that is not money | `ft-number` | a decimal, keeping the printed scale |
-| A currency amount | `ft-monetary-quantity` | the amount with its currency |
-| A yes/no | `ft-boolean` | true or false |
+| Exact printed value | `ft-exact-text` | verbatim text |
+| Derived, summarized, ambiguous, or plain text | `ft-inferred-text` | text |
+| Date | `ft-date` | calendar date |
+| Non-money count or quantity | `ft-number` | decimal, preserving printed scale |
+| Currency amount | `ft-monetary-quantity` | amount with currency |
+| Yes/no | `ft-boolean` | true or false |
 
-**Carry the whole `$defs` block through unchanged.** `set` replaces the document, so a write that drops an entry removes that field type from the node even if nothing used it. Every `$ref` is checked against the block in the same document, wherever it sits, and one that names a key you did not include is refused — `$ref "#/$defs/ft-date" does not name a field type in outputSchema.$defs`.
+Carry the whole `$defs` block through unchanged. `set` replaces the document; omitting an entry removes that type, and every `$ref` must resolve within the same block. Prefer a stricter type only when certain; otherwise use `ft-inferred-text`.
 
-**Prefer a stricter type only when you are sure.** `ft-inferred-text` is the right answer for anything ambiguous; a wrong strict type fails to extract a value that a text field would have returned.
-
-**A Choice is the one type you add yourself.** Use it only where the complete set of allowed values is small, fixed, and evident from the documents or from what the user told you — a status column with four states, not a description column. Add an entry keyed with the same `ft-` prefix and a URL-safe suffix:
+A Choice is the only type you add; add one only when its complete set of allowed values is small, fixed, and evident from documents or user instructions — a status column, not a description column. Use an `ft-` key with a URL-safe suffix, for example:
 
 ```json
 "ft-payment-status": { "title": "Payment Status", "type": ["string", "null"], "enum": ["Paid", "Unpaid", "Partially paid"] }
 ```
 
-Never infer the allowed values from what happens to appear in the samples — a value the documents did not show still extracts, and an enum that omits it loses it. Where the set is large or open, use `ft-inferred-text` and name the likely values in the field's instructions instead.
+Never infer enum values from what appears in the samples: a value they did not show still extracts, and an enum that omits it loses it. For large or open sets, use `ft-inferred-text` and list likely values in field instructions.
 
 ### Names
 
-A group's name is its property key, a field's name is its property key, and a field type's name is its `title`. Each must be **64 characters or fewer**, counted exactly as written, including any surrounding spaces.
-
-For a nested group, keep the **whole composed key** within 64 — `Invoice > Line Items` counts as 20, separator included. Keeping the composed key inside the limit satisfies every reader of the document.
-
-Beyond the limit: never empty; never starting with punctuation, a symbol or a space; unique among siblings. Prefer the document's own wording — a field's name is usually its column header or row label — and keep it short enough to read in the editor.
+Group and field property keys, and field-type `title` values, must be **64 characters or fewer**, counting spaces. The entire nested key, including ` > `, counts. Names must not be empty, begin with punctuation, a symbol, or a space, and must be unique among siblings. Prefer short wording from the document.
 
 ### Instructions
 
-Every group, every field and the document as a whole takes instructions: `description` on the group or field, `prompt` on the document. Each is **4096 characters or fewer**.
-
-Write them for all three. The data type says what a value looks like; the instructions say which value on the page is the right one, which is what the model actually needs. `"The date the invoice was issued, not the due date"` earns its place. `"The invoice date"` does not — it repeats the field name and tells the model nothing.
-
-Anything the user said about a particular field outranks what you inferred from the documents. If they said the reference number excludes a branch prefix, write that down even if every sample includes one.
+The document `prompt`, every group `description`, and every field `description` must be **4096 characters or fewer**. Write all three: types describe value shape; instructions identify the correct value on the page. `"The date the invoice was issued, not the due date"` earns its place; `"The invoice date"` repeats the field name and tells the model nothing. User instructions for a field outrank document inference; record them even if every sample contradicts them (e.g. a reference number said to exclude a branch prefix).
 
 ### Size
 
-Nothing here is enforced by the CLI, but a taxonomy that ignores it tends to extract badly:
+These limits are not CLI-enforced but improve extraction:
 
-- Keep a group to a readable number of fields. The IXP taxonomy quota, which this node does not share, caps a group at 25, and that is a reasonable ceiling to design against.
-- Keep the number of distinct field types small. Every Choice with a different set of values is another type.
-- A Choice with a long list of values is usually a text field in disguise.
+- Keep groups to a readable number of fields; 25 is a reasonable ceiling (the IXP taxonomy quota, which this node does not share, caps groups at 25).
+- Keep distinct field types few; each distinct Choice is another type.
+- A long Choice is usually a text field in disguise.
 
 ## What `set` does for you
 
-**It keeps stable ids.** Every group and field carries an id (`x-uipath-field-group-id`, `x-uipath-field-id`). Annotations, per-field evaluator settings and taxonomy history are all stored against those ids. On a first write there are none, and `set` mints one per entry. On a later write it keeps every id you sent, and gives an entry that has none the id of the same-named entry it replaces.
-
-**It rebuilds the model-settings copy** from the node's `inputs.modelConfig`, so the document can never disagree with the settings the extraction actually runs under.
-
-**It checks the document before writing anything.** A document that is not a schema at all, or that breaks a limit, is refused with exit 3 and changes nothing on disk.
-
-**It refuses to destroy an unsaved draft.** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops rather than overwriting it. `--discard-draft` proceeds and throws the draft away. Pass it only when the user asked for it in this conversation. With no one to ask (headless, CI), leave the node as it is, report the draft and `DraftIssueMessages`, and stop; the request is not done. Never hand-edit `inputs.schemaDocument` to get around the refusal.
+- **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve supplied ids and assign a missing entry the id of the same-named replaced entry.
+- **Model settings:** It rebuilds them from `inputs.modelConfig`.
+- **Validation:** A non-schema or limit violation returns exit 3 and changes nothing on disk.
+- **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop; the request is not done. Run no `nodes provision` either: it writes `inputs.processorKey` into the node. Report a missing processor instead. Never hand-edit `inputs.schemaDocument` to bypass this.
 
 ## Editing a taxonomy that already exists
 
-`get` first, always. Then change what needs changing and send the whole document back, under two rules.
-
-**Keep the ids.** Every id that came back from `get` stays on its entry, including through a rename — an id is what connects a field to the annotations and evaluator settings recorded against it, and the readers fall back to matching by position when one is missing. A rename that drops the id quietly re-points stored annotations at whatever field now sits in that place.
-
-**Keep the text.** Send every existing group and field with its `description`, type and id exactly as `get` returned them. Put new information in new groups, new fields or the document `prompt`; never reword an existing description.
-
-**Send everything back.** `set` replaces the document rather than patching it, so anything you leave out is gone: other field groups, the `$defs` catalogue, the overall prompt.
-
-Never write a replacement from scratch over a taxonomy that already has content. If the user wants a fresh start, say what will be lost first.
+Run `get` first, then send the complete document back. Preserve every existing id, including through renames, because ids connect annotations and evaluator settings; missing ids cause position-based fallback and can repoint annotations. Preserve every existing group and field's `description`, type, and id exactly as returned; add information only in new groups, fields, or `prompt`. Send all groups, `$defs`, and the overall prompt because `set` replaces rather than patches. Never write from scratch over existing content; if the user wants a fresh start, first say what will be lost.
 
 ## Reading the output
 
-`get` returns the stored document under `Data.Schema`, with its own key casing intact so it can be edited and sent straight back. `Data.HasDraft` says whether an unsaved Studio Web edit is parked on the node, and `Data.DraftIssueMessages` says what the editor thought was wrong with it.
+`get` returns the stored document under `Data.Schema` with original key casing, so it can be edited and sent straight back. `Data.HasDraft` reports an unsaved Studio Web edit; `Data.DraftIssueMessages` says what the editor found wrong with the draft.
 
-`set` returns counts and what happened to the ids:
+`set` returns:
 
 | Field | Means |
 | --- | --- |
-| `Groups`, `Fields`, `FieldTypes` | what the written taxonomy now holds |
-| `GroupIdsPreserved`, `FieldIdsPreserved` | entries that kept the id they already had |
-| `GroupIdsMinted`, `FieldIdsMinted` | entries that were new and got one |
-| `BusinessChecksDropped` | checks that were attached to an id no longer in the document, and went with it |
-| `DraftDiscarded` | an unsaved editor draft was thrown away |
-| `ReplacedLegacyDocument` | the node had been carrying the superseded `{taxonomy, fieldTypes}` form, so nothing kept an id |
-| `ProcessorKey` | the processor this node's schema deploys through |
-| `ResourceFile` | the processor's own file under the solution, holding the copy of the schema that deploys. This write puts the schema there — creating the file for a node that had no processor, updating it in place for one that already had — so the file belongs in the same change as the `.flow` |
-| `ResourcePending` | the node gained a processor but no resource file was written, and why. Pass the reason on — it names what creates the file instead |
-| `ProcessorSync` | whether packing the solution rebuilds that processor from this node — it does not for a read-only mirror (`inputs.processorReadOnly`) or a processor published to the tenant (`inputs.processorFolderPath`), whose deployed schema this write never reaches |
+| `Groups`, `Fields`, `FieldTypes` | counts in the written taxonomy |
+| `GroupIdsPreserved`, `FieldIdsPreserved` | entries retaining existing ids |
+| `GroupIdsMinted`, `FieldIdsMinted` | new entries receiving ids |
+| `BusinessChecksDropped` | checks attached to removed ids |
+| `DraftDiscarded` | whether an unsaved draft was discarded |
+| `ReplacedLegacyDocument` | superseded `{taxonomy, fieldTypes}` form was replaced, so no id was retained |
+| `ProcessorKey` | processor through which the schema deploys |
+| `ResourceFile` | processor file under the solution containing the deployable schema; this write creates or updates it, and it belongs in the same change as the `.flow` |
+| `ResourcePending` | why a newly gained processor has no resource file; pass on what creates it |
+| `ProcessorSync` | whether packing rebuilds that processor; it does not for a read-only mirror (`inputs.processorReadOnly`) or tenant-published processor (`inputs.processorFolderPath`), whose deployed schema this write does not reach |
 
-On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped, so the annotations stored against it no longer point at the field; business checks hang off those same ids, so a dropped id takes its checks with it.
+On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting success. A minted id where a rename was intended means the id was dropped: its annotations no longer point at the field, and its business checks are gone.
 
 ## When it refuses
 
 | Exit | Message | What to do |
 | --- | --- | --- |
-| 3 | `Schema document failed validation` | Content problems arrive under this message. Read `Data.Issues`: each entry names the path and the problem. A missing parent is reported here too (`Nested field group "<key>" has no parent group "<parent>"`) — a group named `Parent > Child` needs `Parent` defined in the same document. When an existing group was clearly meant as the parent, rename one of the two so the keys match; never add an empty parent group. |
-| 3 | `Invalid schema document` | The document is not a schema — it needs `prompt` and `outputSchema`. |
-| 3 | `Legacy schema document shape` | The document sent uses the superseded `{taxonomy, fieldTypes}` form; send `{ prompt, outputSchema }`. A legacy document already on the node is simply replaced, reported as `ReplacedLegacyDocument: true`. |
+| 3 | `Schema document failed validation` | Read `Data.Issues` for paths and problems. A missing parent is included: `Nested field group "<key>" has no parent group "<parent>"`. `Parent > Child` needs `Parent` in the same document; if an existing group was clearly meant as parent, rename one key to match—never add an empty parent. |
+| 3 | `Invalid schema document` | Send `prompt` and `outputSchema`; the document is not a schema. |
+| 3 | `Legacy schema document shape` | Send `{ prompt, outputSchema }`, not `{taxonomy, fieldTypes}`. An existing legacy node document is replaced and reports `ReplacedLegacyDocument: true`. |
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. Headless: stop and report. |
-| 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--schema @<file>` for anything sizeable; shells mangle inline JSON. |
-| 1 | `Cannot read the schema file` | The path after `@` does not exist or could not be read. This is a wrong path, not a malformed schema. |
-| 1 | node not found, or wrong node type | `uip maestro flow nodes list <file>` gives the ids and types. Only Extract document nodes carry a taxonomy. |
+| 1 | `Invalid --schema JSON` | The argument did not parse; prefer `--schema @<file>` for sizeable JSON. |
+| 1 | `Cannot read the schema file` | The `@` path is absent or unreadable; this is a path error, not malformed schema. |
+| 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry a taxonomy. |
 
 ## Evidence boundary
 
-Everything here is offline. `set` and `flow validate` prove the taxonomy is well formed, that its references resolve and that its names and instructions fit — not that it extracts the right values. Only running the node against real documents shows that, and the taxonomy usually needs a round of tightening afterwards, mostly in the instructions.
+Everything here is offline. `set` and `flow validate` prove schema shape, resolved references, and name/instruction limits—not extraction accuracy. Only running the node on real documents shows that; expect a round of tightening afterwards, mostly in the instructions.
 
-Where `Data.ResourceFile` names a file, the write landed in two places: the node in the `.flow`, and the processor's own copy of the schema in that file. A debug run and a deployed extraction read that copy, so carry it with the `.flow`. A write that reports `Data.ResourcePending` wrote no second file. `Data.ProcessorSync` says when this schema never reaches the deployed extraction at all. Report whichever of these the write came back with. Taking the node live stays a decision for the user.
+When `Data.ResourceFile` is present, the write landed in both the `.flow` node and the processor copy; debug runs and deployed extraction read that copy, so carry it with the `.flow`. `Data.ResourcePending` means no second file was written. `Data.ProcessorSync` identifies cases where the schema never reaches deployed extraction. Report these values. Taking the node live remains the user's decision.
