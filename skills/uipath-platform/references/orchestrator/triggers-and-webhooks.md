@@ -59,7 +59,7 @@ uip or triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key <process-key> \
   --cron "0 0 9 ? * MON-FRI" \
-  --time-zone "Europe/Bucharest" \
+  --time-zone "GTB Standard Time" \
   --runtime-type Unattended \
   --job-priority Normal --output json
 ```
@@ -68,7 +68,7 @@ uip or triggers create --type time \
 folder is derived from the release the trigger is bound to. Same for all
 three trigger types.
 
-`--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
+`--time-zone` takes a Windows time zone ID such as `UTC`, `GTB Standard Time` or `Pacific Standard Time`, not an IANA name. Run `uip or settings timezones --output json` and pass the `Value` of the zone you need. If `triggers create` or `triggers update` fails with `HTTP 400: The process schedule's time zone is not a valid windows time zone id.`, the value was not a Windows ID: look it up the same way and retry. Recent CLI versions also send an IANA name (`Europe/Bucharest`) as its Windows ID, but the Windows ID works on every version.
 
 Additional options:
 - `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
@@ -265,6 +265,7 @@ uip or webhooks list --enabled --output json
 - **Cron is Quartz 6-field, NOT Unix 5-field.** If a trigger never fires, check for 6 fields and `?` in day-of-month or day-of-week.
 - **`--type` defaults to `time`.** Omitting it when you mean queue or API causes confusing errors.
 - **`--release-key` is the process key** from `uip or processes list` (a GUID), NOT the package ID from `uip or packages list`.
+- **`--time-zone` is a Windows time zone ID** (`GTB Standard Time`), not an IANA name (`Europe/Bucharest`). `uip or settings timezones --output json` lists the IDs.
 - **Calendar keys come from `uip or calendars list`** -- an Orchestrator resource. Keep calendar and trigger timezones aligned.
 - **Trigger history is the debugging tool.** When a trigger doesn't fire, `triggers history` shows why (no machines, license exhausted, calendar exclusion, auto-disabled). Check history before changing config.
 - **Triggers are folder-scoped** -- every command needs `--folder-path` or `--folder-key`. **Webhooks are tenant-scoped** -- no folder flags.
