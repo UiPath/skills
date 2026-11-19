@@ -101,7 +101,7 @@ export default casePlan('loan-approval')
   .build();
 ```
 
-An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; every call is another OR condition. Write one call per SDD Entry/Exit Rule row, and an IF expression on a row is that rule's `expression`. `[rule('case-entered'), ...]` never fires after the case starts, so the stage is never entered.
+An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; every call is another OR condition. Write one call per SDD Entry/Exit Rule row, and an IF expression on a row is that rule's `expression`. `[rule('case-entered'), <rule on a later event>]` can never fire (`case-entered` holds only at case start), so the stage is never entered.
 
 ```ts
 .entryWhen(rule('case-entered'))                       // Entry Rule 1
