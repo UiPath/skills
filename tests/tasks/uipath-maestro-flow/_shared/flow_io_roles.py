@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from typing import Any
 
 _NORM = re.compile(r"[^a-z0-9]")
@@ -225,12 +226,28 @@ def equals_exact(expected: str):
     return lambda v: isinstance(v, str) and v.strip() == expected
 
 
-def unmapped_error(flow: dict, unmapped: list[str]) -> str | None:
+GRADER_ERROR_EXIT = 3
+"""Exit code a checker uses when the GRADER, not the agent, could not evaluate the run."""
+
+
+def unmapped_error(flow: dict, unmapped: list[str], inputs: dict | None = None) -> str | None:
     """The failure to report when a role the flow needs found no input, else None.
 
-    Worded so a reader can tell grader trouble (the role's fragments missed a
-    sensible name) from agent trouble (the flow never declared the input)."""
+    When `inputs` (what was mapped) is given and the flow still declares inputs the
+    grader could not match, the grader is at fault, not the agent: this prints a
+    `GRADER ERROR (not an agent failure)` line and exits with `GRADER_ERROR_EXIT`, so
+    reports can count it apart from agent failures. Otherwise the agent never
+    declared the input, and the returned message is an ordinary failure."""
     if not unmapped:
         return None
     ids = [v["id"] for v in declared(flow, "in")]
+    if inputs is not None:
+        spare = [v["id"] for v in declared(flow, "in")
+                 if v["id"] not in inputs and str(v.get("type") or "").lower() != "file"]
+        if spare:
+            sys.stderr.write(
+                f"GRADER ERROR (not an agent failure): could not map {', '.join(unmapped)} "
+                f"onto the flow's unmatched inputs {spare} (all inputs: {ids})\n"
+            )
+            sys.exit(GRADER_ERROR_EXIT)
     return f"could not map {', '.join(unmapped)} onto inputs {ids}"

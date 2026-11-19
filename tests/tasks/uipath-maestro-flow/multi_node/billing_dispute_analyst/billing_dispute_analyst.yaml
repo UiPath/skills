@@ -71,12 +71,23 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235, a $4,950 credit): the agent completes and a declared output is exactly "manager_review", with reasoning that names an SOP rule'
+    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235, a $4,950 credit): the agent completes and a declared output is "manager_review" or "credit" (the SOP says the dispute is valid), with reasoning that names an SOP rule'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py overcharge
     timeout: 1200
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+  # Advisory: whether a valid $4,950 credit goes to manager review or straight to
+  # credit turns on the SOP's confidence rule, a judgment call that flips between
+  # runs and models; it is scored, not gating. Reads the decision the run above
+  # recorded, so it costs no second debug.
+  - type: run_command
+    description: 'Advisory: the rate error routes to "manager_review" (the $4,950 credit sits in the SOP''s $500-$5,000 band)'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_analyst_band.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
     description: 'Effects, no rate error (invoice MCS-2026-04872 line 5, billed at the contracted $185): the agent completes and a declared output is exactly "reject", with reasoning that names an SOP rule'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py reject

@@ -55,7 +55,7 @@ def map_invoice(flow, raw):
         scalars = [v for v in io.declared(flow, "in") if str(v.get("type") or "").lower() in ("string", "")]
         if len(scalars) == 1:
             return {scalars[0]["id"]: raw}
-        _fail(io.unmapped_error(flow, unmapped))
+        _fail(io.unmapped_error(flow, unmapped, inputs))
     return inputs
 
 

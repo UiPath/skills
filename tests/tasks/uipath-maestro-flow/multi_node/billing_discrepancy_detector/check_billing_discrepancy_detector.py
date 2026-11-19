@@ -128,7 +128,7 @@ def main():
     by_entity = read_ids_by_entity()
 
     inputs, _attachments, unmapped = io.map_inputs(flow, roles(case), object_fallback=None, file_path=None)
-    if problem := io.unmapped_error(flow, unmapped):
+    if problem := io.unmapped_error(flow, unmapped, inputs):
         _fail(problem)
     print(f"debug inputs: {inputs}")
     payload = run_debug(inputs=inputs, timeout=240)

@@ -183,7 +183,7 @@ def build_inputs(flow, case):
     if arrays:
         inputs[arrays[0]] = [line_item(case)]
         unmapped = [r for r in unmapped if r not in LINE_ROLES]
-    if problem := io.unmapped_error(flow, unmapped):
+    if problem := io.unmapped_error(flow, unmapped, inputs):
         _fail(problem)
     return inputs, attachments
 

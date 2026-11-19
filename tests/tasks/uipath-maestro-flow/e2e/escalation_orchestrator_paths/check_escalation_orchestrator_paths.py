@@ -179,7 +179,7 @@ def feed(flow: dict, case: dict, words: dict[str, str]) -> dict:
     inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=fallback, file_path=None)
     missing = [r for r in REQUIRED if r in unmapped]
     missing += ["/".join(group) for group in REQUIRED_ANY if all(r in unmapped for r in group)]
-    error = io.unmapped_error(flow, missing)
+    error = io.unmapped_error(flow, missing, inputs)
     if error:
         _stop(f"{case['name']}: {error}")
     types = {v["id"]: str(v.get("type") or "").lower() for v in io.declared(flow, "in")}

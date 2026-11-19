@@ -76,3 +76,19 @@ def test_exact_text_keeps_case_and_unmapped_roles_name_the_inputs():
     flow = _flow([("invoiceNumber", "string"), ("pdf", "file")])
     assert io.unmapped_error(flow, []) is None
     assert io.unmapped_error(flow, ["account"]) == "could not map account onto inputs ['invoiceNumber', 'pdf']"
+
+
+def test_an_input_the_grader_could_not_match_is_a_grader_error(capsys):
+    """Bai's review: an input the grader failed to match must not read as an agent failure."""
+    import pytest
+    flow = _flow([("invoiceNumber", "string"), ("custRef", "string")])
+    with pytest.raises(SystemExit) as exc:
+        io.unmapped_error(flow, ["account"], {"invoiceNumber": "MCS-1"})
+    assert exc.value.code == io.GRADER_ERROR_EXIT
+    assert "GRADER ERROR (not an agent failure)" in capsys.readouterr().err
+
+
+def test_an_input_the_flow_never_declared_is_an_agent_failure():
+    flow = _flow([("invoiceNumber", "string"), ("pdf", "file")])
+    assert io.unmapped_error(flow, ["account"], {"invoiceNumber": "MCS-1"}) == (
+        "could not map account onto inputs ['invoiceNumber', 'pdf']")

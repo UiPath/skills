@@ -26,6 +26,7 @@ prompt spells it, and return reasoning that names an SOP rule.
 
 Usage: check_billing_dispute_analyst.py overcharge|reject|thin
 """
+import json
 import os
 import re
 import sys
@@ -57,6 +58,11 @@ CASES = {
             "hour. Our SOW AT-2026-008 contracts this work at $235 per hour."
         ),
         "decision": "manager_review",
+        # The SOP says the dispute is valid (billed above the contracted rate); whether a
+        # $4,950 credit routes to manager review or straight to credit turns on its §7
+        # confidence rule, a judgment call. Either passes here; the band is graded by
+        # the advisory `check_analyst_band.py` on the decision this run recorded.
+        "accept": ("manager_review", "credit"),
     },
     "reject": {
         "invoice": "MCS-2026-04872",
@@ -87,8 +93,12 @@ def roles(case):
     }
 
 
+DECISION_FILE = ".grading/analyst_overcharge_decision.json"
+
+
 def check(case, flow, payload):
     expected = CASES[case]["decision"]
+    accepted = CASES[case].get("accept", (expected,))
     agents = set()
     for hint in AGENT_TYPES:
         agents |= completed_node_ids_of_type(payload, hint)
@@ -100,16 +110,20 @@ def check(case, flow, payload):
     print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
     # Text nested in an object output counts too: {decision, reasoning} is one result pair.
     found = [(k, t) for k, (_t, v) in outs.items() for t in io.texts(v)]
-    decided = sorted({k for k, t in found if io.equals_exact(expected)(t)})
-    if not decided:
+    matched = sorted({t.strip() for _k, t in found if any(io.equals_exact(a)(t) for a in accepted)})
+    if not matched:
         returned = [t for _k, t in found if t.strip().lower() in DECISIONS]
         _fail_with_capture(
-            f"no declared output is the decision {expected!r} (the SOP's answer for this dispute); "
-            f"decisions returned: {returned}; outputs: {outs}"
+            f"no declared output is the decision {' or '.join(map(repr, accepted))} (the SOP's answer "
+            f"for this dispute); decisions returned: {returned}; outputs: {outs}"
         )
-    print(f"OK: the decision is {expected!r} ({decided})")
+    print(f"OK: the decision is {matched}")
+    if case == "overcharge":
+        os.makedirs(os.path.dirname(DECISION_FILE), exist_ok=True)
+        with open(DECISION_FILE, "w") as f:
+            json.dump({"decisions": matched}, f)
 
-    reasons = [t for _k, t in found if not io.equals_exact(expected)(t) and len(t.split()) >= 5]
+    reasons = [t for _k, t in found if not any(io.equals_exact(a)(t) for a in accepted) and len(t.split()) >= 5]
     if not any(NAMES_A_RULE.search(t) for t in reasons):
         _fail_with_capture(f"no returned reasoning names an SOP rule (§, section or SOP): {reasons}")
     print("OK: the reasoning names an SOP rule")
@@ -123,7 +137,7 @@ def main():
     if not any(h in str(n.get("type", "")) for n in flow.get("nodes") or [] for h in AGENT_TYPES):
         _fail("the flow has no agent node (inline or existing tenant agent)")
     inputs, _attachments, unmapped = io.map_inputs(flow, roles(case), object_fallback=None, file_path=None)
-    if problem := io.unmapped_error(flow, unmapped):
+    if problem := io.unmapped_error(flow, unmapped, inputs):
         _fail(problem)
     print(f"debug inputs: {inputs}")
     check(case, flow, run_debug(inputs=inputs, timeout=540))

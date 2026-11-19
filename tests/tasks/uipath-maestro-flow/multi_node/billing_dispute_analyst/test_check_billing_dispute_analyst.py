@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -88,12 +89,43 @@ def test_a_decision_inside_an_object_output_passes(sandbox, monkeypatch):
     _run("overcharge", {"decision": {"action": "manager_review", "why": REASONING}, "reasoning": ""}, monkeypatch)
 
 
-@pytest.mark.parametrize("decision", ["credit", "Manager Review", "escalate_to_manager"])
+@pytest.mark.parametrize("decision", ["reject", "Manager Review", "escalate_to_manager"])
 def test_rate_error_with_another_or_misspelled_decision_fails(sandbox, monkeypatch, decision):
-    # $4,950 sits in the SOP's $500-$5,000 band, and the prompt spells the value "manager_review".
+    # The dispute is valid, so reject fails; the prompt spells the values exactly.
     with pytest.raises(SystemExit) as exc:
         _run("overcharge", {"decision": decision, "reasoning": REASONING}, monkeypatch)
-    assert "no declared output is the decision 'manager_review'" in str(exc.value)
+    assert "no declared output is the decision 'manager_review' or 'credit'" in str(exc.value)
+
+
+def test_rate_error_routed_straight_to_credit_passes_the_gate_but_not_the_band(sandbox, monkeypatch):
+    """The SOP's confidence rule decides credit vs manager review, a judgment call: the
+    gate accepts either, and the advisory band check scores manager review."""
+    _run("overcharge", {"decision": "credit", "reasoning": REASONING}, monkeypatch)
+    band = _load_band()
+    with pytest.raises(SystemExit) as exc:
+        band.main()
+    assert "not manager_review" in str(exc.value)
+
+
+def test_the_band_check_passes_on_manager_review(sandbox, monkeypatch, capsys):
+    _run("overcharge", {"decision": "manager_review", "reasoning": REASONING}, monkeypatch)
+    _load_band().main()
+    assert "routed to manager_review" in capsys.readouterr().out
+
+
+def test_the_band_check_fails_when_no_overcharge_run_recorded_a_decision(sandbox):
+    with pytest.raises(SystemExit) as exc:
+        _load_band().main()
+    assert "recorded no decision" in str(exc.value)
+
+
+def _load_band():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_analyst_band", os.path.join(os.path.dirname(os.path.abspath(__file__)), "check_analyst_band.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_reasoning_that_names_no_sop_rule_fails(sandbox, monkeypatch):

@@ -105,7 +105,7 @@ def feed(flow: dict, case: dict) -> dict:
     roles = {role: {"value": value, "keywords": KEYWORDS[role]} for role, value in values.items()}
     fallback = {key: values[role] for role, keys in FALLBACK_KEYS.items() for key in keys}
     inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=fallback, file_path=None)
-    error = io.unmapped_error(flow, [r for r in REQUIRED if r in unmapped])
+    error = io.unmapped_error(flow, [r for r in REQUIRED if r in unmapped], inputs)
     if error:
         _fail(f"{case['name']}: {error}")
     types = {v["id"]: str(v.get("type") or "").lower() for v in io.declared(flow, "in")}

@@ -143,7 +143,7 @@ def main():
         _fail("the flow has no agent node (inline or existing tenant agent)")
     assert_flow_uses_connector_target(SLACK_KEY)
     inputs, _attachments, unmapped = io.map_inputs(flow, ROLES, object_fallback=None, file_path=None)
-    if problem := io.unmapped_error(flow, unmapped):
+    if problem := io.unmapped_error(flow, unmapped, inputs):
         _fail(problem)
     print(f"debug inputs: {inputs}")
 
