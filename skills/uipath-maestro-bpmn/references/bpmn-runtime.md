@@ -631,6 +631,13 @@ binding half, which is the same for every connector-backed node.
   `CALL_ACTIVITY_NO_PAYLOAD`; to make it call a process, give it an
   `Orchestrator.Start*Process` type with a process binding.
 
+<!-- RULE:bpmn.brownfield.typed-element -->
+- A typed node whose task element differs from the registry's decompiles with `element`, e.g.
+  `.activity(id, 'Orchestrator.StartFlowProcess', { ..., element: 'bpmn:serviceTask' })`:
+  Studio Web writes that type as a `bpmn:serviceTask`, the registry as a `bpmn:callActivity`.
+  Keep `element` when you edit the node: without it, compile writes the registry's element
+  and the node changes kind in the merged file.
+
 <!-- RULE:bpmn.brownfield.format -->
 - Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
