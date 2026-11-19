@@ -144,14 +144,14 @@ export default bpmn('claims-nightly')
         .startEvent('claimStart')
         .scriptTask('score', { name: 'Score claim', script: 'return { confidence: 0.9 };', outputs: { aiConfidenceLevel: '=result.response.confidence' } })
         .choose('confidenceGate', [
-          { when: '=vars.aiConfidenceLevel >= 0.85', label: 'Confident', body: (b) => b },
+          { when: '=js:vars.aiConfidenceLevel >= 0.85', label: 'Confident', body: (b) => b },
           {
             otherwise: true,
             label: 'Unsure',
             body: (b) =>
               b.humanTask('assessorReview', { name: 'Assessor review', form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { reviewOutcome: '=Action' } })
                 .choose('assessorVerdict', [
-                  { when: '=vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
+                  { when: '=js:vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
                   {
                     otherwise: true,
                     label: 'Rejected',
@@ -170,7 +170,7 @@ export default bpmn('claims-nightly')
           h.scriptTask('escalateClaim', { name: 'Escalate claim', script: 'return { ok: true };' })
             .task('recordEscalated', { name: 'Record escalation', set: { claimResults: '=js:vars.claimResults.concat([{ claim: iterator[0].item, outcome: "escalated" }])' } })
             .endEvent('claimEscalated', { name: 'Claim escalated' })),
-    { name: 'Handle each claim', loop: { collection: '=vars.claims', itemVar: 'item', sequential: true } },
+    { name: 'Handle each claim', loop: { collection: '=js:vars.claims', itemVar: 'iterator[0]', sequential: true } },
   )
   // Every exit of the body appended to claimResults; sequential, so none was lost.
   .scriptTask('aggregate', { name: 'Total the results', script: 'return vars.claimResults.length;' })

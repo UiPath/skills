@@ -74,13 +74,42 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 
 ## Platform Dependencies
 
-| Resource | Type | Shared by | Purpose |
-|----------|------|-----------|---------|
-| AP_InvoiceIntake | Queue | 1, 2 | One item per received invoice; the trigger for the process |
-| AP_Invoices | Storage bucket | 1, 2, 3, clerk | PDFs and extraction JSON referenced by every component |
-| SAP_AP_Robot | Credential asset | 2 | SAP GUI login for the robot |
-| AP_Mailbox connection | Integration Service connection (Exchange Online) | 2 | Reads the shared mailbox |
-| Finance/AP | Orchestrator folder | all | Home of every resource and process |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| AP_InvoiceIntake | one received invoice | as in Handoffs row 1: `MailId`, `PdfBucketPath`, `ReceivedAt`, `SenderAddress` | *[Inferred: D1]* | *[Inferred: D2]* | component 2 | component 1, one instance per item |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SAP_AP_Robot | the robot's SAP account | SAP GUI | component 2 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs and the extraction JSON | component 2 | components 1 and 3, and the clerk's review |
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+| AP_Mailbox | Exchange Online | the shared AP mailbox | component 2 |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| AP intake schedule *[Inferred: D3]* | component 2's intake entry point | Time | every 15 minutes | 1 *[Inferred: D4]* |
+| AP intake queue trigger *[Inferred: D3]* | component 1 | Queue | `AP_InvoiceIntake` | *[Inferred: D4]* |
+
+### Action Center
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+| AP Invoice Review | component 1 | the clerk's review task |
 
 ## Configuration Questions
 
@@ -90,6 +119,13 @@ Legend: ⏰ time trigger · 🔔 queue trigger · no mark: invoked by another co
 4. Below which agent confidence does the proposal skip straight to human review as `manual`? (constant; default: 0.4)
 5. Who receives the daily failure digest? (setting; default: ap-lead@contoso.com)
 6. Which SAP company codes are in scope? (setting; default: 1000, 2000)
+
+## Open Decisions
+
+1. What makes an invoice unique in the intake queue? (reading; answered by: whoever knows the process; reading: the mail ID, since every item carries `MailId` and a failed item cites it, and no other reference is given) — Platform Dependencies, Queues, and the `AP_InvoiceIntake` rows of components 1 and 2
+2. How many times does Orchestrator retry a failed intake queue item? (run behaviour; answered by: the process owner; recommended: retries every failed item twice, as Handoffs row 1 states; builds now: two retries) — Platform Dependencies, Queues, and the `AP_InvoiceIntake` rows of components 1 and 2
+3. What are the two intake triggers called, and does intake run on a schedule as well as a queue trigger? (reading; answered by: whoever knows the process; reading: a 15-minute schedule named AP intake schedule and a queue trigger named AP intake queue trigger, since the description names neither) — Platform Dependencies, Triggers
+4. How many runners do the two intake triggers use? (reading; answered by: whoever knows the process; reading: one runner for the schedule and the platform default for the queue trigger, since none is stated) — Platform Dependencies, Triggers
 
 ## Business Rules
 
@@ -123,9 +159,12 @@ Not transactional: a coordinator whose per-item lifecycle is the orchestration's
 
 ## Deployment
 
-- **Packaging:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; queues, bucket, asset, and connection declared as solution resources.
-- **Entry points and triggers:** component 2's intake entry point on a 15-minute time trigger; component 1 on a queue trigger for `AP_InvoiceIntake`; components 2 (matching, posting) and 3 started only by component 1.
-- **Environments:** folder `Finance/AP` in tenant `Finance`; a `Finance/AP-Test` folder with the same resources for UAT.
+- **Packaging and route:** one solution `InvoiceProcessing` (`uipath-solution`) containing the three projects; the queue, bucket, asset and connection declared as solution resources.
+- **Entry points:** component 2's intake entry point and component 1; components 2 (matching, posting) and 3 started only by component 1; how each starts: Platform Dependencies, Triggers.
+- **Runtime:** component 2 on Windows, unattended; components 1 and 3 serverless.
+- **Kept out of the logs:** none.
+
+UI targets: the production SAP.
 
 ## Complexity
 

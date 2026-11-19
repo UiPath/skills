@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from typing import Any
 
 CONNECTOR = "uipath-atlassian-jira"
 FOLDER_PATH = "Shared/uipath-maestro-flow"
@@ -43,6 +44,15 @@ def _run(*args: str) -> dict:
         capture_output=True, text=True, timeout=120,
     ).stdout
     return json.loads(out)
+
+
+def _required_data(*args: str) -> Any:
+    envelope = _run(*args)
+    if envelope.get("Result") != "Success" or "Data" not in envelope:
+        keys = ("Result", "ErrorCode", "Retry", "StatusCode", "Message")
+        summary = {key: envelope[key] for key in keys if key in envelope}
+        raise RuntimeError(f"uip {' '.join(args[:3])} failed: {json.dumps(summary, sort_keys=True, default=str)}")
+    return envelope["Data"]
 
 
 _ISSUETYPE_IDS: dict[str, str] = {}
@@ -111,9 +121,29 @@ def issuetype_id(conn_id: str) -> str:
 
 
 def connection_id() -> str:
-    folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
-    conns = _run("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
-    return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
+    folder_key = _required_data("or", "folders", "get", FOLDER_PATH)["Key"]
+    conns = _required_data("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")
+    match = next((c["Id"] for c in conns if c["Name"] == CONNECTION_NAME), None)
+    if match is None:
+        raise MissingConnection(
+            f"no {CONNECTOR} connection named {CONNECTION_NAME!r} in folder {FOLDER_PATH!r}"
+        )
+    return match
+
+
+class MissingConnection(RuntimeError):
+    pass
+
+
+def require_connection() -> str:
+    """connection_id() for pre_run: a missing connection is an ERROR, not a traceback."""
+    try:
+        return connection_id()
+    except MissingConnection as exc:
+        raise SystemExit(
+            "TENANT NOT READY — this is an environment failure, not an agent failure.\n  "
+            f"{exc}\n\nCreate the connection (or rename it to `{CONNECTION_NAME}`) in the named folder, then re-run."
+        ) from exc
 
 
 def create_issue(conn_id: str, summary: str) -> str:

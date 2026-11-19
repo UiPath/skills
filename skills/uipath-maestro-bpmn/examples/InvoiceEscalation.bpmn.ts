@@ -8,11 +8,11 @@
  * | --- | --- |
  * | two lookups at once | `.fork('enrich', [ … ])` — a parallel split and its join |
  * | a human approval with no Action App | `.humanTask('approve', { form: { fields, outcomes } })` — an inline form |
- * | a reminder that does not cancel the approval | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
+ * | a process timer that acts while the approval stays open (not the task SLA: see bpmn.hitl.task-settings) | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
  * | a failure exit for the approval itself | `t.onError(true, { errorVar: 'approvalError' }, …)` |
  * | a three-way decision, one arm looping back | `.choose('route', [ … ])` with `when` / `otherwise` arms and `.goto('approve')` |
  * | a safety net for the whole process | `.eventSubProcess('failures', { error: true }, …)` |
- * | classification on the caught error | a `.choose()` inside the net reading `vars.failures_Error.code`, captured on the net's start by default |
+ * | classification on the caught error | a `.choose()` inside the net reading `JSON.parse(vars.failures_Error).code`, captured on the net's start by default |
  *
  * | the process written top to bottom | `.flowMode('sequence')` — no `.sequenceFlow()` anywhere |
  *
@@ -57,10 +57,14 @@ export default bpmn('invoice-escalation')
   .name('InvoiceEscalation')
   .flowMode('sequence')
   .input('invoiceId', 'string', { name: 'Invoice ID' })
+  .var('invoiceIdIn', 'string', { elementId: 'start' })
   .var('decision', 'string', { default: 'Pending' })
   .var('outcome', 'string', { default: 'RUNNING' })
   .var('reminders', 'number', { default: 0 })
-  .startEvent('start', { name: 'Invoice received' })
+  // An input belongs to the start event: map it into a variable scoped there, and read that downstream.
+  .startEvent('start', { name: 'Invoice received', payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'Invoice ID', type: 'string', source: '=vars.invoiceId', var: 'invoiceIdIn' },
+  ] } })
   // Two lookups at once. `fork` opens a parallel gateway, runs each arm, and joins
   // them through `enrich_join` before `approve` — the join is derived from the id
   // the author wrote, so an explicit `.sequenceFlow('enrich_join', …)` could still
@@ -71,13 +75,13 @@ export default bpmn('invoice-escalation')
       b.http('vendorLookup', {
         name: 'Vendor lookup',
         method: 'GET',
-        url: '=js:"https://erp.example.com/vendors/by-invoice/" + vars.invoiceId',
+        url: '=js:"https://erp.example.com/vendors/by-invoice/" + vars.invoiceIdIn',
       }),
     (b) =>
       b.http('poLookup', {
         name: 'Purchase order lookup',
         method: 'GET',
-        url: '=js:"https://erp.example.com/purchase-orders/by-invoice/" + vars.invoiceId',
+        url: '=js:"https://erp.example.com/purchase-orders/by-invoice/" + vars.invoiceIdIn',
       }),
   ])
   // The approval, with its boundary events declared ON it. Nothing names `approve`
@@ -89,10 +93,10 @@ export default bpmn('invoice-escalation')
     'approve',
     {
       name: 'Approve invoice',
-      title: '=js:"Invoice " + vars.invoiceId',
+      title: '=js:"Invoice " + vars.invoiceIdIn',
       form: {
         fields: [
-          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceId' },
+          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceIdIn' },
           { id: 'vendor', label: 'Vendor', type: 'object', direction: 'input', value: '=vars.vendorLookup_response' },
           { id: 'purchaseOrder', label: 'Purchase order', type: 'object', direction: 'input', value: '=vars.poLookup_response' },
         ],
@@ -101,7 +105,7 @@ export default bpmn('invoice-escalation')
       outputs: { decision: '=Action' },
     },
     (t) => {
-      // Every two days the approval stays open, nudge — and keep waiting. Non-interrupting,
+      // A process timer, not the task SLA: every two days the approval stays open, nudge — and keep waiting. Non-interrupting,
       // so this path may not rejoin the main flow; it ends at its own end event.
       t.onTimer('P2D', { interrupting: false, name: 'Still waiting' }, (b) =>
         b.task('nudge', { name: 'Send reminder', set: { reminders: '=js:vars.reminders + 1' } }).endEvent('reminded', { name: 'Reminder sent' }),
@@ -119,12 +123,12 @@ export default bpmn('invoice-escalation')
   // back to the approver; `rejected` ends the process; `approved` continues.
   .choose('route', [
     {
-      when: '=vars.decision == "Approve"',
+      when: '=js:vars.decision == "Approve"',
       label: 'Approved',
       body: (b) => b.task('markApproved', { name: 'Mark approved', set: { outcome: 'APPROVED' } }),
     },
     {
-      when: '=vars.decision == "Needs info"',
+      when: '=js:vars.decision == "Needs info"',
       label: 'Needs info',
       body: (b) => b.task('requestInfo', { name: 'Ask the vendor', set: { outcome: 'AWAITING_VENDOR' } }).goto('approve'),
     },
@@ -139,26 +143,26 @@ export default bpmn('invoice-escalation')
   // It returns its value; the runtime wraps it as `result.response`.
   .scriptTask('post', {
     name: 'Post to ledger',
-    script: 'return { posted: true, invoiceId: vars.invoiceId };',
+    script: 'return { posted: true, invoiceId: vars.invoiceIdIn };',
   })
   .endEvent('done', { name: 'Posted' })
   // The safety net. An event sub-process has no incoming flow; it starts when an error
   // nothing closer caught is raised anywhere in this process, and — sitting at process
   // level — ends the whole run. Its body chains from the synthesized `failures_start`.
-  // The start captures the caught error into `vars.failures_Error` by default —
-  // `.code`, `.message`, `.detail`, `.status`) — `errorVar` would rename it, and the
+  // The start captures the caught error into `vars.failures_Error` by default, as a JSON
+  // string, so every read parses it first (fields `.code`, `.message`, `.detail`, `.status`) — `errorVar` would rename it, and the
   // boundary above needs one written out because a boundary captures nothing on its own.
   .eventSubProcess('failures', { error: true, name: 'Failure net' }, (h) =>
     h.choose('failureKind', [
       {
-        when: '=js:String(vars.failures_Error.code || "").indexOf("ERP") >= 0',
+        when: '=js:String(JSON.parse(vars.failures_Error).code || "").indexOf("ERP") >= 0',
         label: 'ERP outage',
         body: (b) => b.task('flagOutage', { name: 'Flag ERP outage', set: { outcome: 'FAILED_ERP_OUTAGE' } }).endEvent('outage', { name: 'Escalated to IT' }),
       },
       {
         otherwise: true,
         label: 'Anything else',
-        body: (b) => b.task('flagUnknown', { name: 'Flag for finance', set: { outcome: '=js:"FAILED: " + vars.failures_Error.message' } }).endEvent('unhandled', { name: 'Escalated to finance' }),
+        body: (b) => b.task('flagUnknown', { name: 'Flag for finance', set: { outcome: '=js:"FAILED: " + JSON.parse(vars.failures_Error).message' } }).endEvent('unhandled', { name: 'Escalated to finance' }),
       },
     ]),
   )

@@ -36,16 +36,19 @@ Each entity in the output has:
 
 ## Step 2: Choose the Integration Path
 
-| Path | Best for | Trade-off |
-|------|----------|-----------|
-| **SDK direct** (`sdk.entities`) | The query shape is known at build time — same filter, same fields every time | Reliable, no LLM cost, but you code every query |
-| **`create_datafabric_tool`** | Users ask freeform questions the agent can't anticipate | Flexible, but adds an inner LLM call for SQL generation |
+| Path | Best for | Trade-off | How-to |
+|------|----------|-----------|--------|
+| **SDK direct** (`sdk.entities`) | The query shape is known at build time — same filter, same fields every time | Reliable, no LLM cost, but you code every query | [§ Path 1](#path-1-sdk-direct-access-sdkentities) |
+| **`create_datafabric_tool`** | Users ask freeform questions the agent can't anticipate | Flexible, but adds an inner LLM call for SQL generation | [§ Path 2](#path-2-datafabric-tool-create_datafabric_tool) |
+| **Both** | Fixed operations plus freeform questions in one agent | Two tool kinds in one `create_agent` call | [§ Combining Both Paths](#combining-both-paths) |
+
+Each path's section is further down this file. Read the chosen path's section in full before writing code — Path 2 and Combining sit after the long Path 1 section.
 
 **Rule of thumb:** If the user describes a fixed operation (e.g. "look up orders by customer name"), use the SDK. If they say "users can ask anything" or "I can't predict the questions," use `create_datafabric_tool`.
 
 **CRITICAL: For freeform/unpredictable queries, always use `create_datafabric_tool` from `uipath_langchain.agent.tools`.** Do NOT build a custom NL-to-SQL solution, do NOT use internal functions like `create_datafabric_query_tool`, and do NOT wrap raw SDK calls to handle freeform questions. The `create_datafabric_tool` factory handles schema resolution, SQL generation, error correction, and caching — reimplementing this is fragile and unsupported.
 
-Both paths can coexist in a single agent — use SDK for known operations and `create_datafabric_tool` for open-ended exploration.
+Both paths can coexist in a single agent — use SDK for known operations and `create_datafabric_tool` for open-ended exploration ([§ Combining Both Paths](#combining-both-paths)).
 
 ---
 

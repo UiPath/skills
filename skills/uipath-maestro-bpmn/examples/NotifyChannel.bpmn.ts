@@ -13,7 +13,8 @@
  * `connection`/`folder` are symbolic binding names — `check` and `compile` accept them
  * as `=bindings.<name>` (with a CONNECTION_BINDING_NOT_GUID warning), but `refresh`
  * and a live run need the real connection id, which `uip maestro registry prepare`
- * writes into bindings.json. Compile with
+ * writes into `.flow-sdk/bindings.json` under the directory it ran in. Compile from that
+ * directory (not from `.flow-sdk/`) with
  * `uip maestro bpmn compile NotifyChannel.bpmn.ts -o NotifyChannel.bpmn`, then
  * `uip maestro bpmn validate`.
  */

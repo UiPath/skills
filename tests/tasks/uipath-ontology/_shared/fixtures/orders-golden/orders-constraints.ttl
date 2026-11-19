@@ -1,0 +1,32 @@
+@prefix ont:   <https://ontology.uipath.com/orders#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix shape: <https://ontology.uipath.com/shapes#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+shape:SalesOrderMustHaveNumberAndCustomer
+    a               sh:NodeShape ;
+    rdfs:label      "A sales order has a number and a customer" ;
+    sh:message      "Every sales order must have one order number and be placed by exactly one customer." ;
+    sh:targetClass  ont:SalesOrder ;
+    sh:property     [ sh:path ont:SalesOrder.orderNumber ; sh:name "order number" ;
+                      sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property     [ sh:path ont:placedBy ; sh:name "placed by" ;
+                      sh:class ont:Customer ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+shape:SalesOrderStatusMustBeListed
+    a               sh:NodeShape ;
+    rdfs:label      "Sales order status must be an OrderStatus value" ;
+    sh:message      "A sales order status must be Open, Shipped or Cancelled." ;
+    sh:targetClass  ont:SalesOrder ;
+    sh:property     [ sh:path ont:SalesOrder.status ; sh:name "status" ;
+                      sh:datatype xsd:string ; sh:maxCount 1 ;
+                      sh:in ( "Open" "Shipped" "Cancelled" ) ] .
+
+shape:CustomerMayHaveName
+    a               sh:NodeShape ;
+    rdfs:label      "A customer may have a name" ;
+    sh:message      "A customer has at most one name." ;
+    sh:targetClass  ont:Customer ;
+    sh:property     [ sh:path ont:Customer.customerName ; sh:name "customer name" ;
+                      sh:datatype xsd:string ; sh:maxCount 1 ] .

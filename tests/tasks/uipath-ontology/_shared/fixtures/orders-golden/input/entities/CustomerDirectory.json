@@ -1,0 +1,1 @@
+{"displayName": "Customer directory", "description": "ONE row per customer, read from Customer.", "externalFields": [{"entityName": "Customer", "fields": ["customerName"]}]}

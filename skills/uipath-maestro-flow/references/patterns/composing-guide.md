@@ -33,7 +33,11 @@ pattern's End nodes become `body.continue()`, so the item ends and the loop
 moves on; record the item's outcome in its result. Every step that can fail
 inside the body keeps its own `.onError` continuation if one item must not stop
 the batch. A step inside the body cannot be a `.stepToRef` target from outside
-it (`REF_INTO_LOOP`).
+it (`REF_INTO_LOOP`). When the pattern's routes meet at one shared step (the
+human-review pattern's apply step), keep that step inside the body and end each
+other route with `.stepToRef('<SHARED_STEP>')`. Record every outcome: the shared
+step records the items it applies, and a reject or failure path records its
+outcome before `body.continue()`.
 
 ### As a subflow
 

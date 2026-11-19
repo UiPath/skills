@@ -209,13 +209,12 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `multi_node/slack_channel_description/slack_channel_description.yaml` | Intsvc.ActivityExecution Slack; Slack plumbing in e2e/customer_escalation_triage/escalation_is.py |
 | `multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml` | HttpExecution + Slack ActivityExecution; live debug |
 
-### Portable pending a feasibility probe (16)
+### Portable pending a feasibility probe (15)
 
 | Flow task | BPMN target / note |
 |---|---|
 | `connector_features/ceql_where.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
 | `connector_features/complex_array.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
-| `connector_features/dtl_load_by_default_false.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
 | `connector_features/dtl_load_by_default_true.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
 | `connector_features/enhanced_enum.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |
 | `connector_features/enum.yaml` | IS field-shape feature on Intsvc.ActivityExecution payload; one probe decides the group |

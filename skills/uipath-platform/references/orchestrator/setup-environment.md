@@ -67,7 +67,7 @@ uip or folders create "Invoicing" --parent "Finance" -d "Invoice processing" --o
 Verify the folder structure before proceeding.
 
 ```bash
-# Folders the current user can access
+# Folders the current user can access (an external app without OR.Default: every folder its scopes reach)
 uip or folders list --output json
 
 # All folders in the tenant (requires admin permissions)
@@ -92,7 +92,9 @@ uip or folders delete "Finance/Invoicing" --output json
 uip or folders delete <folder-key-guid> --output json
 ```
 
-The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
+The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, a user gets only the folders they are assigned to, directly or through a group.
+
+An external application (client credentials) whose token has no `OR.Default` scope works differently: Orchestrator applies its scopes in every folder, and its folder roles play no part. Plain `folders list` then returns every folder those scopes reach. On `uip` 1.207.x and older it returned only the folders of the tenant's shared service account (the identity Orchestrator runs such a token as) (often none, or an unrelated `Monitor-Apps`), so an empty or one-row answer there does not mean the app has no folders: use `--all` or `folders get <path>`.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
@@ -421,7 +423,7 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 ### `--all` flag on folders list enables filtering
 
-Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
+Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to (an external app without `OR.Default`: every folder its scopes reach) and rejects filter flags.
 
 `folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
 
