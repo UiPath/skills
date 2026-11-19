@@ -144,9 +144,10 @@ success_criteria:
       follows AGENT OUTPUT and this grading prompt are not part of it.
 
       - If the file is missing or starts with `unknown`, score 0.0.
-      - If the file holds `none`, score 1.0 only if the report mentions no
-        `validate` warning: no `Assumed:` or `Unverified:` clause about a
-        warning, an unset or empty value, or a validator finding.
+      - If the file holds `none`, score 1.0 only if no `Assumed:` or
+        `Unverified:` clause presents something as a `validate` warning or
+        validator finding. A clause about a value, such as "a missing order
+        total counts as 0", is fine.
       - Otherwise score 1.0 only if the report's `Needs:`, `Assumed:` and
         `Unverified:` lines together cover every distinct warning in the
         file. Warnings that differ only in which element raised them count

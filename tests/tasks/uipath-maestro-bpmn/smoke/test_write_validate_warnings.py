@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("write_validate_warnings", HERE / "write_validate_warnings.py")
@@ -108,3 +109,29 @@ def test_validate_that_stops_before_its_rules_is_unknown(
     _validate_prints(monkeypatch, json.dumps({"Result": "Failure", "Instructions": instructions}))
 
     assert _write(tmp_path, monkeypatch).startswith(writer.UNKNOWN)
+
+
+def _warnings_judge() -> dict:
+    task = yaml.safe_load((HERE / "auto_build_final_report.yaml").read_text(encoding="utf-8"))
+    judges = [
+        c for c in task["success_criteria"]
+        if c["type"] == "llm_judge" and ".validate-warnings.txt" in c.get("files", [])
+    ]
+    assert len(judges) == 1
+    return judges[0]
+
+
+def test_judge_reads_what_the_writer_writes() -> None:
+    command = next(
+        c["command"] for c in yaml.safe_load((HERE / "auto_build_final_report.yaml").read_text())["success_criteria"]
+        if c["type"] == "run_command" and "write_validate_warnings.py" in c["command"]
+    )
+    assert command.endswith(" .validate-warnings.txt")
+    assert _warnings_judge()["files"] == [".validate-warnings.txt"]
+
+
+def test_clean_report_rule_allows_a_value_assumption() -> None:
+    prompt = " ".join(_warnings_judge()["prompt"].split())
+    assert "presents something as a `validate` warning or validator finding" in prompt
+    assert "a missing order total counts as 0" in prompt
+    assert f"starts with `{writer.UNKNOWN}`, score 0.0" in prompt
