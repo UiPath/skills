@@ -7,7 +7,7 @@
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `nodes create` and `nodes schema set` add the processor to the open solution instead of writing a file under `resources/`. Nothing else creates it: the designer provisions only nodes without a key. So `ResourcePending` here means the node has no processor and extraction will fail. Report the message and stop.
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `nodes create` and `nodes schema set` add the processor to the open solution instead of writing a file under `resources/`. Nothing else creates it: the designer provisions only nodes without a key. So `ResourcePending` here means the node has no processor. When the message names a retry, run it once; otherwise, or if it reports `ResourcePending` again, report the message and stop.
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-after-save:start-->
