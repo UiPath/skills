@@ -113,7 +113,7 @@ The CLI owns its credentials file. Never read, `cat`, `grep`, or `source` it: it
 | `Data.Organization` / `Data.OrganizationId` | Organization name / UUID |
 | `Data.Tenant` / `Data.TenantId` | Tenant name / UUID |
 | `Data.Identity` | Logged-in user or application |
-| `Data["Expiration Date"]` | Access-token expiry |
+| `Data.ExpirationDate` | Access-token expiry |
 
 **Bearer token for a REST call the CLI does not cover** — get it from `uip login refresh --output json` (`Data.AccessToken`; refreshes when the token expires within 5 minutes, `--login-validity <MINUTES>` for longer calls). Capture and use it in the same shell invocation; never print it:
 
