@@ -301,7 +301,12 @@ your account. Re-check the key with 'uip or folders list --output json'."
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
 ```
 
-Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem on any version — the session lacks `OR.Default`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
+Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem, with two causes. Tell them apart with `uip or users current --output json`:
+
+- **It fails** (`404 User not found`, or `403` when the token has no `OR.Users` scope): Orchestrator runs the token as the tenant's shared service account and lists that account's folders, not the app's. That happens on `uip` 1.207.x and older whenever the token lacks `OR.Default`, and on any version for an `OR.Default` app that is not an Orchestrator user. A folder role does not change this. From `uip` 1.208.0 a token without `OR.Default` lists every folder its scopes reach; on older versions check a folder with `uip or folders get <path> --output json`.
+- **It returns the app's own user:** the token carries `OR.Default` and the app runs as that user, which has no folder role. The list really is empty: give the app a role in the target folder.
+
+See [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 #### Storing the resolved key
 
