@@ -1,6 +1,6 @@
 ---
 name: run-dogfood-fixes
-description: "Lead the fixes for a batch of dogfooding findings on any product: trace each finding to the layer that produces it, fan out one fix session per root cause, and accept a fix only with before/after evidence from the product where the user hit it — running the changed build, on the same path, checked against the product's own engine. Use when handed a dogfooding issue log or batch of field findings to fix. One bug with an obvious cause→fix it directly; polishing one PR→review-to-death."
+description: "Lead the fixes for a batch of dogfooding findings on any product: trace each finding to the layer that produces it, fan out one fix session per root cause, and accept a fix only with before/after evidence from the product where the user hit it — running the changed build, on the same path, checked against the product's own engine. Use when handed a dogfooding issue log or batch of field findings to fix. One bug with an obvious cause→fix it directly."
 ---
 
 # Run Dogfood Fixes
@@ -56,7 +56,7 @@ Answer in order; stop when evidence names the producer.
 
 Decide the pass criteria **before** running. Record evidence for every step in the PR.
 
-1. **Baseline red, measured.** User's verbatim input on the unchanged build, in the product. Diff the shipped build against the branch base before claiming "reproduces on main". Record the rate per variant (model, persona, mode, path) — one run is an anecdote. If stock runs come out clean, say so: a failing offline test becomes the reproducible "before", and ask the user for the input that showed it.
+1. **Baseline red, measured.** User's verbatim input on the unchanged build, in the product. Diff the shipped build against the branch base before claiming "reproduces on main". Record the rate per variant (model, persona, mode, path) — one run is an anecdote. If stock runs come out clean, say so: a failing offline test becomes the reproducible "before", and ask the user for the input that showed it — or defer the finding (Phase 1 step 5).
 2. **Prove the build** (Rule 2), before every run.
 3. **Same input, same answers.** When the product asks a question, answer as a real user would, identically before and after. Dismissing or reshaping a question changes the path.
 4. **Same path.** Read the run's actions and internals (traces, logs, state), not just the end state. A run that took another route is void, even if it looks fixed.
@@ -100,5 +100,5 @@ For every claim ask: *what would I see if this were false, and did I look?*
 - Testing only offline when the finding came from the product.
 - Writing the fix into the brief and receiving it back "confirmed".
 - Accepting a session's "it works" without its evidence.
-- Revalidating after every review round instead of once at the end.
+- Revalidating after every review round instead of once at the end (unless a commit changed what the agent reads — Phase 4 step 9).
 - A deep investigation of one flaky run.
