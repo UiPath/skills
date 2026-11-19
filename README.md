@@ -35,7 +35,7 @@ npx skills use UiPath/skills@uipath-rpa | claude # run one skill; nothing is wri
 npx skills add UiPath/skills --skill uipath-rpa  # install just that one skill
 ```
 
-> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`.
+> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`. `uip skills install` (without `--repo`) is also the only install that follows a `versions.skills` pin (`uip config freeze`), so run it from inside the repo that holds the pin. Skills from `npx skills add` or `npx skills use` come from `main`, and `uip update` neither sees nor moves them: remove them first with `npx skills remove <SKILL>`.
 
 ## Skill Catalog
 
@@ -152,7 +152,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 This repository works as a **Claude Code plugin**. Install skills via `uip skills install` (the recommended method above) — this keeps skills updated automatically.
 
-> **Avoid manual plugin installation** (e.g., `claude plugin marketplace add` / `claude plugin install`). Manually installed plugins must be updated manually, and you may miss skill updates and fixes.
+> **Avoid manual plugin installation** (e.g., `claude plugin marketplace add` / `claude plugin install`). Manually installed plugins must be updated manually, and you may miss skill updates and fixes. A plugin added from GitHub follows `main`, not your `versions.skills` pin.
 
 If you've already installed manually, uninstall and re-install via `uip skills install` to switch to automatic updates.
 
@@ -168,7 +168,7 @@ The command prints the recommended JSON and offers to merge it into your setting
 
 ### OpenAI Codex CLI
 
-`uip skills install --agent codex` is the recommended install. Alternatively, this repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+`uip skills install --agent codex` is the recommended install, and the only one that follows a `versions.skills` pin. Alternatively, this repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
 This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
 
