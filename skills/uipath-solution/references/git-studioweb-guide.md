@@ -32,6 +32,7 @@ Check the solution root (the folder holding the `.uipx`):
 | `.git` folder AND `.git-studioweb` folder | Split: `.git` folder wins in git, VS Code and Studio Web; Studio Web's commits stay only in `.git-studioweb`. The CLI reports `NativeRepository` plus a `Data.Warnings` entry and changes nothing | Leave both alone. Follow [When a `.git` Folder and `.git-studioweb` Both Exist](#when-a-git-folder-and-git-studioweb-both-exist). |
 | `.git-studioweb` is a symlink, not a real folder | Unsupported | Do not link. Tell the user. |
 | `.git-studioweb` folder holds unexpected entries (see [Unexpected Entries](#unexpected-entries)) | Refused: `git-link` (with or without `--force`) fails with `configuration_error`, `Data.Problem` `UnexpectedRepositoryEntries` | Stop. Show the user the listed entries. Never delete them or bypass the refusal yourself. |
+| Solution folder holds files git or VS Code run on their own (see [Files That Run on Their Own](#files-that-run-on-their-own)) | Refused: `git-link` (with or without `--force`) fails with `configuration_error`, `Data.Problem` `AutoRunEntries` | Stop. Show the user `Data.AutoRunEntries`. Never delete them or bypass the refusal yourself. |
 | `.git` is a symlink or any other entry that is neither a regular file nor a folder | Unsupported; `git-link` refuses it, even with `--force` | Leave it. Tell the user. |
 
 ```bash
@@ -65,6 +66,21 @@ ls -A <SOLUTION_DIR>/.git-studioweb <SOLUTION_DIR>/.git-studioweb/hooks <SOLUTIO
 
 If any listed entry exists (by the CLI's `Data` or by this listing): stop, show the user the entries, and ask how to proceed. Never delete them, never write the `.git` file around the refusal.
 
+**On a folder the CLI linked, five of these exist on purpose.** Linking writes `config` (empty), `commondir` (holding `.`) and empty FILES `hooks`, `modules` and `worktrees`, then locks them (see [Locked Entries](#locked-entries)). `--check` does not report them. With any other content they are reported like any planted entry. Trust `Data.UnexpectedEntries` from `--check` over the listing.
+
+## Files That Run on Their Own
+
+The browser can write anywhere in the solution folder, not only in `.git-studioweb`. So `git-link` also refuses (`Data.Problem: "AutoRunEntries"`, each finding in `Data.AutoRunEntries` as `{ Path, Kind }`) when the folder holds:
+
+| `Kind` | What |
+|---|---|
+| `EmbeddedRepository` | A folder shaped like a bare repository (`HEAD`, `objects/`, `refs/`). git honours its `config` when run inside it. |
+| `NestedGitEntry` | A `.git` file or folder below the solution root. |
+| `FolderOpenTask` | A `.vscode/tasks.json` task with `runOptions.runOn: "folderOpen"`. |
+| `SubmoduleCommand` | A `.gitmodules` with `update = !command`, or a `url` / `path` starting with `-` or `ext::`. |
+
+`node_modules`, `.venv` and `__pycache__` are not checked. Same rule as above: stop and show the user; never delete or bypass. `git config --global safe.bareRepository explicit` (the user's machine, their call) stops git honouring embedded repositories anywhere.
+
 ## Link With the CLI
 
 ```bash
@@ -84,11 +100,22 @@ uip solution git-link <SOLUTION_DIR>
 - Same safety checks as `git-link`. A refusal or a failed write only warns; the command continues unlinked.
 - Skipped for `--dry-run`, `--check` and archives. `UIPATH_AUTO_GIT_LINK_DISABLED=1` turns it off.
 
+## Locked Entries
+
+When it links, the CLI makes `.git-studioweb/config`, `commondir`, `hooks`, `modules`, `worktrees` and the `.git` file immutable (macOS `chflags uchg`, Windows read-only), so a web page that keeps the folder handle cannot plant a config or hook later. git, VS Code and Studio Web keep working. `Data.Locked` says whether it took hold; on Linux it is `false` (no lock an unprivileged user can set) and the entries are only checked.
+
+On a locked folder:
+
+| Operation | Result | Do instead |
+|---|---|---|
+| `git config`, `git remote add`, `git push -u`, `git init` | Fails: the repository `config` cannot be written | Push to a URL: `git push https://github.com/<org>/<repo>.git <branch>` |
+| Delete or move the solution folder | Fails (`Operation not permitted` / access denied) | Ask the user. Only with their consent: `chflags -R nouchg <SOLUTION_DIR>` (macOS) or `attrib -R /S /D <SOLUTION_DIR>\*` (Windows) first |
+
 After a `uip solution` command, an explicit `git-link` is usually unnecessary. Before running git yourself, still run `uip solution git-link --check <SOLUTION_DIR> --output json` and act on `Data.State`: a skipped or refused auto-link leaves the folder `NotLinked` or `Invalid`.
 
 ## Manual Fallback
 
-Run in the solution root, only when there is no `.git` entry at all and the [Unexpected Entries](#unexpected-entries) listing found none. The file must contain exactly `gitdir: .git-studioweb` — ASCII, no trailing space, no BOM, optional line ending.
+Run in the solution root, only when there is no `.git` entry at all and the [Unexpected Entries](#unexpected-entries) listing found none. A hand-written `.git` file is neither checked for [Files That Run on Their Own](#files-that-run-on-their-own) nor locked; prefer the CLI. The file must contain exactly `gitdir: .git-studioweb` — ASCII, no trailing space, no BOM, optional line ending.
 
 | OS / shell | Command |
 |---|---|
@@ -142,11 +169,12 @@ git merge --allow-unrelated-histories studioweb/main
 
 ## Hazards
 
-1. **Never `git init` or `git clone` in a solution folder that has `.git-studioweb`, linked or not.** Unlinked, it creates a `.git` folder that then wins everywhere, splitting history from what Studio Web sees; linked, it re-initializes or overwrites the repository Studio Web uses. Link instead when unlinked.
+1. **Never `git init` or `git clone` in a solution folder that has `.git-studioweb`, linked or not.** Unlinked, it creates a `.git` folder that then wins everywhere, splitting history from what Studio Web sees; linked, it re-initializes or overwrites the repository Studio Web uses (or, where linking locked `config`, fails). Link instead when unlinked.
 2. **Never delete, move, or replace a `.git` folder**, even when `.git-studioweb` also exists.
 3. **Never overwrite an existing `.git` file without the user's consent.** Show its content first; rewrite with `uip solution git-link --force` or the manual fallback only after they agree.
 4. **Do not write into `.git-studioweb` beyond what git itself does** — no hand-added hooks, no `config` edits, no deleting it to "clean up".
 5. **Do not link through a symlinked `.git-studioweb`.** It must be a real folder.
+6. **Never unlock the [locked entries](#locked-entries) on your own.** Unlock only when the user asks to delete or move the solution folder, and never to make `git config` or `git remote add` work: push to a URL instead.
 
 ## Packaging and Sync
 
