@@ -240,7 +240,11 @@ def check_content_markers(content: str) -> list[str]:
 def check_no_unfilled_placeholders(content: str) -> list[str]:
     """Check for leftover template placeholders like <PROCESS_NAME>."""
     # Match <UPPER_SNAKE_CASE> but not HTML tags or mermaid syntax
-    placeholders = re.findall(r"<[A-Z][A-Z_]{3,}>", content)
+    # Date/time format tokens (`Intake_<YYYYMMDD>.xlsx`, `<HHMMSS>`) are content, not template slots.
+    placeholders = [
+        p for p in re.findall(r"<[A-Z][A-Z_]{3,}>", content)
+        if not re.fullmatch(r"<[YMDHS]+>", p)
+    ]
     if placeholders:
         unique = list(set(placeholders))[:5]
         return [f"Unfilled template placeholders found: {', '.join(unique)}"]
