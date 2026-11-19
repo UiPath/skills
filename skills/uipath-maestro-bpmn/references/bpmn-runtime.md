@@ -157,6 +157,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   Needs `@uipath/maestro-builder-sdk` 6.93.8 or later; an older SDK writes whatever `type` says, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:sdk-script-type:end-->
 
+<!-- RULE:bpmn.script.template-literal -->
+- In a template-literal `script` (backticks), TypeScript evaluates `\n`, `\t` and `${...}` before the runtime sees the script: `\n` inside a string in the script becomes a real newline and the run faults with `300501` "Invalid or unexpected token", though `check` and `validate` pass.
+  Write `\\n`, or use a plain-quoted `script` string.
+
 <!-- RULE:bpmn.script.error-row -->
 - "Typed error handling" on a script task means the task-scoped `Error` output row: `source: '=Error'`, type `jsonSchema`, writing a variable whose schema is the platform error envelope.
   It is not an error boundary or a second end event, which change the graph.
