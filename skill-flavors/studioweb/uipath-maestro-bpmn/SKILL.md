@@ -2,7 +2,7 @@
 12. A new process goes into a project's main file in `/solution`: the `.bpmn` its `entry-points.json` names, `Process.bpmn` in a project Studio Web created (`uip maestro bpmn init` included). Studio Web packages any other `.bpmn` only as a non-default entry point and shows nothing outside `/solution`. Before you write a `.bpmn`:
     1. Pick the project: the one the request names (`B`, or `A/B`, names `/solution/B`), else the open one. When it does not exist, run `uip maestro bpmn init B` from `/solution`.
     2. When its main file already holds a process (it is not empty, and after `decompile`, `check --graph` lists any node besides one start event and one end event, which is all an `init` template has), never build over it unasked. If the request named this project, ask the user whether to replace its process or use a new project. On *replace*, build into its main file through the [Validation loop](#validation-loop). On *new project*, go to step 3. When the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking.
-    3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn`, else a short name for the process, never a folder `/solution` already holds. Never pass `--force`.
+    3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn`. When the request names neither, ask for the project name in one question before `init`, offering a short default for the process: Studio Web cannot rename a project, so a wrong guess leaves a stray one. Coin the name yourself only when nobody will answer. Never a folder `/solution` already holds. Never pass `--force`.
 
     A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
 <!--skill-flavor:critical-rules-extra:end-->
@@ -99,7 +99,9 @@ When a reference tells you to run a command that is not available, use the Studi
    user chose *replace* in [Critical Rule 12](#critical-rules) step 2; else add a shape only where they report one missing.
    `compile` writes no diagram, and `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
-   is empty.
+   is empty. A request for a main file named `<X>.bpmn` changes nothing: build into the
+   target, never copy or compile to `<X>.bpmn` beside it (the entry point would stay the template),
+   and name that choice on `Assumed:`.
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->
@@ -127,7 +129,8 @@ mkdir -p .flow-sdk/original <Draft>/baseline <Draft>/edited
 # 1. Seed, every turn: a copy of the target, a fresh source, the pristine baseline
 cp <Name>.bpmn .flow-sdk/original/<Name>.bpmn
 uip maestro bpmn decompile <Name>.bpmn -o .flow-sdk/<Name>.bpmn.ts --style nested
-uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Draft>/baseline/<Name>.bpmn
+uip maestro bpmn decompile .flow-sdk/original/<Name>.bpmn -o <Draft>/<Name>.baseline.bpmn.ts --style nested
+uip maestro bpmn compile <Draft>/<Name>.baseline.bpmn.ts -o <Draft>/baseline/<Name>.bpmn
 # 2. Edit .flow-sdk/<Name>.bpmn.ts narrowly, then check until clean
 uip maestro bpmn check .flow-sdk/<Name>.bpmn.ts --source
 uip maestro bpmn check .flow-sdk/<Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
@@ -146,13 +149,13 @@ uip maestro bpmn format <Name>.bpmn
 - **Step 1 runs once per turn.** When a later step fails, fix the source and
   start again at step 2. Step 1 again would copy the merged file over the undo
   copy and the baseline.
-- **The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**
+- **The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`, never a copy of the target or a compile of the edited `.flow-sdk/<Name>.bpmn.ts`.**
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
   them; the edited file shows `merge` no change, so it writes the target back as it was.
-  When `merge` cannot open the baseline, run `mkdir -p <Draft>/baseline`, decompile `.flow-sdk/original/<Name>.bpmn`
-  to `<Draft>/<Name>.baseline.bpmn.ts`, compile that to `<Draft>/baseline/<Name>.bpmn`,
-  and run step 3's `merge` again.
+  When `merge` cannot open the baseline, or reports `"Authored": 0` after an edit (the baseline holds the edit, so the
+  target stays as it was), run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again, compile the edit
+  again, and run step 3's `merge` again. Step 1's other lines stay unrun: they would overwrite the edit.
 - **Step 5b keeps the user's layout.** `merge` keeps every shape
   of the target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
