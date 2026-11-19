@@ -264,14 +264,13 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:case.optionality.explicit -->
-- Declare optionality when something consumes it. `.required(false)` and
-  omitting `.required()` are different statements in the emitted plan — the
-  builder writes `isRequired` only when you call it — and a
-  `required-stages-completed` exit reads that flag to decide which stages gate
-  completion. When a stage or task is deliberately optional, say so explicitly
-  rather than relying on a default the schema leaves unstated. Secondary lanes
-  are the common case: an `exceptionStage(...)` that gates normal completion is
-  almost never what was meant.
+- A task or stage the request calls optional gets `.required(false)`.
+  Omitting `.required()` leaves `isRequired` out of the plan, which is not
+  `false`, and a `required-stages-completed` exit reads that flag to decide
+  which stages gate completion.
+- SDD `Stage Kind: secondary` is `.exceptionStage(label, fn)`, never
+  `.stage()`: only `exceptionStage` writes the exception stage type. Add
+  `.required(false)` so it does not gate normal completion.
 
 ## Activation modes
 
