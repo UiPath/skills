@@ -78,13 +78,15 @@ SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original
 # agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run),
 # the builder SDK's work dir (`.flow-sdk/`, where the Studio Web flavor keeps the
 # undo copy `.flow-sdk/original/<Name>.bpmn`; pack, upload and debug leave it out),
+# the Studio Web flavor's brownfield drafts (`bpmn-draft/<Project>/<Name>/`, compile
+# output without a diagram; `bpmn-work/` is not listed, it can hold the real file),
 # and temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
 # Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
 # that name. No task names one today; a task that must ever do so needs these
 # names taken out (or the grader pointed at the path), or its artifact goes unseen
 # and reads as "no BPMN file found".
 SCRATCH_DIR_NAMES = frozenset(
-    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", ".flow-sdk", "tmp", "temp", ".tmp"}
+    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", ".flow-sdk", "bpmn-draft", "tmp", "temp", ".tmp"}
 )
 SCRATCH_DIR_PREFIXES = ("tmp.",)
 

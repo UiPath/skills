@@ -50,10 +50,12 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in a Studio Web project that
-  already contains the ExpenseAppTask flow, which posts employee expenses to
-  SAP. No user is present, and nobody will answer a question or grant
-  approval, so do not ask, do not pause, and do not wait for input.
+  You are a coding agent in a project that already contains the ExpenseAppTask
+  flow, which posts employee expenses to SAP. No user is present, and nobody
+  will answer a question or grant approval, so do not ask, do not pause, and
+  do not wait for input. Do not delete or overwrite anything this run did not
+  create, except what the task asks you to change, and do not publish to a
+  shared destination unless the task asks for it.
 
   Managers now have to review every expense before it is posted. Add that
   review to the process using our existing "ExpenseReviewApp" Action Center
@@ -73,6 +75,7 @@ initial_prompt: |
   Outputs: status (string), sapDocumentNumber (string). status is "posted" or
   "rejected". When approved, sapDocumentNumber is "SAPEXP-" followed by the
   expenseId, built by the existing posting step.
+  The posting step goes after the review, never before it.
   <!-- helper:end -->
 
   Build and do a test run.

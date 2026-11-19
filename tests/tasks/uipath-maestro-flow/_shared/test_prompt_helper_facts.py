@@ -419,3 +419,24 @@ def test_the_escalation_helpers_state_one_post_or_one_ticket_per_run():
     for task in ("escalation_orchestrator_paths", "escalation_slack_alert"):
         assert "Post one message per run" in _helper(TASKS[task].path), task
     assert "Create one issue per run" in _helper(TASKS["escalation_jira_ticket"].path)
+
+
+GUARD = (
+    "Do not delete or overwrite anything this run did not create, except what the task "
+    "asks you to change, and do not publish to a shared destination unless the task asks for it."
+)
+
+
+@pytest.mark.parametrize("task", TASKS)
+def test_the_opener_names_no_harness_and_carries_the_guard(task):
+    opener = _flat(_prompt(TASKS[task].path).split("\n\n")[0])
+    assert opener.startswith("You are a coding agent in "), task
+    assert "Studio Web" not in opener, task
+    assert GUARD in opener, task
+
+
+def test_the_hitl_helpers_put_the_sap_step_after_the_approval():
+    invoice = _helper(TASKS["e2e_01_invoice_approval_greenfield"].path)
+    assert 'The step that builds the "SAP-" number goes after the approval' in invoice
+    expense = _helper(TASKS["e2e_07_apptask_brownfield"].path)
+    assert "The posting step goes after the review" in expense

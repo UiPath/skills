@@ -56,6 +56,7 @@ from _shared.flow_check import (  # noqa: E402
     completed_connector_node_ids,
     run_debug,
 )
+from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
 BULLET_RE = re.compile(r"^\s*(?:[-*•◦▪‣–·]|\d+[.)])\s*\S")
 # The roles the graded results depend on. The others are fed when declared.
@@ -144,7 +145,8 @@ def main() -> None:
     for case in cases:
         # retries=1: the flow posts to a shared channel, so a whole-flow retry
         # would post a duplicate alert.
-        payload = run_debug(inputs=feed(flow, case), timeout=300, retries=1)
+        with journal_slack_posts():
+            payload = run_debug(inputs=feed(flow, case), timeout=300, retries=1)
         per_case.append(check_case(flow, payload, case))
         print(f"OK: {case['name']}: {case['expected']['severity']}, engineering needed "
               f"{case['expected']['engineering']}, case reference returned, Slack alert posted")

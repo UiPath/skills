@@ -39,11 +39,15 @@ reference:
 post_run:
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
+  - command: "python3 _setup/teardown_slack_posts.py"
+    timeout: 300
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No
-  user is present, and nobody will answer a question or grant approval, so do
-  not ask, do not pause, and do not wait for input.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
   Build an automation called "EscalationSlackAlert" that triages a customer
   escalation and alerts me in the #coding-agent-testing Slack channel. For

@@ -173,3 +173,17 @@ def test_the_prompt_states_the_facts_its_grader_asserts(relative: str) -> None:
 
     assert not missing, f"asserted by the grader, stated nowhere the agent reads: {missing}"
     assert not missing_from_helper, f"must be in the helper block: {missing_from_helper}"
+
+
+GUARD = (
+    "Do not delete or overwrite anything this run did not create, except what the task "
+    "asks you to change, and do not publish to a shared destination unless the task asks for it."
+)
+
+
+@pytest.mark.parametrize("relative", sorted(TASKS))
+def test_the_opener_names_no_harness_and_carries_the_guard(relative: str) -> None:
+    opener = " ".join(_load_task(relative)["initial_prompt"].split("\n\n")[0].split())
+    assert opener.startswith("You are a coding agent in "), relative
+    assert "Studio Web" not in opener, relative
+    assert GUARD in opener, relative

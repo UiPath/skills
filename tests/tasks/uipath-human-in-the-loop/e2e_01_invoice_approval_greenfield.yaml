@@ -46,9 +46,11 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No
-  user is present, and nobody will answer a question or grant approval, so do
-  not ask, do not pause, and do not wait for input.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
   Build an automation called "InvoiceApproval". Our invoices arrive already
   extracted, each with an invoiceNumber, vendorName, totalAmount and currency.
@@ -74,6 +76,8 @@ initial_prompt: |
   Outputs: status (string), sapDocumentNumber (string). status is "posted" or
   "rejected". When approved, sapDocumentNumber is "SAP-" followed by the
   invoiceNumber, like "SAP-INV-1". When rejected it is empty text.
+  The step that builds the "SAP-" number goes after the approval, never
+  before it.
   <!-- helper:end -->
 
   Build and test the automation.

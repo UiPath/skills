@@ -47,9 +47,11 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No
-  user is present, and nobody will answer a question or grant approval, so do
-  not ask, do not pause, and do not wait for input.
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
   Build an expense approval case called "OutcomeExpenseApproval". When an
   expense request comes in, first the approver is emailed that the request is

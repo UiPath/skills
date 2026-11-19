@@ -62,6 +62,7 @@ from _shared.flow_check import (  # noqa: E402
     node_output_leaves,
     run_debug,
 )
+from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
 
 # The roles the path and severity depend on. The others are fed when declared;
@@ -241,7 +242,8 @@ def main() -> None:
     for case in cases:
         # retries=1: every case posts to a shared channel, so a whole-flow retry
         # would post a duplicate; seven serial cases also need a bounded budget.
-        payload = run_debug(inputs=feed(flow, case, words), timeout=300, retries=1)
+        with journal_slack_posts():
+            payload = run_debug(inputs=feed(flow, case, words), timeout=300, retries=1)
         per_case.append(check_case(flow, payload, case))
         print(f"OK: {case['name']}: path={case['expected']['path']}, "
               f"severity={case['expected']['severity']}, one Slack message posted")

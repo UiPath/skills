@@ -44,6 +44,7 @@ from _shared.flow_check import (  # noqa: E402
     node_output_leaves,
     run_debug,
 )
+from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
 INVOICE = "MCS-2026-04872"
 CREDIT_TEXT = "USD 1,610.00"
@@ -165,7 +166,8 @@ def main():
 
     # retries=1: the flow posts to a shared Slack channel, so a whole-flow retry
     # would post a duplicate message.
-    payload = run_debug(inputs=inputs, timeout=540, retries=1)
+    with journal_slack_posts():
+        payload = run_debug(inputs=inputs, timeout=540, retries=1)
     outs = io.out_values(flow, payload)
     print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
     found = [(k, t) for k, (_t, v) in outs.items() for t in io.texts(v)]

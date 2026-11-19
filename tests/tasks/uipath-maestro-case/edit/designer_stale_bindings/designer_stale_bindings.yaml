@@ -41,11 +41,13 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in a Studio Web project that
-  already contains the expense-reporting case (solution ExpenseDesignerSaved,
-  case project CMGoldenExpense). No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait for
-  input.
+  You are a coding agent in a project that already contains the expense-
+  reporting case (solution ExpenseDesignerSaved, case project
+  CMGoldenExpense). No user is present, and nobody will answer a question or
+  grant approval, so do not ask, do not pause, and do not wait for input. Do
+  not delete or overwrite anything this run did not create, except what the
+  task asks you to change, and do not publish to a shared destination unless
+  the task asks for it.
 
   I just pulled the solution from Studio Web, so the copy here is current.
 

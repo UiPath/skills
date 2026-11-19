@@ -209,3 +209,18 @@ def test_orchestrator_helper_states_both_response_modes_and_the_boolean():
     facts = TASKS["escalation_orchestrator_paths"]
     assert facts.enums["responseMode"] == {"Draft", "None"}
     assert facts.outputs["engineeringNeeded"] == "boolean"
+
+
+GUARD = (
+    "Do not delete or overwrite anything this run did not create, except what the task "
+    "asks you to change, and do not publish to a shared destination unless the task asks for it."
+)
+
+
+@pytest.mark.parametrize("task", TASKS)
+def test_the_opener_names_no_harness_and_carries_the_guard(task):
+    path = next(SUITE.rglob(f"{task}.yaml"))
+    opener = _flat(_prompt(path).split("\n\n")[0])
+    assert opener.startswith("You are a coding agent in an empty Agentic Process (Maestro BPMN) project."), task
+    assert "Studio Web" not in opener, task
+    assert GUARD in opener, task

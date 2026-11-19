@@ -45,10 +45,12 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Agentic Process
-  (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait for
-  input.
+  You are a coding agent in an empty Agentic Process (Maestro BPMN) project.
+  No user is present, and nobody will answer a question or grant approval, so
+  do not ask, do not pause, and do not wait for input. Do not delete or
+  overwrite anything this run did not create, except what the task asks you
+  to change, and do not publish to a shared destination unless the task asks
+  for it.
 
   Build a process called "BillingInvoiceLookup" that looks up the line items
   in a disputed invoice, even when the caller types the invoice number
