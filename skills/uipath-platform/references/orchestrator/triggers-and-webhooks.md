@@ -265,7 +265,7 @@ uip or webhooks list --enabled --output json
 - **Cron is Quartz 6-field, NOT Unix 5-field.** If a trigger never fires, check for 6 fields and `?` in day-of-month or day-of-week.
 - **`--type` defaults to `time`.** Omitting it when you mean queue or API causes confusing errors.
 - **`--release-key` is the process key** from `uip or processes list` (a GUID), NOT the package ID from `uip or packages list`.
-- **Calendar keys come from `uip or calendars list`** -- an Orchestrator resource. Keep calendar and trigger timezones aligned.
+- **Calendar keys come from `uip or calendars list`** -- an Orchestrator resource. A calendar has no time zone of its own: its excluded dates are matched in the trigger's `--time-zone`.
 - **Trigger history is the debugging tool.** When a trigger doesn't fire, `triggers history` shows why (no machines, license exhausted, calendar exclusion, auto-disabled). Check history before changing config.
 - **Triggers are folder-scoped** -- every command needs `--folder-path` or `--folder-key`. **Webhooks are tenant-scoped** -- no folder flags.
 - **Webhook `--events` behavior:** omit to subscribe to ALL events; provide to subscribe to specific events only. On update, adding `--events` switches from all-events to specific.
