@@ -2158,16 +2158,21 @@
       "inputName": "body",
       "inputTarget": "body",
       "outputSource": "=result",
-      "outputType": "json",
       "outputName": "caseManagerDecisions",
+      "outputNames": [
+        "caseManagerDecisions",
+        "schedulerOutput"
+      ],
+      "outputVarFromInputField": "decisions",
       "bindingPattern": "none",
       "requiresDiscovery": false,
       "isDynamic": false,
       "contractOutputMayBeCustom": true,
+      "regenerateInstruction": "Open and save the case in Studio Web to regenerate the guardrails element.",
       "xmlTemplate": "<bpmn:serviceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseManagerGuardrails\" version=\"v1\" />\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{\"decisions\":{decisions},\"caseCurrentExecutionState\":{caseCurrentExecutionState}}]]></uipath:input>\n      <uipath:output name=\"caseManagerDecisions\" type=\"json\" source=\"=result\" var=\"{varId}\" custom=\"true\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:serviceTask>",
       "bpmnElementNotes": "The case converter is the only producer of this element and emits it as bpmn:ServiceTask (PO.Frontend generateCaseManagerGuardrailsNode in CaseManagementCaseManagerNodes.ts).",
       "inputNotes": "The case converter adds this task after the case manager whenever it has case-manager decisions. Its two inputs are merged into the body payload during BPMN serialization, so they are body fields, not uipath:context inputs. Studio Web saves from before 2026-08-25 (PO.Frontend #6783) carry only decisions and no output; re-saving the case in Studio Web brings them up to this shape.",
-      "outputNotes": "The output writes the guardrails result back over the variable the decisions input reads, which the run-tasks step reads next; that is what makes the guardrails take effect. The validator picks the output by source \"=result\", accepts the name caseManagerDecisions or schedulerOutput, does not pin its type, and requires its var to equal the variable the decisions input reads. The converter stamps custom=\"true\" on it - a converter detail, not a panel narrowing, so contractOutputMayBeCustom tells the validator to still shape-check it instead of dropping it as an unrelated custom addition.",
+      "outputNotes": "The output writes the guardrails result back over the case manager agent task's own output variable - the one the decisions input reads (=js:vars.<id>) and the run-tasks step reads next - which is what makes the guardrails take effect. PO.Frontend generateCaseManagerGuardrailsNode copies that variable's id into var and its name and type into the output: the name is caseManagerDecisions, or schedulerOutput when the agent output is named that (CaseManagementDispatcherUtils.ts), and the type follows the agent output (json, jsonSchema, ...), so outputNames lists both names, the type is not pinned, and outputVarFromInputField checks var against the variable decisions reads. The converter stamps custom=\"true\" on it - a converter detail, not a panel narrowing, so contractOutputMayBeCustom tells the validator to still shape-check it (name/type/source/var) instead of dropping it as an unrelated custom addition.",
       "inputFields": [
         {
           "name": "decisions",
