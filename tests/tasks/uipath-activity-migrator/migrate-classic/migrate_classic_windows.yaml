@@ -4,7 +4,7 @@ description: >
   migrate a committed Windows-framework project that still uses classic UIA
   activities (ConsentBannerProbe: one XAML with Open Browser, Click, Get Full
   Text, Close Tab). Verifies the skill's pipeline end to end without user
-  questions: acquire UiPath.Upgrade.exe, analyze and upgrade in SARIF mode with
+  questions: obtain the migrator (uip, or the archive fallback), analyze and upgrade in SARIF mode with
   the pinned UIAutomation line, summarize, write the output to a sibling folder,
   leave the source untouched, and produce an output that `uip rpa build`
   compiles. Windows only: the migrator is a .NET desktop tool and the build
@@ -49,7 +49,7 @@ success_criteria:
   # Studio's terminal such a command opens the project in the user's Studio.
   - type: command_not_executed
     description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
-    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia|project\s+migrate)\b'
     tool_name: "Bash"
     weight: 1.0
     pass_threshold: 1.0
