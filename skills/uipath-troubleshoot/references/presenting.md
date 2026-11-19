@@ -86,21 +86,25 @@ Preventive fix:
   - Who: {RPA developer | admin | platform team}
   - Source: {playbook path or docsai URL}
 2. {next domain, same structure}
+
+Next action:
+
+- Repair: {the Immediate fix steps above, by owner}
+- Re-check (not run): `{one read-only command, documented form, IDs filled in}`
+- Later decision: {re-publish / re-deploy / retry / re-run, if any, on this line}
 ```
 
 ### Next action
 
-Every diagnosis ends with, in this order:
+When a root cause is confirmed, the resolution ends with, in this order:
 
-1. **Repair, by owner** — the Immediate fix steps above, each with its `Who:`. Repairs change the faulty artifact or setting. Retry, re-publish, re-deploy, re-run, resume, restart, migrate are not repair steps.
-2. **Re-check** — one line naming one read-only command that shows whether the repair held (e.g. `uip or jobs get <JOB_KEY> --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), with the entity ID filled in. Verify the command exists first. Name it; do NOT run it — the user runs it after applying the repair.
-3. **Later decision** — retry, re-publish, re-deploy or re-run on its own line, framed as the user's call once the re-check is clean. Never fold it into a repair step. Playbook `## Resolution` text that bundles one into a fix step: split it out here.
+1. **Repair, by owner** — the Immediate fix steps above, each with its `Who:`. A repair changes the faulty artifact or setting. When the matched playbook's `## Resolution` prescribes a retry, rerun or restart as the fix for the confirmed cause (transient failure, stale dispatch, restart to load a changed setting), that IS the repair — keep it as a step. Otherwise retry, re-run, resume, restart, migrate, re-publish and re-deploy are not repair steps.
+2. **Re-check (not run)** — one line naming one read-only command that shows the run's current state before the later decision (e.g. `uip or jobs get <JOB_KEY> --no-download --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), entity ID filled in. Copy it in its documented form from the investigation guide or the matched playbook. Name it; do NOT run it.
+3. **Later decision** — re-publish and re-deploy always, and any retry or re-run the playbook does not prescribe as the fix, on its own line as the user's call after the re-check. Never fold it into a repair step; split bundled playbook text out here.
 
-Exception: a step that applies the repaired artifact is repair, not a retry (e.g. publishing a corrected package when the package itself was the defect). Keep it, but never add a re-run to prove it.
+**Reduced-confidence terminal** (checklist gap survived the re-fetch): present the same structure, name the gap explicitly next to the cause statement, and lead the Immediate fix with the playbook's diagnostic recommendation (e.g., a byte-compare snippet) instead of a guessed branch. In Next action, the Repair is that diagnostic; give no Later decision. Recommending the discriminating diagnostic IS the deliverable when evidence cannot separate sibling causes — never silently pick one.
 
-**Reduced-confidence terminal** (checklist gap survived the re-fetch): present the same structure, name the gap explicitly next to the cause statement, and lead the Immediate fix with the playbook's diagnostic recommendation (e.g., a byte-compare snippet) instead of a guessed branch. Recommending the discriminating diagnostic IS the deliverable when evidence cannot separate sibling causes — never silently pick one.
-
-**No root cause found**: present what was investigated and ruled out (from notes.md), and recommend providing more data or opening a UiPath support ticket.
+**No root cause found** (exempt from Next action): present what was investigated and ruled out (from notes.md), and recommend providing more data or opening a UiPath support ticket.
 
 ## 4. Apply presentation rules
 
