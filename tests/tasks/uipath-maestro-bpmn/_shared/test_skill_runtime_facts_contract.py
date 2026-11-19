@@ -152,7 +152,7 @@ REQUIRED = [
     ("references/patterns/high-volume-batch-guide.md", "1-based"),
     ("references/connectors.md", "A connection is a sender's identity"),
     ("references/connectors.md", "belongs to the team whoever its `Owner` is, even when its Name is an email"),
-    ("references/bpmn-runtime.md", "RULE:bpmn.script.template-literal"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.script.ts-string-escapes"),
     ("references/bpmn-runtime.md", "Double every backslash the script needs"),
 ]
 
