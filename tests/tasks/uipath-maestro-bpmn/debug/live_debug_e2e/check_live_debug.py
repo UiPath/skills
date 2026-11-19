@@ -304,7 +304,7 @@ def main() -> None:
                     _fail(
                         f"{path}: script output maps product from source=\"=result\". "
                         "Studio Web completes this shape but reads product back empty; "
-                        "return { response: 6 * 7 } and map source=\"=result.response\"."
+                        "`return 6 * 7;` and map source=\"=result.response\"."
                     )
                 if source != "=result.response":
                     _fail(
@@ -351,7 +351,9 @@ def main() -> None:
     #    only source of the runtime `product` value — the `debug` command output
     #    carries element statuses only. Primary, deterministic pass path: the
     #    agent saved a variables-all payload with product == 42.
-    saved = glob.glob("debug-evidence/**/*.json", recursive=True) + glob.glob("*.json")
+    #    Studio Web cannot create a root folder (a root folder is a project), so
+    #    the agent saves debug-evidence/ inside the project there.
+    saved = glob.glob("**/debug-evidence/**/*.json", recursive=True) + glob.glob("*.json")
     completed = False
     product_from_evidence = False
     instance_id = None

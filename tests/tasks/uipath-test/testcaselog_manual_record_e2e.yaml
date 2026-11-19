@@ -26,7 +26,8 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1800
 
-# The test case is the only immutable seed (create-if-absent, never deleted).
+# The test case is the only immutable seed (create-if-absent; the canonical is
+# never deleted, but accidental name-duplicates from the create-race are).
 # The agent opens its own stamped execution, so there is no fixed-name artifact
 # to collide on. pre_run bounds growth by deleting only earlier-day executions,
 # found via the task's own logs (ad-hoc-set executions are invisible to
@@ -75,16 +76,31 @@ pre_run:
               fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
                    f"release carrying the test case log verbs")
 
-      # Case - create if absent, never delete.
+      # Case - create if absent; keep one canonical, delete only name-duplicates.
       tc = by_name("case.find", "testcases", CASE)
       if not tc:
           call("case.create", "tm", "testcases", "create", "--project-key", P,
                "--name", CASE)
           tc = by_name("case.refind", "testcases", CASE)
-      if not tc:
+      if not tc or not tc.get("Id"):
           fail(f"could not create or find {CASE}")
-      if not tc.get("Id"):
-          fail(f"{CASE} has no id")
+
+      # "create if absent" races across the two concurrent CLAIM variants, so the
+      # project can hold several cases sharing CASE's name; the agent then
+      # (correctly) stops on the ambiguity and the task fails for careful models.
+      # Keep the lowest-key case and delete the rest - both variants sort the same
+      # way, so they pick the same survivor and never delete each other's keeper.
+      if has_verb("tm", "testcases", "delete"):
+          # NB `testcases list` takes no --limit (unlike `testcaselog list`);
+          # the exact-name --filter keeps the match set to the few duplicates.
+          dupes = sorted(
+              (x for x in (call("case.dupes", "tm", "testcases", "list",
+                                "--project-key", P, "--filter", CASE).get("Data") or [])
+               if x.get("Name") == CASE and x.get("TestCaseKey")),
+              key=lambda x: x["TestCaseKey"])
+          for x in dupes[1:]:
+              call(f"dedup.{x['TestCaseKey']}", "tm", "testcases", "delete",
+                   "--project-key", P, "--test-case-key", x["TestCaseKey"], "--yes")
 
       # Sweep only EARLIER-DAY executions. Group the task's own logs by execution
       # and delete one only when every log on it was last touched before today,

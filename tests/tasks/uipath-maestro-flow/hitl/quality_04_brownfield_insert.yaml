@@ -15,7 +15,7 @@ reference:
   directory: ..
 
 initial_prompt: |
-  You are working on an existing UiPath Flow named "ContractReview".
+  No "ContractReview" flow exists yet: build it first (Step 1), then edit it in place as an existing flow (Step 2).
 
   Step 1 — Build the base flow:
   Create ContractReview as a 3-node flow:

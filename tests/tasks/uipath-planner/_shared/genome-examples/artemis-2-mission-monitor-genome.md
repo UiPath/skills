@@ -33,10 +33,17 @@ The automation maintains a lightweight state file tracking the last known missio
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| ArtemisMonitor-Schedule | Time trigger | Fires the process every 3 minutes |
-| SMTP credentials | Credential asset | Authenticates the outgoing mail server when a custom SMTP server is configured |
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| SMTP credentials | the custom SMTP server's account, when Configuration Question 2 names one | the custom SMTP host | step 8 |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| ArtemisMonitor-Schedule | this process | Time | every 3 minutes | 1 *[Inferred: D1]* |
 
 ## Interface
 
@@ -51,6 +58,10 @@ The automation maintains a lightweight state file tracking the last known missio
 3. How far back should the first poll look for events, to avoid flooding the inbox on first run? (constant; default: 1 hour)
 4. Should the state file persist across Orchestrator restarts? (constant; default: yes — avoids duplicate notifications)
 5. Which email format? (constant; default: HTML with mission phase icons; alternative: plain text)
+
+## Open Decisions
+
+1. How many runners does the 3-minute schedule use? (reading; answered by: whoever knows the process; reading: one runner, since each run is one poll and one decision; the description does not state it) — Platform Dependencies, Triggers
 
 ## Workflow
 

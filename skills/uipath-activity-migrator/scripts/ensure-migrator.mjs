@@ -247,81 +247,49 @@ if (needDownload) {
   source = isUpdate ? 'updated' : 'downloaded';
 }
 
-// --- 5. .NET Desktop Runtime -----------------------------------------------
-// The runtime the build asks for comes from UiPath.Upgrade.runtimeconfig.json next to the exe: the 25.10 archives
-// target .NET 8, later builds a later major. The host keeps the major version unless the roll-forward policy (the
-// file's, or DOTNET_ROLL_FORWARD) is Major or LatestMajor; a prerelease runtime counts only for a prerelease request.
-// Check the one place the migrator's launcher loads its runtime from: a set DOTNET_ROOT_X64 or DOTNET_ROOT, with no
-// fallback; otherwise the location the .NET installer registers (32-bit registry view), else %ProgramFiles%\dotnet.
-// The launcher never looks at PATH, so a dotnet on PATH says nothing about what the tool will load.
-const DESKTOP = 'Microsoft.WindowsDesktop.App';
-const parseVer = (s) => {
-  const m = /^(\d+)\.(\d+)\.(\d+)(-.+)?$/.exec(String(s || '').trim());
-  return m ? { parts: [+m[1], +m[2], +m[3]], pre: m[4] !== undefined } : null;
-};
-const cmpVer = (a, b) => a.parts[0] - b.parts[0] || a.parts[1] - b.parts[1] || a.parts[2] - b.parts[2];
-const desktopRuntime = () => {
-  const runtimeConfig = exe.replace(/\.exe$/i, '.runtimeconfig.json');
-  let need;
-  try {
-    const opts = JSON.parse(readFileSync(runtimeConfig, 'utf8')).runtimeOptions || {};
-    const fw = (opts.frameworks || (opts.framework ? [opts.framework] : [])).find((f) => f && f.name === DESKTOP);
-    const parsed = parseVer(fw && fw.version);
-    if (!parsed) throw new Error(`it names no ${DESKTOP} version`);
-    need = {
-      version: fw.version,
-      parsed,
-      rollForward: String(process.env.DOTNET_ROLL_FORWARD || fw.rollForward || opts.rollForward || 'Minor').toLowerCase(),
-    };
-  } catch (e) {
-    fail('verify-failed', `Cannot read the runtime ${exe} needs from ${runtimeConfig} (${e.message}). The install is incomplete: rerun with --force.`);
-  }
-  const accepts = (candidate) => {
-    const have = parseVer(candidate);
-    const want = need.parsed;
-    if (!have || (have.pre && !want.pre) || cmpVer(have, want) < 0) return false;
-    switch (need.rollForward) {
-      case 'disable': return cmpVer(have, want) === 0;
-      case 'latestpatch': return have.parts[0] === want.parts[0] && have.parts[1] === want.parts[1];
-      case 'major': case 'latestmajor': return true;
-      default: return have.parts[0] === want.parts[0];
-    }
-  };
-  const major = need.parsed.parts[0];
-  let dotnetRootVar = '';
-  if (process.env.DOTNET_ROOT_X64) dotnetRootVar = 'DOTNET_ROOT_X64';
-  else if (process.env.DOTNET_ROOT) dotnetRootVar = 'DOTNET_ROOT';
-  const registeredDotnet = () => {
-    const reg = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
-    const q = run(reg, ['query', 'HKLM\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64', '/v', 'InstallLocation', '/reg:32']);
-    const m = q.ok ? /InstallLocation\s+REG_SZ\s+(.+)/i.exec(q.out) : null;
-    return m ? m[1].trim() : '';
-  };
-  const dotnetDir = dotnetRootVar
-    ? process.env[dotnetRootVar]
-    : registeredDotnet() || join(process.env.ProgramFiles || 'C:\\Program Files', 'dotnet');
-  const dotnetExe = join(dotnetDir, 'dotnet.exe');
-  const list = isFile(dotnetExe) ? run(dotnetExe, ['--list-runtimes']) : null;
-  let best = '';
-  for (const line of list?.ok ? list.out.split(/\r?\n/) : []) {
-    const parts = line.trim().split(/\s+/);
-    if (parts[0] === DESKTOP && accepts(parts[1]) && (!best || cmpVer(parseVer(parts[1]), parseVer(best)) > 0)) best = parts[1];
-  }
-  if (best) return best;
-  const installer = `the .NET Desktop Runtime ${major} (x64)`;
-  const fix = dotnetRootVar
-    ? `, the only place the migrator loads its runtime from while ${dotnetRootVar} is set. Unset ${dotnetRootVar}, or install ${installer} there, and rerun.`
-    : `, where the migrator loads its runtime from. Install ${installer} from https://dotnet.microsoft.com/download/dotnet/${major}.0 and rerun.`;
-  const wanted = need.rollForward === 'major' || need.rollForward === 'latestmajor' ? `${need.version} or later` : `${major}.x (${need.version} or later)`;
-  fail('runtime-missing', `${DESKTOP} ${wanted} not found in ${dotnetDir}` + fix);
-};
-const runtime = desktopRuntime();
-
-// --- 6. Verify the tool answers --------------------------------------------
-// The tool's own stderr names why it could not start, such as a runtime it cannot resolve; a re-download never fixes
-// that. .NET launch errors lead with the cause and end with links, so the start of the text is kept.
+// --- 5. Verify the tool answers --------------------------------------------
+// Starting the tool is the only check of its .NET runtime. Which runtime a build needs, where the launcher looks for it
+// and what a roll-forward setting lets it accept are the launcher's rules; a copy of them here would name the wrong
+// runtime for a build that targets another .NET, and refuse a tool that starts.
 const ver = run(exe, ['version'], { timeout: 60000 });
 const version = lastLine(ver.out);
+
+// .NET's launcher exits with these codes before any tool code runs. FRAMEWORK_MISSING: it found a .NET install without
+// the runtime this build needs. HOST_MISSING: it found no .NET install; a broken install exits the same way, so there
+// the launcher's text decides, and anything else stays a verify failure that relays the text.
+const FRAMEWORK_MISSING = 0x80008096;
+const HOST_MISSING = 0x80008083;
+if (ver.status === FRAMEWORK_MISSING || (ver.status === HOST_MISSING && /You must install \.NET to run this application/i.test(ver.err))) {
+  const hostLine = (re) => (re.exec(ver.err) || [])[1]?.trim() || '';
+  // The build's runtimeconfig, next to the exe, names the .NET it targets. It only words the fix; unreadable, the
+  // launcher's text is relayed instead. The launcher's first missing framework is the base runtime, and its download
+  // link installs that one alone, so the fix names the Desktop Runtime, which holds both frameworks the tool loads.
+  let major = '';
+  try {
+    const opts = JSON.parse(readFileSync(exe.replace(/\.exe$/i, '.runtimeconfig.json'), 'utf8')).runtimeOptions;
+    const frameworks = opts.frameworks || [opts.framework];
+    const target = frameworks.find((f) => f.name === 'Microsoft.WindowsDesktop.App') || frameworks.find((f) => f.name === 'Microsoft.NETCore.App');
+    major = /^(\d+)\./.exec(target.version)[1];
+  } catch { /* no major: the launcher's text names the version */ }
+  const arch = hostLine(/^Architecture:\s*(\S+)/m) || 'x64';
+  const runtimeName = major ? `the .NET Desktop Runtime ${major} (${arch})` : `a .NET Desktop Runtime (${arch})`;
+  const page = 'https://dotnet.microsoft.com/download/dotnet' + (major ? `/${major}.0` : '');
+  const reported = major ? '' : ` The launcher names the version: ${head(ver.err, 400)}`;
+  // The launcher lists what it found of the framework it missed: the reason an installed .NET did not count.
+  const found = [...ver.err.matchAll(/^[ \t]+(\d+\.\d+\.\S+) at \[/gm)].map((m) => m[1]);
+  const others = found.length ? ` Versions found there, none of which this build accepts: ${found.join(', ')}.` : '';
+  // The launcher takes the first of DOTNET_ROOT_<ARCH> and DOTNET_ROOT that names an existing folder and looks nowhere
+  // else, so an install into the default location would change nothing. A variable that names no folder is skipped;
+  // with neither left, the launcher uses the default location, reported below.
+  const rootVar = [`DOTNET_ROOT_${arch.toUpperCase()}`, 'DOTNET_ROOT'].find((name) => process.env[name] && isDir(process.env[name]));
+  if (rootVar) {
+    fail('runtime-missing', `${exe} needs ${runtimeName}, which is not in ${process.env[rootVar]}, the only place the migrator loads its runtime from while ${rootVar} is set.${others} Unset ${rootVar}, or install the runtime there, and rerun.${reported}`);
+  }
+  const where = hostLine(/^\.NET location:[ \t]*(\S.*)$/m);
+  const place = where && !/^not found$/i.test(where) ? ` in ${where}, where the migrator loads its runtime from.` : ': no .NET install was found on this machine.';
+  fail('runtime-missing', `${exe} needs ${runtimeName}, which is not installed${place}${others} Install ${runtimeName} from ${page} and rerun.${reported}`);
+}
+
 // The 25.10 builds parse UIPATH_TELEMETRY_DISABLED with bool.Parse and crash at startup on any value but true or
 // false, such as the documented 1. Prove it with a retry under the strict spelling of the user's choice; never unset
 // the variable, which would turn the user's telemetry back on.
@@ -333,11 +301,13 @@ if ((!ver.ok || !version) && telemetry !== undefined && !/^\s*(true|false)\s*$/i
     emit({ status: 'error', code: 'telemetry-flag', env: `UIPATH_TELEMETRY_DISABLED=${strict}`, message: `${exe} crashes at startup while UIPATH_TELEMETRY_DISABLED is ${JSON.stringify(telemetry)}: this build accepts only true or false. It starts with UIPATH_TELEMETRY_DISABLED=${strict}, the same choice. Prefix this script and every UiPath.Upgrade.exe command with it; never unset the variable.` }, 1);
   }
 }
+// Any other failure: the tool's own stderr names why it could not start. .NET launch errors lead with the cause and end
+// with links, so the start of the text is kept.
 if (!ver.ok || !version) {
   const detail = head(ver.err, 400) || (ver.status == null ? 'no output' : `exit code ${ver.status}, no output`);
   fail('verify-failed', `${exe} did not print a version (${detail}). When that names a missing runtime or framework, fix it as it says; otherwise the install may be incomplete: rerun with --force.`);
 }
 
-const result = { status: 'ok', source, command: exe, exe, version, runtime };
+const result = { status: 'ok', source, command: exe, exe, version };
 if (updateAvailable) result.update = true;
 emit(result, 0);

@@ -19,14 +19,14 @@ description: >
   rule is organization-wide, so a leftover from a run that died mid-way would
   keep suppressing this organization's audit trail for every later run.
 
-  Blocker: `/api/EventConfig/rules` is not deployed in the test
-  organization. The CLI half is already covered: UiPath/cli#4379 merged on
-  2026-09-29, and both the smoke gate and coder-eval install
-  `@uipath/cli@dev` from GitHub Packages, which tracks `cli/main` — so the
-  commands are present here well before public npm `latest` carries them
-  (1.202.1 on 2026-10-01; the 1.204 line publishes mid-October, and only end
-  users wait on that). Until it ships, pre_run records the planned name only
-  and the verifier reports that the rules could not be read.
+  Needs the `Audit` scope in the eval token. Exclusion create, replace and
+  delete accept `Audit` or `PM.Audit`, never `Audit.Read`, so without it the
+  agent's create gets HTTP 403. Both token mints must request it:
+  `.github/scripts/refresh-auth.sh` here, and coder_eval_uipath's
+  `eval_runner/scripts/ci/refresh-auth.sh` for the nightly and the AS ETE.
+
+  The exclusion tasks share one organization's rules and can run at the same
+  time. `EXCL_TYPE_SLOT=0` gives this task its own planned event type.
 tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org]
 sandbox:
   template_sources:
@@ -42,7 +42,7 @@ reference:
 pre_run:
   - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-create" python3 _setup/cleanup_exclusion_marker.py'
     timeout: 120
-  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-create" EXCL_PLAN_ONLY=1 EXCL_STATUS="Success" python3 _setup/setup_exclusion_rule.py'
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-create" EXCL_PLAN_ONLY=1 EXCL_STATUS="Success" EXCL_TYPE_SLOT=0 python3 _setup/setup_exclusion_rule.py'
     timeout: 120
 
 post_run:

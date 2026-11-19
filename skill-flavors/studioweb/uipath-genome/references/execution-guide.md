@@ -10,3 +10,7 @@
 <!--skill-flavor:process-genome-pack:start-->
 The host keeps the open solution's resources in sync and packages it only when it is published (`uip solution publish`, the user's call): resource refresh and pack, the dry run included, are Node-CLI-only. Validate and build per project are the last local gate.
 <!--skill-flavor:process-genome-pack:end-->
+
+<!--skill-flavor:capability-discovery-scratch:start-->
+   - **When that discovery needs a project** (the docs an installed package brings), read the docs of the packages the open solution's projects already install, and the owning skill's own guidance otherwise: Studio Web works on its one open solution, so discovery makes no scratch project.
+<!--skill-flavor:capability-discovery-scratch:end-->

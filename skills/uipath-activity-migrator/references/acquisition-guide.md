@@ -11,8 +11,8 @@ How the skill finds and verifies the Activity Migrator: Helm's, through `uip`, e
 | Public download | `https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip`, the standalone `UiPath.Upgrade.exe`. The fallback when `uip` cannot supply the migrator |
 | Also available from | Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool; Customer Portal (`https://customerportal.uipath.com/`) |
 | Archive | Zip with `UiPath.Upgrade.exe` at the archive root and extensions under `Extensions/<Name>/` |
-| Runtime | Through `uip`: Helm runs on the dotnet of the Robot or Studio install, else on the `dotnet` on `PATH` with `DOTNET_ROLL_FORWARD=LatestMajor`. `uip` resolves it; the script checks nothing. The archive: Windows and the .NET Desktop Runtime (x64) the build's `UiPath.Upgrade.runtimeconfig.json` names, which provides both `Microsoft.NETCore.App` and `Microsoft.WindowsDesktop.App`. The default roll-forward keeps the major version |
-| Version | `uip rpa project migrate version` prints Helm's version as its last stdout line, e.g. `27.0.207-dev` or `26.10.x`; the SARIF `tool.driver.version` carries the same. `UiPath.Upgrade.exe version` prints the archive's own, `26.10.0` today, `25.10.x` for older copies |
+| Runtime | Through `uip`: Helm runs on the dotnet of the Robot or Studio install, else on the `dotnet` on `PATH` with `DOTNET_ROLL_FORWARD=LatestMajor`. `uip` resolves it; the script checks nothing. The archive: Windows and the .NET Desktop Runtime of the major version the build targets, recorded in `UiPath.Upgrade.runtimeconfig.json` next to the exe |
+| Version | `uip rpa project migrate version` prints Helm's version as its last stdout line, e.g. `27.0.207-dev` or `26.10.x`; the SARIF `tool.driver.version` carries the same. `UiPath.Upgrade.exe version` prints the archive's own |
 | Freshness signal | Through `uip`: the CLI version. The archive URL is unversioned; the server's `Last-Modified` header is the only change signal. The script stores it, reports `update: true` when it changes, and re-downloads on an install run |
 
 Both forms take the same arguments and write the same SARIF and reports: exit code 0 whatever the outcome, extension options bind only as `--name=value`, reports go to `<PROJECT_DIR>/.upgrade` ([tool-behavior-guide.md](tool-behavior-guide.md)).
@@ -111,7 +111,7 @@ The last stdout line is one JSON object.
 
 ```json
 {"status":"ok","source":"uip","command":"uip rpa project migrate","version":"27.0.207-dev"}
-{"status":"ok","source":"cached","command":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","exe":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","version":"26.10.0","runtime":"10.0.5","uipMessage":"uip rpa project migrate version: helm-missing: …"}
+{"status":"ok","source":"cached","command":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","exe":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator\\current\\UiPath.Upgrade.exe","version":"26.10.0","uipMessage":"uip rpa project migrate version: helm-missing: …"}
 {"status":"missing","dir":"C:\\Users\\me\\AppData\\Local\\UiPath\\ActivityMigrator","url":"https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip","uipMessage":"uip rpa project migrate version: helm-missing: …"}
 ```
 
@@ -120,7 +120,7 @@ The last stdout line is one JSON object.
 | `status` | `ok`, `missing` (archive only), `error` |
 | `source` | `uip` (Helm, through `uip`); for the archive `env` (override dir), `cached`, `downloaded` (first install), `updated` (newer archive replaced the cache) |
 | `command` (`ok`) | What runs the migrator: `uip rpa project migrate` for `uip`, the exe path for the archive. The skill's `<MIGRATOR>` is built from it |
-| `exe`, `runtime` (`ok`, archive only) | The exe path, and the .NET Desktop Runtime version found for it |
+| `exe` (`ok`, archive only) | The exe path |
 | `update` (`ok`, archive only) | `true` when the server's `Last-Modified` differs from the stamp on a plain run: a newer build exists and the cached tool was kept. Absent otherwise |
 | `dir`, `url` (`missing` only) | The folder an install run would fill and the archive it would fetch: the facts the skill puts in its install question |
 | `uipMessage` (archive only) | Why `uip` could not supply the migrator, when it was asked: `helm-missing`, an unknown command, Helm's error, or `uip` not found |
@@ -134,7 +134,7 @@ Exit codes: `0` ok, `1` error, `3` missing.
 
 SKILL.md Step 0 sends the agent here when the script reports `missing`: `uip` could not supply the migrator and no archive copy is installed. `<URL>` and `<DIR>` are the `url` and `dir` values of that object; `<UIP_REASON>` is its `uipMessage`, put in plain words (for example "`uip` is installed without its Helm component", "this `uip` is too old to have `project migrate`", "`uip` is not installed"). Use the host's structured question tool when it has one, otherwise ask in text. Offer exactly these two options, the first as the recommended one, and no other:
 
-> The Activity Migrator is not available: <UIP_REASON>. Updating `uip` (`uip update`), or reinstalling it with its optional Helm dependency, makes `uip rpa project migrate` provide it with no separate download. Otherwise UiPath distributes the standalone `UiPath.Upgrade.exe` as a zip of a few hundred MB for Windows.
+> The Activity Migrator is not available: <UIP_REASON>. Updating `uip` (`uip update`), or reinstalling it with its optional Helm dependency, makes `uip rpa project migrate` provide it with no separate download. Otherwise UiPath distributes the standalone `UiPath.Upgrade.exe` as a zip for Windows.
 >
 > 1. **Download it now** (recommended). I fetch `<URL>`, extract it into `<DIR>` and run the tool from there.
 > 2. **You provide it.** Fix `uip` as above, or download `UiPath.Upgrade.Cli.zip` yourself from `<URL>`, from Automation Cloud → Help → Resources → Downloads → Activity Migrator Tool, or from the Customer Portal. Extract it so `UiPath.Upgrade.exe` and the `Extensions/` folder sit directly in one folder, then tell me that folder or set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it.
@@ -143,7 +143,7 @@ SKILL.md Step 0 sends the agent here when the script reports `missing`: `uip` co
 
 Leave out the `<UIP_REASON>` clause and the `uip` sentence when the object carries no `uipMessage` (`UIPATH_ACTIVITY_MIGRATOR_DIR` or `_URL` is set, so `uip` was not asked).
 
-Option 1: rerun the script with `--install`. The download is a few hundred MB: give the command at least 10 minutes, not the host's default timeout. Apply Step 0's table to its output.
+Option 1: rerun the script with `--install`. Download, extraction and the version check can outlast the host's default timeout: give the command at least 10 minutes. Apply Step 0's table to its output.
 
 Option 2: wait for the user. When they fixed `uip`, rerun the script without a flag and apply Step 0's table: `source: uip` is the expected result. When they named a folder, rerun the script without a flag, with the variable set to that folder in the syntax of the shell that runs it: bash `UIPATH_ACTIVITY_MIGRATOR_DIR="<FOLDER>" node ...`, PowerShell `$env:UIPATH_ACTIVITY_MIGRATOR_DIR = '<FOLDER>'; node ...`. Apply Step 0's table. `missing` again means the folder holds no `UiPath.Upgrade.exe`, neither at its root nor under `current/`: say so, name those two places, and wait for the user; do not download and do not ask the question a second time. A variable set in the command lasts for that command only: tell the user to set it in their user environment so later sessions find the tool; a folder placed at the default `%LOCALAPPDATA%\UiPath\ActivityMigrator\current` needs no variable. The preset settings for managed machines are in [Managed environments](#managed-environments); point an administrator there when asked.
 
@@ -157,7 +157,7 @@ For air-gapped machines without a usable `uip`, or when both downloaders are blo
 4. Set `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1` so the script never tries the network.
 5. Rerun the acquisition script. Expected: `status: ok`, `source: env` or `cached`.
 
-Runtime missing: install the .NET Desktop Runtime (x64) the message names, from `https://dotnet.microsoft.com/download/dotnet/<major>.0`, then rerun. The script reads the version the tool needs from `UiPath.Upgrade.runtimeconfig.json` next to the exe and checks the one place the migrator loads its runtime from: `DOTNET_ROOT_X64` or `DOTNET_ROOT` while one is set; otherwise the install location the .NET installer registers, else `%ProgramFiles%\dotnet`. It never uses the `dotnet` on `PATH`, which the standalone migrator ignores. Verify by rerunning the script, which checks those same places and downloads nothing:
+Runtime missing (`runtime-missing`, archive only): the tool did not start because the .NET Desktop Runtime its build targets is not installed where .NET's launcher looks. The message names the version and the fix; apply it, then verify by rerunning the script:
 
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
