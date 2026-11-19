@@ -39,6 +39,10 @@
   From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
 
+<!--skill-flavor:sdk-hitl-app:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.120.18 or later. Studio Web ships its own SDK: when `compile` rejects `folder`, or writes a v1 task with only an `appId` (it fails at run time with 170000), tell the user that this Studio Web build cannot bind an Action App yet and write the inline form.
+<!--skill-flavor:sdk-hitl-app:end-->
+
 <!--skill-flavor:brownfield-merge-form:start-->
   In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`.
 <!--skill-flavor:brownfield-merge-form:end-->
