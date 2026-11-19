@@ -305,6 +305,14 @@ QUOTES = [
         }
     ),
     json.dumps({"prompt": f"Run uip solution resources list --kind Process, then uip solution resources get {KEY}"}),
+    json.dumps(
+        {
+            "file_path": "/solution/notes.md",
+            "content": "uip solution resources refresh --output json; uip solution resources add --source remote "
+            "--kind Process --kind Index --kind Connection --kind MemorySpace\n"
+            + _host_call(action="add", kind="Process", source="remote"),
+        }
+    ),
 ]
 
 
@@ -317,8 +325,8 @@ def test_resource_lookup_ignores_other_tools_quoting_it(pattern, call):
 # An edit forwards an arbitrary patch, so lookup fields nested in it are not a lookup.
 NESTED = [
     _host_call(action="edit", resourceKey=KEY, patch={"action": action, "kind": kind, "source": "local"})
-    for action in ("list", "get")
-    for kind in ("Process", "App", "Index", "MemorySpace")
+    for action in ("list", "get", "add")
+    for kind in ("Process", "App", "Index", "MemorySpace", "Connection")
 ] + [
     _host_call(action="edit", resourceKey=KEY, patch={"params": {"action": "get"}}),
     _host_call(action="edit", resourceKey=KEY, patch={"params": {"action": "list", "kind": "Process", "source": "local"}}),
@@ -359,6 +367,8 @@ MEMORY_DECLARE = _declare("memory_space/memory_space.yaml", "the memory space", 
         (INDEX_DECLARE, _host_call(action="add", source="remote", kind="Index", name="UiPathAgentsPolicies")),
         (IS_DECLARE, _host_call(action="add", source="remote", kind="Connection", cloudKey="2dc0d640-eac6-445f-9f0c-d5654c4f3b1a")),
         (MEMORY_DECLARE, _host_call(action="add", source="remote", kind="MemorySpace", name="UiPathAgentsSupportMemory", folderPath="Shared/uipath-agents")),
+        (RPA_DECLARE, "uip solution resources add --source remote \\\n  --kind Process --name FibonacciRPA --output json"),
+        (IS_DECLARE, "uip solution resources add --source remote --kind=Connection --cloud-key 2dc0d640 --output json"),
         # The terminal refresh still counts.
         (RPA_DECLARE, "uip solution resources refresh --output json"),
         (MEMORY_DECLARE, "cd MemorySol && uip solution resources refresh --output json"),
@@ -375,6 +385,10 @@ def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
         (RPA_DECLARE, _host_call(action="list", source="local")),
         (RPA_DECLARE, "uip solution resources list --source remote --kind Process --output json"),
         (INDEX_DECLARE, "uip solution resources add --source remote --kind Process --name FibonacciRPA"),
+        # A kind named by a later command in the same call is not this add's kind.
+        (RPA_DECLARE, "uip solution resources add --kind Index --name X && uip solution resources list --kind Process"),
+        (RPA_DECLARE, "uip solution resources add --kind Index --name X\nuip solution resources list --kind Process"),
+        (MEMORY_DECLARE, "uip solution resources add --source remote --kind MemorySpaceArchive --name X"),
         (IS_DECLARE, _host_call(action="add", source="remote", kind="MemorySpace", name="UiPathAgentsSupportMemory")),
     ],
 )
