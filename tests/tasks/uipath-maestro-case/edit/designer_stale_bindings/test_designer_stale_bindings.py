@@ -31,6 +31,18 @@ def _run(command: str, cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(command, shell=True, cwd=cwd, capture_output=True, text=True, timeout=60)
 
 
+def _criterion_json(prefix: str) -> dict:
+    return next(c for c in TASK["success_criteria"] if c["description"].startswith(prefix))
+
+
+def _json_check(prefix: str, cwd: Path) -> bool:
+    """A `json_check` criterion as the harness grades it: every `equals` assertion holds."""
+    jmespath = pytest.importorskip("jmespath")
+    criterion = _criterion_json(prefix)
+    data = json.loads((cwd / criterion["path"]).read_text())
+    return all(jmespath.search(a["expression"], data) == a["expected"] for a in criterion["assertions"])
+
+
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     """The fixture after this task's own pre_run (tenant-id localization skipped)."""
@@ -48,9 +60,7 @@ def test_pre_run_keeps_the_solution_in_the_workspace(workspace: Path):
 
 
 def test_edit_check_fails_until_the_timer_waits_15_minutes(workspace: Path):
-    command = _criterion("The edit landed")
-    result = _run(command, workspace)
-    assert result.returncode == 1 and "duration=PT10S total=15" in result.stdout, result.stdout + result.stderr
+    assert not _json_check("The edit landed", workspace)
 
     path = workspace / PROJECT / "caseplan.case"
     plan = json.loads(path.read_text())
@@ -60,13 +70,11 @@ def test_edit_check_fails_until_the_timer_waits_15_minutes(workspace: Path):
     )
     timer["data"]["timeDuration"] = "PT15M"
     path.write_text(json.dumps(plan))
-    assert _run(command, workspace).returncode == 0
+    assert _json_check("The edit landed", workspace)
 
 
 def test_sidecar_check_fails_on_the_stripped_sidecar_and_passes_once_regenerated(workspace: Path):
-    command = _criterion("bindings_v2.json carries the RPA Workflow resource")
-    result = _run(command, workspace)
-    assert result.returncode == 1 and "rpa_count=0 total_resources=7" in result.stdout, result.stdout + result.stderr
+    assert not _json_check("bindings_v2.json carries the RPA Workflow resource", workspace)
 
     shutil.copy(FIXTURE / "CMGoldenExpense" / "bindings_v2.json", workspace / PROJECT / "bindings_v2.json")
-    assert _run(command, workspace).returncode == 0
+    assert _json_check("bindings_v2.json carries the RPA Workflow resource", workspace)

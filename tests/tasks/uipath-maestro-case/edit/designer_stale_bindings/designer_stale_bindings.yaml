@@ -63,34 +63,29 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
-  - type: run_command
+  - type: json_check
     description: "The edit landed: Wait for timer - S5 waits 15 minutes, and no task was added or removed"
-    command: >
-      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
-      tasks=[t for n in d['nodes'] for ts in n['data'].get('tasks',[]) for t in ts];
-      timer=[t for t in tasks if t['displayName']=='Wait for timer - S5'];
-      dur=timer[0]['data']['timeDuration'] if timer else '';
-      ok=(dur=='PT15M' and len(tasks)==15);
-      print(f'duration={dur} total={len(tasks)}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "nodes[].data.tasks[][] | [?displayName=='Wait for timer - S5'].data.timeDuration | [0]"
+        operator: equals
+        expected: "PT15M"
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 15
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: json_check
     description: "bindings_v2.json carries the RPA Workflow resource again, regenerated from the plan rather than left as the Designer saved it"
-    command: >
-      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json'));
-      rpa=[r for r in d.get('resources',[]) if r.get('key','').endswith('.RPA Workflow')];
-      total=len(d.get('resources',[]));
-      ok=(len(rpa)==1 and total==8);
-      print(f'rpa_count={len(rpa)} total_resources={total}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json"
+    assertions:
+      - expression: "length(resources[?ends_with(key, '.RPA Workflow')])"
+        operator: equals
+        expected: 1
+      - expression: "length(resources)"
+        operator: equals
+        expected: 8
     weight: 3.0
     pass_threshold: 1.0
 

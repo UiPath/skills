@@ -10,7 +10,13 @@ A UiPath source (`.uipx`, `project.json`, `project.uiproj`, `.xaml`/`.cs`, `.flo
 
 Every other framework is read through the **framework migration pack**, which holds per framework a **source guide**, a **selectors guide** and an **inventory script**. Resolve it once per run:
 
-1. **Ask for its location.** Ask "Where is the framework migration guide?" unless the request, or the scaffolding answer ([configuration-questions-guide.md](configuration-questions-guide.md)), already gave it. Accept a folder path (`<PACK_DIR>`); a git URL is cloned into a scratch folder first. Never search the disk for it, never work from memory of its contents, never copy its files into this skill or beside a genome.
+1. **Ask which pack to read**, unless the request, or the scaffolding answer ([configuration-questions-guide.md](configuration-questions-guide.md)), already names one: **UiPath's pack** (https://github.com/UiPath/business-logic-extraction), or another, as a folder path or a git URL. Download UiPath's pack into a new scratch folder, which needs no git and no GitHub account; `<PACK_DIR>` is then `<SCRATCH_DIR>/business-logic-extraction-main`:
+
+   ```bash
+   curl -fsSL https://github.com/UiPath/business-logic-extraction/archive/refs/heads/main.tar.gz | tar -xzf - -C "<SCRATCH_DIR>"
+   ```
+
+   In Windows PowerShell, where `curl` is `Invoke-WebRequest` and a pipe breaks binary data, save the archive with `curl.exe -fsSL -o "<SCRATCH_DIR>/packs.tar.gz"` and the same URL, then run `tar.exe -xzf "<SCRATCH_DIR>/packs.tar.gz" -C "<SCRATCH_DIR>"`. Another git URL is cloned into a scratch folder first, and the clone is `<PACK_DIR>`; a folder path is `<PACK_DIR>` itself. Never search the disk for a pack, never work from memory of its contents, never copy its files into this skill or beside a genome.
 2. **Select the framework row** in `<PACK_DIR>/README.md` § Frameworks: the framework the Source Map names. That name makes the build a **migration**.
 3. **Run, then read.** Run the row's script before reading any export file. Read [source-migration-guide.md](source-migration-guide.md) whole and derive the catalogs with the same script (its § Migration preflight). Whoever names a deliverable also reads the source guide's § Component Detection naming, for the product terms it lists ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)). Whoever writes UI activities or targets also reads [ui-target-migration-guide.md](ui-target-migration-guide.md), [composite-interactions-guide.md](composite-interactions-guide.md), the source guide's § Composite actions and `<PACK_DIR>/<framework>/selectors-guide.md` by technology section; whoever writes or registers targets — a target spec, Object Repository elements — also reads [offline-definition-workarounds-guide.md](offline-definition-workarounds-guide.md) and [selector-translation-guide.md](selector-translation-guide.md) with [selector-matching-guide.md](selector-matching-guide.md) and its guide for each technology the target catalog holds — web ([selector-translation-web-guide.md](selector-translation-web-guide.md)), SAP GUI ([selector-translation-sap-guide.md](selector-translation-sap-guide.md)), desktop ([selector-translation-desktop-guide.md](selector-translation-desktop-guide.md)); whoever builds test components reads [test-execution-guide.md](test-execution-guide.md).
 
@@ -18,4 +24,8 @@ Every other framework is read through the **framework migration pack**, which ho
 
 | Situation | `build` |
 |---|---|
+| The download or clone fails | Say why, and ask for a folder path |
+| No row names the Source Map's framework | Say so, and ask for a pack that has one |
 | The pack is not available | Continue without the migration part — live capture or placeholders, stated in the report ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 1) |
+
+In an autonomous run, a failed download or clone and a pack with no row for the framework ask nothing: the pack is not available.

@@ -83,37 +83,38 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: json_check
     description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, nothing else was added or removed"
-    command: >
-      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
-      s7=[n for n in d['nodes'] if n['data'].get('label')=='Stage 7 - user select'][0];
-      tasks=[t for ts in s7['data'].get('tasks',[]) for t in ts];
-      cooloff=[t for t in tasks if t['displayName']=='Final cool-off' and t['type']=='wait-for-timer'];
-      optional=[t for t in tasks if t['displayName']=='Final cool-off' and t.get('isRequired')==False];
-      all_tasks=[t for n in d['nodes'] for ts in n['data'].get('tasks',[]) for t in ts];
-      ok=len(cooloff)==1 and len(optional)==1 and len(all_tasks)==16;
-      print(f'cooloff={len(cooloff)} optional={len(optional)} total={len(all_tasks)}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && type=='wait-for-timer'])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && isRequired==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 16
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: json_check
     description: "What the Designer wrote survives: schema 32.0.4, layout, the trigger's entryPointId, both connector tasks at configuration v2"
-    command: >
-      python3 -c "import json,sys; d=json.load(open('ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
-      trigger=[n for n in d['nodes'] if n['id']=='trigger_1'][0];
-      epid=trigger['data']['inputs'].get('entryPointId','');
-      v2ctx=[c for n in d['nodes'] for ts in n['data'].get('tasks',[]) for t in ts for c in t.get('data',{}).get('context',[]) if c.get('name')=='activityConfigurationVersion' and c.get('value')=='v2'];
-      ok=(d.get('version')=='32.0.4' and d.get('layout') is not None and epid=='aef0905a-379f-4881-bd5e-d78e4b816346' and len(v2ctx)==2);
-      print(f'version={d.get(\"version\")} layout={d.get(\"layout\") is not None} epid={epid} v2count={len(v2ctx)}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "version"
+        operator: equals
+        expected: "32.0.4"
+      - expression: "layout != null"
+        operator: equals
+        expected: true
+      - expression: "nodes[?id=='trigger_1'].data.inputs.entryPointId | [0]"
+        operator: equals
+        expected: "aef0905a-379f-4881-bd5e-d78e4b816346"
+      - expression: "length(nodes[].data.tasks[][].data.context[] | [?name=='activityConfigurationVersion' && value=='v2'])"
+        operator: equals
+        expected: 2
     weight: 2.0
     pass_threshold: 1.0
 

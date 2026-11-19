@@ -30,6 +30,18 @@ def _run(command: str, cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(command, shell=True, cwd=cwd, capture_output=True, text=True, timeout=60)
 
 
+def _criterion_json(prefix: str) -> dict:
+    return next(c for c in TASK["success_criteria"] if c["description"].startswith(prefix))
+
+
+def _json_check(prefix: str, cwd: Path) -> bool:
+    """A `json_check` criterion as the harness grades it: every `equals` assertion holds."""
+    jmespath = pytest.importorskip("jmespath")
+    criterion = _criterion_json(prefix)
+    data = json.loads((cwd / criterion["path"]).read_text())
+    return all(jmespath.search(a["expression"], data) == a["expected"] for a in criterion["assertions"])
+
+
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     shutil.copytree(HERE / "fixtures" / "ExpenseDesignerSaved", tmp_path / "ExpenseDesignerSaved")
@@ -53,25 +65,21 @@ def test_pre_run_keeps_the_solution_in_the_workspace():
 
 
 def test_edit_check_fails_on_the_untouched_fixture(workspace: Path):
-    result = _run(_criterion("The edit landed"), workspace)
-    assert result.returncode == 1, result.stderr
-    assert "cooloff=0 optional=0 total=15" in result.stdout
+    assert not _json_check("The edit landed", workspace)
 
 
 def test_edit_check_passes_once_the_optional_timer_is_added(workspace: Path):
     _add_cool_off(workspace)
-    result = _run(_criterion("The edit landed"), workspace)
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert _json_check("The edit landed", workspace)
 
 
 def test_designer_fields_check_passes_on_the_fixture_and_fails_on_a_lowered_version(workspace: Path):
-    command = _criterion("What the Designer wrote survives")
-    assert _run(command, workspace).returncode == 0
+    assert _json_check("What the Designer wrote survives", workspace)
     path = workspace / PLAN
     plan = json.loads(path.read_text())
     plan["version"] = "32.0.3"
     path.write_text(json.dumps(plan))
-    assert _run(command, workspace).returncode == 1
+    assert not _json_check("What the Designer wrote survives", workspace)
 
 
 def test_second_plan_file_check(workspace: Path):
