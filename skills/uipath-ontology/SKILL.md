@@ -187,7 +187,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
 
 ### Stage 5 — Write the artifacts against the created entities
 
-Write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md), after one batch confirmation. The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
+Before writing anything, list the artifact files (name and type, one line each) and ask the user to confirm them as one batch; wait for the reply. Confirming the model in Stage 2 does not count; skip the ask only when the user already said to go ahead without further confirmation. When the user says stop, stop: `model.md` stays at `model`. Then write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
 
 Two annotations the ontology viewer reads, written in every ontology:
 
