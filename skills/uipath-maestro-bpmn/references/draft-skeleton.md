@@ -3,11 +3,11 @@
 Author a skeleton of blank boxes, real control flow and labels, compile and validate it, show it to the user, and stop for their approval.
 It makes no registry calls.
 
-**When.** The user wants to see the shape before it is built: *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
+**When.** The user asks for a draft or wants to see the shape before it is built: *create a draft*, *outline it*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
 A request to build the process outright skips the draft and authors real nodes directly.
 A brownfield edit (the shape already exists) and a [discovery-only](bpmn-runtime.md#registry-extension-types) question (nothing is authored) skip it too.
-Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks to see the shape first.
-Judge the intent, not the word: a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) is a build, not the draft gate.
+Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks for a draft or to see the shape first.
+A request for a draft, an outline or a sketch is the gate even when it describes the whole process, and a request whose wording leans toward a draft without saying it (*a rough version*, *a first pass*, *a quick mock-up*) gets the draft, unless it also says outright to build or deploy the whole process. That exception is for leaning wording only: a request for a draft, an outline or a sketch always gates. Like the brownfield and discovery-only cases above, a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) skips the gate: it is a build.
 A connector step it cannot resolve then follows [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector).
 Plan mode is the host's state: never enter it yourself to satisfy "show me first".
 
