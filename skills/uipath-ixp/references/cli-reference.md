@@ -238,8 +238,10 @@ Required on both `create` and `upgrade`. The same name can be deployed in severa
 When filtering the folder list, pass an explicit `--limit` — `--output-filter` without one is rejected on current CLIs (older builds silently filter a single page):
 
 ```bash
-uip or folders list --limit 500 --output json --output-filter "[?Path=='Shared'].Key"
+uip or folders list --limit 1000 --output json --output-filter "[?Path=='Shared'].Key"
 ```
+
+If the envelope's `Pagination.HasMore` is `true` and `Data` is empty, repeat with `--offset 1000`, `--offset 2000`, and so on before treating the folder as missing.
 
 Omitting either required option fails locally with exit `3` / `Result: ValidationError`. No request is sent, so this is never an authentication or connectivity problem. `--version 0` is valid — versions are 0-based.
 

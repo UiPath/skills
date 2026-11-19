@@ -13,15 +13,15 @@ The tenant feed is authoritative for org-published libraries. Do NOT search the 
 One command, one global filter:
 
 ```bash
-uip or libraries list --limit 500 --output json
+uip or libraries list --limit 1000 --output json
 ```
 
 Returns `Data: [{ Key, Title, Version, Authors }]`. `Key` is `PackageId:Version` and is always populated. `Title` can be `null`.
 
 | Flag | Purpose |
 |------|---------|
-| `--limit <N>` | Items per call (default 50). Use 500 to cover most tenants in one call. |
-| `--offset <N>` | Pagination offset. Use only if `Data.length == --limit`. |
+| `--limit <N>` | Items per call (default 50, at most 1000). Use 1000 with `--output-filter`: the filter runs only over the rows this call fetched. |
+| `--offset <N>` | Row offset. Use it while the envelope's `Pagination.HasMore` is `true`, raising it by the limit each call. With `--output-filter`, `Data` holds only the matches, so `Data.length` says nothing about more pages. |
 | `--sort-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
 | `--output-filter "<JMESPath>"` | Client-side filter — the only way to OR multiple keywords in one call. |
 | `-s, --search <term>` | Server-side contains match on name — single term only (CLI ≥1.196). |
@@ -35,12 +35,12 @@ Filter on `Key` — always populated — and `Title` together: `Title` is often 
 
 ```bash
 # Single keyword
-uip or libraries list --limit 500 \
+uip or libraries list --limit 1000 \
   --output-filter "[?contains(Key, 'Excel') || (Title != null && contains(Title, 'Excel'))]" \
   --output json
 
 # Multi-keyword OR
-uip or libraries list --limit 500 \
+uip or libraries list --limit 1000 \
   --output-filter "[?contains(Key, 'Common') || contains(Key, 'Shared') || (Title != null && (contains(Title, 'Common') || contains(Title, 'Shared')))]" \
   --output json
 ```
@@ -52,7 +52,7 @@ For case-insensitive matching, lowercase the keyword in the filter and the field
 For orgs that publish libraries with cryptic Titles but a stable `Authors` value, filter on `Authors` instead of `Title`:
 
 ```bash
-uip or libraries list --limit 500 \
+uip or libraries list --limit 1000 \
   --output-filter "[?Authors != null && contains(Authors, '<OrgName>')]" \
   --output json
 ```
@@ -72,8 +72,8 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    - Capability terms: `Excel`, `SAP`, `ServiceNow`, `Salesforce`, `Email`, `PDF`, `SharePoint`, `Outlook`, `Citrix`, etc. — drawn from the in-scope applications
    - Domain terms: `Invoice`, `Vendor`, `Banking`, `Order` — drawn from the process name
 
-   If you have more than 6 candidate keywords, **skip the OR-filter** and run unfiltered (`--limit 500`, paginate via `--offset` until `Data.length < limit`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
-3. **Run one filtered call covering all keywords** with the OR pattern above. Single call, not one per keyword. Branch on the result: ≥1 candidate after ranking → step 5a. 0 candidates → step 5b. Do not loop back to step 2 with new keyword permutations.
+   If you have more than 6 candidate keywords, **skip the OR-filter** and run unfiltered (`--limit 1000`, paginate via `--offset` while `Pagination.HasMore` is `true`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
+3. **Run one filtered call covering all keywords** with the OR pattern above. Single call, not one per keyword — but if `Pagination.HasMore` is `true`, repeat that same call with `--offset 1000`, `--offset 2000`, … until it is `false`, and merge the matches. Branch on the merged result: ≥1 candidate after ranking → step 5a. 0 candidates → step 5b. Do not loop back to step 2 with new keyword permutations.
 4. **Rank candidates in-agent.**
    - Org-prefix match in `Title` or `Key` (starts with `Common`, `Shared`, `<Company>`) → rank highest
    - Capability/domain match in `Title` → rank next
@@ -108,7 +108,7 @@ If `uip` is unauthenticated, ask:
 2. **Inventing a verb or flag after a CLI rejection.** The surface drifts across versions (`--search` / `--feed-id` exist only on newer CLIs; older CLIs may lack `or libraries` entirely). On `unknown command` / `unknown option`, discover with `--help` and use the preflight's fallback chain (packages feed / Orchestrator API) — never guess.
 3. **Using `--search` for multi-keyword scans.** `--search` takes one term; one call per keyword violates anti-pattern 7. Multi-keyword OR goes through `--output-filter`.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
-5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 500` for a one-shot scan; paginate via `--offset` only if `Data.length == 500`. If `Data.length < --limit` on a paginated call, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.
+5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 1000` for a filtered scan; paginate via `--offset` while `Pagination.HasMore` is `true` (with `--output-filter`, `Data.length` counts matches, not rows fetched). Once `HasMore` is `false`, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.
 6. **Auto-selecting a candidate in interactive mode.** Library selection drives §14 Packages and project compilability — confirm via a structured question; autonomous mode records the pick in Decisions Made.
 7. **One CLI call per keyword, or running more keyword permutations after a zero-result filtered call.** Combine keywords into one OR-filtered call. On zero results, escalate to step 5b — do not loop back with new keyword sets hoping for hidden matches.
 8. **Repeating the search per sub-project in a Solution.** Run once per SDD generation; reuse the result across all sub-projects.
