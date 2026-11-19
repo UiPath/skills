@@ -105,6 +105,8 @@ Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
 - **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
 
+To debug or run the solution, neither path applies: refresh, then run the lead project's own debug command in your Personal Workspace ([Debug or Run the Solution](references/develop-solution.md#debug-or-run-the-solution)).
+
 Authentication is a prerequisite. Check `uip login status --output json` before any work; if not logged in, ask the user to run `uip login` (interactive browser flow). See `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 
 This skill is the terminal step of an SDD-driven build: after `uipath-planner` produces the SDD and derives the task list, and implementation specialists build the projects, the `.uipx` is packed and shipped here.
@@ -148,6 +150,7 @@ When the download answers `not_found`, the solution is not in Studio Web, and th
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Pack Build Guide](references/pack-build-guide.md) | Inside `pack`: `Data.Projects` on failure, dependency feeds, signing, analyzer and governance, coded-app builds, member package ids, `solution cleanup` |
 | [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions, solutions that carry an ontology |
