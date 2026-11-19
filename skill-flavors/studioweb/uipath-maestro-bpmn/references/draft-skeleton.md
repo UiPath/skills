@@ -43,6 +43,6 @@ This gate is the one round for structure and resource questions.
 
 <!--skill-flavor:draft-build-merge:start-->
   When `.flow-sdk/gate/<Name>.bpmn` exists, compare the target with it: `node -e "const f=require('fs');console.log(f.readFileSync('<Name>.bpmn','utf8')===f.readFileSync('.flow-sdk/gate/<Name>.bpmn','utf8')?'same':'changed')"`.
-  On `same`, nobody changed the canvas since the gate, and its layout is the one you drew: compile the source straight over the target, run `format <Name>.bpmn --relayout`, then `refresh` and `validate`.
+  On `same`, nobody changed the canvas since the gate, and its layout is the one you drew: compile the source straight over the target, run `format <Name>.bpmn` (never `--relayout` here: it drops the CDATA of script arguments, and `validate` then reports `SCRIPT_ARGS_ENVELOPE_MISSING`), then `refresh` and `validate`.
   On `changed`, an error, or no gate copy, finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
 <!--skill-flavor:draft-build-merge:end-->
