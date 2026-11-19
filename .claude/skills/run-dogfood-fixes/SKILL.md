@@ -54,17 +54,60 @@ Answer in order; stop when evidence names the producer.
 
 ## Phase 4 — Validate
 
-Decide the pass criteria **before** running. Record evidence for every step in the PR.
+Decide the pass criteria **before** running. Record evidence for every step in the PR. The [Validation Toolkit](#validation-toolkit) says how to run each step on our systems.
 
 1. **Baseline red, measured.** User's verbatim input on the unchanged build, in the product. Diff the shipped build against the branch base before claiming "reproduces on main". Record the rate per variant (model, persona, mode, path) — one run is an anecdote. If stock runs come out clean, say so: a failing offline test becomes the reproducible "before", and ask the user for the input that showed it — or defer the finding (Phase 1 step 5).
-2. **Prove the build** (Rule 2), before every run.
+2. **Prove the build** (Rule 2), before every run — Toolkit A.3, D.2.
 3. **Same input, same answers.** When the product asks a question, answer as a real user would, identically before and after. Dismissing or reshaping a question changes the path.
 4. **Same path.** Read the run's actions and internals (traces, logs, state), not just the end state. A run that took another route is void, even if it looks fixed.
 5. **Generalize.** New natural inputs in other domains, written like a real user — never a spec that pre-designs the answer — across every variant axis the fix is sensitive to, with n>1 on nondeterministic surfaces.
 6. **Negative controls.** A case where behavior must *not* change still doesn't; a grader rejects a known-bad output. A check that passes everything proves nothing.
-7. **Judge with the product's own eyes.** Run the artifact through the product's own engine at its latest version; open it in the product's editor or viewer; take screenshots there. Does it open, render, run? Warnings the product shows users are defects.
-8. **Parity and regression.** Check other surfaces running the same instructions or tool. Add a test that is red on baseline and green on the fix, grading side effects, never self-report.
+7. **Judge with the product's own eyes.** Run the artifact through the product's own engine at its latest version; open it in the product's editor or viewer; take screenshots there. Does it open, render, run? Warnings the product shows users are defects. Toolkit A.5, B, C.
+8. **Parity and regression.** Check other surfaces running the same instructions or tool. Add a test that is red on baseline and green on the fix, grading side effects, never self-report. Toolkit D, E.
 9. **Evidence must cover the head.** A later commit that changes what the agent reads makes the after-run stale; a main merge keeps it only if the PR's own files are byte-identical (show the diff).
+
+## Validation Toolkit
+
+How to run each Phase 4 check against UiPath products. Use every method the finding touches — each catches what the others miss. Placeholders: `<PROFILE>` = the `uip` login profile for the test org/tenant; `<AUTOPILOT>` = local Autopilot checkout serving Studio Web.
+
+### A. Autopilot in Studio Web (where most findings come from)
+
+1. Take the shared lock. Build: `npm run skills:build`; copy `build/skills/studioweb/` over the Studio Web skills package inside `<AUTOPILOT>`'s plugin (`autopilot-plugin-studioweb/node_modules/@uipath/skills-studioweb/skills`); rebuild the plugin.
+2. **Restart the Autopilot dev watchers.** The iframe bakes the plugin release at startup; swapping files without a restart runs stock.
+3. **Prove inside the iframe**: the bundled plugin release (`getBundledPluginReleases()` in the iframe console) equals `sha256(dist/index.json)`. A file hash on the dev server is not proof. Record both in the PR.
+4. Drive Studio Web with browser automation (built-in browser, or the debug Chrome over CDP): new chat, verbatim prompt, answer every question as a user would, same answers before and after. Save the full chat transcript to the shared notes folder.
+5. Open the resulting solution on the **Studio Web canvas**: does it render, do properties and expression editors open as intended, does debug run? Screenshots come from the canvas only.
+6. Restore stock, restart watchers, verify the restore, release the lock.
+
+### B. Studio Web without Autopilot
+
+1. `uip solution upload <SOLUTION_DIR> --profile <PROFILE> --output json`; open the returned designer URL. Check the canvas, panels and validation badges a user sees.
+2. Run it: `uip maestro bpmn debug <PROJECT_DIR> --profile <PROFILE> --output json`, then inspect `instances`, `incidents` and variables. Build success with a runtime failure is a failure.
+3. **Manual canvas ground truth.** When unsure what the product writes for a construct, build it by hand on the canvas, then `uip solution download <SOLUTION_ID> --extract --profile <PROFILE>` and diff that file against the agent's output. The frontend's own serialization beats any doc or reading of the schema.
+
+### C. Frontend and engine as source of truth
+
+1. **Contract questions** (what a valid file looks like, variable scoping, mappings): read PO.Frontend at `origin/develop` — fetch first, never a stale tree. **Runtime questions**: PO.BpmnEngine. Never cite the CLI's behavior as proof of what's correct.
+2. **Run the canvas's own validator.** Studio Web's rules ship as `@uipath/maestro-validation`; call `validateBpmnXml` (from its `/xml` entry) from node on the artifact, at the latest published version (`npm view @uipath/maestro-validation version`). `uip maestro bpmn validate` should match it exactly; when it doesn't, the CLI is the bug.
+3. Check every pin the CLI holds on frontend packages against npm latest — lag is a cause.
+
+### D. Terminal agent parity
+
+1. Copy the built skill to `~/.claude/skills/<SKILL_NAME>` (back up first) and run the same turns in fresh Claude Code subagents across models.
+2. Tell workers to invoke the skill by its exact **unprefixed** name — the plugin-prefixed copy keeps serving cached content all session. Verify each run from the "Base directory for this skill" line in its transcript.
+
+### E. Automated tests (coder-eval)
+
+1. Add or extend a task under `tests/tasks/<SKILL_NAME>/` that fails on baseline and passes on the fix; grade side effects, never self-report. Follow [tests/README.md](../../../tests/README.md).
+2. Local runs: only tasks needing no live tenant, from the worktree's `tests/` with `SKILLS_REPO_PATH=<WORKTREE>`, default experiment.
+3. Anything against a live tenant (e2e): push and dispatch `gh workflow run run-coder-eval.yml --ref <BRANCH> -f task_globs=<GLOB>`; read results from the CI run. Never run e2e locally.
+4. Give each grader a negative control: run it on a known-bad fixture and see it fail.
+
+### F. Environment rules for every method
+
+- `--profile <PROFILE>` on every `uip` command; confirm org and tenant with `uip login status --profile <PROFILE> --output json` before uploads and deletes.
+- Never sign in or switch tenant in a browser; ask the user, naming org and tenant.
+- Log every solution you create (Phase 6). Missing ids are in the designer URL: `?solutionId=<SOLUTION_ID>`.
 
 ## Phase 5 — Review, CI, Merge
 
