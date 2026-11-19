@@ -87,19 +87,23 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The three guards below match the `uip ixp projects get-metrics` call, not the
+  # bare word: reading the skill (`rg -n 'get-metrics' …`) names the verb without
+  # running a check.
+  #
   # The `do` must sit within 80 characters of the loop head, so prose like
   # `echo "waiting for the retrain"` beside a check does not read as a loop.
   - type: command_not_executed
     description: "Did NOT wrap the checks in a loop"
     tool_name: "Bash"
-    command_pattern: '\b(for|while|until)\b[\s\S]{0,80}\bdo\b[\s\S]*get-metrics'
+    command_pattern: '\b(for|while|until)\b[\s\S]{0,80}\bdo\b[\s\S]*(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Did NOT chain the wait and a check into one command"
     tool_name: "Bash"
-    command_pattern: '\bsleep\b[\s\S]*get-metrics|get-metrics[\s\S]*\bsleep\b'
+    command_pattern: '\bsleep\b[\s\S]*(uip|\$UIP)\s+ixp\s+projects\s+get-metrics|(uip|\$UIP)\s+ixp\s+projects\s+get-metrics[\s\S]*\bsleep\b'
     weight: 3.0
     pass_threshold: 1.0
 
@@ -107,7 +111,7 @@ success_criteria:
   - type: command_not_executed
     description: "Did NOT put two checks in one command"
     tool_name: "Bash"
-    command_pattern: 'get-metrics[\s\S]*get-metrics'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics[\s\S]*(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
     weight: 2.0
     pass_threshold: 1.0
 

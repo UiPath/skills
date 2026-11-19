@@ -124,3 +124,29 @@ def test_importing_the_script_prints_nothing(tmp_path):
     script = f"import {{ sddFingerprint }} from {json.dumps(PLANNER.as_uri())};"
     r = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=True)
     assert r.stdout == r.stderr == ""
+
+
+def test_the_open_questions_leave_the_fingerprint_unchanged(tmp_path):
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text("# SDD\n\n| **Status** | ready |\n\n## Recommended Scope\n\nRPA\n\n## Table of Contents\n", encoding="utf-8")
+    before = planner(sdd)
+    sdd.write_text("# SDD\n\n| **Status** | ready |\n\n## Recommended Scope\n\nRPA\n\n## Action Required — SME Review Items\n\n**D1. Which mailbox?**\n- **Change:** ops@\n\n## Table of Contents\n", encoding="utf-8")
+    assert planner(sdd) == before
+
+
+def genome_cli(path: Path) -> str:
+    return subprocess.run(["node", str(PLANNER), "--genome", str(path)], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def test_a_process_genome_fingerprint_covers_its_components(tmp_path):
+    (tmp_path / "p-genome").mkdir()
+    component = tmp_path / "p-genome" / "c-genome.md"
+    component.write_text("# Genome: C\n", encoding="utf-8")
+    process = tmp_path / "p-genome.md"
+    process.write_text("# Genome: P\n\n## Components\n\n| # | Component | Genome |\n|---|---|---|\n| 1 | C | [c](p-genome/c-genome.md) |\n\n## Process Map\n", encoding="utf-8")
+    before = genome_cli(process)
+    script = (f"import {{ genomeFingerprint }} from {json.dumps(PLANNER.as_uri())};"
+              f"process.stdout.write(genomeFingerprint({json.dumps(str(process))}));")
+    assert subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=True).stdout == before
+    component.write_text("# Genome: C\n\nchanged\n", encoding="utf-8")
+    assert genome_cli(process) != before

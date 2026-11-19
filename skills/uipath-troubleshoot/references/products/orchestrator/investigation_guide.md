@@ -11,7 +11,7 @@ uip or jobs list --limit 50 --folder-key <key> --state Faulted \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 
-Filtered lists and logs need an explicit `--limit`. The examples use 50 jobs/logs and 500 folders/queues per page. Inspect the envelope's `Pagination.HasMore`; for a complete lookup, repeat with `--offset` increased by the limit until it is false. An empty filtered `Data` does not prove absence while more pages remain.
+Filtered lists and logs need an explicit `--limit`. The examples use 50 jobs/logs per page, and 1000 folders/queues per page when the lookup must cover the whole set (1000 is the most a `uip or` list accepts; `queue-items list` takes at most 100). Inspect the envelope's `Pagination.HasMore`; for a complete lookup, repeat with `--offset` increased by the limit until it is false. An empty filtered `Data` does not prove absence while more pages remain.
 
 If `--output-filter` cannot express the shape you need, see `scripts/` for skill-provided filter helpers, or fetch a minimal field set first and re-fetch more only when a gap forces it.
 
@@ -32,7 +32,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    **Step A — User named a folder.** Resolve its key:
    ```
-   uip or folders list --limit 500 --output json \
+   uip or folders list --limit 1000 --output json \
      --output-filter "[?Name=='<name>'].{Key:Key,Path:Path,Type:Type}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
@@ -44,7 +44,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
 
    1. Run folders list ONCE to get candidates:
       ```
-      uip or folders list --limit 500 --output json \
+      uip or folders list --limit 1000 --output json \
         --output-filter "[].{Key:Key,Name:Name,Path:Path,Type:Type}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
@@ -85,7 +85,7 @@ Only after identity is resolved, fetch data and verify every result against it:
 If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
 4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time. **If the user gave no job key but described the job by state + folder** (e.g. "my pending job in Shared"), resolve it by enumeration: `uip or jobs list --folder-key <key> --state <State> --output json`. If exactly one candidate matches, proceed with it; if several, present them and ask. Do not ask the user for a key you can discover this way.
-5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip or queues list --folder-key <key> --name <name>` to find the queue definition key. If this exact-name request returns `Result=Failure` / `HTTP 400: Invalid OData query options`, preserve that failed response and retry once without `--name`, using `--limit 500 --output json --output-filter "[?Name=='<name>'].{Key:Key,Name:Name}"`; never treat the HTTP 400 as an empty queue list. If the user provided a queue item key, use `uip or queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
+5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip or queues list --folder-key <key> --name <name>` to find the queue definition key. If this exact-name request returns `Result=Failure` / `HTTP 400: Invalid OData query options`, preserve that failed response and retry once without `--name`, using `--limit 1000 --output json --output-filter "[?Name=='<name>'].{Key:Key,Name:Name}"`, and while `Pagination.HasMore` is `true` repeat it with `--offset 1000`, `--offset 2000`, and so on; the queue is missing from the folder only when every page is empty and the last says `HasMore: false`. Never treat the HTTP 400 as an empty queue list. If the user provided a queue item key, use `uip or queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
 
 ## Job Data Bundle
 

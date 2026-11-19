@@ -7,15 +7,14 @@
 - `--output-filter <expr>` — JMESPath filter for JSON output
 - `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
-- `--verbose` — enable debug logging
+- `--log-level debug` — enable debug logging (`--log-file <path>` writes it to a file instead of stderr)
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
 - `--all-fields` — return raw DTO instead of the curated PascalCase
-  projection. Native Orchestrator commands curate by default; the migrated
-  resource commands (assets, queues, buckets, etc.) return the full DTO by
-  default and do not expose this flag.
+  projection. Orchestrator list and get commands curate by default, including
+  `or assets`, `or queues`, `or queue-items`, `or buckets` and `or bucket-files`.
 
 ---
 
@@ -116,7 +115,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset o
 
 ## Platform Tool (`uip platform`)
 
-Manage organization-level licensing — tenant allocations, user/group bundle assignments, and consumables reporting. See [`licensing/licensing.md`](licensing/licensing.md).
+Manage organization-level licensing — tenant allocations, user/group bundle assignments, consumables reporting, per-user consumption and top-ups, and folder outcome billing. See [`licensing/licensing.md`](licensing/licensing.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
@@ -124,6 +123,9 @@ Manage organization-level licensing — tenant allocations, user/group bundle as
 | **Users Licenses** | `users licenses available`, `users licenses get <user>`, `users licenses set <user> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
 | **Groups Rules** | `groups rules get [--limit --offset --sort-by --sort-order]`, `groups rules details <group>`, `groups rules set <group> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
 | **Consumables** | `licenses consumables get --mode {summary\|daily\|folders} [--tenant --unit --start-date --end-date]` | [Consumables Report](licensing/consumables-report.md) |
+| **Users Usage** | `users usage list [--limit --offset --sort-by --sort-order --license-codes]`, `users usage get [user]` | [User Usage & Top-ups](licensing/user-usage-topups.md) |
+| **Users Top-ups** | `users top-ups create <user> [--wait --count]`, `users top-ups get <job-id>`, `users top-ups request` | [User Usage & Top-ups](licensing/user-usage-topups.md) |
+| **Tenants Folder Outcome Billing** | `tenants folder-outcome-billing get <tenant-id> <folder-key>`, `tenants folder-outcome-billing set <tenant-id> <folder-key> --enabled <true\|false>` | [Folder Outcome Billing](licensing/folder-outcome-billing.md) |
 
 All `uip platform` commands accept `--organization <account-id>` to override the org from the current login.
 
@@ -131,7 +133,7 @@ All `uip platform` commands accept `--organization <account-id>` to override the
 
 ## Traces (`uip traces`)
 
-LLM execution trace observability and feedback annotation. See [traces/traces.md](traces/traces.md) (spans) and [traces/feedback.md](traces/feedback.md) (feedback).
+LLM execution trace observability, feedback annotation, and decisions. See [traces/traces.md](traces/traces.md) (spans), [traces/feedback.md](traces/feedback.md) (feedback), and [traces/decisions.md](traces/decisions.md) (decisions).
 
 | Command | Description |
 |---|---|
@@ -142,6 +144,9 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | `uip traces feedback list detailed` | Feedback with span context, plus time-range/category/sort filters |
 | `uip traces feedback update <id>` | Change sentiment, comment, metadata, or categories |
 | `uip traces feedback delete <id>` | Remove feedback |
+| `uip traces decisions create` | Write decisions to a trace from `--input` JSON or flags; an existing `decisionId` is replaced |
+| `uip traces decisions get <id>` | Fetch one decision by decision ID |
+| `uip traces decisions list` | Query decisions by trace, process, actor, platform, outcome, or time |
 
 ---
 

@@ -7,7 +7,7 @@ description: >
   questions: acquire UiPath.Upgrade.exe, analyze and upgrade in SARIF mode with
   the pinned UIAutomation line, summarize, write the output to a sibling folder,
   leave the source untouched, and produce an output that `uip rpa build`
-  compiles. Windows only: the migrator is a .NET 8 desktop tool and the build
+  compiles. Windows only: the migrator is a .NET desktop tool and the build
   needs Helm. The runtime check is declined in the prompt because the project
   drives a browser, which the runner cannot exercise.
 tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:generate, windows]

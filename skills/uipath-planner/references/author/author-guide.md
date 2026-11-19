@@ -9,7 +9,7 @@ The `author` verb writes a genome — the coding-agent spec `uipath-genome` buil
 The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) and the Critical Rules in [SKILL.md](../../SKILL.md) apply; `author` adds:
 
 1. **Every authored genome rests on the planner's product selection.** Without an SDD, Step 5 runs it: Constraint Gate, platform availability, Maestro disambiguation, Integration Service reuse and tenant library search. An agreed SDD has already made it ([genome-from-sdd-guide.md](genome-from-sdd-guide.md)).
-2. **Follow-ups are bounded** (Step 6): one round for the largest gaps, then write.
+2. **Follow-ups are bounded, unless the user takes the interview** (Step 6): the interview is offered first; declined, one round for the largest gaps, then write.
 
 ## Read Plan
 
@@ -25,6 +25,9 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | products are selected (Step 5) | no SDD | [product-selection-guide.md](../shared/product-selection-guide.md) § Constraint Gate and [component-placement-guide.md](../shared/component-placement-guide.md) § Per-task component placement, opened by name (no heading list); [platform-availability-guide.md](../shared/platform-availability-guide.md) (both not re-read when scenario-proposal-guide.md already opened them); § Maestro disambiguation — BPMN vs Flow vs Case only when the genome has two or more components or a coordinator; component-placement-guide.md § Integration Service only when a step acts on a SaaS system |
 | products are selected (Step 5) | no SDD, a step repeats behaviour a deployed library may already hold, and the tenant is reachable | [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) |
 | the unit of work is assessed | no SDD, and the description iterates over items | [transactional-shape-guide.md](../shared/transactional-shape-guide.md) |
+| the user names a preferences file (Step 6) | — | [genome-format-guide.md](../shared/genome-format-guide.md) § Design Links; the file itself, whole |
+| gaps are listed (Step 6) | Step 6 offers the interview | [interview-guide.md](../interview/interview-guide.md) whole |
+| the genome is written (Step 8) | the input is an agreed SDD | [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6; [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 
 Each phase's reads go out in at most three turns: turn 1 every file read whole, every section this plan names, and the heading list of every other file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 
@@ -75,7 +78,7 @@ From the description, extract: target applications, human actors, workflow steps
 
 Without an SDD, this step runs the planner's product selection, so a genome never names a product the customer's platform cannot run. With an SDD, skip it ([genome-from-sdd-guide.md](genome-from-sdd-guide.md) item 3). Without one, place them:
 
-1. **Constraint Gate** — [product-selection-guide.md § Constraint Gate](../shared/product-selection-guide.md#constraint-gate), with the delivery model from [platform-availability-guide.md](../shared/platform-availability-guide.md). Ask the delivery model only when the request, the PDD or the SDD does not state it; a prototype on an unknown tenant takes Automation Cloud as its default, written as `*[Inferred]*` in Deployment.
+1. **Constraint Gate** — [product-selection-guide.md § Constraint Gate](../shared/product-selection-guide.md#constraint-gate), with the delivery model from [platform-availability-guide.md](../shared/platform-availability-guide.md). Ask the delivery model only when the request, the PDD or the SDD does not state it; a prototype on an unknown tenant takes Automation Cloud as its default, named in the Step 8 message. The genome names no platform: the delivery model is never a line or an entry of it.
 2. **Per-step placement** — [component-placement-guide.md § Per-task component placement](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step); orchestration through [§ Maestro disambiguation](../shared/product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case).
 3. **Integration Service reuse** — [component-placement-guide.md § Integration Service](../shared/component-placement-guide.md#integration-service) before any UI step on a SaaS system.
 4. **Tenant libraries** — [tenant-library-search-guide.md](../shared/tenant-library-search-guide.md) when a step repeats behaviour a deployed library may already hold and the tenant is reachable.
@@ -84,21 +87,25 @@ Then add these capabilities even when the user did not name them:
 
 | User mentions | Add |
 |---|---|
-| PDFs, scanned documents, forms | Document Understanding activities in `uipath-rpa` step; `uipath-ixp` component when custom extraction model needed |
+| PDFs, scanned documents, forms | What [skill-mapping-guide.md § Decision Tree for Ambiguous Steps](../shared/skill-mapping-guide.md) item 3 names |
 | Clicking, typing, reading a screen, desktop app | UI automation in `uipath-rpa` |
 | REST APIs, connectors, SaaS systems | Integration Service connector activities (`uipath-rpa`) or `uipath-api-workflow` component when no UI involved |
 | Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([transactional-shape-guide.md](../shared/transactional-shape-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store follows the split chosen at execution, not imposed |
 | Coordinating several automations, waiting on events | `uipath-maestro-flow` (short-lived) or `uipath-maestro-bpmn` (long-running, human lanes) coordinator component |
-| Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
+| Judgement, classification, summarisation, free-text decisions | What [skill-mapping-guide.md § Decision Tree for Ambiguous Steps](../shared/skill-mapping-guide.md) item 5 names |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
 | Screen for end users, dashboard | `uipath-coded-apps` component |
 | Several automations or test suites drive the same application's screens | One `uipath-rpa` library component (screens and shared actions, Interface as per-workflow argument tables) plus consumer components; process genome states the library builds and packs first |
 | Regression or test scenarios, "per release", "verify that", data-driven cases | One `uipath-rpa` test-case-group component per business area with data variations, all folders of the single test project ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 1); Test Manager under Platform Dependencies (`uipath-test`), never in Build With |
 | Approvals performed as another user, "proxy as", "impersonate", "on behalf of" | Library step that switches user and stops the switch afterwards; one credential asset per persona that can be proxied |
 
-## Step 6 — Ask follow-ups (bounded)
+## Step 6 — Interview, or bounded follow-ups
+
+**Offer the interview first** ([interview-guide.md](../interview/interview-guide.md) § The Offer), on the P0 entries of its § Coverage. Not offered from an agreed SDD, whose design settled them, for a scenario picked from proposals, or in an unattended run. Accepted, the interview replaces the rounds below and its answers are the facts Step 7 writes; one that changes a product signal reruns Step 5. Declined or not offered, the rounds below run; an unattended run asks none.
 
 Group every gap into one message per round. State what you already know so the user does not repeat it. Rounds by complexity: simple 0-1, medium 1-2, complex 2-3. A scenario picked from proposals (Step 1a) gets none: the agent invented every detail, so no gap is left that only the user can fill, and the values left open are Configuration Questions. An SDD's rounds: [genome-from-sdd-guide.md](genome-from-sdd-guide.md) items 2 and 5. After the last round, generate with defaults and stubs; never loop.
+
+The first round, or the interview's first batch, also asks: "Do you have a preferences file: your team's standing answers and development standards for UiPath builds? A path, or none." Skip it when the request names one or says none. With no round and no interview, the Step 8 message asks it, unless an agreed SDD's Preferences item does. A file named answers the follow-ups it covers and is applied as [genome-format-guide.md § Design Links](../shared/genome-format-guide.md) states.
 
 Ask only for gaps that change the build: missing target system, unknown trigger, undefined decision outcome, unspecified failure behaviour for a critical step, unclear ownership of a handoff, which persona signs in for a scenario when several are implied, whether items must be shared across robots or survive a run failure when the description leaves it open (evidence for the Transactional Shape's split options; the split itself is chosen at build). Do not ask for values a Configuration Question can carry as a default.
 
@@ -108,12 +115,12 @@ Populate every template section per the format guide's population matrix. Build 
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface matching the Handoffs row.
 
-Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Deployment records the environment the UI targets come from ("UI targets: <environment>") and that libraries pack before their consumers; a component genome, which has no Deployment, records the environment in its Target Applications row's Notes cell, so the build can offer it.
+Interface by component type ([genome-format-guide.md § Interface](../shared/genome-format-guide.md)): a library component gets one argument table per public workflow; a test component gets its per-scenario row schema and, separately, its constants; credentials appear as asset names, never values. Platform Dependencies takes one table per kind of resource the description implies ([genome-format-guide.md § Platform Dependencies](../shared/genome-format-guide.md)). Deployment records that libraries pack before their consumers, and the environment the UI targets come from where [genome-format-guide.md § Deployment (process)](../shared/genome-format-guide.md) places it.
 
 ## Step 8 — Write, then offer edits
 
-Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)), then review it, and every component genome a process genome links, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) and fix what breaks a rule. Then run the strict check on the genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict` — fix every `FAIL` and run it again, at most three rounds. Then offer edits ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)), naming what is left, every `FAIL` left after the third round included. From an SDD whose `Execution autonomy` is `autonomous`, the edits are offered in the closing summary without waiting for them ([genome-from-sdd-guide.md](genome-from-sdd-guide.md) item 2). Edits: [edit-guide.md](../edit/edit-guide.md).
+Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](../shared/genome-format-guide.md)), then review it, and every component genome a process genome links, against [genome-format-guide.md § Writing Rules](../shared/genome-format-guide.md) and fix what breaks a rule. Then run the strict check on the genome ([SKILL.md](../../SKILL.md) § Check) — `node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict` — fix every `FAIL` and run it again, at most three rounds. From an agreed SDD, then write that SDD's Action Required section again from the genome ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6); with no SDD, write none. Then offer edits ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)), naming the genome, how many questions are open — the SDD's Action Required, or the genome's open entries — per group and by role, how many are needed before the build, and every `FAIL` left after the third round. With no SDD and items open, the same message names `interview <GENOME_MD>` for them and, for answerers who are not in the session, offers to write the SDD ([edit-guide.md](../edit/edit-guide.md), "Write the SDD"). From an SDD whose `Execution autonomy` is `autonomous`, the edits are offered in the closing summary without waiting for them ([genome-from-sdd-guide.md](genome-from-sdd-guide.md) item 2). Edits: [edit-guide.md](../edit/edit-guide.md).
 
 ## Step 9 — Hand the genome to the build
 
-When the request asks for a build ("build", "implement", "create the automation"), invoke `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome` is not installed, stop after Step 8 and say that the build needs it. A genome written from an SDD inside `design` follows [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3 item 4 instead.
+When the request asks for a build ("build", "implement", "create the automation") or to prepare one, invoke `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare, and the user's request quoted verbatim on the next turn, once the user's edits are in; an unattended run hands it over straight away. `author` never writes a workflow file. When `uipath-genome` is not installed, stop after Step 8 and say that the build needs it. A genome written from an SDD inside `design` follows [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 3 item 4 instead.

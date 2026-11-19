@@ -11,7 +11,7 @@ description: >
   rebuild, and the fixed-shape report. Graded on the migrated artifact: exact
   structural outcome of the fixes, annotation rewrites, untouched source, and a
   build the harness runs itself. The fix gate is answered by the simulated
-  user. Windows only (migrator is a .NET 8 desktop tool; build needs Helm).
+  user. Windows only (migrator is a .NET desktop tool; build needs Helm).
   The runtime check is declined: the project drives Edge and the Windows
   Calculator, which the runner cannot exercise, so the loop past the build is
   out of scope here.
