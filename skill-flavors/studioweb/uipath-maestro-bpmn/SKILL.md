@@ -94,9 +94,9 @@ When a reference tells you to run a command that is not available, use the Studi
    read in `compile` itself.
 6. Compile the edit into `<Draft>/edited/`, merge it into the target, then
    `refresh` and `validate` — in that order, every time
-   ([Validation loop](#validation-loop)). Never pass `format --relayout` when any node has a json `uipath:input` or script `args` (every connector, script or HTTP node): it drops their CDATA and the engine loses the input. Else lay out the whole diagram only when the
+   ([Validation loop](#validation-loop)). Lay out the whole diagram only when the
    target held no process yet (empty, or one start event and at most one end event) or the
-   user chose *replace* in [Critical Rule 12](#critical-rules) step 2; otherwise add a shape only where they report one missing.
+   user chose *replace* in [Critical Rule 12](#critical-rules) step 2; else add a shape only where they report one missing.
    `compile` writes no diagram, and `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
    is empty. A request for a main file named `<X>.bpmn` changes nothing: build into the
@@ -140,7 +140,7 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5a. NEVER when any node has a json `uipath:input` or script `args` (every connector, script or HTTP node): run 5b instead. Otherwise, only when step 1 seeded a template, the target was empty, or the user chose *replace*: lay out the whole diagram, then run step 4 again
+# 5a. Only when step 1 seeded a template, the target was empty, or the user chose *replace*: lay out the whole diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn --relayout
 # 5b. Only when step 4 reports BPMN_PARSE_ERROR with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: add the missing shapes, then run step 4 again
 uip maestro bpmn format <Name>.bpmn
@@ -168,14 +168,12 @@ uip maestro bpmn format <Name>.bpmn
   node besides one start event and at most one end event (the template Studio Web or
   `init` writes), or the user chose *replace* (Critical Rule 12 step 2), there is no
   layout of the user's to keep, and step 5b changes nothing after the merge. Run
-  step 5b, not 5a, when any node has a json `uipath:input` or script `args` (every connector, script or HTTP node: 5a drops their CDATA). Else run
   step 5a (Studio Web's Tidy up of the whole diagram) and step 4 after the merge.
   If `format` rejects `--relayout` (`unknown option`), run it with no flag. Never pass
   `--relayout` on any other process: it moves every shape the user placed.
-  Why the gate: with a json `uipath:input` or script `args` on any node, `--relayout` re-serializes the XML and drops their CDATA, so the engine loses the input (`102009`, or undefined `args`). Plain `format` (step 5b) keeps CDATA. Some Studio Web builds keep CDATA, but the gate stays until the layout package fix ships.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
-  compile it straight to `<Name>.bpmn`, then run step 5a (step 5b when any node has a json `uipath:input` or script `args`) and step 4.
+  compile it straight to `<Name>.bpmn`, then run step 5a and step 4.
 - **To undo the merge**, copy `.flow-sdk/original/<Name>.bpmn` back over the
   target, then run step 4.
 - **The canvas re-renders the open file after each write.** Always finish with
