@@ -10,9 +10,7 @@ description: >
   Workflow resource removed from bindings_v2.json before the run. The edit
   itself touches no binding, so only the brownfield pull rule makes the agent
   run `uip maestro case bindings sync`; graded on the sidecar matching the
-  plan afterwards. Local only; nothing is uploaded or debugged. Pre-run copies
-  the fixture into /solution/ so Studio Web's in-page SDK can reach it (it
-  restricts check/compile/decompile to /solution/ and /tmp/).
+  plan afterwards. Local only; nothing is uploaded or debugged.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
@@ -29,20 +27,17 @@ sandbox:
     - type: template_dir
       path: ../designer_saved_plan/fixtures
 
-# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs, then drops the binding,
-# then copies the fixture into /solution/ where Studio Web's sandbox can reach it.
+# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs, then drops the binding.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
     timeout: 300
   - command: "python3 -c \"import json; p='ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json'; d=json.load(open(p)); n=len(d['resources']); d['resources']=[r for r in d['resources'] if not str(r.get('key','')).endswith('.RPA Workflow')]; assert len(d['resources'])==n-1, 'fixture drift: RPA Workflow resource not found'; json.dump(d, open(p,'w'), indent=2)\""
     timeout: 30
-  - command: "mkdir -p /solution && mv ExpenseDesignerSaved /solution/ExpenseDesignerSaved"
-    timeout: 30
 
 initial_prompt: |
-  The case solution in /solution/ExpenseDesignerSaved was just pulled from
-  Studio Web, so the local copy is current: edit it locally and don't pull it
-  again. It is the expense-reporting case, project CMGoldenExpense.
+  The case solution in ./ExpenseDesignerSaved was just pulled from Studio Web,
+  so the local copy is current: edit it locally and don't pull it again. It is
+  the expense-reporting case, project CMGoldenExpense.
 
   Change the task "Wait for timer - S5" in the stage "Stage 5 - connector
   entry" so it waits 15 minutes instead of 10 seconds. Leave everything else in
@@ -62,44 +57,35 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
-  # json_check cannot reach /solution/ (absolute paths are outside the sandbox).
-  # run_command shells into /solution/ and asserts the same JMESPath values.
-  - type: run_command
+  - type: json_check
     description: "The edit landed: Wait for timer - S5 waits 15 minutes, and no task was added or removed"
-    command: >
-      python3 -c "
-      import json,sys; d=json.load(open('/solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.case'));
-      tasks=[t for n in d['nodes'] for ts in n['data'].get('tasks',[]) for t in ts];
-      timer=[t for t in tasks if t['displayName']=='Wait for timer - S5'];
-      dur=timer[0]['data']['timeDuration'] if timer else '';
-      ok=(dur=='PT15M' and len(tasks)==15);
-      print(f'duration={dur} total={len(tasks)}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "nodes[].data.tasks[][] | [?displayName=='Wait for timer - S5'].data.timeDuration | [0]"
+        operator: equals
+        expected: "PT15M"
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 15
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: json_check
     description: "bindings_v2.json carries the RPA Workflow resource again, regenerated from the plan rather than left as the Designer saved it"
-    command: >
-      python3 -c "
-      import json,sys; d=json.load(open('/solution/ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json'));
-      rpa=[r for r in d.get('resources',[]) if r.get('key','').endswith('.RPA Workflow')];
-      total=len(d.get('resources',[]));
-      ok=(len(rpa)==1 and total==8);
-      print(f'rpa_count={len(rpa)} total_resources={total}');
-      sys.exit(0 if ok else 1)
-      "
-    timeout: 30
-    expected_exit_code: 0
+    path: "ExpenseDesignerSaved/CMGoldenExpense/bindings_v2.json"
+    assertions:
+      - expression: "length(resources[?ends_with(key, '.RPA Workflow')])"
+        operator: equals
+        expected: 1
+      - expression: "length(resources)"
+        operator: equals
+        expected: 8
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "validate --strict passes and no longer reports the sidecar as stale"
-    command: "uip maestro case validate /solution/ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json | python3 -c \"import json,sys; d=json.load(sys.stdin); codes=[i.get('Code') for i in (d.get('Data') or {}).get('Issues') or []]; sys.exit(0 if d.get('Result')=='Success' and 'STRICT_BINDINGS_SIDECAR_STALE' not in codes else 1)\""
+    command: "uip maestro case validate ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json | python3 -c \"import json,sys; d=json.load(sys.stdin); codes=[i.get('Code') for i in (d.get('Data') or {}).get('Issues') or []]; sys.exit(0 if d.get('Result')=='Success' and 'STRICT_BINDINGS_SIDECAR_STALE' not in codes else 1)\""
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
