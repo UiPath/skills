@@ -48,7 +48,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 
 | Activity | Installed doc says | The activity does |
 |---|---|---|
-| Check App State (`NCheckState`) | Two branches, "Target appears" and "Target does not appear", with no other names for the disappear mode; `Exists` is "the detected state of the target" | With `Mode="WaitDisappear"` the branches are "Target disappears" in `IfExists`, run when the element is gone or goes within `Timeout`, and "Target does not disappear" in `IfNotExists`, run after the whole `Timeout` when it is still there. `Exists` is the element's presence in every mode: True after "does not disappear". Work for "the element went" goes in `IfExists`, work for "still shown" in `IfNotExists`. `WindowNotActive` unverified |
+| Check App State (`NCheckState`) | Two branches, "Target appears" and "Target does not appear", with no names for the other modes; `Exists` is "the detected state of the target" | The branches follow `Mode`. `WaitDisappear`: "Target disappears" in `IfExists`, run when the target is gone or goes within `Timeout`, and "Target does not disappear" in `IfNotExists`, run after the whole `Timeout` when it is still there. `WindowNotActive`: "Window not in foreground" in `IfExists`, run when the target's top-level window leaves the foreground or the target goes within `Timeout`, and "Window still active" in `IfNotExists`. `Exists` is the target's presence when the check ends: `false` after `IfExists` in these two modes, `true` after "does not disappear" and "still active"; with `CheckVisibility`, a present but hidden target counts as gone. Work for "the element went" goes in `IfExists`, work for "still shown" in `IfNotExists` |
 
 ## Tools — defects seen in builds, until fixed
 

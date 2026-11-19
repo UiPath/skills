@@ -124,7 +124,7 @@ Some properties are only required when another property has a specific value:
 **Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
 **Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
 
-Every `Shortcuts` value starts with `[d(hk)]` and ends with `[u(hk)]`, a single key included: Enter is `[d(hk)][k(enter)][u(hk)]`. An unwrapped value passes `validate` and sends nothing useful at run time. To press one key on its own, use Keyboard Shortcuts, not a Type Into holding only `[k(enter)]`. Full encoding: the installed `UiPath.UIAutomation.Activities` doc `activities/KeyboardShortcuts.md` § Hotkey Encoding Format ([cli-reference.md § Installed package activity documentation](../cli-reference.md#installed-package-activity-documentation)).
+Every `Shortcuts` value starts with `[d(hk)]` and ends with `[u(hk)]`, a single key included: Enter is `[d(hk)][k(enter)][u(hk)]`. An unwrapped value passes `validate` and sends nothing useful at run time. To press a key on its own, use Keyboard Shortcuts: a Type Into holding only `[k(enter)]` clicks the field and empties it first (its defaults `ClickBeforeMode="Single"`, `EmptyFieldMode="SingleLine"`), erasing what an earlier Type Into wrote. Full encoding: the installed `UiPath.UIAutomation.Activities` doc `activities/KeyboardShortcuts.md` § Hotkey Encoding Format ([cli-reference.md § Installed package activity documentation](../cli-reference.md#installed-package-activity-documentation)).
 
 ## NTypeInto `Text` with literal `[k(...)]` special-key tokens
 
@@ -143,7 +143,7 @@ When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key t
 
 Alternatives:
 - Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
-- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` with `[d(hk)][k(enter)][u(hk)]` for Enter; a second `NTypeInto` would empty the field first ([§ NKeyboardShortcuts](#nkeyboardshortcuts-shortcuts-vs-shortcutsargument)).
 
 ## UIA `N*` Activities Carry a `Version` — Never Strip It
 

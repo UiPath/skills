@@ -31,7 +31,7 @@ The web's side of [selector-translation-guide.md](selector-translation-guide.md)
 | Custom Chromium-based browser (with UiPath extension) | `custom_browser` |
 | Safari (macOS) | `Safari` |
 
-A source recording only "Chrome" or "Edge" as browser choice maps to these executables; "IE", or a page the source drives through the Internet Explorer engine, maps to Edge in Internet Explorer mode (`msedge.exe`) unless the robots run the standalone browser; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
+A source recording only "Chrome", "Edge" or "IE" as browser choice maps to these executables, and a page the source runs in Edge's Internet Explorer mode maps to `msedge.exe`; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
 
 ## `webctrl` — HTML element (open schema)
 
