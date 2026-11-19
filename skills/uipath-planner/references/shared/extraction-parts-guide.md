@@ -45,8 +45,9 @@ Runs when the extraction guide's sizing (its Step 2b) plans parts. Extraction's 
    7. every verdict on a suspected defect, with the fields [defect-verification-guide.md](defect-verification-guide.md) returns and the behaviour the rebuild follows;
    8. cross-component calls: calling step, callee component and step, data passed, failure behaviour;
    9. transactional signals: per-item constructs with object and line, for the Transactional Shape;
-   10. deviations from the brief, and every object left unread.
-9. **Checking a return** (§ Running in Parts item 5). Before reconciling, the lead agent checks each part mechanically: the file exists with the counts returned, every defect has its Source Map row with lines, and every assigned object appears in a Source Map row or in the unread list.
+   10. deviations from the brief, and every object left unread;
+   11. the code search of the extraction guide's Step 6b, run by the part over its own objects before it returns, since it holds them: per object, how many texts, field names, comparisons and computations the search found, and that each is in the file written.
+9. **Checking a return** (§ Running in Parts item 5). Before reconciling, the lead agent checks each part mechanically: the file exists with the counts returned, every defect has its Source Map row with lines, every assigned object appears in a Source Map row or in the unread list, and the code search, run again over the part's object with the most texts, finds each in the file.
 
 ## Reconciliation
 

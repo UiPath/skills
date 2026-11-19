@@ -44,14 +44,15 @@ Skip `bpmndi:` diagram elements.
 |---|---|---|
 | `metadata.caseIdentifier`, `caseIdentifierType` | top | Case ID scheme |
 | `nodes[type=uipath.case.trigger].data.inputs.serviceType` | trigger | `None` (manual), `Intsvc.EventTrigger`, `timer` |
-| `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage) | nodes | Stages → Process Map |
+| `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage), each stage's and task's `description` | nodes | Stages → Process Map, each description written as spelled at its step |
 | `data.tasks` (2-D array: inner = parallel, consecutive = sequential) | stage | Task order and parallelism |
 | task `type`: `process`, `rpa`, `agent`, `api-workflow`, `action` (human), `case-management`, `execute-connector-activity`, `wait-for-connector`, `wait-for-timer` | tasks | Component kind invoked — handoff edges |
 | `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].{isInterrupting, rules}`, `exitConditions[].{type, marksStageComplete, exitToStageId, rules}` (`rules` DNF) | tasks / stage | Business rules and gating, each written for the stage or task that holds it with every `rule` kind its condition joins (`required-tasks-completed` included) |
 | `wait-for-connector` rules and tasks: `uipath.serviceType`, `uipath.context[]` (`connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, and in `metadata` the `connectorVersion`, `eventMode` and `filter`) | stage / task | The event in words at the step it starts or wakes (a null `filter` fires on every record of the object); the values quoted in that step's Source Map row as spelled, since the build writes the event from them |
+| task `data.inputs[].value` and its output mappings (`=vars.<name>`, `=js:<expression>`, `=js:metadata.<field>`) | tasks | What each task is given and returns, in words at its step; each expression quoted in that step's Source Map row as spelled, since the build writes the mapping from it |
 | `metadata.slaRules[]`, `nodes[].data.slaRules[]` (`count`, `unit`, `escalationRule[]` with `triggerInfo.type`, `atRiskPercentage`, `recipients`) | metadata / stage | SLAs and escalation → Business Rules and Error Handling |
 | `metadata.caseExitRules[].marksCaseComplete` | metadata | Case completion |
-| `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources |
+| `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources; each variable with its type and default, which decides the conditions that hold before any task has run |
 
 ## Signals — Low-code Agent
 
@@ -119,6 +120,6 @@ Skip `bpmndi:` diagram elements.
 | `package.json` deps `@uipath/coded-action-app`, `@uipath/uipath-typescript` | root | App flavour |
 | `sdk.processes.*`, `sdk.queues.*`, `sdk.entities.*`, `sdk.tasks.*`, `sdk.assets.*`, `sdk.buckets.*`, `sdk.maestro.*`, `sdk.conversations.*` | `src/**/*.ts(x)` | Platform data read and written → Platform Dependencies, handoffs |
 | Route and page components, forms, tables | `src/**` | Workflow steps as user actions ("reviewer opens…, edits…, submits…") |
-| An in-memory or stub module standing in for a platform service | `src/**` | The behaviour the app shows as shipped: each read and write the module serves, what each write changes, and the checks and messages it applies |
+| An in-memory or stub module standing in for a platform service; a sign-in or backend the code marks as still to come | `src/**` | The behaviour the app shows as shipped: each read and write the module serves, what each write changes, and the checks and messages it applies. The service it stands in for, and the sign-in or backend to come, are an Open Decision whose `Builds now:` is the shipped behaviour, never a Platform Dependency, Interface entry or Configuration Question |
 | Widget imports (Validation Station, PDF viewer, DataTable, chat) | `src/**` | Capabilities to name in Overview |
 | `.uipath/app.config.json` `appType`, `appName` | root | Deployed identity |
