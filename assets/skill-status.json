@@ -233,6 +233,14 @@
       },
       "last_synced": null
     },
+    "uipath-task-recording": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-tasks": {
       "status": "stable",
       "confluence": {
