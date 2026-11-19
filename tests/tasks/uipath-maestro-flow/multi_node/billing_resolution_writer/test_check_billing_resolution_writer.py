@@ -161,3 +161,28 @@ def test_a_slack_message_without_the_body_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         checker.main()
     assert "missing required text" in str(exc.value)
+
+
+def _run_with_agent_output(monkeypatch, agent_output):
+    checker = _load_checker()
+
+    def fake(*, inputs, **_):
+        payload = _payload(inputs)
+        payload["variables"]["globals"][f"{AGENT_ID}.output"] = agent_output
+        return payload
+
+    monkeypatch.setattr(checker, "run_debug", fake)
+    checker.main()
+
+
+def test_a_body_parsed_from_the_agents_json_text_passes(sandbox, monkeypatch, capsys):
+    """A Studio Web build (adhoc-2026-11-18_19-31-37) had the agent return its draft as
+    JSON text and a script `JSON.parse` it into subject and body."""
+    _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": SUBJECT, "body": PLAIN_BODY})})
+    assert "came back unchanged" in capsys.readouterr().out
+
+
+def test_a_body_the_agent_never_wrote_still_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": "x", "body": "something else"})})
+    assert "did not come from the executed agent" in str(exc.value)

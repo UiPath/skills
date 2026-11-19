@@ -195,9 +195,14 @@ def check_case(flow: dict, payload: dict, case: dict, conn: str, project: str) -
     outputs that hold it."""
     want = case["expected"]
     ref = case["inputs"]["caseRef"]
-    create_nodes = completed_connector_node_ids(payload, JIRA_KEY, native_op_hint=JIRA_CREATE_OP)
+    # A ticket can be created by the curated Create Issue op or by the generic
+    # `insert-record` on the issue object (a Studio Web build did, 2026-11-18). Any
+    # Jira step that ran counts; the proof is the CE key it returned, read back below.
+    create_nodes = completed_connector_node_ids(payload, JIRA_KEY, native_op_hint=JIRA_CREATE_OP) or (
+        completed_connector_node_ids(payload, JIRA_KEY)
+    )
     if not create_nodes:
-        _fail_with_capture(f"{case['name']}: no Jira Create Issue step completed in the debug run")
+        _fail_with_capture(f"{case['name']}: no Jira step completed in the debug run")
     created = sorted(k for k in node_output_leaves(payload, create_nodes) if re.fullmatch(rf"{project}-\d+", k))
     if not created:
         _fail_with_capture(f"{case['name']}: the Create Issue step that ran returned no {project}-<n> key")

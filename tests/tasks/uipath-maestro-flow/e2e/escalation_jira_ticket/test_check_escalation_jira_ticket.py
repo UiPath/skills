@@ -157,7 +157,7 @@ def test_fails_when_the_returned_key_is_not_the_one_the_create_step_made(grader)
 def test_fails_when_the_create_step_did_not_run(grader):
     with pytest.raises(SystemExit) as exc:
         _check(grader, _payload(executed=("start", "end")))
-    assert "no Jira Create Issue step completed" in str(exc.value)
+    assert "no Jira step completed" in str(exc.value)
 
 
 @pytest.mark.parametrize("summary,why", [
@@ -237,3 +237,15 @@ def test_seed_ends_the_run_when_jira_is_unreachable(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="403"):
         runpy.run_path(os.path.join(HERE, "_setup", "seed.py"))
     assert not (tmp_path / "seed.json").exists()
+
+
+def test_a_ticket_created_by_the_generic_insert_record_op_counts(grader, tmp_path):
+    """A Studio Web build (2026-11-18, adhoc-2026-11-18_19-31-37) created the ticket
+    with `uipath-atlassian-jira.insert-record` on the issue object, which completed."""
+    node = {**CREATE_NODE, "type": "uipath.connector.uipath-atlassian-jira.insert-record",
+            "inputs": {"detail": {**CREATE_NODE["inputs"]["detail"], "objectName": "issue", "endpoint": "/issue"}}}
+    flow = _flow()
+    flow["nodes"][1] = node
+    (tmp_path / "EscalationJiraTicket" / "EscalationJiraTicket" / "EscalationJiraTicket.flow").write_text(json.dumps(flow))
+    held = grader.check_case(flow, _payload(), CASE, "conn", "CE")
+    assert held["ticket key"] == ["ticketKey"]

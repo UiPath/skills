@@ -73,6 +73,28 @@ def is_serialized_object(text):
         return False
 
 
+def with_json_leaves(leaves):
+    """The agent's output strings, plus the strings inside any that are JSON text.
+    An agent may return its draft as a JSON string that a script then parses
+    (`JSON.parse($vars.<agent>.output.body)`, a Studio Web build on 2026-11-18)."""
+    out = set(leaves)
+    for leaf in leaves:
+        try:
+            parsed = json.loads(leaf)
+        except (TypeError, ValueError):
+            continue
+        stack = [parsed]
+        while stack:
+            item = stack.pop()
+            if isinstance(item, str):
+                out.add(item.strip())
+            elif isinstance(item, dict):
+                stack.extend(item.values())
+            elif isinstance(item, list):
+                stack.extend(item)
+    return out
+
+
 def find_body(found, agent_leaves):
     cited = [(k, t) for k, t in found if INVOICE in t and CREDIT_TEXT in t]
     if not cited:
@@ -133,7 +155,7 @@ def main():
         agents |= completed_node_ids_of_type(payload, hint)
     if not agents:
         _fail_with_capture("no agent node completed in the debug run")
-    body_id, body = find_body(found, node_output_leaves(payload, agents))
+    body_id, body = find_body(found, with_json_leaves(node_output_leaves(payload, agents)))
     print(f"OK: the body ({body_id}) mentions {INVOICE} and {CREDIT_TEXT}, is signed {SIGNATURE!r}, and came from the agent")
 
     subjects = [t for _k, t in found
