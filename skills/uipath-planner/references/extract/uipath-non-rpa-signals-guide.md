@@ -47,7 +47,8 @@ Skip `bpmndi:` diagram elements.
 | `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage) | nodes | Stages → Process Map |
 | `data.tasks` (2-D array: inner = parallel, consecutive = sequential) | stage | Task order and parallelism |
 | task `type`: `process`, `rpa`, `agent`, `api-workflow`, `action` (human), `case-management`, `execute-connector-activity`, `wait-for-connector`, `wait-for-timer` | tasks | Component kind invoked — handoff edges |
-| `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].{isInterrupting, rules}`, `exitConditions[].{type, marksStageComplete, exitToStageId, rules}` (`rules` DNF) | tasks / stage | Business rules and gating, each written for the stage or task that holds it with every `rule` kind its condition joins (`required-tasks-completed` included); run-time behaviour the plan does not bind (an event firing in another stage) is never stated |
+| `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].{isInterrupting, rules}`, `exitConditions[].{type, marksStageComplete, exitToStageId, rules}` (`rules` DNF) | tasks / stage | Business rules and gating, each written for the stage or task that holds it with every `rule` kind its condition joins (`required-tasks-completed` included) |
+| `wait-for-connector` rules and tasks: `uipath.serviceType`, `uipath.context[]` (`connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `operation`, and in `metadata` the `connectorVersion`, `eventMode` and `filter`) | stage / task | The event in words at the step it starts or wakes (a null `filter` fires on every record of the object); the values quoted in that step's Source Map row as spelled, since the build writes the event from them |
 | `metadata.slaRules[]`, `nodes[].data.slaRules[]` (`count`, `unit`, `escalationRule[]` with `triggerInfo.type`, `atRiskPercentage`, `recipients`) | metadata / stage | SLAs and escalation → Business Rules and Error Handling |
 | `metadata.caseExitRules[].marksCaseComplete` | metadata | Case completion |
 | `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources |
@@ -118,5 +119,6 @@ Skip `bpmndi:` diagram elements.
 | `package.json` deps `@uipath/coded-action-app`, `@uipath/uipath-typescript` | root | App flavour |
 | `sdk.processes.*`, `sdk.queues.*`, `sdk.entities.*`, `sdk.tasks.*`, `sdk.assets.*`, `sdk.buckets.*`, `sdk.maestro.*`, `sdk.conversations.*` | `src/**/*.ts(x)` | Platform data read and written → Platform Dependencies, handoffs |
 | Route and page components, forms, tables | `src/**` | Workflow steps as user actions ("reviewer opens…, edits…, submits…") |
+| An in-memory or stub module standing in for a platform service | `src/**` | The behaviour the app shows as shipped: each read and write the module serves, what each write changes, and the checks and messages it applies |
 | Widget imports (Validation Station, PDF viewer, DataTable, chat) | `src/**` | Capabilities to name in Overview |
 | `.uipath/app.config.json` `appType`, `appName` | root | Deployed identity |

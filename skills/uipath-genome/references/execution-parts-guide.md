@@ -95,7 +95,7 @@ A group too large for one context is built in parts (§ What a Build Adds item 1
     4. the validate result re-run, and the project build of item 3a, for a part that links its own files (per-file validate runs no analyzer rule, the owning skill's build guidance);
     5. a search of the working folder's scripts and of the inline commands the report lists for any that write `.xaml` or `.cs` into a project;
     6. the reads the report lists, compared with the part's read plan in the run progress, and the activity kinds its files use — XAML element names and coded activity calls — compared with the report's list of kinds;
-    7. a review line for every file the part authored, and three of the part's built branches compared with what they were built from, chosen among conditions with a case rule, loop bounds and waits.
+    7. a review line for every file the part authored, and three of the part's built branches compared with what they were built from, chosen among those that build the most source values: conditions with a case rule, loop bounds and waits in a workflow; formulas with their floors and rounding, joined or formatted texts and hashes in code.
 
     A mandated read missing from the reads performed, or a kind missing from the list or listed without both, sends the part back to make the read, re-check every file it wrote against it, validate again what it changes, and report the reads and the changes; a missing review line, or one compared branch that differs from what it was built from, sends it back to redo the review of every file it authored.
 
