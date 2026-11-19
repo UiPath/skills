@@ -106,7 +106,9 @@ Require `@uipath/maestro-builder-sdk` 6.64.0 or later. If baseline compile stops
 so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
 <!--skill-flavor:check-baseline-uip-version:start-->
-For `unknown option '--baseline'`, check the SDK with `npm ls -g @uipath/maestro-builder-sdk` or the project's `node_modules`. Below 6.64.0, upgrade it. Only with 6.64.0+ and the same error is `uip` too old (1.205.0 is). Until a newer `uip`, run `check --source` without `--baseline` and fix only errors on changed nodes.
+For `unknown option '--baseline'`, check the SDK with `npm ls -g @uipath/maestro-builder-sdk` or the project's `node_modules`. Below 6.64.0, upgrade it. With 6.64.0+ and the same error, `uip` is too old (1.205.0 is): run the same check through the SDK's own bin, which takes the same flags and exits the same way:
+`flow-sdk flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow` (global SDK), or `npx --no-install flow-sdk flow check .flow-sdk/Deployed.flow.ts --source --baseline Deployed.flow` when the SDK is in the project's `node_modules`.
+The bin finds the connector library itself (`--library`, `FLOW_SDK_LIBRARY_JSON`, or the cache `uip maestro registry pull` fills), not through `uip`, so a library only `uip` passes is not used and connector findings (`CONNECTOR_INPUT`, `LOOKUP_UNRESOLVED`) can be missing. If you used a library other than the pulled one, pass it: `--library <dir>`.
 <!--skill-flavor:check-baseline-uip-version:end-->
 
 ```text

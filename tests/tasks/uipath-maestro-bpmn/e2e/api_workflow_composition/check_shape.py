@@ -40,9 +40,9 @@ Per row in composition.RESOURCES:
   6. `entry-points.json` publishes the process's declared input(s) and every
      row's declared output.
   7. LIVE: `uip maestro bpmn validate` reports `Status: "Valid"` with no
-     `VARIABLE_DOES_NOT_EXIST` warning. `VARIABLE_NOT_SET` on the node
-     reading the start-event-scoped input is expected BY CONSTRUCTION (the
-     BPMN skill's own guidance) and is never gated on here.
+     `VARIABLE_DOES_NOT_EXIST` warning. This grader never gates on
+     `VARIABLE_NOT_SET`; the leniency is this grader's only, since the skill
+     maps an input through the start event and treats the warning as a defect.
 
 Steps 1-6 are pure and unit-tested offline against fixtures/gold and
 fixtures/mutations/ in test_checks.py, with the live resolvers (steps 2's
@@ -574,8 +574,8 @@ def collect_shape_problems(
 
 
 # ---------------------------------------------------------------------------
-# Live `uip maestro bpmn validate` gate (rule: chase VARIABLE_DOES_NOT_EXIST
-# only -- VARIABLE_NOT_SET on the start-event-scoped input is by construction)
+# Live `uip maestro bpmn validate` gate (gates on VARIABLE_DOES_NOT_EXIST
+# only; not gating VARIABLE_NOT_SET is this grader's leniency, not the skill's)
 # ---------------------------------------------------------------------------
 
 def assert_validate_clean(validate_payload: dict) -> list[str]:

@@ -50,10 +50,10 @@
       "codedagent deploy": 30,
       "codedagent dev": 18,
       "codedagent eval": 17,
-      "codedagent init": 65,
+      "codedagent init": 66,
       "codedagent invoke": 6,
       "codedagent list-models": 4,
-      "codedagent new": 22,
+      "codedagent new": 25,
       "codedagent pack": 1,
       "codedagent publish": 1,
       "codedagent pull": 8,
@@ -285,7 +285,7 @@
       "rpa pack": 1,
       "rpa packages inspect": 1,
       "rpa run": 4,
-      "rpa uia": 6,
+      "rpa uia": 2,
       "rpa validate": 1
     }
   },
@@ -500,6 +500,76 @@
         "file": "references/llmgateway/custom-connector/connections-guide.md",
         "command": "login refresh",
         "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` and `uip update` command: the host signs the user in and its CLI is the one available. The canonical terminal steps keep them, and Studio Web runs every other step with `uip` (steps 6 and 7 through the Connector Builder and `uip is resources run create`)."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login status",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login tenant list",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/folder-outcome-billing.md",
+        "command": "login tenant set",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites keep them, and Studio Web runs the `uip platform` and `uip or` commands as written."
+      },
+      {
+        "file": "references/licensing/user-usage-topups.md",
+        "command": "login",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites and error rows keep them, and Studio Web runs the `uip platform` commands as written."
+      },
+      {
+        "file": "references/licensing/user-usage-topups.md",
+        "command": "login status",
+        "reason": "The Studio Web override (host-availability-extra) tells the agent to skip every `uip login` command in this file: the host signs the user in. The canonical terminal prerequisites and error rows keep them, and Studio Web runs the `uip platform` commands as written."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "traces decisions",
+        "reason": "Capability index row pointing at references/traces/decisions.md. The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI."
+      },
+      {
+        "file": "references/traces/decisions.md",
+        "command": "traces decisions",
+        "reason": "The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI. The canonical terminal steps keep the commands."
+      },
+      {
+        "file": "references/traces/decisions.md",
+        "command": "traces decisions create",
+        "reason": "The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI. The canonical terminal steps keep the commands."
+      },
+      {
+        "file": "references/traces/decisions.md",
+        "command": "traces decisions get",
+        "reason": "The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI. The canonical terminal steps keep the commands."
+      },
+      {
+        "file": "references/traces/decisions.md",
+        "command": "traces decisions list",
+        "reason": "The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI. The canonical terminal steps keep the commands."
+      },
+      {
+        "file": "references/uip-commands.md",
+        "command": "traces decisions create",
+        "reason": "Command reference table row. The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI."
+      },
+      {
+        "file": "references/uip-commands.md",
+        "command": "traces decisions get",
+        "reason": "Command reference table row. The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI."
+      },
+      {
+        "file": "references/uip-commands.md",
+        "command": "traces decisions list",
+        "reason": "Command reference table row. The Studio Web override (host-availability-extra) in references/traces/decisions.md tells the agent the browser CLI does not run `uip traces decisions` and to send the user to the terminal CLI."
       }
     ],
     "ceiling": {

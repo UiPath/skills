@@ -51,7 +51,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
-| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
+| Variables and arguments | `var`, `input`, `output`, `jsonSchema`. A numeric case variable is `'integer'`, `'float'` or `'double'`, never `'number'` ([closed types](references/case-runtime.md#metadata-fidelity)) | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts`, `examples/CreditDecision.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
 | A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: the source is the result field as the Designer saves it, `=<Field>` on every task that runs published work (agent, process, RPA, API workflow, case management, flow process, function, business rule: `AgentExpenseRequest: '=AgentExpenseRequest'`) and `=response.<field>` only on a connector or wait-for-connector task; a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
@@ -59,6 +59,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
 | Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
+| Document extraction | `documentExtraction(model, { deployment, folderKey, folder, deploymentKey, file, pageRange? })` (SDK 6.82.0+, uip 1.206.0+) | [Document extraction](references/case-runtime.md#document-extraction) | `examples/DocumentExtractionCase.case.ts` |
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work and its Action App | `action`; `app: { name, folder }` (SDK 6.46.4+) names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
@@ -88,6 +89,7 @@ export default casePlan('loan-approval')
       .required()
       .entryWhen(rule('current-stage-entered')))
     .task('Manager Approval', t => t
+      // Literal recipient is baked into the plan; test or unknown assignee: references/case-runtime.md § Action recipients
       .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com', app: { name: 'LoanApproval', folder: 'Shared' } })
       .entryWhen(rule('selected-tasks-completed', { tasks: ['Check Policy'] }))))
   .stage('Decision', s => s
