@@ -14,7 +14,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add the Extract document node to a new flow only when the user asks for it by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet ([ixp.md](ixp.md#resource-identity)). Add the Extract document node to a new flow only when the user asks for it by name, or offer it when `uipath-ixp` reports IXP not enabled. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
 
 | Node | Node type | Where covered |
 | --- | --- | --- |
@@ -202,7 +202,7 @@ After a pulled-down flow has been through Studio Web, pull the solution again be
 
 ## When Extract document is not available
 
-Report the reason from `Data.Reason` or the deploy/run message, even when it names something this guide does not describe. Never add the node anyway, and never substitute a placeholder when working extraction was requested.
+`uipath-ixp` reporting IXP not enabled is not this case; `extraction check` decides. Report the reason from `Data.Reason` or the deploy/run message, even when it names something this guide does not describe. Never add the node anyway, and never substitute a placeholder when working extraction was requested.
 
 **First, look for a published IXP model:**
 
