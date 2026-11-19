@@ -67,6 +67,7 @@ def test_outputs_are_found_by_value_and_exclude_inputs():
 
 def test_booleans_and_numeric_strings_compare_by_value():
     assert io.equals_bool(True)("true") and not io.equals_bool(True)(1)
+    assert io.equals_bool(True)("YES") and io.equals_bool(False)(" no ") and not io.equals_bool(True)("No")
     assert io.equals_number(4950, 0.005)("4,950.00") and io.equals_number(0, 0.005)(0)
 
 

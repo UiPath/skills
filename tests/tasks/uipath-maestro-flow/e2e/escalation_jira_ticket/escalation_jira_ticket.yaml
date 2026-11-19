@@ -48,9 +48,9 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "EscalationJiraTicket" that triages a customer
   escalation and opens a Jira ticket for it.
@@ -71,8 +71,8 @@ initial_prompt: |
   - Sev3: everything else, including non-Enterprise customers who are down
     without a workaround.
 
-  Engineering is needed for Sev1 and Sev2. Open a ticket for every
-  escalation, duplicates included.
+  Engineering is needed for Sev1 and Sev2. Open a ticket for every escalation,
+  duplicates included.
 
   Open a Task in the "Coder Eval" (CE) Jira project. The ticket title starts
   with "[TEST]", followed by the severity, the case reference and the email
@@ -81,8 +81,8 @@ initial_prompt: |
 
   When it finishes, return:
   - the severity, as "Sev1", "Sev2" or "Sev3"
-  - whether engineering is needed, as true or false
-  - the case reference, unchanged
+  - whether engineering is needed: yes/no
+  - the case reference
   - the key of the ticket that was created, for example "CE-12345"
 
   Build and test the automation.

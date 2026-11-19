@@ -34,14 +34,14 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
-  Build an automation called "BillingInvoiceLookup" that finds the lines of a
-  disputed invoice in BillingDisputeERP in Data Fabric. People often type the
-  invoice number carelessly: extra spaces, lowercase, or without the "MCS-"
-  prefix. Clean it up before looking it up.
+  Build an automation called "BillingInvoiceLookup" that helps users search
+  for the lines of a disputed invoice in BillingDisputeERP in Data Fabric.
+  People often type the invoice number carelessly: extra spaces, lowercase, or
+  without the "MCS-" prefix. Clean it up before looking it up.
 
   Return the invoice number exactly as it appears in our records, for example
   "MCS-2026-04872", and the number of lines as a whole number. If the invoice

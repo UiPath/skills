@@ -53,18 +53,18 @@ reference:
   directory: ..
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
-  Build our employee expense reimbursement case as a solution and case project
-  both called "ExpenseReimbursementRunnable". The design the team agreed on is
-  in `sdd.md` in this folder: an expense goes from submission through manager
-  approval and finance approval to payment, with a child case tracking the
-  payment, and ends Approved; Rejected and Withdrawn are the other outcomes.
-  Build it as the document describes, with the stages, tasks, rules and
-  timings it lists, and connect each task to the resource it names. Those
-  resources are already deployed on this tenant.
+  Build our employee expense reimbursement case, named
+  "ExpenseReimbursementRunnable". The design the team agreed on is in `sdd.md`
+  in this folder: an expense goes from submission through manager approval and
+  finance approval to payment, with a child route tracking the payment, if
+  Approved; Rejected and Withdrawn are the other outcomes. Build it as the
+  document describes, with the stages, tasks, rules and timings it lists, and
+  connect each task to the resource it names. Those resources are already
+  deployed on this tenant.
 
   <!-- helper:start -->
   The document calls the child case `CaseTest`; it is deployed as `Maestro Case`.

@@ -63,24 +63,19 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build our expense reporting case as a solution and case project both called
   "CMGoldenExpense", following our design document `sdd.md` in this folder.
-  In short: an AI agent analyzes the submitted expense request, a process
-  orchestration processes it and a robot records it in the legacy system; a
-  manager then approves it, and a rejection opens a rework lane that returns
-  to where it came from; an API workflow logs the decision and a child case
-  runs; an inbound webhook moves the case on; a user picks the next stage; and
-  a last stage holds completion for a short delay. Keep the stages, tasks,
-  rules, timers, SLA and sample request exactly as the document gives them.
+  Keep the stages, tasks, rules, timers, SLA, and sample request exactly as
+  the document specifies.
 
   Everything the document names (the solution folder, agent, process, robot,
   API workflow, child case, connections and connector activities) is already
-  deployed on this tenant: connect each step to that real resource, not to a
-  placeholder. Do not publish the solution.
+  deployed on this tenant, so use the existing resource. Do not publish the
+  solution yet.
 
   Build and test the automation.
 

@@ -47,13 +47,13 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an expense approval case called "OutcomeExpenseApproval". When an
-  expense request comes in, the case first emails the approver that the
-  request is waiting for their decision, then files a Jira issue in our audit
+  expense request comes in, first the approver is emailed that the request is
+  waiting for their decision, then a Jira issue has to be filled in our audit
   project as the audit record. The email subject and the issue summary must
   both carry the request's reference, so the auditors can match the
   notification to the audit record. The email has to really be sent: a saved

@@ -41,9 +41,9 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "EscalationSlackAlert" that triages a customer
   escalation and alerts me in the #coding-agent-testing Slack channel. For
@@ -66,8 +66,8 @@ initial_prompt: |
 
   When it finishes, return:
   - the severity, as "Sev1", "Sev2" or "Sev3"
-  - whether engineering is needed, as true or false
-  - the case reference, unchanged
+  - whether engineering is needed: YES/no
+  - the case reference
   - the ID of the Slack message that was sent
 
   Build and test the automation.

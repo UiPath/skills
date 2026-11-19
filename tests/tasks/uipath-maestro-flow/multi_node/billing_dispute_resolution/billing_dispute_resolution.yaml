@@ -42,9 +42,9 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "BillingDisputeResolution" that resolves a
   customer's billing dispute.
@@ -57,18 +57,18 @@ initial_prompt: |
 
   Read the invoice with our existing invoice extraction model in
   Shared/uipath-maestro-flow/BillingDispute. Customer details are in
-  BillingDisputeCRM and contract details are in BillingDisputeERP, both in Data
-  Fabric. Look them up at the same time, and compare each disputed line with
-  the contract line that has the same line number.
+  BillingDisputeCRM and contract details are in BillingDisputeERP, both in
+  Data Fabric. Look them up and compare each disputed line with the contract
+  line that has the same line number.
 
-  Have an agent assess the pricing differences using the
-  "Billing Dispute SOP Index" and recommend a credit, a rejection or a manager
-  review. For now, automatically approve anything that needs manager review.
+  Have an agent assess the pricing differences using the "Billing Dispute SOP
+  Index" and recommend a credit, a rejection or a manager review. For now,
+  automatically approve anything that needs manager review.
 
   For approved disputes, post the credit through the existing
-  FinancialPostingFunction workflow. Then have a second agent draft an email to
-  the customer explaining the resolution, mentioning the invoice number and the
-  credit amount in USD. Don't send the email.
+  FinancialPostingFunction workflow. Then have a second agent draft an email
+  to the customer explaining the resolution, mentioning the invoice number and
+  the credit amount in USD. Don't send the email.
 
   At the end, return five results:
   - the decision, as "Approved" or "Rejected"
@@ -78,8 +78,8 @@ initial_prompt: |
     applied
   - the full email draft as plain text
 
-  Rejected disputes get no email. Return "No resolution email drafted" instead,
-  and explain the rejection in the explanation.
+  Rejected disputes get no email. Return "No resolution email drafted"
+  instead, and explain the rejection in the explanation.
 
   Build and test the automation.
 

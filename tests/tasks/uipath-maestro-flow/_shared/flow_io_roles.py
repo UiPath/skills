@@ -196,10 +196,11 @@ def as_number(value: Any) -> float | None:
 
 
 def as_bool(value: Any) -> bool | None:
+    """A boolean, or the text "true"/"false" or "yes"/"no" (any case)."""
     if isinstance(value, bool):
         return value
-    if isinstance(value, str) and value.strip().lower() in ("true", "false"):
-        return value.strip().lower() == "true"
+    if isinstance(value, str) and value.strip().lower() in ("true", "false", "yes", "no"):
+        return value.strip().lower() in ("true", "yes")
     return None
 
 

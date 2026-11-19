@@ -42,7 +42,6 @@ initial_prompt: |
     creditScore. Use 742 when no score is given.
   - The case runs CreditRisk on that score and keeps the risk band the rule
     returns in a case variable called riskBand.
-  - Don't change the CreditRisk rule, and don't create a second solution.
 
   <!-- helper:start -->
   CreditRisk is a business rule project in this solution and is not deployed on

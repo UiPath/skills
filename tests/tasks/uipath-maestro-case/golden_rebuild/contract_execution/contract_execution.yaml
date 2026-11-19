@@ -81,22 +81,22 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
-  Build our contract review-and-execution case as a solution and case project
-  both called "ContractExecution", following our design document `sdd.md` in
-  this folder. In short: a business requester submits a contract request;
-  Legal Operations checks it while the counterparty's records are pulled and
-  the draft is screened for unusual clauses; counsel reviews it, can ask for
-  corrections (which sends it back to checking), an outside opinion or a
-  senior counsel review; the approved contract goes out for e-signature and is
-  filed, with obligation tracking opened as a child case; and a request can
-  instead end rejected or withdrawn. Every stage has its own deadline, with
-  warnings and a breach response, and the whole case has a ten-business-day
-  deadline. Keep the stages, tasks, rules, deadlines and field names exactly as
-  the document gives them.
+  Build our contract review-and-execution business process called
+  "ContractExecution", following our design document `sdd.md` in this folder.
+  In short: a business requester submits a contract request; Legal Operations
+  checks it while the counterparty's records are pulled and the draft is
+  screened for unusual clauses; counsel reviews it and can ask for corrections
+  (which sends it back to checking), an outside opinion or a senior counsel
+  review; the approved contract then goes out for e-signature and is filed,
+  with obligation tracking opened as a child case; a request can also end up
+  being rejected or withdrawn. Every stage has its own deadline, with warnings
+  and a breach response, and the whole process has a ten-business-day
+  deadline. Keep the stages, tasks, rules, deadlines and field names exactly
+  as the document gives them.
 
   Everything the document names (folders, API workflow, agent, action app,
   child case and webhook connections) is already deployed on this tenant:

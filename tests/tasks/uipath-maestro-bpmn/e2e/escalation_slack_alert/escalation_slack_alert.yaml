@@ -43,8 +43,8 @@ post_run:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
   Build a process called "EscalationSlackAlert" that triages a customer
   escalation and alerts the team in Slack. Someone starts it by hand with
@@ -56,17 +56,17 @@ initial_prompt: |
     workaround.
   - Sev2: production is down but there is a workaround.
   - Sev3: everything else.
+
   Engineering is needed for Sev1 and Sev2, not for Sev3. Also write a short
   note on the next steps.
 
   Post the alert to our Slack channel "coding-agent-testing" through the
-  "is-sandboxes" Slack connection, posted as the user rather than the bot.
-  The message must include the severity, the correlationId and the next
-  steps.
+  "is-sandboxes" Slack connection, posted as the user rather than the bot. The
+  message must include the severity, the correlationId and the next steps.
 
   Outputs: severity (Sev1, Sev2 or Sev3), engineeringNeeded, caseKey (the
-  correlationId we were given) and slackMessageId (the id of the Slack
-  message that was posted).
+  correlationId we were given) and slackMessageId (the id of the Slack message
+  that was posted).
 
   <!-- helper:start -->
   productionDown and workaroundAvailable are booleans; the other inputs are

@@ -47,15 +47,15 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "CustomerEscalationOrchestrator" that decides
-  whether an incoming customer email is a real escalation or needs triage,
-  and notifies me in the #coding-agent-testing Slack channel either way.
+  whether an incoming customer email is a real escalation or needs triage, and
+  notifies the team in the #coding-agent-testing Slack channel either way.
 
-  For each email it receives:
+  For each email, it must receive:
   - the sender's email address and domain
   - the subject and body
   - the customer's tier
@@ -63,9 +63,9 @@ initial_prompt: |
   - whether there are attachments
   - whether the sender matched one customer, none or several
   - whether it's a duplicate
-  - a case reference
+  - a case reference ID
 
-  Decide the path in this order:
+  There are multiple paths to assert, in this order:
   - no sender domain → "missing_domain"
   - no matching customer → "unknown_customer"
   - several matching customers → "multiple_matches"
@@ -73,14 +73,13 @@ initial_prompt: |
   - otherwise → "escalation"
 
   For escalations, the severity is Sev1 when production is down with no
-  workaround, Sev2 when production is down but there's a workaround, and
-  Sev3 when production isn't down. Engineering is needed for Sev1 and Sev2,
-  and we'll draft a response. Anything that isn't an escalation is
+  workaround, Sev2 when production is down but there's a workaround, and Sev3
+  when production isn't down. Engineering is needed for Sev1 and Sev2, and
+  we'll draft a response. Anything that isn't an escalation is
   "informational": no engineering and no response.
 
-  Post an escalation alert or a triage notice accordingly in the
-  #coding-agent-testing Slack channel, including the path and the case
-  reference. If Slack fails, the automation should still finish.
+  Post an escalation alert or a triage notice in the #coding-agent-testing
+  Slack channel, including the path and the case reference ID.
 
   When it finishes, return:
   - the path, as one of the five values above
@@ -88,7 +87,7 @@ initial_prompt: |
   - whether engineering is needed, as true or false
   - the response mode, as "Draft" or "None"
   - the case reference, unchanged
-  - the ID of the Slack message, or empty text if Slack failed
+  - the ID of the Slack message
 
   Build and test the automation.
 success_criteria:

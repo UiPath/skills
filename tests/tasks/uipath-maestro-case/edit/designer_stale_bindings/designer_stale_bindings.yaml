@@ -44,20 +44,16 @@ pre_run:
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in a Studio Web project that
-  already contains the expense-reporting case (solution
-  ExpenseDesignerSaved, case project CMGoldenExpense). No user is
-  present, and nobody will answer a question or grant approval, so do not ask,
-  do not pause, and do not wait for input.
+  already contains the expense-reporting case (solution ExpenseDesignerSaved,
+  case project CMGoldenExpense). No user is present, and nobody will answer a
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  I just pulled the solution from Studio Web, so the copy here is current;
-  don't pull it again.
+  I just pulled the solution from Studio Web, so the copy here is current.
 
   The task "Wait for timer - S5" in the stage "Stage 5 - connector entry"
   waits 10 seconds; make it wait 15 minutes. Leave everything else in the case
-  as it is, and leave the project ready to publish. Don't run, upload or
-  publish the case: I will publish it myself.
-
-  Make the change and check that the case is valid.
+  as it is; only validate it and have it ready to publish.
 
 success_criteria:
   - type: skill_triggered

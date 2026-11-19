@@ -34,13 +34,14 @@ reference:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  Build a small process called "ProductCalc" so I can check that processes
-  run end to end on this tenant. It starts manually and takes no inputs. A
-  script step multiplies 6 by 7 and stores the result in a process variable
-  called `product`, then the process ends. `product` should come out as 42.
+  I want to build an automation, called "ProductCalc", so I can check that
+  processes run end to end on this tenant. It starts manually and takes no
+  inputs. A script step multiplies 6 by 7 and stores the result in a process
+  variable called `product`, then the process ends. `product` should come out
+  as 42.
 
   Build the process and do a test run.
 

@@ -59,25 +59,25 @@ post_run:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  Build a process called "EscalationJiraTicket" that triages a customer
-  escalation and opens a Jira ticket for it. Someone starts it by hand with
-  what our intake form collects: senderEmail, senderDomain, subject, body,
-  customerTier, productionDown, workaroundAvailable, hasAttachments,
-  customerMatchStatus, isDuplicate and correlationId.
+  Automate my process called "EscalationJiraTicket" that triages a customer
+  escalation and opens a Jira ticket for it. We have an intake form that
+  collects senderEmail, senderDomain, subject, body, customerTier,
+  productionDown, workaroundAvailable, hasAttachments, customerMatchStatus,
+  isDuplicate and correlationId. I will bring these in when I start the
+  process.
 
   How to rate the severity:
-  - Sev1: customerTier is "Enterprise", production is down, and there is
-    no workaround.
+  - Sev1: customerTier is "Enterprise", production is down, and there is no
+    workaround.
   - Sev2: production is down but there is a workaround.
   - Sev3: everything else.
 
-  Open the ticket as a Task in our Jira project CE ("Coder Eval"), through
-  the Atlassian Jira connection in the Shared/uipath-maestro-flow folder.
-  The ticket summary must include the correlationId exactly as given, for
-  example "[Sev1] <correlationId> <subject>".
+  Open the ticket as a Task in our Jira project CE ("Coder Eval"). The ticket
+  summary must also include the correlationId, for example "[Sev1]
+  <correlationId> <subject>".
 
   Outputs: severity, caseKey (the correlationId we were given) and
   jiraIssueKey (the key of the ticket that was created).

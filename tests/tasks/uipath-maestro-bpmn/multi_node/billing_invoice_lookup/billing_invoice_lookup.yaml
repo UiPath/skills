@@ -47,19 +47,19 @@ post_run:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  Build a process called "BillingInvoiceLookup" that looks up a disputed
-  invoice's line items, even when the caller types the invoice number
-  sloppily.
+  Build a process called "BillingInvoiceLookup" that looks up the line items
+  in a disputed invoice, even when the caller types the invoice number
+  sloppily or with typos.
 
   - Input: invoiceNumber. Callers may leave out the "MCS-" prefix, use the
     wrong casing, or add spaces.
-  - Clean the number up first: trim it, uppercase it, and add "MCS-" in
-    front when it is missing.
-  - Then look up that invoice's rows in BillingDisputeERP, the invoice table
-    we keep in Data Service. It has one row per invoice line.
+  - Clean the number up first: trim it, uppercase it, and add the "MCS-"
+    prefix when it is missing.
+  - Then look up the respective invoice and its rows in BillingDisputeERP, the
+    invoice table we keep in Data Service. It has one row per invoice line.
   - Outputs: matchedInvoiceNumber (the invoice number of the first matching
     row) and lineItemCount (how many rows matched).
 

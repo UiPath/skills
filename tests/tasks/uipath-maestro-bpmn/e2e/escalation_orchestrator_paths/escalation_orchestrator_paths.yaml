@@ -47,39 +47,41 @@ post_run:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  Build a process called "CustomerEscalationOrchestrator" that triages a
-  customer escalation. Someone starts it by hand with what our intake form
-  and CRM lookup already know: senderEmail, senderDomain, subject, body,
-  customerTier, productionDown, workaroundAvailable, hasAttachments,
-  customerMatchStatus ("single", "none" or "multiple"), isDuplicate and
-  correlationId. Decide everything from those inputs.
-
-  First decide the escalation path, checking in this order:
+  I want to automate my business process called
+  "CustomerEscalationOrchestrator" that triages a customer escalation. This is
+  what I do: I take in the data from our intake form and CRM lookup and I
+  decide the escalation path by checking in order:
   - no senderDomain: "missing_domain"
   - customerMatchStatus is "none": "unknown_customer"
   - customerMatchStatus is "multiple": "multiple_matches"
   - isDuplicate: "duplicate"
   - otherwise: "escalation"
 
-  On the "escalation" path, rate the severity: Sev1 when production is down
+  On the "escalation" path, I rate the severity: Sev1 when production is down
   and there is no workaround, Sev2 when production is down but there is a
-  workaround, Sev3 when production is not down. Engineering is needed for
-  Sev1 and Sev2. The response mode is "Draft". On every other path the
-  severity is "informational", engineering is not needed, and the response
-  mode is "None".
+  workaround, Sev3 when production is not down. Engineering is needed for Sev1
+  and Sev2. On every other path the severity is "informational", engineering
+  is not needed, and no response is required. On escalations, when engineering
+  is needed, I also write up a draft response.
 
-  Escalations post an alert to our Slack channel "coding-agent-testing";
-  the other paths post a triage notice there instead. Use the "is-sandboxes"
-  Slack connection and post as the user, not the bot. Each message must
-  include the escalation path and the correlationId. If posting to Slack
+  For escalations I also post an alert to our Slack channel
+  "coding-agent-testing"; for the other paths, I post a triage notice instead.
+  Use the "is-sandboxes" Slack connection and post as a user. Each message
+  must include the escalation path and the correlationId. If posting to Slack
   fails, the process should still finish rather than fault.
 
-  Outputs: escalationPath, severity, engineeringNeeded, responseMode,
-  caseKey (the correlationId we were given) and slackMessageId (the id of
-  the Slack message this run posted).
+  What I'll input from the intake form and CRM lookup: senderEmail,
+  senderDomain, subject, body, customerTier, productionDown,
+  workaroundAvailable, hasAttachments, customerMatchStatus ("single", "none"
+  or "multiple"), isDuplicate and correlationId. I decide everything from
+  these inputs only.
+
+  Outputs: escalationPath, severity, engineeringNeeded, responseMode, caseKey
+  (the correlationId we were given) and slackMessageId (the id of the Slack
+  message this run posted).
 
   <!-- helper:start -->
   productionDown, workaroundAvailable, hasAttachments and isDuplicate are

@@ -34,24 +34,23 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
-  Build an automation called "BillingDiscrepancyDetector" that checks whether a
-  customer was overcharged on a disputed invoice line, and tells me the
+  Build an automation called "BillingDiscrepancyDetector" that checks whether
+  a customer was overcharged on a disputed invoice line, and tells me the
   customer's account tier.
 
   Each time it runs, it receives the invoice number, the customer's account
   number, which line of the invoice is disputed, and the unit price and
   quantity the customer was billed for that line. Contract details for every
   invoice line are in BillingDisputeERP, and customer details, including the
-  account tier, are in BillingDisputeCRM. Both are in Data Fabric. Look them up
-  at the same time.
+  account tier, are in BillingDisputeCRM. Both are in Data Fabric.
 
-  The overcharge is what the customer was billed for the line (unit price times
-  quantity) minus the contracted amount for that line, or zero if they weren't
-  billed more than the contract. Give me back four results:
+  The overcharge is what the customer was billed for the line (unit price
+  times quantity) minus the contracted amount for that line, or zero if they
+  weren't billed more than the contract. Give me back four results:
   - the overcharge as a plain number in USD, for example 1610, or 0 when there
     is none
   - the number of discrepancies as 1 or 0

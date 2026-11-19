@@ -39,16 +39,13 @@ reference:
   directory: ..
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Case project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Case project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
-  Build the case "IoBindingCase" from the approved design in sdd.md in this
-  folder. Follow it as written: don't rewrite, shorten or redesign it. The case
-  runs eight API workflows that already exist on the tenant, one after
-  another, and passes values between them, its case variables and its outputs
-  exactly as the design says. Use the API workflows and folders the design
-  names; don't build new ones.
+  Build my business process "IoBindingCase" as defined and approved in the
+  sdd.md in this folder. Follow it as written: don't rewrite, shorten or
+  redesign it.
 
   <!-- helper:start -->
   Echo literal's APIOutput1 has no Outputs row in the design because it is the

@@ -71,12 +71,12 @@ post_run:
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
   (Maestro BPMN) project. No user is present, and nobody will answer a
-  question or grant approval, so do not ask, do not pause, and do not wait
-  for input.
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
   Build a process called "CustomerEscalationTriage" that triages a customer
-  escalation, opens a Jira ticket for it and alerts a Slack channel. It is
-  started with these inputs: customerTier, serviceState, workaroundAvailable,
+  escalation, opens a Jira ticket for it and alerts a Slack channel. It
+  receives these inputs: customerTier, serviceState, workaroundAvailable,
   correlationId, jiraProjectKey, jiraIssueTypeId and slackChannelId.
 
   How to rate the severity:
@@ -85,15 +85,14 @@ initial_prompt: |
   - Sev2: any other case where serviceState is "Unavailable" or "Degraded".
   - Sev3: everything else.
 
-  Open a Jira ticket in the project and issue type the inputs give, through
-  the Atlassian Jira connection "is-sandboxes-test@uipath.com-uipath-sandbox-380"
-  in the Shared/uipath-maestro-flow folder. Its summary must include the
-  correlationId exactly as given, for example
-  "[Sev1] <correlationId> customer escalation".
+  Open a Jira ticket in the provided project and issue type, using my sandbox
+  connection from the uipath-maestro-flow shared folder. Its summary must
+  include the correlationId, for example "[Sev1] <correlationId> customer
+  escalation".
 
-  Then post exactly one Slack message to the channel slackChannelId, through
-  the "is-sandboxes" Slack connection in the same folder, posted as the user
-  rather than the bot. The message must include the correlationId and the
+  Then post a Slack message to the channel slackChannelId, through the sandbox
+  Slack connection in the same shared folder I mentioned above. Post it as the
+  user, not the bot. The message must also include the correlationId and the
   severity.
 
   Outputs: severity, caseKey (the correlationId we were given) and

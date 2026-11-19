@@ -47,21 +47,17 @@ pre_run:
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in a Studio Web project that
-  already contains the expense-reporting case (solution
-  ExpenseDesignerSaved, case project CMGoldenExpense). No user is
-  present, and nobody will answer a question or grant approval, so do not ask,
-  do not pause, and do not wait for input.
+  already contains the expense-reporting case (solution ExpenseDesignerSaved,
+  case project CMGoldenExpense). No user is present, and nobody will answer a
+  question or grant approval, so do not ask, do not pause, and do not wait for
+  input.
 
-  I just pulled the solution from Studio Web, so the copy here is current;
-  don't pull it again.
+  I just pulled the solution from Studio Web, so the copy here is current.
 
   In the stage "Stage 7 - user select", add an optional timer task called
   "Final cool-off" that waits 10 minutes. It starts as soon as the stage is
   entered, and the stage doesn't wait for it to finish. Leave everything else
-  in the case as it is. Don't run, upload or publish the case: I will test it
-  from the Designer.
-
-  Make the change and check that the case is valid.
+  in the case as it is. I will test it myself.
 
 success_criteria:
   - type: skill_triggered

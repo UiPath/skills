@@ -55,13 +55,12 @@ initial_prompt: |
   approval, so do not ask, do not pause, and do not wait for input.
 
   Managers now have to review every expense before it is posted. Add that
-  review to the flow using our existing "ExpenseReviewApp" Action Center app
-  in Shared/uipath-agents/ExpenseReviewSol as the task form; don't build a
-  new form. The reviewer should see the expense id, employee, amount and
-  description.
+  review to the process using our existing "ExpenseReviewApp" Action Center
+  app in Shared/uipath-agents/ExpenseReviewSol as the task form. The reviewer
+  should see the expense id, employee, amount and description.
 
   - Post to SAP only when the manager approves.
-  - When they reject, post nothing and end the flow with status "rejected".
+  - When they reject, end the flow with the status "rejected".
 
   Leave the rest of the flow as it is.
 
