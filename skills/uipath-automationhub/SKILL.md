@@ -33,7 +33,7 @@ Set `$ACCESS_TOKEN` in the **same shell invocation** as each request, and never 
 ACCESS_TOKEN=${UIPATH_CLI_AUTH_TOKEN:-$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')}
 ```
 
-If neither yields a token, stop and ask the user to run `uip login`. Never ask the user to paste a token.
+Never run `uip login refresh --output json` on its own: its output includes the token. If neither source yields a token, stop and ask the user to run `uip login`. Never ask the user to paste a token.
 
 **Gateway URL** (every request):
 

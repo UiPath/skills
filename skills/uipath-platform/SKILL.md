@@ -125,6 +125,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "<BASE_URL>/<ORG>/<TENANT>/<SERVICE_PA
 
 Never ask the user to paste a token, and never put one in a file, a command argument you echo, or a message.
 
+**Never run `uip login refresh --output json` on its own or print its output.** In a non-interactive shell — every agent shell — the CLI adds `Data.AccessToken` to the output, so the bare command puts the token in the conversation. Always pipe it straight into a variable as above. For session details, run `uip login status --output json`, which never includes a token.
+
 Named profiles keep several UiPath logins on one machine:
 
 ```bash
