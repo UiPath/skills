@@ -78,6 +78,7 @@ Skip `bpmndi:` diagram elements.
 | `interrupt(InvokeProcess / CreateTask / CreateEscalation(...))`, `EscalateAction(app_name=…)` | any `.py` | HITL checkpoints |
 | System prompt strings passed to the model | any `.py` | Business rules — paraphrase |
 | `bindings.json` `resources[]` (`resource`: `asset`, `queue`, `process`, `bucket`, `app`, `index`, `connection`, `mcpServer`) | root | Platform resources |
+| `bindings.json` / `bindings_v2.json` `EventTrigger` (`metadata.Connector`, `ObjectName`, `Operation`, `FilterExpression`) and the `Property` resources whose `ParentResourceKey` names it | root | Triggers row in words; the metadata and property values quoted in the triggered step's Source Map row as spelled, since the build writes the binding from them |
 | `evaluations/eval-sets/*.json`, `evaluations/evaluators/*.json` | evaluations | Expected behaviour → acceptance criteria |
 | `pyproject.toml` `[project].dependencies` | root | Framework packages |
 
@@ -106,7 +107,7 @@ Skip `bpmndi:` diagram elements.
 | `method` + `path` on `defineFunction` | TS/JS | HTTP endpoint vs run-as-job |
 | `UiPath()` SDK calls (Python), `ctx.platform.*` (TS/JS) | code | Platform side effects |
 | Body logic (conditions, calculations) | code | Business rules |
-| `entry-points.json` `entryPoints[].{type: "function", input, output}`, `bindings_v2.json` `HttpTrigger` | generated | Confirms interface and trigger |
+| `entry-points.json` `entryPoints[].{type: "function", input, output}`, `bindings_v2.json` `HttpTrigger` | generated | Confirms interface and trigger; an `EventTrigger` is read as in § Signals — Coded Agent |
 
 ## Signals — Coded App
 

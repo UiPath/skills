@@ -54,8 +54,10 @@ A genome is extracted through a rendering of the source — a framework's invent
 7. **Formats** a date or number is typed or compared in (a mask, a pattern, one part of a date per segment): the format is part of the value.
 8. **Values bound to a built-in** (the run date, the user's folder), computed at run time — never the stored default a same-named project variable carries.
 9. **A parameter's unit, its default, and which of two filled parameters overrides the other**, read from the source's own documentation of that parameter (a framework export often carries it) before they are called unknown.
-10. **Log texts** of each step, with their literal wording and variable substitutions.
-11. **Which file and which field**: the kind of each file the process reads or writes, by its extension (a workbook, not a text file), and which of several dates or fields a filter, sort or window uses (loaded or completed, created or updated).
+10. **Texts the run emits**, with their literal wording and variable substitutions: each log line, each failure message with the code or status it raises or returns to its caller, each reason it records or returns, and each message body or template it sends, markup included.
+11. **Names and stored values in what the run writes, sends or parses**: each field name of a record, event, request or response body, with the fallback names it tries; the stored value behind each named choice or status it writes or compares (`Closed` is `3`); and the endpoint and method of each service call.
+12. **Empty and missing values**: how a missing, null, empty or zero value tests and what it becomes (a missing flag reads as false, `0` counts as set, an absent id becomes empty text).
+13. **Which file and which field**: the kind of each file the process reads or writes, by its extension (a workbook, not a text file), and which of several dates or fields a filter, sort or window uses (loaded or completed, created or updated).
 
 Extraction writes them so (its Step 3).
 
