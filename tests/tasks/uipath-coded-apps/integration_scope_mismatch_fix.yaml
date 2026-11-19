@@ -72,12 +72,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "THE FIX — the `scope` key in uipath.json now includes a write-capable Tasks scope as a whole token: bare `OR.Tasks` or `OR.Tasks.Write` (not just OR.Tasks.Read). Rule #16: write/action methods need broader scopes than read-only flows."
+    description: "THE FIX — the `scope` key in uipath.json now covers BOTH the read call (`getAll`) and the write call (`complete`), as whole tokens: bare `OR.Tasks`, or `OR.Tasks.Read` together with `OR.Tasks.Write`. `OR.Tasks.Write` alone fails — it would break the read path. Rule #16: write/action methods need broader scopes than read-only flows."
     path: "uipath.json"
     assertions:
       - expression: "scope"
         operator: regex
-        expected: "(^|\\s)OR\\.Tasks(\\.Write)?(\\s|$)"
+        expected: "(^|\\s)OR\\.Tasks(\\s|$)|^(?=.*(^|\\s)OR\\.Tasks\\.Read(\\s|$))(?=.*(^|\\s)OR\\.Tasks\\.Write(\\s|$))"
     weight: 3.0
     pass_threshold: 1.0
 
