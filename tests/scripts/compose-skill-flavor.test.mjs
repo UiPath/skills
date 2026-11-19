@@ -1727,8 +1727,10 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   // published bytes. It must still never reach for the flavor packer's output.
   assert.match(
     publishNpmjs,
-    /^\s*npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}" \\\n\s*--access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
+    /^\s*npm publish "\$TARBALL" \\\n\s*--access public --provenance --tag "\$DIST_TAG"\s*$/m,
   );
+  assert.match(publishNpmjs, /^\s*TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}\s*$/m);
+  assert.match(publishNpmjs, /^\s*DIST_TAG: \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m);
   assert.match(publishNpmjs, /^\s*npm pack --pack-destination \.\s*$/m);
   assert.doesNotMatch(publishDev, /npm run skills:pack|build\/npm|\.tgz/);
   assert.doesNotMatch(publishNpmjs, /npm run skills:pack|build\/npm/);
