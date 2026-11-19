@@ -22,15 +22,16 @@ The web's side of [selector-translation-guide.md](selector-translation-guide.md)
 |---|---|
 | Google Chrome | `chrome.exe` |
 | Microsoft Edge (Chromium) | `msedge.exe` |
+| Microsoft Edge in Internet Explorer mode | `msedge.exe` — the page keeps `html` and `webctrl` as any page: `<html app='msedge.exe' title='Wikipedia' />` `<webctrl parentid='js-link-box-de' tag='STRONG' />`; never `iexplore.exe` |
 | Microsoft Edge WebView2 (embedded in desktop app) | `msedgewebview2.exe` |
 | Microsoft Edge (legacy, UWP) | `ApplicationFrameHost.exe` |
 | Mozilla Firefox | `firefox.exe` |
-| Internet Explorer | `iexplore.exe` — also default when `app` is empty or missing |
+| Internet Explorer (standalone browser) | `iexplore.exe` — also default when `app` is empty or missing |
 | Brave, Vivaldi | `brave.exe`, `vivaldi.exe` |
 | Custom Chromium-based browser (with UiPath extension) | `custom_browser` |
 | Safari (macOS) | `Safari` |
 
-A source recording only "Chrome", "Edge" or "IE" as browser choice maps to these executables; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
+A source recording only "Chrome" or "Edge" as browser choice maps to these executables; "IE", or a page the source drives through the Internet Explorer engine, maps to Edge in Internet Explorer mode (`msedge.exe`) unless the robots run the standalone browser; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
 
 ## `webctrl` — HTML element (open schema)
 
