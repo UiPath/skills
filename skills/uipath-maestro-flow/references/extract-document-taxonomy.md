@@ -75,6 +75,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 
 ## The loop
 
+<!--skill-flavor:extract-collect-samples:start-->
 1. **Collect samples.** Check and decode uploaded documents ([The documents uploaded to the node](#the-documents-uploaded-to-the-node)). Without samples, ask for representative documents even if fields were listed; if none are supplied, design from the stated fields and say so in the report.
 2. **Read them.** Perform one full `Read` per decoded document; it returns text and image for digital and scanned files, so PDF tooling is unnecessary.
 3. **Design** the taxonomy under the rules below and write it to a JSON file.
@@ -82,6 +83,7 @@ uip maestro flow validate Flow/Flow.flow --output json
 5. **Fix rejections.** Exit 3 means a rule-violating schema; fix each problem `Data.Issues` lists at its path and rerun the same command.
 6. **Validate:** run `uip maestro flow validate <file> --output json`; it must return `Valid`.
 7. **Report** what was created, `Data.ProcessorSync`, and `Data.ResourceFile`. The write stores the schema in that file too; keep it with the `.flow`. Taking the node live is the user's decision.
+<!--skill-flavor:extract-collect-samples:end-->
 
 ## The document
 

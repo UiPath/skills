@@ -28,7 +28,11 @@ The three `uipath.ixp.` families are not interchangeable. The processor variant 
 
 ## At a glance
 
-Add a descriptive node, wire its file, write taxonomy, bind the result, and validate. `fileRef` is the only author-supplied input and is required for validation. The processor arrives with the node; packing keeps it synchronized ([Making it actually extract](#making-it-actually-extract)).
+<!--skill-flavor:extract-taxonomy-writes:start-->
+Add a descriptive node, wire its file, write taxonomy, bind the result, and validate.
+<!--skill-flavor:extract-taxonomy-writes:end-->
+
+`fileRef` is the only author-supplied input and is required for validation. The processor arrives with the node; packing keeps it synchronized ([Making it actually extract](#making-it-actually-extract)).
 
 ## The loop
 
@@ -218,7 +222,10 @@ If none exists, stop. State the tenant, reported reason, absence of a trained mo
 
 ## Unsupported Capabilities
 
-These requests are outside the skill. Recognize them, give the standard response, and route the user. Do NOT enter discovery (`uip --help`, grep, source reading). For uncovered settings or resources, do not seek a CLI path or edit `.flow`, `.flow.ts`, or project files. Say it is unavailable here and link [Extract document documentation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/introduction).
+These requests are outside the skill. Recognize them, give the standard response, and route the user. Do NOT enter discovery (`uip --help`, grep, source reading).
+
+<!--skill-flavor:extract-model-settings:start-->
+For uncovered settings or resources, do not seek a CLI path or edit `.flow`, `.flow.ts`, or project files. Say it is unavailable here and link [Extract document documentation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/introduction).
 
 | User request | Standard response |
 |---|---|
@@ -228,6 +235,7 @@ These requests are outside the skill. Recognize them, give the standard response
 | "Switch the language to Arabic / Japanese" / "set language to Auto-detect / Latin-based / Extended" | "I can't change language support from here. See [Language support](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#language-support)." |
 | "Set layout parsing to None / Full" / "turn layout parsing on / off" | "I can't change layout parsing from here. See [Layout parsing](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#layout-parsing)." |
 | "Use Rules-based / Model-based attribution" | "I can't change attribution from here. See [Attribution](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#attribution)." |
+<!--skill-flavor:extract-model-settings:end-->
 | "Add model overrides" / "set the overrides JSON" | "I can't set model configuration overrides from here. See [Overrides](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/configuring-the-model#overrides)." |
 | "Import this IXP taxonomy file" (a file with `entity_defs` and `label_groups`) / "Export the taxonomy as an IXP file" | "I can't import or export IXP taxonomy files from here. Use Import/Export in the flow designer: [Importing and exporting taxonomies](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/importing-and-exporting-taxonomies). I can show the taxonomy, replace it from a flow-format file, or copy it from another Extract document node." |
 | "Upload these documents" / "delete a test file" / "tag these documents" / "show the documents not annotated yet" / "reuse the other Extract node's documents" | "I can't manage the node's test documents from here. See [Uploading sample documents](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/uploading-sample-documents)." |
