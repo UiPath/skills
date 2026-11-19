@@ -88,6 +88,16 @@ Preventive fix:
 2. {next domain, same structure}
 ```
 
+### Next action
+
+Every diagnosis ends with, in this order:
+
+1. **Repair, by owner** — the Immediate fix steps above, each with its `Who:`. Repairs change the faulty artifact or setting. Retry, re-publish, re-deploy, re-run, resume, restart, migrate are not repair steps.
+2. **Re-check** — one line naming one read-only command that shows whether the repair held (e.g. `uip or jobs get <JOB_KEY> --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), with the entity ID filled in. Verify the command exists first. Name it; do NOT run it — the user runs it after applying the repair.
+3. **Later decision** — retry, re-publish, re-deploy or re-run on its own line, framed as the user's call once the re-check is clean. Never fold it into a repair step. Playbook `## Resolution` text that bundles one into a fix step: split it out here.
+
+Exception: a step that applies the repaired artifact is repair, not a retry (e.g. publishing a corrected package when the package itself was the defect). Keep it, but never add a re-run to prove it.
+
 **Reduced-confidence terminal** (checklist gap survived the re-fetch): present the same structure, name the gap explicitly next to the cause statement, and lead the Immediate fix with the playbook's diagnostic recommendation (e.g., a byte-compare snippet) instead of a guessed branch. Recommending the discriminating diagnostic IS the deliverable when evidence cannot separate sibling causes — never silently pick one.
 
 **No root cause found**: present what was investigated and ruled out (from notes.md), and recommend providing more data or opening a UiPath support ticket.

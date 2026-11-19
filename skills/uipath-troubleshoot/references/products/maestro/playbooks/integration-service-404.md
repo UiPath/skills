@@ -42,7 +42,7 @@ What to look for:
 - **If connector deleted/renamed:** re-create the activity against the current connector and re-publish
 - **If IS not enabled on the tenant:** enable via **Admin > Tenant > Services**
 - **If webhook config stale:** regenerate the webhook URL and update the external system
-- **If stale folder key from cross-import:** fix per [folder-not-accessible](folder-not-accessible.md) - it owns the bindings update and re-deploy steps
+- **If stale folder key from cross-import:** fix per [folder-not-accessible](folder-not-accessible.md) - it owns the bindings update; deploy stays a later decision
 - **If Data Fabric target missing:** create the entity/instance in the destination folder, or fix the binding
 
 ## Notes
