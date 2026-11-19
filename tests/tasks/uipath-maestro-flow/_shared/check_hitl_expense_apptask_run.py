@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """ExpenseAppTask (skill-hitl-e2e-apptask-brownfield): the review step uses the
-tenant's deployed ExpenseReviewApp, and a real run waits on it.
+tenant's deployed ExpenseReviewApp, and real runs wait on it.
 
 `structure`: the flow has a human-in-the-loop step backed by ExpenseReviewApp
 (Shared/uipath-agents/ExpenseReviewSol on the codereval tenant), named by app
 name, resource key or system name, not an inline quick form.
 
-`run` (default):
-1. Debug the flow with a fresh expense id.
-2. The run created an Action Center app task whose data shows that expense id,
+`run` (default) debugs the flow twice, each with a fresh expense id:
+1. The run created an Action Center app task whose data shows that expense id,
    the employee and the amount.
-3. Complete it with the app's `approve` outcome.
-4. The run then completed, the fixture's SAP posting step completed, and the
-   named outputs are status = "posted", sapDocumentNumber = "SAPEXP-<id>".
+2. Approve run: the grader completes it with the app's `approve` outcome; the
+   run then completed, the review and the fixture's SAP posting step
+   completed, and the named outputs are status = "posted",
+   sapDocumentNumber = "SAPEXP-<id>".
+3. Reject run: the grader completes it with `reject`; the run then completed,
+   the review completed, the posting step did not run, and status =
+   "rejected". An app task has one `completed` port, so where the flow routes
+   on the outcome is not pinned: the two runs show posting happens on approve
+   only. Before either run, the posting step must sit behind the review: the
+   trigger cannot reach it without passing through the review step.
 
-ExpenseReviewApp's schema (retrieve-configuration on the tenant, run
-2026-11-17_04-23-30, skill-agent-inline-external-escalation-tool): input
-`Content` (string), inOut `Comment` (string), outcomes `approve`, `reject`.
+A run that did not complete is cancelled. ExpenseReviewApp's schema (as
+`retrieve-configuration` reports it on the tenant): input `Content` (string),
+inOut `Comment` (string), outcomes `approve`, `reject`.
 """
 
 from __future__ import annotations
@@ -81,12 +87,10 @@ def structure(project_dir: str) -> None:
     print(f"OK: {node.get('id')} ({node.get('type')}) uses ExpenseReviewApp; the posting step is kept")
 
 
-def run(project_dir: str) -> None:
-    flow = live.load_flow(project_dir)
-    node = app_hitl(flow)
-    if node is None:
-        live.fail("no human-in-the-loop step backed by ExpenseReviewApp to run")
-    hitl_id = str(node.get("id"))
+def run_once(project_dir: str, node: dict, actions: list[str], comment: str) -> tuple[dict, str]:
+    """Debug the flow, check the run's app task, answer it with `actions`, and
+    return the completed run's payload and expense id. Cancels the instance
+    unless it completed."""
     expense = f"EXP-{uuid.uuid4().hex[:8].upper()}"
     inputs = {
         "expenseId": expense,
@@ -95,7 +99,9 @@ def run(project_dir: str) -> None:
         "description": DESCRIPTION,
     }
     deadline = time.monotonic() + DEADLINE_SECONDS
+    live.bound_calls_by(deadline)
     debug = live.start_debug(project_dir, inputs, CLI_TIMEOUT)
+    payload = None
     try:
         ids = live.wait_for_ids(debug, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
@@ -130,25 +136,48 @@ def run(project_dir: str) -> None:
         print(f"OK: app task {task.task_id} shows {expense}, {EMPLOYEE}, {AMOUNT}")
         data = dict(task.data) if isinstance(task.data, dict) else {}
         if not data.get("Comment"):
-            data["Comment"] = "Approved by the eval grader"
-        live.complete_task(task, ["approve", "Approve"], data)
+            data["Comment"] = comment
+        live.complete_task(task, actions, data)
         payload = live.wait_for_result(debug, deadline)
-    except SystemExit:
-        live.cancel(debug)
-        raise
-    live.require_completed(payload)
+        live.require_completed(payload)
+    finally:
+        if not live.is_completed(payload):
+            live.cancel(debug)
+    return payload, expense
+
+
+def run(project_dir: str) -> None:
+    flow = live.load_flow(project_dir)
+    node = app_hitl(flow)
+    if node is None:
+        live.fail("no human-in-the-loop step backed by ExpenseReviewApp to run")
+    hitl_id = str(node.get("id"))
+    posting = posting_ids(flow)
+    early = sorted(posting & live.bypassing(flow, hitl_id))
+    if early:
+        live.fail(f"the SAP posting step(s) {early} can run without the manager's review: "
+                  f"the trigger reaches them without passing through {hitl_id}")
+
+    payload, expense = run_once(project_dir, node, ["approve", "Approve"], "Approved by the eval grader")
     done = live.completed_ids(payload)
     if hitl_id not in done:
         _fail_with_capture(f"the review step {hitl_id} did not complete in the run")
-    posted = posting_ids(flow) & done
+    posted = posting & done
     if not posted:
-        _fail_with_capture(
-            f"the SAP posting step {sorted(posting_ids(flow))} did not run after approval"
-        )
+        _fail_with_capture(f"the SAP posting step {sorted(posting)} did not run after approval")
     print(f"OK: review {hitl_id} and posting {sorted(posted)} completed")
     assert_named_equals(payload, "status", "posted")
     assert_named_equals(payload, "sapDocumentNumber", f"SAPEXP-{expense}", case_sensitive=True)
     print(f"OK: status=posted, sapDocumentNumber=SAPEXP-{expense}")
+
+    payload, _expense = run_once(project_dir, node, ["reject", "Reject"], "Rejected by the eval grader")
+    done = live.completed_ids(payload)
+    if hitl_id not in done:
+        _fail_with_capture(f"the review step {hitl_id} did not complete in the reject run")
+    if posting & done:
+        _fail_with_capture(f"the SAP posting step {sorted(posting & done)} ran after a rejection")
+    assert_named_equals(payload, "status", "rejected")
+    print("OK: after a rejection nothing was posted and status=rejected")
 
 
 def main() -> None:

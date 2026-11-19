@@ -8,7 +8,7 @@ description: |
   its declared outputs by value. Three debug runs on live data: a real
   overcharge (both reads complete; 1610, 1, MCS-2026-04872, Enterprise), an
   invoice line that does not exist and a customer that does not exist (both
-  complete and return 0, 0 and empty text). Parallel layout is advisory.
+  complete and return 0, 0 and empty text, each output set, not left unset).
 tags:
   - uipath-maestro-flow
   - e2e

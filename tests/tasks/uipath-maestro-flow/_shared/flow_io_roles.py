@@ -10,11 +10,16 @@ declared outputs by VALUE:
   number"), with the seeded value and the name fragments that mean it.
 - `map_inputs` scores every declared `in` variable against every role by those
   fragments (in the id and the description), assigns each role to at most one
-  input, and coerces the value to the input's declared type.
+  input, and coerces the value to the input's declared type. A fragment
+  that matches whole words of the name (`disputedLineNo` holds `line` and
+  `lineno`) outranks one found only inside a word (`deadline` holds `line`,
+  `invoicenumber` holds `invoice`); ties go to the name the fragment covers
+  most, then by name, never by declaration order.
 - An `object` input is filled from the paths the flow itself reads off it
   (`$vars.<trigger>.output.<id>.a.b`): each leaf name is matched to a role the
   same way. A task may add a `fallback` object for paths the flow reads in a
   way a regex cannot see (inside a script loop), which is merged underneath.
+- An `array` input only takes a role whose value is a list.
 - `out_values` returns the declared `out` variables' runtime values, inputs
   excluded, and `texts` flattens strings nested in objects.
 
@@ -39,9 +44,51 @@ def declared(flow: dict, direction: str) -> list[dict]:
     return [v for v in variables.get("globals") or [] if v.get("direction") == direction and v.get("id")]
 
 
-def _score(name: str, keywords: list[str]) -> int:
-    """How strongly a normalized name means a role: the longest fragment it holds."""
-    return max((len(k) for k in keywords if re.search(k, name)), default=0)
+_WORD = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
+_PLAIN = re.compile(r"^[a-z0-9]+$")
+
+
+def _words(text: Any) -> list[str]:
+    """`disputed_lineNo` -> ['disputed', 'line', 'no']."""
+    return [w.lower() for w in _WORD.findall(str(text or ""))]
+
+
+def _runs(words: list[str]) -> list[str]:
+    return ["".join(words[i:j]) for i in range(len(words)) for j in range(i + 1, len(words) + 1)]
+
+
+WHOLE_WORD_BONUS = 1000
+
+
+def _match(texts: list[Any], keywords: list[str], *, substring: bool = True) -> tuple[int, int]:
+    """(score, leftover) of the best fragment found in any of `texts`.
+
+    A plain fragment that equals a run of whole words, a plural `s`/`es`
+    allowed, scores WHOLE_WORD_BONUS plus its length; a fragment with regex
+    syntax (`^from$`) searched in the whole normalized text scores the same.
+    Only when nothing matches that way, and `substring` is on, does a plain
+    fragment found inside the normalized text count, at its bare length: so
+    `invoicenumber` still means the invoice, while a real `lineNumber` beats
+    `deadline` for the line. Leftover is what of that text the fragment does
+    not cover, so the closer name wins a tie."""
+    best = (0, 0)
+    for allow_inside in ((False, True) if substring else (False,)):
+        for text in texts:
+            whole = normalize(text)
+            runs = set(_runs(_words(text)))
+            for k in keywords:
+                if not _PLAIN.match(k):
+                    hit, bonus = not allow_inside and bool(re.search(k, whole)), WHOLE_WORD_BONUS
+                elif allow_inside:
+                    hit, bonus = k in whole, 0
+                else:
+                    hit, bonus = k in runs or f"{k}s" in runs or f"{k}es" in runs, WHOLE_WORD_BONUS
+                score = bonus + len(k)
+                if hit and (score, -(len(whole) - len(k))) > (best[0], -best[1]):
+                    best = (score, len(whole) - len(k))
+        if best[0]:
+            return best
+    return best
 
 
 def _coerce(value: Any, declared_type: str | None) -> Any:
@@ -95,15 +142,21 @@ def _merge_under(base: Any, overlay: Any) -> Any:
     return overlay
 
 
-def fill_object(flow: dict, var_id: str, roles: dict[str, dict], fallback: dict | None) -> dict:
-    """An object input built from the leaf paths the flow reads, plus `fallback`."""
+def fill_object(
+    flow: dict, var_id: str, roles: dict[str, dict], fallback: dict | None
+) -> tuple[dict, set[str]]:
+    """An object input built from the leaf paths the flow reads, plus `fallback`,
+    and the roles those paths placed."""
     built: dict = {}
+    placed: set[str] = set()
     for parts in referenced_paths(flow, var_id):
-        leaf = normalize(parts[-1])
-        best = max(roles.items(), key=lambda kv: _score(leaf, kv[1]["keywords"]), default=None)
-        if best and _score(leaf, best[1]["keywords"]) > 0:
-            _set_path(built, parts, best[1]["value"])
-    return _merge_under(fallback or {}, built)
+        scored = [(_match([parts[-1]], spec["keywords"]), role) for role, spec in roles.items()]
+        scored = [(score, leftover, role) for (score, leftover), role in scored if score]
+        if scored:
+            _score_, _left, role = min(scored, key=lambda t: (-t[0], t[1], t[2]))
+            _set_path(built, parts, roles[role]["value"])
+            placed.add(role)
+    return _merge_under(fallback or {}, built), placed
 
 
 def map_inputs(
@@ -115,40 +168,48 @@ def map_inputs(
 ) -> tuple[dict, dict, list[str]]:
     """Return (inputs, attachments, unmapped_roles) for `uip maestro flow debug`.
 
-    `roles` maps a role name to {"value": ..., "keywords": [regex fragments over a
-    normalized name]}. Scalar inputs get the best-scoring unassigned role. An
-    object input is filled by `fill_object`; a file input gets `file_path`.
+    `roles` maps a role name to {"value": ..., "keywords": [name fragments, see
+    `_match`]}. An object input is filled by `fill_object`; the roles its paths
+    placed are not given to another input. Each other input gets the
+    best-scoring unassigned role: an array input only a list, any other input
+    only a non-list. A file input gets `file_path`. A role counts as mapped
+    when an input took it, or when an object input was filled with a non-empty
+    `object_fallback` (which carries every role under its common spellings).
     """
     inputs: dict = {}
     attachments: dict = {}
     taken: set[str] = set()
-    scalars = []
+    carried = False
+    others = []
     for var in declared(flow, "in"):
         var_type = str(var.get("type") or "").lower()
         if var_type == "file":
             if file_path:
                 attachments[var["id"]] = file_path
             continue
-        if var_type in ("object", "jsonschema", "array"):
-            inputs[var["id"]] = fill_object(flow, var["id"], roles, object_fallback)
-            taken.update(roles)  # an object input carries the whole submission
+        if var_type in ("object", "jsonschema"):
+            inputs[var["id"]], placed = fill_object(flow, var["id"], roles, object_fallback)
+            taken |= placed
+            carried = carried or bool(object_fallback)
             continue
-        scalars.append(var)
+        others.append(var)
     pairs = []
-    for var in scalars:
-        name = normalize(var["id"]) + normalize(var.get("description"))
+    for var in others:
+        is_array = str(var.get("type") or "").lower() == "array"
         for role, spec in roles.items():
-            score = _score(name, spec["keywords"])
+            if isinstance(spec["value"], list) != is_array:
+                continue
+            score, leftover = _match([var["id"], var.get("description")], spec["keywords"])
             if score:
-                pairs.append((score, var["id"], role, var.get("type")))
+                pairs.append((score, leftover, var["id"], role, var.get("type")))
     used_vars: set[str] = set()
-    for score, var_id, role, var_type in sorted(pairs, key=lambda p: -p[0]):
+    for _score_, _left, var_id, role, var_type in sorted(pairs, key=lambda p: (-p[0], p[1], p[2], p[3])):
         if var_id in used_vars or role in taken:
             continue
         inputs[var_id] = _coerce(roles[role]["value"], var_type)
         used_vars.add(var_id)
         taken.add(role)
-    return inputs, attachments, [r for r in roles if r not in taken]
+    return inputs, attachments, [] if carried else [r for r in roles if r not in taken]
 
 
 def _named(payload: dict, name: str) -> Any:
@@ -171,6 +232,20 @@ def out_values(flow: dict, payload: dict) -> dict[str, tuple[str | None, Any]]:
         for v in declared(flow, "out")
         if normalize(v["id"]) not in inputs
     }
+
+
+def means(names: list[Any], keywords: list[str], *, substring: bool = True) -> int:
+    """How strongly any of `names` (an id, a description, a key) means a role; 0 for not at all.
+    `substring=False` takes whole-word matches only (see `_match`)."""
+    return _match(names, keywords, substring=substring)[0]
+
+
+def outs_meaning(flow: dict, keywords: list[str]) -> list[str]:
+    """Ids of declared `out` variables whose id or description means a role, best match first."""
+    inputs = {normalize(v["id"]) for v in declared(flow, "in")}
+    scored = [(_match([v["id"], v.get("description")], keywords), v["id"]) for v in declared(flow, "out")
+              if normalize(v["id"]) not in inputs]
+    return [i for (score, left), i in sorted(scored, key=lambda t: (-t[0][0], t[0][1], t[1])) if score]
 
 
 def texts(value: Any) -> list[str]:
@@ -204,6 +279,11 @@ def as_bool(value: Any) -> bool | None:
     return None
 
 
+def is_empty_text(value: Any) -> bool:
+    """Text set to "" or whitespace. An output never set (None) is not empty text."""
+    return isinstance(value, str) and not value.strip()
+
+
 def find_out(outs: dict, predicate) -> list[str]:
     """Ids of declared outputs whose value satisfies `predicate`."""
     return [k for k, (_t, v) in outs.items() if predicate(v)]
@@ -228,17 +308,22 @@ def equals_exact(expected: str):
 
 
 GRADER_ERROR_EXIT = 3
-"""Exit code a checker uses when the GRADER, not the agent, could not evaluate the run."""
+"""Exit code a checker uses when the grader, not the agent, may be at fault.
+
+Nothing reads it: every criterion expects exit 0, so it scores as a failure
+like any other non-zero exit. It and the stderr label only tell whoever
+triages the run to look at the grader's mapping first."""
 
 
 def unmapped_error(flow: dict, unmapped: list[str], inputs: dict | None = None) -> str | None:
     """The failure to report when a role the flow needs found no input, else None.
 
     When `inputs` (what was mapped) is given and the flow still declares inputs the
-    grader could not match, the grader is at fault, not the agent: this prints a
-    `GRADER ERROR (not an agent failure)` line and exits with `GRADER_ERROR_EXIT`, so
-    reports can count it apart from agent failures. Otherwise the agent never
-    declared the input, and the returned message is an ordinary failure."""
+    grader could not match, this prints a `GRADER ERROR (not an agent failure)`
+    line and exits with `GRADER_ERROR_EXIT`: the grader's fragments may have
+    missed the agent's name, though an unrelated extra input the agent added
+    lands here too. Otherwise the agent never declared the input, and the
+    returned message is an ordinary failure."""
     if not unmapped:
         return None
     ids = [v["id"] for v in declared(flow, "in")]

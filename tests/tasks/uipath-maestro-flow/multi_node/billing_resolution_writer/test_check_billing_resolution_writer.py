@@ -5,13 +5,13 @@ Only `run_debug` is replaced. The flow on disk is the task's reference flow
 renamed the way an agent working from the v3 prompt might name them, so the
 mapping by meaning, the trace lookups and the Slack read-back run for real.
 
-Payloads follow the 2026-11-17 Studio Web run of this task
-(adhoc-2026-11-17_15-00-15): the agent's `{subject, body}` at
-`<agent>.output`, the Slack response `{ts, channel, message: {text, bot_profile}}`
-at `<send>.output` (posted by the bot), and the flow's outputs as globals.
+Payloads follow a Studio Web run of this task: the agent's `{subject, body}`
+at `<agent>.output`, the Slack response `{ts, channel, message: {text,
+bot_profile}}` at `<send>.output` (posted by the bot), and the flow's outputs
+as globals.
 
-The packed-JSON case pins run adhoc-2026-09-23_16-15-07: the agent returned its
-whole answer as one JSON string in `body`, which every substring check passes.
+The packed-JSON case is an agent that returned its whole answer as one JSON
+string in `body`, which every substring check passes.
 """
 
 from __future__ import annotations
@@ -139,6 +139,38 @@ def test_a_multi_line_subject_fails(sandbox, monkeypatch):
     assert "one-line email subject" in str(exc.value)
 
 
+def test_a_two_word_echo_is_not_taken_for_the_subject(sandbox, monkeypatch):
+    """With no output that means the subject, a customer-name echo does not stand in for it."""
+    flow = sandbox / "new.flow"
+    flow.write_text(flow.read_text().replace('"subject"', '"recipientName"').replace(".subject", ".recipientName"))
+    checker = _load_checker()
+
+    def fake(*, inputs, **_):
+        payload = _payload(inputs)
+        payload["variables"]["globals"]["recipientName"] = "Northwind Traders"
+        return payload
+
+    monkeypatch.setattr(checker, "run_debug", fake)
+    with pytest.raises(SystemExit) as exc:
+        checker.main()
+    assert "no declared output is the email subject" in str(exc.value)
+
+
+def test_a_subject_inside_a_returned_email_object_passes(sandbox, monkeypatch, capsys):
+    flow = sandbox / "new.flow"
+    flow.write_text(flow.read_text().replace('"subject"', '"email"').replace(".subject", ".email"))
+    checker = _load_checker()
+
+    def fake(*, inputs, **_):
+        payload = _payload(inputs)
+        payload["variables"]["globals"]["email"] = {"subject": SUBJECT, "to": "Northwind Traders"}
+        return payload
+
+    monkeypatch.setattr(checker, "run_debug", fake)
+    checker.main()
+    assert f"OK: subject (email.subject) {SUBJECT!r}" in capsys.readouterr().out
+
+
 def test_a_changed_case_reference_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _run(monkeypatch, case_out="RESO-other")
@@ -176,8 +208,8 @@ def _run_with_agent_output(monkeypatch, agent_output):
 
 
 def test_a_body_parsed_from_the_agents_json_text_passes(sandbox, monkeypatch, capsys):
-    """A Studio Web build (adhoc-2026-11-18_19-31-37) had the agent return its draft as
-    JSON text and a script `JSON.parse` it into subject and body."""
+    """An agent may return its draft as JSON text that a script `JSON.parse`s
+    into subject and body."""
     _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": SUBJECT, "body": PLAIN_BODY})})
     assert "came back unchanged" in capsys.readouterr().out
 
@@ -189,7 +221,6 @@ def test_a_body_the_agent_never_wrote_still_fails(sandbox, monkeypatch):
 
 
 def test_a_body_cut_out_of_the_agents_longer_reply_passes(sandbox, monkeypatch, capsys):
-    """A Studio Web build (adhoc-2026-11-19_00-34-36) had the agent reply
-    "subject: ...\\nbody: ..." and a script cut the body out of it."""
+    """An agent may reply "subject: ...\\nbody: ..." and a script cut the body out of it."""
     _run_with_agent_output(monkeypatch, {"body": f"subject: {SUBJECT}\nbody: {PLAIN_BODY}"})
     assert "came back unchanged" in capsys.readouterr().out

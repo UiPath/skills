@@ -5,12 +5,12 @@ real CLI logs (maestro-tool 1.204: `Personal folder — key: …, id: …`,
 `Debug session started — jobKey: …`, `Debug instance created — instanceId: …`)
 and waits for the task; `tasks list|data get|complete|assign`, `login status`
 and `debug-instance status|variables` answer in the real envelope shapes (the
-`TaskList` row fields are those `uip tasks list` returned on the codereval
-tenant, nightly 2026-11-18_04-23-44, skill-tasks-e2e-fetch-tasks; `tasks data
-get` prints the whole task record with the form under `Data`, run
-adhoc-2026-11-18_14-40-01; an app task sits in the app's folder, 3278005, not
-the personal folder; completing a task nobody is assigned fails with "This
-action is no longer assigned to you" until `tasks assign`).
+`TaskList` row fields are those `uip tasks list` returns on the codereval
+tenant; `tasks data get` prints the whole task record with the form under
+`Data`; an app task sits in the app's folder, not the personal folder;
+completing a task nobody is assigned fails with "This action is no longer
+assigned to you" until `tasks assign`). A scenario's `on_reject` gives what a
+run answered with Reject executes and returns.
 """
 
 from __future__ import annotations
@@ -65,11 +65,13 @@ FAKE_UIP = textwrap.dedent(
                 break
             time.sleep(0.2)
         st = state()
+        R = S.get("on_reject", {}) if "reject" in st["action"].lower() else {}
         out({"instanceId": INST, "jobKey": JOB, "finalStatus": "Completed",
-             "elementExecutions": [{"elementId": e, "status": "Completed"} for e in S["executed"]],
-             "variables": {"globals": fill(S["globals"], st["inputs"])}}, code="FlowDebug")
+             "elementExecutions": [{"elementId": e, "status": "Completed"} for e in R.get("executed", S["executed"])],
+             "variables": {"globals": fill(R.get("globals", S["globals"]), st["inputs"])}}, code="FlowDebug")
     st = state()
     inputs = st.get("inputs", {})
+    R = S.get("on_reject", {}) if "reject" in str(st.get("action", "")).lower() else {}
     if args[:2] == ["login", "status"]:
         out({"UserId": "a9da509e-82c6-4393-8e49-cedd00f5103c", "UserEmail": "bot@example.test"})
     TASK_PATH = S.get("task_folder_path")  # None: the run's personal folder
@@ -87,11 +89,18 @@ FAKE_UIP = textwrap.dedent(
         if fid in (None, "42") and not path:
             rows.append({"Id": 100, "Status": "Pending", "Type": "AppTask", "Title": "Someone else's task",
                          "FolderId": 42, "CreatorJobKey": "00000000-0000-0000-0000-000000000000"})
+            if S.get("foreign_newer"):
+                rows.append({"Id": 300, "Status": "Pending", "Type": S.get("task_type", "AppTask"),
+                             "Title": "Another run's task", "FolderId": 42,
+                             "CreatorJobKey": "d4e5f6a7-0000-0000-0000-000000000009"})
         in_scope = (fid is None and path is None) or (path == TASK_PATH if path else fid == str(TASK_FOLDER))
         if inputs and in_scope:
             rows.append(task_row())
         out(rows, code="TaskList")
     if args[:3] == ["tasks", "data", "get"]:
+        if args[3] == "300" and S.get("foreign_newer"):
+            out({"Status": "Pending", "Id": 300, "Data": fill(S["task_data"], dict(inputs, **S["foreign_newer"]))},
+                code="TaskData")
         if args[3] != "200":
             out({"Status": "Pending", "Id": int(args[3]), "Data": {"other": "x"}}, code="TaskData")
         record = dict(task_row(), Action=None, TaskSource={"SourceName": "Maestro", "SourceId": JOB},
@@ -108,22 +117,29 @@ FAKE_UIP = textwrap.dedent(
             print(json.dumps({"Result": "Failure", "Message": "Error completing task '200'",
                               "Instructions": "This action is no longer assigned to you"}))
             sys.exit(1)
-        if args[args.index("--folder-id") + 1] != str(TASK_FOLDER):
+        if args[2] != "200" or args[args.index("--folder-id") + 1] != str(TASK_FOLDER):
             out(None, result="Failure", rc=1)
         if action not in S.get("accept_actions", [action]):
             out(None, result="Failure", rc=1)
         st["action"] = action
         st["data"] = json.loads(args[args.index("--data") + 1])
         json.dump(st, open(STATE, "w"))
+        with open(STATE + ".log", "a") as log:
+            log.write(json.dumps(st) + "\n")
         out({"success": True}, code="TaskCompleted")
     if args[:3] == ["maestro", "flow", "debug-instance"]:
         verb = args[3]
         if verb == "status":
             done = bool(st.get("action"))
-            out({"status": "Completed" if done else "Running",
-                 "elementExecutions": [{"elementId": e, "status": "Completed"} for e in S["executed"]] if done else []})
+            out({"status": S.get("final_status", "Completed") if done else "Running",
+                 "elementExecutions": [{"elementId": e, "status": "Completed"}
+                                       for e in R.get("executed", S["executed"])] if done else []})
         if verb == "variables":
-            out({"globals": fill(S["globals"], inputs)})
+            out({"globals": fill(R.get("globals", S["globals"]), inputs)})
+        if verb == "cancel":
+            st["cancelled"] = True
+            json.dump(st, open(STATE, "w"))
+            out({"success": True})
         out([])
     out(None, result="Failure", rc=1)
     '''
@@ -155,7 +171,8 @@ def invoice_flow(reject_step: bool = False) -> dict:
     nodes = [
         {"id": "start", "type": "core.trigger.manual"},
         INVOICE_HITL,
-        {"id": "postToSap", "type": "core.action.script", "inputs": {"script": "return {}"}},
+        {"id": "postToSap", "type": "core.action.script",
+         "inputs": {"script": 'return { sapDocumentNumber: "SAP-" + $vars.start.output.invoiceNumber };'}},
         {"id": "end", "type": "core.control.end"},
         {"id": "end2", "type": "core.control.end"},
     ]
@@ -178,9 +195,11 @@ def invoice_flow(reject_step: bool = False) -> dict:
 GOOD_INVOICE = {
     "executed": ["start", "financeApproval", "postToSap", "end"],
     "globals": {"invoiceNumber": "{invoiceNumber}", "status": "posted", "sapDocumentNumber": "SAP-{invoiceNumber}"},
-    # Action Center shows field `invoicenumber` as `Invoicenumber` (run adhoc-2026-11-18_14-32-31)
+    # Action Center shows field `invoicenumber` as `Invoicenumber`
     "task_data": {"Invoicenumber": "{invoiceNumber}", "Vendorname": "{vendorName}", "Totalamount": 4870.25, "Currency": "{currency}"},
     "task_type": "QuickFormTask",
+    "on_reject": {"executed": ["start", "financeApproval", "end2"],
+                  "globals": {"invoiceNumber": "{invoiceNumber}", "status": "rejected", "sapDocumentNumber": ""}},
 }
 
 APP_HITL = {
@@ -195,29 +214,41 @@ APP_HITL = {
 }
 
 
+POST_EXPENSE = {"id": "postExpense", "type": "core.action.script",
+                "inputs": {"script": 'return { sapDocumentNumber: "SAPEXP-" + $vars.start.output.expenseId };'}}
+
+
 def expense_flow(hitl: dict = APP_HITL) -> dict:
+    """The fixture's start -> postExpense -> end, with the review and a
+    decision on its outcome put in front of the posting."""
     return {
         "nodes": [
             {"id": "start", "type": "core.trigger.manual"},
             hitl,
-            {"id": "postExpense", "type": "core.action.script",
-             "inputs": {"script": 'return { sapDocumentNumber: "SAPEXP-" + $vars.start.output.expenseId };'}},
+            {"id": "isApproved", "type": "core.logic.decision",
+             "inputs": {"expression": f"$vars.{hitl['id']}.status === 'approve'"}},
+            POST_EXPENSE,
             {"id": "end", "type": "core.control.end"},
+            {"id": "endRejected", "type": "core.control.end"},
         ],
         "edges": [
             {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": hitl["id"]},
-            {"sourceNodeId": hitl["id"], "sourcePort": "completed", "targetNodeId": "postExpense"},
+            {"sourceNodeId": hitl["id"], "sourcePort": "completed", "targetNodeId": "isApproved"},
+            {"sourceNodeId": "isApproved", "sourcePort": "true", "targetNodeId": "postExpense"},
+            {"sourceNodeId": "isApproved", "sourcePort": "false", "targetNodeId": "endRejected"},
             {"sourceNodeId": "postExpense", "sourcePort": "success", "targetNodeId": "end"},
         ],
     }
 
 
 GOOD_EXPENSE = {
-    "executed": ["start", "managerReview", "postExpense", "end"],
+    "executed": ["start", "managerReview", "isApproved", "postExpense", "end"],
     "globals": {"status": "posted", "sapDocumentNumber": "SAPEXP-{expenseId}"},
     "task_data": {"Content": "Expense {expenseId}: {employeeName}, USD {amount}, {description}", "Comment": ""},
     "task_type": "AppTask",
-    "accept_actions": ["approve"],
+    "accept_actions": ["approve", "reject"],
+    "on_reject": {"executed": ["start", "managerReview", "isApproved", "endRejected"],
+                  "globals": {"status": "rejected"}},
 }
 
 
@@ -250,21 +281,30 @@ def state_of(tmp_path) -> dict:
     return json.loads((tmp_path / "state.json").read_text())
 
 
+def completions(tmp_path) -> list[dict]:
+    """The state after each task completion, in order: one per debug run."""
+    log = tmp_path / "state.json.log"
+    return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+
+
 # ── invoice approval ────────────────────────────────────────────────────────
 
 def test_invoice_approval_passes_when_the_task_shows_the_invoice_and_approve_posts(tmp_path):
     r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), GOOD_INVOICE)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "OK: Action Center task 200" in r.stdout
-    st = state_of(tmp_path)
-    assert st["action"] == "Approve"
-    assert st["data"] == {
-        "Invoicenumber": st["inputs"]["invoiceNumber"],
+    approved, rejected = completions(tmp_path)
+    assert approved["action"] == "Approve"
+    assert approved["data"] == {
+        "Invoicenumber": approved["inputs"]["invoiceNumber"],
         "Vendorname": "Northwind Office Supplies",
         "Totalamount": 4870.25,
         "Currency": "EUR",
         "Comments": "Approved by the eval grader",
     }
+    assert rejected["action"] == "Reject"
+    assert rejected["data"]["Comments"] == "Rejected by the eval grader"
+    assert rejected["inputs"]["invoiceNumber"] != approved["inputs"]["invoiceNumber"]
 
 
 def test_invoice_approval_fails_when_the_task_hides_the_vendor(tmp_path):
@@ -308,16 +348,67 @@ def test_invoice_approval_finds_the_task_by_its_data_without_a_job_key(tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+def test_invoice_approval_fails_when_posting_runs_before_the_approval(tmp_path):
+    flow = invoice_flow()
+    flow["edges"] = [
+        {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postToSap"},
+        {"sourceNodeId": "postToSap", "sourcePort": "success", "targetNodeId": "financeApproval"},
+        {"sourceNodeId": "financeApproval", "sourcePort": "outcome-approve", "targetNodeId": "end"},
+        {"sourceNodeId": "financeApproval", "sourcePort": "outcome-reject", "targetNodeId": "end2"},
+    ]
+    scenario = dict(GOOD_INVOICE, executed=["start", "postToSap", "financeApproval", "end"],
+                    on_reject={"executed": ["start", "postToSap", "financeApproval", "end2"],
+                               "globals": {"status": "rejected", "sapDocumentNumber": ""}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, scenario)
+    assert r.returncode != 0
+    assert "can run without the finance manager's approval" in r.stdout + r.stderr
+
+
+def test_invoice_approval_fails_when_a_rejection_still_posts(tmp_path):
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
+                                             "globals": {"status": "rejected", "sapDocumentNumber": ""}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), scenario)
+    assert r.returncode != 0
+    assert "reachable only from Approve ran after a rejection: ['postToSap']" in r.stdout + r.stderr
+
+
+@pytest.mark.parametrize("globals_,why", [
+    ({"status": "posted", "sapDocumentNumber": ""}, "expected 'rejected'"),
+    ({"status": "rejected", "sapDocumentNumber": "SAP-{invoiceNumber}"}, "must be empty after a rejection"),
+])
+def test_invoice_approval_fails_when_a_rejection_returns_the_wrong_outputs(tmp_path, globals_, why):
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "end2"], "globals": globals_})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), scenario)
+    assert r.returncode != 0
+    assert why in r.stdout + r.stderr
+
+
+def test_invoice_approval_picks_its_own_task_over_a_newer_one_for_another_invoice(tmp_path):
+    scenario = dict(GOOD_INVOICE, job_link=False, foreign_newer={"invoiceNumber": "INV-0THERRUN"})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), scenario)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert [c["action"] for c in completions(tmp_path)] == ["Approve", "Reject"]
+
+
+def test_invoice_approval_cancels_a_run_that_did_not_complete(tmp_path):
+    scenario = dict(GOOD_INVOICE, cli="suspend", final_status="Faulted")
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), scenario)
+    assert r.returncode != 0
+    assert "did not complete" in r.stdout + r.stderr
+    assert state_of(tmp_path).get("cancelled") is True
+
+
 # ── expense app task ────────────────────────────────────────────────────────
 
 def test_expense_app_task_passes_when_the_app_task_shows_the_expense(tmp_path):
     r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), GOOD_EXPENSE, "run")
     assert r.returncode == 0, r.stdout + r.stderr
-    st = state_of(tmp_path)
+    st, rejected = completions(tmp_path)
     assert st["action"] == "approve"
     assert set(st["data"]) == {"Content", "Comment"}
     assert st["data"]["Comment"] == "Approved by the eval grader"
     assert st["inputs"]["expenseId"] in st["data"]["Content"]
+    assert rejected["action"] == "reject"
 
 
 def test_expense_app_task_is_found_and_completed_in_the_app_folder(tmp_path):
@@ -325,7 +416,7 @@ def test_expense_app_task_is_found_and_completed_in_the_app_folder(tmp_path):
     r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
     assert r.returncode == 0, r.stdout + r.stderr
     assert "OK: app task 200" in r.stdout
-    assert state_of(tmp_path)["action"] == "approve"
+    assert [c["action"] for c in completions(tmp_path)] == ["approve", "reject"]
 
 
 def test_expense_app_task_fails_when_the_content_lacks_the_employee(tmp_path):
@@ -340,6 +431,37 @@ def test_expense_app_task_fails_when_posting_does_not_run(tmp_path):
     r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
     assert r.returncode != 0
     assert "posting step" in r.stdout + r.stderr
+
+
+def test_expense_app_task_fails_when_posting_runs_before_the_review(tmp_path):
+    flow = expense_flow()
+    flow["edges"] = [
+        {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postExpense"},
+        {"sourceNodeId": "postExpense", "sourcePort": "success", "targetNodeId": "managerReview"},
+        {"sourceNodeId": "managerReview", "sourcePort": "completed", "targetNodeId": "end"},
+    ]
+    scenario = dict(GOOD_EXPENSE, executed=["start", "postExpense", "managerReview", "end"],
+                    on_reject={"executed": ["start", "postExpense", "managerReview", "end"],
+                               "globals": {"status": "rejected"}})
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", flow, scenario, "run")
+    assert r.returncode != 0
+    assert "can run without the manager's review" in r.stdout + r.stderr
+
+
+def test_expense_app_task_fails_when_a_rejection_still_posts(tmp_path):
+    scenario = dict(GOOD_EXPENSE, on_reject={"executed": ["start", "managerReview", "isApproved", "postExpense", "end"],
+                                             "globals": {"status": "rejected"}})
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
+    assert r.returncode != 0
+    assert "ran after a rejection" in r.stdout + r.stderr
+
+
+def test_expense_app_task_fails_when_a_rejection_is_not_reported_rejected(tmp_path):
+    scenario = dict(GOOD_EXPENSE, on_reject={"executed": ["start", "managerReview", "isApproved", "endRejected"],
+                                             "globals": {"status": "posted"}})
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
+    assert r.returncode != 0
+    assert "expected 'rejected'" in r.stdout + r.stderr
 
 
 def test_expense_structure_refuses_a_quick_form_substitute(tmp_path):

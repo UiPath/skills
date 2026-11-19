@@ -29,17 +29,19 @@ without a variance to reject):
   reject      Invoice MCS-2026-04872, line 5 (Custom Integration Build), account
               ACCT-98201-NE: 14 hours billed at $185, and the ERP row's
               contractedRate is $185. No variance, so the run must complete
-              without posting and without the writer, and return "Rejected",
+              after the ERP lookup and the analyst agent but without posting
+              and without the writer, and return "Rejected",
               "reject", 0, an explanation naming an SOP rule, and
               "No resolution email drafted".
 
-Both recommended actions count for the overcharge: the analyst picked
-"manager_review" in one run and "credit" in the next for the same dispute
-(round 3, 2026-11-18), and both lead to approval here. The analyst task grades
+Both recommended actions count for the overcharge: the analyst can pick
+"manager_review" in one run and "credit" in the next for the same dispute, and
+both lead to approval here. The analyst task grades
 the SOP's band strictly.
 
 Usage: check_e2e_billing_dispute_resolution.py overcharge|reject
 """
+import json
 import os
 import re
 import sys
@@ -61,7 +63,9 @@ from _shared.flow_check import (  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 NO_EMAIL = "No resolution email drafted"
-NAMES_A_RULE = re.compile(r"§|\bsection\s*\d|\bSOP\b", re.I)
+# A rule named by section ("§5.4", "SOP 5.4", "section 7") or by title ("Incorrect rate").
+NAMES_A_RULE = re.compile(
+    r"§\s*\d|\b(?:section|sec\.?|clause|rule|SOP)\s*#?\s*\d+(?:\.\d+)*|\bincorrect[\s-]+rate\b", re.I)
 
 CASES = {
     "overcharge": {
@@ -246,7 +250,7 @@ def check_results(case, outs, *, email):
     explanations = [t for k, (_t, v) in outs.items() if k not in email_ids for t in io.texts(v)
                     if len(t.split()) >= 5]
     if not any(NAMES_A_RULE.search(t) for t in explanations):
-        _fail_with_capture(f"no returned explanation names an SOP rule (§, section or SOP): {explanations}")
+        _fail_with_capture(f"no returned explanation names an SOP rule (by § or section number, or its title): {explanations}")
     print("OK: the explanation names an SOP rule")
 
 
@@ -291,14 +295,29 @@ def check_overcharge(flow, payload):
     check_results("overcharge", outs, email=email)
 
 
+def _erp_reads(flow):
+    """Entity reads naming BillingDisputeERP, or every read when none names an entity."""
+    reads = set().union(*(_ids_of(flow, hint) for hint in ENTITY_QUERY_HINTS))
+    named = {n["id"]: json.dumps(n).lower() for n in flow.get("nodes") or [] if n["id"] in reads}
+    erp = {i for i, text in named.items() if "billingdisputeerp" in text}
+    return erp if erp or any("billingdisputecrm" in t for t in named.values()) else reads
+
+
 def check_reject(flow, payload):
     api = _ids_of(flow, "uipath.core.api-workflow")
     executed = _executed_ids(payload)
+    done = _executed_ids(payload, completed=True)
+    if not _erp_reads(flow) & done:
+        _fail_with_capture(f"the BillingDisputeERP lookup did not complete (reads: {sorted(_erp_reads(flow))})")
+    writers = _agent_ids(flow) & _downstream(flow, api)
+    analysts = _agent_ids(flow) - writers
+    if not analysts & done:
+        _fail_with_capture(f"the analyst agent did not complete (agents before posting: {sorted(analysts)})")
+    print("OK: the ERP lookup and the analyst agent completed")
     if api & executed:
         _fail_with_capture(f"FinancialPostingFunction ran ({sorted(api & executed)}) for a line billed exactly at contract")
     print("OK: nothing was posted")
 
-    writers = _agent_ids(flow) & _downstream(flow, api)
     if writers & executed:
         _fail_with_capture(f"the writer agent ran ({sorted(writers & executed)}): an email was drafted")
     print("OK: the writer did not run")

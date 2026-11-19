@@ -12,9 +12,9 @@ asserts:
 
 - declared outputs hold the path, the severity, whether engineering is
   needed, the response mode and the case reference unchanged;
-- the Slack effect: exactly one Slack send completed (the escalation alert or
-  the triage notice, never both), and a returned Slack ts is the one that
-  send got back, in #coding-agent-testing, with the case reference and the
+- the Slack effect: exactly one Slack message was posted (the escalation
+  alert or the triage notice, never both, and no send run twice), and a
+  returned Slack ts is the one that send got back, in #coding-agent-testing, with the case reference and the
   path in the message.
 
 After all cases, the same output must hold each result in every case, so a
@@ -42,65 +42,46 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
 sys.path.insert(0, _directory)
 
 from _shared import flow_io_roles as io  # noqa: E402
+from _shared.escalation_inputs import (  # noqa: E402
+    check_same_outputs,
+    feed_roles,
+    input_types,
+    is_match_input,
+    load_flow,
+)
 from _shared.flow_check import (  # noqa: E402
+    _SLACK_TS_RE,
     _fail_with_capture,
+    _get_ci,
     assert_flow_uses_connector_target,
     assert_slack_message_posted,
     completed_connector_node_ids,
-    find_flow_file,
+    node_output_leaves,
     run_debug,
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
 SLACK_SEND = "send-message-to-channel"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
-# What each seeded value means, as fragments of a normalized input name.
-KEYWORDS = {
-    "senderEmail": ["senderemail", "fromemail", "emailaddress", "senderaddress", "fromaddress",
-                    "^sender$", "^from$", "email"],
-    "senderDomain": ["senderdomain", "emaildomain", "domain"],
-    "subject": ["emailsubject", "subject", "title"],
-    "body": ["emailbody", "body", "content", "message", "description", "text"],
-    "tier": ["customertier", "tier", "plan", "segment", "level"],
-    "productionDown": ["productiondown", "proddown", "outage", "production", "down"],
-    "workaround": ["workaround"],
-    "attachments": ["attachment"],
-    "match": ["customermatch", "matchstatus", "matchcount", "matchresult", "matches", "matched", "match"],
-    "duplicate": ["duplicate", "dup"],
-    "caseRef": ["casereference", "correlationid", "caseref", "casekey", "caseid", "casenumber",
-                "correlation", "reference", "case", "ref"],
-}
 # The roles the path and severity depend on. The others are fed when declared;
 # the domain may be derived from the address instead (see REQUIRED_ANY).
 REQUIRED = ("productionDown", "workaround", "match", "duplicate", "caseRef")
 REQUIRED_ANY = (("senderDomain", "senderEmail"),)
-# Field names a script may read off an object input where no `$vars` path shows.
-FALLBACK_KEYS = {
-    "senderEmail": ["senderEmail", "email", "from", "fromEmail", "sender"],
-    "senderDomain": ["senderDomain", "domain"],
-    "subject": ["subject", "emailSubject"],
-    "body": ["body", "emailBody", "content"],
-    "tier": ["customerTier", "tier"],
-    "productionDown": ["productionDown", "isProductionDown", "prodDown"],
-    "workaround": ["workaroundAvailable", "hasWorkaround", "workaround"],
-    "attachments": ["hasAttachments"],
-    "match": ["customerMatchStatus", "matchStatus", "customerMatch", "match"],
-    "duplicate": ["isDuplicate", "duplicate"],
-    "caseRef": ["caseReference", "caseRef", "caseId", "correlationId", "reference"],
-}
 
-# How a flow may spell each match state, normalized.
-STATE_WORDS = {
-    "one": {"single", "one", "matched", "match", "unique", "exact", "exactmatch", "found",
-            "singlematch", "onematch", "exactlyone", "1"},
-    "none": {"none", "nomatch", "nomatches", "notfound", "unmatched", "zero", "unknown",
-             "nocustomer", "nomatchfound", "0"},
-    "several": {"multiple", "several", "many", "ambiguous", "multi", "multiplematches",
-                "morethanone", "2"},
-}
-DEFAULT_WORD = {"one": "single", "none": "none", "several": "multiple"}
+# Words a flow may spell each match state with, checked in this order, since
+# "no_match" holds "match" too. A literal's words are compared, so
+# "NO_CUSTOMER_FOUND", "exactly_one" and "MORE_THAN_ONE" are understood.
+STATE_WORDS = (
+    ("none", ["none", "no", "not", "zero", "unknown", "unmatched", "nomatch", "nomatches", "notfound",
+              "nocustomer", "nomatchfound", "missing", "0"]),
+    ("several", ["multiple", "several", "many", "ambiguous", "multi", "multiplematches", "morethanone",
+                 "2"]),
+    ("one", ["single", "one", "matched", "match", "unique", "exact", "exactmatch", "found",
+             "singlematch", "onematch", "exactlyone", "1"]),
+)
+# The prompt's own words, when the flow's code names no word for a state.
+DEFAULT_WORD = {"one": "one", "none": "none", "several": "several"}
 # The five paths the prompt names, normalized.
 PATH_WORDS = {"missingdomain", "unknowncustomer", "multiplematches", "duplicate", "escalation"}
 COUNT = {"one": 1, "none": 0, "several": 2}
@@ -108,27 +89,26 @@ _Q = "[\"'`]"
 _LIT = rf"{_Q}([^\"'`\n]{{1,40}}){_Q}"
 
 
-def _stop(msg: str) -> None:
-    sys.exit(f"FAIL: {msg}")
-
-
-def load_flow() -> dict:
-    return json.loads(Path(find_flow_file()).read_text(encoding="utf-8"))
-
-
 def _match_vars(flow: dict) -> list[dict]:
-    return [v for v in io.declared(flow, "in")
-            if re.search("|".join(KEYWORDS["match"]), io.normalize(v["id"]))]
+    return [v for v in io.declared(flow, "in") if is_match_input(v["id"])]
+
+
+def state_of(literal: str) -> str | None:
+    """The match state a literal means, by its words."""
+    # Whole words only: "phone" or "notification" must not read as one or none.
+    return next((state for state, words in STATE_WORDS
+                 if io.means([literal.strip()], words, substring=False)), None)
 
 
 def match_words(flow: dict) -> dict[str, str]:
     """The literal the flow compares the match input with, per state.
 
-    Read from the flow's own code: comparisons of a match-named identifier
-    (the input, an object field, or a local copied from it), or its membership
-    in a list, first, then the
-    input's description, then literals near those identifiers, then
-    "single"/"none"/"multiple"."""
+    The words a text input expects exist only in the flow's code, so they are
+    read from it: comparisons of the input that means the match (by
+    `flow_io_roles`), an object field or a local copied from it, or its
+    membership in a list, first, then the input's description, then literals
+    near those identifiers. Each literal is classed by what its words mean
+    (`state_of`). A state no literal names gets the prompt's own word."""
     code = "\n".join(io.texts(flow.get("nodes") or []))
     idents = {v["id"] for v in _match_vars(flow)}
     # Identifiers that hold the match status; `.match(` is a string method, not one.
@@ -156,10 +136,10 @@ def match_words(flow: dict) -> dict[str, str]:
     described = [w for v in _match_vars(flow) for w in re.findall(r"[\w-]+", str(v.get("description") or ""))]
     words: dict[str, str] = {}
     for literal in [*compared, *described, *near]:
-        for state, vocabulary in STATE_WORDS.items():
-            if state not in words and io.normalize(literal) in vocabulary:
-                words[state] = literal.strip()
-    return {state: words.get(state, DEFAULT_WORD[state]) for state in STATE_WORDS}
+        state = state_of(literal)
+        if state and state not in words:
+            words[state] = literal.strip()
+    return {state: words.get(state, DEFAULT_WORD[state]) for state in DEFAULT_WORD}
 
 
 def _boolean_match(var_id: str, state: str) -> bool:
@@ -174,15 +154,8 @@ def _boolean_match(var_id: str, state: str) -> bool:
 def feed(flow: dict, case: dict, words: dict[str, str]) -> dict:
     """The `--inputs` for one case, keyed by the inputs the agent declared."""
     values = {**case["inputs"], "match": words[case["inputs"]["match"]]}
-    roles = {role: {"value": value, "keywords": KEYWORDS[role]} for role, value in values.items()}
-    fallback = {key: values[role] for role, keys in FALLBACK_KEYS.items() for key in keys}
-    inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=fallback, file_path=None)
-    missing = [r for r in REQUIRED if r in unmapped]
-    missing += ["/".join(group) for group in REQUIRED_ANY if all(r in unmapped for r in group)]
-    error = io.unmapped_error(flow, missing, inputs)
-    if error:
-        _stop(f"{case['name']}: {error}")
-    types = {v["id"]: str(v.get("type") or "").lower() for v in io.declared(flow, "in")}
+    inputs = feed_roles(flow, case, values, REQUIRED, REQUIRED_ANY)
+    types = input_types(flow)
     state = case["inputs"]["match"]
     for var in _match_vars(flow):
         if var["id"] not in inputs:
@@ -191,15 +164,22 @@ def feed(flow: dict, case: dict, words: dict[str, str]) -> dict:
             inputs[var["id"]] = COUNT[state]
         elif types[var["id"]] in ("boolean", "bool"):
             inputs[var["id"]] = _boolean_match(var["id"], state)
-    # A yes/no declared as text gets "true"/"false", not Python's "True".
-    return {
-        k: v.lower() if types.get(k) == "string" and v in ("True", "False") else v
-        for k, v in inputs.items()
-    }
+    return inputs
 
 
 def _is_ts(value) -> bool:
-    return isinstance(value, str) and bool(TS_RE.match(value.strip()))
+    return isinstance(value, str) and bool(_SLACK_TS_RE.match(value.strip()))
+
+
+def slack_messages(payload: dict, sends: set[str]) -> int:
+    """How many Slack messages the completed sends posted: their completed
+    executions (a send in a loop runs more than once) or the distinct ts
+    values in their responses, whichever is more."""
+    runs = [e for e in _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+            if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in sends
+            and str(_get_ci(e, "status", "Status")).lower() == "completed"]
+    ts = {str(x).strip() for x in node_output_leaves(payload, sends) if _is_ts(x)}
+    return max(len(runs), len(ts))
 
 
 def _any_text(options: list[str]):
@@ -228,10 +208,10 @@ def check_case(flow: dict, payload: dict, case: dict) -> dict[str, list[str]]:
             values = {k: v for k, (_t, v) in outs.items()}
             _fail_with_capture(f"{case['name']}: no declared output is {shown} ({result}); outputs: {values}")
     fired = completed_connector_node_ids(payload, SLACK_KEY, native_op_hint=SLACK_SEND)
-    if len(fired) > 1:
+    if (posted := slack_messages(payload, fired)) > 1:
         _fail_with_capture(
-            f"{case['name']}: {len(fired)} Slack sends completed ({sorted(fired)}); "
-            "a case gets the escalation alert or the triage notice, not both"
+            f"{case['name']}: {posted} Slack messages posted by {sorted(fired)}; "
+            "a case gets one message, the escalation alert or the triage notice"
         )
     # The case reference is opaque and must appear verbatim. The path is matched
     # ignoring case and separators, so "Unknown customer" counts.
@@ -244,16 +224,6 @@ def check_case(flow: dict, payload: dict, case: dict) -> dict[str, list[str]]:
         send_op=SLACK_SEND,
     )
     return holders
-
-
-def check_same_outputs(per_case: list[dict[str, list[str]]]) -> None:
-    """One output carries each result in every case, not a constant that fit some."""
-    for result in per_case[0]:
-        if not set.intersection(*(set(h[result]) for h in per_case)):
-            _stop(
-                f"no single output holds the {result} in every case "
-                f"(outputs per case: {[h[result] for h in per_case]})"
-            )
 
 
 def main() -> None:

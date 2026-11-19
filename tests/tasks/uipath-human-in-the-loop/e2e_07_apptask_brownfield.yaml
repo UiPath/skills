@@ -8,8 +8,10 @@ description: >
   debugs the flow with a fresh expense id, finds the app task that run
   created, checks it shows the expense id, employee and amount, approves it,
   and checks the run then completed through the existing posting step with
-  status=posted and sapDocumentNumber=SAPEXP-<id>. A structural check asks
-  only that the review step is backed by ExpenseReviewApp, not a quick form.
+  status=posted and sapDocumentNumber=SAPEXP-<id>; then a second run is
+  rejected and must complete without the posting step, with status=rejected.
+  The posting step must sit behind the review. A structural check asks only
+  that the review step is backed by ExpenseReviewApp, not a quick form.
   Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga, outcome-graded]
@@ -22,9 +24,9 @@ run_limits:
   expected_turns: 25
   max_turns: 60
   # task_timeout must be >= turn_timeout or the nightly default (1200s)
-  # silently caps this (see e2e_01's history, 34aa3c773). Grading adds a live
-  # run that waits on the app task (up to 720s) after validate (180s).
-  task_timeout: 2700
+  # silently caps this. It covers one agent turn plus grading: validate (180s)
+  # and two live runs that wait on the app task (up to 1800s).
+  task_timeout: 4200
   turn_timeout: 1800
 
 sandbox:
@@ -99,9 +101,10 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: a real run created an Action Center app task whose data shows the run's expense id, Dana Whitfield and 1840.5; after the grader approved it the run completed, the review and the existing SAP posting step completed, and the outputs are status=posted and sapDocumentNumber=SAPEXP-<id>"
+    description: "Effects: the existing SAP posting step sits behind the review; a real run created an Action Center app task whose data shows the run's expense id, Dana Whitfield and 1840.5; after the grader approved it the run completed, the review and the posting step completed, and the outputs are status=posted and sapDocumentNumber=SAPEXP-<id>; a second run the grader rejected completed without the posting step, with status=rejected"
     command: "python3 $REFERENCE_DIR/_shared/check_hitl_expense_apptask_run.py run"
-    timeout: 720
+    # Two runs, each with a 600s deadline that bounds every uip call, then a cancel.
+    timeout: 1800
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

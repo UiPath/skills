@@ -10,7 +10,8 @@ found among its declared outputs by value:
   written "USD 1,610.00", is signed "Billing Support Team", is prose rather
   than a serialized JSON object, and came from the executed agent node's own
   output (not a template over the inputs);
-- the subject: another returned text on a single line;
+- the subject: a one-line text in the output that means the subject by its
+  name or description (or under such a key in a returned object);
 - the case reference, unchanged: a fresh value per run, so it cannot be baked
   into the flow;
 - the Slack message id: a returned Slack ts that is the response of an executed
@@ -76,7 +77,7 @@ def is_serialized_object(text):
 def with_json_leaves(leaves):
     """The agent's output strings, plus the strings inside any that are JSON text.
     An agent may return its draft as a JSON string that a script then parses
-    (`JSON.parse($vars.<agent>.output.body)`, a Studio Web build on 2026-11-18)."""
+    (`JSON.parse($vars.<agent>.output.body)`)."""
     out = set(leaves)
     for leaf in leaves:
         try:
@@ -108,7 +109,7 @@ def find_body(found, agent_leaves):
     # From the executed agent, not a template over the inputs: the body is one of
     # the agent's own output strings, or holds one of its long ones verbatim.
     # Either way round: a script may wrap the agent's text, or cut the body out of a
-    # longer agent reply ("subject: ...\nbody: ...", a Studio Web build 2026-11-19).
+    # longer agent reply ("subject: ...\nbody: ...").
     drafted = [(k, t) for k, t in signed
                if t.strip() in agent_leaves
                or any(len(a) >= 80 and a in t for a in agent_leaves)
@@ -116,6 +117,23 @@ def find_body(found, agent_leaves):
     if not drafted:
         _fail_with_capture("the email body did not come from the executed agent node's output")
     return drafted[0]
+
+
+SUBJECT_KEYWORDS = ["emailsubject", "subjectline", "subject", "headline", "title"]
+
+
+def find_subject(flow, outs, body):
+    """The one-line subject, from an output that means it, or such a key inside one."""
+    named = [(k, outs[k][1]) for k in io.outs_meaning(flow, SUBJECT_KEYWORDS)]
+    nested = [(f"{k}.{key}", val) for k, (_t, v) in outs.items() if isinstance(v, dict)
+              for key, val in v.items() if io.means([key], SUBJECT_KEYWORDS)]
+    texts = [(k, v) for k, v in named + nested if isinstance(v, str) and v.strip()]
+    if not texts:
+        _fail_with_capture(f"no declared output is the email subject (by its name or description): {outs}")
+    lines = [(k, v) for k, v in texts if "\n" not in v.strip() and v != body]
+    if not lines:
+        _fail_with_capture(f"the email subject is not a one-line email subject: {texts}")
+    return lines[0]
 
 
 def check_slack_post(payload, outs, body):
@@ -162,12 +180,8 @@ def main():
     body_id, body = find_body(found, with_json_leaves(node_output_leaves(payload, agents)))
     print(f"OK: the body ({body_id}) mentions {INVOICE} and {CREDIT_TEXT}, is signed {SIGNATURE!r}, and came from the agent")
 
-    subjects = [t for _k, t in found
-                if len(t.split()) >= 2 and t != body and "\n" not in t.strip() and t.strip() != CASE_REF
-                and not _SLACK_TS_RE.match(t.strip())]
-    if not subjects:
-        _fail_with_capture(f"no returned text is a one-line email subject: {found}")
-    print(f"OK: subject {subjects[0]!r}")
+    subject_id, subject = find_subject(flow, outs, body)
+    print(f"OK: subject ({subject_id}) {subject!r}")
 
     if not io.find_out(outs, io.equals_exact(CASE_REF)):
         _fail_with_capture(f"no declared output is the case reference {CASE_REF} unchanged: {outs}")

@@ -122,6 +122,17 @@ def test_not_found_echoing_the_cleaned_number_fails(project, monkeypatch):
     assert "expected empty text and 0" in str(exc.value)
 
 
+def test_not_found_with_the_invoice_output_never_set_fails(project, monkeypatch):
+    def unset(raw):
+        payload = _payload(raw, "", 0)
+        del payload["variables"]["globals"]["invoiceOnRecord"]
+        return payload
+
+    with pytest.raises(SystemExit) as exc:
+        _run(monkeypatch, "not-found", unset)
+    assert "expected empty text and 0" in str(exc.value)
+
+
 def test_a_single_text_input_is_used_whatever_its_name(project, monkeypatch):
     _write_flow(project, {**RENAMES, "invoiceNumber": "q"})
     checker = _load_checker()

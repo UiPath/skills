@@ -13,7 +13,8 @@ description: >
   ("informational" off the escalation path), whether engineering is needed,
   the response mode ("Draft" or "None"; either for Sev3, which the prompt
   leaves open) and the case reference unchanged; checks that exactly one
-  Slack send completed (the alert or the notice, never both); and that a
+  Slack message was posted (the alert or the notice, never both, no send run
+  twice); and that a
   returned Slack ts is the one that send got back, in #coding-agent-testing,
   with the case reference and the path in the message. The same output must
   hold each result in every case. No layout is pinned. The "if Slack fails,
@@ -103,8 +104,8 @@ success_criteria:
   # ── The delivered flow validates ────────────────────────────────────────
   # Discovered, not hardcoded: the SDK loop scaffolds `<Name>Sol/<Name>/<Name>.flow`
   # (its SKILL.md says `uip solution init <Name>Sol`), so a fixed
-  # `<Name>/<Name>/<Name>.flow` path failed "File not found" on flows that were
-  # otherwise green (adhoc 2026-08-31 22:43 v2: seeded paths passed, validate 0.0).
+  # `<Name>/<Name>/<Name>.flow` path fails "File not found" on flows that are
+  # otherwise green.
   - type: run_command
     description: "Generated CustomerEscalationOrchestrator Flow validates without errors, independent of solution layout"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
@@ -134,7 +135,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: for each of the seven seeded cases, fed to the agent's inputs by meaning, the debug run returns among its declared outputs the path in the prompt's order, the severity (tier ignored; informational off the escalation path), whether engineering is needed, the response mode and the case reference unchanged, the same outputs in every case; exactly one Slack send completed, and a returned Slack ts is the one it got back, in #coding-agent-testing, with the case reference and the path in the message"
+    description: "Effects: for each of the seven seeded cases, fed to the agent's inputs by meaning, the debug run returns among its declared outputs the path in the prompt's order, the severity (tier ignored; informational off the escalation path), whether engineering is needed, the response mode and the case reference unchanged, the same outputs in every case; exactly one Slack message was posted (counted by completed sends and by distinct ts), and a returned Slack ts is the one it got back, in #coding-agent-testing, with the case reference and the path in the message"
     command: "python3 $REFERENCE_DIR/e2e/escalation_orchestrator_paths/check_escalation_orchestrator_paths.py"
     timeout: 3000  # budget-guard: manual x7. 7 x debug_budget(300, retries=1) = 2100 + margin
     expected_exit_code: 0

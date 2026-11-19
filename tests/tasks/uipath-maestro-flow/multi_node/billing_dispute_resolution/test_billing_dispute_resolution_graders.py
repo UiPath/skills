@@ -7,8 +7,8 @@ reject a flow with no rejection path or with the writer before posting.
 
 The effects check builds the dispute submission from the paths the flow reads
 plus a synonym-rich fallback, so it is fed the reference flow with its
-variables renamed, a flow that reads the submission only inside a script (the
-2026-11-18 round-3 codex build, adhoc-2026-11-18_12-43-33), and a flow that
+variables renamed, a flow that reads the submission only inside a script (as
+an agent build did), and a flow that
 spreads the submission over separate inputs. Payloads are in the shape
 `uip maestro flow debug --output json` returns.
 """
@@ -143,7 +143,7 @@ def test_submission_is_built_from_the_paths_the_flow_reads(effects, flow):
 
 
 def test_a_submission_read_only_inside_a_script_is_served_by_the_fallback(effects):
-    # adhoc-2026-11-18_12-43-33: `const submission = $vars.start.output.disputeSubmission;` then
+    # An agent build: `const submission = $vars.start.output.disputeSubmission;` then
     # submission.customer.accountNumber / submission.dispute.disputedLineItems in the script.
     script = ("const submission = $vars.start.output.disputeSubmission;\n"
               "const accountNumber = String(submission.customer.accountNumber);")
@@ -234,6 +234,37 @@ def test_reject_fails_without_the_no_email_text(effects, flow):
     with pytest.raises(SystemExit) as exc:
         effects.check_reject(flow, _payload(REJECT_PATH, {**REJECTED, "draft": ""}))
     assert "No resolution email drafted" in str(exc.value)
+
+
+@pytest.mark.parametrize("skipped,message", [
+    (["queryEntityRecords2"], "BillingDisputeERP lookup did not complete"),
+    (["autonomousAgent1"], "analyst agent did not complete"),
+    (["invoiceExtraction", "dataTransform", "queryEntityRecords1", "queryEntityRecords2", "merge1",
+      "discrepancyScript", "autonomousAgent1"], "BillingDisputeERP lookup did not complete"),
+])
+def test_reject_fails_when_the_rejection_skipped_the_lookup_or_the_analyst(effects, flow, skipped, message):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_reject(flow, _payload([n for n in REJECT_PATH if n not in skipped], REJECTED))
+    assert message in str(exc.value)
+
+
+@pytest.mark.parametrize("why", [
+    "Per the SOP there is no variance on line 5, so we reject the dispute and credit nothing.",
+    "The billed rate matches the contract, so the SOP says this dispute is rejected.",
+])
+def test_reject_fails_when_the_explanation_only_mentions_the_sop(effects, flow, why):
+    with pytest.raises(SystemExit) as exc:
+        effects.check_reject(flow, _payload(REJECT_PATH, {**REJECTED, "why": why}))
+    assert "names an SOP rule" in str(exc.value)
+
+
+@pytest.mark.parametrize("why", [
+    "Under SOP 5.4 line 5 was billed at the contracted $185, so there is no variance to credit.",
+    "Per the Incorrect rate rule line 5 matches its contracted $185, so there is nothing to credit.",
+    "Section 7 sends a dispute without a variance to reject, and line 5 matches its contract.",
+])
+def test_reject_accepts_a_rule_named_by_number_or_title(effects, flow, why):
+    effects.check_reject(flow, _payload(REJECT_PATH, {**REJECTED, "why": why}))
 
 
 def test_reject_disputes_a_line_billed_at_its_contracted_rate(effects):

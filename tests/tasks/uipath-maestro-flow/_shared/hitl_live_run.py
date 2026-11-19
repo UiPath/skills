@@ -13,19 +13,21 @@ early when the Orchestrator job reports `Suspended` (maestro-tool 1.204
 2. polls `uip tasks list` for an open task this run created (`CreatorJobKey`
    on the row is the run's job key, or a per-run marker is in the task data).
    A quick form's task lands in the run's personal folder, an app task in the
-   app's own folder (`Shared/uipath-agents/ExpenseReviewSol`, folder 3278005,
-   not personal folder 2863967: run adhoc-2026-11-18_14-40-01), so the
-   caller's folder paths are listed too, and now and then every folder;
+   app's own folder (`Shared/uipath-agents/ExpenseReviewSol`), so the caller's
+   folder paths are listed too, and now and then every folder;
 3. completes it with the chosen outcome (`uip tasks complete`). `--data`
    replaces the task's data, so it carries only the form's own fields: the
    `Data` object inside the record `uip tasks data get` prints, plus the
-   answers. Sending the whole record faulted the run with 170001 "Failure
-   mapping the data from the task result" (same flow, flat data: Completed;
-   run adhoc-2026-11-18_14-31-31);
+   answers. Sending the whole record faults the run with 170001 "Failure
+   mapping the data from the task result";
 4. waits for the run to finish: the CLI's own envelope when it is still
    polling, else `uip maestro flow debug-instance status` / `variables`, and
    returns a payload shaped like `run_debug`'s `Data` (`finalStatus`,
    `elementExecutions`, `variables`), so the `flow_check` assertions read it.
+
+After `bound_calls_by(deadline)`, no `uip` call outlives the deadline by more
+than MIN_CALL_SECONDS, so a grader's criterion timeout can be sized from its
+deadlines; `cancel` is exempt, since it must run after a missed deadline.
 
 Used by the uipath-human-in-the-loop e2e tasks only.
 """
@@ -54,14 +56,24 @@ TASK_POLL_SECONDS = 10
 STATUS_POLL_SECONDS = 5
 MAX_CANDIDATES = 25
 ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
+MIN_CALL_SECONDS = 30
+_call_deadline: float | None = None
+
+
+def bound_calls_by(deadline: float | None) -> None:
+    """Cap each later bounded `uip` call at the time left before `deadline`."""
+    global _call_deadline
+    _call_deadline = deadline
 
 
 def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
-def uip_json(args: list[str], timeout: int = 90) -> dict | None:
+def uip_json(args: list[str], timeout: int = 90, *, bounded: bool = True) -> dict | None:
     """Run `uip <args> --output json`; the parsed envelope, or None."""
+    if bounded and _call_deadline is not None:
+        timeout = min(timeout, max(MIN_CALL_SECONDS, int(_call_deadline - time.monotonic())))
     try:
         r = subprocess.run(
             ["uip", *args, "--output", "json"],
@@ -321,6 +333,8 @@ def find_run_task(
         )
         by_job = [r for r in open_rows if job and job in row_job_keys(r)]
         for row in by_job + [r for r in open_rows[:MAX_CANDIDATES] if r not in by_job]:
+            if time.monotonic() >= deadline:
+                break
             task_id = str(_get_ci(row, "Id"))
             row_folder = str(_get_ci(row, "FolderId", "OrganizationUnitId") or folder or "")
             if task_id not in seen_data:
@@ -378,7 +392,7 @@ def cancel(run: DebugRun) -> None:
     ids = run.refresh_ids()
     run.stop()
     if ids.instance_id:
-        uip_json(["maestro", "flow", "debug-instance", "cancel", ids.instance_id], timeout=60)
+        uip_json(["maestro", "flow", "debug-instance", "cancel", ids.instance_id], timeout=60, bounded=False)
 
 
 def wait_for_result(run: DebugRun, deadline: float) -> dict:
@@ -423,6 +437,10 @@ def wait_for_result(run: DebugRun, deadline: float) -> dict:
     state = _get_ci(payload, "finalStatus")
     print(f"note: followed instance {ids.instance_id} after the CLI returned; status {state}")
     return payload
+
+
+def is_completed(payload: dict | None) -> bool:
+    return _get_ci(payload or {}, "finalStatus", "FinalStatus") == "Completed"
 
 
 def require_completed(payload: dict) -> None:
@@ -471,6 +489,17 @@ def reachable(edges: list[dict], starts: set[str]) -> set[str]:
         seen.add(node)
         todo.extend(out.get(node, ()))
     return seen
+
+
+def bypassing(flow: dict, node_id: str) -> set[str]:
+    """Steps the trigger reaches without passing through `node_id`."""
+    edges = [e for e in flow.get("edges") or [] if str(e.get("sourceNodeId")) != node_id]
+    nodes = flow.get("nodes") or []
+    starts = {str(n.get("id")) for n in nodes if str(n.get("type", "")).startswith("core.trigger")}
+    if not starts:
+        targets = {str(e.get("targetNodeId")) for e in flow.get("edges") or []}
+        starts = {str(n.get("id")) for n in nodes if str(n.get("id")) not in targets}
+    return reachable(edges, starts - {node_id}) - {node_id}
 
 
 def port_targets(edges: list[dict], source: str, port: str) -> set[str]:

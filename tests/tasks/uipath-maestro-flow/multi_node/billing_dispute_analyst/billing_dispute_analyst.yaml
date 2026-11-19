@@ -71,7 +71,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235, a $4,950 credit): the agent completes and a declared output is "manager_review" or "credit" (the SOP says the dispute is valid), with reasoning that names an SOP rule'
+    description: 'Effects, rate error (invoice MCS-2026-04903 line 2, 90 h billed at $290 vs a contracted $235, a $4,950 credit): the agent completes and a declared output is "manager_review" or "credit" (the SOP says the dispute is valid), with reasoning that names an SOP rule (by § or section number, or its title)'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py overcharge
     timeout: 1200
     expected_exit_code: 0
@@ -89,14 +89,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects, no rate error (invoice MCS-2026-04872 line 5, billed at the contracted $185): the agent completes and a declared output is exactly "reject", with reasoning that names an SOP rule'
+    description: 'Effects, no rate error (invoice MCS-2026-04872 line 5, billed at the contracted $185): the agent completes and a declared output is exactly "reject", with reasoning that names an SOP rule (by § or section number, or its title)'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py reject
     timeout: 1200
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
   - type: run_command
-    description: 'Effects, thin description (no line, quantity or rates): the agent completes and a declared output is exactly "manager_review", as the prompt asks, with reasoning that names an SOP rule'
+    description: 'Effects, thin description (no line, quantity or rates): the agent completes and a declared output is exactly "manager_review", as the prompt asks, with reasoning that names an SOP rule (by § or section number, or its title)'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py thin
     timeout: 1200
     expected_exit_code: 0

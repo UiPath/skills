@@ -17,7 +17,8 @@ found among its declared outputs by value.
 
 The prompt says a missing line or customer must not fail the run: it returns 0
 for the overcharge and the discrepancies and empty text for the invoice number
-and the tier.
+and the tier. Those outputs must be declared and set: an output the run never
+set is not empty text.
 
 Usage: check_billing_discrepancy_detector.py overcharge|unknown-line|unknown-customer
 """
@@ -79,10 +80,6 @@ def read_ids_by_entity():
     return by_entity
 
 
-def is_empty_text(value):
-    return value is None or (isinstance(value, str) and not value.strip())
-
-
 def check_overcharge(payload, outs, by_entity):
     completed = set()
     for hint in ENTITY_QUERY_HINTS:
@@ -110,7 +107,7 @@ def check_not_found(case, outs):
     if matched:
         _fail_with_capture(f"[{case}] the flow returned a match {matched} for a line or customer that does not exist: {outs}")
     zeros = io.find_out(outs, io.equals_number(0, 0.0))
-    empties = [k for k, (_t, v) in outs.items() if is_empty_text(v)]
+    empties = io.find_out(outs, io.is_empty_text)
     if len(zeros) < 2 or len(empties) < 2:
         _fail_with_capture(
             f"[{case}] expected 0 for the overcharge and the discrepancies and empty text for the "

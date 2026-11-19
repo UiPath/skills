@@ -86,7 +86,7 @@ def check_found(flow):
 
 def check_not_found(flow):
     outs = lookup(flow, MISSING, "not found")
-    empty = [k for k, (_t, v) in outs.items() if v is None or (isinstance(v, str) and not v.strip())]
+    empty = io.find_out(outs, io.is_empty_text)  # set to "", not left unset
     zero = io.find_out(outs, io.equals_number(0, 0.0))
     if not empty or not zero:
         _fail_with_capture(f"[not found] expected empty text and 0; empty outputs {empty}, zero outputs {zero}: {outs}")

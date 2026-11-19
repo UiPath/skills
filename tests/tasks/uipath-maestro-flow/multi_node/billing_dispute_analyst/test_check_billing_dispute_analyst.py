@@ -4,9 +4,9 @@ Only `run_debug` is replaced. The flow on disk is the task's reference flow (an
 inline agent wired to the SOP context index), with its variables renamed the
 way an agent working from the v3 prompt might name them, so the mapping by
 meaning and the trace lookups run for real. Payloads are in the `Data` shape
-`uip maestro flow debug --output json` returns; the 2026-11-17 Studio Web run
-of this task returned an agent output and an SOP-citing rationale
-("Under SOP §5.1, ...") in that shape.
+`uip maestro flow debug --output json` returns; a Studio Web run of this task
+returned an agent output and an SOP-citing rationale ("Under SOP §5.1, ...")
+in that shape.
 """
 
 from __future__ import annotations
@@ -133,6 +133,20 @@ def test_reasoning_that_names_no_sop_rule_fails(sandbox, monkeypatch):
         _run("overcharge", {"decision": "manager_review",
                             "reasoning": "The rate looks higher than agreed so a manager should look."}, monkeypatch)
     assert "names an SOP rule" in str(exc.value)
+
+
+def test_reasoning_that_only_mentions_the_sop_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run("overcharge", {"decision": "manager_review",
+                            "reasoning": "Per the SOP the billed rate is above the contract, so a manager reviews it."},
+             monkeypatch)
+    assert "names an SOP rule" in str(exc.value)
+
+
+def test_reasoning_that_names_the_rule_title_passes(sandbox, monkeypatch):
+    _run("overcharge", {"decision": "manager_review",
+                        "reasoning": "Under the incorrect-rate rule the billed $290 exceeds the contracted $235."},
+         monkeypatch)
 
 
 def test_agent_that_did_not_complete_fails(sandbox, monkeypatch):

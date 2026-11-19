@@ -80,7 +80,7 @@ def test_exact_text_keeps_case_and_unmapped_roles_name_the_inputs():
 
 
 def test_an_input_the_grader_could_not_match_is_a_grader_error(capsys):
-    """Bai's review: an input the grader failed to match must not read as an agent failure."""
+    """An input the grader failed to match is labelled for triage, not read as the agent's fault."""
     import pytest
     flow = _flow([("invoiceNumber", "string"), ("custRef", "string")])
     with pytest.raises(SystemExit) as exc:
@@ -93,3 +93,55 @@ def test_an_input_the_flow_never_declared_is_an_agent_failure():
     flow = _flow([("invoiceNumber", "string"), ("pdf", "file")])
     assert io.unmapped_error(flow, ["account"], {"invoiceNumber": "MCS-1"}) == (
         "could not map account onto inputs ['invoiceNumber', 'pdf']")
+
+
+ESCALATION_ROLES = {
+    "subject": {"value": "Outage", "keywords": ["emailsubject", "subject"]},
+    "caseRef": {"value": "ESC-1", "keywords": ["casereference", "caseref", "case", "reference"]},
+}
+
+
+def test_a_scalar_input_beside_an_object_input_gets_its_role():
+    node = {"id": "s", "inputs": {"script": "return $vars.start.output.email.subject"}}
+    flow = _flow([("email", "object"), ("caseReference", "string")], nodes=[node])
+    inputs, _, unmapped = io.map_inputs(flow, ESCALATION_ROLES, object_fallback=None, file_path=None)
+    assert inputs == {"email": {"subject": "Outage"}, "caseReference": "ESC-1"}
+    assert unmapped == []
+
+
+def test_a_role_only_the_object_fallback_carries_is_not_unmapped():
+    flow = _flow([("email", "object")])
+    inputs, _, unmapped = io.map_inputs(flow, ESCALATION_ROLES, object_fallback={"caseRef": "ESC-1"},
+                                        file_path=None)
+    assert inputs == {"email": {"caseRef": "ESC-1"}} and unmapped == []
+
+
+def test_an_array_input_gets_a_list_role_and_never_a_dict():
+    roles = {"lines": {"value": [{"lineNumber": 5}], "keywords": ["lineitems", "lines"]},
+             "attached": {"value": False, "keywords": ["attachment"]}}
+    flow = _flow([("lineItems", "array"), ("attachments", "array")])
+    inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=None, file_path=None)
+    assert inputs == {"lineItems": [{"lineNumber": 5}]}
+    assert unmapped == ["attached"]
+
+
+def test_a_whole_word_match_outranks_one_inside_a_word():
+    flow = _flow([("deadline", "string"), ("disputedLineNumber", "number"), ("hasAttachments", "boolean")])
+    roles = {"line": {"value": 5, "keywords": ["linenumber", "lineno", "line"]},
+             "attached": {"value": True, "keywords": ["attachment"]}}
+    inputs, _, _ = io.map_inputs(flow, roles, object_fallback=None, file_path=None)
+    assert inputs == {"disputedLineNumber": 5, "hasAttachments": True}
+
+
+def test_an_all_lowercase_id_still_maps_by_the_fragment_inside_it():
+    flow = _flow([("invoicenumber", "string"), ("disputedlinenumber", "number")])
+    inputs, _, unmapped = io.map_inputs(flow, DETECTOR_ROLES, object_fallback=None, file_path=None)
+    assert inputs == {"invoicenumber": "MCS-2026-04872", "disputedlinenumber": 5}
+    assert sorted(unmapped) == ["account", "price", "quantity"]
+
+
+def test_ties_go_to_the_closer_name_whatever_the_declaration_order():
+    for order in ([("invoiceLine", "number"), ("invoice", "string")],
+                  [("invoice", "string"), ("invoiceLine", "number")]):
+        inputs, _, _ = io.map_inputs(_flow(order), DETECTOR_ROLES, object_fallback=None, file_path=None)
+        assert inputs == {"invoice": "MCS-2026-04872", "invoiceLine": 5}

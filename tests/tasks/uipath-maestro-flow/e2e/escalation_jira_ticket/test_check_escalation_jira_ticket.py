@@ -1,6 +1,6 @@
 """Unit tests for the EscalationJiraTicket effects grader.
 
-The flow is cut down from what agents built on the 2026-11-17 nightly (manual
+The flow is cut down from what agents built in nightly runs (manual
 trigger, the real `create-issue` node bound to the CE connection, End), with
 input and output names a v3 agent might pick. The Create step's response has
 the shape those runs returned (`id`, `key`, `self`). The Jira tenant is faked
@@ -142,8 +142,26 @@ def test_keys_from_every_case_are_kept_for_teardown(grader, tmp_path):
 def test_fails_when_the_key_is_not_in_jira(grader, tmp_path):
     with pytest.raises(SystemExit) as exc:
         _check(grader, _payload(key="CE-999999"))
-    assert "reading CE-999999 back from Jira found no issue" in str(exc.value)
-    assert (tmp_path / ".created_keys").read_text().split() == ["CE-999999"]
+    assert "no CE key the Jira steps returned (['CE-999999']) reads back" in str(exc.value)
+    assert not (tmp_path / ".created_keys").exists()
+
+
+def test_only_the_ticket_carrying_the_case_ref_is_recorded_for_teardown(grader, tmp_path):
+    """A flow that searches CE for duplicates returns other runs' keys; teardown
+    must not delete those from the shared project."""
+    insert = {**CREATE_NODE, "id": "openTicket", "type": "uipath.connector.uipath-atlassian-jira.insert-record",
+              "inputs": {"detail": {**CREATE_NODE["inputs"]["detail"], "objectName": "issue", "endpoint": "/issue"}}}
+    search = {**CREATE_NODE, "id": "findDuplicates", "type": "uipath.connector.uipath-atlassian-jira.search-issues",
+              "inputs": {"detail": {**CREATE_NODE["inputs"]["detail"], "endpoint": "/search"}}}
+    flow = _flow()
+    flow["nodes"][1:2] = [search, insert]
+    (tmp_path / "EscalationJiraTicket" / "EscalationJiraTicket" / "EscalationJiraTicket.flow").write_text(json.dumps(flow))
+    payload = _payload(executed=("start", "findDuplicates", "openTicket", "end"))
+    payload["variables"]["globals"]["findDuplicates.output"] = {
+        "issues": [{"id": "10017", "key": "CE-17", "self": "https://x/rest/api/3/issue/CE-17"}]}
+    held = grader.check_case(flow, payload, CASE, "conn", "CE")
+    assert held["ticket key"] == ["ticketKey"]
+    assert (tmp_path / ".created_keys").read_text().split() == ["CE-3481"]
 
 
 def test_fails_when_the_returned_key_is_not_the_one_the_create_step_made(grader):
@@ -163,7 +181,7 @@ def test_fails_when_the_create_step_did_not_run(grader):
 @pytest.mark.parametrize("summary,why", [
     (f"[Sev1] {REF} {SUBJECT}", "does not start with '[TEST]'"),
     (f"[TEST] {REF} {SUBJECT}", "lacks the severity"),
-    (f"[TEST] [Sev1] {SUBJECT}", "lacks the case reference"),
+    (f"[TEST] [Sev1] {SUBJECT}", "whose title carries the case reference"),
     (f"[TEST] {REF} [Sev1] {SUBJECT}", "in that order"),
 ])
 def test_fails_when_the_title_is_not_in_the_asked_format(grader, summary, why):
@@ -240,8 +258,8 @@ def test_seed_ends_the_run_when_jira_is_unreachable(tmp_path, monkeypatch):
 
 
 def test_a_ticket_created_by_the_generic_insert_record_op_counts(grader, tmp_path):
-    """A Studio Web build (2026-11-18, adhoc-2026-11-18_19-31-37) created the ticket
-    with `uipath-atlassian-jira.insert-record` on the issue object, which completed."""
+    """A Studio Web build may create the ticket with
+    `uipath-atlassian-jira.insert-record` on the issue object."""
     node = {**CREATE_NODE, "type": "uipath.connector.uipath-atlassian-jira.insert-record",
             "inputs": {"detail": {**CREATE_NODE["inputs"]["detail"], "objectName": "issue", "endpoint": "/issue"}}}
     flow = _flow()

@@ -130,6 +130,13 @@ def test_not_found_with_missing_zeros_fails(sandbox, monkeypatch):
     assert "expected 0" in str(exc.value)
 
 
+def test_not_found_with_the_text_outputs_never_set_fails(sandbox, monkeypatch):
+    unset = {k: v for k, v in NOT_FOUND.items() if k not in ("recordInvoice", "tier")}
+    with pytest.raises(SystemExit) as exc:
+        _run("unknown-line", unset, monkeypatch)
+    assert "empty outputs []" in str(exc.value)
+
+
 def test_a_flow_missing_an_input_reports_the_role_it_could_not_map(sandbox, monkeypatch):
     flow_path = sandbox / "new.flow"
     flow = json.loads(flow_path.read_text())

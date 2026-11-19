@@ -18,9 +18,10 @@ issue) and asserts:
 The duplicate case must get its own ticket too. After all cases, the same
 output must hold each result in every case.
 
-No node id, node type, layout or variable name is pinned. Every key a Create
-step returned is written to `.created_keys` so post_run teardown deletes it
-even when a later assertion fails.
+No node id, node type, layout or variable name is pinned. A key a Jira step
+returned is written to `.created_keys`, so post_run teardown deletes it even
+when a later assertion fails, only when its read-back title carries this
+case's reference: a step that searches CE returns other runs' tickets.
 """
 
 from __future__ import annotations
@@ -42,11 +43,17 @@ sys.path.insert(0, _directory)
 
 from _shared import flow_io_roles as io  # noqa: E402
 from _shared import jira_is  # noqa: E402
+from _shared.escalation_inputs import (  # noqa: E402
+    check_same_outputs,
+    feed_roles,
+    input_types,
+    is_match_input,
+    load_flow,
+)
 from _shared.flow_check import (  # noqa: E402
     _fail_with_capture,
     assert_flow_uses_connector_target,
     completed_connector_node_ids,
-    find_flow_file,
     get_last_debug_raw,
     node_output_leaves,
     run_debug,
@@ -56,70 +63,24 @@ JIRA_KEY = "uipath-atlassian-jira"
 JIRA_CREATE_OP = "create-issue"  # matched by op, so a connector-proxy Create also counts
 CREATED_KEYS = Path(".created_keys")
 
-# What each seeded value means, as fragments of a normalized input name.
-KEYWORDS = {
-    "senderEmail": ["senderemail", "fromemail", "emailaddress", "senderaddress", "fromaddress",
-                    "^sender$", "^from$", "email"],
-    "senderDomain": ["senderdomain", "emaildomain", "domain"],
-    "subject": ["emailsubject", "subject", "title"],
-    "body": ["emailbody", "body", "content", "message", "description", "text"],
-    "tier": ["customertier", "tier", "plan", "segment", "level"],
-    "productionDown": ["productiondown", "proddown", "outage", "production", "down"],
-    "workaround": ["workaround"],
-    "attachments": ["attachment"],
-    "match": ["customermatch", "matchstatus", "matchtype", "matchcount", "matchresult", "matches",
-              "matched", "match"],
-    "duplicate": ["duplicate", "dup"],
-    "caseRef": ["casereference", "correlationid", "caseref", "casekey", "caseid", "casenumber",
-                "correlation", "reference", "case", "ref"],
-}
 # The roles the ticket and the results depend on. The others are fed when declared.
 REQUIRED = ("subject", "body", "tier", "productionDown", "workaround", "caseRef")
-# Field names a script may read off an object input where no `$vars` path shows.
-FALLBACK_KEYS = {
-    "senderEmail": ["senderEmail", "email", "from", "fromEmail", "sender"],
-    "senderDomain": ["senderDomain", "domain"],
-    "subject": ["subject", "emailSubject"],
-    "body": ["body", "emailBody", "content"],
-    "tier": ["customerTier", "tier"],
-    "productionDown": ["productionDown", "isProductionDown", "prodDown"],
-    "workaround": ["workaroundAvailable", "hasWorkaround", "workaround"],
-    "attachments": ["hasAttachments"],
-    "match": ["customerMatchStatus", "matchStatus", "customerMatch"],
-    "duplicate": ["isDuplicate", "duplicate"],
-    "caseRef": ["caseReference", "caseRef", "caseId", "correlationId", "reference"],
-}
 
 
 def _fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
 
 
-def load_flow() -> dict:
-    return json.loads(Path(find_flow_file()).read_text(encoding="utf-8"))
-
-
 def feed(flow: dict, case: dict) -> dict:
     """The `--inputs` for one case, keyed by the inputs the agent declared."""
-    values = case["inputs"]
-    roles = {role: {"value": value, "keywords": KEYWORDS[role]} for role, value in values.items()}
-    fallback = {key: values[role] for role, keys in FALLBACK_KEYS.items() for key in keys}
-    inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=fallback, file_path=None)
-    error = io.unmapped_error(flow, [r for r in REQUIRED if r in unmapped], inputs)
-    if error:
-        _fail(f"{case['name']}: {error}")
-    types = {v["id"]: str(v.get("type") or "").lower() for v in io.declared(flow, "in")}
-    fixed = {}
-    for k, v in inputs.items():
-        is_match = bool(re.search("|".join(KEYWORDS["match"]), io.normalize(k)))
-        if is_match and types.get(k) in ("number", "integer", "int"):
-            v = 1  # the sender matched one customer, as a count
-        elif is_match and types.get(k) in ("boolean", "bool"):
-            v = True  # the sender matched a customer
-        elif types.get(k) == "string" and v in ("True", "False"):
-            v = v.lower()  # a yes/no declared as text
-        fixed[k] = v
-    return fixed
+    inputs = feed_roles(flow, case, case["inputs"], REQUIRED)
+    types = input_types(flow)
+    for k in inputs:
+        if is_match_input(k) and types.get(k) in ("number", "integer", "int"):
+            inputs[k] = 1  # the sender matched one customer, as a count
+        elif is_match_input(k) and types.get(k) in ("boolean", "bool"):
+            inputs[k] = True  # the sender matched a customer
+    return inputs
 
 
 def _record(keys) -> None:
@@ -137,16 +98,22 @@ def _record_partial(exc: BaseException, conn: str, ref: str, project: str) -> li
         partial += "".join(
             s.decode() if isinstance(s, bytes) else (s or "") for s in (exc.stdout, exc.stderr)
         )
-    owned: list[str] = []
-    for key in dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)):
+    owned = list(_owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", partial), ref))
+    if owned:
+        _record(owned)
+    return owned
+
+
+def _owned(conn: str, keys, ref: str) -> dict[str, dict]:
+    """The keys whose Jira title carries `ref`, with the fields read back."""
+    owned: dict[str, dict] = {}
+    for key in dict.fromkeys(keys):
         try:
             fields = jira_is.get_issue(conn, key)
         except Exception:  # noqa: BLE001
             continue
         if fields is not None and ref in str(fields.get("summary", "")):
-            owned.append(key)
-    if owned:
-        _record(owned)
+            owned[key] = fields
     return owned
 
 
@@ -196,16 +163,21 @@ def check_case(flow: dict, payload: dict, case: dict, conn: str, project: str) -
     want = case["expected"]
     ref = case["inputs"]["caseRef"]
     # A ticket can be created by the curated Create Issue op or by the generic
-    # `insert-record` on the issue object (a Studio Web build did, 2026-11-18). Any
-    # Jira step that ran counts; the proof is the CE key it returned, read back below.
+    # `insert-record` on the issue object. Any Jira step that ran counts; the
+    # proof is a CE key it returned whose ticket reads back with this case's ref.
     create_nodes = completed_connector_node_ids(payload, JIRA_KEY, native_op_hint=JIRA_CREATE_OP) or (
         completed_connector_node_ids(payload, JIRA_KEY)
     )
     if not create_nodes:
         _fail_with_capture(f"{case['name']}: no Jira step completed in the debug run")
-    created = sorted(k for k in node_output_leaves(payload, create_nodes) if re.fullmatch(rf"{project}-\d+", k))
-    if not created:
+    returned = sorted(k for k in node_output_leaves(payload, create_nodes) if re.fullmatch(rf"{project}-\d+", k))
+    if not returned:
         _fail_with_capture(f"{case['name']}: the Create Issue step that ran returned no {project}-<n> key")
+    owned = _owned(conn, returned, ref)
+    if not owned:
+        _fail(f"{case['name']}: no {project} key the Jira steps returned ({returned}) reads back as a "
+              f"ticket whose title carries the case reference {ref!r}")
+    created = sorted(owned)
     _record(created)
 
     outs = io.out_values(flow, payload)
@@ -223,21 +195,8 @@ def check_case(flow: dict, payload: dict, case: dict, conn: str, project: str) -
             _fail_with_capture(f"{case['name']}: no declared output is {shown} ({result}); outputs: {values}")
 
     key = str(outs[holders["ticket key"][0]][1]).strip()
-    fields = jira_is.get_issue(conn, key)
-    if fields is None:
-        _fail(f"{case['name']}: reading {key} back from Jira found no issue")
-    check_ticket(fields, case, key, want["severity"])
+    check_ticket(owned[key], case, key, want["severity"])
     return holders
-
-
-def check_same_outputs(per_case: list[dict[str, list[str]]]) -> None:
-    """One output carries each result in every case, not a constant that fit once."""
-    for result in per_case[0]:
-        if not set.intersection(*(set(h[result]) for h in per_case)):
-            _fail(
-                f"no single output holds the {result} in every case "
-                f"(outputs per case: {[h[result] for h in per_case]})"
-            )
 
 
 def main() -> None:

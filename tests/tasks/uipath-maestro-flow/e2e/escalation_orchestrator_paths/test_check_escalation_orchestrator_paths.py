@@ -1,10 +1,10 @@
 """Unit tests for the CustomerEscalationOrchestrator effects grader.
 
-Two layouts, both cut down from real agent builds: the two-branch flow the
-2026-11-17/18 nightlies produced (classify Script, Decision, one Slack node
-and one End per branch) and a single-Slack-node flow. The classify script is
-the one the 2026-11-18 claude-code nightly wrote (it copies the match input
-into a local `match` and lowercases it). Payloads have the shape
+Two layouts, both cut down from real agent builds: the two-branch flow
+nightly runs produced (classify Script, Decision, one Slack node and one End
+per branch) and a single-Slack-node flow. The classify script is one a
+nightly agent wrote (it copies the match input into a local `match` and
+lowercases it). Payloads have the shape
 `uip maestro flow debug --output json` returns: `elementExecutions`, the
 declared outputs in `variables.globals`, and each Slack send's response under
 `<id>.output` (`ts`, `channel`, `message.text`).
@@ -205,14 +205,25 @@ def test_severity_cases_show_the_tier_is_ignored():
 
 def test_the_match_vocabulary_is_read_from_the_flows_comparisons():
     grader = _grader()
-    assert grader.match_words(_flow(TWO_BRANCH)) == {"one": "single", "none": "none", "several": "multiple"}
+    assert grader.match_words(_flow(TWO_BRANCH)) == {"one": "one", "none": "none", "several": "multiple"}
     other = NIGHTLY_SCRIPT.replace('"none"', '"no_match"').replace('"multiple"', '"ambiguous"')
     assert grader.match_words(_flow(TWO_BRANCH, script=other)) == {
-        "one": "single", "none": "no_match", "several": "ambiguous"}
+        "one": "one", "none": "no_match", "several": "ambiguous"}
 
 
-# The classify Script of the 2026-11-18 claude-code run (adhoc-2026-11-18_15-14-51),
-# cut to the match handling: membership in a list, no `===` on the match.
+def test_the_match_vocabulary_is_read_by_the_words_of_each_literal():
+    """Spellings no fixed list holds are classed by their words, and an input
+    whose name means the match is found by `flow_io_roles`, not a regex."""
+    script = (NIGHTLY_SCRIPT.replace("customerMatchStatus", "senderMatchedCustomers")
+              .replace('"none"', '"NO_CUSTOMER_FOUND"').replace('"multiple"', '"MORE_THAN_ONE"')
+              .replace('let escalationPath', 'if (match === "EXACTLY_ONE") {}\n  let escalationPath'))
+    ins = [("senderMatchedCustomers", "string") if i == "customerMatchStatus" else (i, t) for i, t in INS]
+    assert _grader().match_words(_flow(TWO_BRANCH, ins=ins, script=script)) == {
+        "one": "EXACTLY_ONE", "none": "NO_CUSTOMER_FOUND", "several": "MORE_THAN_ONE"}
+
+
+# A classify Script an agent wrote, cut to the match handling: membership in a
+# list, no `===` on the match.
 MEMBERSHIP_SCRIPT = """
   const s = $vars.start.output;
   const domain = String(s.senderDomain ?? "").trim();
@@ -247,7 +258,7 @@ def test_the_match_vocabulary_is_read_from_a_membership_list_not_the_path_it_set
     )
     out = subprocess.run([sys.executable, "-c", code], input=json.dumps(flow), capture_output=True,
                          text=True, check=True, env={**os.environ, "PYTHONHASHSEED": seed})
-    assert json.loads(out.stdout) == {"one": "single", "none": "none", "several": "several"}
+    assert json.loads(out.stdout) == {"one": "one", "none": "none", "several": "several"}
 
 
 def test_the_match_vocabulary_falls_back_to_the_inputs_description():
@@ -312,7 +323,7 @@ def test_main_passes_every_seeded_case_on_either_layout(tmp_path, monkeypatch, n
 
     monkeypatch.setattr(grader, "run_debug", fake_debug)
     grader.main()
-    assert [f["customerMatchStatus"] for f in fed] == ["single", "single", "single", "single",
+    assert [f["customerMatchStatus"] for f in fed] == ["one", "one", "one", "one",
                                                        "multiple", "none", "none"]
 
 
@@ -357,7 +368,18 @@ def test_fails_when_a_case_posts_both_the_alert_and_the_notice(two_branch):
                        executed=("start", "classify", "isEscalation", "endTriage"))
     with pytest.raises(SystemExit) as exc:
         _grader().check_case(flow, payload, case)
-    assert "2 Slack sends completed" in str(exc.value)
+    assert "2 Slack messages posted" in str(exc.value)
+
+
+def test_fails_when_one_send_posts_twice(two_branch):
+    """A send inside a loop completes twice: one send node, two messages."""
+    flow, cases = two_branch
+    case = cases["escalation/Sev1"]
+    payload = _two_branch_payload(case, 1)
+    payload["elementExecutions"].append({"elementId": "escalationAlert", "status": "Completed"})
+    with pytest.raises(SystemExit) as exc:
+        _grader().check_case(flow, payload, case)
+    assert "2 Slack messages posted by ['escalationAlert']" in str(exc.value)
 
 
 def test_fails_when_the_message_does_not_name_the_path(two_branch):

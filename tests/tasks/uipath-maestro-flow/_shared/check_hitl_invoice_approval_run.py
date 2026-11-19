@@ -2,22 +2,32 @@
 """InvoiceApproval (skill-hitl-e2e-invoice-approval-greenfield): run the flow
 for real, act as the finance manager, and check what the run did.
 
-1. Debug the flow with a fresh invoice number, so the run's task is told apart
-   from any other open task in the folder.
-2. The run created an Action Center task whose data shows that invoice number,
-   the vendor, the total amount and the currency.
-3. Complete the task with the Approve outcome.
-4. The run then completed; the HITL step completed; a step reachable only
-   from the Approve outcome (the SAP posting) completed, and no step reachable
-   only from Reject ran.
-5. The named outputs: status = "posted", sapDocumentNumber = "SAP-<invoice>".
+The flow is debugged twice, each with a fresh invoice number so the run's task
+is told apart from any other open task in the folder:
 
-Any layout is accepted: per-outcome ports or one port into a switch on the
-decision; nothing here pins node ids, labels or variable names.
+1. The run created an Action Center task whose data shows that invoice number,
+   the vendor, the total amount and the currency.
+2. Approve run: the grader completes the task with the Approve outcome. The
+   run then completed; the HITL step completed; a step reachable only from
+   Approve completed when there is one, and no step reachable only from
+   Reject ran. The named outputs: status = "posted", sapDocumentNumber =
+   "SAP-<invoice>".
+3. Reject run: the grader completes it with Reject. The run then completed;
+   the HITL step completed; no step reachable only from Approve ran. The
+   named outputs: status = "rejected", sapDocumentNumber empty.
+
+Before either run, every step that builds the "SAP-" document number (the
+posting stand-in; an End node mapping the output is not a step) must sit
+behind the approval: the trigger cannot reach it without passing through the
+HITL step. Any outcome layout is accepted: per-outcome ports, or both into a
+switch on the decision; the reject run shows nothing is posted then. Nothing
+here pins node ids, labels or variable names. A run that did not complete is
+cancelled.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -28,6 +38,7 @@ import hitl_live_run as live  # noqa: E402
 from flow_check import (  # noqa: E402
     _get_ci,
     _fail_with_capture,
+    _named_global,
     assert_named_equals,
     find_project_dir,
 )
@@ -37,13 +48,13 @@ CLI_TIMEOUT = 540
 VENDOR = "Northwind Office Supplies"
 AMOUNT = 4870.25
 CURRENCY = "EUR"
-TEXT_ANSWER = "Approved by the eval grader"
+SAP_MARKER = "SAP-"
 
 
-def outcome_plan(hitl: dict) -> tuple[list[str], set[str], set[str]]:
-    """(approve action names to try, Approve ports, Reject ports)."""
+def outcome_plan(hitl: dict) -> tuple[list[str], list[str], set[str], set[str]]:
+    """(approve action names to try, reject action names, Approve ports, Reject ports)."""
     outcomes = ((hitl.get("inputs") or {}).get("schema") or {}).get("outcomes") or []
-    approve, approve_ports, reject_ports = [], set(), set()
+    approve, reject, approve_ports, reject_ports = [], [], set(), set()
     for o in outcomes:
         name, oid = str(o.get("name") or ""), str(o.get("id") or "")
         label = f"{name} {oid}".lower()
@@ -51,15 +62,15 @@ def outcome_plan(hitl: dict) -> tuple[list[str], set[str], set[str]]:
             approve += [name, oid]
             approve_ports.add(f"outcome-{oid}")
         elif "reject" in label:
+            reject += [name, oid]
             reject_ports.add(f"outcome-{oid}")
-    return approve or ["Approve"], approve_ports, reject_ports
+    return approve or ["Approve"], reject or ["Reject"], approve_ports, reject_ports
 
 
-def completion_data(hitl: dict, existing: object) -> dict:
+def completion_data(hitl: dict, existing: object, text_answer: str) -> dict:
     """The task's form data plus an answer for each empty output field, keyed
     the way Action Center shows the fields (first letter upper-cased:
-    `comment` -> `Comment`), the shape a completion that resumed the run used
-    (run adhoc-2026-11-18_14-31-31)."""
+    `comment` -> `Comment`), the shape a completion that resumes the run uses."""
     data = dict(existing) if isinstance(existing, dict) else {}
     for f in ((hitl.get("inputs") or {}).get("schema") or {}).get("fields") or []:
         fid = str(f.get("id") or "")
@@ -70,7 +81,7 @@ def completion_data(hitl: dict, existing: object) -> dict:
             continue
         kind = str(f.get("type") or "").lower()
         data[key] = 0 if kind in ("number", "integer", "float", "double") else (
-            True if kind == "boolean" else TEXT_ANSWER
+            True if kind == "boolean" else text_answer
         )
     return data
 
@@ -97,16 +108,10 @@ def check_task_data(task: live.FoundTask, invoice: str) -> None:
     )
 
 
-def main() -> None:
-    project_dir = find_project_dir()
-    flow = live.load_flow(project_dir)
-    hitls = live.hitl_nodes(flow)
-    if len(hitls) != 1:
-        live.fail(f"expected one human-in-the-loop step, found {len(hitls)}")
-    hitl = hitls[0]
-    hitl_id = str(hitl.get("id"))
-    actions, approve_ports, reject_ports = outcome_plan(hitl)
-
+def run_once(project_dir: str, hitl: dict, actions: list[str], comment: str) -> tuple[dict, str]:
+    """Debug the flow, check the run's task, answer it with `actions`, and
+    return the completed run's payload and invoice number. Cancels the
+    instance unless it completed."""
     invoice = f"INV-{uuid.uuid4().hex[:8].upper()}"
     inputs = {
         "invoiceNumber": invoice,
@@ -115,7 +120,9 @@ def main() -> None:
         "currency": CURRENCY,
     }
     deadline = time.monotonic() + DEADLINE_SECONDS
+    live.bound_calls_by(deadline)
     run = live.start_debug(project_dir, inputs, CLI_TIMEOUT)
+    payload = None
     try:
         ids = live.wait_for_ids(run, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
@@ -134,37 +141,78 @@ def main() -> None:
                 f"stderr tail: {run.stderr()[-1500:]}"
             )
         check_task_data(task, invoice)
-        live.complete_task(task, actions, completion_data(hitl, task.data))
+        live.complete_task(task, actions, completion_data(hitl, task.data, comment))
         payload = live.wait_for_result(run, deadline)
-    except SystemExit:
-        live.cancel(run)
-        raise
-    live.require_completed(payload)
+        live.require_completed(payload)
+    finally:
+        if not live.is_completed(payload):
+            live.cancel(run)
+    return payload, invoice
 
+
+def sap_steps(flow: dict) -> set[str]:
+    """Non-End steps that build the "SAP-" document number."""
+    updates = (flow.get("variables") or {}).get("variableUpdates") or {}
+    return {
+        str(n.get("id"))
+        for n in flow.get("nodes") or []
+        if n.get("type") != "core.control.end"
+        and SAP_MARKER in json.dumps([n.get("inputs"), n.get("outputs"), updates.get(str(n.get("id")))])
+    }
+
+
+def main() -> None:
+    project_dir = find_project_dir()
+    flow = live.load_flow(project_dir)
+    hitls = live.hitl_nodes(flow)
+    if len(hitls) != 1:
+        live.fail(f"expected one human-in-the-loop step, found {len(hitls)}")
+    hitl = hitls[0]
+    hitl_id = str(hitl.get("id"))
+    approve, reject, approve_ports, reject_ports = outcome_plan(hitl)
+    edges = flow.get("edges") or []
+    node_types = {str(n.get("id")): str(n.get("type", "")) for n in flow.get("nodes") or []}
+
+    def only_from(ports: set[str], others: set[str]) -> set[str]:
+        reach = lambda ps: live.reachable(edges, set().union(*(live.port_targets(edges, hitl_id, p) for p in ps)))
+        return {n for n in reach(ports) - reach(others) if node_types.get(n) != "core.control.end"}
+
+    approve_only = only_from(approve_ports, reject_ports)
+    reject_only = only_from(reject_ports, approve_ports)
+    early = sorted(sap_steps(flow) & live.bypassing(flow, hitl_id))
+    if early:
+        live.fail(f"the SAP posting step(s) {early} can run without the finance manager's approval: "
+                  f"the trigger reaches them without passing through {hitl_id}")
+
+    payload, invoice = run_once(project_dir, hitl, approve, "Approved by the eval grader")
     done = live.completed_ids(payload)
     if hitl_id not in done:
         _fail_with_capture(f"the approval step {hitl_id} did not complete in the run")
-    edges = flow.get("edges") or []
-    node_types = {str(n.get("id")): str(n.get("type", "")) for n in flow.get("nodes") or []}
-    approve_reach = live.reachable(edges, set().union(*(live.port_targets(edges, hitl_id, p) for p in approve_ports)) if approve_ports else set())
-    reject_reach = live.reachable(edges, set().union(*(live.port_targets(edges, hitl_id, p) for p in reject_ports)) if reject_ports else set())
-    approve_only = {n for n in approve_reach - reject_reach if node_types.get(n) != "core.control.end"}
-    reject_only = {n for n in reject_reach - approve_reach if node_types.get(n) != "core.control.end"}
     if approve_only:
         if not approve_only & done:
             _fail_with_capture(
                 f"no step on the Approve path {sorted(approve_only)} completed after approval"
             )
         print(f"OK: the Approve path ran: {sorted(approve_only & done)}")
-    else:
-        print("note: both outcomes share their downstream steps; the outputs below decide the path")
     ran_rejected = sorted(reject_only & done)
     if ran_rejected:
         _fail_with_capture(f"steps reachable only from Reject ran after an approval: {ran_rejected}")
-
     assert_named_equals(payload, "status", "posted")
     assert_named_equals(payload, "sapDocumentNumber", f"SAP-{invoice}", case_sensitive=True)
     print(f"OK: status=posted, sapDocumentNumber=SAP-{invoice}")
+
+    payload, _invoice = run_once(project_dir, hitl, reject, "Rejected by the eval grader")
+    done = live.completed_ids(payload)
+    if hitl_id not in done:
+        _fail_with_capture(f"the approval step {hitl_id} did not complete in the reject run")
+    ran_approved = sorted(approve_only & done)
+    if ran_approved:
+        _fail_with_capture(f"steps reachable only from Approve ran after a rejection: {ran_approved}")
+    assert_named_equals(payload, "status", "rejected")
+    sap, _globals = _named_global(payload, "sapDocumentNumber")
+    if str(sap if sap is not None else "").strip():
+        _fail_with_capture(f"output 'sapDocumentNumber' must be empty after a rejection, got {sap!r}")
+    print("OK: after a rejection nothing was posted, status=rejected and sapDocumentNumber is empty")
 
 
 if __name__ == "__main__":

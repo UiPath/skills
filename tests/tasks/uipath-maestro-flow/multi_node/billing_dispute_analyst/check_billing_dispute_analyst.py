@@ -47,7 +47,9 @@ from _shared.flow_check import (  # noqa: E402
 # An inline agent, or an existing tenant agent (`uipath.core.agent.<key>`).
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
 DECISIONS = ("credit", "reject", "manager_review")
-NAMES_A_RULE = re.compile(r"§|\bsection\s*\d|\bSOP\b", re.I)
+# A rule named by section ("§5.4", "SOP 5.4", "section 7") or by title ("Incorrect rate").
+NAMES_A_RULE = re.compile(
+    r"§\s*\d|\b(?:section|sec\.?|clause|rule|SOP)\s*#?\s*\d+(?:\.\d+)*|\bincorrect[\s-]+rate\b", re.I)
 
 CASES = {
     "overcharge": {
@@ -125,7 +127,7 @@ def check(case, flow, payload):
 
     reasons = [t for _k, t in found if not any(io.equals_exact(a)(t) for a in accepted) and len(t.split()) >= 5]
     if not any(NAMES_A_RULE.search(t) for t in reasons):
-        _fail_with_capture(f"no returned reasoning names an SOP rule (§, section or SOP): {reasons}")
+        _fail_with_capture(f"no returned reasoning names an SOP rule (by § or section number, or its title): {reasons}")
     print("OK: the reasoning names an SOP rule")
 
 
