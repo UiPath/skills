@@ -292,9 +292,9 @@ DF_LOCAL_CODES = ("CONNECTION_NOT_FOUND", "REFERENCE_TARGET_NOT_FOUND", "CHOICE_
 RECOVERY_IDS = PER_FILE_RULES + ("MAP-012",) + tuple(f"XF-{n:03d}" for n in range(1, 16) if n != 11) + \
     ("ZIP-001", "XF-017", "XF-019", "SVC-001", "ENTITY_ID_IGNORED") + C1_CODES + DF_LOCAL_CODES + \
     ("Not logged in", "Ambiguous match", "Missing in the target folder", "InvalidArguments", "BLOCKED_AMBIGUITY")
-# Entities are created before the artifacts are written: login < init < connection import
+# Entities are created before the artifacts are written: ont probe < login < init < connection import
 # < choice sets / entities create < artifacts check < ont create < validate < pack.
-STAGES = ("uip login status", "uip solution init",
+STAGES = ("uip ont --help", "uip login status", "uip solution init",
           "uip solution resources add --source remote --kind Connection", "uip df entities list --local",
           "uip df choice-sets create", "uip df entities create", "uip df entities validate --local",
           "uip ont artifacts check", "uip ont create", "uip ont files add",
@@ -626,4 +626,30 @@ def test_shacl_guide_names_every_property_block_and_spares_multi_select():
 
 def test_artifacts_only_mode_needs_no_login():
     s = read(SKILL_DIR / "SKILL.md")
-    assert "Artifacts-only mode skips this stage" in section(s, "Stage 1")
+    assert "Artifacts-only mode skips the login check" in section(s, "Stage 1")
+
+
+def test_stage_1_checks_for_uip_ont_before_the_interview():
+    s1 = section(read(SKILL_DIR / "SKILL.md"), "Stage 1")
+    assert s1.index("uip ont --help") < s1.index("uip login status")
+    assert "In every mode" in s1 and "unknown command 'ont'" in s1 and "stop before asking anything" in s1
+
+
+def test_artifacts_only_reports_what_it_did_not_check():
+    t = read(SKILL_DIR / "SKILL.md")
+    s5 = section(t, "Stage 5")
+    assert "only the per-file check ran" in s5 and "Artifacts-only [Report]" in s5
+    rep = section(t, "Report")
+    assert "Artifacts-only mode has no solution or package" in rep and "NOT_CHECKED:" in rep
+
+
+def test_artifacts_only_has_no_solution():
+    t = read(SKILL_DIR / "SKILL.md")
+    assert "not in Artifacts-only mode" in section(t, "Stage 2")
+    assert "Artifacts-only mode has no `SOLUTION_DIR`" in section(t, "Paths")
+    assert "no `SOLUTION_DIR` is Artifacts-only: continuing after `model` re-runs Stage 5 only" in section(t, "Saved model")
+
+
+def test_handoff_warns_about_same_name_entities():
+    s9 = section(read(SKILL_DIR / "SKILL.md"), "Stage 9")
+    assert "check the target folder for same-name entities before deploying" in s9 and "EntityConflict" in s9

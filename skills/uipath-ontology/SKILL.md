@@ -37,7 +37,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 3. **Every `uip df` create or update carries `--local`.** No tenant folder scope on any `uip df` command.
 4. **Duplicate check before any create** (`uip df choice-sets list --local`, `uip df entities list --local`). Reuse a matching definition; when it differs, ask before changing it. Never a silent update.
 5. **The only remote import is a federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path "<CONNECTION_FOLDER>"`. No entity or choice-set import, re-import or refresh.
-6. **`uip login status` runs first, except in Artifacts-only mode** (offline; see Stage 1). Being logged out never blocks Stage 2: the model is confirmed and saved without a tenant, and login is asked for before Stage 3. The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
+6. **`uip ont --help` runs first in every mode, then `uip login status`, except in Artifacts-only mode** (offline; see Stage 1). Being logged out never blocks Stage 2: the model is confirmed and saved without a tenant, and login is asked for before Stage 3. The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
 7. **A relationship is one `RELATIONSHIP` field on the referencing entity**; its inverse lives only in the schema (`InverseObjectProperties`). A federated target means a plain-column join. See [relationships-guide.md](references/relationships-guide.md).
 8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
 9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the saved model, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
@@ -48,7 +48,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 14. **Ontology names are unique per folder.** Never rename the ontology resource while authoring; a new name means a new resource. Change its display name, description and entities only with `uip ont update --local`, and its files only with `uip ont files add|remove`.
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
 16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
-17. **No `uip ont`, no build.** When a `uip ont` command fails with `unknown command 'ont'`, the installed `uip` predates the ontology tool. Stop, tell the user to update `uip` and re-run, and report what is done so far (the saved model, the local entities). Never pack, refresh or import resources to work around it: a package without the ontology is not the result.
+17. **No `uip ont`, no build.** When a `uip ont` command fails with `unknown command 'ont'` (Stage 1 checks this before anything else), the installed `uip` predates the ontology tool. Stop, tell the user to update `uip` and re-run, and report what is done so far (the saved model, the local entities). Never pack, refresh or import resources to work around it: a package without the ontology is not the result.
 
 ## Paths
 
@@ -59,7 +59,7 @@ WORKDIR        <BASE_DIR>/<ONTOLOGY_NAME>/        artifacts at top level, plus i
 SOLUTION_DIR   <SOLUTION_PARENT>/<SOLUTION_NAME>/ absent (new) or holding exactly one .uipx
 ```
 
-`WORKDIR` and `SOLUTION_DIR` are separate and absolute: neither is inside the other, and they are never the same path. When the user names the solution after the ontology under the same base directory, propose `<ONTOLOGY_NAME>-solution` as `SOLUTION_NAME` and confirm it. Write files only inside `WORKDIR`; change `SOLUTION_DIR` only through `uip` commands. Quote every path. File names, types and counts are in [artifacts-guide.md](references/artifacts-guide.md).
+`WORKDIR` and `SOLUTION_DIR` are separate and absolute: neither is inside the other, and they are never the same path. When the user names the solution after the ontology under the same base directory, propose `<ONTOLOGY_NAME>-solution` as `SOLUTION_NAME` and confirm it. Artifacts-only mode has no `SOLUTION_DIR`: no solution is asked for, checked or saved. Write files only inside `WORKDIR`; change `SOLUTION_DIR` only through `uip` commands. Quote every path. File names, types and counts are in [artifacts-guide.md](references/artifacts-guide.md).
 
 ## Saved model
 
@@ -71,7 +71,7 @@ ONTOLOGY_IRI: https://ontology.uipath.com/{name}#
 DISPLAY_NAME: optional; defaults to ONTOLOGY_NAME
 DESCRIPTION: optional
 WORKDIR: absolute path of the dedicated {name}/ artifact folder
-SOLUTION_DIR: absolute path of the solution folder to create or update; entities and choice sets are authored there locally
+SOLUTION_DIR: absolute path of the solution folder to create or update; entities and choice sets are authored there locally. Absent in Artifacts-only mode
 CLASS_MAP: class -> entityName; names only, no ids
 ENTITY_DEFINITIONS: entityName -> confirmed Data Fabric entity body, authored locally as is; names in place of ids (referenceEntityName, referenceFieldName default Id, choiceSetName)
 CHOICE_SETS: choiceSetName -> [value names in order]
@@ -88,7 +88,7 @@ ANNOTATIONS: confirmed labels, comments, synonyms, value domains, grain, and cla
 
 **Update, not resume.** When `model.md` reads `CONFIRMED_THROUGH: built` and the user asks to change that ontology, follow [Updating an existing solution](#updating-an-existing-solution); do not offer to resume or start over.
 
-**Resume.** When `WORKDIR` already holds `input/model.md` short of `built`, the folder is this skill's own earlier work. Show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue or start over; overwrite it only when the user starts over. Continuing after `model` re-runs Stages 3–9: an existing `SOLUTION_DIR` is not created again, the duplicate check (Critical Rule 4) reuses the entities and choice sets already authored, and an ontology the solution already has (`uip ont get <Name> --local`) is not created again: `files add` replaces its files. A `WORKDIR` holding files but no `input/model.md` was not written by this skill: ask for another folder.
+**Resume.** When `WORKDIR` already holds `input/model.md` short of `built`, the folder is this skill's own earlier work. Show its `CONFIRMED_THROUGH` step and the confirmed tables, and ask whether to continue or start over; overwrite it only when the user starts over. A `model.md` with no `SOLUTION_DIR` is Artifacts-only: continuing after `model` re-runs Stage 5 only. Otherwise continuing after `model` re-runs Stages 3–9: an existing `SOLUTION_DIR` is not created again, the duplicate check (Critical Rule 4) reuses the entities and choice sets already authored, and an ontology the solution already has (`uip ont get <Name> --local`) is not created again: `files add` replaces its files. A `WORKDIR` holding files but no `input/model.md` was not written by this skill: ask for another folder.
 
 ## Report
 
@@ -106,21 +106,38 @@ VALIDATION: Done, with any remaining WARNING
 UNRESOLVED_AMBIGUITIES: [] or the open items
 ```
 
+Artifacts-only mode has no solution or package; report instead:
+
+```text
+WORKDIR: absolute path of the artifact folder
+FILES: fileName -> type, with its `uip ont artifacts check` result (clean, or the WARNINGs left)
+NOT_CHECKED: the cross-file (`XF-…`) and service checks; they run at `uip ont validate --local` once the files are built into a solution (Files mode)
+UNRESOLVED_AMBIGUITIES: [] or the open items
+```
+
 ## Workflow
 
 Entities come before artifacts: a federated entity's fields are known only after `create --local` reads the connector, and a name or type corrected at create must reach the mapping before it is written.
 
-### Stage 1 — Sign in
+### Stage 1 — Check the CLI and sign in
+
+In every mode, first check that the installed `uip` has the ontology tool:
+
+```bash
+uip ont --help
+```
+
+When it fails with `unknown command 'ont'`, stop before asking anything (Critical Rule 17): tell the user to update `uip` and re-run.
 
 ```bash
 uip login status --output json
 ```
 
-Artifacts-only mode skips this stage: `artifacts check` is offline. In every other mode, when not logged in, say so and go on to Stage 2: confirming and saving the model needs no tenant. Before Stage 3, ask the user to run `uip login` and wait. The connection import, a federated entity's `create --local` over a connector source (it reads the connection and the connector metadata) and service validation need it. Native entities, choice sets and a federated entity over local native sources only do not. Nothing is created on the tenant.
+Artifacts-only mode skips the login check: `artifacts check` is offline. In every other mode, when not logged in, say so and go on to Stage 2: confirming and saving the model needs no tenant. Before Stage 3, ask the user to run `uip login` and wait. The connection import, a federated entity's `create --local` over a connector source (it reads the connection and the connector metadata) and service validation need it. Native entities, choice sets and a federated entity over local native sources only do not. Nothing is created on the tenant.
 
 ### Stage 2 — Model and confirm
 
-Collect only what is missing: the document, domain or source files, any entity definitions the user has, `ONTOLOGY_NAME`, optional display name and description, the solution (new name or existing folder) and the base directory. Resolve every path to an absolute path and reject a name that fails the `ONTOLOGY_NAME` pattern, or nested `WORKDIR` and `SOLUTION_DIR`. A `WORKDIR` that already holds `input/model.md` is resumed ([Saved model](#saved-model)); one holding other files is refused.
+Collect only what is missing: the document, domain or source files, any entity definitions the user has, `ONTOLOGY_NAME`, optional display name and description, the solution (new name or existing folder; not in Artifacts-only mode) and the base directory. Resolve every path to an absolute path and reject a name that fails the `ONTOLOGY_NAME` pattern, or nested `WORKDIR` and `SOLUTION_DIR`. A `WORKDIR` that already holds `input/model.md` is resumed ([Saved model](#saved-model)); one holding other files is refused.
 
 In Document mode, read the document and confirm the model in three tables per [document-guide.md](references/document-guide.md), saving `model.md` after each (run `mkdir -p "<WORKDIR>/input"` before the first save). In the other modes, show one reviewable model: classes with grain, entity name and domain (the business area the viewer groups the class under, 3–7 per ontology; see [owl-patterns-guide.md](references/owl-patterns-guide.md#domain-annotation)) (never `Order` or `Group`, which the CLI refuses: propose `SalesOrder`-style names, see [entity-guide.md](references/entity-guide.md)), data properties with xsd and field types ([entity-guide.md](references/entity-guide.md)), relationships ([relationships-guide.md](references/relationships-guide.md)), choice sets with their value names, federated sources and joins, and constraints. The confirmed model fixes the entity, field, relationship and choice-set names. In every mode, when the model has a `FILE` field, tell the user before they confirm that later upgrades keep that entity as installed, so fields added to or changed on it are not applied ([entity-guide.md](references/entity-guide.md#xsd-to-data-fabric-type)).
 
@@ -185,7 +202,7 @@ uip ont artifacts check "<PATH>" --output json
 
 The file name decides the type, the same way `files add` decides it. Pass `--type summary` or `--type context` only for a `.json` name that ends in neither `-summary` nor `-context`.
 
-Fix every ERROR; show WARNINGs and fix them when the fix is mechanical. In a constraints file, `SHC-006` on a `CHOICE_SET_MULTIPLE` property is expected: never add `sh:maxCount 1` to it ([shacl-patterns-guide.md](references/shacl-patterns-guide.md#every-property-block-carries-shname-and-shmaxcount)). After 3 rounds on the same file with ERRORs left, stop and show them to the user. Artifacts-only mode stops here.
+Fix every ERROR; show WARNINGs and fix them when the fix is mechanical. In a constraints file, `SHC-006` on a `CHOICE_SET_MULTIPLE` property is expected: never add `sh:maxCount 1` to it ([shacl-patterns-guide.md](references/shacl-patterns-guide.md#every-property-block-carries-shname-and-shmaxcount)). After 3 rounds on the same file with ERRORs left, stop and show them to the user. Artifacts-only mode stops here: tell the user that only the per-file check ran, and that the cross-file and service checks run only when the files are built into a solution (Files mode). Give the Artifacts-only [Report](#report).
 
 ### Stage 6 — Create the ontology resource and add its files
 
@@ -223,7 +240,7 @@ Show the dry-run listing first. `PACKAGE_PATH` is the zip the real pack reports 
 Save `model.md` with `CONFIRMED_THROUGH: built` and give the [Report](#report). When the user asks to deploy, hand off to `uipath-solution` with:
 
 - The ontology name, unique per folder. The solution's own ontology upgrades normally. A same-name ontology the solution does not own is a deploy conflict: the deployer chooses `Replace` or gives a new `name` in the deployment configuration (`RenameInSolution`). A rename onto a name another ontology holds fails the install (`InstallError`): choose another name.
-- The entities and choice sets are created in the target folder at deploy from their local resources, or merged into a same-name entity there.
+- The entities and choice sets are created in the target folder at deploy from their local resources, or merged into a same-name entity there. Tell the user to check the target folder for same-name entities before deploying: a changed field type there is reported as `EntityConflict`.
 - The federated connections, each needing sign-in after deploy (`NeedsSetupToActivate`), unless the deployer links each one in the deployment configuration to an existing signed-in connection of the same connector.
 - A solution already deployed is upgraded in place, never deployed again: see [Updating an existing solution](#updating-an-existing-solution).
 - The post-deploy check in the deployment folder belongs to `uipath-solution`. The skill runs nothing after this stage.
