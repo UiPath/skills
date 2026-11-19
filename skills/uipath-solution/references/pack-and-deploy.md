@@ -80,7 +80,7 @@ The output is a `.zip` file named `<name>_<version>.zip` — **underscore betwee
 
 **A failed pack names the broken file in `Data.Projects`, not in `Message`.** Read it per project — fields in [Read `Data.Projects` on a failed pack](pack-build-guide.md#read-dataprojects-on-a-failed-pack).
 
-**Controlling package sources.** `--nuget-sources-config-path` *adds* the sources of a local `NuGet.config` to the tenant and built-in feeds; it does not replace them. To resolve from an approved set only, add `--exclude-configured-sources`, and keep a mirror of the official activity packages in that `NuGet.config` — a bare `--exclude-configured-sources` usually fails the restore. `pack`, `restore` and `cleanup` all take these options; see [Dependency feeds](pack-build-guide.md#dependency-feeds).
+**Controlling package sources.** `--nuget-sources-config-path` *adds* the sources of a local `NuGet.config` to the tenant and built-in feeds; it does not replace them. To resolve from an approved set only, add `--exclude-configured-sources`, and, unless the tenant's library feeds include the host libraries feed (UiPath-Official on Automation Cloud), keep a mirror of the official activity packages in that `NuGet.config` — without one a bare `--exclude-configured-sources` fails the restore there. `pack`, `restore` and `cleanup` all take these options; see [Dependency feeds](pack-build-guide.md#dependency-feeds).
 
 **Governance does not gate.** When AutomationOps cannot be asked (unreachable, or an external-app login), `pack` still exits `0` with the shipped rules or your `--governance-file-path`. The only sign is a stderr warning, which `--log-level error` hides. See [Governance does not gate a build](pack-build-guide.md#governance-does-not-gate-a-build).
 

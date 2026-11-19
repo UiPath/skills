@@ -40,7 +40,7 @@ By default dependencies resolve against every tenant feed the session can see, p
 | `--nuget-sources-config-path <path>` | Add the sources in that `NuGet.config` to the ones above. It adds; it does not replace |
 | `--exclude-configured-sources` | Drop the built-in feeds. Resolution uses only the tenant feeds (or `--feed-folder`) and `--nuget-sources-config-path` |
 
-> **Bare `--exclude-configured-sources` usually breaks restore.** Official activity packages (`UiPath.System.Activities`, `UiPath.UIAutomation.Activities`, …) must then be on the feeds you named, and most tenant library feeds do not mirror UiPath-Official. Pair the flag with a `NuGet.config` that points at your own mirror.
+> **Bare `--exclude-configured-sources` restores only where the tenant includes the host libraries feed.** Official activity packages (`UiPath.System.Activities`, `UiPath.UIAutomation.Activities`, …) must then come from the feeds that are left. The tenant's library feeds are still used, the same ones Studio restores from: where the tenant includes the host libraries feed (UiPath-Official on Automation Cloud) they resolve from it. Where it does not, the restore fails; pair the flag with a `NuGet.config` that points at your own mirror.
 
 ## Package signing
 
