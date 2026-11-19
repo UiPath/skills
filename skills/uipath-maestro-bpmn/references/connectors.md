@@ -128,7 +128,7 @@ uip is connections ping <CONNECTION_ID> --output json                 # Data.Sta
 
 - With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in, else the one with `IsDefault: Yes`, else the first one listed, skipping every connection the next bullet rules out (including the requester's own personal one), and name it on the final report's `Assumed:` line.
 - A connection is a sender's identity. Never bind, or offer on an outline, another person's personal connection (its folder is `<USER_NAME>'s workspace`).
-  A connection in a shared folder belongs to the team even when its Name is an email: bind it when the user says to use whatever exists.
+  A connection in a shared folder belongs to the team whoever its `Owner` is and even when its Name is an email: bind it when the user says to use whatever exists.
   Never bind one as a stand-in for a mailbox, channel or account the request names (`ar@…`) that has no connection.
   Bind the requester's own personal connection only when they say to. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
