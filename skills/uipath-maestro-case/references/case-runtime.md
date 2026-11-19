@@ -324,6 +324,12 @@ make from syntax alone. Exact signatures remain in the generated API.
      the SDD declares a sub-property dereference, extract it from the
      producing task's own output root: `=response.<field>` on a connector
      or wait-for-connector task, `=<OutputName>.<field>` on other types.
+     An output argument that is an object named `response` is therefore
+     read `=response.<field>` on any type: `uip maestro case tasks describe
+     --type <TASK_TYPE> --id <ENTITY_KEY> --output json` lists it in
+     `Data.Outputs[]` as `name: "response"`, `type: "jsonSchema"`,
+     `_jsonSchema.type: "object"`. Keep that source through `check`'s
+     `REFERENCE_OUTPUT_SOURCE`, which compile does not run.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
