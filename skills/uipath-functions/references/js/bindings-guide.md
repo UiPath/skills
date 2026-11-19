@@ -89,7 +89,7 @@ Sharp edge: a rename is a delete+create, never an update. Treat `method` + `path
 
 ## Declaring resource bindings by hand
 
-Any resource whose `resource` field is not `"HttpTrigger"` is preserved **verbatim** across every regeneration — the generator never reads, validates, or rewrites it. That is the mechanism for binding platform resources (storage buckets, queues, assets, processes) to the package: add the entry to `resources[]` in `bindings_v2.json` by hand and it survives all future packs.
+Any resource whose `resource` field is not `"HttpTrigger"` is preserved **verbatim** across every regeneration — the generator never reads, validates, or rewrites it. That is the mechanism for binding platform resources (storage buckets, queues, assets, processes) and connector event triggers ([../event-trigger-guide.md](../event-trigger-guide.md)) to the package: add the entry to `resources[]` in `bindings_v2.json` by hand and it survives all future packs.
 
 Entry shape (`value` and `metadata` optional, passed through untouched):
 

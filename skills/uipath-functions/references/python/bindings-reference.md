@@ -67,7 +67,7 @@ If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_as
 Read the current `bindings.json` and compare:
 
 1. **Missing in bindings** — Resource calls found in code but no matching entry in bindings.json
-2. **Stale in bindings** — Entries in bindings.json with no matching resource call in code
+2. **Stale in bindings** — Entries in bindings.json with no matching resource call in code. Event-trigger entries (`EventTrigger` and its `Property` and `entity` entries) come from connector discovery, not code, and are never stale.
 3. **Mismatched values** — Entries where the key, name, or folder path differs from code
 
 Non-interactive default: add/update missing bindings automatically; report no-op silently; ask only before deletion or for dynamic values.
@@ -99,6 +99,7 @@ Each resource can optionally be linked to an entrypoint from `entry-points.json`
 Update `bindings.json`:
 
 - **Add** entries for resources found in code but missing from bindings
+- **Add** the event-trigger entries when the function starts on a connector event ([../event-trigger-guide.md](../event-trigger-guide.md))
 - **Remove** entries that are stale (no longer referenced in code), after user confirmation
 - **Update** entries where values have drifted
 - **Add/update entrypoint fields** per Step 4 resolution
