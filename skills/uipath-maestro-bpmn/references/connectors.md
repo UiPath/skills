@@ -45,6 +45,8 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 <!--skill-flavor:field-reference:end-->
 
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
+A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
+When several Integration Service resources match an `http()` request, describe each and pick the one that does what the user asked.
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
 A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
@@ -69,7 +71,7 @@ A failed search gives `uip`'s reason; fix what it names: log in again for a sess
 - OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<ACTION>', 'referenceID').by('FullName', '<ITEM_PATH>')`, then `uip maestro registry prepare uipath-microsoft-onedrive --action <ACTION> --resolve referenceID:FullName=<ITEM_PATH>`. Never paste an item id.
 - Outlook `send-email`: `message.toRecipients`, `ccRecipients` and `bccRecipients` are ONE comma-separated string, never an array (`CONNECTOR_INPUT … expected string, got object`). Always set `saveAsDraft`: `false` to send, `true` to draft. The definition's default (`true`) is not compiled into the task, and the response (`status: "success"`) does not say which happened.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
-- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
+- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.Count', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads. `.Count` counts an array, and on an object silently returns its field count: a list operation's runtime response is the bare array, even where `uip is resources run` prints `{ items, Pagination }`.
 
 Authoring never waits on discovery beyond §1.
 Write the node from the task's own words and let `check` tell you what is missing.

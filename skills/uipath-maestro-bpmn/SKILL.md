@@ -24,10 +24,12 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    After a `merge` into an existing process, run `refresh` and `validate` only; run `format` only when `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, because it lays out the whole diagram again and drops the user's pools, lanes, colors and placement; after that `format`, run `refresh` and `validate` again and, unless the report was `No diagrams found`, tell the user the canvas layout was reset ([Brownfield](references/bpmn-runtime.md#brownfield-editing)).
 6. A different target system (Document Understanding → agent, Outlook → Gmail) changes a node's type and binding, not the graph; reshape only when the process differs.
 7. You author the process; you never take part in it. Where a step reasons, classifies or extracts at run time, place and bind the node that does it (a UiPath agent, Document Understanding, a business rule); never do that work while authoring or hardcode its result. A bare "agent" in a request means a UiPath agent, never you.
-8. A process given as an image is transcribed 1:1, every item a node and every connector a flow, from a confirmed inventory: read [Authoring from an image](references/image-transcription-guide.md) first.
+8. Build a design you are given (an approved SDD, a BPMN diagram, an image) 1:1: every item a node, every connector a flow, each rule on the element the design names for it, each stated default kept (a value the design calls unknown until assessed stays unknown, never `false` or available). Never merge, drop or collapse its nodes on your own, for example into one script task; ask first. A gap in the design is a question for the user, never a step you invent; add only what it needs to compile or validate (start and end events, a join). A retry loop the design draws becomes the activity's `retry` option (rule 9). In a draft, ask at the gate and name each addition in its reply; in a build, name each on the final report's `Assumed:` line. When the request says nobody will answer, take the most literal reading of the design and name each choice the same way. An image needs a confirmed inventory first: read [Authoring from an image](references/image-transcription-guide.md).
 9. Retry a failing activity with its `retry` option ([Retry](references/bpmn-runtime.md#events-and-timers)), never a drawn loop of gateways, timers or `.goto()`.
 10. Pick an Orchestrator node by the target's `ProcessType`, never by its label ([Orchestrator work](references/bpmn-runtime.md#http-and-orchestrator-work)).
 11. A process returns only what its end event maps: compute into a `.var()` and map it onto each `.output()` in the `BPMN.Variables` payload of every end event that finishes the process (root scope, not a sub-process body); a task that writes an `.output()` directly returns `null` to the caller, and every check passes ([Process contract](references/bpmn-runtime.md#variables-and-the-process-contract)).
+<!--skill-flavor:critical-rules-extra:start-->
+<!--skill-flavor:critical-rules-extra:end-->
 
 <!--skill-flavor:host-setup:start-->
 
@@ -158,8 +160,8 @@ A discovery-only request (discover types or save registry evidence, no authoring
    When the project sits in a solution this run did not create, check its Studio Web copy before editing, so an upload never overwrites edits made there ([Operate](references/operate.md#check-the-cloud-copy-before-editing)).
 <!--skill-flavor:workflow-merge:end-->
 9. **End every build with the final report.**
-   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**.
-   It ends the turn too when validation fails only because tenant resources are missing.
+   A plain request to build or edit a process (`(auto mode)`) and *Build it* after a [draft gate](#draft-first) (`(draft mode)`) both end the turn with **[`references/final-report-template.md`](references/final-report-template.md)**, also when validation fails only because tenant resources are missing: read it in full once `validate` passes or fails only that way, before any upload or other closing tool call.
+   Resume only: when the turn carries no new user instruction and only continues after an interruption that came after the report or a gate reply was written, resend that message unchanged and whole and do nothing else. Any new user message (*Build it*, *Change it: …*, a question) is a normal turn.
 
 ## Draft first
 
@@ -191,7 +193,7 @@ Match one name — do not read either end to end — then read the span it gives
 |---|---|---|---|
 | Show the shape before building it (sketch it, show me first, plan mode) | bare `task`, `choose` | [Draft first](references/draft-skeleton.md) | — |
 | Discover types or save registry evidence only, no authoring | `registry` pull, list, search, get | [Discovery only](references/bpmn-runtime.md#registry-extension-types) | — |
-| Build or draft from an image: sketch, whiteboard photo, diagram screenshot | transcribed 1:1 | [Authoring from an image](references/image-transcription-guide.md) | — |
+| Build or draft from a given design: approved SDD, BPMN diagram, sketch, whiteboard photo, diagram screenshot | built 1:1 | [Critical Rule 8](#critical-rules); an image: [Authoring from an image](references/image-transcription-guide.md) | — |
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
