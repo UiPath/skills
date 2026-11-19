@@ -30,11 +30,16 @@ Map to working variables (`Data.Status` must be `Logged in`; otherwise ask the u
 | `TENANT_ID` | `Data.TenantId` |
 | `USER_ID` | `Data.UserId` |
 
-**Bearer token** — set `ACCESS_TOKEN` in the same shell invocation as each request below, and never print it. Never run `uip login refresh --output json` on its own: its output includes the token.
+**Sending the requests below** — use `uip api`, which adds `{BASE_URL}`, `{ORG_NAME}` and the token itself (never extract the token). All three are organization-level `studio_` calls: pass the path after `{ORG_NAME}/`, `--level organization`, and the tenant header. For a POST, write the JSON body to a file first:
 
 ```bash
-ACCESS_TOKEN=$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')
+uip api "studio_/backend/api/resourcebuilder/solutions/<SOLUTION_ID>/resources/search?kind=app&..." \
+  --level organization --header "x-uipath-tenantid: <TENANT_ID>" --output json
+uip api "studio_/backend/api/resourcebuilder/solutions/<SOLUTION_ID>/resources/retrieve-configuration" \
+  --level organization --method POST --input "<BODY_FILE>" --header "x-uipath-tenantid: <TENANT_ID>" --output json
 ```
+
+The response is in `Data.Body`. If `uip api` is an unknown command, run `uip update`, then retry.
 
 **Resolve solution context:**
 
@@ -70,7 +75,7 @@ GET {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTIO
   &searchTerm={APP_NAME}
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+Headers: `x-uipath-tenantid: {TENANT_ID}` (`uip api` adds authorization and `Accept: application/json`)
 
 Response:
 
@@ -121,7 +126,7 @@ Content-Type: application/json
 }
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Content-Type: application/json`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+Headers: `x-uipath-tenantid: {TENANT_ID}` (`uip api` adds authorization; `--input` sets `Content-Type: application/json`)
 
 The response is a resource object. Key extractions from `spec`:
 
