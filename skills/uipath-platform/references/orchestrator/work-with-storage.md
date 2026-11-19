@@ -125,15 +125,15 @@ uip or bucket-files upload <bucket-key> "data/config.json" \
 | Need | Use | Sub-folders |
 |------|-----|-------------|
 | Every file in the bucket | `list <bucket-key>` (default) | Included |
-| Every file under a path | `list <bucket-key> --prefix <path>` | Included |
+| Every file whose path starts with a string | `list <bucket-key> --prefix <text>` (a string prefix, not a directory: `--prefix reports/` also returns `reports-old/b.csv` and `reports.txt`) | Included |
 | Only the files directly in one directory | `list <bucket-key> --directory <path>` | **Left out** |
-| One directory and everything below it | `list <bucket-key> --directory <path> --recursive` | Included |
+| One directory and everything below it, nothing beside it | `list <bucket-key> --directory <path> --recursive` (one unpaged response) | Included |
 
 ```bash
 # List all files in a bucket, sub-folders included
 uip or bucket-files list <bucket-key> --folder-path "Finance" --output json
 
-# Filter by path prefix (also includes sub-folders)
+# Filter by path prefix (also includes sub-folders; matches reports-old/ too)
 uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --prefix "reports/" --output json
 
@@ -141,12 +141,12 @@ uip or bucket-files list <bucket-key> --folder-path "Finance" \
 uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --directory "reports" --output json
 
-# reports/ and all its sub-folders, through the directory API
+# reports/ and all its sub-folders, through the directory API (one response)
 uip or bucket-files list <bucket-key> --folder-path "Finance" \
   --directory "reports" --recursive --output json
 ```
 
-`--directory` lists **one level only** unless `--recursive` is given (see [Common Pitfalls](#common-pitfalls)). To find files, prefer the default mode or `--prefix`. Use `--directory` when you want one level on purpose, and pair it with `list-dirs` to walk the tree. `--recursive` without `--directory` is rejected (`ValidationError`, exit 3), because the default listing already includes sub-folders. If `--recursive` is rejected as an unknown option (a CLI older than the flag), drop `--directory` and use `--prefix <path>`: that listing includes sub-folders too.
+`--directory` lists **one level only** unless `--recursive` is given (see [Common Pitfalls](#common-pitfalls)). To find files, prefer the default mode or `--prefix`. Use `--directory` when you want one level on purpose, and pair it with `list-dirs` to walk the tree. `--directory --recursive` returns the whole subtree in one response with no paging, so on a large tree use `--prefix`, which pages. `--recursive` without `--directory` is rejected (`ValidationError`, exit 3), because the default listing already includes sub-folders. If `--recursive` is rejected as an unknown option (a CLI older than the flag), drop `--directory` and use `--prefix <path>`: that listing includes sub-folders too, but it is a string prefix, so drop the paths that only start with the same text.
 
 The default and `--prefix` modes use **continuation-token pagination** (not offset/limit). Check the response for a continuation token and pass it back:
 
@@ -250,7 +250,7 @@ uip or bucket-files upload <bucket-key> "2026/04/revenue.csv" \
 uip or bucket-files upload <bucket-key> "2026/04/expenses.pdf" \
   --folder-path "Finance" --file ./expenses.pdf --output json
 
-# 3. List files in the April directory
+# 3. List files whose path starts with 2026/04 (a string prefix)
 uip or bucket-files list <bucket-key> \
   --folder-path "Finance" --prefix "2026/04/" --output json
 
@@ -287,6 +287,7 @@ uip or bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 - **`buckets list` requires either `--folder-path`/`--folder-key` or `--all-folders`.** No-flag invocations error out — there is no implicit cross-folder default.
 - **File paths containing `&`, `+`, `%`, or `?` are rejected by the CLI.** The Orchestrator storage API builds presigned blob URIs without re-encoding URL-reserved characters, so such paths are silently corrupted server-side while the API reports success (`a&b.txt` is truncated to `a`; `+` and `%xx` decode to other characters; delete then operates on the corrupted name). The CLI refuses these paths up front on every path-taking command (`upload`, `download`, `delete`, `get`, `get-download-url`, `get-upload-url`). Rename files to avoid these characters. The same corruption applies when calling the REST API directly — the only REST workaround is double-URL-encoding the `path` parameter, which will break when the server-side fix lands; prefer renaming.
 - **`bucket-files list --directory` stops at one level.** An empty `Items` from `--directory` (even `--directory "/"`) does not mean the bucket or directory is empty: the files may be in sub-folders. List without `--directory`, narrowing with `--prefix <path>` (works on every CLI version), or add `--recursive`.
+- **`--prefix` is a string prefix, not a directory.** The CLI drops a trailing slash, so `--prefix reports/` matches `reports/a.csv` but also `reports-old/b.csv` and `reports.txt`. To stay inside one directory, use `--directory <path> --recursive`, or filter the `FullPath` values yourself.
 - **`--directory` takes no trailing slash.** `--directory "reports/"` fails with `HTTP 400: Invalid blob file path` on both `list` and `list-dirs`; write `--directory "reports"` (or `"/reports"`). Use `"/"` for the bucket root. `--prefix` accepts a trailing slash.
 - **`download` without `--destination`** writes to stdout. For binary files, always use `--destination`.
 - **External providers** (Azure, Amazon) require `--credential-store-key`. Use `uip or credential-stores list` to find keys.
