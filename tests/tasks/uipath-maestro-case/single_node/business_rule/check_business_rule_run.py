@@ -41,6 +41,7 @@ from _shared.case_check import (  # noqa: E402
 RULE = "CreditRisk"
 SCORE = 742
 EXPECTED_BAND = "LOW_RISK"
+BANDS = ("LOW_RISK", "HIGH_RISK")
 
 
 def _leaf_values(value, key: str):
@@ -72,17 +73,20 @@ def _rule_names(plan: dict, task: dict) -> set[str]:
 def _binds_risk_band(plan: dict, task: dict) -> bool:
     """An output row of ``task`` writes the riskBand case variable from the rule's result."""
     variables = get_variables(plan)
-    ids = {
-        str(v.get("id"))
+    declared = [
+        v
         for group in ("inputOutputs", "outputs", "inputs")
         for v in variables.get(group) or []
         if str(v.get("name") or "").lower() == "riskband"
-    }
+    ]
+    if any(str(v.get("default") or "").strip().upper() in BANDS for v in declared):
+        return False
+    ids = {str(v.get("id")) for v in declared}
     for row in (task.get("data") or {}).get("outputs") or []:
         source = str(row.get("source") or "")
         if row.get("var") not in ids or not source.startswith("="):
             continue
-        if re.search(r"low_risk|high_risk", source, re.IGNORECASE):
+        if re.search(r"low_risk|high_risk|vars\.", source, re.IGNORECASE):
             continue
         if re.search(r"riskband|riskdecision|result", source, re.IGNORECASE):
             return True

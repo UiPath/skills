@@ -10,7 +10,8 @@ description: >
   status=posted and sapDocumentNumber=SAP-<invoice>; then a second run is
   rejected and must complete with nothing on the Approve path run,
   status=rejected and an empty sapDocumentNumber. The SAP posting stand-in
-  must sit behind the approval. Structural checks accept any outcome layout. Text between the helper markers is lower-tier guidance
+  must sit behind the approval. Structural checks accept any outcome layout.
+  Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga, outcome-graded]
 

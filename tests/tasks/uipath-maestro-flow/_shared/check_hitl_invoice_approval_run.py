@@ -13,11 +13,13 @@ is told apart from any other open task in the folder:
    Reject ran. The named outputs: status = "posted", sapDocumentNumber =
    "SAP-<invoice>".
 3. Reject run: the grader completes it with Reject. The run then completed;
-   the HITL step completed; no step reachable only from Approve ran. The
-   named outputs: status = "rejected", sapDocumentNumber empty.
+   the HITL step completed; no step reachable only from Approve ran and no
+   posting step ran. The named outputs: status = "rejected",
+   sapDocumentNumber empty.
 
-Before either run, every step that builds the "SAP-" document number (the
-posting stand-in; an End node mapping the output is not a step) must sit
+Before either run, every step that builds the "SAP-" document number or feeds
+the sapDocumentNumber output (the posting stand-in; an End node mapping the
+output is not a step) must sit
 behind the approval: the trigger cannot reach it without passing through the
 HITL step. Any outcome layout is accepted: per-outcome ports, or both into a
 switch on the decision; the reject run shows nothing is posted then. Nothing
@@ -27,7 +29,6 @@ cancelled.
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import time
@@ -49,6 +50,7 @@ VENDOR = "Northwind Office Supplies"
 AMOUNT = 4870.25
 CURRENCY = "EUR"
 SAP_MARKER = "SAP-"
+SAP_OUTPUT = "sapDocumentNumber"
 
 
 def outcome_plan(hitl: dict) -> tuple[list[str], list[str], set[str], set[str]]:
@@ -151,14 +153,7 @@ def run_once(project_dir: str, hitl: dict, actions: list[str], comment: str) -> 
 
 
 def sap_steps(flow: dict) -> set[str]:
-    """Non-End steps that build the "SAP-" document number."""
-    updates = (flow.get("variables") or {}).get("variableUpdates") or {}
-    return {
-        str(n.get("id"))
-        for n in flow.get("nodes") or []
-        if n.get("type") != "core.control.end"
-        and SAP_MARKER in json.dumps([n.get("inputs"), n.get("outputs"), updates.get(str(n.get("id")))])
-    }
+    return live.posting_steps(flow, SAP_MARKER, SAP_OUTPUT)
 
 
 def main() -> None:
@@ -208,6 +203,9 @@ def main() -> None:
     ran_approved = sorted(approve_only & done)
     if ran_approved:
         _fail_with_capture(f"steps reachable only from Approve ran after a rejection: {ran_approved}")
+    ran_posting = sorted(sap_steps(flow) & done)
+    if ran_posting:
+        _fail_with_capture(f"the SAP posting step(s) {ran_posting} ran after a rejection")
     assert_named_equals(payload, "status", "rejected")
     sap, _globals = _named_global(payload, "sapDocumentNumber")
     if str(sap if sap is not None else "").strip():

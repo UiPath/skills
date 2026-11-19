@@ -129,3 +129,12 @@ def test_a_real_variables_all_payload_reads_product_42():
 
     payload = parse_json_output((FIXTURES / "codex_variables_all_2026-11-18.json").read_text(), "variables-all")
     checker.assert_product(get_ci(payload, "Data"))
+
+
+@pytest.mark.parametrize("script", ["var u = 'a//b'; return 42;", 'var u = "a/*b*/"; return 42;', "var u = `//`; return 42;"])
+def test_a_comment_marker_inside_a_string_does_not_hide_a_hardcoded_answer(tmp_path, monkeypatch, script):
+    _sandbox(tmp_path, (FIXTURES / "ProductCalc.bpmn").read_text().replace("return 6 * 7;", script))
+    monkeypatch.chdir(tmp_path)
+    _patch_live(monkeypatch)
+    with pytest.raises(checker.CheckFailure, match="written into the process"):
+        checker.main()

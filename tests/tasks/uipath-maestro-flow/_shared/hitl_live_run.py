@@ -57,6 +57,8 @@ STATUS_POLL_SECONDS = 5
 MAX_CANDIDATES = 25
 ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
 MIN_CALL_SECONDS = 30
+END_TYPE = "core.control.end"
+VARS_REF_RE = re.compile(r"\$vars\.(\w+)")
 _call_deadline: float | None = None
 
 
@@ -507,6 +509,33 @@ def port_targets(edges: list[dict], source: str, port: str) -> set[str]:
         str(e.get("targetNodeId"))
         for e in edges
         if str(e.get("sourceNodeId")) == source and e.get("sourcePort") == port
+    }
+
+
+def posting_steps(flow: dict, marker: str, output: str) -> set[str]:
+    """Steps that post: they build `marker`, set the `output` global through
+    variableUpdates, or feed the End node's `output` binding."""
+    updates = (flow.get("variables") or {}).get("variableUpdates") or {}
+    nodes = flow.get("nodes") or []
+    fed = set()
+    for n in nodes:
+        if n.get("type") != END_TYPE:
+            continue
+        bound = [o for k, o in (n.get("outputs") or {}).items() if k == output]
+        fed.update(VARS_REF_RE.findall(json.dumps(bound)))
+    for step_id, update in updates.items():
+        if output in json.dumps(update):
+            fed.add(str(step_id))
+            fed.update(VARS_REF_RE.findall(json.dumps(update)))
+    skipped = (END_TYPE, "core.trigger", "uipath.human-in-the-loop")
+    return {
+        str(n.get("id"))
+        for n in nodes
+        if not str(n.get("type", "")).startswith(skipped)
+        and (
+            str(n.get("id")) in fed
+            or marker in json.dumps([n.get("inputs"), n.get("outputs"), updates.get(str(n.get("id")))])
+        )
     }
 
 

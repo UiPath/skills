@@ -33,6 +33,20 @@ def test_scalar_inputs_map_by_meaning_and_take_the_declared_type():
     assert attachments == {} and unmapped == []
 
 
+def test_a_whole_word_match_beats_a_substring_in_an_earlier_input():
+    flow = _flow([("deadline", "string"), ("lineItem", "number")])
+    roles = {"line": {"value": 5, "keywords": ["line"]}}
+    inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=None, file_path=None)
+    assert inputs == {"lineItem": 5} and unmapped == []
+
+
+def test_an_object_role_value_is_not_fed_to_a_boolean_input():
+    flow = _flow([("hasAttachments", "boolean")])
+    roles = {"attachments": {"value": {"hasAttachments": False}, "keywords": ["attachments"]}}
+    inputs, _, unmapped = io.map_inputs(flow, roles, object_fallback=None, file_path=None)
+    assert inputs == {} and unmapped == ["attachments"]
+
+
 def test_a_role_no_input_means_is_reported_unmapped():
     flow = _flow([("invoiceNumber", "string")])
     _, _, unmapped = io.map_inputs(flow, DETECTOR_ROLES, object_fallback=None, file_path=None)
@@ -86,7 +100,7 @@ def test_an_input_the_grader_could_not_match_is_a_grader_error(capsys):
     with pytest.raises(SystemExit) as exc:
         io.unmapped_error(flow, ["account"], {"invoiceNumber": "MCS-1"})
     assert exc.value.code == io.GRADER_ERROR_EXIT
-    assert "GRADER ERROR (not an agent failure)" in capsys.readouterr().err
+    assert "possible grader mapping miss, or an unrelated input" in capsys.readouterr().err
 
 
 def test_an_input_the_flow_never_declared_is_an_agent_failure():

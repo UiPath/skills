@@ -365,6 +365,77 @@ class OtherStepsOnTheSameConnectorTests(unittest.TestCase):
             checker.assert_outcome(contract, SEED, debug, variables, [])
 
 
+def with_step(contract_field: str, step: str, response: dict, debug: dict, variables: dict) -> tuple:
+    ids = getattr(CONTRACT, contract_field) + (step,)
+    contract = checker.Contract(
+        output_ids=CONTRACT.output_ids,
+        jira_create_ids=ids if contract_field == "jira_create_ids" else CONTRACT.jira_create_ids,
+        slack_send_ids=ids if contract_field == "slack_send_ids" else CONTRACT.slack_send_ids,
+    )
+    debug["ElementExecutions"].append({"ElementId": step})
+    variables["Variables"][0]["Elements"].append({"ElementId": step, "Outputs": {"response": response}})
+    return contract, debug, variables
+
+
+class OneIssueOneMessageTests(unittest.TestCase):
+    def test_a_get_issue_of_the_created_key_is_one_issue(self):
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001", "fields": {}},
+            good_debug_data(), good_variables_data(),
+        )
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_a_get_issue_is_not_journalled_twice(self):
+        contract, _debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001", "fields": {}},
+            good_debug_data(), good_variables_data(),
+        )
+        effects = checker.harvest_side_effects(contract, variables)
+        self.assertEqual(effects["jira_keys"], ["CE-101"])
+        self.assertEqual(effects["jira_issues"], ["10001"])
+
+    def test_a_get_issue_alone_still_reaches_the_tenant_reread(self):
+        debug, variables = good_debug_data(), good_variables_data()
+        debug["ElementExecutions"] = [
+            e for e in debug["ElementExecutions"] if e["ElementId"] != "JiraCreate1"
+        ]
+        variables["Variables"][0]["Elements"] = [
+            e for e in variables["Variables"][0]["Elements"] if e["ElementId"] != "JiraCreate1"
+        ]
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001"}, debug, variables
+        )
+        contract = checker.Contract(CONTRACT.output_ids, ("JiraGet1",), CONTRACT.slack_send_ids)
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_two_creates_with_different_keys_fail(self):
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraCreate2", {"key": "CE-102", "id": "10002"},
+            good_debug_data(), good_variables_data(),
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "Jira create"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
+
+    def test_two_posts_with_different_timestamps_fail(self):
+        contract, debug, variables = with_step(
+            "slack_send_ids", "SlackSend2",
+            {"ts": "333.444", "channel": "C0B2FDZD1M3", "message": {"text": "[Sev1] ESC-BPMN-test", "ts": "333.444"}},
+            good_debug_data(), good_variables_data(),
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "Slack send"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
+
+
+class RuleEncodingTests(unittest.TestCase):
+    def test_the_severity_check_is_the_shared_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.bpmn"
+            path.write_text(SAMPLE_BPMN, encoding="utf-8")
+            with patch.object(checker, "assert_rule_encoded", side_effect=checker.CheckFailure("shared")):
+                with self.assertRaisesRegex(checker.CheckFailure, "shared"):
+                    checker.resolve_contract(path)
+
+
 class SideEffectHarvestTests(unittest.TestCase):
     def test_prefers_numeric_id_for_deletion_and_keeps_key(self):
         effects = checker.harvest_side_effects(CONTRACT, good_variables_data())

@@ -186,3 +186,39 @@ def test_a_build_that_feeds_the_trigger_input_straight_to_the_task_passes() -> N
     root["Globals"].pop("CreditScore")
     root["GlobalDefinitions"].pop("CreditScore")
     assert grader.check_run(PLAN, debug, grader.RunEvidence(variables_all["Data"]))
+
+
+def _default_risk_band(plan: dict, default: str) -> None:
+    for variable in plan["variables"]["inputOutputs"]:
+        if variable["name"] == "riskBand":
+            variable["default"] = default
+
+
+@pytest.mark.parametrize("default", ["LOW_RISK", "HIGH_RISK"])
+def test_no_run_outputs_fail_when_risk_band_has_a_default_although_bound(default: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    _default_risk_band(plan, default)
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+@pytest.mark.parametrize("source", ["=vars.riskBand", "=js:vars.riskBand", "=js:vars.result"])
+def test_no_run_outputs_fail_when_the_source_reads_a_case_variable(source: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    _default_risk_band(plan, "LOW_RISK")
+    next(o for o in _rule_task(plan)["data"]["outputs"] if o["var"] == "riskBand")["source"] = source
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+def test_no_run_outputs_fail_when_the_source_reads_a_case_variable_without_a_default() -> None:
+    plan = copy.deepcopy(PLAN)
+    next(o for o in _rule_task(plan)["data"]["outputs"] if o["var"] == "riskBand")["source"] = "=vars.riskBand"
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)

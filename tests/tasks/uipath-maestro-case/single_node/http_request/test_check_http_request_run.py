@@ -128,6 +128,27 @@ def test_an_instance_missing_from_the_list_fails(monkeypatch: pytest.MonkeyPatch
         evidence_mod.folder_key_of("00000000-0000-0000-0000-000000000000", "2026-11-18T13:00:00Z")
 
 
+def test_the_instance_list_stops_at_its_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [0.0]
+    calls = []
+    paged = json.dumps(
+        {"Result": "Success", "Data": [], "Pagination": {"HasMore": True, "NextPage": "n"}}
+    )
+
+    def slow_run(cmd, **kw):  # noqa: ANN001, ANN003
+        calls.append(kw["timeout"])
+        clock[0] += kw["timeout"]
+        return subprocess.CompletedProcess(cmd, 0, paged, "")
+
+    monkeypatch.setattr(evidence_mod, "_run", slow_run)
+    monkeypatch.setattr(evidence_mod.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(evidence_mod.time, "sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+    with pytest.raises(SystemExit, match="is not in"):
+        evidence_mod.folder_key_of("00000000-0000-0000-0000-000000000000", "2026-11-18T13:00:00Z")
+    assert clock[0] <= evidence_mod.LIST_DEADLINE_S
+    assert calls
+
+
 @pytest.mark.parametrize("header", ["Authorization", "XApiKey", "Cookie"])
 def test_a_credential_header_the_service_received_fails(header: str) -> None:
     variables_all = copy.deepcopy(EVIDENCE["variables_all"])

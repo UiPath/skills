@@ -91,6 +91,9 @@ def _match(texts: list[Any], keywords: list[str], *, substring: bool = True) -> 
     return best
 
 
+SCALAR_TYPES = ("number", "integer", "int", "float", "double", "decimal", "boolean", "bool")
+
+
 def _coerce(value: Any, declared_type: str | None) -> Any:
     t = (declared_type or "").lower()
     if t in ("number", "integer", "int", "float", "double", "decimal"):
@@ -195,9 +198,12 @@ def map_inputs(
         others.append(var)
     pairs = []
     for var in others:
-        is_array = str(var.get("type") or "").lower() == "array"
+        var_type = str(var.get("type") or "").lower()
+        is_array = var_type == "array"
         for role, spec in roles.items():
             if isinstance(spec["value"], list) != is_array:
+                continue
+            if isinstance(spec["value"], dict) and var_type in SCALAR_TYPES:
                 continue
             score, leftover = _match([var["id"], var.get("description")], spec["keywords"])
             if score:
@@ -319,7 +325,7 @@ def unmapped_error(flow: dict, unmapped: list[str], inputs: dict | None = None) 
     """The failure to report when a role the flow needs found no input, else None.
 
     When `inputs` (what was mapped) is given and the flow still declares inputs the
-    grader could not match, this prints a `GRADER ERROR (not an agent failure)`
+    grader could not match, this prints a `possible grader mapping miss, or an unrelated input`
     line and exits with `GRADER_ERROR_EXIT`: the grader's fragments may have
     missed the agent's name, though an unrelated extra input the agent added
     lands here too. Otherwise the agent never declared the input, and the
@@ -332,7 +338,7 @@ def unmapped_error(flow: dict, unmapped: list[str], inputs: dict | None = None) 
                  if v["id"] not in inputs and str(v.get("type") or "").lower() != "file"]
         if spare:
             sys.stderr.write(
-                f"GRADER ERROR (not an agent failure): could not map {', '.join(unmapped)} "
+                f"possible grader mapping miss, or an unrelated input: could not map {', '.join(unmapped)} "
                 f"onto the flow's unmatched inputs {spare} (all inputs: {ids})\n"
             )
             sys.exit(GRADER_ERROR_EXIT)

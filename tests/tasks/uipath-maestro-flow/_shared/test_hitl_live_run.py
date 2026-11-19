@@ -372,6 +372,67 @@ def test_invoice_approval_fails_when_a_rejection_still_posts(tmp_path):
     assert "reachable only from Approve ran after a rejection: ['postToSap']" in r.stdout + r.stderr
 
 
+def shared_posting_flow() -> dict:
+    flow = invoice_flow()
+    flow["edges"] = [
+        {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "financeApproval"},
+        {"sourceNodeId": "financeApproval", "sourcePort": "outcome-approve", "targetNodeId": "postToSap"},
+        {"sourceNodeId": "financeApproval", "sourcePort": "outcome-reject", "targetNodeId": "postToSap"},
+        {"sourceNodeId": "postToSap", "sourcePort": "success", "targetNodeId": "end"},
+    ]
+    return flow
+
+
+def test_invoice_approval_fails_when_a_rejection_posts_through_a_shared_step(tmp_path):
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
+                                             "globals": {"status": "rejected", "sapDocumentNumber": ""}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", shared_posting_flow(), scenario)
+    assert r.returncode != 0
+    assert "posting step" in r.stdout + r.stderr
+    assert "ran after a rejection" in r.stdout + r.stderr
+
+
+def assembled_marker_flow(posting: dict, end_expression: str, edges: list[dict]) -> dict:
+    return {
+        "nodes": [
+            {"id": "start", "type": "core.trigger.manual"},
+            INVOICE_HITL,
+            posting,
+            {"id": "end", "type": "core.control.end",
+             "outputs": {"sapDocumentNumber": {"var": "sapDocumentNumber",
+                                               "source": {"type": "jsExpression", "expression": end_expression}}}},
+            {"id": "end2", "type": "core.control.end"},
+        ],
+        "edges": edges,
+    }
+
+
+POST_FIRST = [
+    {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postToSap"},
+    {"sourceNodeId": "postToSap", "sourcePort": "success", "targetNodeId": "financeApproval"},
+    {"sourceNodeId": "financeApproval", "sourcePort": "outcome-approve", "targetNodeId": "end"},
+    {"sourceNodeId": "financeApproval", "sourcePort": "outcome-reject", "targetNodeId": "end2"},
+]
+
+
+def test_invoice_approval_fails_on_an_assembled_marker_before_the_approval(tmp_path):
+    posting = {"id": "postToSap", "type": "core.action.script",
+               "inputs": {"script": 'return { sapDocumentNumber: "SA" + "P-" + $vars.start.output.invoiceNumber };'}}
+    flow = assembled_marker_flow(posting, "$vars.postToSap.output.sapDocumentNumber", POST_FIRST)
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, GOOD_INVOICE)
+    assert r.returncode != 0
+    assert "can run without the finance manager's approval" in r.stdout + r.stderr
+
+
+def test_invoice_approval_fails_on_a_step_updating_the_document_number_before_the_approval(tmp_path):
+    posting = {"id": "postToSap", "type": "core.action.script", "inputs": {"script": "return {}"}}
+    flow = assembled_marker_flow(posting, '"posted"', POST_FIRST)
+    flow["variables"] = {"variableUpdates": {"postToSap": [{"variableId": "sapDocumentNumber", "expression": "x"}]}}
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, GOOD_INVOICE)
+    assert r.returncode != 0
+    assert "can run without the finance manager's approval" in r.stdout + r.stderr
+
+
 @pytest.mark.parametrize("globals_,why", [
     ({"status": "posted", "sapDocumentNumber": ""}, "expected 'rejected'"),
     ({"status": "rejected", "sapDocumentNumber": "SAP-{invoiceNumber}"}, "must be empty after a rejection"),
@@ -464,6 +525,33 @@ def test_expense_app_task_fails_when_a_rejection_is_not_reported_rejected(tmp_pa
     assert "expected 'rejected'" in r.stdout + r.stderr
 
 
+def test_expense_app_task_fails_on_an_assembled_marker_before_the_review(tmp_path):
+    flow = expense_flow()
+    posting = {"id": "postExpense", "type": "core.action.script",
+               "inputs": {"script": 'return { sapDocumentNumber: "SAPE" + "XP-" + $vars.start.output.expenseId };'}}
+    end = {"id": "end", "type": "core.control.end",
+           "outputs": {"sapDocumentNumber": {"var": "sapDocumentNumber", "source": {
+               "type": "jsExpression", "expression": "$vars.postExpense.output.sapDocumentNumber"}}}}
+    flow["nodes"] = [posting if n["id"] == "postExpense" else end if n["id"] == "end" else n
+                     for n in flow["nodes"]]
+    flow["edges"] = [
+        {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postExpense"},
+        {"sourceNodeId": "postExpense", "sourcePort": "success", "targetNodeId": "managerReview"},
+        {"sourceNodeId": "managerReview", "sourcePort": "completed", "targetNodeId": "end"},
+    ]
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", flow, GOOD_EXPENSE, "run")
+    assert r.returncode != 0
+    assert "can run without the manager's review" in r.stdout + r.stderr
+
+
+def test_expense_app_task_cancels_a_run_that_did_not_complete(tmp_path):
+    scenario = dict(GOOD_EXPENSE, cli="suspend", final_status="Faulted")
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
+    assert r.returncode != 0
+    assert "did not complete" in r.stdout + r.stderr
+    assert state_of(tmp_path).get("cancelled") is True
+
+
 def test_expense_structure_refuses_a_quick_form_substitute(tmp_path):
     quick = {"id": "managerReview", "type": "uipath.human-in-the-loop.quick-form",
              "inputs": {"schema": {"fields": [{"id": "note", "label": "ExpenseReviewApp"}]}}}
@@ -537,3 +625,38 @@ def test_node_folder_paths_reads_the_app_folder():
 def test_row_job_keys_ignore_the_empty_guid():
     row = {"CreatorJobKey": "00000000-0000-0000-0000-000000000000", "TaskSource": {"SourceId": "ABC"}}
     assert live.row_job_keys(row) == {"abc"}
+
+
+def test_bounded_calls_return_within_the_minimum_when_uip_hangs(tmp_path, monkeypatch):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    hung = bin_dir / "uip"
+    hung.write_text("#!/bin/sh\nsleep 30\n")
+    hung.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setattr(live, "MIN_CALL_SECONDS", 1)
+    live.bound_calls_by(time.monotonic() - 100)
+    try:
+        started = time.monotonic()
+        assert live.uip_json(["tasks", "list"]) is None
+        assert time.monotonic() - started < 5
+    finally:
+        live.bound_calls_by(None)
+
+
+def test_find_run_task_stops_reading_tasks_at_the_deadline():
+    rows = [{"Id": 7, "Status": "Unassigned", "Type": "AppTask", "FolderId": 42,
+             "CreatorJobKey": "00000000-0000-0000-0000-000000000000"}]
+    reads = []
+
+    def reader(task_id, folder):
+        reads.append(task_id)
+        return {}
+
+    ids = live.RunIds(folder_id="42", job_key="52c347d7-d166-49f8-8480-f6fb55763afd")
+    task, _notes = live.find_run_task(
+        ids, lambda *_: True, time.monotonic() - 1, None,
+        lister=lambda *_a, **_k: rows, data_reader=reader, sleep=lambda _s: None,
+    )
+    assert task is None
+    assert reads == []

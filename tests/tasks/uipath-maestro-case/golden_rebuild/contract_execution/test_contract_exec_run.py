@@ -10,13 +10,13 @@ Counsel review follows only after the request check, so the run parks there.
 
 from __future__ import annotations
 
-import importlib.util
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("case_run_contract", HERE.parent.parent / "_setup" / "case_run.py")
-case_run = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(case_run)
+CASE_ROOT = HERE.parent.parent
+sys.path.insert(0, str(CASE_ROOT))
+from _shared import case_run_path  # noqa: E402
 
 
 def _task(task_id: str, task_type: str, name: str, rule: str, required: bool) -> list[dict]:
@@ -58,7 +58,7 @@ PARKED = [
 
 
 def test_the_plan_names_the_opening_path() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     assert [t["displayName"] for _, t in path["automated"]] == ["Pull Counterparty Records"]
     assert [t["displayName"] for _, t in path["human"]] == ["Validate Request Details"]
     # The request check holds the stage open, so the run is not expected to reach counsel.
@@ -66,31 +66,31 @@ def test_the_plan_names_the_opening_path() -> None:
 
 
 def test_a_run_parked_at_the_request_check_passes() -> None:
-    path = case_run.opening_path(PLAN)
-    assert case_run.path_failures(path, {"executions": PARKED}) == []
-    assert case_run.path_reached(path, PARKED)
+    path = case_run_path.opening_path(PLAN)
+    assert case_run_path.path_failures(path, {"executions": PARKED}) == []
+    assert case_run_path.path_reached(path, PARKED)
 
 
 def test_the_optional_clause_analysis_may_fail() -> None:
     """Debug starts with no draft attached, so the optional agent can fault."""
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     rows = PARKED + [{"elementId": "tuUoi6UtD", "status": "Faulted"}]
-    assert case_run.path_failures(path, {"executions": rows}) == []
+    assert case_run_path.path_failures(path, {"executions": rows}) == []
 
 
 def test_a_failed_counterparty_pull_fails() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     rows = [r for r in PARKED if r["elementId"] != "tMYD48OCQ"] + [
         {"elementId": "tMYD48OCQ", "status": "Faulted"}
     ]
-    problems = case_run.path_failures(path, {"executions": rows})
+    problems = case_run_path.path_failures(path, {"executions": rows})
     assert any("api-workflow task 'Pull Counterparty Records'" in p for p in problems)
     assert any("required elements failed" in p for p in problems)
 
 
 def test_a_request_check_that_never_opened_fails() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     rows = [r for r in PARKED if r["elementId"] != "tKhteOD4C"]
-    assert case_run.path_failures(path, {"executions": rows}) == [
+    assert case_run_path.path_failures(path, {"executions": rows}) == [
         "human task 'Validate Request Details' in 'Checking the request' was never opened"
     ]

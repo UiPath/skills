@@ -44,6 +44,7 @@ from _shared import bpmn_check, bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
+    assert_rule_encoded,
     connector_response_values,
     element_output_records,
     exact_type,
@@ -63,7 +64,6 @@ from _shared.bpmn_live import (  # noqa: E402
 )
 
 NAME = "CustomerEscalationTriage"
-SEVERITIES = ("Sev1", "Sev2", "Sev3")
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
@@ -112,12 +112,7 @@ class Contract:
 
 def resolve_contract(path: Path) -> Contract:
     text = path.read_text(encoding="utf-8")
-    missing_severities = [s for s in SEVERITIES if s not in text]
-    if missing_severities:
-        raise CheckFailure(
-            f"the process never names {missing_severities}: it returns the seeded "
-            "case's answer instead of classifying by the stated rule"
-        )
+    assert_rule_encoded(text)
     root = ET.fromstring(text.encode("utf-8"))
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
@@ -186,6 +181,18 @@ def resolve_contract(path: Path) -> Contract:
     )
 
 
+def _step_values(
+    variables_data: object, element_id: str, field: str
+) -> set[str]:
+    return {
+        value
+        for value in connector_response_values(
+            element_output_records(variables_data, element_id), field
+        )
+        if isinstance(value, str) and value
+    }
+
+
 def steps_returning(
     variables_data: object, element_ids: tuple[str, ...], field: str
 ) -> tuple[str, ...]:
@@ -196,13 +203,32 @@ def steps_returning(
     return tuple(
         element_id
         for element_id in element_ids
-        if any(
-            isinstance(value, str) and value
-            for value in connector_response_values(
-                element_output_records(variables_data, element_id), field
-            )
-        )
+        if _step_values(variables_data, element_id, field)
     )
+
+
+def distinct_returns(
+    variables_data: object,
+    element_ids: tuple[str, ...],
+    field: str,
+    executed_ids: list,
+) -> int:
+    """Distinct `field` values the steps returned, a step run twice counting
+    twice: a create plus a get-issue of the same key is one issue."""
+
+    runs: dict[str, int] = {}
+    for element_id in steps_returning(variables_data, element_ids, field):
+        for value in _step_values(variables_data, element_id, field):
+            runs[value] = max(runs.get(value, 0), executed_ids.count(element_id))
+    return sum(runs.values())
+
+
+def _distinct(values: list) -> list:
+    unique: list = []
+    for value in values:
+        if value not in unique:
+            unique.append(value)
+    return unique
 
 
 def harvest_side_effects(
@@ -218,16 +244,16 @@ def harvest_side_effects(
         variables_data,
         steps_returning(variables_data, contract.jira_create_ids, "key"),
     )
-    jira_keys = [
+    jira_keys = _distinct([
         value
         for value in connector_response_values(jira_outputs, "key")
         if isinstance(value, str)
-    ]
-    jira_ids = [
+    ])
+    jira_ids = _distinct([
         value
         for value in connector_response_values(jira_outputs, "id")
         if isinstance(value, str)
-    ]
+    ])
     slack_outputs = element_output_records(
         variables_data, contract.slack_send_ids
     )
@@ -242,7 +268,7 @@ def harvest_side_effects(
         "jira_keys": jira_keys,
         # Deletion targets prefer the numeric id; the key still works.
         "jira_issues": jira_ids or jira_keys,
-        "slack_messages": slack_messages,
+        "slack_messages": _distinct(slack_messages),
     }
 
 
@@ -284,8 +310,8 @@ def assert_outcome(
     if incidents:
         raise CheckFailure(f"unexpected incidents: {incidents}")
 
-    # Execution evidence: one issue created and one message posted. Counts sum
-    # across the connector's steps that returned a key / ts, so a search,
+    # Execution evidence: one issue created and one message posted. Counts are
+    # distinct keys / ts values the connector's steps returned, so a search,
     # comment or lookup on the same connector is not counted.
     executions = get_ci(debug_data, "ElementExecutions", [])
     executed_ids = [
@@ -295,8 +321,7 @@ def assert_outcome(
         ("Jira create", contract.jira_create_ids, "key"),
         ("Slack send", contract.slack_send_ids, "ts"),
     ):
-        creating = steps_returning(variables_data, element_ids, field)
-        count = sum(executed_ids.count(element_id) for element_id in creating)
+        count = distinct_returns(variables_data, element_ids, field, executed_ids)
         if count != 1:
             raise CheckFailure(
                 f"{label} {list(element_ids)} expected 1 execution that "

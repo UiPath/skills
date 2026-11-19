@@ -10,16 +10,18 @@ the CLI's `Data` shape (camelCase rows), the instance follow-up uses
 
 from __future__ import annotations
 
-import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("case_run_cm", HERE.parent.parent / "_setup" / "case_run.py")
-case_run = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(case_run)
+CASE_ROOT = HERE.parent.parent
+sys.path.insert(0, str(CASE_ROOT))
+sys.path.insert(0, str(CASE_ROOT / "_setup"))
+import case_run  # noqa: E402
+from _shared import case_run_path  # noqa: E402
 
 
 def _task(task_id: str, task_type: str, name: str, rule: str, required: bool = True) -> dict:
@@ -63,7 +65,7 @@ AT_APPROVAL = STAGE1_DONE + [
 
 
 def test_the_plan_names_the_opening_path() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     assert [t["displayName"] for _, t in path["automated"]] == [
         "Analyze Expense Request", "Process Expense Request", "Record Expense via RPA",
     ]
@@ -72,27 +74,27 @@ def test_the_plan_names_the_opening_path() -> None:
 
 
 def test_a_run_parked_at_the_approval_passes() -> None:
-    path = case_run.opening_path(PLAN)
-    assert case_run.path_failures(path, {"executions": AT_APPROVAL}) == []
+    path = case_run_path.opening_path(PLAN)
+    assert case_run_path.path_failures(path, {"executions": AT_APPROVAL}) == []
 
 
 def test_a_run_whose_robot_never_ran_fails() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     rows = [r for r in AT_APPROVAL if r["elementId"] != "tcmH1qeMP"]
-    problems = case_run.path_failures(path, {"executions": rows})
+    problems = case_run_path.path_failures(path, {"executions": rows})
     assert any("rpa task 'Record Expense via RPA'" in p for p in problems)
 
 
 def test_a_run_that_never_reached_the_approval_fails() -> None:
-    path = case_run.opening_path(PLAN)
-    problems = case_run.path_failures(path, {"executions": STAGE1_DONE})
+    path = case_run_path.opening_path(PLAN)
+    problems = case_run_path.path_failures(path, {"executions": STAGE1_DONE})
     assert problems == ["the case never moved on to 'Stage 2'"]
 
 
 def test_a_failed_required_task_fails() -> None:
-    path = case_run.opening_path(PLAN)
+    path = case_run_path.opening_path(PLAN)
     rows = AT_APPROVAL + [{"elementId": "tWHwPiWpw", "status": "Faulted"}]
-    problems = case_run.path_failures(path, {"executions": rows})
+    problems = case_run_path.path_failures(path, {"executions": rows})
     assert any("required elements failed" in p for p in problems)
 
 
@@ -131,7 +133,7 @@ def fake(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(case_check, "find_project_dir", lambda *a, **k: "Sol/Case")
     monkeypatch.setattr(case_check, "find_solution_dir", lambda *a, **k: "Sol")
-    monkeypatch.setattr(case_run.time, "sleep", lambda s: None)
+    monkeypatch.setattr(case_run_path.time, "sleep", lambda s: None)
 
     def install(debug_stdout: dict, follow_up: list[dict]) -> FakeUip:
         stub = FakeUip(debug_stdout, follow_up)
@@ -151,9 +153,9 @@ def test_a_suspended_debug_is_followed_on_the_instance_then_cancelled(fake) -> N
         follow_up=[{"ElementId": r["elementId"], "Status": r["status"]} for r in AT_APPROVAL],
     )
 
-    path, run = case_run.run_opening_path(PLAN)
+    path, run = case_run_path.run_opening_path(PLAN)
 
-    assert case_run.path_failures(path, run) == []
+    assert case_run_path.path_failures(path, run) == []
     assert ["uip", "maestro", "case", "instance", "cancel", "inst-1",
             "--comment", "eval cleanup"] in stub.calls
 
@@ -166,17 +168,17 @@ def test_a_poll_timeout_envelope_is_followed_by_its_instance_id(fake) -> None:
         follow_up=[{"ElementId": r["elementId"], "Status": r["status"]} for r in AT_APPROVAL],
     )
 
-    path, run = case_run.run_opening_path(PLAN)
+    path, run = case_run_path.run_opening_path(PLAN)
 
     assert run["status"] == "Running"
-    assert case_run.path_failures(path, run) == []
+    assert case_run_path.path_failures(path, run) == []
 
 
 def test_a_debug_that_never_started_an_instance_fails(fake) -> None:
     fake({"Result": "Failure", "Message": "Resource is not configured"}, follow_up=[])
 
     with pytest.raises(SystemExit, match="did not start an instance"):
-        case_run.run_opening_path(PLAN)
+        case_run_path.run_opening_path(PLAN)
 
 
 def test_post_run_cancels_only_this_tasks_open_debug_instances(

@@ -31,6 +31,8 @@ from _shared.case_check import _get_ci, _parse_json, _run, iter_tasks  # noqa: E
 
 LIST_ATTEMPTS = 6
 LIST_SLEEP_S = 5
+LIST_DEADLINE_S = 180
+LIST_CALL_TIMEOUT_S = 180
 
 
 def fail(message: str) -> None:
@@ -53,13 +55,18 @@ def _uip(args: list[str], what: str) -> Any:
 
 def folder_key_of(instance_id: str, since: str) -> str:
     """The folder the debug instance runs in (the invoker's personal workspace)."""
+    deadline = time.monotonic() + LIST_DEADLINE_S
     for attempt in range(LIST_ATTEMPTS):
         cursor = None
         for _page in range(10):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
             args = ["maestro", "case", "instance", "list", "--from-date", since, "--limit", "500"]
             if cursor:
                 args += ["--next-page", cursor]
-            r = _run(["uip", *args, "--output", "json"], timeout=180, what="uip maestro case instance list")
+            r = _run(["uip", *args, "--output", "json"], timeout=min(LIST_CALL_TIMEOUT_S, remaining),
+                     what="uip maestro case instance list")
             envelope = _parse_json(r.stdout) or {}
             items = envelope.get("Data") or []
             if isinstance(items, dict):
@@ -71,8 +78,11 @@ def folder_key_of(instance_id: str, since: str) -> str:
             cursor = pagination.get("NextPage")
             if not pagination.get("HasMore") or not cursor:
                 break
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
         if attempt < LIST_ATTEMPTS - 1:
-            time.sleep(LIST_SLEEP_S)
+            time.sleep(min(LIST_SLEEP_S, remaining))
     fail(f"debug instance {instance_id} is not in `uip maestro case instance list --from-date {since}`")
 
 

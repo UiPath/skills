@@ -48,7 +48,8 @@ OUTPUT = "product"
 EXPECTED = 42
 LIVE_RUN_DIR = Path("product-calc-live")
 LITERAL = re.compile(r"(?<![\w.])42(?![\w.])")
-COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
+COMMENT = re.compile(r"""('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
+KEEP_LITERAL = r"\1"
 
 
 def assert_not_hardcoded(root: ET.Element) -> None:
@@ -56,7 +57,7 @@ def assert_not_hardcoded(root: ET.Element) -> None:
     for node in root.iter():
         if node.tag in (q(UIPATH_NS, "input"), q(UIPATH_NS, "output")):
             texts.extend([node.attrib.get("value", ""), node.attrib.get("source", ""), node.text or ""])
-    hits = [t.strip() for t in texts if t and LITERAL.search(COMMENT.sub("", t))]
+    hits = [t.strip() for t in texts if t and LITERAL.search(COMMENT.sub(KEEP_LITERAL, t))]
     if hits:
         raise CheckFailure(f"the answer 42 is written into the process as a literal: {hits[:3]}")
 

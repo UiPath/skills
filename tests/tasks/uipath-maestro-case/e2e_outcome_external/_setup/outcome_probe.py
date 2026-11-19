@@ -56,6 +56,7 @@ STDERR_TAIL_CHARS = 4000
 #      keeps running server-side. Measured 2026-08-07: the CLI timed out at 600 s
 #      and the case's effects landed ~7 min later. A short probe budget reports a
 #      false negative for a case that did its job.
+CLOCK_SKEW_S = 2
 POLL_ATTEMPTS = 20
 POLL_SLEEP = 30
 
@@ -457,11 +458,9 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     kept, dropped = [], []
     for hit in hits:
         when = _to_epoch(hit.get(stamp_key))
-        # No skew allowance: the agent is asked to test its build, so its own
-        # run writes token-bearing records seconds before the floor, while the
-        # harness's run cannot write before it starts (measured Graph/Atlassian
-        # stamps agreed with ours to the second).
-        if when is None or when >= floor:
+        # The agent's own test run writes token-bearing records seconds before
+        # the floor, so the allowance stays at a second or two.
+        if when is None or when >= floor - CLOCK_SKEW_S:
             kept.append(hit)
         else:
             dropped.append(hit)

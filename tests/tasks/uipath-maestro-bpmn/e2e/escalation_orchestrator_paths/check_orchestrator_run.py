@@ -73,28 +73,37 @@ def _loose(text: str) -> str:
 
 # Squashed spellings the word split cannot separate ("nodraft", "noresponserequired").
 _NO_RESPONSE = {
-    "", "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
+    "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
     "noresponseneeded", "notapplicable", "notneeded", "draftnotneeded",
 }
-_NEGATIONS = {"no", "not", "none", "false", "without"}
+_NEGATED_DRAFT = re.compile(
+    r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|response)\b"
+    r"|\bdraft\s+(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
+    r"|\bdraft\s+(?:none|false|n a|na)\b"
+    r"|^(?:n a|none|false|not applicable|not required|not needed)$"
+)
 
 
-def _words(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9]+", re.sub(r"([a-z])([A-Z])", r"\1 \2", text).lower())
+def _words(text: str) -> str:
+    unquoted = re.sub(r"['\u2019]", "", text)
+    return " ".join(re.findall(r"[a-z0-9]+", re.sub(r"([a-z])([A-Z])", r"\1 \2", unquoted).lower()))
 
 
 def response_mode(value) -> str | None:
     """'draft' or 'none' by meaning: the request no longer names the values, only
     that a draft response is written for escalations that need engineering.
-    Negation is read first, so "No draft" and "Draft not needed" are 'none'."""
+    A negation counts only when it governs the draft ("No draft", "Draft not
+    needed"), so "Draft, no edits required" is still 'draft'. Anything else is
+    None (unknown)."""
     if isinstance(value, bool):
         return "draft" if value else "none"
-    if isinstance(value, str):
-        text = _loose(value)
-        if text in _NO_RESPONSE or _NEGATIONS.intersection(_words(value)):
-            return "none"
-        if "draft" in text:
-            return "draft"
+    if not isinstance(value, str):
+        return None
+    text = _loose(value)
+    if text in _NO_RESPONSE or _NEGATED_DRAFT.search(_words(value)):
+        return "none"
+    if "draft" in text:
+        return "draft"
     return None
 
 
@@ -130,7 +139,8 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
         if field == "caseKey":
             ok = any(isinstance(v, str) and v.strip() == expected[field] for v in values)
         elif field == "responseMode":
-            ok = any(response_mode(v) == response_mode(expected[field]) for v in values)
+            wanted = response_mode(expected[field])
+            ok = wanted is not None and any(response_mode(v) == wanted for v in values)
         else:
             ok = any(_norm(v) == _norm(expected[field]) for v in values)
         if not ok:

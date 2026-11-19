@@ -46,6 +46,7 @@ APP_MARKERS = (
     "a30ac44f-8ebf-4124-9746-abc93a5ae17d",  # resource key
     "ID5dcddde3c89d4a299e6f031e31568900",  # appSystemName
 )
+POSTING_OUTPUT = "sapDocumentNumber"
 POSTING_MARKER = "SAPEXP-"  # the fixture's posting script builds the document number
 DEADLINE_SECONDS = 600
 CLI_TIMEOUT = 540
@@ -66,11 +67,7 @@ def app_hitl(flow: dict) -> dict | None:
 
 
 def posting_ids(flow: dict) -> set[str]:
-    return {
-        str(n.get("id"))
-        for n in flow.get("nodes") or []
-        if POSTING_MARKER in json.dumps((n.get("inputs") or {}))
-    }
+    return live.posting_steps(flow, POSTING_MARKER, POSTING_OUTPUT)
 
 
 def structure(project_dir: str) -> None:

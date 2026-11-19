@@ -108,7 +108,11 @@ def test_wrong_severity_fails():
         checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, severity="Sev1"))
 
 
-@pytest.mark.parametrize("value", ["draft", "Draft response", True])
+@pytest.mark.parametrize(
+    "value",
+    ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "Draft, no edits required",
+     "Draft ready, not sent", "Draft - no review needed"],
+)
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]
     assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode=value))
@@ -124,8 +128,9 @@ def test_sev3_needs_no_draft_response():
 
 @pytest.mark.parametrize(
     "value",
-    ["No draft", "NoDraft", "no_draft", "Draft not needed", "Not applicable", "N/A",
-     "No response needed", "none", "", False],
+    ["No draft", "NoDraft", "no_draft", "no-draft", "Draft not needed", "Not applicable", "N/A",
+     "No response needed", "none", "Draft: none", "none (draft not required)", "Do not draft",
+     "Don't draft", "Without a draft", "Draft: false", False],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -133,6 +138,13 @@ def test_a_negated_response_mode_reads_as_none(value):
     sev1 = SEED["cases"][0]
     with pytest.raises(checker.CheckFailure, match="responseMode"):
         checker.verify_case(PROCESS, SLACK, sev1, _debug(sev1), _variables(sev1, responseMode=value))
+
+
+@pytest.mark.parametrize("value", ["", "   ", "maybe", "pending"])
+def test_an_unrecognized_response_mode_matches_neither_mode(value):
+    for case in (SEED["cases"][0], next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")):
+        with pytest.raises(checker.CheckFailure, match="responseMode"):
+            checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode=value))
 
 
 def test_message_id_must_be_the_posted_ts():

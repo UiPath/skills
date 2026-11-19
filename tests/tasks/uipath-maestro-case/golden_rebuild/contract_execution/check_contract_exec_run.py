@@ -24,9 +24,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CASE_ROOT = os.path.dirname(os.path.dirname(HERE))
-sys.path.insert(0, os.path.join(CASE_ROOT, "_setup"))
 sys.path.insert(0, CASE_ROOT)
-from case_run import path_failures, run_opening_path  # noqa: E402
+from _shared.case_run_path import path_failures, run_opening_path  # noqa: E402
 from _shared.case_check import existing_caseplan, read_caseplan  # noqa: E402
 
 EXPECTED_CASEPLAN = os.path.join("ContractExecution", "ContractExecution", "caseplan.json")

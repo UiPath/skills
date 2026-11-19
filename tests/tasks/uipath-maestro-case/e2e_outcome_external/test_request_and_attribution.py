@@ -73,3 +73,13 @@ def test_a_record_stamped_seconds_before_the_harness_debug_start_is_not_counted(
     on_time = {"subject": "y", "received": "2026-11-18T10:00:00Z"}
 
     assert probe._only_after([early, on_time], "received", "email") == [on_time]
+
+
+def test_a_record_one_second_before_the_floor_is_counted_as_clock_skew(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _floor(monkeypatch, tmp_path, "2026-11-18T10:00:00+00:00")
+    skewed = {"subject": "x", "received": "2026-11-18T09:59:59Z"}
+    agents = {"subject": "y", "received": "2026-11-18T09:59:50Z"}
+
+    assert probe._only_after([skewed, agents], "received", "email") == [skewed]
