@@ -20,6 +20,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
+    vars_ref,
 )
 
 
@@ -241,8 +242,7 @@ def main() -> None:
         bridges = [
             output
             for output in start_mapping.findall("uipath:output", NS)
-            if output.attrib.get("source")
-            == f"=vars.{attr(public_input, 'id')}"
+            if vars_ref(output.attrib.get("source")) == attr(public_input, "id")
             and output.attrib.get("var")
         ]
         if len(bridges) != 1:
@@ -271,11 +271,11 @@ def main() -> None:
         output
         for output in end_mapping.findall("uipath:output", NS)
         if output.attrib.get("var") == attr(public_output, "id")
-        and (output.attrib.get("source") or "").startswith("=vars.")
+        and vars_ref(output.attrib.get("source")) is not None
     ]
     if len(output_bridges) != 1:
         fail("completion end must bridge mutable 'decision' to the public output")
-    internal_output_id = output_bridges[0].attrib["source"].removeprefix("=vars.")
+    internal_output_id = vars_ref(output_bridges[0].attrib["source"])
     internal_output = variable_by_id(variables, internal_output_id)
     if local_name(internal_output) != "inputOutput":
         fail("'decision' end bridge must read from uipath:inputOutput")

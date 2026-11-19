@@ -37,6 +37,10 @@ run_limits:
 reference:
   directory: ../..
 
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-jdbc=uipath-maestro-flow'
+    timeout: 120
+
 initial_prompt: |
   Create a new UiPath Maestro BPMN process project called "DatabricksQuery"
   inside a solution of the same name, with a manual start.

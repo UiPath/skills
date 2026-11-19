@@ -28,6 +28,24 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
+_VARS_EXPRESSION = re.compile(r"=(?:js:\s*)?vars\.([\w-]+(?:\.[\w-]+)*)")
+
+
+def vars_ref(value: str | None, *, fields: bool = False) -> str | None:
+    """The variable a mapping value reads, for ``=vars.<id>`` or ``=js:vars.<id>``.
+
+    The canvas treats the two spellings as the same read of one variable, and the
+    skill writes the ``=js:`` form. ``None`` for anything else, including a larger
+    script (``=js:vars.a + 1``) or a field read (``=vars.a.b``) unless ``fields``
+    is set, in which case the dotted path after ``vars.`` is returned.
+    """
+    match = _VARS_EXPRESSION.fullmatch((value or "").strip())
+    if match is None:
+        return None
+    path = match.group(1)
+    return path if fields or "." not in path else None
+
+
 def _project_files(paths: Iterable[_PathLike]) -> list[_PathLike]:
     """The subset of ``paths`` that sit beside a ``project.uiproj``.
 
@@ -160,7 +178,12 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             hinted = _project_files(matches)
-            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
+            # Several matches and no project to prefer: the shallowest is the file
+            # the agent edited in place. A same-named copy in a work folder
+            # (`Foo-work/Foo.bpmn`) is deeper, and plain alphabetical order would
+            # put it first (`-` sorts before `.`).
+            shallowest = min(matches, key=lambda p: (Path(p).parts.__len__(), p))
+            return _entry_point_beside(hinted[0] if len(hinted) == 1 else shallowest)
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -672,6 +695,20 @@ def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[s
     )
 
 
+def _catalog_verb(task: ET.Element) -> str:
+    """The catalog verb (``getbyid``) the activity was picked by, or ``""``.
+
+    Read from ``activityMetadata.activity.configuration.httpMethod`` of the
+    context ``metadata`` input, where the canvas serializes the picked operation.
+    """
+    try:
+        metadata = json.loads(context_value(task, "metadata"))
+        configuration = json.loads(metadata["activityMetadata"]["activity"]["configuration"])
+        return str(configuration["httpMethod"]).strip().lower()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return ""
+
+
 def _operation_matches(
     task: ET.Element,
     method: str,
@@ -690,6 +727,17 @@ def _operation_matches(
         recorded = context_value(task, "operation").strip().lower()
         if operation.operation and recorded:
             return recorded == operation.operation.lower()
+        # `method` in the context is the HTTP method (`GET`); the catalog verb the
+        # operation was picked by (`GETBYID`) is only in the node's metadata
+        # (`instanceParameters.httpMethod`). That verb decides when the node has it;
+        # a bare `GET` with no metadata stays a list read, not a get-by-id.
+        verb = _catalog_verb(task)
+        if verb:
+            # A catalog verb in the context `method` itself (`GETBYID`, what the
+            # canvas's quick-add copies) still counts.
+            return verb in _methods(operation) or (
+                method in _CATALOG_ONLY_METHODS and method in _methods(operation)
+            )
         return method in _methods(operation)
 
     if method not in _http_methods(operation):

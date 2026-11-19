@@ -136,12 +136,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The prompt states the exact project layout, so the pinned path grades a
-  # stated requirement (unlike the flow suite, whose prompt names only the
-  # flow and therefore discovers the file).
+  # Studio Web lays the project out as <Project>/<Project>/Process.bpmn and the
+  # Node CLI as <Solution>/<Project>/<Project>.bpmn; resolve it either way.
   - type: run_command
     description: "The UiPath CLI validator independently accepts the generated BPMN"
-    command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
+    command: "uip maestro bpmn validate \"$(python3 $REFERENCE_DIR/_shared/print_bpmn_path.py CustomerEscalationTriage.bpmn)\" --output json"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

@@ -59,11 +59,9 @@ from _shared.bpmn_live import (  # noqa: E402
     UIPATH_NS,
 )
 
-# The prompt states this exact layout, so the pinned path is a stated
-# requirement — not the unstated-solution-name trap the flow suite's
-# discovery helper exists for.
-PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
-BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
+# The project wherever the agent put it: `<Project>/<Project>/Process.bpmn` in Studio Web,
+# `<Solution>/<Project>/<Project>.bpmn` from the Node CLI.
+BPMN_NAME = "CustomerEscalationTriage.bpmn"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
@@ -126,7 +124,7 @@ class Contract:
     classifier_ids: tuple[str, ...]
 
 
-def resolve_contract(path: Path = BPMN_FILE) -> Contract:
+def resolve_contract(path: Path) -> Contract:
     root = ET.parse(path).getroot()
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
@@ -455,9 +453,9 @@ def assert_jira_issue_on_tenant(
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    if not BPMN_FILE.is_file():
-        raise CheckFailure(f"missing {BPMN_FILE}")
-    contract = resolve_contract()
+    BPMN_FILE = bpmn_check.resolve_bpmn_file(BPMN_NAME)
+    PROJECT = BPMN_FILE.parent
+    contract = resolve_contract(BPMN_FILE)
     original_hash = sha256(BPMN_FILE)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()

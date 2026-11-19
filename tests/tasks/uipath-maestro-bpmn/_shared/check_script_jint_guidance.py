@@ -21,6 +21,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_sequence_integrity,
     text_content,
+    vars_ref,
 )
 
 FORBIDDEN = (
@@ -622,7 +623,7 @@ def main() -> None:
     response_rows = result_rows
     if len(response_rows) > 1:
         end_sources = {
-            output.attrib.get("source", "").removeprefix("=vars.")
+            vars_ref(output.attrib.get("source"))
             for output in mapping_outputs(end)
             if output.attrib.get("var") == attr(public_risk, "id")
         }
@@ -651,7 +652,7 @@ def main() -> None:
             output
             for output in mapping_outputs(end)
             if output.attrib.get("var") == attr(public_risk, "id")
-            and output.attrib.get("source") == f"=vars.{attr(response, 'id')}"
+            and vars_ref(output.attrib.get("source")) == attr(response, "id")
         ]
         if numeric_bridges and all(
             row.attrib.get("type") in {"double", "number"} for row in numeric_bridges
@@ -706,7 +707,7 @@ def main() -> None:
         bridges = [
             candidate
             for candidate in mapping_outputs(start)
-            if candidate.attrib.get("source") == f"=vars.{public_id}"
+            if vars_ref(candidate.attrib.get("source")) == public_id
             and candidate.attrib.get("var")
         ]
         if not bridges and mapping_outputs(start):
@@ -725,14 +726,11 @@ def main() -> None:
         output
         for output in mapping_outputs(end)
         if output.attrib.get("var") == attr(public_risk, "id")
-        and re.fullmatch(
-            r"=vars\.[\w.-]+",
-            output.attrib.get("source", ""),
-        )
+        and vars_ref(output.attrib.get("source"), fields=True) is not None
     ]
     if end_bridges:
         end_output = exactly_one(end_bridges, "numeric result to public riskScore output bridge")
-        result_variable_id = attr(end_output, "source").removeprefix("=vars.")
+        result_variable_id = vars_ref(attr(end_output, "source"), fields=True)
     else:
         # No bridge: the script's own row must land in the public output.
         result_variable_id = attr(public_risk, "id")
@@ -753,10 +751,10 @@ def main() -> None:
             fail(f"{variable_id!r} must be a mutable inputOutput variable")
         if variable.attrib.get("type") not in expected_types:
             fail(f"{variable_id!r} must use type {sorted(expected_types)!r}")
-        if variable.attrib.get("elementId") != process_id:
+        if variable.attrib.get("elementId") not in {process_id, start_id}:
             fail(
-                f"{variable_id!r} must be process-scoped via "
-                f"elementId={process_id!r} (#3211)"
+                f"{variable_id!r} must be scoped to the process "
+                f"({process_id!r}) or its start event ({start_id!r}) (#3211)"
             )
 
     response_id = attr(response, "id")
@@ -802,13 +800,13 @@ def main() -> None:
     arg_sources: dict[str, str] = {}
     if not whole_state:
         for arg_name, arg_value in args_value.items():
-            match = re.fullmatch(r"=vars\.([A-Za-z0-9_]+)", str(arg_value))
-            if match is None:
+            arg_variable = vars_ref(str(arg_value))
+            if arg_variable is None:
                 fail(
                     f"ScriptTask args entry {arg_name!r} must read one process variable "
                     f"(=vars.<id>); got {arg_value!r}"
                 )
-            arg_sources[arg_name] = match.group(1)
+            arg_sources[arg_name] = arg_variable
 
     input_schemas = task.findall(
         "bpmn:extensionElements/uipath:mapping/uipath:context/uipath:inputSchema",
@@ -918,7 +916,7 @@ def main() -> None:
                 output
                 for output in task_outputs
                 if output.attrib.get("var") == result_variable_id
-                and output.attrib.get("source") == f"=vars.{response_id}"
+                and vars_ref(output.attrib.get("source")) == response_id
                 and output.attrib.get("type") == "double"
             ],
             "optional scriptResponse-to-business-result output mapping",
