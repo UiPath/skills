@@ -42,6 +42,8 @@ uip solution init "InvoiceAutomation" --output json
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
 
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
+
+> If the target folder already holds a `.uipx`, the solution exists: do not run `solution init`. It reports success but overwrites the manifest with a new `SolutionId` and an empty `Projects` list. Add projects to the existing solution instead.
 <!--skill-flavor:step-create-solution:end-->
 
 ## Step 2: Add Existing Projects

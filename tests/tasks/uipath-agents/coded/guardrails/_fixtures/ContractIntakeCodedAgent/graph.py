@@ -52,7 +52,7 @@ judge a contract by its file name. Return a short plain-language summary."""
 
 def create_llm():
     """Create the LLM instance."""
-    return UiPathChat(model="gpt-4o-2024-08-06", temperature=0.0)
+    return UiPathChat(model="gpt-4.1-mini-2025-04-14", temperature=0.0)
 
 
 llm = create_llm()

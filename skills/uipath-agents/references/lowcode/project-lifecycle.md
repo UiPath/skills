@@ -172,6 +172,8 @@ Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, `Data.TraceId`, a
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 ```
+
+Only for a new solution. If the folder already holds a `.uipx`, do not run it ([Critical Rule 10](critical-rules/critical-rules.md)): it overwrites the manifest with a new `SolutionId` and an empty `Projects` list.
 <!--skill-flavor:create-solution:end-->
 
 ### Register Project with Solution
@@ -348,6 +350,8 @@ All commands run from the same working directory — no `cd` needed. Pass paths 
 
 <!--skill-flavor:e2e-scaffold:start-->
 ```bash
+# Skip `solution init` when <SOLUTION_NAME>/ already holds a `.uipx`: it
+# overwrites the manifest (new SolutionId, empty Projects).
 uip solution init "<SOLUTION_NAME>" --output json
 # `agent init` auto-registers the project in the parent `.uipx` because
 # the agent path lives inside the solution directory. Confirm via
