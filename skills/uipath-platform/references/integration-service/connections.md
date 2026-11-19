@@ -77,12 +77,12 @@ Use this for connectors with basic, API key, personal access token or custom aut
 | 3, `MissingFields` | Fields missing | Pass the fields. |
 | 3, vendor text | The vendor rejected the sign-in | Ask the person to check every value. Do not retry with the same values. |
 | 3, name taken | A connection with that `--name` exists | Use another `--name`, or use `Data.ExistingConnectionId`. |
-| 3, `invalid_state` | The connection is Enabled | Do not retry. Use the connection as it is. |
+| 3, `invalid_state` | The connection is Disabled: its tenant was deleted | Do not retry. Create a new connection. |
 | 3, a message that names an option | A wrong option. Nothing was sent | Fix the option and run it again. |
 
 Check `Instructions` for "result is unknown" before you apply the `server_error` row.
 
-Re-authenticate a Failed or Expired connection, or a shell connection from a solution deploy: `uip is connections edit <connection-id> --auth-type <auth-type> --field <key>=env.NAME --output json`. `edit` takes no `--name` and no folder option. An Enabled connection returns exit 3 `invalid_state`. Do not retry it. If the answer says "not available on this tenant", use the browser flow.
+Re-authenticate a connection, or sign in a shell connection from a solution deploy: `uip is connections edit <connection-id> --auth-type <auth-type> --field <key>=env.NAME --output json`. This works on an Enabled connection too, for example to move it to a new key. If the vendor rejects the new value, the connection keeps its old one. `edit` takes no `--name` and no folder option. If the answer says "not available on this tenant", use the browser flow.
 
 On every failure, tell the person `SessionId` and `TraceId`.
 
