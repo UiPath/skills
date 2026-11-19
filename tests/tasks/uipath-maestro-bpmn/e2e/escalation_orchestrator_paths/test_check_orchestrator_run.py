@@ -108,6 +108,20 @@ def test_wrong_severity_fails():
         checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, severity="Sev1"))
 
 
+@pytest.mark.parametrize("value", ["draft", "Draft response", True])
+def test_a_draft_response_mode_is_read_by_meaning(value):
+    case = SEED["cases"][0]
+    assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode=value))
+
+
+def test_sev3_needs_no_draft_response():
+    """Simona's prompt (2026-11-19): a draft response only when engineering is needed."""
+    case = next(c for c in SEED["cases"] if c["expected"]["severity"] == "Sev3")
+    assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode="none"))
+    with pytest.raises(checker.CheckFailure, match="responseMode"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode="Draft"))
+
+
 def test_message_id_must_be_the_posted_ts():
     case = SEED["cases"][3]
     with pytest.raises(checker.CheckFailure, match="slackMessageId"):

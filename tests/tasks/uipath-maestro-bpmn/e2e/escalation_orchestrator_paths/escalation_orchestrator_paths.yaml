@@ -13,7 +13,9 @@ description: >
   #coding-agent-testing, posted as user, carrying the correlationId and the
   path; and the named outputs read back escalationPath, severity,
   engineeringNeeded, responseMode, caseKey=<correlationId> and
-  slackMessageId=<that message's ts>. Seven cases with different answers
+  slackMessageId=<that message's ts>. responseMode is read by meaning (draft
+  or none), since the request no longer names its values, and Sev3 needs no
+  draft. Seven cases with different answers
   prove the routing is computed, so no node layout is required. Graceful
   Slack-failure handling and the agent's own test run are advisory.
   Salesforce is not called (match status is an input).

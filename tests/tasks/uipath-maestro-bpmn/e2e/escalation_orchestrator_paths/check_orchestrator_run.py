@@ -107,6 +107,23 @@ def _loose(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(text).lower())
 
 
+_NO_RESPONSE = {"none", "", "no", "false", "noresponse", "notrequired", "noresponserequired", "na"}
+
+
+def response_mode(value) -> str | None:
+    """'draft' or 'none' by meaning: the request no longer names the values, only
+    that a draft response is written for escalations that need engineering."""
+    if isinstance(value, bool):
+        return "draft" if value else "none"
+    if isinstance(value, str):
+        text = _loose(value)
+        if "draft" in text:
+            return "draft"
+        if text in _NO_RESPONSE:
+            return "none"
+    return None
+
+
 def slack_ids(process: ET.Element) -> set[str]:
     ids = {
         element_id
@@ -138,6 +155,8 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
         values = named_values(process, variables_data, field)
         if field == "caseKey":
             ok = any(isinstance(v, str) and v.strip() == expected[field] for v in values)
+        elif field == "responseMode":
+            ok = any(response_mode(v) == response_mode(expected[field]) for v in values)
         else:
             ok = any(_norm(v) == _norm(expected[field]) for v in values)
         if not ok:

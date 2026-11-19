@@ -72,7 +72,7 @@ def build_seed() -> dict:
         _case(
             "sev3-no-production-impact", r, "SEV3",
             {"subject": "Report formatting off", "body": "The export looks wrong"},
-            {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "Draft"},
+            {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "None"},
             True,
         ),
         # ── Triage paths (Slack triage notice) ─────────────────────────────

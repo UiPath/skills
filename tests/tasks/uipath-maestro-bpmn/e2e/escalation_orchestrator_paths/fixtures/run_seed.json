@@ -69,7 +69,7 @@
         "escalationPath": "escalation",
         "severity": "Sev3",
         "engineeringNeeded": false,
-        "responseMode": "Draft",
+        "responseMode": "None",
         "caseKey": "ORCH-dc5c3056757f-SEV3"
       }
     },
