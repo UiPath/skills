@@ -91,15 +91,44 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Task 2 has two right outcomes, so it is graded by guards only. Every uip call fails here,
+  # `documents download` too, and the labelling guide skips a document whose download fails;
+  # a field-level, version-pinned confirm of f-001 is right as well. The trap is the hint:
+  # writing a hand-read value back, or confirming more than the one field the user judged.
   - type: cli_called
-    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned — not manual extraction, and not a bare bulk confirm (Critical Rules #8, #11, #19)"
+    description: "Task 2: did NOT write its own value for f-001 via --corrections (Critical Rule #8)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      corrections: {contains: "f-001", aliases: ["c"]}
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Project-wide (no document) or whole-document: either confirms fields nobody reviewed.
+  - type: cli_called
+    description: "Task 2: did NOT run a confirm without --fields (Critical Rule #8)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      fields: {absent: true, aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Task 2: did NOT confirm on doc-abc-123 without pinning the model version (Critical Rule #19)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     flags:
-      fields: {contains: "f-001", aliases: ["f"]}
-      model-version: {equals: "7", aliases: ["m"]}
-    weight: 4.0
+      model-version: {absent: true, aliases: ["m"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   # Stays command_not_executed: assigning the readonly UID shell variable is a
