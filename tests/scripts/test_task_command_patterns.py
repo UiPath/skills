@@ -329,3 +329,54 @@ NESTED = [
 @pytest.mark.parametrize("call", NESTED)
 def test_resource_lookup_ignores_lookup_fields_nested_in_an_edit(pattern, call):
     assert _hits(pattern, call) == {False}
+
+
+# --- uipath-agents: declaring the resource in the solution ---------------------
+# Terminal agents run `uip solution resources refresh`; Studio Web cannot (no .uipx
+# on disk), so its skill declares each resource with `resources add`, through the
+# CLI or the ManageSolutionResources host tool.
+
+_DECLARE = "Agent declared {what} in the solution: uip solution resources refresh, or resources add --kind {kind} (CLI or ManageSolutionResources)"
+
+
+def _declare(task: str, what: str, kind: str) -> str:
+    return _pattern(f"uipath-agents/lowcode/{task}", _DECLARE.format(what=what, kind=kind))
+
+
+RPA_DECLARE = _declare("external_rpa_tool/external_rpa_tool.yaml", "the FibonacciRPA process", "Process")
+MAESTRO_DECLARE = _declare("external_maestro_tool/external_maestro_tool.yaml", "the Maestro process", "Process")
+INDEX_DECLARE = _declare("context_index/context_index.yaml", "the index", "Index")
+IS_DECLARE = _declare("is_connector_tool/is_connector_tool.yaml", "the connection", "Connection")
+MEMORY_DECLARE = _declare("memory_space/memory_space.yaml", "the memory space", "MemorySpace")
+
+
+@pytest.mark.parametrize(
+    ("pattern", "call"),
+    [
+        # Recorded in the 2026-11-19 Studio Web run.
+        (RPA_DECLARE, _host_call(action="add", source="remote", kind="Process", name="FibonacciRPA", folderPath="Shared/uipath-agents/FibonacciRPA")),
+        (MAESTRO_DECLARE, 'uip solution resources add --source remote --kind Process --name "ProcurementProcess" --folder-path "Shared" --output json'),
+        (INDEX_DECLARE, _host_call(action="add", source="remote", kind="Index", name="UiPathAgentsPolicies")),
+        (IS_DECLARE, _host_call(action="add", source="remote", kind="Connection", cloudKey="2dc0d640-eac6-445f-9f0c-d5654c4f3b1a")),
+        (MEMORY_DECLARE, _host_call(action="add", source="remote", kind="MemorySpace", name="UiPathAgentsSupportMemory", folderPath="Shared/uipath-agents")),
+        # The terminal refresh still counts.
+        (RPA_DECLARE, "uip solution resources refresh --output json"),
+        (MEMORY_DECLARE, "cd MemorySol && uip solution resources refresh --output json"),
+    ],
+)
+def test_declaring_the_resource_counts_refresh_or_add(pattern, call):
+    assert _hits(pattern, call) == {True}
+
+
+@pytest.mark.parametrize(
+    ("pattern", "call"),
+    [
+        (RPA_DECLARE, _host_call(action="add", source="remote", kind="Index", name="UiPathAgentsPolicies")),
+        (RPA_DECLARE, _host_call(action="list", source="local")),
+        (RPA_DECLARE, "uip solution resources list --source remote --kind Process --output json"),
+        (INDEX_DECLARE, "uip solution resources add --source remote --kind Process --name FibonacciRPA"),
+        (IS_DECLARE, _host_call(action="add", source="remote", kind="MemorySpace", name="UiPathAgentsSupportMemory")),
+    ],
+)
+def test_declaring_the_resource_needs_add_of_the_same_kind(pattern, call):
+    assert _hits(pattern, call) == {False}
