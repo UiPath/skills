@@ -9,6 +9,7 @@ tags: [activation, classification]
 
 dataset:
   paths:
+    - uipath-a2a-agents.jsonl
     - uipath-activity-migrator.jsonl
     - uipath-admin.jsonl
     - uipath-agents.jsonl
@@ -153,6 +154,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-mcp-servers activation"
     skill_name: uipath-mcp-servers
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-a2a-agents activation"
+    skill_name: uipath-a2a-agents
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

@@ -43,6 +43,9 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-governance": 100,
     "uipath-ixp": 100,
     "uipath-mcp-servers": 100,
+    # Provisional until the first full gate run on its PR: 80 puts the floor at
+    # the suite's 70% recall.yes. Replace with the measured value, nearest 5%.
+    "uipath-a2a-agents": 80,
     "uipath-tasks": 100,
     "uipath-human-in-the-loop": 100,
     "uipath-rpa": 90,

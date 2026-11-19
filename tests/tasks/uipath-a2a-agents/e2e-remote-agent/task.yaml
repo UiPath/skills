@@ -1,0 +1,70 @@
+task_id: skill-a2a-agents-e2e-remote-agent
+description: >
+  E2E (live tenant): register a remote A2A agent in Agent Gateway from a card passed as JSON (its endpoint
+  is not reachable, so Agent Gateway must not fetch it), change its description, verify the stored agent,
+  then the harness deletes it. Remote A2A agents are off on Automation Suite, so the Automation Suite ETE
+  run skips this task.
+tags: [uipath-a2a-agents, e2e, mode:build, lifecycle:setup, outcome-graded]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+run_limits:
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Work autonomously — take this end to end and don't stop to ask me anything.
+
+  Register a partner's A2A agent in Agent Gateway, in the Shared folder. Its
+  endpoint isn't reachable from the cloud yet, so register this agent card as it is, without fetching it:
+
+  {"name": "E2E A2A Agent", "description": "Echoes the text it gets.", "url": "https://a2a-e2e.example.com/", "version": "1.0.0", "protocolVersion": "0.3.0", "preferredTransport": "JSONRPC", "capabilities": {"streaming": false}, "defaultInputModes": ["text/plain"], "defaultOutputModes": ["text/plain"], "skills": [{"id": "echo", "name": "Echo", "description": "Echoes the text it gets.", "tags": ["echo"]}]}
+
+  Name it "E2E A2A Agent <EPOCH>" and give it the slug a2a-e2e-<EPOCH>, with the same Unix epoch in both,
+  so each run is unique. Then change its description to "Updated by the e2e".
+
+  When it's done, leave a report.json in the working dir for cleanup:
+  {"slug": "<slug>", "folder_path": "Shared"}
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-a2a-agents skill auto-loaded (inferred from the task, not named in the prompt)"
+    skill_name: "uipath-a2a-agents"
+    expected_skill: "uipath-a2a-agents"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created the remote A2A agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+create\b(?![^\n]*--(dry-run|help|print-schema))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for cleanup"
+    path: report.json
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the agent is retrievable, with the card's endpoint and the new description"
+    command: 'uip agenthub remote-a2a-agent get "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e "((.Data.CachedAgentCard.url // .Data.CachedAgentCard.Url) == \"https://a2a-e2e.example.com/\") and .Data.Description == \"Updated by the e2e\""'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the agent keeps its E2E A2A Agent name, has no headers or connection, and Relay is off"
+    command: 'uip agenthub remote-a2a-agent get "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e "(.Data.Name | startswith(\"E2E A2A Agent \")) and ((.Data.Headers // \"\") == \"\") and (.Data.ConnectionId == null) and (.Data.UseRelay == false)"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_a2a_agent.py"
+    timeout: 120

@@ -27,6 +27,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Document extraction model (IXP): taxonomy, training, model deployment | `uipath-ixp` | "train a model to extract fields from these documents" | IXP project reference, taxonomy files |
 | Process Mining app | `uipath-process-mining` | "analyse the event log", "process app" | dbt models, process-app data mapping |
 | MCP server / resource tools | `uipath-mcp-servers` | "expose these as MCP tools" | `uipath`-type MCP server registration |
+| Remote A2A agent: an external agent (another vendor's or team's) called over A2A | `uipath-a2a-agents` | "call our Agentforce agent", "use the vendor's A2A agent", "register this agent card" | an A2A agent card (`/.well-known/agent-card.json`) the project calls |
 
 **Human approval or validation checkpoints** inside a Flow, BPMN process, Case plan, or agent belong to the containing component's skill. Name `uipath-human-in-the-loop` in the Rationale column so the builder consults it for gate design.
 

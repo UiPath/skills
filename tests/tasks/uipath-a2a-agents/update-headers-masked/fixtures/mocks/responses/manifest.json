@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "remote-a2a-agent-user-connections set --help",
+      "file": "help_uc_set.txt"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections list --help",
+      "file": "help_uc_list.txt"
+    },
+    {
+      "match": "remote-a2a-agent-user-connections delete --help",
+      "file": "help_uc_delete.txt"
+    },
+    {
+      "match": "remote-a2a-agent create --help",
+      "file": "help_create.txt"
+    },
+    {
+      "match": "remote-a2a-agent update --help",
+      "file": "help_update.txt"
+    },
+    {
+      "match": "remote-a2a-agent get --help",
+      "file": "help_get.txt"
+    },
+    {
+      "match": "remote-a2a-agent list --help",
+      "file": "help_list.txt"
+    },
+    {
+      "match": "remote-a2a-agent delete --help",
+      "file": "help_delete.txt"
+    },
+    {
+      "match": "remote-a2a-agent refresh-card --help",
+      "file": "help_refresh_card.txt"
+    },
+    {
+      "match": "or folders list",
+      "file": "or_folders_list.json"
+    },
+    {
+      "match": "remote-a2a-agent list",
+      "file": "list.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent create",
+        "--print-schema"
+      ],
+      "file": "create_print_schema.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--print-schema"
+      ],
+      "file": "update_print_schema.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "X-Region=****"
+      ],
+      "file": "update_masked_refusal.json",
+      "exit_code": 3
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--dry-run",
+        "--header",
+        "--description"
+      ],
+      "file": "update_dryrun.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--dry-run",
+        "--header"
+      ],
+      "file": "update_headers_dryrun.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--dry-run"
+      ],
+      "file": "update_dryrun.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--header",
+        "--description"
+      ],
+      "file": "update.json"
+    },
+    {
+      "match_all": [
+        "remote-a2a-agent update",
+        "--header"
+      ],
+      "file": "update_headers.json"
+    },
+    {
+      "match": "remote-a2a-agent update",
+      "file": "update_description.json"
+    },
+    {
+      "match": "remote-a2a-agent get vendor-agent",
+      "after": [
+        "remote-a2a-agent update vendor-agent",
+        "X-Region=us"
+      ],
+      "file": "get_after_update.json"
+    },
+    {
+      "match": "remote-a2a-agent get vendor-agent",
+      "file": "get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

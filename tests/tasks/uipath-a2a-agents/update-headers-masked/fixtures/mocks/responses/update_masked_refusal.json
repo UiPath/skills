@@ -1,0 +1,8 @@
+{
+  "Result": "ValidationError",
+  "Code": "AgentHubRemoteA2aAgentUpdate",
+  "Message": "Header 'X-Region' is stored unmasked, as `remote-a2a-agent get` shows it, so pass that value instead of \"X-Region=****\".",
+  "Instructions": "Pass \"<name>=****\" only with a name exactly as `uip agenthub remote-a2a-agent get vendor-agent --folder-path Shared` shows it with a **** value, or pass the value itself.",
+  "ErrorCode": "invalid_argument",
+  "Retry": "RetryWillNotFix"
+}

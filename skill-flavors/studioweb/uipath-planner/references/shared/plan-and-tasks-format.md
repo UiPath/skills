@@ -1,5 +1,5 @@
 <!--skill-flavor:task-row-skill-field:start-->
-| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The specialist the task loads; it also opens the task's title in the host plan. |
+| `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-rules`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-a2a-agents`, `uipath-human-in-the-loop`, `uipath-test`. The specialist the task loads; it also opens the task's title in the host plan. |
 <!--skill-flavor:task-row-skill-field:end-->
 
 <!--skill-flavor:task-row-tool-fields:start-->

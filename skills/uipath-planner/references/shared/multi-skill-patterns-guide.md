@@ -24,6 +24,7 @@ What each specialist owns, for the plans `decompose` writes; genomes take their 
 | `uipath-ixp` | Document Understanding / IXP — extraction from semi-structured documents (invoices, forms): taxonomy, model, classify / extract / validate. Standalone project, or the extraction step a primary consumes | Yes (`uip login`) | **Partial** — model publish/tag via `uip ixp`; consumed by the host project |
 | `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration, for any project type, RPA included. See [Integration mechanism](component-placement-guide.md#integration-mechanism--connection-before-raw-api-call) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
 | `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. NOT for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
+| `uipath-a2a-agents` | Agent Gateway remote A2A agent registration: an external agent (Salesforce Agentforce, Microsoft Foundry, any agent with an agent card) registered from its card URL or JSON, authenticated with an OAuth Agent 2 Agent connection or asset-backed headers; per-user connections, Relay. NOT for calling the agent (the calling project's skill) or for exposing a UiPath agent over A2A. | Yes (CLI login) | **Yes** — registration is deployment (posts directly to AgentHub) |
 | `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. | Yes (`uip login`) | **Yes** — for every project inside a solution (`Packaging: solution`) |
 
 ## When to emit a multi-skill plan
@@ -133,6 +134,16 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 ```
 1. uipath-platform    → create the Orchestrator asset(s) holding the auth values
 2. uipath-mcp-servers → register the server with asset-substituted headers
+```
+
+## Pattern 7 — Register a remote A2A agent
+
+**When it applies:** an external A2A agent is registered in Agent Gateway and a UiPath project in the same plan calls it, or its auth needs an Orchestrator asset or an Integration Service connection that does not exist yet. Registering alone is single-skill; go straight to `uipath-a2a-agents`.
+
+```
+1. uipath-platform   → create the asset holding the agent's key or token, or the OAuth Agent 2 Agent connection
+2. uipath-a2a-agents → register the agent with that connection or asset-backed headers
+3. uipath-agents / uipath-maestro-flow / uipath-maestro-bpmn → build the project that calls it
 ```
 
 ## Pattern composition for Solutions
