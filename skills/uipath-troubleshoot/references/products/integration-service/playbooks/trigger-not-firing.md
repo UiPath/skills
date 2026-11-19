@@ -39,26 +39,19 @@ What to look for:
 
 ## Investigation
 
-1. **Get the trigger key.** Everything below needs it, and event triggers are
-   folder-scoped, so a folder is required too.
+1. **Anchor on the trigger, from whatever the user gave.** Event triggers are
+   folder-scoped, so a folder is needed either way.
 
-   - **The user gave a key** — go to step 2. `uip is trigger-traces list --trigger-key`
-     validates the type itself: it fails with `not an Integration Service event trigger`
-     and names the real type when the key belongs to a time, queue or HTTP trigger.
-   - **The user gave only a name** — try to resolve it:
+   | They gave | Do |
+   |---|---|
+   | the trigger **name** | pass it straight through: `--trigger-name "<name>"` resolves it |
+   | the trigger **key** | pass `--trigger-key <guid>` |
+   | a process, or neither | list the folder's event triggers and pick with them: `uip or triggers list --type event --folder-path "<folder>" --output json` |
 
-     ```bash
-     uip or triggers list --type event --folder-path "<folder>" --output json
-     ```
-
-     then match on `Name` to read `Key`.
-
-   **`--type event` exists only on CLI builds that include cli#5902.** On a build
-   without it the command answers `Invalid trigger type: 'event'`. That is not a
-   diagnosis — it means the name cannot be resolved here. Ask the user to copy the key
-   from Orchestrator → folder → **Triggers** → **Event triggers**, and continue from
-   step 2. Do not substitute `--type api`: that reads HTTP triggers, a different store,
-   and will report the trigger as missing.
+   No separate lookup call is needed for a name — `uip is trigger-traces list` does it,
+   and tells you when the name matches nothing or matches two triggers in that folder.
+   It also validates the type: a key belonging to a time, queue or HTTP trigger fails
+   with `not an Integration Service event trigger` and names the real type.
 
    A time, queue or HTTP trigger ends this playbook — use
    `uip or triggers history <key> --folder-path "<folder>" --output json` for its failed
@@ -68,7 +61,8 @@ What to look for:
    below. Match `--from` to what the user reported.
 
    ```bash
-   uip is trigger-traces list --trigger-key <trigger-key> --folder-path "<folder>" --from 24h --output json
+   uip is trigger-traces list --trigger-name "<name>" --folder-path "<folder>" --from 24h --output json
+   # or --trigger-key <guid>
    ```
 
 3. **Branch on the result** using the table in

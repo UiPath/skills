@@ -39,13 +39,38 @@ What to look for:
 
 ## Investigation
 
-1. **List the stuck instances** for the process and window. The user usually has no
-   instance id.
+1. **Find the stuck instances from whatever the user gave.** Assume nothing: most
+   people arrive with a complaint and a process name, not an instance id or a URL.
+   `--to-date` filters on *start* time, so "started before T and still `Running`" is
+   exactly "stuck since T".
 
    ```bash
-   uip maestro bpmn instances list --process-key <process-key> --folder-key <folder-key> \
-     --status Running --from-date <iso-8601> --output json
+   # Nothing but "some instances are stuck for hours" — this works tenant-wide,
+   # no folder and no process needed.
+   uip maestro bpmn instances list --status Running --to-date <now-minus-N-hours> --output json
    ```
+
+   Narrow with whatever they did give, and nothing they did not:
+
+   | They named | Add |
+   |---|---|
+   | a process, by name | `--package-id <dotted-id>` — the `PackageId` ends with the process name |
+   | a process, by key | `--process-key <guid>` |
+   | a folder | `--folder-key <guid>` or `--folder-path "<path>"` |
+   | an instance or a Maestro URL | skip to step 2 with that instance id |
+
+   Each row carries `InstanceId`, `PackageId`, `FolderKey` and **`Source`** — so this
+   one call also answers "is this process event-started at all". Results page by
+   cursor: keep going while `Pagination.HasMore` is true, passing `Pagination.NextPage`
+   to `--next-page`.
+
+   **`Source` other than `IntegrationTrigger`** means the instance was started
+   manually, by an API call, by a time trigger or by a parent process. Those produce
+   no trigger traces — but note that the *start* source says nothing about a
+   mid-process Wait-For-Event, which step 2 is what actually settles.
+
+   Report how many are stuck before investigating any of them. "Three of forty" and
+   "forty of forty" are different problems.
 
 2. **Confirm each is parked on a Wait-For-Event (CA001 gate).** A Maestro instance id
    doubles as its trace id, so its spans are reachable directly.
@@ -61,8 +86,9 @@ What to look for:
    [bpmn-job-stuck.md](./bpmn-job-stuck.md).
 
 3. **Read that element's trigger traces — once per instance.** Each instance has its
-   own trigger, so this runs per instance, not once for the process. Investigate a
-   handful first and only widen if their causes differ.
+   own trigger, so this runs per instance, not once for the process. Start with three
+   or four; if they agree, say so and name the shared cause rather than walking all
+   forty. If they disagree, widen until the groups are clear.
 
    ```bash
    uip is trigger-traces list --instance-id <instance-id> --from 24h --output json
