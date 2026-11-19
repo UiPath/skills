@@ -1,5 +1,5 @@
 <!--skill-flavor:field-reference:start-->
-Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` rather than guessing input names.
+Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` (add `--object <OBJECT>` for a generic operation such as `get-record`) rather than guessing input names.
 <!--skill-flavor:field-reference:end-->
 
 <!--skill-flavor:library-pull:start-->
