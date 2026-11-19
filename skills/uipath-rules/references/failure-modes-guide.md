@@ -6,7 +6,9 @@ Failures `uip rules` reports, with the fix for each. DMN or FEEL syntax errors f
 
 | Message | Fix |
 |---|---|
-| `error: unknown command 'rules'` | The installed CLI predates `uip rules`; tell the user to update it with `npm install -g @uipath/cli@latest`. |
+<!--skill-flavor:unknown-rules-command:start-->
+| `error: unknown command 'rules'` | The installed CLI is older than `uip rules`. If the nearest `.uipath/config.json` (this folder or a parent, else `~/.uipath/config.json`) has `versions.cli`, run `npm i -g @uipath/cli@<CLI_PIN>` with that version, then `uip update`; otherwise run `uip update`. Then retry. When the retry's `Instructions` start with `Run 'uip update'`, run `uip update` once, then retry; if anything fails again, or a step fails, show the user the error and stop. Install no other CLI version and don't change the pins (no `@latest` install, `uip update --force`, `uip tools install --force`, `uip config freeze` or `uip config unfreeze`). |
+<!--skill-flavor:unknown-rules-command:end-->
 | `Invalid project name "<NAME>". Name can only contain letters, numbers, underscores (_), and hyphens (-).` | Rename the project with only those characters. |
 | `Directory "<NAME>" already exists and is not empty. Use --force to overwrite.` | Pick another name, or pass `--force`. `--force` never overwrites an existing `.dmn` (`Data.RuleStatus: "Preserved"`). |
 
