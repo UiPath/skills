@@ -301,7 +301,7 @@ your account. Re-check the key with 'uip or folders list --output json'."
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
 ```
 
-Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem — on `uip` 1.206.0 and older it usually means the session lacks `OR.Default`; on a newer `uip` it means the app is assigned to no folder. See [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
+Keep every other flag from the failed call. Run it once; do not sleep, back off, or loop. **Zero rows from `uip or folders list` (with `Result: Success`)** is a different problem, and it does not mean the app needs a folder assignment. Orchestrator runs the token as the tenant's shared service account and lists that account's folders: on `uip` 1.207.x and older whenever the token lacks `OR.Default`, and on any version for an `OR.Default` app that is not an Orchestrator user. From `uip` 1.208.0 a token without `OR.Default` lists every folder its scopes reach. Check a folder with `uip or folders get <path> --output json` or `uip or folders list --all`; see [debug.md](debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 #### Storing the resolved key
 
