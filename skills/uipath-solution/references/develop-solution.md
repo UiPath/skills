@@ -430,9 +430,11 @@ uip solution resources remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation
 
 | Refused | Do instead |
 |---|---|
-| A project's own resource | Remove the project: `uip solution projects remove <project-path>` |
-| A resource another resource still references | Remove the referencing resource first |
-| A `package` declaration | It goes only with the resource that pins it |
+| A project's own resource (`DeletingProjectArtefactResourceIsNotAllowed`) | Remove the project: `uip solution projects remove <PROJECT_PATH>` |
+| A resource another resource still references, such as a `package` declaration a resource pins | Remove the referencing resources first; a `package` declaration goes with the resource that pins it |
+| A hidden resource the solution manages (`DeletingHiddenResourceIsNotAllowed`) | Leave it: the solution removes it with the resource that uses it, and no command removes it on its own |
+
+For a coded app, `resources remove` alone does not stick: the next `resources refresh` or `pack` adds the resource back from the app's `source/uipath_resources.ts`. Delete its `resource.<kind>(...)` call there too.
 
 | Option | Values | Default |
 |--------|--------|---------|
@@ -610,8 +612,11 @@ A pattern that would drop a project the `.uipx` lists is refused with `ErrorCode
 
 | Failure | Cause | Fix |
 |---|---|---|
-| 401 or 403, `ErrorCode: permission_denied` | **Not a login problem.** The CLI checked the token before calling, and logging in again returns the same one. The acting identity may not do this in Studio Web, or the `.uipx` `SolutionId` belongs to another tenant | Do not log in again. Read `Instructions`. For an external app, check its Studio Web (`StudioWebS2S`) grants, not only the Orchestrator and Solutions ones; for a user, check Studio Web access in the tenant. Then confirm the `SolutionId` belongs to the tenant you are logged into |
+| 401 or 403 whose `Instructions` name `invalid_token` | Studio Web rejected the token itself: expired, or issued for another environment or audience | Logging in again is worth one try (in CI, mint a new client-credentials token). Confirm the token was issued for the organization being called. If the same refusal comes back, treat it as the next row |
+| Any other 401 or 403 | The token is valid and not allowed to do this in Studio Web, so logging in again mints the same token and fails the same way. `ErrorCode` is `permission_denied`, except a user's 401, which keeps `authentication_required`; it is still not a login problem | Do not log in again. Read `Instructions`. For an external app, check its Studio Web (`StudioWebS2S`) grants, not only the Orchestrator and Solutions ones; for a user, check Studio Web access in the tenant. Confirm you are logged into the organization and tenant the solution belongs to |
 | HTTP 500 with `Context.ErrorCode: 20039` (`Path contains invalid characters`) on a `.uis` upload | A file inside a project folder has a control character or one of `: * ? " < > |` in its name; Studio Web does not say which | Retrying fails the same way. Rename the file, or upload the solution directory instead — the CLI then names the file (`invalid_argument`) before sending anything. `.uipignore` can also leave it out |
+
+A `SolutionId` from another tenant is not a 401/403: Studio Web answers 404 for an id the session cannot see. `upload` then imports it as a new solution (from a directory, it writes the new id to the `.uipx`); with `--force` it fails `ErrorCode: not_found` instead.
 
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
