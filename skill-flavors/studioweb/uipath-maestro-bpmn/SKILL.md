@@ -140,7 +140,7 @@ uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --basel
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
-# 5a. Only when step 1 seeded a template, the target was empty, or the user chose *replace*: lay out the whole diagram, then run step 4 again
+# 5a. Only when step 1 seeded a template, the target was empty, or the user chose *replace*, and no node has a json `uipath:input` or script `args`: lay out the whole diagram, then run step 4 again
 uip maestro bpmn format <Name>.bpmn --relayout
 # 5b. Only when step 4 reports BPMN_PARSE_ERROR with No diagrams found, MISSING_DI_SHAPE or MISSING_DI_EDGE: add the missing shapes, then run step 4 again
 uip maestro bpmn format <Name>.bpmn
@@ -169,6 +169,7 @@ uip maestro bpmn format <Name>.bpmn
   step 5a (Studio Web's Tidy up of the whole diagram) and step 4 after the merge.
   If `format` rejects `--relayout` (`unknown option`), run it with no flag. Never pass
   `--relayout` on any other process: it moves every shape the user placed.
+  Never pass it either when any node has a json `uipath:input` or script `args` (every connector, script or HTTP node): `--relayout` re-serializes the XML and drops their CDATA, so the engine loses the input (`102009`, or undefined `args`). Run plain `format` (step 5b) instead; it keeps CDATA.
 - **An empty target** gives `decompile` nothing to read. Write
   `.flow-sdk/<Name>.bpmn.ts` from [Minimal shape](#minimal-shape), run step 2,
   compile it straight to `<Name>.bpmn`, then run step 5a and step 4.
