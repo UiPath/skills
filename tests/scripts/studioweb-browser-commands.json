@@ -944,6 +944,11 @@
       },
       {
         "file": "references/pack-and-deploy.md",
+        "command": "tools list",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
         "command": "update",
         "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
       }
