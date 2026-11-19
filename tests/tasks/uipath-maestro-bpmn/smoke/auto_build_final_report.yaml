@@ -144,15 +144,16 @@ success_criteria:
       follows AGENT OUTPUT and this grading prompt are not part of it.
 
       - If the file is missing or starts with `unknown`, score 0.0.
-      - If the file holds `none`, score 1.0.
+      - If the file holds `none`, score 1.0 only if the report mentions no
+        `validate` warning: no `Assumed:` or `Unverified:` clause about a
+        warning, an unset or empty value, or a validator finding.
       - Otherwise score 1.0 only if the report's `Needs:`, `Assumed:` and
         `Unverified:` lines together cover every distinct warning in the
         file. Warnings that differ only in which element raised them count
         as one. A warning is covered when a clause names its input, step or
         path in plain words and says what the warning says about it (for
-        example "invoice amount is empty unless the caller passes it"). A
-        clause about inputs in general that names none of them does not
-        cover a warning. A warning code (such as `VARIABLE_NOT_SET`) or a
+        example "the approval step can be reached with no approver set"). A
+        clause that names none of them does not cover a warning. A warning code (such as `VARIABLE_NOT_SET`) or a
         raw variable id in place of plain words does not cover it, and text
         about warnings outside the report does not count.
 
