@@ -42,16 +42,14 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "[?Attributes.Error != null].{name: Name, spanType: SpanType, error: Attributes.Error}"
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | select($a.error != null) | {name: .Name, spanType: .SpanType, error: $a.error}]'
    ```
 
 3. Parse the error JSON to identify credential type:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "[?Attributes.Error != null].Attributes.Error" \
-     | jq -r '.[] | fromjson | .details' 2>/dev/null \
-     || grep -o '"details":"[^"]*"'
+     | jq -r '.Data[] | (.Attributes | fromjson? // {}) | .error // empty | (fromjson? | .details) // .'
    ```
 
    - `Invalid Organization or User secret` → connection-level credentials invalid (OAuth client ID/secret or API key)

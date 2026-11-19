@@ -43,7 +43,7 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "[?Attributes.Error != null].{name: Name, spanType: SpanType, error: Attributes.Error}"
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | select($a.error != null) | {name: .Name, spanType: .SpanType, error: $a.error}]'
    ```
 
    Note the connection name or ID from the error text or span name.

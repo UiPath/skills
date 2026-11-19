@@ -31,10 +31,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 8. **CLI commands must use `--output json`** when output is parsed programmatically
 9. **`--output-filter` keys must match the unfiltered output, not the API.** The filter is case-sensitive, and most `uip` commands PascalCase their `Data` keys before printing — so `[].Name`, not `[].name`. A wrong-cased or non-existent key matches nothing and returns `Result: "Success"` with `Data: []`, which reads as "there is no such thing" rather than "your expression is wrong". Never copy field names from a service DTO, an OpenAPI schema, a raw API response or a `--help` example; run the command once **without** `--output-filter` and read the keys off the result.
 
-   Two traps, both of which produced wrong expressions in this repo:
+   Three traps, all of which produced wrong expressions in this repo:
 
    - **Some commands pass their keys through verbatim**, so camelCase is correct *there* and wrong everywhere else — `uip maestro flow registry get` (`Node.inputDefinition.fields`) and `uip is resources run list` (`items[].{id: id}`) are the ones to know. You cannot tell from the outside; check the output.
    - **`Data` is often not wrapped.** `uip traces spans get` returns the span array *as* `Data`, so an expression starting `spans[...]` reads a field that does not exist. Start with `[`.
+   - **A field that holds a JSON string cannot be filtered into.** Each span's `Attributes` from `uip traces spans get` is a string, so `Attributes.error` matches nothing — and the keys inside it stay camelCase, since the CLI does not recase a string. Filter on top-level fields with `--output-filter`, then parse in `jq`: `.Data[] | (.Attributes | fromjson? // {})`.
 
    A recent `uip` build names the mistake for you — on an empty result it reports which referenced fields do not exist and lists the ones that do, on stderr and in the envelope's `Warning`. If a filter returns nothing, read that before assuming the tenant is empty.
 10. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
