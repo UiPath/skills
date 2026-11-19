@@ -124,7 +124,7 @@ Some properties are only required when another property has a specific value:
 **Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
 **Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
 
-See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
+Every `Shortcuts` value starts with `[d(hk)]` and ends with `[u(hk)]`, a single key included: Enter is `[d(hk)][k(enter)][u(hk)]`. An unwrapped value passes `validate` and sends nothing useful at run time. To press one key on its own, use Keyboard Shortcuts, not a Type Into holding only `[k(enter)]`. Full encoding: the installed `UiPath.UIAutomation.Activities` doc `activities/KeyboardShortcuts.md` § Hotkey Encoding Format ([cli-reference.md § Installed package activity documentation](../cli-reference.md#installed-package-activity-documentation)).
 
 ## NTypeInto `Text` with literal `[k(...)]` special-key tokens
 
@@ -667,7 +667,16 @@ Studio compiles expressions against `TextExpression.ReferencesForImplementation`
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `System.Net.Mail`, `netstandard` (fallback). A type from a package the project lacks needs `uip rpa packages install` first.
+Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `netstandard` (fallback), and these by the type an expression uses:
+
+| Expression uses | References |
+|---|---|
+| An image (`System.Drawing.Image`), e.g. an OCR activity's input or output | `System.Drawing`, `System.Drawing.Common`, `System.Drawing.Primitives` |
+| An OCR activity's result types | `UiPath.UiAutomation.Activities` |
+| `Process` (`Process.GetProcessesByName`, `Process.Start`) | `System.Diagnostics.Process` |
+| A mail message's members, e.g. an `Office365Message`'s `From.Address` | `System.Net.Mail`, `System.Net.Primitives` |
+
+A type from a package the project lacks needs `uip rpa packages install` first.
 
 ## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
 
