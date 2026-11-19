@@ -22,7 +22,12 @@ Known failure modes:
 
 | Symptom | Cause | Action |
 |---|---|---|
-| `Unknown tool '@uipath/aops-tool'` | The installed CLI's registry index predates the tool | Update the CLI first (`uip update`), then retry the install. Report the CLI version (`uip --version`) to the user if it still fails. |
+<!--skill-flavor:unknown-tool-row:start-->
+| `Unknown tool '@uipath/aops-tool'` | The installed CLI is older than the tool | If the nearest `.uipath/config.json` (this folder or a parent, else `~/.uipath/config.json`) has `versions.cli`, this CLI is also older than the freeze and ignores it: install the pinned CLI with `npm i -g @uipath/cli@<CLI_PIN>`, then run `uip update`, then retry the install. Otherwise run `uip update`, then retry. If it is still `Unknown tool`, stop: tell the user the installed CLI (`uip --version`) does not have aops-tool. Any other failure: show the user `Message` and `Instructions` and stop. Do not run `npm i` / `npm install` of the newest CLI, `uip update --force`, `uip tools install --force`, `uip config freeze` or `uip config unfreeze`. |
+<!--skill-flavor:unknown-tool-row:end-->
+<!--skill-flavor:frozen-install-row:start-->
+| `The config <CONFIG_PATH> is frozen and does not list @uipath/aops-tool` | The team's freeze does not list aops-tool | Do not run the `--force` command in `Instructions`: it writes aops-tool into the team's freeze. Show the user `Message` and `Instructions` and stop. |
+<!--skill-flavor:frozen-install-row:end-->
 | `Unsupported URL Type "workspace:"` when installing `@uipath/sc-tool` | The last published `sc-tool` is a stale build with unresolved workspace dependencies | Do not install `sc-tool`. It is retired — install `aops-tool`. |
 
 Do not fall back to `uip sc` / `uip cicd` when `aops` is unavailable. Report the install failure to the user instead.  <!-- uip-check-skip -->
