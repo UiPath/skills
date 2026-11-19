@@ -4,9 +4,11 @@ Guide for `uip admin authorization check-access`. See [authorization-commands.md
 
 ## Purpose and Output
 
-`check-access` is the Policy Decision Point (PDP): it reports what a principal can do at a scope now. Unlike `roles assignments list`, which reads PAP catalog assignments, it evaluates effective access, including server-side role catalogs managed by `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, and `processmining`. The catalog still exposes those roles and assignments through `roles list --service <svc>` and `roles assignments list --service <svc>`, but the PDP is authoritative for resolved permissions.
+`check-access` is the Policy Decision Point (PDP): it reports what a principal can do at a scope now. Unlike `roles assignments list`, which reads PAP catalog assignments, it evaluates effective access, including server-side role catalogs managed by `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, and `processmining`. The catalog also shows the roles and assignments of `insights`, `automationops`, `casemanagement`, and `processmining` through `roles list --service <svc>` and `roles assignments list --service <svc>`. It does not show them for `orchestrator`, `dataservice`, `testmanager`, or `taskmining`. For these four services, `check-access --service <svc>` is the only `uip admin` command that shows the roles of a principal. The PDP is authoritative for resolved permissions. See [Services and role ownership](role-management.md#services-and-role-ownership).
 
 Returned `Data` includes `roleAssignments.results[]` effective roles. Each row contains `roleId`, `roleName`, `serviceName` (display-name form), `roleType`, and nested `roleAssignments[]` entries for underlying grants. It also includes `grantedServicesMetadata` (services with any access) and `grantedRolesMetadata` (roles contributing to the result).
+
+A `roleId` from `check-access` is an Authorization Service ID. Data Fabric uses a different ID for the same role. Never pass it to `uip df directory assign-roles --role-ids`; see [Data Fabric role assignments](role-assignment-management.md#data-fabric-role-assignments).
 
 Inspect every nested `roleAssignments[]` entry; do not collapse paths:
 

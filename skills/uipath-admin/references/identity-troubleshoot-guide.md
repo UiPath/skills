@@ -72,6 +72,7 @@ Look up the permission the denied action requires ([permission-catalog.md](autho
 
 - **No effective role carries it** → [Cause A](diagnose/failure-modes.md#cause-a--the-permission-is-not-granted). Find a role that does with `roles list --service <SERVICE>` and `roles get <ROLE_ID>` (compare `ActionDetails[].Name`). To extend a custom role instead, re-fetch first and send the full action set — `roles update` is a PUT-style upsert (Rule 12).
 - **A role carries it but the grant sits elsewhere** → [Cause B](diagnose/failure-modes.md#cause-b--the-permission-is-granted-at-the-wrong-scope). Verify `ownerServiceName` against the scope-path service segment (Rule 17). A `Tenant` role cannot provide folder-level access: use a `Project`-scoped role, or Orchestrator's own folder roles (`uip or roles`, `uipath-platform`).
+- **The 403 comes from Data Fabric** → [Data Fabric 403](diagnose/failure-modes.md#data-fabric-403). `roles list` cannot show Data Fabric roles, so do not use it for this branch.
 
 ### Step 5 — Diagnose and recommend
 
