@@ -43,7 +43,8 @@ test("the dev channel does not depend on the release gate", () => {
 
 test("the packed tarball is the tarball that gets published", () => {
   assert.match(PUBLISH, /TARBALL=\$\(ls uipath-skills-\*\.tgz\)/);
-  assert.match(PUBLISH, /npm publish "\$\{\{ steps\.pack\.outputs\.tarball \}\}"/);
+  assert.match(PUBLISH, /TARBALL: \$\{\{ steps\.pack\.outputs\.tarball \}\}/);
+  assert.match(PUBLISH, /npm publish "\$TARBALL"/);
 });
 
 test("gate failure has no ungated fallback", () => {
@@ -85,4 +86,22 @@ test("the flavor publisher scans with its own copy of the gate, not the built co
     /^\s*run: python3 \.publisher\/scripts\/check-sensitive-content\.py "\$TARBALL"\s*$/m,
   );
   assert.doesNotMatch(flavorPublish, /python3 scripts\/check-sensitive-content\.py/);
+});
+
+// A dispatch runs the workflow file from the chosen ref, so the ref checks are
+// what keep `latest` on a release line and `dev` on main.
+test("latest publishes only from a release line, dev only from main", () => {
+  assert.match(gate("publish-npmjs"), /channel == 'latest' && startsWith\(github\.ref, 'refs\/heads\/release\/'\)/);
+  assert.match(gate("publish-dev"), /github\.ref == 'refs\/heads\/main'/);
+  assert.match(gate("publish-studioweb-dev"), /github\.ref == 'refs\/heads\/main'/);
+});
+
+test("the npmjs job runs in the npm-publish environment", () => {
+  assert.match(job("publish-npmjs"), /^\s*environment: npm-publish\s*$/m);
+});
+
+// Failing open handed `preview` to whichever line published during an outage.
+test("dist-tag resolution fails closed and never moves latest backwards", () => {
+  assert.doesNotMatch(PUBLISH, /npm view[^\n]*\|\| true/);
+  assert.match(PUBLISH, /would not move it forward/);
 });

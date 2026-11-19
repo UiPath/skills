@@ -187,3 +187,17 @@ test("a marketplace manifest without plugins[] is a hard error, not a no-op", ()
     assert.match(result.stderr, /\.claude-plugin\/marketplace\.json has no plugins\[\] entry to sync/);
   });
 });
+
+test("a malformed version is a hard error, never compared", () => {
+  withRepo({ pkgVersion: "1.205.0", pluginVersion: "1.x.0" }, (root) => {
+    const result = run(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /plugin\.json version "1\.x\.0" is not M\.N\.P/);
+    assert.equal(readDoc(root, FILES.plugin).version, "1.x.0");
+  });
+  withRepo({ pkgVersion: "1.205", pluginVersion: "1.205.0" }, (root) => {
+    const result = run(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /package\.json version "1\.205" is not M\.N\.P/);
+  });
+});
