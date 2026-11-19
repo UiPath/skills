@@ -84,6 +84,10 @@ BASELINES_PCT: dict[str, int] = {
     # 005, 008: "implement", "execute", "run the migration") the agent reads the genome first instead of
     # invoking the skill. At full context Claude Code routes all 11 rows to it. 60 is the nearest 5% below.
     "uipath-genome": 60,
+    # uipath-ontology: measured 52/52 under this name (actions/runs/44284706628, 44293074603), with the planner's ontology
+    # redirect in place. Its rows include 25 SDD/PDD/design-document prompts the planner also claims, so this gate is
+    # what keeps them reaching it.
+    "uipath-ontology": 100,
 }
 
 DROP_PP = 10
