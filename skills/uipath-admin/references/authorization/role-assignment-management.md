@@ -26,7 +26,7 @@ Role and assignment scope vocabularies differ:
 |---|---|---|
 | `User` | `uip admin users list --search "<NAME_OR_EMAIL>" --output json` ([user-management.md](../user-management.md)) | `--identity-type User` |
 | `Group` | `uip admin groups list --filter "<NAME>" --output json` ([group-management.md](../group-management.md)) | `--identity-type Group` |
-| `Robot` | `uip admin robot-accounts list --filter "<NAME>" --output json` ([robot-account-management.md](../robot-account-management.md)) | `--identity-type Robot` |
+| `Robot` | `uip admin robot-accounts list --search "<NAME>" --output json` ([robot-account-management.md](../robot-account-management.md)) | `--identity-type Robot` |
 | `ExternalApplication` | `uip admin external-apps list --output json` (filter client-side) ([external-app-management.md](../external-app-management.md)) | `--identity-type ExternalApplication` |
 
 ### Echo-before-mutate protocol
@@ -172,7 +172,7 @@ The bulk endpoint silently no-ops on unknown or already-deleted ids and still re
 
 `roles assignments list --service <svc>` accepts all services, including service-managed (`orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, `processmining`) and platform-level (`authz`, `oms`, `platform`, `identity`, `licensing`). The endpoint may return `403 Forbidden` without the service's read permission; the CLI does not filter these services client-side.
 
-For `orchestrator`, `dataservice`, `testmanager`, and `taskmining`, the list never returns assignments. With `--service`, it fails with 403, and this 403 is not about the permissions of the caller. Use the tools in [Services and role ownership](role-management.md#services-and-role-ownership) for these services.
+For `orchestrator`, `dataservice`, `testmanager`, and `taskmining`, the list does not return the assignments of their roles. With `--service`, it fails with 403. If the error `Message` says that the service manages its own role assignments, this 403 is not about the permissions of the caller. Handle any other 403 as a permission or token-scope failure. [Services and role ownership](role-management.md#services-and-role-ownership) tells how to tell the two 403s apart, and which tool to use for these services.
 
 Authoring with `assignments create --service <svc>` is rejected for those services. Never use `--scope-path` to get past this refusal for `orchestrator`, `dataservice`, `testmanager`, or `taskmining`. Such an assignment goes into the Authorization Service only, and the next sync from the owning service can overwrite it. For the other services, use `--scope-path` only when the registry refuses the service. You must also have the scope path of the role from another source. Tell the user that the next sync from a service-managed service can overwrite such an assignment.
 
@@ -193,7 +193,7 @@ Data Fabric (`dataservice`) manages its own roles. Use `uip df roles` and `uip d
 1. **Get `--role-ids` from `uip df roles list` only.** The Authorization Service and Data Fabric use different IDs for the same role. A role ID from `check-access` or `uip admin authorization roles list` does not work with `assign-roles`. Match the role by name, then copy its ID from `uip df roles list`.
 2. **Confirm every write with the user first.** Resolve the principal under [Resolve Principals Before Mutation](#resolve-principals-before-mutation). Show the principal, the `--type`, the role names, and the UI access. Run `assign-roles` or `revoke-roles` only after the user confirms.
 3. **`assign-roles` adds roles and keeps the existing roles.** `--replace` replaces the full Data Fabric role set of the principal.
-4. **`assign-roles` also turns on Data Fabric UI access, unless you pass `--no-ui-access`.** Before the write, read `IsUIEnabled` for the principal in `uip df directory list`. If it is `false`, pass `--no-ui-access`. Turn on UI access only when the user approves it.
+4. **`assign-roles` also turns on Data Fabric UI access, unless you pass `--no-ui-access`.** Before the write, read `IsUIEnabled` for the principal in `uip df directory list`. If it is `false`, pass `--no-ui-access`. If the principal is not in the list, pass `--no-ui-access` unless the user approves UI access. Turn on UI access only when the user approves it.
 5. **`revoke-roles` removes all direct Data Fabric roles of each principal.** It cannot remove only one role. To remove only some roles, run `assign-roles --replace` with the roles to keep. Roles that come from a group stay until the group membership changes.
 6. **Use the `Type` that `uip df directory list` shows for the principal as `--type`.** Robot accounts appear in that list as `Type: "User"` (`ObjectType: "DirectoryRobotUser"`). If the principal is not in the list, tell the user which `--type` you will use before the write.
 7. **`<PRINCIPAL_ID>` is the identity ID of the user, group, or robot account.** `uip df directory list` shows this ID as `ExternalId`.

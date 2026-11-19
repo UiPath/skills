@@ -14,8 +14,10 @@ For effective principal access, use PDP via [check-access.md](check-access.md); 
 The Authorization Service leaves the roles and role assignments of four services out of its read APIs: `orchestrator`, `dataservice`, `testmanager`, and `taskmining`. These services manage their own roles. For them:
 
 - `roles list --service <svc>` succeeds with an empty list.
-- `roles assignments list --service <svc>` fails with 403. This 403 is not about the permissions of the caller. Do not check or change the roles of the caller because of it.
-- `roles assignments list --scope-path "/tenant/<TENANT_ID>/<svc>"` without `--service` returns an empty list.
+- `roles assignments list --service <svc>` fails with 403. Read the error `Message`:
+  - If it says that `<svc>` manages its own role assignments, the 403 is not about the permissions of the caller. Do not check or change the roles of the caller because of it.
+  - Any other 403 can be a missing permission or token scope. Run `uip login status --detailed`, then `check-access`, as for any 403. An older CLI shows this generic 403 text for both causes. If these checks show no problem, the cause is most likely that the service manages its own role assignments.
+- `roles assignments list --scope-path "/tenant/<TENANT_ID>/<svc>"` without `--service` leaves out the assignments of the roles of the service. It can still show assignments of other roles at that path, such as `centralizedaccess` roles.
 - An empty list does not mean that no roles or assignments exist.
 
 | Service | `uip admin authorization` lists | Effective roles of one principal | List roles and who holds them | Assign or remove roles | Create or change role definitions |
@@ -24,8 +26,6 @@ The Authorization Service leaves the roles and role assignments of four services
 | Data Fabric (`dataservice`) | No roles; assignments 403 | `check-access "<PRINCIPAL>" --service dataservice` | `uip df roles list`; `uip df directory list` | `uip df directory assign-roles`; `uip df directory revoke-roles`. See [Data Fabric role assignments](role-assignment-management.md#data-fabric-role-assignments). | Data Fabric UI |
 | Test Manager (`testmanager`), Task Mining (`taskmining`) | No roles; assignments 403 | `check-access "<PRINCIPAL>" --service <svc>` | The UI of the service | The UI of the service | The UI of the service |
 | Insights (`insights`), Automation Ops (`automationops`), Case Management (`casemanagement`), Process Mining (`processmining`) | Roles and assignments | `check-access "<PRINCIPAL>" --service <svc>` | `roles list --service <svc>`; `roles assignments list --service <svc>` | See [Service-Managed and Platform Services](role-assignment-management.md#service-managed-and-platform-services) | The UI or API of the service |
-
-`uip df roles` and `uip df directory` do not show in `uip df --help`, but they work.
 
 ## Role shape and service resolution
 

@@ -243,20 +243,8 @@ Use this path when a principal gets 403 from Data Fabric. An example is a write 
    uip admin authorization check-access "<PRINCIPAL>" --service dataservice --output json
    ```
 3. Report the gap: the Data Fabric roles that the principal has, and the role that the denied action needs. For example, a record write needs a role with write access. Stop here and let the user decide (Rule 34).
-4. Only after the user confirms the fix, get the Data Fabric role ID and the principal type:
-   ```bash
-   uip df roles list --output json
-   uip df directory list --output json
-   ```
-5. Assign the role:
-   ```bash
-   uip df directory assign-roles <PRINCIPAL_ID> --type <TYPE> --role-ids <DF_ROLE_ID> --output json
-   ```
-   Take `<DF_ROLE_ID>` from `uip df roles list`, never from `check-access`. Take `<TYPE>` from the `Type` of the principal in `uip df directory list`. Page the list with `--limit` and `--offset` to find the principal.
-   If `IsUIEnabled` of the principal is `false`, add `--no-ui-access`. Without it, `assign-roles` turns on Data Fabric UI access. Turn on UI access only when the user approves it.
-6. Run step 2 again to confirm the new role.
 
-The rules for these commands are in [Data Fabric role assignments](../authorization/role-assignment-management.md#data-fabric-role-assignments).
+**Fix (Operate — present it, do not run it):** add the Data Fabric role that the action needs with `uip df directory assign-roles`. Take the role ID from `uip df roles list`, not from `check-access`. [Data Fabric role assignments](../authorization/role-assignment-management.md#data-fabric-role-assignments) gives the rules for the role IDs, `--type`, UI access, and the confirmation.
 
 ---
 
