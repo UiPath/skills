@@ -466,7 +466,7 @@ For the generic debug_overwrites shape (capability-agnostic), see [../../solutio
 
 > **Fallback path.** When `uip solution resources get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
 
-> **SECURITY: Never read the CLI's credentials file** — the access token must not appear in Claude's context. Take `<BASE_URL>`, `<ORG>`, `<TENANT>` from `uip login status --output json` (`Data.BaseUrl`, `Data.Organization`, `Data.Tenant`). Get the token from `uip login refresh --output json` into a shell variable and make the API call in the same shell invocation, so Claude only sees the API response. Never print the token.
+> **SECURITY: Never read the CLI's credentials file** — the access token must not appear in Claude's context. Take `<BASE_URL>`, `<ORG>`, `<TENANT>` from `uip login status --output json` (`Data.BaseUrl`, `Data.Organization`, `Data.Tenant`). Get the token from `uip login refresh --output json` into a shell variable and make the API call in the same shell invocation, so Claude only sees the API response. Never print the token, and never run `uip login refresh --output json` on its own: its output includes the token.
 
 ### Step 1: Discover the process and its folder
 

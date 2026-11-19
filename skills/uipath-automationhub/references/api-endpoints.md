@@ -17,7 +17,7 @@ Set `$ACCESS_TOKEN` in the same shell invocation as each request, and never prin
 ACCESS_TOKEN=${UIPATH_CLI_AUTH_TOKEN:-$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')}
 ```
 
-Never ask the user to paste a token, and never fall back to an admin OpenAPI token. If neither source yields a token, stop and explain that the skill needs the user's cloud session (`uip login`) or a host-provided token.
+Never run `uip login refresh --output json` on its own: its output includes the token. Never ask the user to paste a token, and never fall back to an admin OpenAPI token. If neither source yields a token, stop and explain that the skill needs the user's cloud session (`uip login`) or a host-provided token.
 
 ### Base URL
 

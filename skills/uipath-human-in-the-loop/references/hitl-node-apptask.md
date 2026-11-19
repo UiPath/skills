@@ -30,7 +30,7 @@ Map to working variables (`Data.Status` must be `Logged in`; otherwise ask the u
 | `TENANT_ID` | `Data.TenantId` |
 | `USER_ID` | `Data.UserId` |
 
-**Bearer token** — set `ACCESS_TOKEN` in the same shell invocation as each request below, and never print it:
+**Bearer token** — set `ACCESS_TOKEN` in the same shell invocation as each request below, and never print it. Never run `uip login refresh --output json` on its own: its output includes the token.
 
 ```bash
 ACCESS_TOKEN=$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')
