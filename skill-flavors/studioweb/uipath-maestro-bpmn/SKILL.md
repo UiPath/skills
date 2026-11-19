@@ -99,7 +99,7 @@ When a reference tells you to run a command that is not available, use the Studi
    user chose *replace* in [Critical Rule 12](#critical-rules) step 2; else add a shape only where they report one missing.
    `compile` writes no diagram, and `merge` keeps the shapes the target already has. Exactly one `<Name>.bpmn`
    exists in the project: the target. Compile straight over it only when it
-   is empty.
+   is empty, or as draft *Build it* says ([draft-skeleton.md](references/draft-skeleton.md#after-the-answer)).
 <!--skill-flavor:workflow-compile:end-->
 
 <!--skill-flavor:workflow-merge:start-->

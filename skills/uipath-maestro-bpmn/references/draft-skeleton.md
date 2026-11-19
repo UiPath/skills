@@ -62,6 +62,7 @@ A skeleton is not a working process and must never be reported as one.
 8. **Mark a step that runs once per item on its own box.**
    When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start, read through the start event's mapping).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
+   When the looped box names a producer (`→ <variable>`), every item writes that one process variable, so items running at once overwrite it: add `sequential: true`, and when the request asked for them all at once, say so under `Assumed`.
    When the step stops early ("stop at the first failed document"), add `completion: '=js:vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
@@ -243,7 +244,8 @@ It is the turn's last tool call: before it, read [gate-reply-template.md](gate-r
   Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
-- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[?contains(Name,'<Word>') || contains(Name,'<word>')].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+  A tenant holds hundreds of entities, so never list them unfiltered: `contains` is case-sensitive, so give each keyword from the box's label (`Hotel`, `Pilot`) a capitalized and a lowercase test, all joined with `||`.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
@@ -293,10 +295,15 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
+  `merge` keeps a box's `<bpmn:task>` tag when the edit retypes it, so `refresh` or `validate` then rejects the box (`cannot be attached to bpmn:task`).
+  On that error, when the target holds no pool, lane or annotation (`grep -cE '<bpmn:(participant|lane|textAnnotation)' <Name>.bpmn` prints `0`), compile the source straight over the target, run `format` on it, then `refresh` and `validate`, and say in the report that the diagram was laid out again.
+  Otherwise put back the copy you merged into, and tell the user `merge` cannot retype that box without losing what the SDK does not model.
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
-  A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
-  An unanswered which-of-two takes the first resource named, reported under `Assumed`.
+  A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function or another Maestro process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is the kind's (`Agent`, `Api`), and the folder binding carries no value.
+  A connector or Data Fabric box with no connection or entity stays a bare `.task()` named as the second bullet of [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) says, because `refresh` refuses a connection binding that is not a connection id.
+  The final report lists both under `Needs:`.
+  A connection the gate named is the user's choice once they pick *Build it*, their own personal one included; an unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
   End the turn with the [final report](final-report-template.md), read as [SKILL.md](../SKILL.md#workflow) step 9 says; its first line says `(draft mode)`, because this run stopped at a gate.
