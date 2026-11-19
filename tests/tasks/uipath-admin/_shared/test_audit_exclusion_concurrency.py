@@ -16,6 +16,7 @@ import datetime
 import importlib.util
 import io
 import json
+import logging
 import os
 import re
 import sys
@@ -319,3 +320,47 @@ def test_cleanup_orphan_sweep_can_be_turned_off(tmp_path, monkeypatch):
     run_script(CLEANUP_SCRIPT, org, tmp_path, monkeypatch,
                EXCL_CLEANUP_MARKER="ce-audit-excl-create", EXCL_ORPHAN_HOURS=0)
     assert "pol-orphan" in org.ids() and "pol-own" not in org.ids()
+
+
+OLD = NOW - datetime.timedelta(days=35)
+
+
+@pytest.mark.parametrize("created_on", [
+    # What the service returns, e.g. the 2026-10-15 orphan's "2026-10-15T10:52:22.988Z".
+    OLD.strftime("%Y-%m-%dT%H:%M:%S.") + f"{OLD.microsecond // 1000:03d}Z",
+    OLD.strftime("%Y-%m-%dT%H:%M:%S.%f") + "1Z",  # the 7-digit .NET form
+    OLD.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    OLD.strftime("%Y-%m-%dT%H:%M:%S"),  # no offset: read as UTC
+])
+def test_cleanup_reads_the_service_timestamp_forms(created_on, tmp_path, monkeypatch):
+    (tmp_path / "seed.json").write_text(json.dumps({"uuid8": "12ab34cd"}), encoding="utf-8")
+    org = FakeOrg([dict(rule("pol-orphan", "ce-audit-excl-create-894b24f9"), CreatedOn=created_on)])
+    run_script(CLEANUP_SCRIPT, org, tmp_path, monkeypatch, EXCL_CLEANUP_MARKER="ce-audit-excl-create")
+    assert org.ids() == set()
+
+
+def test_cleanup_says_why_it_left_another_runs_rule(tmp_path, monkeypatch, caplog):
+    (tmp_path / "seed.json").write_text(json.dumps({"uuid8": "12ab34cd"}), encoding="utf-8")
+    org = FakeOrg([
+        dict(rule("pol-undated", "ce-audit-excl-create-ffff6666"), CreatedOn="last month"),
+        rule("pol-inflight", "ce-audit-excl-create-dddd4444", created=datetime.timedelta(minutes=3)),
+    ])
+    with caplog.at_level(logging.INFO):
+        run_script(CLEANUP_SCRIPT, org, tmp_path, monkeypatch, EXCL_CLEANUP_MARKER="ce-audit-excl-create")
+    assert org.ids() == {"pol-undated", "pol-inflight"}
+    assert "ce-audit-excl-create-ffff6666: its CreatedOn 'last month' can't be read" in caplog.text
+    assert "ce-audit-excl-create-dddd4444: another run's rule" in caplog.text
+    assert "(orphan after 6 h)" in caplog.text
+
+
+class FakeOrgListingFails(FakeOrg):
+    def __call__(self, args, timeout=30, quiet=False):
+        if list(args)[:5] == ["admin", "audit", "org", "exclusions", "list"]:
+            return {"Result": "Failure", "Message": "HTTP 503"}
+        return super().__call__(args, timeout, quiet)
+
+
+def test_setup_warns_when_it_cannot_skip_covered_types(tmp_path, monkeypatch, caplog):
+    with caplog.at_level(logging.INFO):
+        assert plan(tmp_path, monkeypatch, FakeOrgListingFails([PEER]), slot=0) == "t-rl"
+    assert "Could not list the existing rules, so no covered event type is skipped" in caplog.text

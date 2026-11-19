@@ -212,8 +212,15 @@ def snapshot_existing():
 
 def covered_type_ids():
     """Lowercased EventType ids that some live rule, active or staged, excludes."""
+    rules = list_rules()
+    if rules is None:
+        logger.warning(
+            "Could not list the existing rules, so no covered event type is skipped; "
+            "the seed may collide with an existing rule (HTTP 409)"
+        )
+        return set()
     covered = set()
-    for rule in list_rules() or []:
+    for rule in rules:
         for selector in field(rule, "Selectors") or []:
             if str(field(selector, "Type") or "").strip().lower() != "eventtype":
                 continue

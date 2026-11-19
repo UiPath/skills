@@ -119,11 +119,24 @@ def clean_by_marker(marker, rules):
         if owned_by_this_run(name):
             delete(name, policy_id, "seeded by this run")
             continue
+        # `startswith`, not the substring match peer_test_object() uses: deleting
+        # needs the stricter test, so an administrator's "Copy of ce-audit-excl…"
+        # rule is never swept.
         if not threshold or not name.lower().startswith(RESERVED_PREFIX):
             continue
         age = age_hours(rule)
-        if age is not None and age >= threshold:
+        if age is None:
+            logger.info(
+                "Leaving %s: its CreatedOn %r can't be read, so it can't be judged an orphan",
+                name, field(rule, "CreatedOn"),
+            )
+        elif age >= threshold:
             delete(name, policy_id, f"orphan of an earlier run, created {age:.0f} h ago")
+        else:
+            logger.info(
+                "Leaving %s: another run's rule, %.1f h old (orphan after %g h)",
+                name, age, threshold,
+            )
 
 
 def clean_unsnapshotted(rules):

@@ -54,6 +54,10 @@ rules. Rules that carry the reserved `ce-audit-excl` prefix but not this run's
 uuid8 belong to another run, so readback and unchanged leave them out of the
 comparison, and the pre-run snapshot never records them. Customer rules and this
 run's own rules are still compared strictly.
+One gap remains. A rule that a peer run's agent creates under a name without the
+reserved prefix looks like a customer rule here, so a concurrent list, org-scope
+or unchanged check can fail for a sibling's mistake. That sibling's own task
+fails in the same run, which points at the cause.
 
 Logging: rule names printed here are the ones this run seeded or asked for, so
 they are test-authored, not customer data. Every identifier — policy ids and
@@ -109,6 +113,7 @@ def without_peers(rules):
     if skipped:
         logger.info("Ignoring %d peer test rule(s) owned by other runs", skipped)
     return kept
+
 
 # Dimensions whose values are ids defined by the audit metadata catalog. `Tenant`
 # is deliberately absent: the service accepts a tenant id from outside the
