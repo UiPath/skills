@@ -57,6 +57,27 @@ through `.onError(...)`. Local replay treats it as dispatch-only.
   inputs: { claimId: input('claimId') } }))
 ```
 
+## Argument types (`inputSchema`)
+
+Compile declares each passed input with a type taken from its value: a number,
+boolean, array or object literal by its shape, and anything else (an expression,
+`input()`, `out()`) as `string`. When the process types an argument differently
+(an object filled from an expression, or an argument the step does not pass),
+write the argument JSON Schema as `inputSchema`. Compile writes it verbatim as
+the definition's `inputDefinition`:
+
+```ts
+inputs: { payload: input('request') },
+inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
+```
+
+A decompiled step carries `inputSchema` when its saved definition holds more
+than compile would infer; keep it. `check` reports an object or array literal
+whose declared type does not allow it (`PROCESS_INPUT_SCHEMA_TYPE`; `flow
+validate` reports the same value as `TYPE_MISMATCH`), and an `inputSchema` that
+is not a plain object (`PROCESS_INPUT_SCHEMA_INVALID`). Needs a builder SDK
+release that includes UiPath/builder-sdk#2198.
+
 ## In-solution sibling
 
 To call a sibling project of the SAME solution — for example another Flow,

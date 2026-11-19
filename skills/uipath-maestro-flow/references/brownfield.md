@@ -334,6 +334,7 @@ Preserved shapes include:
 - `{ fork }`, `.stepToRef` arms, and pass-through `rawNode` merge ([parallel-merge.md](parallel-merge.md));
 - `core.logic.loop@1.0` `output`/`loopBack` handles through its carried definition;
 - subflow reads of its Start node as `input('<name>')` and subflow `.onError()`.
+- a process step's `inputSchema` (its saved argument schema; edit a `properties` entry only when you change that argument's type).
 
 Findings the source cannot carry print on stderr as `flow-decompile: warning: …`; `--strict` turns each into an error. Edit `.flow` JSON directly only when decompile printed one of these warnings and its case below says to; otherwise edit through merge:
 
