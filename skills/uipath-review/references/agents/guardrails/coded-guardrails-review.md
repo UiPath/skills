@@ -92,7 +92,8 @@ the intended product. If the clause does not directly match, continue normal Aud
 ## Missing-guardrail fast path — completed deliverable
 
 When the entry source clearly matches a catalog use case and no matching guardrail is wired (no middleware, no
-`@guardrail`), use this bounded sequence:
+`@guardrail`), use this bounded sequence. If any guardrail is already wired, audit each one first (conclusive audit
+fast path or Audit Mode); this fast path then only adds recommendations to that report.
 
 1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`;
 2. read the entry `.py` per [Read the agent first](#read-the-agent-first);
@@ -360,3 +361,5 @@ Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-
    named.
 8. **Review only** — emit findings; never write guardrails, edit the entry `.py`, or run mutating `uip codedagent`
    commands.
+9. **Audit before recommending** — when any guardrail is wired, audit each one before emitting any
+   `CODED_GUARDRAIL_RECOMMENDED`; every wired guardrail is named in the report.

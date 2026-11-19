@@ -14,7 +14,7 @@ Decisions are **live-catalog driven**. Use catalog `when_to_use`, `use_cases`, `
 
 ## Conclusive existing-guardrail fast path — completed report checkpoint
 
-When a format-valid guardrail and its selected source conclusively match a catalog `when_not_to_use` clause:
+When a format-valid guardrail and its selected source conclusively match a catalog `when_not_to_use` clause, run this sequence **before** the missing-guardrail fast path, Recommend Mode, or general manual review:
 
 1. Run `uip agent review` and retain deterministic findings and `Data.Grade`.
 2. Read the guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and `matchNames`, plus only its selected source or resource.
@@ -28,7 +28,9 @@ Require a direct source-to-catalog contradiction, not a plausible concern. For e
 
 ## Missing-guardrail fast path — completed deliverable
 
-When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching validator:
+When the source clearly matches a missing-guardrail use case and `guardrails[]` is **absent or empty**:
+
+> If `guardrails[]` has any entry, this fast path does not apply. Audit every entry first (existing-guardrail fast path or Audit Mode), then add `LC_GUARDRAIL_RECOMMENDED` findings to the same report.
 
 1. Run `uip agent review` and retain deterministic findings and `Data.Grade`.
 2. Read the system prompt, schema property names, tool/resource names, and existing `guardrails[]` from the target agent source.
@@ -85,6 +87,8 @@ Unavailable means the **fetch itself failed**: the output contains `"Code": "Gua
 
 For each `agent.json` `guardrails[]` entry not flagged format-invalid by the CLI, read `validator`, `selector.scopes`, and action `$actionType`, then run both checks.
 
+**Coverage:** every `guardrails[]` entry appears in the report, either as an `LC_GUARDRAIL_ACTION_INEFFECTIVE` / `LC_GUARDRAIL_MISAPPLIED` finding or as an "audited, no defect" line naming its `name`/`id`, scope, action, and the catalog `WhenNotToUse` clause checked. Silence about a configured guardrail is a defect.
+
 A BYO-backed entry with tenant `Status: "Disabled"` is a configuration switch, not a format problem. For a guardrail targeting that configuration through `byoValidatorName`, treat it like an `Unauthorised` validator: unable to protect, and report that condition.
 
 ### Actionability Check → `LC_GUARDRAIL_ACTION_INEFFECTIVE`
@@ -101,7 +105,7 @@ Relevant catalog-driven cases include:
 
 Also emit when `detectionScope` is `"Files"` or `"Both"` on an agent with no `job-attachment` field and no file tool (`properties.toolType` `analyze-attachments` / `create-file`) — the guardrail has nothing to evaluate. Leave schema validity of `detectionScope` (unknown parameter, bad value) to the CLI format pass.
 
-Read system prompt, `inputSchema`, `outputSchema`, and tool resources to establish real context. Read catalog `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition, such as a generate-only agent with no user input carrying a PII guardrail when PII output is the intended product. Cite the matched catalog clause.
+Read system prompt, `inputSchema`, `outputSchema`, and tool resources to establish real context. Read catalog `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition, for example `pii_detection` at `Llm` scope on a generate-only agent whose LLM never receives real PII, including when it takes a non-PII user input such as a topic or theme. Cite the matched catalog clause.
 
 ## Recommend Mode — missing guardrails (Info recommendations)
 
@@ -156,3 +160,4 @@ Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-
 5. **Never silently downgrade block → log:** a security-critical guardrail at `log` is `LC_GUARDRAIL_ACTION_INEFFECTIVE`, unless the catalog/agent shows a stated reason.
 6. Do not name `harmful_content` / `intellectual_property` / `user_prompt_attacks` unless already present; phrase generically. `pii_detection` / `prompt_injection` may be named.
 7. **Review only:** emit findings; never write guardrails, fix `agent.json`, or run `uip agent validate`.
+8. **Audit before recommending:** when `guardrails[]` is non-empty, audit every entry before emitting any `LC_GUARDRAIL_RECOMMENDED`; every configured guardrail is named in the report.
