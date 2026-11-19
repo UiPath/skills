@@ -108,7 +108,8 @@ On a locked folder:
 
 | Operation | Result | Do instead |
 |---|---|---|
-| `git config`, `git remote add`, `git push -u`, `git init` | Fails: the repository `config` cannot be written | Push to a URL: `git push https://github.com/<org>/<repo>.git <branch>` |
+| `git config`, `git remote add`, `git push -u` | Fails on macOS: the repository `config` cannot be written. Git for Windows clears the read-only attribute and writes it anyway (the lock there guards against the browser, not git) | Push to a URL: `git push https://github.com/<org>/<repo>.git <branch>`. Do not write `config` even where git lets you: `--check` then reports it |
+| `git init` | Fails on any linked folder (`hooks` is a file) and creates nothing | Nothing to do: the repository already exists |
 | Delete or move the solution folder | Fails (`Operation not permitted` / access denied) | Ask the user. Only with their consent: `chflags -R nouchg <SOLUTION_DIR>` (macOS) or `attrib -R /S /D <SOLUTION_DIR>\*` (Windows) first |
 
 After a `uip solution` command, an explicit `git-link` is usually unnecessary. Before running git yourself, still run `uip solution git-link --check <SOLUTION_DIR> --output json` and act on `Data.State`: a skipped or refused auto-link leaves the folder `NotLinked` or `Invalid`.
@@ -169,7 +170,7 @@ git merge --allow-unrelated-histories studioweb/main
 
 ## Hazards
 
-1. **Never `git init` or `git clone` in a solution folder that has `.git-studioweb`, linked or not.** Unlinked, it creates a `.git` folder that then wins everywhere, splitting history from what Studio Web sees; linked, it re-initializes or overwrites the repository Studio Web uses (or, where linking locked `config`, fails). Link instead when unlinked.
+1. **Never `git init` or `git clone` in a solution folder that has `.git-studioweb`, linked or not.** Unlinked, it creates a `.git` folder that then wins everywhere, splitting history from what Studio Web sees; linked, it fails or overwrites the repository Studio Web uses. Link instead when unlinked.
 2. **Never delete, move, or replace a `.git` folder**, even when `.git-studioweb` also exists.
 3. **Never overwrite an existing `.git` file without the user's consent.** Show its content first; rewrite with `uip solution git-link --force` or the manual fallback only after they agree.
 4. **Do not write into `.git-studioweb` beyond what git itself does** — no hand-added hooks, no `config` edits, no deleting it to "clean up".
