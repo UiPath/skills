@@ -58,7 +58,8 @@ Checks:
     processor            the node's inputs.processorKey is a GUID and, when
                          the flow sits in a solution, the solution holds an
                          idpProcessor resource with that key under
-                         resources/ (outside one, pack writes it later)
+                         resources/ (outside one, or in one with no
+                         resources/ yet, pack writes it later)
 
 Exit 0 and ``OK: ...`` on stdout when the check holds. Otherwise exit 1 and a
 ``FAIL: ...`` line on stderr naming what was found instead.
@@ -407,7 +408,10 @@ def check_processor(_: dict, node: dict, args: argparse.Namespace) -> str | None
     if not isinstance(key, str) or not GUID.fullmatch(key):
         return f"inputs.processorKey is {json.dumps(key)}, not a GUID"
     solution_dir = _find_solution_dir(args.flow_path)
-    if solution_dir is None:
+    # No resources/ means the agent never saw a solution: Studio Web keeps the
+    # .uipx off the sandbox and the harness adds it at export, so the CLI
+    # reported ResourcePending and pack writes the resource later.
+    if solution_dir is None or not os.path.isdir(os.path.join(solution_dir, "resources")):
         return None
     keys = _list_processor_keys(solution_dir)
     if key in keys:

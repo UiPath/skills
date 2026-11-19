@@ -658,6 +658,19 @@ def test_processor_passes_a_keyed_flow_outside_a_solution(write):
     assert _run("processor") == 0
 
 
+def test_processor_passes_a_keyed_flow_in_a_solution_without_resources(write, tmp_path):
+    write(_keyed_flow())
+    (tmp_path / "InvoiceReaderSolution" / "InvoiceReaderSolution.uipx").write_text("{}")
+    assert _run("processor") == 0
+
+
+def test_processor_fails_a_keyless_flow_in_a_solution_without_resources(write, tmp_path, capsys):
+    write(_keyed_flow(None))
+    (tmp_path / "InvoiceReaderSolution" / "InvoiceReaderSolution.uipx").write_text("{}")
+    assert _run("processor") == 1
+    assert "not a GUID" in capsys.readouterr().err
+
+
 def test_processor_fails_a_keyless_flow_outside_a_solution(write, capsys):
     write(_keyed_flow(None))
     assert _run("processor") == 1
