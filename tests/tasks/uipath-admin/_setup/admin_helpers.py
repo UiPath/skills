@@ -279,3 +279,17 @@ def owned_by_this_run(name: str) -> bool:
     seed = load_seed()
     token = seed.get("uuid8")
     return bool(token) and str(name).endswith(token)
+
+
+def peer_test_object(name, prefix: str) -> bool:
+    """True when `name` is a test object that another run owns.
+
+    Such an object carries the reserved test `prefix` but not this run's uuid8.
+    Its owner creates, renames and deletes it on its own schedule, so a check
+    that compares live state against a snapshot or a saved listing has to skip
+    it. Otherwise a correct run fails whenever a peer task overlaps it. A
+    customer's object (no prefix) and this run's own object (its uuid8) are still
+    compared strictly.
+    """
+    text = str(name or "")
+    return prefix.lower() in text.lower() and not owned_by_this_run(text)
