@@ -695,20 +695,6 @@ def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[s
     )
 
 
-def _catalog_verb(task: ET.Element) -> str:
-    """The catalog verb (``getbyid``) the activity was picked by, or ``""``.
-
-    Read from ``activityMetadata.activity.configuration.httpMethod`` of the
-    context ``metadata`` input, where the canvas serializes the picked operation.
-    """
-    try:
-        metadata = json.loads(context_value(task, "metadata"))
-        configuration = json.loads(metadata["activityMetadata"]["activity"]["configuration"])
-        return str(configuration["httpMethod"]).strip().lower()
-    except (KeyError, TypeError, ValueError, AttributeError):
-        return ""
-
-
 def _operation_matches(
     task: ET.Element,
     method: str,
@@ -727,17 +713,6 @@ def _operation_matches(
         recorded = context_value(task, "operation").strip().lower()
         if operation.operation and recorded:
             return recorded == operation.operation.lower()
-        # `method` in the context is the HTTP method (`GET`); the catalog verb the
-        # operation was picked by (`GETBYID`) is only in the node's metadata
-        # (`instanceParameters.httpMethod`). That verb decides when the node has it;
-        # a bare `GET` with no metadata stays a list read, not a get-by-id.
-        verb = _catalog_verb(task)
-        if verb:
-            # A catalog verb in the context `method` itself (`GETBYID`, what the
-            # canvas's quick-add copies) still counts.
-            return verb in _methods(operation) or (
-                method in _CATALOG_ONLY_METHODS and method in _methods(operation)
-            )
         return method in _methods(operation)
 
     if method not in _http_methods(operation):
