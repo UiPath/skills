@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
-import yaml
 
 SUITE = Path(__file__).resolve().parents[1]
 HITL_SUITE = SUITE.parent / "uipath-human-in-the-loop"
@@ -312,7 +311,25 @@ def _flat(text: str) -> str:
 
 
 def _prompt(path: Path) -> str:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))["initial_prompt"]
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = lines.index("initial_prompt: |") + 1
+    body = []
+    for line in lines[start:]:
+        if line and not line.startswith(" "):
+            break
+        body.append(line[2:])
+    return "\n".join(body)
+
+
+def _tags(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8")
+    inline = re.search(r"^tags:\s*\[(.*)\]\s*$", text, re.M)
+    if inline:
+        return [tag.strip().strip("'\"") for tag in inline.group(1).split(",")]
+    block = re.search(r"^tags:\s*\n((?:\s+-\s*.+\n?)+)", text, re.M)
+    if not block:
+        return []
+    return [line.split("-", 1)[1].strip().strip("'\"") for line in block.group(1).splitlines() if line.strip()]
 
 
 def _helper(path: Path) -> str:
@@ -325,7 +342,7 @@ def _tagged(directory: Path) -> set[Path]:
     return {
         path
         for path in directory.rglob("*.yaml")
-        if PATH_TO_GA_TAG in (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("tags", [])
+        if PATH_TO_GA_TAG in _tags(path)
     }
 
 
