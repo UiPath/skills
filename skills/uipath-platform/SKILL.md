@@ -21,7 +21,7 @@ Classify the requested **outcome** before running any command:
 <!--skill-flavor:freeze-critical-rule:start-->
 ## Critical Rules
 
-1. **In a frozen config, fix a refusal without changing the freeze.** When a `uip` command is refused while the config has a `versions` block, or its `Message` mentions a freeze or a pin, read [`references/cli-freeze-guide.md`](references/cli-freeze-guide.md) before the next command. Run only the fixes it names: no `--force` and no reinstall of the newest CLI without the user's agreement.
+1. **In a frozen config, fix a freeze refusal without changing the freeze.** A freeze refusal is a `uip` failure with `ErrorCode: configuration_error` while the config has a `versions` block, or one whose `Message` names a freeze, a frozen config or a pin. On one, read [`references/cli-freeze-guide.md`](references/cli-freeze-guide.md) before the next command. Run only the fixes it names: no `--force` and no reinstall of the newest CLI without the user's agreement. Every other failure in a frozen repo (`Not logged in`, a 404, a validation error) is not a freeze refusal: handle it as usual.
 <!--skill-flavor:freeze-critical-rule:end-->
 
 ## Use the CLI. Don't roll your own REST.
@@ -41,7 +41,7 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 ## CLI Bootstrap for Fresh Machines
 
 <!--skill-flavor:freeze-bootstrap:start-->
-In a repo whose `.uipath/config.json` has `versions.cli`, skip the installers below, which install the newest CLI: install the pin with `npm i -g @uipath/cli@<CLI_PIN>`, then run `uip update --output json`.
+In a repo whose `.uipath/config.json` has `versions.cli`, run the installers below from inside the repo folder: they read the freeze there and put the CLI on its pin.
 <!--skill-flavor:freeze-bootstrap:end-->
 
 When `uip --version` fails, Node/npm is missing, or a coding agent needs a workstation prepared for UiPath work, use the official onboarding installers instead of reconstructing package-manager logic. They are idempotent and safe to rerun.
@@ -177,7 +177,7 @@ uip --version
 ```
 
 <!--skill-flavor:freeze-step0-install:start-->
-If the command is missing and the repo's `.uipath/config.json` has `versions.cli`, install that version instead: `npm i -g @uipath/cli@<CLI_PIN>`, then `uip update --output json`. Otherwise use the official installer from [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines), then open a new shell if the installer added PATH entries.
+If the command is missing, use the official installer from [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines), then open a new shell if the installer added PATH entries. In a frozen repo, run the installer from inside the repo folder so it installs the pinned CLI.
 <!--skill-flavor:freeze-step0-install:end-->
 
 ### Step 1 — Authenticate
