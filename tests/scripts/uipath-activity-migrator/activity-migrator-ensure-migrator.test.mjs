@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SCRIPT = join(REPO_ROOT, "skills", "uipath-activity-migrator", "scripts", "ensure-migrator.mjs");
 
 // ensure-migrator.mjs is a Windows-only flow that shells out to curl, powershell.exe, tar/unzip and UiPath.Upgrade.exe.

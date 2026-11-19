@@ -64,7 +64,8 @@ def test_every_python_script_test_is_run_by_a_workflow():
 def test_every_node_script_test_is_in_skills_test():
     skills_test = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))["scripts"]["skills:test"]
     listed = set(skills_test.split())
-    unrun = [_rel(path) for path in sorted(SCRIPT_TESTS.glob("*.test.mjs")) if _rel(path) not in listed]
+    # rglob: owner subfolders such as tests/scripts/uipath-activity-migrator/ hold node tests too.
+    unrun = [_rel(path) for path in sorted(SCRIPT_TESTS.rglob("*.test.mjs")) if _rel(path) not in listed]
     assert not unrun, f"add these to `skills:test` in package.json: {unrun}"
 
 

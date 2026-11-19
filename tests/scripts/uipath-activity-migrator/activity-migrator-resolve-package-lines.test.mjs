@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SCRIPT = join(REPO_ROOT, "skills", "uipath-activity-migrator", "scripts", "resolve-package-lines.mjs");
 
 const VERSIONS = [
