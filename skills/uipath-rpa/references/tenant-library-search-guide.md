@@ -15,7 +15,7 @@ The tenant feed is authoritative for org-published libraries. Do NOT search the 
 uip or libraries list --search Excel --output json
 
 # Full scan, then filter/rank client-side:
-uip or libraries list --limit 500 --output json
+uip or libraries list --limit 1000 --output json
 ```
 
 | Flag | Purpose |
@@ -68,7 +68,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    - Capability terms: `Excel`, `SAP`, `ServiceNow`, `Salesforce`, `Email`, `PDF`, `SharePoint`, `Outlook`, `Citrix`, etc. — drawn from the activities the project will use
    - Domain terms: `Invoice`, `Vendor`, `Banking`, `Order` — drawn from the project name and request
 
-   If you have more than 6 candidate keywords, **skip the OR-filter** and run unfiltered (`--limit 500`, paginate via `--offset` while `Pagination.HasMore` is `true`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
+   If you have more than 6 candidate keywords, **skip the OR-filter** and run unfiltered (`--limit 1000`, paginate via `--offset` while `Pagination.HasMore` is `true`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
 3. **Run one filtered call covering all keywords** with the OR pattern above. Single call, not one per keyword — but if `Pagination.HasMore` is `true`, repeat that same call with `--offset 1000`, `--offset 2000`, … until it is `false`, and merge the matches. Branch on the merged result: ≥1 candidate after ranking → step 5a. 0 candidates → step 5b. Do not loop back to step 2 with new keyword permutations.
 4. **Rank candidates in-agent.**
    - Org-prefix match in `Title` or `Key` (starts with `Common`, `Shared`, `<Company>`) → rank highest

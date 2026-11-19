@@ -67,8 +67,8 @@ Libraries are tenant-scoped -- no folder context needed.
 | `uip or libraries delete <key>` | Delete a specific library version. Key format is `PackageId:Version` (validated client-side). |
 
 ```bash
-# List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
-uip or libraries list --limit 500 --output json
+# List libraries (first 1000, the most one call returns). Default --limit is 50; bump it for tenants with many libraries.
+uip or libraries list --limit 1000 --output json
 
 # Filter by name client-side. Title can be null — guard with `Title != null` or contains() will error.
 uip or libraries list --limit 1000 \
