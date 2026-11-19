@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "skills"
-MODELER_DIR = SKILLS / "uipath-ontology"
+SKILL_DIR = SKILLS / "uipath-ontology"
 SOLUTION_DIR_SKILL = SKILLS / "uipath-solution"
 
 NEGATION = re.compile(r"\b(never|not|no|don't|do not|without|instead of|refuse|reject|stop)\b", re.I)
@@ -33,7 +33,7 @@ def body(text: str) -> str:
 
 
 def guidance_files() -> list[Path]:
-    return list(MODELER_DIR.rglob("*.md"))
+    return list(SKILL_DIR.rglob("*.md"))
 
 
 def unnegated_lines(path: Path, pattern: re.Pattern) -> list[str]:
@@ -82,7 +82,7 @@ def test_skill_registered_as_preview():
 
 
 def test_frontmatter_identity_and_redirects():
-    m = frontmatter(read(MODELER_DIR / "SKILL.md"))
+    m = frontmatter(read(SKILL_DIR / "SKILL.md"))
     assert m["name"] == "uipath-ontology"
     assert m["description"].startswith("UiPath Ontology") and len(m["description"]) <= 1024
     assert "→uipath-solution" in m["description"] and "TRIGGER" not in m["description"]
@@ -106,8 +106,8 @@ def test_codeowners_cover_ontology_paths():
 
 
 def test_skills_ship_no_code():
-    assert not (MODELER_DIR / "scripts").exists()
-    assert [p for p in MODELER_DIR.rglob("*") if p.suffix in {".py", ".js", ".mjs", ".sh", ".ps1"}] == []
+    assert not (SKILL_DIR / "scripts").exists()
+    assert [p for p in SKILL_DIR.rglob("*") if p.suffix in {".py", ".js", ".mjs", ".sh", ".ps1"}] == []
 
 
 def test_no_rest_or_sdk_patterns_in_any_guide():
@@ -116,7 +116,7 @@ def test_no_rest_or_sdk_patterns_in_any_guide():
 
 
 def test_markdown_links_stay_inside_the_skill():
-    for skill_dir in (MODELER_DIR,):
+    for skill_dir in (SKILL_DIR,):
         for md in skill_dir.rglob("*.md"):
             for link in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", read(md)):
                 if re.match(r"[a-z]+:", link):
@@ -148,15 +148,15 @@ RETIRED = re.compile(r"\b(OFN-00[3678]|SHC-00[15]|MAP-00[1378]|FNO-\d+|BRU-\d+)\
 
 def test_artifact_guides_exist():
     for g in ARTIFACT_GUIDES:
-        assert (MODELER_DIR / "references" / g).is_file(), g
+        assert (SKILL_DIR / "references" / g).is_file(), g
 
 
 def test_example_files_are_folded_into_their_guides():
-    assert sorted(p.name for p in (MODELER_DIR / "references").glob("*-example.md")) == []
+    assert sorted(p.name for p in (SKILL_DIR / "references").glob("*-example.md")) == []
 
 
 def test_artifact_guides_never_carry_ids():
-    hits = [h for g in ARTIFACT_GUIDES for h in unnegated_lines(MODELER_DIR / "references" / g, ID_TERMS)]
+    hits = [h for g in ARTIFACT_GUIDES for h in unnegated_lines(SKILL_DIR / "references" / g, ID_TERMS)]
     assert hits == []
 
 
@@ -173,7 +173,7 @@ def test_no_retired_rules_or_formats():
 
 
 def test_artifacts_guide_matches_zip_contract():
-    t = read(MODELER_DIR / "references/artifacts-guide.md")
+    t = read(SKILL_DIR / "references/artifacts-guide.md")
     for row in ("| `{name}.ofn` | `schema` | `text/owl-functional` | exactly 1 |",
                 "| `{name}-constraints[-{area}].ttl` | `constraints` | `text/turtle` | 0+ (optional) |",
                 "| `{name}-mapping.yarrrml.yml` | `mapping` | `application/yaml` | exactly 1 |",
@@ -184,19 +184,19 @@ def test_artifacts_guide_matches_zip_contract():
 
 
 def test_mapping_guide_maps_choice_sets_by_name():
-    t = read(MODELER_DIR / "references/mapping-yarrrml-guide.md")
+    t = read(SKILL_DIR / "references/mapping-yarrrml-guide.md")
     assert "## Choice-set columns" in t and "xsd:string" in t and "CHOICE_SET_MULTIPLE" in t
     assert "table:" in t and "access: datafabric" in t
     assert "equal(str1=$(customer), str2=$(Id))" in t and "## Joins" in t
 
 
 def test_shacl_guide_lists_value_names():
-    t = read(MODELER_DIR / "references/shacl-patterns-guide.md")
+    t = read(SKILL_DIR / "references/shacl-patterns-guide.md")
     assert "## Value list from a choice set" in t and re.search(r'sh:in\s*\(\s*"Open"', t)
 
 
 def test_owl_guide_has_inverse_properties_section():
-    assert "## Inverse properties" in read(MODELER_DIR / "references/owl-patterns-guide.md")
+    assert "## Inverse properties" in read(SKILL_DIR / "references/owl-patterns-guide.md")
 
 
 DF_WRITE = re.compile(r"uip\s+df\s+(entities|choice-sets|choice-set-values)\s+(create|update)\b")
@@ -213,7 +213,7 @@ def test_no_tenant_folder_scope_in_skills():
 
 
 def test_entity_guide_type_table_and_sources():
-    t = read(MODELER_DIR / "references/entity-guide.md")
+    t = read(SKILL_DIR / "references/entity-guide.md")
     for v in ("`DATETIME_WITH_TZ`", "`RELATIONSHIP`", "`CHOICE_SET_SINGLE`", "`CHOICE_SET_MULTIPLE`",
               "decimalPrecision: 0", "referenceEntityName", "referenceFieldName", "choiceSetName", "connectionName"):
         assert v in t
@@ -224,7 +224,7 @@ def test_entity_guide_type_table_and_sources():
 
 
 def test_entity_guide_authors_locally_in_order():
-    t = read(MODELER_DIR / "references/entity-guide.md")
+    t = read(SKILL_DIR / "references/entity-guide.md")
     assert re.search(r"uip df choice-sets create [^\n]*--local", t)
     assert re.search(r"uip df choice-set-values create <C> <VALUE> --local", t)
     assert "externalFields" in t and "sourceConnectionName" in t and "uip login" in t
@@ -236,7 +236,7 @@ def test_entity_guide_authors_locally_in_order():
 
 
 def test_entity_guide_reserves_order_and_group():
-    t = read(MODELER_DIR / "references/entity-guide.md")
+    t = read(SKILL_DIR / "references/entity-guide.md")
     assert re.search(r"`Order` and `Group` are never entity names", t) and "NAME_RESERVED" in t
     lines = [l for p in guidance_files() for l in read(p).splitlines()
              if re.search(r"entities create (Order|Group)\b|referenceEntityName\": \"(Order|Group)\"|table: (Order|Group)\b", l)]
@@ -244,14 +244,14 @@ def test_entity_guide_reserves_order_and_group():
 
 
 def test_relationship_guide_forbids_second_field():
-    t = read(MODELER_DIR / "references/relationships-guide.md")
+    t = read(SKILL_DIR / "references/relationships-guide.md")
     assert "InverseObjectProperties" in t and "XF-017" in t
     assert re.search(r"(?i)never add a second RELATIONSHIP field", t)
     assert re.search(r"(?i)federated[^\n]*plain column", t)
 
 
 def test_entity_guide_spells_out_federated_body():
-    t = read(MODELER_DIR / "references/entity-guide.md")
+    t = read(SKILL_DIR / "references/entity-guide.md")
     assert '"joins"' in t and "FEDERATED_SOURCES" not in t
     for k in ("source", "relatedSource", "sourceField", "relatedField", "sourceConnectionName", "relatedConnectionName"):
         assert f'"{k}"' in t, k
@@ -284,7 +284,7 @@ C1_CODES = ("NoParentSolution", "OntologyNotFound", "OntologyNameTaken", "Invali
     "InvalidResourceArchive", "InvalidAttachedFile", "FileAttachNotSupported", "ResourceNotFound", "PackageNotFound",
     "OntologyNotInPackage", "OntologyManifestNotWritten", "ValidationFailed", "ServiceValidationUnavailable",
     "ServiceValidationFailed")
-# local authoring codes of the `uip df … --local` commands the modeler can meet
+# local authoring codes of the `uip df … --local` commands the skill can meet
 DF_LOCAL_CODES = ("CONNECTION_NOT_FOUND", "REFERENCE_TARGET_NOT_FOUND", "CHOICE_SET_NOT_FOUND", "RELATIONSHIP_TARGET_FEDERATED",
     "FEDERATED_UPDATE_NOT_SUPPORTED", "ENTITY_IN_USE", "CHOICE_SET_IN_USE", "CHOICE_SET_NAME_TAKEN", "CHOICE_SET_VALUE_NAME_TAKEN",
     "NAME_RESERVED", "RELATIONSHIP_CYCLE", "ENTITY_NAME_TAKEN", "INVALID_NAME", "INVALID_FEDERATED_SOURCE", "INVALID_JOIN",
@@ -300,10 +300,10 @@ STAGES = ("uip login status", "uip solution init",
           "uip ont artifacts check", "uip ont create", "uip ont files add",
           "uip ont validate --local", "uip solution pack", "uip ont files list", "Stop after pack")
 # Order tests read only the `## Workflow` section, so Critical Rules may name commands in any order.
-wf = lambda: section(read(MODELER_DIR / "SKILL.md"), "Workflow")
+wf = lambda: section(read(SKILL_DIR / "SKILL.md"), "Workflow")
 
 
-def test_modeler_stage_order():
+def test_skill_stage_order():
     t = wf(); pos = [t.index(s) for s in STAGES]
     assert pos == sorted(pos)
 
@@ -318,7 +318,7 @@ def test_artifacts_follow_created_entities():
     assert "created entity and field names exactly" in s5 and "Artifacts-only mode stops here" in s5
 
 
-def test_modeler_checks_duplicates_before_create():
+def test_skill_checks_duplicates_before_create():
     t = wf()
     assert t.index("uip df choice-sets list --local") < t.index("uip df choice-sets create")
     assert t.index("uip df entities list --local") < t.index("uip df entities create")
@@ -351,7 +351,7 @@ def test_no_retired_rule_ids():
 
 
 def test_stop_after_pack_and_no_lifecycle_commands():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     assert "Stop after pack" in t
     assert not re.search(r"uip solution (publish|deploy)", t)
     assert "uip ont get" not in wf()  # the post-deploy check belongs to uipath-solution
@@ -364,7 +364,7 @@ def test_validation_needs_login_and_no_offline_flag():
 
 
 def test_saved_model_and_report_blocks_have_exact_fields():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     h = fenced_block_starting(section(t, "Saved model"), "ONTOLOGY_NAME: exact slug")
     r = fenced_block_starting(section(t, "Report"), "SOLUTION_DIR: absolute path")
     assert tuple(re.findall(r"^([A-Z_]+):", h, re.M)) == MODEL_FIELDS
@@ -374,7 +374,7 @@ def test_saved_model_and_report_blocks_have_exact_fields():
 
 
 def errors_guide() -> str:
-    return section(read(MODELER_DIR / "references/errors-guide.md"), "Recovery table")
+    return section(read(SKILL_DIR / "references/errors-guide.md"), "Recovery table")
 
 
 def test_recovery_table_lists_every_id():
@@ -395,7 +395,7 @@ def test_recovery_rows_are_local_fixes():
 def test_deploy_rejections_belong_to_the_solution_skill():
     sec = errors_guide()
     assert not re.search(r"^\| `(TypeIncompatible|EntityConflict)`", sec, re.M)
-    s = read(MODELER_DIR / "SKILL.md")
+    s = read(SKILL_DIR / "SKILL.md")
     assert "| `XF-013`" not in s.split("## Errors", 1)[0]  # the full table lives in errors-guide.md
     assert "errors-guide.md" in section(s, "Errors")
 
@@ -408,7 +408,7 @@ def test_skill_links_resolve():
 
 def test_error_table_codes_exist_in_errors_guide():
     guide = errors_guide()
-    rows = [l for l in section(read(MODELER_DIR / "SKILL.md"), "Errors").splitlines()
+    rows = [l for l in section(read(SKILL_DIR / "SKILL.md"), "Errors").splitlines()
             if l.startswith("| ") and not l.startswith("| Signal")]
     codes = {c for l in rows for c in re.findall(r"`([A-Za-z]+(?:[-_][A-Z0-9]+)+|[A-Z][a-z]+(?:[A-Z][a-z]+)+)`",
                                                  l.split("|")[1])}
@@ -418,11 +418,11 @@ def test_error_table_codes_exist_in_errors_guide():
 # --- one skill: document mode and the saved model ---------------------------------------------------------
 
 def document_guide() -> str:
-    return read(MODELER_DIR / "references/document-guide.md")
+    return read(SKILL_DIR / "references/document-guide.md")
 
 
 def test_document_mode_runs_the_document_guide():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     row = next(l for l in t.splitlines() if l.startswith("| Document |"))
     assert "SDD" in row and "document-guide.md" in row
     assert "document-guide.md" in section(t, "Stage 2")
@@ -453,13 +453,13 @@ def test_document_guide_checks_refused_names_at_approval():
 
 
 def test_file_field_upgrade_cost_is_told_before_confirmation():
-    for t in (section(document_guide(), "Table 2"), section(read(MODELER_DIR / "SKILL.md"), "Stage 2"),
-              read(MODELER_DIR / "references/entity-guide.md")):
+    for t in (section(document_guide(), "Table 2"), section(read(SKILL_DIR / "SKILL.md"), "Stage 2"),
+              read(SKILL_DIR / "references/entity-guide.md")):
         assert "FILE" in t and "not applied" in t
 
 
 def test_saved_model_is_written_resumed_and_kept_current():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     sm = section(t, "Saved model")
     assert "<WORKDIR>/input/model.md" in sm and "CONFIRMED_THROUGH" in sm
     for step in ("concepts", "properties", "labels", "model", "built"):
@@ -472,8 +472,8 @@ def test_saved_model_is_written_resumed_and_kept_current():
     assert "save the change to `model.md`" in section(t, "Stage 4")
 
 
-def test_planner_hands_ontology_requests_to_the_modeler():
-    # The planner claims every PDD/SDD; without this redirect "an ontology from this PDD" never reaches the modeler.
+def test_planner_hands_ontology_requests_to_the_skill():
+    # The planner claims every PDD/SDD; without this redirect "an ontology from this PDD" never reaches the skill.
     fm = frontmatter(read(SKILLS / "uipath-planner/SKILL.md"))
     assert "ontology, even from a PDD/SDD→uipath-ontology" in fm["description"]
     assert "A PDD always routes here, even for one RPA process, but not an ontology." in fm["when_to_use"]
@@ -482,26 +482,26 @@ def test_planner_hands_ontology_requests_to_the_modeler():
 
 
 def test_review_does_not_wait_for_login():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     s1 = section(t, "Stage 1")
     assert "go on to Stage 2" in s1 and "Before Stage 3" in s1
     assert "never blocks Stage 2" in section(t, "Critical Rules")
 
 
 def test_a_document_can_ask_for_artifacts_only():
-    row = next(l for l in read(MODELER_DIR / "SKILL.md").splitlines() if l.startswith("| Artifacts only |"))
+    row = next(l for l in read(SKILL_DIR / "SKILL.md").splitlines() if l.startswith("| Artifacts only |"))
     assert "document" in row and "Document mode" in row
 
 
 def test_update_keeps_the_saved_model_current():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     up = section(t, "Updating an existing solution")
     assert "input/model.md" in up and "save each change" in up and "CONFIRMED_THROUGH: built" in up
     assert "Update, not resume." in section(t, "Saved model")
 
 
 def test_a_missing_ont_command_stops_the_build():
-    t = read(MODELER_DIR / "SKILL.md")
+    t = read(SKILL_DIR / "SKILL.md")
     rule = next(l for l in section(t, "Critical Rules").splitlines() if l.startswith("17."))
     assert "unknown command 'ont'" in rule and "Never pack" in rule
     assert "`unknown command 'ont'`" in section(t, "Errors")
@@ -581,19 +581,19 @@ def test_develop_solution_never_promises_updated_on_rerun():
 # --- grouping (ont:domain), source-system icons (mapping `system:`), in-place upgrade -------------------
 
 def test_owl_guide_declares_domain_annotation():
-    t = section(read(MODELER_DIR / "references/owl-patterns-guide.md"), "Domain annotation")
+    t = section(read(SKILL_DIR / "references/owl-patterns-guide.md"), "Domain annotation")
     assert "Declaration(AnnotationProperty(:domain))" in t
     assert re.search(r'AnnotationAssertion\(:domain :\w+ "[^"]+"\)', t)
     assert "every class" in t
 
 
 def test_mapping_guide_names_the_source_system_of_connector_sources():
-    t = section(read(MODELER_DIR / "references/mapping-yarrrml-guide.md"), "Source system")
+    t = section(read(SKILL_DIR / "references/mapping-yarrrml-guide.md"), "Source system")
     assert "system: <CONNECTOR_KEY>" in t and "uipath-coupa-coupa" in t
     assert "sourceSystems:" in t and "native" in t
 
 
-def test_modeler_models_domains_and_writes_source_systems():
+def test_skill_models_domains_and_writes_source_systems():
     t = wf()
     s2 = section(t, "Stage 2")
     assert "domain" in s2
@@ -601,15 +601,15 @@ def test_modeler_models_domains_and_writes_source_systems():
     assert ":domain" in s5 and "system:" in s5
 
 
-def test_modeler_update_bumps_version_and_hands_off_an_upgrade():
-    t = section(read(MODELER_DIR / "SKILL.md"), "Updating an existing solution")
+def test_skill_update_bumps_version_and_hands_off_an_upgrade():
+    t = section(read(SKILL_DIR / "SKILL.md"), "Updating an existing solution")
     assert "--version" in t and "deploy upgrade" in t and "in place" in t and "uipath-solution" in t
 
 
 def test_solution_owns_the_file_field_upgrade_recovery():
-    t = section(read(MODELER_DIR / "SKILL.md"), "Updating an existing solution")
+    t = section(read(SKILL_DIR / "SKILL.md"), "Updating an existing solution")
     assert "TypeIncompatible" in t and "uipath-solution" in t
-    assert not (MODELER_DIR / "references/upgrade-guide.md").exists()
+    assert not (SKILL_DIR / "references/upgrade-guide.md").exists()
     g = read(SOLUTION_DIR_SKILL / "references/scenarios/local-entity-file-field.md")
     for s_ in ("conflictFixingAction UseExisting", "config link", "--package-version", "--yes", "deploy status"):
         assert s_ in g, s_
@@ -617,7 +617,7 @@ def test_solution_owns_the_file_field_upgrade_recovery():
 
 
 def test_shacl_guide_names_every_property_block_and_spares_multi_select():
-    t = read(MODELER_DIR / "references/shacl-patterns-guide.md")
+    t = read(SKILL_DIR / "references/shacl-patterns-guide.md")
     fences = re.findall(r"```turtle\n(.*?)```", t, re.S)
     for block in fences:
         assert block.count("sh:path") == block.count("sh:name"), block[:80]
@@ -625,5 +625,5 @@ def test_shacl_guide_names_every_property_block_and_spares_multi_select():
 
 
 def test_artifacts_only_mode_needs_no_login():
-    s = read(MODELER_DIR / "SKILL.md")
+    s = read(SKILL_DIR / "SKILL.md")
     assert "Artifacts-only mode skips this stage" in section(s, "Stage 1")
