@@ -99,10 +99,16 @@ validate` warns about every missing id; author with the CLI there.
 
 `schema` is the extraction taxonomy: an object with `prompt` (the overall
 instructions) and `outputSchema` (the field groups and the field types they
-reference). It is emitted as the node's `schemaDocument`. `flow validate` only
-warns about any other shape, so it will not catch a bare JSON-Schema object
-with `properties` alone for you — the format, with a worked example, is in
-[extract-document-taxonomy.md](extract-document-taxonomy.md).
+reference). It is emitted as the node's `schemaDocument`. `check` refuses the
+content problems `nodes schema set` refuses, each under its own code. A bare
+JSON-Schema object (`properties` alone) or the legacy `{taxonomy, fieldTypes}`
+form is only a warning there (`EXTRACT_TAXONOMY_BARE`, `_LEGACY`), as in `flow
+validate`, but `set` refuses both and the processor gets no fields: fix either
+warning before compiling. The codes are in
+[When it refuses](extract-document-taxonomy.md#when-it-refuses). When `check`
+reports none of these for a broken taxonomy, the SDK is older (no
+builder-sdk#2055) and `flow validate` only warns about a wrong shape. The format, with a worked example, is
+in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 Classification lands at `out('classify', ...)`. What the node emits at run time
 is a processed document, with the extracted values at `result.output`, one
