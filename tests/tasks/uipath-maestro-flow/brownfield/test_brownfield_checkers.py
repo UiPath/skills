@@ -332,12 +332,55 @@ def _schema_changed(agent: dict, system: dict) -> None:
     agent["outputSchema"] = {}
 
 
+WRITER_INTRO_END = "posted to the financial system."
+APPENDED = " Tell the customer the credit appears on their next statement within 5 business days."
+
+
+def _append_to_intro(_agent: dict, system: dict) -> None:
+    system["content"] = system["content"].replace(WRITER_INTRO_END, WRITER_INTRO_END + APPENDED, 1)
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def test_writer_prompt_accepts_a_sentence_appended_to_an_existing_line(project: Path) -> None:
+    edit_writer(project, _append_to_intro)
+    assert intent(project, "writer-prompt") == 0
+
+
+def _splice_into_line(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    system["content"] = system["content"].replace("Do not change, round", "Do not change, ever, round")
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def _reword_line(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    system["content"] = system["content"].replace("\nRequirements:\n", "\nRequirements for the email:\n")
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def _swap_lines(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    sign_off, subject = '- Sign off as "Billing Operations Team".', "- The subject must include the invoice number."
+    system["content"] = system["content"].replace(f"{sign_off}\n{subject}", f"{subject}\n{sign_off}")
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def _prepend_clause(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    system["content"] = system["content"].replace("You are the Resolution Writer", "Today, You are the Resolution Writer", 1)
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
 @pytest.mark.parametrize(
     "change",
     [
         pytest.param(_content_only, id="content-tokens-stale"),
         pytest.param(_drop_bullet, id="existing-line-dropped"),
         pytest.param(_schema_changed, id="output-schema-changed"),
+        pytest.param(_splice_into_line, id="clause-spliced-into-line"),
+        pytest.param(_reword_line, id="line-reworded"),
+        pytest.param(_swap_lines, id="lines-reordered"),
+        pytest.param(_prepend_clause, id="clause-prepended"),
     ],
 )
 def test_writer_prompt_rejects_collateral_changes(project: Path, change) -> None:

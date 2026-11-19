@@ -138,10 +138,12 @@ success_criteria:
 
   # The prompt states the exact project layout, so the pinned path grades a
   # stated requirement (unlike the flow suite, whose prompt names only the
-  # flow and therefore discovers the file).
+  # flow and therefore discovers the file). Studio Web cannot honour it: its
+  # export is CustomerEscalationTriage/CustomerEscalationTriage/Process.bpmn,
+  # which escalation_project.py accepts in its place (and only that shape).
   - type: run_command
     description: "The UiPath CLI validator independently accepts the generated BPMN"
-    command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
+    command: 'f="$(python3 $REFERENCE_DIR/e2e/customer_escalation_triage/escalation_project.py)" && uip maestro bpmn validate "$f" --output json'
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

@@ -5,6 +5,8 @@ description: >
   edit and `flow validate` fails on the draft. Tests that the agent leaves the
   draft and the saved taxonomy as they are: no `--discard-draft` without the
   user's say-so, no hand edit of either, and no second node to hold the field.
+  The node already has its processorKey, so the draft is the only thing
+  validate reports and nothing sends the agent to `nodes provision`.
 
   No `flow debug`: a CLI-authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.

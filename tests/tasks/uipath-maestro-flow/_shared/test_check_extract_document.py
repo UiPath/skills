@@ -667,3 +667,19 @@ def test_processor_fails_a_keyless_flow_outside_a_solution(write, capsys):
 def test_processor_takes_no_values(write):
     write(_keyed_flow())
     assert _run("processor", "extra") == 2
+
+
+FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "extract-document", "_fixtures")
+
+
+def test_draft_fixture_already_has_its_processor():
+    """unsaved_draft grades that nothing on Extract Invoice changes, so the draft must be the only
+    thing validate reports: a missing processorKey would have validate tell the agent to run
+    `nodes provision`, a write the task's own criterion then fails."""
+    with open(os.path.join(FIXTURES, "InvoiceReaderDraft", "InvoiceReader", "InvoiceReader.flow"), encoding="utf-8") as fh:
+        flow = json.load(fh)
+    node = next(n for n in flow["nodes"] if n["id"] == NODE_ID)
+    assert node["type"] == EXTRACT_NODE_TYPE
+    assert "x-uipath-schema-editor-draft" in node["inputs"]["schemaDocument"]
+    key = node["inputs"].get("processorKey")
+    assert isinstance(key, str) and len(key) == 36
