@@ -110,11 +110,11 @@ Older environments expose bare `prepare-connector` with identical arguments exce
 Use the library action id and object option directly:
 
 ```ts
-.step('users', connector('uipath-servicenow-servicenow', 'list-all-records',
+.step('users', connector('uipath-servicenow-servicenow', 'list-records',
   {}, { connection: 'sn', folder: 'shared', object: 'acr_user' }))
 ```
 
-This generic form needs no live resolution and compiles from the baked library. `registry prepare` is for curated schema-dynamic operations; for a generic operation use it only when a needed field is genuinely missing (a generic list usually has none, so preparing resolves nothing). Library `list-all-records` differs from registry `list-records` (`registry get` finds nothing under the library id; `registry prepare` lists the real actions, closest first); a registry prepare produces a curated, object-pinned node (`ListAccountRecoveryEnrolledUser`) with node type `…list-records`, not the requested generic node. Prefer the generic call unless specifically asked otherwise.
+This generic form needs no live resolution and compiles from the baked library. `registry prepare` is for curated schema-dynamic operations; for a generic operation use it only when a needed field is genuinely missing (a generic list usually has none, so preparing resolves nothing). The library and the registry use the same id, `list-records`. Older libraries called it `list-all-records`; against the current library that id is `CONNECTOR_NOT_IN_LIBRARY`. ServiceNow's `list-records` is one object-less entry, so `object: 'acr_user'` is accepted with a warning and the tenant resolves it at dispatch; a connector with static objects (Coupa) has one `list-records` entry per object.
 
 ### Finding the object id for a Generic operation
 
@@ -220,7 +220,7 @@ uip maestro registry prepare <connector-key> --action <action> \
 
 Prepare separately reports service rejection and accepted values that resolve only to parents. Values are parent-scoped (Jira `Task` is `10620` in `IN`, `10005` in `AP`): never copy ids between projects, connections, or tasks; resolve against the connection bound by the flow. Standard `summary` and `description` are portable; custom fields such as `fields.storyPointEstimate_Customfield10016` may not be.
 
-Use the generated descriptor import and `connector(...)` call; it carries connection-resolved operation/object identity even when action ids differ. `connectors-local/` is authoring input; emitted Flow is self-contained. Prefer curated operations; use raw `*-http-request` only when curated surfaces lack the raw/generic need.
+Use the generated descriptor import and `connector(...)` call; it carries connection-resolved operation/object identity even when action ids differ. `connectors-local/` is authoring input; emitted Flow is self-contained. Prefer curated operations. For a raw call the curated surface lacks, use the managed HTTP node (`core.action.http.v2`) with the connector's connection and `targetConnector: '<connector-key>'` ([http.md](http.md)); the library has no per-connector `*-http-request` operation.
 
 Preparation needs a live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not invent fields or use placeholder discovery. If the published list is empty, pass `{}`; offline evidence then proves operation identity/control-flow routing, not provider payload/dispatch.
 
