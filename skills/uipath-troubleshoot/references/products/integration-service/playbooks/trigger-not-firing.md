@@ -39,30 +39,49 @@ What to look for:
 
 ## Investigation
 
-1. **Anchor on the trigger, from whatever the user gave.** Event triggers are
-   folder-scoped, so a folder is needed either way.
+1. **Get to a trigger key, from whatever the user gave.** The trace commands take a
+   key or an Integration Service trigger id — never a name — so resolving a name is
+   this step's job. Event triggers are folder-scoped, so a folder is needed either way;
+   if the user has not named one, run `uip or folders list --output json` and ask.
 
-   | They gave | Do |
-   |---|---|
-   | the trigger **name** | pass it straight through: `--trigger-name "<name>"` resolves it |
-   | the trigger **key** | pass `--trigger-key <guid>` |
-   | a process, or neither | list the folder's event triggers and pick with them: `uip or triggers list --type event --folder-path "<folder>" --output json` |
+   **They gave a key** — go to step 2.
 
-   No separate lookup call is needed for a name — `uip is trigger-traces list` does it,
-   and tells you when the name matches nothing or matches two triggers in that folder.
-   It also validates the type: a key belonging to a time, queue or HTTP trigger fails
-   with `not an Integration Service event trigger` and names the real type.
+   **They gave a name** — list the folder's event triggers and match on `Name`:
 
-   A time, queue or HTTP trigger ends this playbook — use
-   `uip or triggers history <key> --folder-path "<folder>" --output json` for its failed
-   fire attempts instead.
+   ```bash
+   uip or triggers list --type event --folder-path "<folder>" --output json
+   ```
+
+   Each row carries `Key`, `Name`, `Enabled`, `ReleaseName`, `ConnectorKey`,
+   `Operation` and `ObjectName`. Read `Key` from the row whose `Name` matches.
+
+   - **No row matches** — names are folder-scoped and exact. Show the names that *are*
+     in the folder and ask which they meant. Do not guess at a near-match.
+   - **Two rows share the name** — show both with their `ConnectorKey` and `Operation`
+     and ask. They have separate traces; picking one at random answers the wrong
+     question.
+   - **`Invalid trigger type: 'event'`** — the CLI predates cli#5902. No other command
+     lists event triggers; ask for the key from Orchestrator → folder → **Triggers** →
+     **Event triggers**. Do not fall back to `--type api`: that reads HttpTriggers, a
+     different store, and will report the trigger as missing.
+
+   **They gave neither** — list the folder's event triggers as above and ask which one,
+   leading with any that are `Enabled: false`.
+
+   Whichever route, carry the **name** into your final answer alongside the key. The
+   user recognises the name; the GUID means nothing to them.
+
+   `uip is trigger-traces list --trigger-key` validates the type for you: a key
+   belonging to a time, queue or HTTP trigger fails with `not an Integration Service
+   event trigger` and names the real type. That ends this playbook — use
+   `uip or triggers history <key> --folder-path "<folder>" --output json` for its
+   failed fire attempts instead.
 
 2. **Read the traces for the user's window** — the one command that decides everything
    below. Match `--from` to what the user reported.
 
    ```bash
-   uip is trigger-traces list --trigger-name "<name>" --folder-path "<folder>" --from 24h --output json
-   # or --trigger-key <guid>
+   uip is trigger-traces list --trigger-key <trigger-key> --folder-path "<folder>" --from 24h --output json
    ```
 
 3. **Branch on the result** using the table in

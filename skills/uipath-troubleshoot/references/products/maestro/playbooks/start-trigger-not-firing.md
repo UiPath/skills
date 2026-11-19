@@ -67,9 +67,12 @@ What to look for:
    list them for the user and confirm which one the missing events should have hit
    rather than assuming the first.
 
-   The row's `Name` can go straight into `--trigger-name` at step 3; its `Key` into
-   `--trigger-key`. Either is fine — the name is what the user will recognise when you
-   report back.
+   Read `Key` from the matching row — step 3 takes the key, not the name. Keep the
+   `Name` too: it is what the user will recognise when you report back.
+
+   On a CLI predating cli#5902 the command answers `Invalid trigger type: 'event'`,
+   and nothing else lists event triggers — ask for the key from Orchestrator → folder
+   → **Triggers** → **Event triggers**.
 
 3. **Read the traces for the reported window.** `--source maestro` is what lets this
    authorize without a folder-scoped grant.
