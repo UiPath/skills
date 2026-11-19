@@ -16,7 +16,7 @@
  *
  * Every `.dataService()` writes its response to `<id>_response` and the error payload
  * to `<id>_Error`, both declared for you, so the next node reads
- * `=vars.create_response.Id` with nothing more written.
+ * `=js:vars.create_response.Id` with nothing more written.
  */
 import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
@@ -47,7 +47,7 @@ export default bpmn('ContractRegistry')
   .dataService('create', {
     ...df,
     op: 'create',
-    record: { contractTitle: '=vars.contractTitle', status: 'Open', priority: 2, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
+    record: { contractTitle: '=js:vars.contractTitle', status: 'Open', priority: 2, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
   })
   // The filter is a query parameter; `start`/`limit` default to 0/100.
   // `sortBy` becomes the body's `_sortFieldName` (the connector's own RequestField) and
@@ -58,19 +58,19 @@ export default bpmn('ContractRegistry')
   .dataService('update', {
     ...df,
     op: 'update',
-    id: '=vars.create_response.Id',
-    record: { contractTitle: '=vars.contractTitle', status: 'Open', priority: 1, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
+    id: '=js:vars.create_response.Id',
+    record: { contractTitle: '=js:vars.contractTitle', status: 'Open', priority: 1, dueDate: '2026-08-01', value: 12500.5, isUrgent: true },
   })
-  .dataService('get', { ...df, op: 'get', recordId: '=vars.update_response.Id', expansionLevel: 3 })
+  .dataService('get', { ...df, op: 'get', recordId: '=js:vars.update_response.Id', expansionLevel: 3 })
   .endEvent('done', {
     name: 'Done',
     payload: {
       type: 'BPMN.Variables',
       outputRows: [
-        { name: 'createdRecord', type: 'json', var: 'createdRecord', source: '=vars.create_response' },
-        { name: 'dueSoon', type: 'json', var: 'dueSoon', source: '=vars.queryDue_response' },
-        { name: 'untitled', type: 'json', var: 'untitled', source: '=vars.queryUntitled_response' },
-        { name: 'retrievedRecord', type: 'json', var: 'retrievedRecord', source: '=vars.get_response' },
+        { name: 'createdRecord', type: 'json', var: 'createdRecord', source: '=js:vars.create_response' },
+        { name: 'dueSoon', type: 'json', var: 'dueSoon', source: '=js:vars.queryDue_response' },
+        { name: 'untitled', type: 'json', var: 'untitled', source: '=js:vars.queryUntitled_response' },
+        { name: 'retrievedRecord', type: 'json', var: 'retrievedRecord', source: '=js:vars.get_response' },
       ],
     },
   })
