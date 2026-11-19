@@ -86,7 +86,7 @@ Wait for `publish` to finish before deploying or upgrading.
 
 ## Deploy — Orchestrator UI (preferred for first-time users)
 
-Orchestrator → **Deployments** → **Manage** → **Deploy** → pick the package and version → location **Shared** (a folder on the tenant feed) → configure the app resource: routing name, **external application** (the confidential one), auth mode **Application**, **client secret** → Deploy. The app opens at `https://<org>.uipath.host/<routingName>`.
+Orchestrator → **Deployments** → **Manage** → **Deploy** → pick the package and version → pick the target folder → configure the app resource: routing name, **external application** (the confidential one), auth mode **Application**, **client secret** → Deploy. The app opens at `https://<org>.uipath.host/<routingName>`.
 
 ## Deploy — CLI
 
@@ -116,7 +116,7 @@ The upgrade keeps the stored secret **and its scope** (a changed `scope` in `uip
 | Symptom | Cause |
 |---|---|
 | `ValidationError`, no request sent | Call not supported in public mode (rule 3) |
-| 403 on every call | Resource not declared, or deployed outside a tenant-feed folder |
+| 403 on every call | Resource not declared in `uipath_resources.ts`, or not connected at deploy |
 | 403 `Missing permissions: EntityRecords.Create` | External app has no role in the deployment folder |
 | 403 `isn't open to all` on a list | Entity `access.mode` is `session` |
 | 404 reading a record/job | Another visitor created it, or the session expired |
