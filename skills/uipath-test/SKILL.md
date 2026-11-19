@@ -29,6 +29,7 @@ When the request asks to operate Test Manager through its Integration Service co
 10. Any `uip` failure or ambiguity stops and asks the user: command errors, malformed output, unclear flags/values, multiple matches, missing identifiers, or unexpected schemas. Never use REST. Exceptions: (a) Rule 9 missing-folder error; (b) `uip tm wait` exit code 2 with `Timed out after <N>s waiting for execution '<EXECUTION_ID>'. Last status: <status>.`, which means bounded timeout worked—report non-finish and continue remaining steps; `Polling failed/interrupted/aborted ...` or exit code 1 is a real failure; (c) requirement AI exit 2 with `ErrorCode: timeout`: the job is still running, so resume it with the `--activity-id … --wait` command its `Instructions` name, never a new start; (d) `uip tm run --type package` exit 1 with `"Code": "RunPackageTestsFailed"` or `"RunPackageCancelled"` and `"ErrorCode": "execution_failed"`, which means the run finished with failed or no tests, or was cancelled: report `Data` (counts, `OutputPath`, `ExecutionUrl`) and do not retry; (e) usage error — `ValidationError` (`unknown command`, `unknown option`, `missing required option`), including from a `--help` probe, or `No project was given.`: read the parent group's `--help` (for `unknown command`) or `<command> --help`, fix the command or flags, and run it again once (counts toward Rule 3); a second usage error on the same command stops; (f) `report export --format junit` failing `'JUnit export' feature is not enabled`: run the `uip tm result download` command its `Instructions` give, once, without asking; (g) `perf-scenario list-dry-run-reports` failing `no test case carries an automationId`: read the history without `--scenario-id` (Performance scenarios). Every other failure stops.
 11. Walk pages before concluding absence. Responses contain only `Data`, with no total/cursor/has-more. If absent and the page has exactly `--limit` rows (default 50), increase `--offset` by the page size until a short page; maximum page size is 100. `--limit` above 100 fails with `HTTP 400 … Page size cannot be greater than 100.` Lists without `--limit`/`--offset`, such as `tm testcases list`, must use filter flags (Rule 8).
 12. Run Test Manager mutations as shell commands whose results you read, never from a script you write (a `.py`/`.sh` file, or `python3 -c` with `subprocess`): Rules 3, 4, 5 and 10 must judge each result, and a script keeps going, deletes included, after a step fails. Repeats of one command may share a shell call when the first failure stops the rest (`&&`, or a loop with `|| break`).
+13. Scopes: a user (browser) login needs none. An external-application login (`uip login --client-id …`) must pass an explicit `--scope` list built from [references/scopes-guide.md](references/scopes-guide.md) for every command you will run. On `403`, `permission_denied`, or a `401` saying the token carries no scope for this API, run `uip login status --detailed --output json`, name the scope missing from `Data.Scopes` per that guide, and stop (Rule 10); never retry, and never ask a browser-login user to add scopes.
 
 ## Quick Start
 
@@ -161,7 +162,7 @@ Find scenarios with `perf-scenario list --project-key <PROJECT_KEY> --search <NA
 
 ## Troubleshooting
 
-For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For unexpected command failure, first verify syntax with `uip tm <command> --help`, then authentication with `uip login status --output json`; Rule 10 still controls whether to proceed.
+For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For unexpected command failure, first verify syntax with `uip tm <command> --help`, then authentication with `uip login status --output json`; Rule 10 still controls whether to proceed. For `403` or a missing-scope `401` under an external-application login, apply Rule 13.
 
 ## Navigate to a Workflow
 
@@ -178,6 +179,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For un
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
 - Object labels / tag metadata on test entities (`uip tm objectlabel`): [references/object-labels-guide.md](references/object-labels-guide.md)
 - Project time zone, execution name format, and what is read-only (`uip tm project settings`): [references/project-settings-guide.md](references/project-settings-guide.md)
+- OAuth scopes per command, external-application `--scope` lists, and diagnosing a `403`: [references/scopes-guide.md](references/scopes-guide.md)
 
 ## Anti-patterns
 
