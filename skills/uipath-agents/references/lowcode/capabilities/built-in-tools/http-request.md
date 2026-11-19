@@ -11,7 +11,7 @@ For the built-in-tools capability overview, see [built-in-tools.md](built-in-too
 
 Do not use it when:
 
-- **The agent is standalone.** The tool is available only to inline agents in a Flow — Agent Builder has no UI for it. Never author it on a standalone agent, even though `uip agent validate` accepts the resource there. Tell the user the tool needs an inline agent in a Flow and offer to build the agent that way — [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+- **The agent is standalone.** The tool is available only to inline agents in a Flow — Agent Builder has no UI for it. Never author it on a standalone agent, even though `uip agent validate` accepts the resource there. Tell the user the tool needs an inline agent in a Flow and offer to build the agent that way — [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md). If the user asked for a standalone agent, or the task forbids questions, build it without this tool and say in the completion report that the tool was left out and why. Naming the tool in the request does not override this — [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) § What NOT to Do 25.
 - The call needs credentials — add an Integration Service tool instead ([../integration-service/integration-service.md](../integration-service/integration-service.md)). This tool attaches no credentials of its own, and a secret written into a static header is plain text in `resource.json`.
 - The target is inside a private network — the tool rejects hosts that resolve to non-public addresses.
 - The response is binary — the body comes back as text.

@@ -122,6 +122,7 @@ See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) § What
 - Hand-editing memory feature JSON instead of using `uip agent memory`
 - camelCasing `contextType` / `retrievalMode` enum values (validate accepts it, Studio Web silently drops the resource)
 - Copy-pasting UUIDs across resources (every resource needs its own)
+- Adding the HTTP Request built-in tool to a standalone agent because the user asked for it and `uip agent validate` passed (inline agents in a Flow only — leave it out and say why)
 
 ## Completion Output
 
