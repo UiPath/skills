@@ -153,8 +153,10 @@ uip maestro bpmn format <Name>.bpmn
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
   them; the edited file shows `merge` no change, so it writes the target back as it was.
-  When `merge` cannot open the baseline, or reports `"Authored": 0` after an edit (the baseline holds the edit, so the
-  target stays as it was), run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again, compile the edit
+  After `merge`, `grep -c 'id="<NEW_ID>"' <Name>.bpmn` for an element you added: `0` means the baseline holds the edit
+  and the target stayed as it was (`"Authored": 0` with `"Removed": 0` says the same; `"Authored": 0` with `"Removed"` above 0
+  is normal when the edit replaced a template, so judge by the grep). When `merge` cannot open the baseline or the grep
+  finds nothing, run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again, compile the edit
   again, and run step 3's `merge` again. Step 1's other lines stay unrun: they would overwrite the edit.
 - **Step 5b keeps the user's layout.** `merge` keeps every shape
   of the target, also where the user moved it. A newer SDK also draws the shapes of
