@@ -1,7 +1,7 @@
 task_id: skill-flow-e2e-escalation-orchestrator-paths
 description: >
   End-to-end, outcome-based test of the customer-escalation orchestration,
-  asked the way a Studio Web user would ask it (Ioana's v3 business prompt,
+  asked the way a Studio Web user would ask it (a business prompt
   with the eval tenant's Slack channel) and driven down each path by seeded
   inputs. The prompt names no variables, so the grader maps seven seeded
   cases onto the inputs the agent declared, by meaning (the customer-match

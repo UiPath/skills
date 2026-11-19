@@ -217,3 +217,108 @@ def test_post_run_cancels_only_this_tasks_open_debug_instances(
 
     assert case_run.cancel_debug_instances() == 0
     assert cancelled == ["ours"]
+
+
+def test_a_tenant_cancelled_debug_is_retried_once(fake, monkeypatch: pytest.MonkeyPatch) -> None:
+    import _shared.case_check as case_check
+
+    cancelled = {"Result": "Failure", "Data": {"instanceId": "inst-a", "finalStatus": "Cancelled"}}
+    suspended = {"Result": "Failure", "Data": {"instanceId": "inst-b", "finalStatus": "Suspended",
+                                                 "elementExecutions": STAGE1_DONE}}
+    stub = fake(cancelled, follow_up=[])
+    replies = iter([cancelled, suspended])
+    run = stub.run
+
+    def run_debug_twice(cmd, timeout, what):
+        if cmd[1:4] == ["maestro", "case", "debug"]:
+            stub.debug_stdout = next(replies)
+        return run(cmd, timeout, what)
+
+    monkeypatch.setattr(case_check, "_run", run_debug_twice)
+
+    result = case_run_path.debug_case()
+
+    assert result["instance_id"] == "inst-b"
+    assert sum(1 for c in stub.calls if c[1:4] == ["maestro", "case", "debug"]) == 2
+
+
+def test_a_second_cancelled_debug_is_returned_not_retried_again(fake, monkeypatch: pytest.MonkeyPatch) -> None:
+    cancelled = {"Result": "Failure", "Data": {"instanceId": "inst-a", "finalStatus": "Cancelled"}}
+    stub = fake(cancelled, follow_up=[])
+
+    result = case_run_path.debug_case()
+
+    assert result["status"] == "Cancelled"
+    assert sum(1 for c in stub.calls if c[1:4] == ["maestro", "case", "debug"]) == 2
+
+
+def _chained(task_id: str, task_type: str, after: list[str], required: bool = True) -> dict:
+    return {
+        "id": task_id, "type": task_type, "displayName": task_id, "isRequired": required,
+        "entryConditions": [{"rules": [[{"rule": "selected-tasks-completed",
+                                         "selectedTasksIds": after}]]}],
+    }
+
+
+CHAIN_PLAN = {
+    "nodes": [
+        {"id": "Stage_a", "type": "case-management:Stage", "data": {
+            "label": "Opening",
+            "entryConditions": [{"rules": [[{"rule": "case-entered"}]]}],
+            "tasks": [
+                [_task("tFirst", "http-request", "First", "current-stage-entered")],
+                [_chained("tSecond", "script", ["tFirst"])],
+                [_chained("tReview", "action", ["tSecond"])],
+                [_chained("tAfterReview", "agent", ["tReview"])],
+                [_chained("tOptional", "agent", ["tFirst"], required=False)],
+            ],
+        }},
+    ]
+}
+
+
+@pytest.mark.parametrize("task_type", [
+    "http-request", "flow-process", "external-agent", "external-workflow",
+    "document-extraction", "script",
+])
+def test_every_non_human_non_waiting_type_is_automated(task_type: str) -> None:
+    plan = {"nodes": [{"id": "S", "type": "case-management:Stage", "data": {
+        "entryConditions": [{"rules": [[{"rule": "case-entered"}]]}],
+        "tasks": [[_task("t1", task_type, "T", "current-stage-entered")]],
+    }}]}
+    assert [t["id"] for _, t in case_run_path.opening_path(plan)["automated"]] == ["t1"]
+
+
+@pytest.mark.parametrize("task_type", ["wait-for-timer", "wait-for-connector", "action", "wait-for-user"])
+def test_waiting_and_human_types_are_not_automated(task_type: str) -> None:
+    plan = {"nodes": [{"id": "S", "type": "case-management:Stage", "data": {
+        "entryConditions": [{"rules": [[{"rule": "case-entered"}]]}],
+        "tasks": [[_task("t1", task_type, "T", "current-stage-entered")]],
+    }}]}
+    assert case_run_path.opening_path(plan)["automated"] == []
+
+
+def test_the_opening_path_follows_selected_tasks_completed_chains() -> None:
+    path = case_run_path.opening_path(CHAIN_PLAN)
+
+    assert [t["id"] for _, t in path["automated"]] == ["tFirst", "tSecond"]
+    assert [t["id"] for _, t in path["human"]] == ["tReview"]
+
+
+def test_wait_for_counts_the_time_the_reads_take(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [0.0]
+    reads: list[float] = []
+
+    def read(instance_id: str) -> list[dict]:
+        clock[0] += 100
+        reads.append(clock[0])
+        return []
+
+    monkeypatch.setattr(case_run_path.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(case_run_path.time, "sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+    monkeypatch.setattr(case_run_path, "instance_executions", read)
+
+    case_run_path.wait_for({"executions": [], "status": "Running", "instance_id": "i"},
+                           lambda rows: False, budget=480, every=20)
+
+    assert len(reads) == 4

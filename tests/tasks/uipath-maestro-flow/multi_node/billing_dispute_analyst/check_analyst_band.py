@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Advisory: the analyst routed the valid $4,950 credit to manager review, the SOP's band.
 
-Whether a valid credit of $4,950 goes to manager review or straight to credit turns
-on the SOP's confidence rule, a judgment call that flips between runs and models, so
-it is scored, not gating. Reads the decision that `check_billing_dispute_analyst.py
-overcharge` recorded; it runs no debug of its own.
+Scored, not gating. Reads the decision `check_billing_dispute_analyst.py overcharge`
+recorded; runs no debug of its own.
 """
 import json
 import sys

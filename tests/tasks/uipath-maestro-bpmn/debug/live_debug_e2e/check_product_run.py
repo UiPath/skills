@@ -3,7 +3,7 @@
 from the grader's own sandbox and assert what the run did.
 
 The grader runs the debug itself: Studio Web's host can refuse the agent's own
-`bpmn debug` (`UnavailableInHost`, run adhoc-2026-11-14_08-01-54) and its
+`bpmn debug` (`UnavailableInHost`) and its
 testbench stubs RunProject, so the agent's saved evidence cannot be the gate.
 
 Asserted on the run:

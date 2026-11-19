@@ -160,6 +160,20 @@ def test_a_submission_read_only_inside_a_script_is_served_by_the_fallback(effect
     assert sub["invoice"]["number"] == sub["invoiceNumber"] == sub["invoiceNo"]
 
 
+@pytest.mark.parametrize("path,value", [
+    ("invoice", "MCS-2026-04903"),
+    ("customer", "ACCT-71044-AT"),
+])
+def test_a_bare_string_read_of_invoice_or_customer_gets_the_scalar(effects, path, value):
+    flow = {"nodes": [{"id": "s", "type": "core.action.script",
+                       "inputs": {"script": f"return $vars.sub.{path};"}}],
+            "variables": {"globals": [
+                {"id": "pdf", "direction": "in", "type": "file"},
+                {"id": "sub", "direction": "in", "type": "object"}]}}
+    inputs, _ = effects.build_inputs(flow, "overcharge")
+    assert str(inputs["sub"][path]).strip().upper() == value
+
+
 def test_a_submission_spread_over_separate_inputs_is_mapped(effects):
     flow = {"nodes": [], "variables": {"globals": [
         {"id": "pdf", "direction": "in", "type": "file"},
@@ -218,6 +232,37 @@ def test_overcharge_fails_when_posting_did_not_run(effects, flow):
     with pytest.raises(SystemExit) as exc:
         effects.check_overcharge(flow, _payload(REJECT_PATH, APPROVED))
     assert "FinancialPostingFunction" in str(exc.value)
+
+
+@pytest.mark.parametrize("skipped,entity", [
+    ("queryEntityRecords1", "BillingDisputeCRM"),
+    ("queryEntityRecords2", "BillingDisputeERP"),
+])
+def test_overcharge_fails_when_one_of_the_two_lookups_did_not_complete(effects, flow, skipped, entity):
+    executed = [n for n in ALL_NODES if n != skipped]
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(executed, {**POSTED, **APPROVED}))
+    assert f"{entity} lookup did not complete" in str(exc.value)
+
+
+def test_overcharge_fails_when_both_lookups_read_the_same_entity(effects, flow):
+    twin = json.loads(json.dumps(flow).replace("BillingDisputeCRM", "BillingDisputeERP"))
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(twin, _payload(ALL_NODES, {**POSTED, **APPROVED}))
+    assert "no read of BillingDisputeCRM" in str(exc.value)
+
+
+def _with_decoy_api_workflow(flow):
+    flow = copy.deepcopy(flow)
+    flow["nodes"].append({"id": "decoyApi", "type": "uipath.core.api-workflow.00000000-0000-0000-0000-000000000000"})
+    return flow
+
+
+def test_overcharge_requires_financial_posting_function_not_any_api_workflow(effects, flow):
+    executed = [n for n in ALL_NODES if n != "financialpostingfunction12"] + ["decoyApi"]
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(_with_decoy_api_workflow(flow), _payload(executed, {**POSTED, **APPROVED}))
+    assert "FinancialPostingFunction did not complete" in str(exc.value)
 
 
 def test_reject_passes_on_the_rejection_path(effects, flow):
@@ -289,3 +334,12 @@ def test_reject_catches_a_tenant_agent_writer_that_ran(effects, flow):
     with pytest.raises(SystemExit) as exc:
         effects.check_reject(_with_tenant_agent_writer(flow), _payload(REJECT_PATH + ["autonomousAgent3"], REJECTED))
     assert "writer agent ran" in str(exc.value)
+
+
+def test_main_debugs_once_so_the_credit_is_not_posted_twice(effects, flow, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(effects, "_load_flow", lambda glob: flow)
+    monkeypatch.setattr(effects, "run_debug", lambda **kw: seen.update(kw) or _payload(REJECT_PATH, REJECTED))
+    monkeypatch.setattr("sys.argv", ["check", "reject"])
+    effects.main()
+    assert seen["retries"] == 1

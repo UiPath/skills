@@ -169,3 +169,38 @@ def test_a_variable_bound_to_the_request_instead_of_the_echo_fails() -> None:
     _globals(variables_all)["EchoResponse"] = copy.deepcopy(request)
     with pytest.raises(SystemExit, match="Args"):
         grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))
+
+
+def _recorded(mutate) -> dict:
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    mutate(_globals(variables_all)["EchoResponse"])
+    return variables_all
+
+
+@pytest.mark.parametrize("accept", [None, "text/html", "*/*"])
+def test_an_echo_without_the_json_accept_header_fails(accept: object) -> None:
+    def mutate(echo: dict) -> None:
+        echo["Headers"].pop("Accept")
+        if accept is not None:
+            echo["Headers"]["Accept"] = accept
+
+    with pytest.raises(SystemExit, match="Accept"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(_recorded(mutate)))
+
+
+@pytest.mark.parametrize("field", ["InvoiceNumber", "Probe"])
+def test_values_sent_under_other_body_fields_fail(field: str) -> None:
+    def mutate(echo: dict) -> None:
+        echo["Json"] = {"Other" + k if k == field else k: v for k, v in echo["Json"].items()}
+
+    with pytest.raises(SystemExit, match="body"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(_recorded(mutate)))
+
+
+def test_values_sent_as_text_instead_of_a_json_body_fail() -> None:
+    def mutate(echo: dict) -> None:
+        echo["Json"] = None
+        echo["Data"] = "INV-1042 skills-case-http-7f3a"
+
+    with pytest.raises(SystemExit, match="body"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(_recorded(mutate)))

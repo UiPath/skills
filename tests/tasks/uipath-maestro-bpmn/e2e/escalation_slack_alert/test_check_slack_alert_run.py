@@ -9,7 +9,6 @@ Globals, each element's own `Outputs`, the Slack step's `Response` carrying
 
 from __future__ import annotations
 
-import copy
 import importlib.util
 import json
 import sys
@@ -57,10 +56,10 @@ def _debug(slack_status="Completed"):
     }
 
 
-def _variables(*, text=None, channel="C0B2FDZD1M3", message_id=TS, next_steps_key="nextSteps"):
+def _variables(*, text=None, channel="C0B2FDZD1M3", message_id=TS, next_steps_key="nextSteps", engineering=True):
     text = text or f"Escalation alert | Severity: Sev1 | Correlation ID: {CORR} | Next steps: Page on-call."
     response = {"ok": True, "channel": channel, "ts": TS, "message": {"text": text, "ts": TS}}
-    outputs = {"Severity": "Sev1", "EngineeringNeeded": True, "CaseKey": CORR, "SlackMessageId": message_id}
+    outputs = {"Severity": "Sev1", "EngineeringNeeded": engineering, "CaseKey": CORR, "SlackMessageId": message_id}
     return {
         "Variables": [
             {
@@ -97,6 +96,17 @@ def test_a_next_steps_field_name_the_request_never_gives_is_not_required():
     """The request only asks for next steps in the message, not a field named
     `nextSteps` on the classifier."""
     checker.assert_outcome(_process(), CASE, _debug(), _variables(next_steps_key="followUp"))
+
+
+@pytest.mark.parametrize("value", ["yes", "Yes", "YES", "true"])
+def test_engineering_needed_yes_reads_as_true(value):
+    checker.assert_outcome(_process(), CASE, _debug(), _variables(engineering=value))
+
+
+@pytest.mark.parametrize("value", ["no", "No", "false"])
+def test_engineering_needed_no_fails_where_true_is_expected(value):
+    with pytest.raises(checker.CheckFailure, match="engineeringNeeded"):
+        checker.assert_outcome(_process(), CASE, _debug(), _variables(engineering=value))
 
 
 def test_slack_step_found_by_connector_key_alone():

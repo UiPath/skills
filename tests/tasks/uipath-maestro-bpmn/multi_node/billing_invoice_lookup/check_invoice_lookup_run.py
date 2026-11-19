@@ -3,19 +3,16 @@
 entity, once per messy input, and assert what each run did and returned.
 
 Three messy forms of two real invoices. On the live tenant MCS-2026-04872 has
-8 rows and MCS-2026-05128 has 5 (an agent's whole-entity read in run
-2026-11-17_04-23-38 listed 95 rows with those counts, and agents' own debug
-runs returned `LineItemCount: 8` and `LineItemCount: 5` for them), so the
-counts differ per invoice and a hardcoded answer cannot pass every case.
+8 rows and MCS-2026-05128 has 5, so the counts differ per invoice and a
+hardcoded answer cannot pass every case.
 
 Each run must:
 - complete with no incidents;
 - complete a Data Service step (the lookup really ran against the tenant);
 - return `matchedInvoiceNumber` = the cleaned-up invoice number and
-  `lineItemCount` = that invoice's row count, read by those names. The old
-  grader searched every runtime value, and the query's own rows carry both
-  the invoice number and `LineNumber: 8`, so it passed a process that
-  returned neither.
+  `lineItemCount` = that invoice's row count, read by those names, not
+  found among every runtime value (the query's own rows carry both the
+  invoice number and `LineNumber: 8`).
 
 The Data Service step is found by its connector key, whatever its object,
 element type or id.

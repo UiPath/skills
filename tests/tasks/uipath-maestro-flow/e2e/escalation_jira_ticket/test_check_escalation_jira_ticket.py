@@ -43,6 +43,7 @@ CREATE_NODE = {
         }
     },
 }
+TASK = {"name": "Task"}
 INS = [("senderEmail", "string"), ("senderDomain", "string"), ("emailSubject", "string"),
        ("emailBody", "string"), ("customerTier", "string"), ("isProductionDown", "boolean"),
        ("hasWorkaround", "boolean"), ("hasAttachments", "boolean"), ("matchType", "string"),
@@ -84,10 +85,11 @@ def grader(tmp_path, monkeypatch):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    module.issues = {"CE-3481": {"summary": _summary(CASE, "Sev1"), "description": _adf(BODY)},
+    module.issues = {"CE-3481": {"summary": _summary(CASE, "Sev1"), "description": _adf(BODY), "issuetype": TASK},
                      "CE-17": {"summary": "an older ticket"}}
     monkeypatch.setattr(module.jira_is, "connection_id", lambda: "conn")
     monkeypatch.setattr(module.jira_is, "get_issue", lambda conn, key: module.issues.get(key))
+    monkeypatch.setattr(module.jira_is, "issue_absent", lambda conn, key: key not in module.issues)
     return module
 
 
@@ -133,7 +135,7 @@ def test_keys_from_every_case_are_kept_for_teardown(grader, tmp_path):
     dup = {**CASE, "name": "dup", "inputs": {**CASE["inputs"], "caseRef": "ESC-JIRA-1e90fee1-2",
                                              "tier": "Standard", "duplicate": True},
            "expected": {"severity": "Sev3", "engineering": False}}
-    grader.issues["CE-3482"] = {"summary": _summary(dup, "Sev3"), "description": _adf(BODY)}
+    grader.issues["CE-3482"] = {"summary": _summary(dup, "Sev3"), "description": _adf(BODY), "issuetype": TASK}
     _check(grader, _payload())
     _check(grader, _payload(dup, key="CE-3482"), dup)
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-3481", "CE-3482"]
@@ -203,6 +205,49 @@ def test_a_plain_text_description_counts(grader):
     _check(grader, _payload())
 
 
+@pytest.mark.parametrize("issuetype", [{"name": "Bug"}, {"name": "Story"}, None])
+def test_fails_when_the_ticket_is_not_a_task(grader, issuetype):
+    grader.issues["CE-3481"]["issuetype"] = issuetype
+    with pytest.raises(SystemExit) as exc:
+        _check(grader, _payload())
+    assert "is not a Task" in str(exc.value)
+
+
+def test_a_missing_description_fails_as_not_holding_the_body(grader):
+    del grader.issues["CE-3481"]["description"]
+    with pytest.raises(SystemExit) as exc:
+        _check(grader, _payload())
+    assert "does not hold the email body" in str(exc.value)
+
+
+def test_one_failed_read_is_retried(grader, monkeypatch, tmp_path):
+    reads = []
+
+    def flaky(conn, key):
+        reads.append(key)
+        if len(reads) == 1:
+            raise RuntimeError("uip is resources run get returned invalid JSON")
+        return grader.issues.get(key)
+
+    monkeypatch.setattr(grader.jira_is, "get_issue", flaky)
+    _check(grader, _payload())
+    assert (tmp_path / ".created_keys").read_text().split() == ["CE-3481"]
+
+
+@pytest.mark.parametrize("failure", ["raises", "returns_none"])
+def test_a_persistent_read_error_is_a_grader_error_and_journals_nothing(grader, monkeypatch, tmp_path, failure):
+    def broken(conn, key):
+        if failure == "raises":
+            raise RuntimeError("uip is resources run get returned invalid JSON")
+
+    monkeypatch.setattr(grader.jira_is, "get_issue", broken)
+    monkeypatch.setattr(grader.jira_is, "issue_absent", lambda conn, key: False)
+    with pytest.raises(SystemExit) as exc:
+        _check(grader, _payload())
+    assert "GRADER ERROR" in str(exc.value) and "CE-3481" in str(exc.value)
+    assert not (tmp_path / ".created_keys").exists()
+
+
 def test_fails_when_engineering_needed_is_not_returned(grader):
     with pytest.raises(SystemExit) as exc:
         _check(grader, _payload(outputs={"engineeringRequired": None}))
@@ -214,7 +259,7 @@ def test_main_opens_a_ticket_for_the_duplicate_too(grader, tmp_path, monkeypatch
                                              "tier": "Standard", "duplicate": True},
            "expected": {"severity": "Sev3", "engineering": False}}
     (tmp_path / "seed.json").write_text(json.dumps({"project_key": "CE", "cases": [CASE, dup]}))
-    grader.issues["CE-3482"] = {"summary": _summary(dup, "Sev3"), "description": _adf(BODY)}
+    grader.issues["CE-3482"] = {"summary": _summary(dup, "Sev3"), "description": _adf(BODY), "issuetype": TASK}
     payloads = iter([_payload(), _payload(dup, key="CE-3482")])
     fed = []
 

@@ -14,7 +14,11 @@ import sys
 from pathlib import Path
 
 from _shared import flow_io_roles as io
-from _shared.flow_check import find_flow_file
+from _shared.flow_check import _SLACK_TS_RE, find_flow_file
+
+SLACK_KEY = "uipath-salesforce-slack"
+SLACK_SEND = "send-message-to-channel"
+SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 
 # What each seeded value means, as fragments of an input name.
 KEYWORDS = {
@@ -51,6 +55,10 @@ FALLBACK_KEYS = {
 
 def _stop(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
+
+
+def is_slack_ts(value) -> bool:
+    return isinstance(value, str) and bool(_SLACK_TS_RE.match(value.strip()))
 
 
 def load_flow() -> dict:

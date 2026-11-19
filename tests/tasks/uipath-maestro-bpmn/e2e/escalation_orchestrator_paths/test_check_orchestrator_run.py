@@ -1,7 +1,7 @@
 """check_orchestrator_run.py grades each path run's Slack post and named outputs.
 
 `fixtures/Process.bpmn` and `fixtures/run_seed.json` are the agent's process and
-the seed from Studio Web run adhoc-2026-11-17_15-00-15 (passed): a classify
+the seed from a passing Studio Web run: a classify
 script, a gateway, one Slack step per branch, two end events whose outputs
 share one set of root variables. Runtime payloads follow the
 `debug-instance variables-all` shape (PascalCase Globals, each element's own
@@ -14,7 +14,10 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+import shutil
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -31,10 +34,11 @@ def _load(name: str, path: Path):
 
 
 checker = _load("check_orchestrator_run", HERE / "check_orchestrator_run.py")
-old = _load("old_check_escalation_orchestrator_paths", HERE.parents[1] / "_shared" / "check_escalation_orchestrator_paths.py")
+seed_module = _load("orchestrator_seed", HERE / "_setup" / "seed.py")
 
 BPMN = FIXTURES / "Process.bpmn"
 SEED = json.loads((FIXTURES / "run_seed.json").read_text())
+CLASSIFIED_FIELDS = ("escalationPath", "severity", "engineeringNeeded", "responseMode")
 PROCESS = checker.load_process(BPMN)
 SLACK = checker.slack_ids(PROCESS)
 
@@ -60,11 +64,13 @@ def _debug(case, *, extra_slack=False, shared_node=False):
     return {"InstanceId": "inst", "FinalStatus": "Completed", "ElementExecutions": executions}
 
 
-def _variables(case, *, ts="1763405123.456789", text=None, message_id=None, shared_node=False, **overrides):
+def _variables(
+    case, *, ts="1763405123.456789", text=None, message_id=None, shared_node=False, channel="C0B2FDZD1M3", **overrides
+):
     expected = {**case["expected"], **overrides}
     corr = case["inputs"]["correlationId"]
     text = text if text is not None else f"[{expected['escalationPath']}] {corr}"
-    response = {"ok": True, "channel": "C0B2FDZD1M3", "ts": ts, "message": {"text": text}}
+    response = {"ok": True, "channel": channel, "ts": ts, "message": {"text": text}}
     outputs = {
         "EscalationPath": expected["escalationPath"],
         "Severity": expected["severity"],
@@ -79,7 +85,7 @@ def _variables(case, *, ts="1763405123.456789", text=None, message_id=None, shar
                 "ParentElementId": None,
                 "Globals": {"CorrelationId": corr, **outputs},
                 "Elements": [
-                    {"ElementId": "classify", "Outputs": {"Response": {k: expected[k] for k in old.CLASSIFICATION_FIELDS}}},
+                    {"ElementId": "classify", "Outputs": {"Response": {k: expected[k] for k in CLASSIFIED_FIELDS}}},
                     {"ElementId": _slack_step(case, shared_node), "Outputs": {"Response": response}},
                 ],
             }
@@ -111,7 +117,7 @@ def test_wrong_severity_fails():
 @pytest.mark.parametrize(
     "value",
     ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "Draft, no edits required",
-     "Draft ready, not sent", "Draft - no review needed"],
+     "Draft ready, not sent", "Draft - no review needed", "drafted", "true", "Yes", "YES"],
 )
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]
@@ -119,7 +125,6 @@ def test_a_draft_response_mode_is_read_by_meaning(value):
 
 
 def test_sev3_needs_no_draft_response():
-    """Simona's prompt (2026-11-19): a draft response only when engineering is needed."""
     case = next(c for c in SEED["cases"] if c["expected"]["severity"] == "Sev3")
     assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode="none"))
     with pytest.raises(checker.CheckFailure, match="responseMode"):
@@ -130,7 +135,9 @@ def test_sev3_needs_no_draft_response():
     "value",
     ["No draft", "NoDraft", "no_draft", "no-draft", "Draft not needed", "Not applicable", "N/A",
      "No response needed", "none", "Draft: none", "none (draft not required)", "Do not draft",
-     "Don't draft", "Without a draft", "Draft: false", False],
+     "Don't draft", "Without a draft", "Draft: false", False, "not drafted", "not_drafted", "undrafted",
+     "draft_response_not_needed", "Response not required", "none required", "skipped", "false", "No response",
+     "Not required", "Not needed", "no", "No."],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -140,7 +147,7 @@ def test_a_negated_response_mode_reads_as_none(value):
         checker.verify_case(PROCESS, SLACK, sev1, _debug(sev1), _variables(sev1, responseMode=value))
 
 
-@pytest.mark.parametrize("value", ["", "   ", "maybe", "pending"])
+@pytest.mark.parametrize("value", ["", "   ", "maybe", "pending", "draft or none", "None or draft"])
 def test_an_unrecognized_response_mode_matches_neither_mode(value):
     for case in (SEED["cases"][0], next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")):
         with pytest.raises(checker.CheckFailure, match="responseMode"):
@@ -189,50 +196,24 @@ def test_message_naming_the_path_as_its_own_word_passes(index, template):
     assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, text=text))
 
 
-def test_one_slack_step_for_both_paths_passes_where_the_old_grader_failed(tmp_path, monkeypatch):
-    """A single Slack step whose text depends on the path is a correct layout.
-    The old grader required escalation and triage to post through two
-    different Slack steps (and one gateway, two end events)."""
-    cases = SEED["cases"]
-    for case in cases:
+def test_one_slack_step_for_both_paths_passes():
+    for case in SEED["cases"]:
         checker.verify_case(PROCESS, SLACK, case, _debug(case, shared_node=True), _variables(case, shared_node=True))
-
-    project = tmp_path / "CustomerEscalationOrchestrator" / "CustomerEscalationOrchestrator"
-    project.mkdir(parents=True)
-    (project / "project.uiproj").write_text('{"Name": "CustomerEscalationOrchestrator"}')
-    (project / "Process.bpmn").write_text(BPMN.read_text())
-    (tmp_path / "seed.json").write_text(json.dumps(SEED))
-    monkeypatch.chdir(tmp_path)
-    current = iter(cases)
-    state = {}
-
-    def fake_debug(*a, **k):
-        state["case"] = next(current)
-        return _debug(state["case"], shared_node=True), "inst"
-
-    def fake_cli(argv, **k):
-        payload = {"Result": "Success", "Data": _variables(state["case"], shared_node=True)}
-        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
-
-    monkeypatch.setattr(old, "import_exact", lambda bpmn, project_dir, solution: project_dir)
-    monkeypatch.setattr(old, "run_debug", fake_debug)
-    monkeypatch.setattr(old, "run_cli", fake_cli)
-    with pytest.raises(old.CheckFailure, match="SAME Slack sendTask"):
-        old.main()
 
 
 def test_main_runs_every_case(tmp_path, monkeypatch):
+    seeded = seed_module.build_seed()["cases"]
     project = tmp_path / "CustomerEscalationOrchestrator" / "CustomerEscalationOrchestrator"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text('{"Name": "CustomerEscalationOrchestrator"}')
     (project / "Process.bpmn").write_text(BPMN.read_text())
-    (tmp_path / "seed.json").write_text(json.dumps(SEED))
+    (tmp_path / "seed.json").write_text(json.dumps({"cases": seeded}))
     monkeypatch.chdir(tmp_path)
     sent = []
     state = {}
 
     def fake_debug(project_dir, inputs, log, **k):
-        state["case"] = next(c for c in SEED["cases"] if c["inputs"] == inputs)
+        state["case"] = next(c for c in seeded if c["inputs"] == inputs)
         sent.append(inputs)
         return _debug(state["case"]), "inst"
 
@@ -240,7 +221,7 @@ def test_main_runs_every_case(tmp_path, monkeypatch):
     monkeypatch.setattr(checker, "run_debug", fake_debug)
     monkeypatch.setattr(checker, "fetch_variables", lambda i: (_variables(state["case"]), ""))
     checker.cases()
-    assert sent == [c["inputs"] for c in SEED["cases"]]
+    assert sent == [c["inputs"] for c in seeded]
 
 
 def test_slack_failure_advisory_accepts_the_real_process(tmp_path, monkeypatch):
@@ -250,3 +231,97 @@ def test_slack_failure_advisory_accepts_the_real_process(tmp_path, monkeypatch):
     (project / "Process.bpmn").write_text(BPMN.read_text())
     monkeypatch.chdir(tmp_path)
     checker.slack_failure_handled()
+
+
+def test_a_post_to_another_channel_fails():
+    case = SEED["cases"][0]
+    with pytest.raises(checker.CheckFailure, match="posted to channel"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, channel="C0000000000"))
+
+
+def test_a_slack_step_posting_as_the_bot_fails():
+    bot = checker.load_process(_bpmn_with_send_as("bot"))
+    case = SEED["cases"][0]
+    with pytest.raises(checker.CheckFailure, match="must post as 'user'"):
+        checker.verify_case(bot, checker.slack_ids(bot), case, _debug(case), _variables(case))
+
+
+@pytest.mark.parametrize("value, expected", [("yes", True), ("Yes", True), ("NO", False), ("no", False)])
+def test_engineering_needed_yes_no_reads_as_a_boolean(value, expected):
+    case = next(c for c in SEED["cases"] if c["expected"]["engineeringNeeded"] is expected)
+    assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, engineeringNeeded=value))
+
+
+def test_engineering_needed_yes_fails_where_none_is_needed():
+    case = next(c for c in SEED["cases"] if c["expected"]["engineeringNeeded"] is False)
+    with pytest.raises(checker.CheckFailure, match="engineeringNeeded"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, engineeringNeeded="yes"))
+
+
+def _bpmn_with_send_as(identity: str) -> Path:
+    path = Path(tempfile.mkdtemp()) / "Process.bpmn"
+    path.write_text(BPMN.read_text().replace('{"send_as":"user"}', '{"send_as":"%s"}' % identity))
+    return path
+
+
+def _first_matching_rule(inputs: dict) -> str:
+    if not inputs["senderDomain"]:
+        return "missing_domain"
+    if inputs["customerMatchStatus"] == "none":
+        return "unknown_customer"
+    if inputs["customerMatchStatus"] == "multiple":
+        return "multiple_matches"
+    return "duplicate" if inputs["isDuplicate"] else "escalation"
+
+
+def _rules_tripped(inputs: dict) -> int:
+    return sum([
+        not inputs["senderDomain"],
+        inputs["customerMatchStatus"] == "none",
+        inputs["customerMatchStatus"] == "multiple",
+        inputs["isDuplicate"],
+    ])
+
+
+def test_the_seed_has_overlap_cases_won_by_the_first_rule():
+    cases = seed_module.build_seed()["cases"]
+    overlaps = [c for c in cases if _rules_tripped(c["inputs"]) > 1]
+    assert len(overlaps) >= 3
+    for case in cases:
+        assert case["expected"]["escalationPath"] == _first_matching_rule(case["inputs"])
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_the_real_classifier_agrees_with_every_seeded_case():
+    script = PROCESS.find(".//{http://www.omg.org/spec/BPMN/20100524/MODEL}script").text
+    for case in seed_module.build_seed()["cases"]:
+        program = f"const vars = {json.dumps(case['inputs'])}; console.log(JSON.stringify((function(){{{script}}})()));"
+        out = subprocess.run(["node", "-e", program], capture_output=True, text=True, check=True).stdout
+        got = json.loads(out)
+        for field in ("escalationPath", "severity", "engineeringNeeded"):
+            assert got[field] == case["expected"][field], (case["name"], field)
+
+
+def _handler_check(text: str) -> None:
+    root = ET.fromstring(text)
+    process = root.find("{http://www.omg.org/spec/BPMN/20100524/MODEL}process")
+    checker.assert_error_handlers(root, process, tuple(sorted(SLACK)))
+
+
+def test_error_handlers_accept_the_real_process():
+    _handler_check(BPMN.read_text())
+
+
+def test_a_slack_step_without_an_error_boundary_fails():
+    text = BPMN.read_text().replace("<bpmn:errorEventDefinition />", "", 1)
+    with pytest.raises(checker.CheckFailure, match="no error boundary event"):
+        _handler_check(text)
+
+
+def test_an_error_handler_that_calls_slack_again_fails():
+    text = BPMN.read_text().replace(
+        'sourceRef="sendEscalationAlert_onError" targetRef="handleEscalationSlackFailure"',
+        'sourceRef="sendEscalationAlert_onError" targetRef="sendTriageNotice"',
+    )
+    with pytest.raises(checker.CheckFailure, match="connector-free"):
+        _handler_check(text)

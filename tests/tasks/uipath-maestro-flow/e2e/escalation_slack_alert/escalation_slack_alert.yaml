@@ -1,7 +1,7 @@
 task_id: skill-flow-e2e-escalation-slack-alert
 description: >
   End-to-end, outcome-based slice of the customer-escalation orchestration,
-  asked the way a Studio Web user would ask it (Ioana's v3 business prompt,
+  asked the way a Studio Web user would ask it (a business prompt
   with the eval tenant's Slack channel). The prompt names no variables, so the
   grader maps three seeded cases (an Enterprise outage with no workaround that
   is Sev1, a Standard-tier outage with no workaround that is Sev3, and a

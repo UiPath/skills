@@ -103,6 +103,9 @@ initial_prompt: |
   <!-- helper:start -->
   workaroundAvailable is a boolean; the other inputs are strings.
   jiraIssueTypeId is the numeric id of an issue type, such as "10001".
+  The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380" and
+  the Slack connection is "is-sandboxes", both in the
+  Shared/uipath-maestro-flow folder.
   <!-- helper:end -->
 
   Build the process and do a test run.

@@ -39,6 +39,7 @@ PROBE = "skills-case-http-7f3a"
 INVOICE = "INV-1042"
 QUERY_SOURCE = "skills-case-eval"
 BOUND_VAR = "echoResponse"
+ACCEPT_VALUE = "application/json"
 CREDENTIAL_HEADERS = {"authorization", "proxy-authorization", "cookie", "x-api-key", "api-key"}
 
 
@@ -101,7 +102,16 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> str:
             f"{BOUND_VAR} lacks the fields postman-echo fills in (Args.source={QUERY_SOURCE}, "
             f"Url {URL}), so it is not the service's echo: {echoed[:800]}"
         )
+    sent = ci(body, "json")
+    sent = sent if isinstance(sent, dict) else {}
+    if str(ci(sent, "invoiceNumber")) != INVOICE or str(ci(sent, "probe")) != PROBE:
+        fail(
+            f"the service did not receive the JSON body fields invoiceNumber={INVOICE} and "
+            f"probe={PROBE}: {echoed[:800]}"
+        )
     received = ci(body, "headers")
+    if ACCEPT_VALUE not in str(ci(received, "accept")).lower():
+        fail(f"the service did not receive the header Accept: {ACCEPT_VALUE}: {echoed[:800]}")
     leaked = sorted(
         str(h) for h in (received if isinstance(received, dict) else {})
         if _header_key(h) in CREDENTIAL_KEYS

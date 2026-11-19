@@ -3,8 +3,7 @@
 
 `run_debug` cannot grade a HITL flow: the run suspends on the Action Center
 task, so `uip maestro flow debug` either polls until its own timeout or returns
-early when the Orchestrator job reports `Suspended` (maestro-tool 1.204
-`pollDebugInstanceStatus`). Neither ends `Completed`. This helper:
+early when the Orchestrator job reports `Suspended`. Neither ends `Completed`. This helper:
 
 1. starts `uip maestro flow debug` in the background and reads the personal
    folder, job key and instance id from its stderr log lines
@@ -37,6 +36,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -57,8 +57,9 @@ STATUS_POLL_SECONDS = 5
 MAX_CANDIDATES = 25
 ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
 MIN_CALL_SECONDS = 30
+DEADLINE_SECONDS = 600
+CLI_TIMEOUT = 540
 END_TYPE = "core.control.end"
-VARS_REF_RE = re.compile(r"\$vars\.(\w+)")
 _call_deadline: float | None = None
 
 
@@ -177,6 +178,9 @@ class DebugRun:
     stdout_path: str
     stderr_path: str
     ids: RunIds = field(default_factory=RunIds)
+    stdout_file: Any = None
+    stderr_file: Any = None
+    out_dir: str | None = None
 
     def stderr(self) -> str:
         try:
@@ -208,6 +212,14 @@ class DebugRun:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 pass
+        for handle in (self.stdout_file, self.stderr_file):
+            if handle is not None:
+                handle.close()
+
+    def finish(self) -> None:
+        self.stop()
+        if self.out_dir:
+            shutil.rmtree(self.out_dir, ignore_errors=True)
 
 
 def start_debug(project_dir: str, inputs: dict, cli_timeout: int) -> DebugRun:
@@ -223,13 +235,10 @@ def start_debug(project_dir: str, inputs: dict, cli_timeout: int) -> DebugRun:
         "--timeout", str(cli_timeout),
     ]
     print(f"debug inputs: {inputs}")
-    proc = subprocess.Popen(
-        cmd,
-        stdout=open(stdout_path, "w"),
-        stderr=open(stderr_path, "w"),
-        env=env,
-    )
-    return DebugRun(proc, stdout_path, stderr_path)
+    stdout_file = open(stdout_path, "w")
+    stderr_file = open(stderr_path, "w")
+    proc = subprocess.Popen(cmd, stdout=stdout_file, stderr=stderr_file, env=env)
+    return DebugRun(proc, stdout_path, stderr_path, stdout_file=stdout_file, stderr_file=stderr_file, out_dir=out_dir)
 
 
 def wait_for_ids(run: DebugRun, deadline: float) -> RunIds:
@@ -441,6 +450,50 @@ def wait_for_result(run: DebugRun, deadline: float) -> dict:
     return payload
 
 
+def run_with_task(
+    project_dir: str,
+    inputs: dict,
+    token: str,
+    hitl: dict,
+    actions: list[str],
+    check_task: Callable[[FoundTask], None],
+    answer: Callable[[FoundTask], dict],
+    label: str,
+) -> dict:
+    """Debug the flow, find the run's task by `token` in its data, run
+    `check_task`, complete it with `answer(task)` under `actions`, and return
+    the completed run's payload. Cancels the instance unless it completed."""
+    deadline = time.monotonic() + DEADLINE_SECONDS
+    bound_calls_by(deadline)
+    run = start_debug(project_dir, inputs, CLI_TIMEOUT)
+    payload = None
+    try:
+        ids = wait_for_ids(run, deadline)
+        print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
+        task, notes = find_run_task(
+            ids,
+            lambda _row, bundle: has_text(bundle, token),
+            deadline,
+            run,
+            folder_paths=node_folder_paths(hitl),
+        )
+        if task is None:
+            out = run.stdout()[-1500:] if run.proc.poll() is not None else "(still running)"
+            fail(
+                f"the run created no open Action Center task for {label} {token}; "
+                f"{'; '.join(notes)}; debug stdout: {out}; stderr tail: {run.stderr()[-1500:]}"
+            )
+        check_task(task)
+        complete_task(task, actions, answer(task))
+        payload = wait_for_result(run, deadline)
+        require_completed(payload)
+    finally:
+        if not is_completed(payload):
+            cancel(run)
+        run.finish()
+    return payload
+
+
 def is_completed(payload: dict | None) -> bool:
     return _get_ci(payload or {}, "finalStatus", "FinalStatus") == "Completed"
 
@@ -512,30 +565,15 @@ def port_targets(edges: list[dict], source: str, port: str) -> set[str]:
     }
 
 
-def posting_steps(flow: dict, marker: str, output: str) -> set[str]:
-    """Steps that post: they build `marker`, set the `output` global through
-    variableUpdates, or feed the End node's `output` binding."""
+def posting_steps(flow: dict, marker: str) -> set[str]:
+    """Steps that build `marker`, the stand-in for posting."""
     updates = (flow.get("variables") or {}).get("variableUpdates") or {}
-    nodes = flow.get("nodes") or []
-    fed = set()
-    for n in nodes:
-        if n.get("type") != END_TYPE:
-            continue
-        bound = [o for k, o in (n.get("outputs") or {}).items() if k == output]
-        fed.update(VARS_REF_RE.findall(json.dumps(bound)))
-    for step_id, update in updates.items():
-        if output in json.dumps(update):
-            fed.add(str(step_id))
-            fed.update(VARS_REF_RE.findall(json.dumps(update)))
     skipped = (END_TYPE, "core.trigger", "uipath.human-in-the-loop")
     return {
         str(n.get("id"))
-        for n in nodes
+        for n in flow.get("nodes") or []
         if not str(n.get("type", "")).startswith(skipped)
-        and (
-            str(n.get("id")) in fed
-            or marker in json.dumps([n.get("inputs"), n.get("outputs"), updates.get(str(n.get("id")))])
-        )
+        and marker in json.dumps([n.get("inputs"), n.get("outputs"), updates.get(str(n.get("id")))])
     }
 
 

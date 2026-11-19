@@ -31,8 +31,8 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared import flow_io_roles as io  # noqa: E402
+from _shared.escalation_inputs import SLACK_CHANNEL, SLACK_KEY, is_slack_ts  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
-    _SLACK_TS_RE,
     _fail,
     _fail_with_capture,
     _get_ci,
@@ -48,8 +48,6 @@ from _shared.flow_check import (  # noqa: E402
 INVOICE = "MCS-2026-04872"
 CREDIT_TEXT = "USD 1,610.00"
 SIGNATURE = "Billing Support Team"
-SLACK_KEY = "uipath-salesforce-slack"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
 CASE_REF = f"RESO-{uuid4().hex[:12]}"
 ROLES = {
@@ -137,7 +135,7 @@ def find_subject(flow, outs, body):
 
 
 def check_slack_post(payload, outs, body):
-    ts_ids = io.find_out(outs, lambda v: isinstance(v, str) and bool(_SLACK_TS_RE.match(v.strip())))
+    ts_ids = io.find_out(outs, is_slack_ts)
     if not ts_ids:
         _fail_with_capture(f"no declared output is a Slack message ts: {outs}")
     ts = assert_slack_message_posted(

@@ -208,6 +208,13 @@ def test_numbered_or_dashed_steps_count_as_the_list(v3):
     v3.check_case(_flow(V3_IO), _payload(V3_IO, text=text), CASE)
 
 
+def test_a_node_that_only_echoes_the_ts_is_not_taken_for_the_send(v3):
+    payload = _payload(V3_IO)
+    globals_ = payload["variables"]["globals"]
+    payload["variables"]["globals"] = {"triage.output": {"slackMessageId": TS, "severity": "Sev1"}, **globals_}
+    v3.check_case(_flow(V3_IO), payload, CASE)
+
+
 def test_fails_when_the_ts_was_not_returned_by_the_send_that_ran(v3):
     with pytest.raises(SystemExit) as exc:
         v3.check_case(_flow(V3_IO), _payload(V3_IO, posted_ts="1794932000.000001"), CASE)

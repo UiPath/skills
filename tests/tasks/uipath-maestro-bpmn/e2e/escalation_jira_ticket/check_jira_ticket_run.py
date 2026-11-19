@@ -16,10 +16,10 @@ Static, layout-free guard: the process names all three severities, so it
 encodes the rule rather than returning the one answer the seeded case expects.
 
 The Jira step is found by its connector key, whatever its operation (curated
-Create Issue, the generic `issue` object the Studio Web builder emits, run
-adhoc-2026-11-14_08-01-54), element type or id; no script task or variable
-name is required. Every created key is journalled to `.created_keys` before
-any assertion; post_run's teardown_jira.py deletes them.
+Create Issue, the generic `issue` object the Studio Web builder emits),
+element type or id; no script task or variable name is required. Every
+created key is journalled to `.created_keys` before any assertion;
+post_run's teardown_jira.py deletes them.
 """
 
 from __future__ import annotations

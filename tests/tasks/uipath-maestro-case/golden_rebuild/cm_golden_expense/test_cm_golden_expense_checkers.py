@@ -313,8 +313,7 @@ class CMGoldenCheckerTests(unittest.TestCase):
         self.assertIn("expected exactly 15 tasks, got 16", result.stdout + result.stderr)
 
     def test_topology_checker_accepts_a_studio_web_plan_without_activity_config(self) -> None:
-        """Studio Web's case scaffold has no intsvcActivityConfig key (both
-        Studio Web runs: adhoc-2026-11-14_08-01-54, adhoc-2026-11-17_15-00-15)."""
+        """Studio Web's case scaffold has no intsvcActivityConfig key."""
         plan = expected_caseplan()
         plan["metadata"].pop("intsvcActivityConfig")
 

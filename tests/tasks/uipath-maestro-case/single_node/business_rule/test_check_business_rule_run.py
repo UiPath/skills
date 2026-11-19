@@ -83,7 +83,7 @@ def test_the_recorded_faulted_run_fails_on_the_rule_task() -> None:
 def test_the_recorded_input_shape_carries_the_score() -> None:
     evidence = grader.RunEvidence(EVIDENCE["variables_all"]["Data"])
     inputs, _ = evidence.task_io(RULE_TASK)
-    assert list(grader._leaf_values(inputs, "creditScore")) == [742]
+    assert list(grader.leaf_values(inputs, "creditScore")) == [742]
 
 
 @pytest.mark.parametrize("band", ["HIGH_RISK", None, "", "NOT_LOW_RISK", "low_risk"])
@@ -222,3 +222,42 @@ def test_no_run_outputs_fail_when_the_source_reads_a_case_variable_without_a_def
     evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
     with pytest.raises(SystemExit, match="riskBand"):
         grader.check_run(plan, debug, evidence)
+
+
+@pytest.mark.parametrize("default", ['"LOW_RISK"', "'LOW_RISK'", '=js:"LOW_RISK"', " =js:'high_risk' ", "low_risk"])
+def test_a_quoted_or_js_default_does_not_evade_the_default_guard(default: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    _default_risk_band(plan, default)
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        '=js:result.riskBand||"LOW"+"_RISK"',
+        "=js:result.riskBand??'x'",
+        "=js:result.riskBand?result.riskBand:'x'",
+        "=otherTask.result",
+        '=js:"result"',
+        '=js:"riskBand"',
+    ],
+)
+def test_no_run_outputs_fail_for_fallback_foreign_or_literal_sources(source: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    next(o for o in _rule_task(plan)["data"]["outputs"] if o["var"] == "riskBand")["source"] = source
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+@pytest.mark.parametrize("source", ["=RiskDecision.riskBand", "=result.RiskDecision.riskBand", "=js:result.riskBand", "=result"])
+def test_no_run_outputs_pass_for_a_direct_read_of_the_rule_output(source: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    next(o for o in _rule_task(plan)["data"]["outputs"] if o["var"] == "riskBand")["source"] = source
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    assert grader.check_run(plan, debug, evidence)

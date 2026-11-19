@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -49,17 +51,15 @@ from _shared.bpmn_live import (  # noqa: E402
     element_output_records,
     exact_type,
     get_ci,
+    import_exact,
     incident_records,
     index_runtime_connectors,
-    parse_json_output,
     payload_data,
     q,
     resolve_runtime_key,
     root_scope,
     run_cli,
     run_debug,
-    sha256,
-    tail_log,
     UIPATH_NS,
 )
 
@@ -67,10 +67,10 @@ NAME = "CustomerEscalationTriage"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
+SOLUTION_INIT_TIMEOUT = bpmn_live.SOLUTION_INIT_TIMEOUT
+SOLUTION_IMPORT_TIMEOUT = bpmn_live.SOLUTION_IMPORT_TIMEOUT
+VARIABLES_ALL_TIMEOUT = bpmn_live.VARIABLES_ALL_TIMEOUT
+INCIDENTS_TIMEOUT = bpmn_live.INCIDENTS_TIMEOUT
 
 # Every live CLI call on the worst-case path, this module's plus escalation_is'.
 # The behavior criterion's `timeout:` must cover the sum; test_behavior_checker
@@ -93,7 +93,7 @@ OUTPUT_TYPES = {
 # adhoc-2026-11-14_08-01-54); the runtime evidence and the tenant reread prove
 # the ticket, whichever operation made it.
 SLACK_SEND_AS = "user"
-COMPLETED_STATUSES = {"Completed", "Successful"}
+COMPLETED_STATUSES = bpmn_live.COMPLETED_STATUSES
 
 
 @dataclass(frozen=True)
@@ -423,59 +423,66 @@ def assert_jira_issue_on_tenant(
 
 
 
+def journal_partial_log(seed: dict, log_file: Path, jira_connection_id: str) -> None:
+    """Journal the Jira keys in an interrupted run's log whose summary carries
+    this run's correlationId."""
+
+    partial = log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
+    project_key = seed["inputs"]["jiraProjectKey"]
+    for key in dict.fromkeys(re.findall(rf"\b{re.escape(project_key)}-\d+\b", partial)):
+        try:
+            fields = escalation_is.get_issue_fields(jira_connection_id, key)
+        except (CheckFailure, subprocess.TimeoutExpired):
+            continue
+        if seed["correlationId"] in str(get_ci(fields, "summary", "")):
+            escalation_is.record_created_id("jira_issue", key)
+
+
+def run_and_read(
+    seed: dict, imported_project: Path, jira_connection_id: str
+) -> tuple[object, str, object]:
+    """Debug the seeded case and read its variables; return (debug_data,
+    instance_id, variables_data). When either step fails after the run may
+    have created records, journal them from the partial log before re-raising."""
+
+    log_file = LIVE_RUN_DIR / "debug.log"
+    try:
+        debug_data, instance_id = run_debug(imported_project, seed["inputs"], log_file)
+        print(f"OK: debug completed (instance {instance_id})")
+
+        variables = run_cli(
+            ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+            timeout=VARIABLES_ALL_TIMEOUT,
+        )
+        _payload, variables_data = payload_data(variables, "variables-all")
+    except (CheckFailure, subprocess.TimeoutExpired):
+        try:
+            journal_partial_log(seed, log_file, jira_connection_id)
+        except (CheckFailure, subprocess.TimeoutExpired, OSError):
+            pass
+        raise
+    return debug_data, instance_id, variables_data
+
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
     bpmn_file = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     project = bpmn_file.parent
     contract = resolve_contract(bpmn_file)
-    original_hash = sha256(bpmn_file)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()
 
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "CustomerEscalationLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)],
-        timeout=SOLUTION_INIT_TIMEOUT,
+    imported_project = import_exact(
+        bpmn_file, project, LIVE_RUN_DIR / "CustomerEscalationLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(project.resolve()),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-        cwd=solution_dir,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / project.name
-    if sha256(imported_project / bpmn_file.name) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
-    debug_data, instance_id = run_debug(
-        imported_project, seed["inputs"], LIVE_RUN_DIR / "debug.log"
+    debug_data, instance_id, variables_data = run_and_read(
+        seed, imported_project, connections[escalation_is.JIRA_CONNECTOR]
     )
-    print(f"OK: debug completed (instance {instance_id})")
 
     # Runtime evidence. Journal every created id BEFORE asserting anything —
     # the records exist regardless of the verdict, and post_run replays the
     # journal even if this process is killed mid-assertion.
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
     effects = harvest_side_effects(contract, variables_data)
     for issue in effects["jira_issues"]:
         escalation_is.record_created_id("jira_issue", issue)

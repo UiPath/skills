@@ -28,7 +28,6 @@ Usage: check_billing_dispute_analyst.py overcharge|reject|thin
 """
 import json
 import os
-import re
 import sys
 
 _d = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +35,7 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared import flow_io_roles as io  # noqa: E402
+from _shared.billing_sop import NAMES_A_RULE  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
     _fail,
     _fail_with_capture,
@@ -47,9 +47,6 @@ from _shared.flow_check import (  # noqa: E402
 # An inline agent, or an existing tenant agent (`uipath.core.agent.<key>`).
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
 DECISIONS = ("credit", "reject", "manager_review")
-# A rule named by section ("§5.4", "SOP 5.4", "section 7") or by title ("Incorrect rate").
-NAMES_A_RULE = re.compile(
-    r"§\s*\d|\b(?:section|sec\.?|clause|rule|SOP)\s*#?\s*\d+(?:\.\d+)*|\bincorrect[\s-]+rate\b", re.I)
 
 CASES = {
     "overcharge": {
@@ -60,10 +57,7 @@ CASES = {
             "hour. Our SOW AT-2026-008 contracts this work at $235 per hour."
         ),
         "decision": "manager_review",
-        # The SOP says the dispute is valid (billed above the contracted rate); whether a
-        # $4,950 credit routes to manager review or straight to credit turns on its §7
-        # confidence rule, a judgment call. Either passes here; the band is graded by
-        # the advisory `check_analyst_band.py` on the decision this run recorded.
+        # check_analyst_band.py grades the band.
         "accept": ("manager_review", "credit"),
     },
     "reject": {

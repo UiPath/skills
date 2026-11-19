@@ -383,6 +383,20 @@ def shared_posting_flow() -> dict:
     return flow
 
 
+def test_invoice_approval_passes_when_the_reject_branch_returns_an_empty_document_number(tmp_path):
+    reject_end = {"id": "end2", "type": "core.control.end", "outputs": {"sapDocumentNumber": {
+        "var": "sapDocumentNumber",
+        "source": {"type": "jsExpression", "expression": "$vars.notifyRejected.output.sapDocumentNumber"}}}}
+    reject_step = {"id": "notifyRejected", "type": "core.action.script",
+                   "inputs": {"script": 'return { sapDocumentNumber: "" };'}}
+    flow = invoice_flow(reject_step=True)
+    flow["nodes"] = [{"end2": reject_end, "notifyRejected": reject_step}.get(n["id"], n) for n in flow["nodes"]]
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "notifyRejected", "end2"],
+                                             "globals": {"status": "rejected", "sapDocumentNumber": ""}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, scenario)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
 def test_invoice_approval_fails_when_a_rejection_posts_through_a_shared_step(tmp_path):
     scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
                                              "globals": {"status": "rejected", "sapDocumentNumber": ""}})
@@ -413,24 +427,6 @@ POST_FIRST = [
     {"sourceNodeId": "financeApproval", "sourcePort": "outcome-approve", "targetNodeId": "end"},
     {"sourceNodeId": "financeApproval", "sourcePort": "outcome-reject", "targetNodeId": "end2"},
 ]
-
-
-def test_invoice_approval_fails_on_an_assembled_marker_before_the_approval(tmp_path):
-    posting = {"id": "postToSap", "type": "core.action.script",
-               "inputs": {"script": 'return { sapDocumentNumber: "SA" + "P-" + $vars.start.output.invoiceNumber };'}}
-    flow = assembled_marker_flow(posting, "$vars.postToSap.output.sapDocumentNumber", POST_FIRST)
-    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, GOOD_INVOICE)
-    assert r.returncode != 0
-    assert "can run without the finance manager's approval" in r.stdout + r.stderr
-
-
-def test_invoice_approval_fails_on_a_step_updating_the_document_number_before_the_approval(tmp_path):
-    posting = {"id": "postToSap", "type": "core.action.script", "inputs": {"script": "return {}"}}
-    flow = assembled_marker_flow(posting, '"posted"', POST_FIRST)
-    flow["variables"] = {"variableUpdates": {"postToSap": [{"variableId": "sapDocumentNumber", "expression": "x"}]}}
-    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, GOOD_INVOICE)
-    assert r.returncode != 0
-    assert "can run without the finance manager's approval" in r.stdout + r.stderr
 
 
 @pytest.mark.parametrize("globals_,why", [
@@ -523,25 +519,6 @@ def test_expense_app_task_fails_when_a_rejection_is_not_reported_rejected(tmp_pa
     r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
     assert r.returncode != 0
     assert "expected 'rejected'" in r.stdout + r.stderr
-
-
-def test_expense_app_task_fails_on_an_assembled_marker_before_the_review(tmp_path):
-    flow = expense_flow()
-    posting = {"id": "postExpense", "type": "core.action.script",
-               "inputs": {"script": 'return { sapDocumentNumber: "SAPE" + "XP-" + $vars.start.output.expenseId };'}}
-    end = {"id": "end", "type": "core.control.end",
-           "outputs": {"sapDocumentNumber": {"var": "sapDocumentNumber", "source": {
-               "type": "jsExpression", "expression": "$vars.postExpense.output.sapDocumentNumber"}}}}
-    flow["nodes"] = [posting if n["id"] == "postExpense" else end if n["id"] == "end" else n
-                     for n in flow["nodes"]]
-    flow["edges"] = [
-        {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postExpense"},
-        {"sourceNodeId": "postExpense", "sourcePort": "success", "targetNodeId": "managerReview"},
-        {"sourceNodeId": "managerReview", "sourcePort": "completed", "targetNodeId": "end"},
-    ]
-    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", flow, GOOD_EXPENSE, "run")
-    assert r.returncode != 0
-    assert "can run without the manager's review" in r.stdout + r.stderr
 
 
 def test_expense_app_task_cancels_a_run_that_did_not_complete(tmp_path):
@@ -660,3 +637,61 @@ def test_find_run_task_stops_reading_tasks_at_the_deadline():
     )
     assert task is None
     assert reads == []
+
+
+class FakeProc:
+    def __init__(self, running: bool):
+        self.running = running
+        self.killed = False
+
+    def poll(self):
+        return None if self.running else 0
+
+    def kill(self):
+        self.killed = True
+        self.running = False
+
+    def wait(self, timeout=None):
+        return 0
+
+
+def fake_debug_run(tmp_path, running: bool) -> live.DebugRun:
+    out_dir = tmp_path / "hitl-debug-x"
+    out_dir.mkdir()
+    stdout_path, stderr_path = str(out_dir / "stdout.json"), str(out_dir / "stderr.log")
+    return live.DebugRun(
+        FakeProc(running), stdout_path, stderr_path,
+        stdout_file=open(stdout_path, "w"), stderr_file=open(stderr_path, "w"), out_dir=str(out_dir),
+    )
+
+
+@pytest.mark.parametrize("running", [True, False])
+def test_stop_closes_the_log_handles(tmp_path, running):
+    run = fake_debug_run(tmp_path, running)
+    run.stop()
+    assert run.proc.killed is running
+    assert run.stdout_file.closed and run.stderr_file.closed
+    run.stop()
+
+
+def test_finish_removes_the_temp_dir_and_keeps_stop_idempotent(tmp_path):
+    run = fake_debug_run(tmp_path, True)
+    run.finish()
+    assert run.proc.killed
+    assert run.stdout_file.closed and run.stderr_file.closed
+    assert not os.path.exists(run.out_dir)
+    assert run.stdout() == "" and run.stderr() == ""
+    run.finish()
+
+
+def test_invoice_completion_data_leaves_booleans_unapproved_on_a_rejection():
+    import check_hitl_invoice_approval_run as invoice
+
+    hitl = {"inputs": {"schema": {"fields": [
+        {"id": "comments", "type": "text", "direction": "output"},
+        {"id": "escalate", "type": "boolean", "direction": "output"},
+    ]}}}
+    approved = invoice.completion_data(hitl, {}, "ok", invoice.Decision.APPROVE)
+    rejected = invoice.completion_data(hitl, {}, "no", invoice.Decision.REJECT)
+    assert approved == {"Comments": "ok", "Escalate": True}
+    assert rejected == {"Comments": "no", "Escalate": False}

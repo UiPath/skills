@@ -3,7 +3,7 @@ description: |
   E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
   reads BillingDisputeERP and BillingDisputeCRM and computes an invoice
   overcharge and the customer's tier, asked the way a business user asks it
-  (Ioana's v3 prompt; it names no variables). The graders map the seeded
+  (it names no variables). The graders map the seeded
   values onto the flow's declared inputs by meaning and read the results among
   its declared outputs by value. Three debug runs on live data: a real
   overcharge (both reads complete; 1610, 1, MCS-2026-04872, Enterprise), an

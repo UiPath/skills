@@ -173,3 +173,11 @@ def test_every_jira_helper_copy_resolves_the_issue_type_the_same_way() -> None:
     for path in sorted(tasks.glob("uipath-maestro-*/**/*_is.py")):
         if not path.name.startswith("test_"):
             assert "11457" not in path.read_text(encoding="utf-8"), path
+
+
+def test_the_prompt_names_the_connection_and_folder_the_grader_requires() -> None:
+    jira_is = _load_module()
+    prompt = (HERE / "escalation_jira_ticket.yaml").read_text(encoding="utf-8")
+    helper = prompt.split("<!-- helper:start -->")[1].split("<!-- helper:end -->")[0]
+    assert jira_is.CONNECTION_NAME in helper
+    assert jira_is.FOLDER_PATH in helper

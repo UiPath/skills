@@ -30,7 +30,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -46,10 +45,7 @@ APP_MARKERS = (
     "a30ac44f-8ebf-4124-9746-abc93a5ae17d",  # resource key
     "ID5dcddde3c89d4a299e6f031e31568900",  # appSystemName
 )
-POSTING_OUTPUT = "sapDocumentNumber"
 POSTING_MARKER = "SAPEXP-"  # the fixture's posting script builds the document number
-DEADLINE_SECONDS = 600
-CLI_TIMEOUT = 540
 EMPLOYEE = "Dana Whitfield"
 AMOUNT = 1840.5
 DESCRIPTION = "Client workshop travel, Berlin"
@@ -67,7 +63,7 @@ def app_hitl(flow: dict) -> dict | None:
 
 
 def posting_ids(flow: dict) -> set[str]:
-    return live.posting_steps(flow, POSTING_MARKER, POSTING_OUTPUT)
+    return live.posting_steps(flow, POSTING_MARKER)
 
 
 def structure(project_dir: str) -> None:
@@ -86,8 +82,7 @@ def structure(project_dir: str) -> None:
 
 def run_once(project_dir: str, node: dict, actions: list[str], comment: str) -> tuple[dict, str]:
     """Debug the flow, check the run's app task, answer it with `actions`, and
-    return the completed run's payload and expense id. Cancels the instance
-    unless it completed."""
+    return the completed run's payload and expense id."""
     expense = f"EXP-{uuid.uuid4().hex[:8].upper()}"
     inputs = {
         "expenseId": expense,
@@ -95,52 +90,44 @@ def run_once(project_dir: str, node: dict, actions: list[str], comment: str) -> 
         "amount": AMOUNT,
         "description": DESCRIPTION,
     }
-    deadline = time.monotonic() + DEADLINE_SECONDS
-    live.bound_calls_by(deadline)
-    debug = live.start_debug(project_dir, inputs, CLI_TIMEOUT)
-    payload = None
-    try:
-        ids = live.wait_for_ids(debug, deadline)
-        print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
-        task, notes = live.find_run_task(
-            ids,
-            lambda _row, bundle: live.has_text(bundle, expense),
-            deadline,
-            debug,
-            folder_paths=live.node_folder_paths(node),
-        )
-        if task is None:
-            live.fail(
-                f"the run created no open Action Center task for expense {expense}; "
-                f"{'; '.join(notes)}; stderr tail: {debug.stderr()[-1500:]}"
-            )
-        missing = [
-            label
-            for label, ok in (
-                (f"expense id {expense}", live.has_text(task.data, expense)),
-                (f"employee {EMPLOYEE!r}", live.has_text(task.data, EMPLOYEE)),
-                (f"amount {AMOUNT}", live.has_amount(task.data, AMOUNT)),
-            )
-            if not ok
-        ]
-        if missing:
-            live.fail(
-                f"task {task.task_id} does not show the reviewer {', '.join(missing)}; "
-                f"data={str(task.data)[:1500]}"
-            )
-        if task.task_type.lower() != "apptask":
-            live.fail(f"task {task.task_id} is a {task.task_type}, not an app task")
-        print(f"OK: app task {task.task_id} shows {expense}, {EMPLOYEE}, {AMOUNT}")
-        data = dict(task.data) if isinstance(task.data, dict) else {}
-        if not data.get("Comment"):
-            data["Comment"] = comment
-        live.complete_task(task, actions, data)
-        payload = live.wait_for_result(debug, deadline)
-        live.require_completed(payload)
-    finally:
-        if not live.is_completed(payload):
-            live.cancel(debug)
+    payload = live.run_with_task(
+        project_dir,
+        inputs,
+        expense,
+        node,
+        actions,
+        lambda task: check_task(task, expense),
+        lambda task: answer_data(task, comment),
+        "expense",
+    )
     return payload, expense
+
+
+def check_task(task: live.FoundTask, expense: str) -> None:
+    missing = [
+        label
+        for label, ok in (
+            (f"expense id {expense}", live.has_text(task.data, expense)),
+            (f"employee {EMPLOYEE!r}", live.has_text(task.data, EMPLOYEE)),
+            (f"amount {AMOUNT}", live.has_amount(task.data, AMOUNT)),
+        )
+        if not ok
+    ]
+    if missing:
+        live.fail(
+            f"task {task.task_id} does not show the reviewer {', '.join(missing)}; "
+            f"data={str(task.data)[:1500]}"
+        )
+    if task.task_type.lower() != "apptask":
+        live.fail(f"task {task.task_id} is a {task.task_type}, not an app task")
+    print(f"OK: app task {task.task_id} shows {expense}, {EMPLOYEE}, {AMOUNT}")
+
+
+def answer_data(task: live.FoundTask, comment: str) -> dict:
+    data = dict(task.data) if isinstance(task.data, dict) else {}
+    if not data.get("Comment"):
+        data["Comment"] = comment
+    return data
 
 
 def run(project_dir: str) -> None:

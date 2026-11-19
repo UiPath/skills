@@ -2,8 +2,8 @@
 """CustomerEscalationOrchestrator: run the agent's process once per seeded
 path case, from the grader's own sandbox, and assert what each run did.
 
-Seven cases (seed.py): Sev1/Sev2/Sev3 escalations and the four triage
-reasons. For each run:
+Cases (seed.py): Sev1/Sev2/Sev3 escalations, the four triage reasons, and
+inputs that trip several routing rules at once. For each run:
 - it completed;
 - exactly one Slack step completed (the alert or the triage notice, never
   both), and the message it posted (its own response) went to
@@ -13,11 +13,9 @@ reasons. For each run:
   engineeringNeeded, responseMode, caseKey=<correlationId>, and
   slackMessageId equal to the ts Slack returned for that post.
 
-Seven input-driven cases with different answers prove the routing is
-computed, so no layout is required: no script task, gateway, end-event count
-or variable name the request does not give. The old grader required one
-classifier script returning all four fields, a single exclusive gateway,
-two Slack steps and two end events.
+Input-driven cases with different answers prove the routing is computed, so
+no layout is required: no script task, gateway, end-event count or variable
+name the request does not give.
 
 `slack_failure_handled` mode (advisory) checks that each Slack step has an
 error boundary leading to a connector-free end, as the request asks.
@@ -35,12 +33,13 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from _shared import bpmn_check  # noqa: E402
+from _shared import bpmn_check, graph  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     COMPLETED_STATUSES,
     CheckFailure,
     completed_ids,
+    connector_context,
     element_output_records,
     fetch_incidents,
     fetch_variables,
@@ -57,13 +56,18 @@ SLACK_CONNECTOR = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
+VISITING = 1
+VISITED = 2
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
+
+
+ENGINEERING_BOOLEANS = {"true": True, "yes": True, "false": False, "no": False}
 
 
 def _norm(value):
     if isinstance(value, str):
         text = value.strip().casefold()
-        return {"true": True, "false": False}.get(text, text)
+        return ENGINEERING_BOOLEANS.get(text, text)
     return value
 
 
@@ -71,17 +75,21 @@ def _loose(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(text).lower())
 
 
-# Squashed spellings the word split cannot separate ("nodraft", "noresponserequired").
 _NO_RESPONSE = {
     "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
     "noresponseneeded", "notapplicable", "notneeded", "draftnotneeded",
 }
 _NEGATED_DRAFT = re.compile(
-    r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|response)\b"
-    r"|\bdraft\s+(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
-    r"|\bdraft\s+(?:none|false|n a|na)\b"
-    r"|^(?:n a|none|false|not applicable|not required|not needed)$"
+    r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|drafted|response)\b"
+    r"|\bundrafted\b"
+    r"|\b(?:draft|drafted|response)\s+(?:response\s+)?(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
+    r"|\bdraft(?:ed)?\s+(?:none|false|n a|na)\b"
+    r"|\bnone\s+(?:needed|required)\b"
+    r"|^(?:n a|none|no|false|skipped|skip|not applicable|not required|not needed)$"
 )
+_DRAFT = re.compile(r"\bdraft(?:ed)?\b|^(?:true|yes)$")
+_EITHER_OR = re.compile(r"\bor\b")
+_NONE_WORD = re.compile(r"\b(?:none|no|n a|na|false)\b")
 
 
 def _words(text: str) -> str:
@@ -93,18 +101,20 @@ def response_mode(value) -> str | None:
     """'draft' or 'none' by meaning: the request no longer names the values, only
     that a draft response is written for escalations that need engineering.
     A negation counts only when it governs the draft ("No draft", "Draft not
-    needed"), so "Draft, no edits required" is still 'draft'. Anything else is
-    None (unknown)."""
+    needed"), so "Draft, no edits required" is still 'draft'. "Draft or none"
+    and anything else unrecognized is None."""
     if isinstance(value, bool):
         return "draft" if value else "none"
     if not isinstance(value, str):
         return None
-    text = _loose(value)
-    if text in _NO_RESPONSE or _NEGATED_DRAFT.search(_words(value)):
+    text = _words(value)
+    negated = _loose(value) in _NO_RESPONSE or _NEGATED_DRAFT.search(text) is not None
+    drafted = _DRAFT.search(text) is not None
+    if _EITHER_OR.search(text) and drafted and (negated or _NONE_WORD.search(text)):
+        return None
+    if negated:
         return "none"
-    if "draft" in text:
-        return "draft"
-    return None
+    return "draft" if drafted else None
 
 
 def names_path(text: str, path: str) -> bool:
@@ -194,8 +204,7 @@ def cases() -> None:
 
     imported = import_exact(bpmn_path, bpmn_path.parent, LIVE_RUN_DIR / "EscalationOrchestratorLiveEval")
     for case in seeded:
-        # Posts a real message, so no whole-run retry. timeout is a literal so
-        # test_criterion_budgets.py can price it.
+        # timeout stays a literal: test_criterion_budgets.py prices it.
         debug_data, instance_id = run_debug(
             imported, case["inputs"], LIVE_RUN_DIR / f"debug-{case['name']}.log", timeout=300
         )
@@ -212,9 +221,68 @@ def cases() -> None:
     print(f"OK: all {len(seeded)} path cases produced the expected outcome")
 
 
-def slack_failure_handled() -> None:
-    from _shared.check_escalation_orchestrator_paths import assert_error_handlers
+def _outgoing(root: ET.Element) -> dict[str, list[str]]:
+    outgoing: dict[str, list[str]] = {}
+    for source, target in graph.edges(root):
+        outgoing.setdefault(source, []).append(target)
+    return outgoing
 
+
+def _ends_cleanly(start: str, by_id: dict, outgoing: dict) -> bool:
+    state: dict[str, int] = {}
+
+    def visit(node_id: str) -> bool:
+        element = by_id.get(node_id)
+        if element is not None and connector_context(element).get("connectorKey"):
+            return False
+
+        state[node_id] = VISITING
+        targets = outgoing.get(node_id, [])
+        tag = element.tag.rsplit("}", 1)[-1] if element is not None else ""
+        if tag == "endEvent" or not targets:
+            state[node_id] = VISITED
+            return True
+
+        for target in targets:
+            if state.get(target) == VISITING:
+                return False
+            if state.get(target) == VISITED:
+                continue
+            if not visit(target):
+                return False
+
+        state[node_id] = VISITED
+        return True
+
+    return visit(start)
+
+
+def assert_error_handlers(root: ET.Element, process: ET.Element, slack_step_ids: tuple[str, ...]) -> None:
+    by_id = {el.attrib.get("id"): el for el in process.iter() if el.attrib.get("id")}
+    outgoing = _outgoing(root)
+    boundaries = bpmn_check.elements(root, "boundaryEvent")
+
+    bad = []
+    for slack_id in slack_step_ids:
+        handlers = [
+            b
+            for b in boundaries
+            if bpmn_check.attr(b, "attachedToRef") == slack_id
+            and b.find("bpmn:errorEventDefinition", bpmn_check.NS) is not None
+        ]
+        if not handlers:
+            bad.append((slack_id, "no error boundary event attached"))
+            continue
+
+        targets = [t for b in handlers for t in outgoing.get(bpmn_check.attr(b, "id"), [])]
+        if not any(_ends_cleanly(t, by_id, outgoing) for t in targets):
+            bad.append((slack_id, "error boundary event does not reach a terminating, connector-free path"))
+
+    if bad:
+        raise CheckFailure(f"{SLACK_CONNECTOR} sendTask(s) do not degrade gracefully on failure: {bad}")
+
+
+def slack_failure_handled() -> None:
     bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     root = ET.parse(bpmn_path).getroot()
     process = root.find(q(BPMN_NS, "process"))

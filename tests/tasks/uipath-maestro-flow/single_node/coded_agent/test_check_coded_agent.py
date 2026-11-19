@@ -82,7 +82,7 @@ def test_agent_node_that_did_not_complete_fails(sandbox, monkeypatch):
 
 
 def test_the_sentence_goes_to_an_input_the_agent_named_itself(tmp_path, monkeypatch):
-    """Silviu's prompt (2026-11-19) no longer names the input."""
+    """The prompt does not name the input."""
     project = tmp_path / "ApproverCountAgent" / "ApproverCountAgent"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))

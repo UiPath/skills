@@ -81,13 +81,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, nothing else was added or removed"
+    description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, which waits PT10M and starts on current-stage-entered; nothing else was added or removed"
     path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
     assertions:
       - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && type=='wait-for-timer'])"
         operator: equals
         expected: 1
       - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && isRequired==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && data.timeDuration=='PT10M'])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && contains(entryConditions[].rules[][].rule, 'current-stage-entered')])"
         operator: equals
         expected: 1
       - expression: "length(nodes[].data.tasks[][])"

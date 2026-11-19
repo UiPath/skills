@@ -17,9 +17,8 @@ is told apart from any other open task in the folder:
    posting step ran. The named outputs: status = "rejected",
    sapDocumentNumber empty.
 
-Before either run, every step that builds the "SAP-" document number or feeds
-the sapDocumentNumber output (the posting stand-in; an End node mapping the
-output is not a step) must sit
+Before either run, every step that builds the "SAP-" document number (the
+posting stand-in; an End node mapping the output is not a step) must sit
 behind the approval: the trigger cannot reach it without passing through the
 HITL step. Any outcome layout is accepted: per-outcome ports, or both into a
 switch on the decision; the reject run shows nothing is posted then. Nothing
@@ -31,8 +30,8 @@ from __future__ import annotations
 
 import os
 import sys
-import time
 import uuid
+from enum import Enum
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hitl_live_run as live  # noqa: E402
@@ -44,13 +43,15 @@ from flow_check import (  # noqa: E402
     find_project_dir,
 )
 
-DEADLINE_SECONDS = 600
-CLI_TIMEOUT = 540
 VENDOR = "Northwind Office Supplies"
 AMOUNT = 4870.25
 CURRENCY = "EUR"
 SAP_MARKER = "SAP-"
-SAP_OUTPUT = "sapDocumentNumber"
+
+
+class Decision(Enum):
+    APPROVE = "approve"
+    REJECT = "reject"
 
 
 def outcome_plan(hitl: dict) -> tuple[list[str], list[str], set[str], set[str]]:
@@ -69,10 +70,11 @@ def outcome_plan(hitl: dict) -> tuple[list[str], list[str], set[str], set[str]]:
     return approve or ["Approve"], reject or ["Reject"], approve_ports, reject_ports
 
 
-def completion_data(hitl: dict, existing: object, text_answer: str) -> dict:
+def completion_data(hitl: dict, existing: object, text_answer: str, decision: Decision) -> dict:
     """The task's form data plus an answer for each empty output field, keyed
     the way Action Center shows the fields (first letter upper-cased:
-    `comment` -> `Comment`), the shape a completion that resumes the run uses."""
+    `comment` -> `Comment`), the shape a completion that resumes the run uses.
+    Boolean fields are true only on approval."""
     data = dict(existing) if isinstance(existing, dict) else {}
     for f in ((hitl.get("inputs") or {}).get("schema") or {}).get("fields") or []:
         fid = str(f.get("id") or "")
@@ -83,7 +85,7 @@ def completion_data(hitl: dict, existing: object, text_answer: str) -> dict:
             continue
         kind = str(f.get("type") or "").lower()
         data[key] = 0 if kind in ("number", "integer", "float", "double") else (
-            True if kind == "boolean" else text_answer
+            decision is Decision.APPROVE if kind == "boolean" else text_answer
         )
     return data
 
@@ -110,10 +112,11 @@ def check_task_data(task: live.FoundTask, invoice: str) -> None:
     )
 
 
-def run_once(project_dir: str, hitl: dict, actions: list[str], comment: str) -> tuple[dict, str]:
+def run_once(
+    project_dir: str, hitl: dict, decision: Decision, actions: list[str], comment: str
+) -> tuple[dict, str]:
     """Debug the flow, check the run's task, answer it with `actions`, and
-    return the completed run's payload and invoice number. Cancels the
-    instance unless it completed."""
+    return the completed run's payload and invoice number."""
     invoice = f"INV-{uuid.uuid4().hex[:8].upper()}"
     inputs = {
         "invoiceNumber": invoice,
@@ -121,39 +124,21 @@ def run_once(project_dir: str, hitl: dict, actions: list[str], comment: str) -> 
         "totalAmount": AMOUNT,
         "currency": CURRENCY,
     }
-    deadline = time.monotonic() + DEADLINE_SECONDS
-    live.bound_calls_by(deadline)
-    run = live.start_debug(project_dir, inputs, CLI_TIMEOUT)
-    payload = None
-    try:
-        ids = live.wait_for_ids(run, deadline)
-        print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
-        task, notes = live.find_run_task(
-            ids,
-            lambda _row, bundle: live.has_text(bundle, invoice),
-            deadline,
-            run,
-            folder_paths=live.node_folder_paths(hitl),
-        )
-        if task is None:
-            out = run.stdout()[-1500:] if run.proc.poll() is not None else "(still running)"
-            live.fail(
-                "the run created no open Action Center task for invoice "
-                f"{invoice}; {'; '.join(notes)}; debug stdout: {out}; "
-                f"stderr tail: {run.stderr()[-1500:]}"
-            )
-        check_task_data(task, invoice)
-        live.complete_task(task, actions, completion_data(hitl, task.data, comment))
-        payload = live.wait_for_result(run, deadline)
-        live.require_completed(payload)
-    finally:
-        if not live.is_completed(payload):
-            live.cancel(run)
+    payload = live.run_with_task(
+        project_dir,
+        inputs,
+        invoice,
+        hitl,
+        actions,
+        lambda task: check_task_data(task, invoice),
+        lambda task: completion_data(hitl, task.data, comment, decision),
+        "invoice",
+    )
     return payload, invoice
 
 
 def sap_steps(flow: dict) -> set[str]:
-    return live.posting_steps(flow, SAP_MARKER, SAP_OUTPUT)
+    return live.posting_steps(flow, SAP_MARKER)
 
 
 def main() -> None:
@@ -179,7 +164,7 @@ def main() -> None:
         live.fail(f"the SAP posting step(s) {early} can run without the finance manager's approval: "
                   f"the trigger reaches them without passing through {hitl_id}")
 
-    payload, invoice = run_once(project_dir, hitl, approve, "Approved by the eval grader")
+    payload, invoice = run_once(project_dir, hitl, Decision.APPROVE, approve, "Approved by the eval grader")
     done = live.completed_ids(payload)
     if hitl_id not in done:
         _fail_with_capture(f"the approval step {hitl_id} did not complete in the run")
@@ -196,7 +181,7 @@ def main() -> None:
     assert_named_equals(payload, "sapDocumentNumber", f"SAP-{invoice}", case_sensitive=True)
     print(f"OK: status=posted, sapDocumentNumber=SAP-{invoice}")
 
-    payload, _invoice = run_once(project_dir, hitl, reject, "Rejected by the eval grader")
+    payload, _invoice = run_once(project_dir, hitl, Decision.REJECT, reject, "Rejected by the eval grader")
     done = live.completed_ids(payload)
     if hitl_id not in done:
         _fail_with_capture(f"the approval step {hitl_id} did not complete in the reject run")

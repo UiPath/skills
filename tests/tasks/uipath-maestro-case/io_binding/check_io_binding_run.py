@@ -44,6 +44,7 @@ from _shared.case_run_evidence import (  # noqa: E402
     assert_completed,
     execution_of,
     fail,
+    leaf_values,
     read_run,
     since_iso,
     text_of,
@@ -196,17 +197,6 @@ def check_plan(plan: dict) -> list[dict]:
 # ── Runtime: what the run did ───────────────────────────────────────────────
 
 
-def _leaf_values(value, key: str):
-    if isinstance(value, dict):
-        for k, v in value.items():
-            if str(k).lower() == key.lower():
-                yield v
-            yield from _leaf_values(v, key)
-    elif isinstance(value, list):
-        for item in value:
-            yield from _leaf_values(item, key)
-
-
 def _instant(stamp: object) -> datetime | None:
     match = re.match(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?", str(stamp or ""))
     if not match:
@@ -235,7 +225,7 @@ def _upstream(evidence: RunEvidence, chain: list[dict], source: str | None, fiel
     """``field`` as the source task returned it, else as the case variable holds it."""
     if source is not None:
         task = next(t for t, (name, *_) in zip(chain, CHAIN) if name == source)
-        returned = list(_leaf_values(evidence.task_io_or_empty(str(task.get("id")))[1], field))
+        returned = list(leaf_values(evidence.task_io_or_empty(str(task.get("id")))[1], field))
         if returned:
             return returned[0]
     return evidence.value(field) if evidence.has(field) else None
@@ -244,7 +234,7 @@ def _upstream(evidence: RunEvidence, chain: list[dict], source: str | None, fiel
 def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
     for task, (name, _folder, field, expected) in zip(chain, CHAIN):
         inputs, _ = evidence.task_io(str(task.get("id")))
-        values = list(_leaf_values(inputs, field))
+        values = list(leaf_values(inputs, field))
         if expected is None and (not values or _empty(values[0])):
             upstream = _upstream(evidence, chain, *UPSTREAM[name])
             if _empty(upstream):

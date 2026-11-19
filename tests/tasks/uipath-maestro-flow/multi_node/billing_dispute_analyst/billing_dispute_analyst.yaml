@@ -3,7 +3,7 @@ description: |
   E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent,
   grounded on the existing "Billing Dispute SOP Index", reviews a billing
   dispute and decides how to handle it, asked the way a business user asks it
-  (Ioana's v3 prompt; it names no variables). The graders map the seeded
+  (it names no variables). The graders map the seeded
   values onto the flow's declared inputs by meaning and read the decision and
   reasoning among its declared outputs by value. Three debug runs on real ERP
   lines: a $55/h rate error over 90 h must come back as "manager_review" (the

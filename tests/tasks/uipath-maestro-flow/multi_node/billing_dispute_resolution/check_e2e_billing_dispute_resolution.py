@@ -43,7 +43,6 @@ Usage: check_e2e_billing_dispute_resolution.py overcharge|reject
 """
 import json
 import os
-import re
 import sys
 
 _d = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +50,8 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared import flow_io_roles as io  # noqa: E402
+from _shared.advisory_flow_utils import entity_name, entity_reads  # noqa: E402
+from _shared.billing_sop import NAMES_A_RULE  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
     ENTITY_QUERY_HINTS,
     _fail,
@@ -63,9 +64,8 @@ from _shared.flow_check import (  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 NO_EMAIL = "No resolution email drafted"
-# A rule named by section ("§5.4", "SOP 5.4", "section 7") or by title ("Incorrect rate").
-NAMES_A_RULE = re.compile(
-    r"§\s*\d|\b(?:section|sec\.?|clause|rule|SOP)\s*#?\s*\d+(?:\.\d+)*|\bincorrect[\s-]+rate\b", re.I)
+LOOKUP_ENTITIES = ("BillingDisputeCRM", "BillingDisputeERP")
+POSTING_FUNCTION = "FinancialPostingFunction"
 
 CASES = {
     "overcharge": {
@@ -140,9 +140,9 @@ def submission_roles(case):
     c = CASES[case]
     return {
         "account number": {"value": c["account"], "keywords": [
-            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct"]},
+            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct", "customer"]},
         "invoice number": {"value": c["typed"], "keywords": [
-            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum"]},
+            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum", "invoice"]},
         "disputed lines": {"value": [line_item(case)], "keywords": ["lineitems", "lines", "items", "disputes"]},
     }
 
@@ -154,8 +154,6 @@ def scalar_roles(case):
     """The submission spread over separate inputs."""
     li = CASES[case]["line"]
     roles = {k: v for k, v in submission_roles(case).items() if k != "disputed lines"}
-    roles["invoice number"]["keywords"] = roles["invoice number"]["keywords"] + ["invoice"]
-    roles["account number"]["keywords"] = roles["account number"]["keywords"] + ["customer"]
     roles.update({
         "disputed line number": {"value": li["number"], "keywords": ["linenumber", "lineno", "line"]},
         "billed quantity": {"value": li["quantity"], "keywords": ["quantity", "qty", "hours"]},
@@ -227,6 +225,23 @@ def _completed(flow, payload, sub):
     return _ids_of(flow, sub) & _executed_ids(payload, completed=True)
 
 
+def _lookup_ids(flow):
+    """Entity name -> ids of the reads that address it."""
+    shape, reads = entity_reads(flow.get("nodes") or [])
+    by_entity = {}
+    for node in reads:
+        by_entity.setdefault(entity_name(node, shape), set()).add(node["id"])
+    return by_entity
+
+
+def _posting_ids(flow):
+    """API-workflow nodes that call FinancialPostingFunction, named on the node or its definition."""
+    named = {d.get("nodeType") for d in flow.get("definitions") or [] if POSTING_FUNCTION in json.dumps(d)}
+    return {n["id"] for n in flow.get("nodes") or []
+            if "uipath.core.api-workflow" in str(n.get("type"))
+            and (n.get("type") in named or POSTING_FUNCTION in json.dumps(n))}
+
+
 def _amount_spellings(amount):
     spellings = {f"{amount:.2f}", f"{amount:,.2f}"}
     if float(amount).is_integer():
@@ -259,14 +274,16 @@ def check_overcharge(flow, payload):
     invoice, credit = c["invoice"], c["credit"]
     if not _completed(flow, payload, "uipath.ixp"):
         _fail_with_capture("the IxP extraction did not complete")
-    reads = set()
-    for hint in ENTITY_QUERY_HINTS:
-        reads |= _completed(flow, payload, hint)
-    if len(reads) < 2:
-        _fail_with_capture(f"expected the ERP and CRM lookups to complete, completed reads: {sorted(reads)}")
+    lookups = _lookup_ids(flow)
+    done = _executed_ids(payload, completed=True)
+    for entity in LOOKUP_ENTITIES:
+        if not lookups.get(entity):
+            _fail_with_capture(f"no read of {entity} in the flow (reads: {sorted(lookups)})")
+        if not lookups[entity] & done:
+            _fail_with_capture(f"the {entity} lookup did not complete (reads: {sorted(lookups[entity])})")
     print("OK: IxP extraction and both lookups completed")
 
-    posted = _completed(flow, payload, "uipath.core.api-workflow")
+    posted = _posting_ids(flow) & _executed_ids(payload, completed=True)
     if not posted:
         _fail_with_capture("FinancialPostingFunction did not complete: a valid overcharge was not posted")
     # The deployed function echoes the invoice it was sent ("Credit memo posted
@@ -341,7 +358,8 @@ def main():
     flow = _load_flow("**/project.uiproj")
     inputs, attachments = build_inputs(flow, case)
     print(f"debug inputs: {inputs} attachments: {attachments}")
-    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840)
+    # retries=1: a re-run would post the credit twice.
+    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840, retries=1)
     (check_overcharge if case == "overcharge" else check_reject)(flow, payload)
 
 

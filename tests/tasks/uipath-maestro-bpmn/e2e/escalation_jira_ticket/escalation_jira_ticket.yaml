@@ -84,7 +84,9 @@ initial_prompt: |
 
   <!-- helper:start -->
   productionDown, workaroundAvailable, hasAttachments and isDuplicate are
-  booleans; the other inputs are strings.
+  booleans; the other inputs are strings. The Jira connection is
+  "is-sandboxes-test@uipath.com-uipath-sandbox-380", in the
+  Shared/uipath-maestro-flow folder.
   <!-- helper:end -->
 
   Build the process and do a test run.

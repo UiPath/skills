@@ -308,19 +308,39 @@ def completed_ids(debug_data: Any) -> list[str]:
 
 
 SEVERITIES = ("Sev1", "Sev2", "Sev3")
+_CODE_TAGS = frozenset({q(BPMN_NS, "script"), q(BPMN_NS, "conditionExpression")})
+_UIPATH_VALUE_TAGS = frozenset(q(UIPATH_NS, name) for name in ("input", "output", "expression"))
+_UIPATH_VALUE_ATTRIBUTES = ("value", "source", "expression")
+
+
+def _encoded_text(root: ET.Element) -> str:
+    chunks: list[str] = []
+    for element in root.iter():
+        if element.tag in _CODE_TAGS:
+            chunks.append(element.text or "")
+        if element.tag not in _UIPATH_VALUE_TAGS:
+            continue
+        chunks.append(element.text or "")
+        chunks.extend(element.attrib.get(name, "") for name in _UIPATH_VALUE_ATTRIBUTES)
+    return "\n".join(chunks)
 
 
 def assert_rule_encoded(bpmn_text: str) -> None:
     """A single seeded case cannot tell a classifier from a constant, so the
-    process must at least name every severity."""
-    missing = [s for s in SEVERITIES if s not in bpmn_text]
+    scripts and uipath values must name every severity. Element names and
+    documentation do not count."""
+    try:
+        root = ET.fromstring(bpmn_text.encode("utf-8"))
+    except ET.ParseError as error:
+        raise CheckFailure(f"the BPMN is not well-formed XML: {error}") from error
+
+    encoded = _encoded_text(root)
+    missing = [s for s in SEVERITIES if s not in encoded]
     if missing:
         raise CheckFailure(
             f"the process never names {missing}: it returns the seeded case's answer "
             "instead of classifying by the stated rule"
         )
-
-
 
 
 def connector_response_values(outputs: list[Any], name: str) -> list[Any]:

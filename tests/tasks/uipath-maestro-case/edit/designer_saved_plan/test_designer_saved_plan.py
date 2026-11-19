@@ -47,13 +47,14 @@ def workspace(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _add_cool_off(workspace: Path) -> None:
+def _add_cool_off(workspace: Path, duration: str = "PT10M", entry: str = "current-stage-entered") -> None:
     path = workspace / PLAN
     plan = json.loads(path.read_text())
     stage = next(n for n in plan["nodes"] if n["data"].get("label") == "Stage 7 - user select")
     stage["data"]["tasks"].append([{
         "id": "tCoolOff1", "displayName": "Final cool-off", "type": "wait-for-timer",
-        "isRequired": False, "data": {"timeDuration": "PT10M"},
+        "isRequired": False, "data": {"timeDuration": duration},
+        "entryConditions": [{"rules": [[{"rule": entry}]]}],
     }])
     path.write_text(json.dumps(plan))
 
@@ -70,6 +71,12 @@ def test_edit_check_fails_on_the_untouched_fixture(workspace: Path):
 def test_edit_check_passes_once_the_optional_timer_is_added(workspace: Path):
     _add_cool_off(workspace)
     assert _json_check("The edit landed", workspace)
+
+
+@pytest.mark.parametrize("kwargs", [{"duration": "PT5M"}, {"duration": "PT10S"}, {"entry": "adhoc"}, {"entry": "runs-sequentially"}])
+def test_edit_check_fails_on_the_wrong_wait_or_entry_rule(workspace: Path, kwargs: dict):
+    _add_cool_off(workspace, **kwargs)
+    assert not _json_check("The edit landed", workspace)
 
 
 def test_designer_fields_check_passes_on_the_fixture_and_fails_on_a_lowered_version(workspace: Path):

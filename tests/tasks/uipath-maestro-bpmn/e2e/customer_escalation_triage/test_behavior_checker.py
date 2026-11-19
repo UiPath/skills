@@ -471,6 +471,65 @@ class JournalTests(unittest.TestCase):
         )
 
 
+class PartialRunJournalTests(unittest.TestCase):
+    PARTIAL_LOG = (
+        'created CE-7 and then CE-8 in the project\n'
+        '{"channel": "C0B2FDZD1M3", "ts": "1763405123.456789"}\n'
+    )
+
+    def _run(self, *, debug_error=None, variables_error=None):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            live = root / "live"
+            live.mkdir()
+            (live / "debug.log").write_text(self.PARTIAL_LOG, encoding="utf-8")
+            journal = root / "ids.jsonl"
+            summaries = {"CE-7": "[Sev1] ESC-BPMN-test escalation", "CE-8": "someone else's"}
+
+            def debug(*args, **kwargs):
+                if debug_error:
+                    raise debug_error
+                return good_debug_data(), "instance-1"
+
+            def cli(*args, **kwargs):
+                if variables_error:
+                    raise variables_error
+                return object()
+
+            with patch.object(checker, "LIVE_RUN_DIR", live), patch.object(
+                escalation_is, "JOURNAL", journal
+            ), patch.object(checker, "run_debug", debug), patch.object(
+                checker, "run_cli", cli
+            ), patch.object(
+                checker, "payload_data", lambda *a: (None, good_variables_data())
+            ), patch.object(
+                escalation_is,
+                "get_issue_fields",
+                lambda conn, key: {"summary": summaries[key]},
+            ):
+                try:
+                    checker.run_and_read(SEED, live, "jira-conn")
+                except (checker.CheckFailure, subprocess.TimeoutExpired) as error:
+                    return escalation_is.read_journal(journal), error
+                return escalation_is.read_journal(journal), None
+
+    def test_a_debug_failure_journals_only_this_runs_records(self):
+        records, error = self._run(debug_error=checker.CheckFailure("timed out"))
+        self.assertIsInstance(error, checker.CheckFailure)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+        self.assertNotIn("slack_message", records)
+
+    def test_a_variables_read_failure_journals_from_the_log(self):
+        records, error = self._run(variables_error=subprocess.TimeoutExpired("uip", 120))
+        self.assertIsInstance(error, subprocess.TimeoutExpired)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+
+    def test_a_clean_read_journals_nothing_here(self):
+        records, error = self._run()
+        self.assertIsNone(error)
+        self.assertEqual(records, {})
+
+
 class SeedTests(unittest.TestCase):
     def test_seed_writes_consistent_case(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -498,6 +557,17 @@ class SeedTests(unittest.TestCase):
         )
         for name in SEED["inputs"]:
             self.assertIn(name, task_text, f"prompt never names input {name}")
+
+    def test_prompt_helper_names_each_connection_and_the_folder(self):
+        task_text = (HERE / "customer_escalation_triage.yaml").read_text(
+            encoding="utf-8"
+        )
+        helper = task_text.split("<!-- helper:start -->")[1].split(
+            "<!-- helper:end -->"
+        )[0]
+        for name in escalation_is.CONNECTION_NAMES.values():
+            self.assertIn(name, helper)
+        self.assertIn(escalation_is.FOLDER_PATH, helper)
 
     def test_yaml_timeout_covers_every_step_budget(self):
         """The criterion must outlast the sum of the live CLI calls it makes.

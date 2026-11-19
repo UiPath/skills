@@ -1,8 +1,7 @@
 """check_expense_runnable_run: the path a completed debug run took.
 
 Payload rows have the shape `uip maestro case debug --output json` returns in
-`Data.elementExecutions` (elementId / elementType / status, as in the run
-2026-11-11_04-19-58 skill-case-e2e-outcome-external debug_result.json).
+`Data.elementExecutions` (elementId / elementType / status).
 No tenant is touched.
 """
 

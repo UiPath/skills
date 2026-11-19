@@ -43,14 +43,17 @@ sys.path.insert(0, _directory)
 
 from _shared import flow_io_roles as io  # noqa: E402
 from _shared.escalation_inputs import (  # noqa: E402
+    SLACK_CHANNEL,
+    SLACK_KEY,
+    SLACK_SEND,
     check_same_outputs,
     feed_roles,
     input_types,
     is_match_input,
+    is_slack_ts,
     load_flow,
 )
 from _shared.flow_check import (  # noqa: E402
-    _SLACK_TS_RE,
     _fail_with_capture,
     _get_ci,
     assert_flow_uses_connector_target,
@@ -60,9 +63,6 @@ from _shared.flow_check import (  # noqa: E402
     run_debug,
 )
 
-SLACK_KEY = "uipath-salesforce-slack"
-SLACK_SEND = "send-message-to-channel"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 
 # The roles the path and severity depend on. The others are fed when declared;
 # the domain may be derived from the address instead (see REQUIRED_ANY).
@@ -167,10 +167,6 @@ def feed(flow: dict, case: dict, words: dict[str, str]) -> dict:
     return inputs
 
 
-def _is_ts(value) -> bool:
-    return isinstance(value, str) and bool(_SLACK_TS_RE.match(value.strip()))
-
-
 def slack_messages(payload: dict, sends: set[str]) -> int:
     """How many Slack messages the completed sends posted: their completed
     executions (a send in a loop runs more than once) or the distinct ts
@@ -178,7 +174,7 @@ def slack_messages(payload: dict, sends: set[str]) -> int:
     runs = [e for e in _get_ci(payload, "elementExecutions", "Elements", "elements") or []
             if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in sends
             and str(_get_ci(e, "status", "Status")).lower() == "completed"]
-    ts = {str(x).strip() for x in node_output_leaves(payload, sends) if _is_ts(x)}
+    ts = {str(x).strip() for x in node_output_leaves(payload, sends) if is_slack_ts(x)}
     return max(len(runs), len(ts))
 
 
@@ -199,7 +195,7 @@ def check_case(flow: dict, payload: dict, case: dict) -> dict[str, list[str]]:
         "engineering needed": (io.equals_bool(want["engineering"]), str(want["engineering"]).lower()),
         "response mode": (_any_text(modes), " or ".join(map(repr, modes))),
         "case reference": (io.equals_exact(ref), repr(ref)),
-        "Slack message id": (_is_ts, "a Slack message ts"),
+        "Slack message id": (is_slack_ts, "a Slack message ts"),
     }
     holders = {}
     for result, (predicate, shown) in expected.items():

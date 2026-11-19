@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import _get_ci, _parse_json, _run, iter_tasks  # noqa: E402
+from _shared.case_check import _get_ci, _parse_json, _run  # noqa: E402
 
 LIST_ATTEMPTS = 6
 LIST_SLEEP_S = 5
@@ -168,8 +168,16 @@ def text_of(value: Any) -> str:
     return json.dumps(value, default=str).lower()
 
 
-def tasks_by_name(plan: dict) -> dict[str, dict]:
-    return {str(t.get("displayName")): t for t in iter_tasks(plan)}
+def leaf_values(value: Any, key: str):
+    """Every value stored under ``key`` (any case) anywhere in ``value``."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if str(k).lower() == key.lower():
+                yield v
+            yield from leaf_values(v, key)
+    elif isinstance(value, list):
+        for item in value:
+            yield from leaf_values(item, key)
 
 
 def execution_of(payload: dict, task_id: str) -> dict | None:

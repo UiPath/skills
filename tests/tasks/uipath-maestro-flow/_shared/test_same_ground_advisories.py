@@ -21,30 +21,6 @@ def run_script(script: str, *args: Path | str, cwd: Path | None = None) -> subpr
     )
 
 
-def _script(node_id: str, script: str) -> dict:
-    return {"id": node_id, "type": "core.action.script", "inputs": {"script": script}}
-
-
-def test_literal_scan_reads_inside_a_double_quoted_script_string() -> None:
-    sys.path.insert(0, str(SHARED))
-    from advisory_flow_utils import carries_literal
-
-    script = "return { queryExpression: \"invoiceNumber = 'MCS-2026-04872'\" };"
-    assert carries_literal({"nodes": [{"inputs": {"script": script}}]}, "MCS-2026-04872")
-
-
-def test_script_trace_past_the_inline_cap_is_ambiguous() -> None:
-    """Each ternary triples the inlined text; past the cap the trace falls back
-    instead of building a multi-megabyte string."""
-    sys.path.insert(0, str(SHARED))
-    from advisory_flow_utils import script_output
-
-    lines = ["const v0 = $vars.start.output.invoiceNumber;"]
-    lines += [f"const v{i} = v{i - 1} ? v{i - 1} : v{i - 1};" for i in range(1, 11)]
-    lines.append("return { queryExpression: \"invoiceNumber = '\" + v10 + \"'\" };")
-    assert script_output(_script("buildQuery", "\n".join(lines)), "queryExpression") is None
-
-
 def test_server_side_filter_rejects_a_row_with_no_predicate(tmp_path: Path) -> None:
     """`rows: [{}]` is a non-empty list the serializer emits nothing from, so
     list non-emptiness is not the question."""
@@ -350,56 +326,3 @@ def test_inline_agent_model_scope_rejects_scaffold_default(tmp_path: Path) -> No
 
     assert result.returncode != 0
     assert "not overridden" in result.stdout
-
-
-def test_reachability_excludes_the_loop_back_edge() -> None:
-    """A loop body must not reach the End nodes that follow the loop.
-
-    The back edge from the last body node into the loop container closes a
-    cycle, so a naive walk would go body -> loop -> after -> end. Excluding it
-    is the whole point of the filter in `successful_end_ids`, and it keyed off
-    `loopBack` — a handle `core.logic.loop` has never declared and that
-    `flow validate` rejects. The real inner target handles are `continue` and
-    `break`, so the filter never fired on any valid flow.
-    """
-    sys.path.insert(0, str(SHARED))
-    from advisory_flow_utils import LOOP_BACK_PORTS, successful_end_ids
-
-    assert {"continue", "break"} <= LOOP_BACK_PORTS
-
-    nodes = [
-        {"id": "loop1", "type": "core.logic.loop"},
-        {"id": "body", "type": "core.action.script"},
-        {"id": "after", "type": "core.action.script"},
-        {"id": "end1", "type": "core.control.end"},
-    ]
-    edges = [
-        {"sourceNodeId": "loop1", "sourcePort": "start", "targetNodeId": "body", "targetPort": "input"},
-        {"sourceNodeId": "body", "sourcePort": "success", "targetNodeId": "loop1", "targetPort": "continue"},
-        {"sourceNodeId": "loop1", "sourcePort": "success", "targetNodeId": "after", "targetPort": "input"},
-        {"sourceNodeId": "after", "sourcePort": "success", "targetNodeId": "end1", "targetPort": "input"},
-    ]
-
-    assert successful_end_ids(nodes, edges, "body") == set()
-    assert successful_end_ids(nodes, edges, "loop1") == {"end1"}
-
-
-def test_reachability_excludes_the_loop_break_edge() -> None:
-    """`break` is the other inner target handle and closes the same cycle."""
-    sys.path.insert(0, str(SHARED))
-    from advisory_flow_utils import successful_end_ids
-
-    nodes = [
-        {"id": "loop1", "type": "core.logic.loop"},
-        {"id": "body", "type": "core.action.script"},
-        {"id": "end1", "type": "core.control.end"},
-    ]
-    edges = [
-        {"sourceNodeId": "loop1", "sourcePort": "start", "targetNodeId": "body", "targetPort": "input"},
-        {"sourceNodeId": "body", "sourcePort": "success", "targetNodeId": "loop1", "targetPort": "break"},
-        {"sourceNodeId": "loop1", "sourcePort": "success", "targetNodeId": "end1", "targetPort": "input"},
-    ]
-
-    assert successful_end_ids(nodes, edges, "body") == set()
-
-

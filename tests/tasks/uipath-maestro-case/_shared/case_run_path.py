@@ -27,7 +27,35 @@ from case_run import (  # noqa: E402
     instance_executions,
     status_of,
 )
+from _shared import task_types  # noqa: E402
 from _shared.case_check import _get_ci as _ci  # noqa: E402
+
+CANCELLED = "Cancelled"
+RETRY_SLEEP_S = 15
+
+
+def _debug_once(cmd: list[str], timeout: int) -> tuple:
+    """Run ``cmd``, retrying once on a transient start fault. Returns ``(proc, envelope, data)``."""
+    from _shared.case_check import (  # noqa: PLC0415
+        _parse_json,
+        _run,
+        debug_fault_is_transient,
+    )
+
+    for attempt in (1, 2):
+        r = _run(cmd, timeout=timeout, what="uip maestro case debug")
+        envelope = _parse_json(r.stdout) or {}
+        data = _ci(envelope, "Data") if isinstance(_ci(envelope, "Data"), dict) else {}
+        if _ci(data, "instanceId", "InstanceId"):
+            return r, envelope, data
+        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
+        if fault is None or attempt == 2:
+            sys.exit(
+                f"FAIL: case debug did not start an instance (exit {r.returncode})\n"
+                f"stdout: {r.stdout[-3000:]}\nstderr: {r.stderr[-3000:]}"
+            )
+        print(f"NOTE: retrying `uip maestro case debug` once — {fault}.", flush=True)
+        time.sleep(RETRY_SLEEP_S)
 
 
 def debug_case(timeout: int = 1500) -> dict:
@@ -37,9 +65,7 @@ def debug_case(timeout: int = 1500) -> dict:
     or output that names no instance.
     """
     from _shared.case_check import (  # noqa: PLC0415
-        _parse_json,
         _run,
-        debug_fault_is_transient,
         find_project_dir,
         find_solution_dir,
     )
@@ -62,20 +88,12 @@ def debug_case(timeout: int = 1500) -> dict:
             sys.exit(f"FAIL: solution resources refresh exit {r.returncode}\n{r.stdout}\n{r.stderr}")
 
     cmd = ["uip", "maestro", "case", "debug", project_dir, "--log-level", "debug", "--output", "json"]
-    for attempt in (1, 2):
-        r = _run(cmd, timeout=timeout, what="uip maestro case debug")
-        envelope = _parse_json(r.stdout) or {}
-        data = _ci(envelope, "Data") if isinstance(_ci(envelope, "Data"), dict) else {}
-        if _ci(data, "instanceId", "InstanceId"):
-            break
-        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
-        if fault is None or attempt == 2:
-            sys.exit(
-                f"FAIL: case debug did not start an instance (exit {r.returncode})\n"
-                f"stdout: {r.stdout[-3000:]}\nstderr: {r.stderr[-3000:]}"
-            )
-        print(f"NOTE: retrying `uip maestro case debug` once — {fault}.", flush=True)
-        time.sleep(15)
+    r, envelope, data = _debug_once(cmd, timeout)
+    if str(_ci(data, "finalStatus", "FinalStatus", "lastStatus", "LastStatus") or "") == CANCELLED:
+        print("NOTE: retrying `uip maestro case debug` once — the debug instance "
+              "was cancelled mid-run, which is the tenant's fault and not the plan's.", flush=True)
+        time.sleep(RETRY_SLEEP_S)
+        r, envelope, data = _debug_once(cmd, timeout)
 
     instance_id = str(_ci(data, "instanceId", "InstanceId"))
     executions = [row for row in _ci(data, "elementExecutions", "ElementExecutions", default=[]) or []
@@ -96,10 +114,10 @@ def wait_for(run: dict, done, *, budget: int = 480, every: int = 20) -> dict:
     The CLI stops polling at a parked or still-running instance; the instance
     keeps going, so its own element executions are the source of truth.
     """
-    waited = 0
-    while not done(run["executions"]) and run["status"].lower() not in TERMINAL and waited < budget:
+    deadline = time.monotonic() + budget
+    while (not done(run["executions"]) and run["status"].lower() not in TERMINAL
+           and time.monotonic() < deadline):
         time.sleep(every)
-        waited += every
         rows = instance_executions(run["instance_id"])
         if rows:
             run["executions"] = rows
@@ -108,12 +126,13 @@ def wait_for(run: dict, done, *, budget: int = 480, every: int = 20) -> dict:
 
 # ── what the run must show ───────────────────────────────────────────────────
 
-AUTOMATED_TYPES = {
-    "agent", "process", "rpa", "api-workflow", "case-management",
-    "execute-connector-activity", "function", "business-rule",
-}
 HUMAN_TYPES = {"action", "wait-for-user"}
+WAITING_TYPES = {"wait-for-timer", "wait-for-connector"}
+AUTOMATED_TYPES = (
+    {entry["Type"] for entry in task_types.load()["Authorable"]} - HUMAN_TYPES - WAITING_TYPES
+)
 STARTS_ON_ENTRY = {"current-stage-entered", "runs-sequentially"}
+CHAINED = "selected-tasks-completed"
 MOVES_ON = {"selected-stage-completed", "selected-stage-exited"}
 
 
@@ -140,6 +159,34 @@ def _tasks(stage: dict) -> list[dict]:
     return out
 
 
+def _starting(stage: dict) -> list[dict]:
+    """The stage's required tasks that start on entry or in sequence, then
+    those chained by selected-tasks-completed behind an automated one."""
+    required = [t for t in _tasks(stage) if t.get("isRequired") is not False]
+    starting = [
+        t for t in required
+        if not t.get("entryConditions")
+        or any(r.get("rule") in STARTS_ON_ENTRY for r in _first_rules(t.get("entryConditions")))
+    ]
+    completing = {t.get("id") for t in starting if t.get("type") in AUTOMATED_TYPES}
+    grew = True
+    while grew:
+        grew = False
+        for task in required:
+            if task in starting:
+                continue
+            for rule in _first_rules(task.get("entryConditions")):
+                after = {str(i) for i in rule.get("selectedTasksIds") or []}
+                if rule.get("rule") != CHAINED or not after or not after <= completing:
+                    continue
+                starting.append(task)
+                grew = True
+                if task.get("type") in AUTOMATED_TYPES:
+                    completing.add(task.get("id"))
+                break
+    return starting
+
+
 def _label(node: dict) -> str:
     return (node.get("data") or {}).get("label") or node.get("id") or "?"
 
@@ -159,12 +206,7 @@ def opening_path(plan: dict) -> dict:
                if any(r.get("rule") == "case-entered"
                       for r in _first_rules((s.get("data") or {}).get("entryConditions")))]
     opening_ids = {s.get("id") for s in opening}
-    starting = [
-        (s, t) for s in opening for t in _tasks(s)
-        if t.get("isRequired") is not False
-        and (not t.get("entryConditions")
-             or any(r.get("rule") in STARTS_ON_ENTRY for r in _first_rules(t.get("entryConditions"))))
-    ]
+    starting = [(s, t) for s in opening for t in _starting(s)]
     automated = [(s, t) for s, t in starting if t.get("type") in AUTOMATED_TYPES]
     human = [(s, t) for s, t in starting if t.get("type") in HUMAN_TYPES]
     following = [

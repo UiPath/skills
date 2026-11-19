@@ -15,11 +15,6 @@ description: >
   Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga, outcome-graded]
-# Was skip: true until a deployed Action App was available. ExpenseReviewApp
-# (a Workflow Action app: input Content, inOut Comment, outcomes approve and
-# reject) is deployed on the codereval tenant and already backs
-# skill-agent-inline-external-escalation-tool and skill-agent-coded-hitl-create-task.
-
 run_limits:
   expected_turns: 25
   max_turns: 60

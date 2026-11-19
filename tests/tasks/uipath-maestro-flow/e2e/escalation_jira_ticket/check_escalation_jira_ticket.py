@@ -13,7 +13,8 @@ issue) and asserts:
    case reference unchanged.
 3. TENANT: reading the key back from Jira returns an issue whose title starts
    with "[TEST]", followed by the severity, the case reference and the email
-   subject in that order, and whose description holds the email body.
+   subject in that order, whose type is Task, and whose description holds
+   the email body.
 
 The duplicate case must get its own ticket too. After all cases, the same
 output must hold each result in every case.
@@ -21,7 +22,9 @@ output must hold each result in every case.
 No node id, node type, layout or variable name is pinned. A key a Jira step
 returned is written to `.created_keys`, so post_run teardown deletes it even
 when a later assertion fails, only when its read-back title carries this
-case's reference: a step that searches CE returns other runs' tickets.
+case's reference: a step that searches CE returns other runs' tickets. A key
+whose read keeps failing is not journaled (its owner is unknown) and ends the
+check as a grader error.
 """
 
 from __future__ import annotations
@@ -62,6 +65,7 @@ from _shared.flow_check import (  # noqa: E402
 JIRA_KEY = "uipath-atlassian-jira"
 JIRA_CREATE_OP = "create-issue"  # matched by op, so a connector-proxy Create also counts
 CREATED_KEYS = Path(".created_keys")
+READ_ATTEMPTS = 2
 
 # The roles the ticket and the results depend on. The others are fed when declared.
 REQUIRED = ("subject", "body", "tier", "productionDown", "workaround", "caseRef")
@@ -69,6 +73,10 @@ REQUIRED = ("subject", "body", "tier", "productionDown", "workaround", "caseRef"
 
 def _fail(msg: str) -> None:
     sys.exit(f"FAIL: {msg}")
+
+
+def _grader_error(msg: str) -> None:
+    sys.exit(f"GRADER ERROR: {msg}")
 
 
 def feed(flow: dict, case: dict) -> dict:
@@ -98,23 +106,41 @@ def _record_partial(exc: BaseException, conn: str, ref: str, project: str) -> li
         partial += "".join(
             s.decode() if isinstance(s, bytes) else (s or "") for s in (exc.stdout, exc.stderr)
         )
-    owned = list(_owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", partial), ref))
+    owned, _unread = _owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", partial), ref)
     if owned:
         _record(owned)
-    return owned
+    return list(owned)
 
 
-def _owned(conn: str, keys, ref: str) -> dict[str, dict]:
-    """The keys whose Jira title carries `ref`, with the fields read back."""
-    owned: dict[str, dict] = {}
-    for key in dict.fromkeys(keys):
+def _read(conn: str, key: str) -> dict | None:
+    """The issue's fields, None when Jira confirms it does not exist. Raises
+    RuntimeError when the read keeps failing."""
+    for _ in range(READ_ATTEMPTS):
         try:
             fields = jira_is.get_issue(conn, key)
-        except Exception:  # noqa: BLE001
+        except (RuntimeError, subprocess.SubprocessError):
+            continue
+        if fields is not None:
+            return fields
+        if jira_is.issue_absent(conn, key):
+            return None
+    raise RuntimeError(f"the Jira read of {key} failed {READ_ATTEMPTS} times")
+
+
+def _owned(conn: str, keys, ref: str) -> tuple[dict[str, dict], list[str]]:
+    """The keys whose Jira title carries `ref`, with the fields read back, and
+    the keys whose read failed."""
+    owned: dict[str, dict] = {}
+    unread: list[str] = []
+    for key in dict.fromkeys(keys):
+        try:
+            fields = _read(conn, key)
+        except RuntimeError:
+            unread.append(key)
             continue
         if fields is not None and ref in str(fields.get("summary", "")):
             owned[key] = fields
-    return owned
+    return owned, unread
 
 
 def _plain(value) -> str:
@@ -150,9 +176,10 @@ def check_ticket(fields: dict, case: dict, key: str, severity: str) -> None:
     if not found["severity"] < found["case reference"] < found["email subject"]:
         _fail(f"{key}: the ticket title {summary!r} does not give the severity, the case "
               "reference and the email subject in that order")
-    if "description" not in fields:
-        print(f"NOTE: the Jira read of {key} returned no description field; the description was not checked")
-    elif _squash(body) not in _squash(_plain(fields.get("description"))):
+    issuetype = str((fields.get("issuetype") or {}).get("name") or "")
+    if issuetype.casefold() != jira_is.ISSUETYPE_NAME.casefold():
+        _fail(f"{key}: the ticket is not a {jira_is.ISSUETYPE_NAME} (issue type {issuetype!r})")
+    if _squash(body) not in _squash(_plain(fields.get("description"))):
         _fail(f"{key}: the ticket description does not hold the email body {body!r}")
     print(f"OK: {key} reads back as {summary!r}, with the email body as its description")
 
@@ -173,7 +200,10 @@ def check_case(flow: dict, payload: dict, case: dict, conn: str, project: str) -
     returned = sorted(k for k in node_output_leaves(payload, create_nodes) if re.fullmatch(rf"{project}-\d+", k))
     if not returned:
         _fail_with_capture(f"{case['name']}: the Create Issue step that ran returned no {project}-<n> key")
-    owned = _owned(conn, returned, ref)
+    owned, unread = _owned(conn, returned, ref)
+    if not owned and unread:
+        _grader_error(f"{case['name']}: could not read back {unread} from Jira, so their ownership is unknown "
+                      "and nothing was journaled for teardown")
     if not owned:
         _fail(f"{case['name']}: no {project} key the Jira steps returned ({returned}) reads back as a "
               f"ticket whose title carries the case reference {ref!r}")
@@ -226,8 +256,8 @@ def main() -> None:
         print(f"OK: {case['name']}: {case['expected']['severity']}, engineering needed "
               f"{case['expected']['engineering']}, ticket opened and read back")
     check_same_outputs(per_case)
-    print(f"PASS: every seeded escalation, the duplicate included, opened its own Jira ticket "
-          f"with the expected results")
+    print("PASS: every seeded escalation, the duplicate included, opened its own Jira ticket "
+          "with the expected results")
 
 
 if __name__ == "__main__":

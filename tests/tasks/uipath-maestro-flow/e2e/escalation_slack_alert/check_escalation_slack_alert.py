@@ -38,20 +38,25 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
 sys.path.insert(0, _directory)
 
 from _shared import flow_io_roles as io  # noqa: E402
-from _shared.escalation_inputs import check_same_outputs, feed_roles, load_flow  # noqa: E402
+from _shared.escalation_inputs import (  # noqa: E402
+    SLACK_CHANNEL,
+    SLACK_KEY,
+    SLACK_SEND,
+    check_same_outputs,
+    feed_roles,
+    is_slack_ts,
+    load_flow,
+)
 from _shared.flow_check import (  # noqa: E402
-    _SLACK_TS_RE,
     _fail_with_capture,
     _leaves,
     _op_matches,
     assert_flow_uses_connector_target,
     assert_slack_message_posted,
+    completed_connector_node_ids,
     run_debug,
 )
 
-SLACK_KEY = "uipath-salesforce-slack"
-SLACK_SEND = "send-message-to-channel"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 BULLET_RE = re.compile(r"^\s*(?:[-*•◦▪‣–·]|\d+[.)])\s*\S")
 # The roles the graded results depend on. The others are fed when declared.
 REQUIRED = ("tier", "productionDown", "workaround", "caseRef")
@@ -62,17 +67,13 @@ def feed(flow: dict, case: dict) -> dict:
     return feed_roles(flow, case, case["inputs"], REQUIRED)
 
 
-def _is_ts(value) -> bool:
-    return isinstance(value, str) and bool(_SLACK_TS_RE.match(value.strip()))
-
-
 def posted_texts(payload: dict, ts: str) -> list[str]:
-    """Every text in the response of the Slack send that returned `ts`."""
+    """Every text in the response of the completed Slack send that returned `ts`."""
     globals_ = (payload.get("variables") or {}).get("globals") or {}
-    for key, out in globals_.items():
-        if str(key).endswith(".output") and isinstance(out, (dict, list)):
-            if ts in {str(x).strip() for x in _leaves(out) if isinstance(x, str)}:
-                return io.texts(out)
+    for node_id in completed_connector_node_ids(payload, SLACK_KEY, native_op_hint=SLACK_SEND):
+        out = globals_.get(f"{node_id}.output")
+        if isinstance(out, (dict, list)) and ts in {str(x).strip() for x in _leaves(out) if isinstance(x, str)}:
+            return io.texts(out)
     return []
 
 
@@ -106,7 +107,7 @@ def check_case(flow: dict, payload: dict, case: dict) -> dict[str, list[str]]:
         "severity": (io.equals_text(want["severity"]), repr(want["severity"])),
         "engineering needed": (io.equals_bool(want["engineering"]), str(want["engineering"]).lower()),
         "case reference": (io.equals_exact(ref), repr(ref)),
-        "Slack message id": (_is_ts, "a Slack message ts"),
+        "Slack message id": (is_slack_ts, "a Slack message ts"),
     }
     holders = {}
     for result, (predicate, shown) in expected.items():

@@ -26,6 +26,7 @@ from _shared.case_run_evidence import (  # noqa: E402
     RunEvidence,
     assert_completed,
     fail,
+    leaf_values,
     read_run,
     since_iso,
     text_of,
@@ -41,19 +42,11 @@ from _shared.case_check import (  # noqa: E402
 RULE = "CreditRisk"
 SCORE = 742
 EXPECTED_BAND = "LOW_RISK"
-BANDS = ("LOW_RISK", "HIGH_RISK")
-
-
-def _leaf_values(value, key: str):
-    """Every value stored under ``key`` (any case) anywhere in ``value``."""
-    if isinstance(value, dict):
-        for k, v in value.items():
-            if str(k).lower() == key.lower():
-                yield v
-            yield from _leaf_values(v, key)
-    elif isinstance(value, list):
-        for item in value:
-            yield from _leaf_values(item, key)
+BAND_LITERAL = re.compile(r"low_risk|high_risk", re.IGNORECASE)
+RULE_OUTPUT_READ = re.compile(
+    r"(?:result|output|riskdecision|riskband)(?:\.\w+|\[\d+\])*", re.IGNORECASE
+)
+JS_PREFIX = "=js:"
 
 
 def _rule_names(plan: dict, task: dict) -> set[str]:
@@ -70,6 +63,12 @@ def _rule_names(plan: dict, task: dict) -> set[str]:
     return names
 
 
+def _bare(expression: str) -> str:
+    """``expression`` without quotes, the ``=js:`` or ``=`` prefix and whitespace."""
+    text = re.sub(r"\s+", "", expression.replace('"', "").replace("'", ""))
+    return text.removeprefix(JS_PREFIX).removeprefix("=")
+
+
 def _binds_risk_band(plan: dict, task: dict) -> bool:
     """An output row of ``task`` writes the riskBand case variable from the rule's result."""
     variables = get_variables(plan)
@@ -79,16 +78,16 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
         for v in variables.get(group) or []
         if str(v.get("name") or "").lower() == "riskband"
     ]
-    if any(str(v.get("default") or "").strip().upper() in BANDS for v in declared):
+    if any(BAND_LITERAL.search(_bare(str(v.get("default") or ""))) for v in declared):
         return False
     ids = {str(v.get("id")) for v in declared}
     for row in (task.get("data") or {}).get("outputs") or []:
         source = str(row.get("source") or "")
         if row.get("var") not in ids or not source.startswith("="):
             continue
-        if re.search(r"low_risk|high_risk|vars\.", source, re.IGNORECASE):
+        if '"' in source or "'" in source or BAND_LITERAL.search(source):
             continue
-        if re.search(r"riskband|riskdecision|result", source, re.IGNORECASE):
+        if RULE_OUTPUT_READ.fullmatch(_bare(source)):
             return True
     return False
 
@@ -96,7 +95,7 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
 def _bands(value) -> list:
     """The band ``value`` holds: itself when it is not an object, else every riskBand in it."""
     if isinstance(value, (dict, list)):
-        return list(_leaf_values(value, "riskBand"))
+        return list(leaf_values(value, "riskBand"))
     return [value]
 
 
@@ -114,13 +113,13 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
     for task in credit_tasks:
         assert_completed(payload, task)
         inputs, outputs = evidence.task_io(str(task.get("id")))
-        scores = list(_leaf_values(inputs, "creditScore"))
+        scores = list(leaf_values(inputs, "creditScore"))
         if SCORE not in scores:
             fail(
                 f"task {task.get('displayName')!r} ran the rule with creditScore {scores or 'unset'}, "
                 f"expected {SCORE}; its inputs: {text_of(inputs)[:400]}"
             )
-        returned = list(_leaf_values(outputs, "riskBand"))
+        returned = list(leaf_values(outputs, "riskBand"))
         if returned and any(b != EXPECTED_BAND for b in returned):
             fail(
                 f"task {task.get('displayName')!r} returned riskBand {returned} in its "

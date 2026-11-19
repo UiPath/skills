@@ -2,8 +2,8 @@ task_id: skill-flow-devcon-billing-invoice-lookup
 description: |
   E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that
   cleans up a carelessly typed invoice number and looks up that invoice's lines
-  in BillingDisputeERP, asked the way a business user asks it (Ioana's v3
-  prompt; it names no variables). The graders map the raw number onto the
+  in BillingDisputeERP, asked the way a business user asks it (it names
+  no variables). The graders map the raw number onto the
   flow's declared input by meaning and read the results among its declared
   outputs by value. Four debug runs on live data: three messy forms of three
   real invoices (an entity read completes; the number exactly as the records

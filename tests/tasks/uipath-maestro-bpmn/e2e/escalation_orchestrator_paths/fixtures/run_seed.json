@@ -3,7 +3,6 @@
   "cases": [
     {
       "name": "sev1-standard-production-down",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",
@@ -27,7 +26,6 @@
     },
     {
       "name": "sev2-degraded-with-workaround",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",
@@ -51,7 +49,6 @@
     },
     {
       "name": "sev3-no-production-impact",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",
@@ -75,7 +72,6 @@
     },
     {
       "name": "duplicate-escalation",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",
@@ -99,7 +95,6 @@
     },
     {
       "name": "unknown-customer",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",
@@ -123,7 +118,6 @@
     },
     {
       "name": "missing-domain",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "",
@@ -147,7 +141,6 @@
     },
     {
       "name": "multiple-matches",
-      "expect_slack": true,
       "inputs": {
         "senderEmail": "jane.doe@acmecorp.com",
         "senderDomain": "acmecorp.com",

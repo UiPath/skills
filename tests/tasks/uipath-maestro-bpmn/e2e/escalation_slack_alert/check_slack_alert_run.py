@@ -54,10 +54,13 @@ SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-slack-alert-live")
 
 
+ENGINEERING_BOOLEANS = {"true": True, "yes": True, "false": False, "no": False}
+
+
 def _norm(value):
     if isinstance(value, str):
         text = value.strip().casefold()
-        return {"true": True, "false": False}.get(text, text)
+        return ENGINEERING_BOOLEANS.get(text, text)
     return value
 
 
