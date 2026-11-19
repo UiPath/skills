@@ -61,9 +61,7 @@ A skeleton is not a working process and must never be reported as one.
    Data a person supplies after the process has started is a real step: draw its box (`[Action app]`).
 8. **Mark a step that runs once per item on its own box.**
    When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start, read through the start event's mapping).
-   Add `sequential: true` when the items go one after another, or when the looped box names a producer (`→ <variable>`): every item writes that one process variable, and only a sequential loop keeps each item's write ([composing guide](patterns/composing-guide.md)).
-   Otherwise leave it out, also when the items run all at once or the request does not say.
-   When the request asked for a producer box's items all at once, the final report after *Build it* says under `Assumed` that they run one at a time.
+   Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
    When the step stops early ("stop at the first failed document"), add `completion: '=js:vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**

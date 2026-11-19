@@ -41,7 +41,7 @@ When the path line is the local path, write the plain path, such as InvoiceIntak
 
 List every task box, in order, including a box that needs no resource, and nothing else: not the start event, a timer, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
-After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates ending in `which one?` (`<A> in <folder> or <B> in <folder>, which one?`, leaving out ` in <folder>` for a row with no folder name), or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
+After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates ending in `which one?` (`<A> in <folder> or <B> in <folder>, which one? Build it takes <A>`, leaving out ` in <folder>` for a row with no folder name), or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
 Give each box one short clause: no element type ids, no build-time plans, and no alternatives for the kind.
 <!--skill-flavor:gate-not-checked-rule:start-->
 Write `not checked` only for a box whose lookup ran and failed, or when this run found no `uip login`; a box you have not looked up is not a reply line yet, so run its lookup first.
