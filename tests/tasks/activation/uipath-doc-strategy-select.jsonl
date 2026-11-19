@@ -1,0 +1,5 @@
+{"id": "uipath-doc-strategy-select-001", "prompt": "We need a fixed set of fields off incoming supplier forms. Which file handling strategy should this be before I start building?", "expected_skill": "uipath-doc-strategy-select"}
+{"id": "uipath-doc-strategy-select-002", "prompt": "Should this workload use Extract or Summarize? The output is a written assessment with citations back to the source.", "expected_skill": "uipath-doc-strategy-select"}
+{"id": "uipath-doc-strategy-select-005", "prompt": "Do I need the advanced agent harness for this, or is standard enough? The run is long and spans several stages.", "expected_skill": "uipath-doc-strategy-select"}
+{"id": "uipath-doc-strategy-select-010", "prompt": "An agent was used to do arithmetic across evidence files and the results are not reproducible. What should this have been routed to?", "expected_skill": "uipath-doc-strategy-select"}
+{"id": "uipath-doc-strategy-select-019", "prompt": "Which document strategy handles a mailbox where some messages carry the request in the body and some in one of several attachments?", "expected_skill": "uipath-doc-strategy-select"}
