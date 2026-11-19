@@ -259,12 +259,9 @@ That second read happens only when a Personal Workspace could be the target: a p
 
 Resolve it with the **server-side `--name` filter** — do **not** fetch the full list and match client-side. The plain list is **paginated at 50 per page**, so a folder beyond the first page is silently missed. `--name` (contains match), `--path` (prefix), and `--type` all **require `--all`**.
 
-> **Prerequisite:** `uip or ...` commands require the Orchestrator tool. Run `uip tools list` first; if `orchestrator-tool` is missing, install it once: `uip tools install @uipath/orchestrator-tool`.
+> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, run `uip tools install @uipath/orchestrator-tool` (a `Message` that mentions a pin falls under Critical Rule 23 instead).
 
 ```bash
-# 0. Ensure the Orchestrator tool is installed (idempotent — skip if already present)
-uip tools list --output json | grep -q '"orchestrator-tool"' || uip tools install @uipath/orchestrator-tool
-
 # 1. Filter by name server-side (--name is a CONTAINS match, and requires --all)
 uip or folders list --all --name "Shared" --output json > /tmp/folders.json
 
@@ -295,7 +292,7 @@ Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), 
 your account. Re-check the key with 'uip or folders list --output json'."
 ```
 
-**Only on `uip` older than 1.204.0.** That release dropped the client-side pre-check behind this error: `--folder-key` is no longer rejected for a folder the CLI cannot list, so a current CLI never reports it. Upgrade (`npm i -g @uipath/cli`). Until then, move the key into the env-var prefix and drop the flag — the pre-check ran only for `--folder-key`, and the deploy request still carries the key, so a genuinely wrong key still fails at the server:
+**Only on `uip` older than 1.204.0.** That release dropped the client-side pre-check behind this error: `--folder-key` is no longer rejected for a folder the CLI cannot list, so a current CLI never reports it. To upgrade: that CLI predates the freeze and ignores `versions`, so if the nearest `.uipath/config.json` (the folder you run `uip` in or a parent, else `~/.uipath/config.json`) has `versions.cli`, run `npm i -g @uipath/cli@<CLI_PIN>`, then `uip update`; otherwise run `uip update`. Until then, move the key into the env-var prefix and drop the flag — the pre-check ran only for `--folder-key`, and the deploy request still carries the key, so a genuinely wrong key still fails at the server:
 
 ```bash
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
