@@ -8,7 +8,6 @@
    Merge keeps the shapes the user already has on the canvas. A template (one start event and at most one end event) or a process the user chose to *replace* ([Critical Rule 12](../SKILL.md#critical-rules) step 2) has none to keep. An empty target has nothing to merge into: compile straight over it instead of merging.
    For all three, then run `format <Name>.bpmn --relayout` (loop step 5a), then `refresh` and `validate` again.
    `validate` must report `Status: Valid`.
-   When you ran step 5a, then run `mkdir -p .flow-sdk/gate && cp <Name>.bpmn .flow-sdk/gate/<Name>.bpmn`: *Build it* compares the target with that copy.
 <!--skill-flavor:draft-steps:end-->
 
 <!--skill-flavor:draft-steps-no-refresh:start-->
@@ -42,7 +41,5 @@ This gate is the one round for structure and resource questions.
 <!--skill-flavor:gate-one-round:end-->
 
 <!--skill-flavor:draft-build-merge:start-->
-  When `.flow-sdk/gate/<Name>.bpmn` exists, compare the target with it: `node -e "const f=require('fs');console.log(f.readFileSync('<Name>.bpmn','utf8')===f.readFileSync('.flow-sdk/gate/<Name>.bpmn','utf8')?'same':'changed')"`.
-  On `same`, nobody changed the canvas since the gate, and its layout is the one you drew: compile the source straight over the target, run `format <Name>.bpmn` (never `--relayout` here: it drops the CDATA of script arguments, and `validate` then reports `SCRIPT_ARGS_ENVELOPE_MISSING`), then `refresh` and `validate`.
-  On `changed`, an error, or no gate copy, finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
+  Finish through the merge pipeline of the [Validation loop](../SKILL.md#validation-loop), as every turn does.
 <!--skill-flavor:draft-build-merge:end-->

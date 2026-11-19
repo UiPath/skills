@@ -295,9 +295,6 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
-  `merge` keeps a box's `<bpmn:task>` tag when the edit retypes it, so `refresh` or `validate` then rejects the box (`cannot be attached to bpmn:task`).
-  On that error, when the target holds no pool, lane or annotation (`grep -cE '<bpmn:(participant|lane|textAnnotation)' <Name>.bpmn` prints `0`), compile the source straight over the target, run `format` on it, then `refresh` and `validate`, and say in the report that the diagram was laid out again.
-  Otherwise put back the copy you merged into, and tell the user `merge` cannot retype that box without losing what the SDK does not model.
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
   A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function or another Maestro process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is the kind's (`Agent`, `Api`), and the folder binding carries no value.
