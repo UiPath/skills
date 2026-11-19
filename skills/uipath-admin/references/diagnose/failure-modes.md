@@ -253,6 +253,7 @@ Use this path when a principal gets 403 from Data Fabric. An example is a write 
    uip df directory assign-roles <PRINCIPAL_ID> --type <TYPE> --role-ids <DF_ROLE_ID> --output json
    ```
    Take `<DF_ROLE_ID>` from `uip df roles list`, never from `check-access`. Take `<TYPE>` from the `Type` of the principal in `uip df directory list`. Page the list with `--limit` and `--offset` to find the principal.
+   If `IsUIEnabled` of the principal is `false`, add `--no-ui-access`. Without it, `assign-roles` turns on Data Fabric UI access. Turn on UI access only when the user approves it.
 6. Run step 2 again to confirm the new role.
 
 The rules for these commands are in [Data Fabric role assignments](../authorization/role-assignment-management.md#data-fabric-role-assignments).

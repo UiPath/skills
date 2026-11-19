@@ -191,10 +191,11 @@ Data Fabric (`dataservice`) manages its own roles. Use `uip df roles` and `uip d
 `assign-roles` and `revoke-roles` accept more than one `<PRINCIPAL_ID>`. `uip df directory list` returns a page of 50 principals by default. Page with `--limit` and `--offset` to the end before you decide that a principal is not in the list.
 
 1. **Get `--role-ids` from `uip df roles list` only.** The Authorization Service and Data Fabric use different IDs for the same role. A role ID from `check-access` or `uip admin authorization roles list` does not work with `assign-roles`. Match the role by name, then copy its ID from `uip df roles list`.
-2. **Confirm every write with the user first.** Resolve the principal under [Resolve Principals Before Mutation](#resolve-principals-before-mutation). Show the principal, the `--type`, and the role names. Run `assign-roles` or `revoke-roles` only after the user confirms.
-3. **`assign-roles` adds roles and keeps the existing roles.** `--replace` replaces the full Data Fabric role set of the principal. `--no-ui-access` does not give access to the Data Fabric UI.
-4. **`revoke-roles` removes all direct Data Fabric roles of each principal.** It cannot remove only one role. To remove only some roles, run `assign-roles --replace` with the roles to keep. Roles that come from a group stay until the group membership changes.
-5. **Use the `Type` that `uip df directory list` shows for the principal as `--type`.** Robot accounts appear in that list as `Type: "User"` (`ObjectType: "DirectoryRobotUser"`). If the principal is not in the list, tell the user which `--type` you will use before the write.
-6. **`<PRINCIPAL_ID>` is the identity ID of the user, group, or robot account.** `uip df directory list` shows this ID as `ExternalId`.
+2. **Confirm every write with the user first.** Resolve the principal under [Resolve Principals Before Mutation](#resolve-principals-before-mutation). Show the principal, the `--type`, the role names, and the UI access. Run `assign-roles` or `revoke-roles` only after the user confirms.
+3. **`assign-roles` adds roles and keeps the existing roles.** `--replace` replaces the full Data Fabric role set of the principal.
+4. **`assign-roles` also turns on Data Fabric UI access, unless you pass `--no-ui-access`.** Before the write, read `IsUIEnabled` for the principal in `uip df directory list`. If it is `false`, pass `--no-ui-access`. Turn on UI access only when the user approves it.
+5. **`revoke-roles` removes all direct Data Fabric roles of each principal.** It cannot remove only one role. To remove only some roles, run `assign-roles --replace` with the roles to keep. Roles that come from a group stay until the group membership changes.
+6. **Use the `Type` that `uip df directory list` shows for the principal as `--type`.** Robot accounts appear in that list as `Type: "User"` (`ObjectType: "DirectoryRobotUser"`). If the principal is not in the list, tell the user which `--type` you will use before the write.
+7. **`<PRINCIPAL_ID>` is the identity ID of the user, group, or robot account.** `uip df directory list` shows this ID as `ExternalId`.
 
 After a write, run `check-access "<PRINCIPAL>" --service dataservice` again to confirm the result.
