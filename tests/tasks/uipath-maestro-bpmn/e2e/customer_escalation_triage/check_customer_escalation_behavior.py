@@ -453,10 +453,10 @@ def assert_jira_issue_on_tenant(
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    BPMN_FILE = bpmn_check.resolve_bpmn_file(BPMN_NAME)
-    PROJECT = BPMN_FILE.parent
-    contract = resolve_contract(BPMN_FILE)
-    original_hash = sha256(BPMN_FILE)
+    bpmn_file = bpmn_check.resolve_bpmn_file(BPMN_NAME)
+    project = bpmn_file.parent
+    contract = resolve_contract(bpmn_file)
+    original_hash = sha256(bpmn_file)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()
 
@@ -479,14 +479,14 @@ def main() -> None:
             "solution",
             "projects",
             "import",
-            str(PROJECT.resolve()),
+            str(project.resolve()),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
         cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / PROJECT.name
-    if sha256(imported_project / BPMN_FILE.name) != original_hash:
+    imported_project = solution_dir / project.name
+    if sha256(imported_project / bpmn_file.name) != original_hash:
         raise CheckFailure("solution import changed the submitted BPMN bytes")
     print(f"OK: imported exact artifact (sha256={original_hash})")
 

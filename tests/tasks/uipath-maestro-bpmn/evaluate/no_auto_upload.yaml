@@ -68,7 +68,7 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
-    pass_threshold: 0.0  # advisory: Studio Web opens the solution itself and refuses `uip solution init`/`new`
+    pass_threshold: 0.0  # advisory: the BPMN artifact checks below are the authority
 
   - type: run_command
     description: "LocalOnly BPMN artifact exists"

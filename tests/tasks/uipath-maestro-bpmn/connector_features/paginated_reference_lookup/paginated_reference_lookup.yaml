@@ -71,7 +71,8 @@ success_criteria:
 # v1-route telemetry is advisory (the SDK arm never runs it); the second records
 # "went past page 1" for either route and only counts a command that succeeded —
 # typing the flag on a failing command does not page. It is also advisory because
-# a command cut off by a turn timeout has unknown status. Both carry weight 0:
+# a command cut off by a turn timeout has unknown status, and it is implied by the
+# graded id: C083AN4E61E is not on page 1. Both carry weight 0, because
 # `pass_threshold: 0` alone never fails the task but still moves the score. The final artifact
 # criterion (resolved id C083AN4E61E) stays the authority.
   - type: command_executed

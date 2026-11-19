@@ -58,7 +58,11 @@ def _edit(root: Path, old: str, new: str) -> None:
     [
         ("=vars.a", False, "a"),
         ("=js:vars.a", False, "a"),
-        (" =js: vars.a ", False, "a"),
+        (" =js:vars.a ", False, "a"),
+        ("=js: vars.a", False, None),
+        ("=vars.a-b", False, None),
+        ("=vars.\u00e9", False, None),
+        ("=vars.1a", False, None),
         ("=js:vars.a.b", True, "a.b"),
         ("=js:vars.a.b", False, None),
         ("=js:vars.a + 1", True, None),
@@ -192,6 +196,53 @@ def test_resolve_bpmn_file_finds_studio_web_layout(tmp_path: Path, monkeypatch: 
     assert found.relative_to(tmp_path) == Path("CustomerEscalationTriage/CustomerEscalationTriage/Process.bpmn")
 
 
+def _project(root: Path, rel: str, *files: str, entry: str | None = None) -> Path:
+    directory = root / rel
+    directory.mkdir(parents=True)
+    for name in files:
+        (directory / name).write_text("<x/>")
+    (directory / "project.uiproj").write_text("{}")
+    if entry:
+        (directory / "entry-points.json").write_text(
+            '{"entryPoints":[{"filePath":"/content/%s#Start"}]}' % entry
+        )
+    return directory
+
+
+def test_resolve_bpmn_file_maps_a_named_file_to_the_entry_point_beside_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _project(tmp_path, "P/P", "P.bpmn", "Process.bpmn", entry="Process.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.resolve_bpmn_file("P.bpmn").relative_to(tmp_path) == Path("P/P/Process.bpmn")
+
+
+def test_resolve_bpmn_file_ignores_a_draft_in_a_scratch_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _project(tmp_path, "tmp", "P.bpmn")
+    _project(tmp_path, "PSolution/P", "P.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.resolve_bpmn_file("P.bpmn").relative_to(tmp_path) == Path("PSolution/P/P.bpmn")
+
+
+def test_find_bpmn_file_prefers_the_project_over_a_shallower_draft(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "Foo.bpmn").write_text("<x/>")
+    _project(tmp_path, "Sol/Foo", "Foo.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "Sol/Foo/Foo.bpmn"
+
+
+def test_find_bpmn_file_takes_the_shallowest_of_several_projects(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _project(tmp_path, "Foo-work", "Foo.bpmn")
+    _project(tmp_path, "z", "Foo.bpmn")
+    _project(tmp_path, "a/b/c", "Foo.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "Foo-work/Foo.bpmn"
+
+
 def test_print_bpmn_path_resolves_both_layouts(tmp_path: Path) -> None:
     script = HERE / "print_bpmn_path.py"
     studio = tmp_path / "a" / "P" / "P"
@@ -232,3 +283,38 @@ def test_input_echo_ids_follows_js_bridges() -> None:
     assert "Var_B" not in ids  # a computed value is not an echo
 
 
+
+
+# ---- devcon expense approval: same read, both prefixes --------------------------------
+
+
+def _devcon():
+    import check_devcon_expense_approval as devcon
+
+    return devcon
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        ("=vars.amount", "amount"),
+        ("=js:vars.amount", "amount"),
+        ("=js:vars.claim.amount", "claim"),
+        ("=js:vars.amount + 1", None),
+        ("=js:vars.a; vars.b", None),
+        ("=js: vars.amount", None),
+        ("=js:vars.a.b.c", None),
+        ("=result.response", None),
+    ],
+)
+def test_devcon_expr_var_ref_reads_both_prefixes(expr: str, expected: str | None) -> None:
+    assert _devcon().expr_var_ref(expr) == expected
+
+
+def test_devcon_resolves_declared_type_through_js_prefix() -> None:
+    devcon = _devcon()
+    types = {"approved": "boolean"}
+    schemas = {"claim": {"properties": {"reason": {"type": "string"}}}}
+    assert devcon.resolve_expr_type("=js:vars.approved", types, schemas) == "boolean"
+    assert devcon.resolve_expr_type("=js:vars.claim.reason", types, schemas) == "string"
+    assert devcon.resolve_expr_type("=js:vars.approved + 1", types, schemas) is None

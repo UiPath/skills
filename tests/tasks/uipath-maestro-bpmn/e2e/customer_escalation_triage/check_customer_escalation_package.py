@@ -65,7 +65,7 @@ def fail(message: str) -> NoReturn:
 
 def main() -> None:
     bpmn_file = resolve_bpmn_file(BPMN_NAME)
-    PROJECT = bpmn_file.parent
+    project = bpmn_file.parent
     with tempfile.TemporaryDirectory(prefix="bpmn-eval-pack-") as output_dir:
         result = subprocess.run(
             [
@@ -73,7 +73,7 @@ def main() -> None:
                 "maestro",
                 "bpmn",
                 "pack",
-                str(PROJECT),
+                str(project),
                 output_dir,
                 "--output",
                 "json",

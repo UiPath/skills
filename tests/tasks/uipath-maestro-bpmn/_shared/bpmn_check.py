@@ -28,7 +28,7 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
-_VARS_EXPRESSION = re.compile(r"=(?:js:\s*)?vars\.([\w-]+(?:\.[\w-]+)*)")
+_VARS_EXPRESSION = re.compile(r"=(?:js:)?vars\.([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", re.ASCII)
 
 
 def vars_ref(value: str | None, *, fields: bool = False) -> str | None:
@@ -177,13 +177,12 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
-            hinted = _project_files(matches)
-            # Several matches and no project to prefer: the shallowest is the file
-            # the agent edited in place. A same-named copy in a work folder
-            # (`Foo-work/Foo.bpmn`) is deeper, and plain alphabetical order would
-            # put it first (`-` sorts before `.`).
-            shallowest = min(matches, key=lambda p: (Path(p).parts.__len__(), p))
-            return _entry_point_beside(hinted[0] if len(hinted) == 1 else shallowest)
+            pool = _project_files(matches) or matches
+            # Several candidates: the shallowest is the file the agent edited in
+            # place. A same-named copy in a work folder (`Foo-work/Foo.bpmn`) is
+            # deeper, and plain alphabetical order would put it first (`-` sorts
+            # before `.`).
+            return _entry_point_beside(min(pool, key=lambda p: (len(Path(p).parts), p)))
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -226,15 +225,20 @@ def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Pat
     """
     excluded = [Path(d).resolve() for d in exclude_under]
     cwd = Path.cwd()
-    named = list(cwd.rglob(bpmn_name)) or [
-        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    named = [
+        *cwd.rglob(bpmn_name),
+        *(p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)),
     ]
-    candidates = [
-        p
-        for p in _project_files(named)
-        if not any(p.resolve().is_relative_to(d) for d in excluded)
-        and not is_scratch_bpmn(p.relative_to(cwd))
-    ]
+    # Filter, map each file to the entry point that runs beside it (Studio Web's
+    # `Process.bpmn` for a `<Name>.bpmn` written next to it), dedupe, then require one.
+    candidates = sorted(
+        {
+            Path(_entry_point_beside(str(p)))
+            for p in _project_files(named)
+            if not any(p.resolve().is_relative_to(d) for d in excluded)
+            and not is_scratch_bpmn(p.relative_to(cwd))
+        }
+    )
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
