@@ -66,11 +66,12 @@ on:
 # `publish-preview`; manual latest uses `publish-latest`. Never cancel an
 # in-flight publish.
 #
-# The branch is in the key too. A newer run in a group cancels the one queued
-# behind it, so keyed by channel alone a push to main could cancel a publish the
-# sprint cut queued on a release branch, failing the cut.
+# Keyed by channel only, across branches: the dist-tag is the shared state. A
+# newer run in a group cancels the one queued behind it, which is why `dev` is
+# main-only and the sprint cut dispatches only preview: a push to main can no
+# longer cancel a run the cut queued on a release branch.
 concurrency:
-  group: publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || (github.ref == 'refs/heads/main' && 'dev' || 'preview') }}-${{ github.ref }}
+  group: publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || (github.ref == 'refs/heads/main' && 'dev' || 'preview') }}
   cancel-in-progress: false
 
 permissions:
@@ -261,7 +262,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! TAGS=$(npm view @uipath/skills dist-tags --json --@uipath:registry=https://registry.npmjs.org/ 2>"$RUNNER_TEMP/npm-view.err"); then
-            if grep -q E404 "$RUNNER_TEMP/npm-view.err"; then
+            if grep -qE '^npm (error|ERR!) code E404$' "$RUNNER_TEMP/npm-view.err"; then
               TAGS='{}'
             else
               cat "$RUNNER_TEMP/npm-view.err"
