@@ -47,7 +47,7 @@ Skip `bpmndi:` diagram elements.
 | `nodes[type=case-management:Stage]`, `data.stageType` (`secondary` = exception stage) | nodes | Stages → Process Map |
 | `data.tasks` (2-D array: inner = parallel, consecutive = sequential) | stage | Task order and parallelism |
 | task `type`: `process`, `rpa`, `agent`, `api-workflow`, `action` (human), `case-management`, `execute-connector-activity`, `wait-for-connector`, `wait-for-timer` | tasks | Component kind invoked — handoff edges |
-| `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].rules` (DNF), `exitConditions[].{type, exitToStageId}` | tasks / stage | Business rules and gating |
+| `isRequired`, `skipCondition`, `shouldRunOnlyOnce`, `entryConditions[].{isInterrupting, rules}`, `exitConditions[].{type, marksStageComplete, exitToStageId, rules}` (`rules` DNF) | tasks / stage | Business rules and gating, each written for the stage or task that holds it with every `rule` kind its condition joins (`required-tasks-completed` included); run-time behaviour the plan does not bind (an event firing in another stage) is never stated |
 | `metadata.slaRules[]`, `nodes[].data.slaRules[]` (`count`, `unit`, `escalationRule[]` with `triggerInfo.type`, `atRiskPercentage`, `recipients`) | metadata / stage | SLAs and escalation → Business Rules and Error Handling |
 | `metadata.caseExitRules[].marksCaseComplete` | metadata | Case completion |
 | `variables.{inputs, outputs, inputOutputs}`, `bindings[]` | top | Interface and platform resources |
