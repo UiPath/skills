@@ -194,7 +194,7 @@ Deletion is irreversible and triggers a model retrain. Do NOT use deletion to sk
 After processing all documents, track progress and errors:
 
 - Do NOT stop on the first error — continue with remaining documents
-- If a download fails, skip the document and note the failure
+- If a download fails, skip the document and note the failure. A field the user already stated is correct is still confirmed (Critical Rule 8)
 - If confirmation fails, log the error and the document ID, then continue
 
 At the end, report a full summary:
