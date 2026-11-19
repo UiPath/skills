@@ -67,13 +67,13 @@ VISITED = 2
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
 
 
-_RUN_TOGETHER_NEGATION = re.compile(r"no(draft|response|reply)")
+_RUN_TOGETHER_NEGATION = re.compile(r"non?(draft|response|reply)")
 _NEGATIONS = frozenset({
     "no", "not", "none", "without", "skip", "skipped", "na", "nil", "null", "never",
-    "omitted", "undrafted", "noreply", "false", "nothing", "empty", "dont",
+    "omitted", "undrafted", "non", "noreply", "false", "nothing", "empty", "dont",
 })
 _EITHER_OR = re.compile(r"\bor\b|[/|]", re.IGNORECASE)
-_NOT_APPLICABLE = re.compile(r"\bn[\s./-]+a\b", re.IGNORECASE)
+_NOT_APPLICABLE = re.compile(r"\bn[\s./\\_-]+a\b", re.IGNORECASE)
 _NA_TOKEN = "na"
 
 

@@ -286,6 +286,13 @@ def harvest_side_effects(
     }
 
 
+def _capped_keys(keys: list[str]) -> list[str]:
+    skipped = keys[MAX_OWNED_KEY_READS:]
+    if skipped:
+        print(f"NOTE: not journaled, over the {MAX_OWNED_KEY_READS}-read cap: {skipped}")
+    return keys[:MAX_OWNED_KEY_READS]
+
+
 def owned_jira_targets(
     effects: dict[str, list], jira_connection_id: str, correlation: str
 ) -> list[str]:
@@ -293,7 +300,9 @@ def owned_jira_targets(
     correlationId; a step that merely read an existing ticket is not owned."""
 
     owned = []
-    for key, target in effects["jira_targets"].items():
+    targets = effects["jira_targets"]
+    for key in _capped_keys(list(targets)):
+        target = targets[key]
         try:
             fields = escalation_is.get_issue_fields(jira_connection_id, key)
         except (CheckFailure, subprocess.TimeoutExpired):
@@ -465,7 +474,8 @@ def journal_partial_log(
     if debug_data is not None:
         partial += "\n" + json.dumps(debug_data, default=str)
     project_key = seed["inputs"]["jiraProjectKey"]
-    for key in dict.fromkeys(re.findall(rf"\b{re.escape(project_key)}-\d+\b", partial)):
+    found = list(dict.fromkeys(re.findall(rf"\b{re.escape(project_key)}-\d+\b", partial)))
+    for key in _capped_keys(found):
         try:
             fields = escalation_is.get_issue_fields(jira_connection_id, key)
         except (CheckFailure, subprocess.TimeoutExpired):

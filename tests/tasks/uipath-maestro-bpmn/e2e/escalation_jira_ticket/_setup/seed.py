@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """pre_run: seed a Sev1 escalation case for the Jira-ticket outcome eval.
 
-No live issue is created here — the agent's process creates it when
+No live issue is created here; the agent's process creates it when
 check_jira_ticket_run.py runs `uip maestro bpmn debug`. The unique tag lives in
 the correlationId, which the process must echo into the Jira issue summary, so
 the check can prove the ticket the process created (not a fabricated key)

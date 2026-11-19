@@ -459,6 +459,14 @@ def wait_for_result(run: DebugRun, deadline: float) -> dict:
     return payload
 
 
+def _record_instance(token: str, instance_id: str | None) -> bool:
+    if not instance_id:
+        return False
+    with open(TOKENS_FILE, "a") as f:
+        f.write(f"{token} {instance_id}\n")
+    return True
+
+
 def run_with_task(
     project_dir: str,
     inputs: dict,
@@ -481,9 +489,7 @@ def run_with_task(
     try:
         ids = wait_for_ids(run, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
-        if ids.instance_id:
-            with open(TOKENS_FILE, "a") as f:
-                f.write(f"{token} {ids.instance_id}\n")
+        recorded = _record_instance(token, ids.instance_id)
         task, notes = find_run_task(
             ids,
             lambda _row, bundle: has_text(bundle, token),
@@ -491,6 +497,8 @@ def run_with_task(
             run,
             folder_paths=node_folder_paths(hitl),
         )
+        if not recorded:
+            _record_instance(token, run.refresh_ids().instance_id)
         if task is None:
             out = run.stdout()[-1500:] if run.proc.poll() is not None else "(still running)"
             fail(

@@ -164,7 +164,7 @@ def test_ties_go_to_the_closer_name_whatever_the_declaration_order():
 
 _SPELLED_ROLES = {
     "invoice number": {"value": "MCS-1", "keywords": ["invoicenumber", "invoice"]},
-    "line no": {"value": 5, "keywords": ["lineno", "line"], "cased": ["lineNo"]},
+    "line no": {"value": 5, "keywords": ["lineno", "line"]},
 }
 
 
@@ -191,6 +191,18 @@ def test_a_lone_free_text_submission_gets_every_role_as_json():
     assert unmapped == []
     sent = json.loads(inputs["disputeSubmission"])
     assert sent["invoiceNumber"] == "MCS-1" and sent["invoicenumber"] == "MCS-1"
+
+
+def test_a_free_text_submission_carries_the_callers_fallback_fields():
+    flow = _flow([("invoicePdf", "file"), ("disputeSubmission", "string")])
+    fallback = {"disputedLineItems": [{"lineNumber": 5}]}
+    inputs, _, _ = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=fallback, file_path="inv.pdf")
+    sent = json.loads(inputs["disputeSubmission"])
+    assert sent["disputedLineItems"] == [{"lineNumber": 5}] and sent["invoiceNumber"] == "MCS-1"
+
+
+def test_a_role_is_spelled_in_camel_case_from_its_name():
+    assert io.spelled_object(_SPELLED_ROLES)["lineNo"] == 5
 
 
 def test_a_lone_text_input_that_is_not_a_submission_gets_nothing():

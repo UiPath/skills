@@ -747,3 +747,40 @@ def test_each_graded_run_records_its_token_for_cleanup(tmp_path):
     with_instance = [line.split() for line in lines if len(line.split()) == 2]
     assert len(tokens) == 2 and all(t.startswith("INV-") for t in tokens)
     assert [t for t, _ in with_instance] == tokens and all(i == "c3d4e5f6-0000-0000-0000-000000000001" for _, i in with_instance)
+
+
+class _LateInstanceRun:
+    """A debug whose log names the job key first and the instance id only later."""
+
+    def __init__(self):
+        self.ids = live.RunIds(folder_id="42", job_key="job-1")
+        self.proc = type("Proc", (), {"poll": lambda self: 0})()
+
+    def stdout(self):
+        return ""
+
+    def stderr(self):
+        return ""
+
+    def refresh_ids(self):
+        return self.ids
+
+    def finish(self):
+        pass
+
+
+def test_an_instance_id_that_arrives_after_the_job_key_is_still_recorded(tmp_path, monkeypatch):
+    run = _LateInstanceRun()
+
+    def find_run_task(ids, matches, deadline, run_, **kwargs):
+        run_.ids.instance_id = "inst-9"
+        return None, ["no task"]
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(live, "start_debug", lambda *a, **k: run)
+    monkeypatch.setattr(live, "wait_for_ids", lambda r, d: r.refresh_ids())
+    monkeypatch.setattr(live, "find_run_task", find_run_task)
+    monkeypatch.setattr(live, "cancel", lambda r: None)
+    with pytest.raises(SystemExit):
+        live.run_with_task(str(tmp_path), {}, "TOK-1", {}, [], lambda t: None, lambda t: {}, "task")
+    assert (tmp_path / live.TOKENS_FILE).read_text().splitlines() == ["TOK-1", "TOK-1 inst-9"]

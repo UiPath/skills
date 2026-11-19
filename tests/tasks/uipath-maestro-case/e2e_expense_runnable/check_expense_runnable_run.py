@@ -122,7 +122,7 @@ def main() -> None:
     payload = {"elementExecutions": run["executions"]}
     happy = check_path(plan, payload)
     print(
-        "OK: the expense ran Completed through "
+        "OK: the Approved stage completed through "
         + " -> ".join(happy)
         + "; Rejected and Withdrawn did not run"
     )

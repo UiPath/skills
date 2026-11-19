@@ -5,8 +5,8 @@
 touches only those created at or after that time that carry a token the grader
 recorded in `.hitl-run-tokens`. Parallel tasks share the eval identity, so the
 creator never marks a task as this run's. Each line is `token` or
-`token instanceId`: it cancels the recorded instances, then completes each task
-so it leaves the inbox. Best-effort: always exits 0.
+`token instanceId`: it cancels each instance recorded by id, then completes each
+task so it leaves the inbox. Best-effort: always exits 0.
 """
 
 from __future__ import annotations

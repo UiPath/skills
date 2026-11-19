@@ -1,8 +1,8 @@
 """Each path-to-ga prompt states, inside its helper block, the facts its grader
 asserts: names and types, connections and folder, enum values, targets.
 
-Facts come from the grader modules and seeds, so a prompt and its grader
-cannot drift apart. Only the helper block is checked; the request text is not.
+Facts come from the grader modules and seeds where they exist; the rest are
+pinned literals here. Only the helper block is checked; the request text is not.
 """
 
 from __future__ import annotations

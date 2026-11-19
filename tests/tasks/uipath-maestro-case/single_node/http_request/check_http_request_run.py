@@ -48,7 +48,7 @@ def _header_key(name: object) -> str:
     return re.sub(r"[^a-z]", "", str(name).lower())
 
 
-CREDENTIAL_KEYS = {_header_key(h) for h in CREDENTIAL_HEADERS}
+RECEIVED_CREDENTIAL_KEYS = {_header_key(h) for h in CREDENTIAL_HEADERS - {"cookie"}}
 
 
 def check_no_credential_headers(plan: dict) -> None:
@@ -114,7 +114,7 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> str:
         fail(f"the service did not receive the header Accept: {ACCEPT_VALUE}: {echoed[:800]}")
     leaked = sorted(
         str(h) for h in (received if isinstance(received, dict) else {})
-        if _header_key(h) in CREDENTIAL_KEYS
+        if _header_key(h) in RECEIVED_CREDENTIAL_KEYS
     )
     if leaked:
         fail(f"the service received credential header(s) {leaked}")

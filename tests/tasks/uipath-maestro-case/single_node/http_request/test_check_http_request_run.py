@@ -149,12 +149,27 @@ def test_the_instance_list_stops_at_its_deadline(monkeypatch: pytest.MonkeyPatch
     assert calls
 
 
-@pytest.mark.parametrize("header", ["Authorization", "XApiKey", "Cookie"])
+@pytest.mark.parametrize("header", ["Authorization", "XApiKey", "ProxyAuthorization"])
 def test_a_credential_header_the_service_received_fails(header: str) -> None:
     variables_all = copy.deepcopy(EVIDENCE["variables_all"])
     _globals(variables_all)["EchoResponse"]["Headers"][header] = "secret"
     with pytest.raises(SystemExit, match=header):
         grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))
+
+
+def test_a_cookie_the_service_replayed_from_its_own_set_cookie_passes() -> None:
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    _globals(variables_all)["EchoResponse"]["Headers"]["Cookie"] = "sails.sid=s%3Aabc"
+    assert grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all)) == "'Post Invoice'"
+
+
+def test_a_cookie_header_in_the_plan_fails() -> None:
+    plan = copy.deepcopy(PLAN)
+    task = next(t for n in plan["nodes"] for lane in n["data"].get("tasks") or [] for t in lane)
+    body = next(i for i in task["data"]["inputs"] if i["name"] == "body")["body"]
+    body["headers"]["Cookie"] = "sid=1"
+    with pytest.raises(SystemExit, match="Cookie"):
+        grader.check_no_credential_headers(plan)
 
 
 def test_a_variable_bound_to_the_request_instead_of_the_echo_fails() -> None:

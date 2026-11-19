@@ -144,7 +144,8 @@ def test_sev3_needs_no_draft_response():
      "NoDraftNeeded", "noDraftRequired", "NoReply", "Draft not generated", "Skip draft", "SkipDraft",
      "No automatic response", "None (Sev3)", "No reply", "Not required for Sev3", "Draft never sent", "no_reply",
      "None or N/A", "none or not applicable", "None OR n/a", "NODRAFT", "nodraft", "noresponse", "NORESPONSE",
-     "nodraftneeded", "n-a", "N / A", "n.a.", "N.A.", "None/N/A"],
+     "nodraftneeded", "n-a", "N / A", "n.a.", "N.A.", "None/N/A", "N_A", "n_a", "n\\a",
+     "non-draft", "nondraft", "Non-Draft", "non draft"],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")

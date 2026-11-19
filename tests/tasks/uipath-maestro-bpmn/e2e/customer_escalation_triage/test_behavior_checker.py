@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -20,6 +21,7 @@ import tempfile
 import unittest
 
 import yaml
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -475,6 +477,22 @@ class OwnedJiraTargetTests(unittest.TestCase):
         effects = {"jira_targets": {"CE-101": "10001"}}
         self.assertEqual(self._owned(effects, {"CE-101": checker.CheckFailure("boom")}), [])
 
+    def test_reads_are_capped_and_the_rest_reported(self):
+        keys = {f"CE-{n}": str(n) for n in range(1, 6)}
+        reads = []
+
+        def read(_connection, key):
+            reads.append(key)
+            return {"summary": self.CORRELATION}
+
+        out = io.StringIO()
+        with patch.object(escalation_is, "get_issue_fields", side_effect=read), redirect_stdout(out):
+            owned = checker.owned_jira_targets({"jira_targets": keys}, "conn", self.CORRELATION)
+        self.assertEqual(len(reads), checker.MAX_OWNED_KEY_READS)
+        self.assertEqual(owned, ["1", "2"])
+        self.assertIn("NOTE", out.getvalue())
+        self.assertIn("CE-5", out.getvalue())
+
     def test_harvest_maps_each_key_to_its_deletion_target(self):
         effects = checker.harvest_side_effects(CONTRACT, good_variables_data())
         self.assertEqual(effects["jira_targets"], {"CE-101": "10001"})
@@ -499,6 +517,20 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(
             escalation_is.read_journal(Path("/nonexistent/ids.jsonl")), {}
         )
+
+
+class SlackLogScanTests(unittest.TestCase):
+    def test_a_deeply_nested_string_does_not_stop_the_scan(self):
+        post = '{"channel": "C0B2FDZD1M3", "ts": "1763405123.456789", "message": {}}'
+        text = '{"a":' + "[" * 100000 + "\n" + post
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / "debug.log"
+            log.write_text(text, encoding="utf-8")
+            with patch.object(escalation_is, "JOURNAL", root / "ids.jsonl"):
+                escalation_is.journal_slack_posts_in_log(log)
+                records = escalation_is.read_journal(root / "ids.jsonl")
+        self.assertEqual(records["slack_message"], [["C0B2FDZD1M3", "1763405123.456789"]])
 
 
 class PartialRunJournalTests(unittest.TestCase):
@@ -562,6 +594,25 @@ class PartialRunJournalTests(unittest.TestCase):
         self.assertIsInstance(error, subprocess.TimeoutExpired)
         self.assertEqual(records["jira_issue"], ["CE-7"])
         self.assertNotIn("slack_message", records)
+
+    def test_partial_log_reads_are_capped_and_the_rest_reported(self):
+        reads = []
+
+        def read(_conn, key):
+            reads.append(key)
+            return {"summary": SEED["correlationId"]}
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "debug.log"
+            path.write_text("created CE-7 CE-8 CE-9 CE-10", encoding="utf-8")
+            out = io.StringIO()
+            with patch.object(escalation_is, "JOURNAL", Path(directory) / "ids.jsonl"), patch.object(
+                escalation_is, "get_issue_fields", side_effect=read
+            ), redirect_stdout(out):
+                checker.journal_partial_log(SEED, path, "jira-conn")
+        self.assertEqual(reads, ["CE-7", "CE-8"])
+        self.assertIn("NOTE", out.getvalue())
+        self.assertIn("CE-10", out.getvalue())
 
     def test_a_clean_read_journals_nothing_here(self):
         records, error = self._run()

@@ -23,7 +23,6 @@ sys.path.insert(0, str(SUITE / "_shared"))
 
 from _shared import flow_io_roles as io  # noqa: E402
 from _shared import jira_is  # noqa: E402
-from _shared.billing_sop import NAMES_A_RULE  # noqa: E402
 from _shared.escalation_inputs import KEYWORDS, SLACK_CHANNEL  # noqa: E402
 
 HELPER_START = "<!-- helper:start -->"
@@ -76,6 +75,7 @@ ESCALATION_NAMES = {
     "duplicate": "isDuplicate",
     "caseRef": "caseReference",
 }
+SLACK_BULLETS = "2 or 3 bullet lines"
 SLACK_LITERALS = (SLACK_CONNECTION, jira_is.FOLDER_PATH, SLACK_CHANNEL_NAME, SLACK_CHANNEL)
 SUBMISSION_FIELDS = {"account number": "accountNumber", "invoice number": "invoiceNumber"}
 
@@ -202,7 +202,6 @@ TASKS = {
             resolution.POSTING_FUNCTION,
             *resolution.LOOKUP_ENTITIES,
             "Shared",
-            RESOLUTION_CASES["overcharge"]["invoice"],
         ),
         meanings={
             **_meanings(RESOLUTION_ROLES, SUBMISSION_FIELDS),
@@ -271,7 +270,7 @@ TASKS = {
             "slackMessageId": "string",
         },
         enums={"severity": _expected_values(SLACK_CASES, "severity")},
-        literals=(*SLACK_LITERALS, "bullet"),
+        literals=(*SLACK_LITERALS, SLACK_BULLETS),
         meanings=_meanings({k: {"keywords": v} for k, v in KEYWORDS.items()}, ESCALATION_NAMES),
     ),
     "e2e_01_invoice_approval_greenfield": Facts(
@@ -396,16 +395,18 @@ def test_the_hitl_graders_feed_the_names_the_helper_declares(task):
     assert all(name in helper for name in names)
 
 
-def test_the_rule_example_is_one_the_grader_accepts():
+def test_the_helpers_name_the_rule_without_an_example_to_copy():
     for task in ("billing_dispute_analyst", "billing_dispute_resolution"):
-        example = re.search(r'like "(§[^"]+)"', _helper(TASKS[task].path))
-        assert example and NAMES_A_RULE.search(example.group(1)), task
+        helper = _helper(TASKS[task].path)
+        assert "by its section number in the SOP" in helper, task
+        assert not re.search(r"§\s*\d", helper), task
 
 
 def test_the_resolution_helper_names_the_cleaned_invoice_form():
     helper = _helper(TASKS["billing_dispute_resolution"].path)
     assert 'FinancialPostingFunction, as the records hold it' in helper
-    assert resolution.CASES["overcharge"]["invoice"] in helper
+    assert 'like "MCS-YYYY-NNNNN"' in helper
+    assert resolution.CASES["overcharge"]["invoice"] not in helper
 
 
 def test_the_agent_tasks_say_to_build_a_flow_not_an_agent_project():

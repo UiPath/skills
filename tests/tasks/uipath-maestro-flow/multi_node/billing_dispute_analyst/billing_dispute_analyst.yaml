@@ -56,7 +56,7 @@ initial_prompt: |
   Inputs: invoiceNumber (string), disputeDescription (string).
   Outputs: decision (string), reasoning (string). decision is "credit", "reject"
   or "manager_review".
-  Name the SOP rule in reasoning by its section number in the SOP, like "§3".
+  Name the SOP rule in reasoning by its section number in the SOP.
   <!-- helper:end -->
 
   Build and test the automation.

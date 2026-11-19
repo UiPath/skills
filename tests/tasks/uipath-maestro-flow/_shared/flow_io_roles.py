@@ -177,11 +177,11 @@ def spelled_object(roles: dict[str, dict]) -> dict:
     """Every role under each plain name fragment, plus its camelCase spellings, for a flow whose reads of an object input a regex cannot see.
 
     JS keys are case-sensitive: a role's camelCase names are its own name
-    (`invoice number` -> `invoiceNumber`) and any `cased` list on the role."""
+    (`invoice number` -> `invoiceNumber`)."""
     spelled: dict = {}
     for role, spec in roles.items():
         names = [k for k in spec["keywords"] if _PLAIN.match(k)]
-        names += [_camel(role), *spec.get("cased", [])]
+        names.append(_camel(role))
         spelled.update({k: spec["value"] for k in names if k})
     return spelled
 
@@ -208,7 +208,8 @@ def map_inputs(
     when an input took it, or when an object input was filled with a non-empty
     `object_fallback` (which carries every role under its common spellings).
     An object input whose read paths are not found, and no `object_fallback`,
-    gets `spelled_object` in its place.
+    gets `spelled_object` in its place. A lone free-text submission gets
+    `spelled_object` as JSON, with `object_fallback` laid over it.
     """
     inputs: dict = {}
     attachments: dict = {}
@@ -253,7 +254,7 @@ def map_inputs(
     free_text = [v for v in others if v["id"] not in used_vars and str(v.get("type") or "").lower() == TEXT_TYPE
                  and _reads_as_submission(v)]
     if missing and not carried and len(free_text) == 1:
-        inputs[free_text[0]["id"]] = json.dumps(spelled_object(roles))
+        inputs[free_text[0]["id"]] = json.dumps({**spelled_object(roles), **(object_fallback or {})})
         return inputs, attachments, []
     return inputs, attachments, [] if carried else missing
 

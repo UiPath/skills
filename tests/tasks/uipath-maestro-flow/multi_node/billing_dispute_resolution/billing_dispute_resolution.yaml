@@ -90,12 +90,12 @@ initial_prompt: |
   explanation (string), emailDraft (string).
   decision is "Approved" or "Rejected". recommendedAction is "credit", "reject"
   or "manager_review". Name the SOP rule in explanation by its section number
-  in the SOP, like "§3".
+  in the SOP.
   BillingDisputeERP and BillingDisputeCRM are existing Data Fabric entities. Use
   the Data Service connection in the Shared folder, even though it is a personal
   one.
   Post the cleaned invoice number to FinancialPostingFunction, as the records
-  hold it, like "MCS-2026-04903".
+  hold it, like "MCS-YYYY-NNNNN".
   <!-- helper:end -->
 
   Build and test the automation.

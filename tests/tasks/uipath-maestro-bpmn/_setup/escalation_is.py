@@ -418,7 +418,7 @@ def _slack_responses_in(text: str) -> list[tuple[str, str]]:
     while index != -1:
         try:
             value, end = decoder.raw_decode(text, index)
-        except ValueError:
+        except (ValueError, RecursionError):
             index = text.find("{", index + 1)
             continue
         found += _slack_responses(value)

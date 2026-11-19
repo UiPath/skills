@@ -97,9 +97,10 @@ def test_a_token_with_no_instance_cancels_nothing(sandbox):
 def test_approve_is_never_a_fallback_action(sandbox):
     write_tokens(sandbox, TOKEN)
     uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
-    uip_fail = lambda args: None if args[:2] == ["tasks", "complete"] else uip(args)
+    uip_fail = lambda args: (uip(args), None)[1] if args[:2] == ["tasks", "complete"] else uip(args)
     cleanup.clean(uip_fail, sandbox)
-    assert "Approve" not in cleanup.CLOSE_ACTIONS
+    attempts = uip.verbs("tasks", "complete")
+    assert attempts and all("Approve" not in call for call in attempts)
 
 
 def test_tasks_from_before_the_run_or_already_completed_are_left_alone(sandbox):

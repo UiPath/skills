@@ -123,7 +123,7 @@ def test_a_cli_timeout_is_followed_to_the_completed_instance(
 
     check_run.main()
 
-    assert "OK: the expense ran Completed" in capsys.readouterr().out
+    assert "OK: the Approved stage completed" in capsys.readouterr().out
 
 
 def test_a_cli_timeout_whose_instance_faults_fails(monkeypatch: pytest.MonkeyPatch) -> None:
