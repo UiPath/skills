@@ -35,7 +35,7 @@ npx skills use UiPath/skills@uipath-rpa | claude # run one skill; nothing is wri
 npx skills add UiPath/skills --skill uipath-rpa  # install just that one skill
 ```
 
-> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`. `uip skills install` (without `--repo`) is also the only install that follows a `versions.skills` pin (`uip config freeze`), so run it from inside the repo that holds the pin. Skills from `npx skills add` or `npx skills use` come from `main`, and `uip update` neither sees nor moves them: remove them first with `npx skills remove <SKILL>`.
+> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`. Only `uip skills install` and `uip skills update` (both without `--repo`) and `uip update` follow a `versions.skills` pin (`uip config freeze`), so run them from inside the repo that holds the pin. Skills from `npx skills add` come from `main`, and `uip update` neither sees nor moves them: remove them with `npx skills remove <SKILL>`, then run `uip skills install`. `npx skills use` writes nothing, so there is nothing to remove, but it runs `main`'s copy of the skill, not the pinned one.
 
 ## Skill Catalog
 
