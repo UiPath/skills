@@ -240,6 +240,19 @@ make from syntax alone. Exact signatures remain in the generated API.
   it. Read the SDD's own words for which: "returns to", "resumes", "rework"
   means the first; "closed", "terminated", "escalated out" means the second.
 
+<!-- RULE:case.exit.branch-entry -->
+- `exitToStage` does not route at run time: the runtime drops the exit's
+  target and, when a stage completes, enters every stage whose entry holds. A
+  bare `selected-stage-completed` entry holds for every branch out of that
+  stage, so a stage that branches several ways opens every destination at once.
+  Gate each destination's entry on its own branch, with the expression its exit
+  carries:
+
+  ```ts
+  .stage('Review', s => s
+    .entryWhen(rule('selected-stage-completed', { stage: 'Triage', expression: '=js:vars.route === "review"' })))
+  ```
+
 <!-- RULE:case.skip.live -->
 - Whether a skipped task satisfies a completion rule is runtime behavior. For a
   critical bypass, use a separate expression-gated exit or prove the path live.
