@@ -36,6 +36,8 @@ initial_prompt: |
     Commands WILL fail — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Run each `uip` command directly in the shell, not from inside a
+    Python/Node script — this test reads the shell commands you run.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
