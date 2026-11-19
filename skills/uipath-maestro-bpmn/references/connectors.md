@@ -59,7 +59,7 @@ A failed search gives `uip`'s reason; fix what it names: log in again for a sess
   {
     'fields.project.key': lookup('uipath-atlassian-jira', 'create-issue', 'fields.project.key').by('name', 'Coder Eval'),
     'fields.issuetype.id': '10001',
-    'fields.summary': '=vars.summary',
+    'fields.summary': '=js:vars.summary',
   },
   { connection: 'jira', folder: 'jiraFolder' })
 ```
@@ -221,7 +221,7 @@ uip is triggers objects <connector> <EVENT> --connection-id <id> --output json  
 uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --output json
 ```
 
-- The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=vars.<id>_result.subject` reads a payload field downstream.
+- The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=js:vars.<id>_result.subject` reads a payload field downstream.
   `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
   A bare `'=subject'` reads nothing: the payload is not at the top level.
 - `folderPath` is deprecated and ignored: the task names its folder by the `folder` binding alone, so drop it.
@@ -234,7 +234,7 @@ Write the step so that `check` passes and the CLI, not prose, says what is missi
 
 - **The operation's metadata is local**: §1 finds it in the library (a local cache, so this works offline), and `check` names no `uip maestro registry prepare` for it (`OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or a `CONNECTOR_INPUT` for a field only the connection discovers), since only a live `prepare` clears those.
   Write the `.connector()` call of §2 with symbolic `connection` and `folder` names and no `bindings.json`.
-  Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
+  Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=js:vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
   `check`, `compile` and `format` pass and emit a real `Intsvc.ActivityExecution` task reading `=bindings.<name>`.
   `refresh` then refuses (`Connection binding "<name>" default must be a GUID.`) and `validate` reports `MISSING_BINDING`: that is the draft's blocker, so stop there, and do not edit a binding or a package file to get past it.
 - **Otherwise, with no tenant for `prepare` to reach** (the operation is not in the library, or `check` asks for a `prepare`): write the step as a bare `.task(id, { name })` whose name says what it does and carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.

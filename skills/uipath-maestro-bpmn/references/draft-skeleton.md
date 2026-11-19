@@ -62,7 +62,7 @@ A skeleton is not a working process and must never be reported as one.
 8. **Mark a step that runs once per item on its own box.**
    When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start, read through the start event's mapping).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
-   When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
+   When the step stops early ("stop at the first failed document"), add `completion: '=js:vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel gateway, the fork as well as the join, fires only when every incoming flow has delivered a token.
@@ -118,7 +118,7 @@ export default bpmn('Process_1')
   .startEvent('Event_start', { name: 'Every Monday at 7:00', timer: { cycle: 'R/2026-01-05T07:00:00Z/P7D' } })
   .task('countStock', { name: 'Count warehouse stock [RPA workflow] → itemsBelowReorder' })
   .choose('needsReorder', [
-    { when: '=vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
+    { when: '=js:vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
     { otherwise: true, label: 'Stock is fine', body: (b) => b.task('logCount', { name: 'Log the stock count [Execute script]' }) },
   ])
   .endEvent('done', { name: 'Stock checked' })
@@ -139,7 +139,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
   .startEvent('Event_start', { name: 'New hire submitted' })
   .task('verifyDoc', {
     name: 'Verify document [Action app] → documentFailed',
-    loop: { collection: '=vars.documents', itemVar: 'document', sequential: true, completion: '=vars.documentFailed' },
+    loop: { collection: '=js:vars.documents', itemVar: 'document', sequential: true, completion: '=js:vars.documentFailed' },
   })
   .fork('setup', [
     (b) => b
@@ -151,7 +151,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
         .onError((h) => h.task('alertHr', { name: 'Alert HR [Connector]' }).endEvent('stopped', { name: 'Onboarding stopped', terminate: true }))
         .onTimer('PT1H', { interrupting: false }, (h) => h.task('chasePayroll', { name: 'Chase payroll [Connector]' }).endEvent('chased', { name: 'Payroll chased' }))),
   ])
-  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=vars.teams', itemVar: 'team' } })
+  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=js:vars.teams', itemVar: 'team' } })
   .endEvent('done', { name: 'Onboarded' })
   .build();
 ```

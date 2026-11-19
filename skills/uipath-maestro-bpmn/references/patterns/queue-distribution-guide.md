@@ -52,15 +52,9 @@ export default bpmn('claim-worker')
   .scriptTask('perItemAction', { name: 'Handle claim', script: 'return { outcome: "success", reason: null };', outputs: { itemOutcome: '=result.response.outcome', failureReason: '=result.response.reason' } })
   // Every branch BEGINS with the activity that marks the transaction.
   .choose('outcomeGate', [
-<<<<<<< HEAD
-    { when: '=vars.itemOutcome == "failure"', label: 'Failure', body: (b) => b.activity('setFailed', 'Orchestrator.SetTransactionStatus', { name: 'Mark failed', inputs: { QueueItem: '=vars.queueItem', Status: 'Failed', Reason: '=vars.failureReason' } }).endEvent('endFailed', { name: 'Item failed' }) },
-    { when: '=vars.itemOutcome == "defer"', label: 'Defer', body: (b) => b.activity('postpone', 'Orchestrator.PostponeTransactionItem', { name: 'Postpone item', inputs: { QueueItem: '=vars.queueItem', PostponeDate: '=js:new Date(Date.now() + 3600000).toISOString()' } }).endEvent('endPostponed', { name: 'Item postponed' }) },
-    { otherwise: true, label: 'Success', body: (b) => b.activity('setSuccessful', 'Orchestrator.SetTransactionStatus', { name: 'Mark successful', inputs: { QueueItem: '=vars.queueItem', Status: 'Successful' } }).endEvent('endSucceeded', { name: 'Item succeeded' }) },
-=======
     { when: '=js:vars.itemOutcome == "failure"', label: 'Failure', body: (b) => b.activity('setFailed', 'Orchestrator.SetTransactionStatus', { name: 'Mark failed', inputs: { QueueItem: '=js:vars.item', Status: 'Failed', Reason: '=js:vars.failureReason' } }).endEvent('endFailed', { name: 'Item failed' }) },
     { when: '=js:vars.itemOutcome == "defer"', label: 'Defer', body: (b) => b.activity('postpone', 'Orchestrator.PostponeTransactionItem', { name: 'Postpone item', inputs: { QueueItem: '=js:vars.item', PostponeDate: '=js:new Date(Date.now() + 3600000).toISOString()' } }).endEvent('endPostponed', { name: 'Item postponed' }) },
     { otherwise: true, label: 'Success', body: (b) => b.activity('setSuccessful', 'Orchestrator.SetTransactionStatus', { name: 'Mark successful', inputs: { QueueItem: '=js:vars.item', Status: 'Successful' } }).endEvent('endSucceeded', { name: 'Item succeeded' }) },
->>>>>>> cac07e73b (fix(uipath-maestro-bpmn): read a process input through the start event's mapping (#4892))
   ])
   .build();
 ```

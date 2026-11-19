@@ -49,7 +49,7 @@ export default bpmn('invoice-batch')
           h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: false }])' } })
             .endEvent('itemFailed', { name: 'Invoice failed' })),
     // Sequential, so each iteration appends to the list the one before left.
-    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
+    { name: 'Process each invoice', loop: { collection: '=js:vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
   )
   .scriptTask('aggregate', {
     name: 'Total the results',
@@ -59,7 +59,7 @@ export default bpmn('invoice-batch')
   // The report runs BEFORE the verdict, so finance gets it on both outcomes.
   .plainTask('sendReport', { name: 'Send summary to finance', element: 'bpmn:sendTask' })
   .choose('policyGate', [
-    { when: '=vars.policySatisfied == false', label: 'Policy missed', body: (b) => b.endEvent('endFailed', { name: 'Batch failed' }) },
+    { when: '=js:vars.policySatisfied == false', label: 'Policy missed', body: (b) => b.endEvent('endFailed', { name: 'Batch failed' }) },
     { otherwise: true, label: 'Policy met', body: (b) => b.endEvent('endCompleted', { name: 'Batch completed' }) },
   ])
   .build();
