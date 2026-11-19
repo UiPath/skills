@@ -107,8 +107,12 @@ def find_body(found, agent_leaves):
         _fail_with_capture(f"the email body is not signed {SIGNATURE!r}: {prose}")
     # From the executed agent, not a template over the inputs: the body is one of
     # the agent's own output strings, or holds one of its long ones verbatim.
+    # Either way round: a script may wrap the agent's text, or cut the body out of a
+    # longer agent reply ("subject: ...\nbody: ...", a Studio Web build 2026-11-19).
     drafted = [(k, t) for k, t in signed
-               if t.strip() in agent_leaves or any(len(a) >= 80 and a in t for a in agent_leaves)]
+               if t.strip() in agent_leaves
+               or any(len(a) >= 80 and a in t for a in agent_leaves)
+               or (len(t.strip()) >= 80 and any(t.strip() in a for a in agent_leaves))]
     if not drafted:
         _fail_with_capture("the email body did not come from the executed agent node's output")
     return drafted[0]

@@ -186,3 +186,10 @@ def test_a_body_the_agent_never_wrote_still_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": "x", "body": "something else"})})
     assert "did not come from the executed agent" in str(exc.value)
+
+
+def test_a_body_cut_out_of_the_agents_longer_reply_passes(sandbox, monkeypatch, capsys):
+    """A Studio Web build (adhoc-2026-11-19_00-34-36) had the agent reply
+    "subject: ...\\nbody: ..." and a script cut the body out of it."""
+    _run_with_agent_output(monkeypatch, {"body": f"subject: {SUBJECT}\nbody: {PLAIN_BODY}"})
+    assert "came back unchanged" in capsys.readouterr().out
