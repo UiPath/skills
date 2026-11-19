@@ -275,8 +275,10 @@ binding half, which is the same for every connector-backed node.
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
   It resolves the same way: `check` prints `uip maestro registry prepare --entity <name> --folder-key <key>`, which records the entity's own key; run it, then `check` again.
+  If `uip` answers `unknown option '--folder-key'`, the `uip` in use predates the flag: run the same command as `npx flow-sdk registry prepare --entity <name> --folder-key <key>`.
+  If `uip` says `--folder-key` needs a builder SDK release that supports it, or `npx flow-sdk` answers `unknown option '--folder-key'`, the SDK predates the flag: name the folder by path with `{ name, folder }` instead, which needs no `--folder-key`.
   A folder key written as an `=`-expression cannot be recorded, so it writes the V1 task and declares nothing in the solution; prefer `{ name, folder }`.
-  A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings; it compiles back as it is.
+  A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: a `.connector()` call would drop the picker, so decompile keeps the task as it is, and it compiles back unchanged.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
 - Do not add entity bindings by hand: compile writes the pair.
@@ -288,7 +290,7 @@ binding half, which is the same for every connector-backed node.
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
 <!--skill-flavor:sdk-v2-connector:end-->
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
-  `.dataService()` still writes V1 tasks for the file operations (`downloadFile`, `uploadFile`, `deleteFile`), and for `delete` on a folder-scoped entity (see the folder-entity rule above).
+  `.dataService()` still writes V1 tasks for the file operations (`downloadFile`, `uploadFile`, `deleteFile`), and on a folder-scoped entity for `delete` and for a folder key written as an `=`-expression (see the folder-entity rule above).
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
   Leave them as they are: a task you add beside them is V2, and a file may mix the two.
   Leave the process-level `uipath:intsvcActivityConfig` marker as you found it, as `registry get --input-details` instructs: a new workflow from `bpmn init` has it, and an existing workflow without it needs none.
