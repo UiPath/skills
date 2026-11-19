@@ -1,16 +1,16 @@
 task_id: skill-flow-devcon-billing-resolution-writer
 description: |
-  E2E (DevCon BillingDisputeResolution scenario): build a Flow that writes a
+  E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent writes a
   customer-facing billing-dispute resolution email and posts it to Slack,
-  asked the way a business user asks it (Simona's prompt; it names no
-  variables and no longer asks for an agent). The grader maps the seeded
+  asked the way a business user asks it (Simona's prompt plus Silviu's "Use an
+  agent to write the email"; it names no variables). The grader maps the seeded
   values onto the flow's declared inputs by meaning and reads the results among
   its declared outputs by value. One debug run: the returned body mentions the
   invoice and "USD 1,610.00" and is signed "Billing Support Team"; the subject
   is one line; the per-run case reference comes back unchanged; and the
   returned Slack ts is the response of an executed send to
   #coding-agent-testing whose message starts with the case reference and
-  carries the body. Whether an agent wrote the body is reported, not graded.
+  carries the body. The body must come from the executed agent's own output.
   The sender identity is not graded.
 tags:
   - uipath-maestro-flow
@@ -44,7 +44,7 @@ initial_prompt: |
 
   Build an automation called "BillingResolutionWriter" that writes the
   resolution email for a billing dispute we've approved and sends it in the
-  #coding-agent-testing Slack channel.
+  #coding-agent-testing Slack channel. Use an agent to write the email.
 
   The email should be signed by "Billing Support Team", and the body must
   mention the invoice number and the credit amount, written like "USD
@@ -80,7 +80,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects: one debug run whose returned body mentions MCS-2026-04872 and "USD 1,610.00" and is signed "Billing Support Team"; a one-line subject is returned; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message starts with the case reference and carries the invoice and the body'
+    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-04872 and "USD 1,610.00" and is signed "Billing Support Team"; a one-line subject is returned; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message starts with the case reference and carries the invoice and the body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0

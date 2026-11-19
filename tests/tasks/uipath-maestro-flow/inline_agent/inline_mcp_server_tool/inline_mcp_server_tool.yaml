@@ -33,18 +33,18 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "DevToolsFlow" in which an agent answers a
-  developer's question about a GitHub repository. Build the agent as part of
-  this automation and connect it to our "GitHubMcp" MCP server so it can look
-  the repository up with that server's GitHub tools instead of guessing.
+  developer's question about a GitHub repository. The automation should
+  connect to our "GitHubMcp" MCP server so that the agent can look the
+  repository up with that server's GitHub tools instead of guessing.
 
   It takes repository (owner/name, for example "octocat/Hello-World") and
-  question, and returns the agent's reply as answer. Don't publish or deploy
-  anything.
+  question, and returns the agent's reply as answer. Don't publish the
+  automation yet.
 
   <!-- helper:start -->
   GitHubMcp is an existing MCP server in the tenant. repository, question and

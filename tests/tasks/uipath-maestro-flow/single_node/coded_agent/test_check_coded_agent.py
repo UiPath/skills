@@ -79,3 +79,23 @@ def test_agent_node_that_did_not_complete_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _run(_payload({"approvedCount": 3}, agent_status="Faulted"), monkeypatch)
     assert "did not complete" in str(exc.value)
+
+
+def test_the_sentence_goes_to_an_input_the_agent_named_itself(tmp_path, monkeypatch):
+    """Silviu's prompt (2026-11-19) no longer names the input."""
+    project = tmp_path / "ApproverCountAgent" / "ApproverCountAgent"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    flow = REFERENCE_FLOW.read_text().replace('"sentence"', '"reviewText"').replace(".sentence", ".reviewText")
+    (project / "ApproverCountAgent.flow").write_text(flow)
+    monkeypatch.chdir(tmp_path)
+    checker = _load_checker()
+    sent = {}
+
+    def fake(*, inputs, **_):
+        sent.update(inputs)
+        return _payload({"approvedCount": 3})
+
+    monkeypatch.setattr(checker, "run_debug", fake)
+    checker.main()
+    assert sent == {"reviewText": checker.SENTENCE}

@@ -9,7 +9,8 @@ and Lena recused herself, so 3 people approved.
 The run must complete the flow's agent node (a `uipath.core.agent.<key>` node,
 the node a coded Agent project gets; a coded Function would be
 `uipath.core.function.<key>`) and return `approvedCount` = 3, read by the name
-the prompt gives.
+the prompt gives. The prompt does not name the input, so the sentence is fed to
+the declared input that best means it (`flow_io_roles.map_inputs`).
 """
 import os
 import sys
@@ -18,9 +19,11 @@ _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
+from _shared import flow_io_roles as io  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
     _fail,
     _fail_with_capture,
+    _load_flow,
     assert_flow_has_node_type,
     assert_output_nonempty,
     completed_node_ids_of_type,
@@ -34,6 +37,8 @@ SENTENCE = (
     "and Lena recused herself."
 )
 EXPECTED = 3
+ROLES = {"text": {"value": SENTENCE, "keywords": [
+    "sentence", "outcome", "review", "description", "summary", "message", "text", "input", "."]}}
 
 
 def check(payload):
@@ -53,8 +58,12 @@ def check(payload):
 
 def main():
     assert_flow_has_node_type([AGENT_TYPE])
-    print(f"debug inputs: sentence={SENTENCE!r}")
-    check(run_debug(inputs={"sentence": SENTENCE}, timeout=300))
+    flow = _load_flow("**/project.uiproj")
+    inputs, _attachments, unmapped = io.map_inputs(flow, ROLES, object_fallback=None, file_path=None)
+    if problem := io.unmapped_error(flow, unmapped, inputs):
+        _fail(problem)
+    print(f"debug inputs: {inputs}")
+    check(run_debug(inputs=inputs, timeout=300))
 
 
 if __name__ == "__main__":

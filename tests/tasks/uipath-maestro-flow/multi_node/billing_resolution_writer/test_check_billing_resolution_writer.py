@@ -182,11 +182,10 @@ def test_a_body_parsed_from_the_agents_json_text_passes(sandbox, monkeypatch, ca
     assert "came back unchanged" in capsys.readouterr().out
 
 
-def test_a_body_no_agent_wrote_passes_with_a_note(sandbox, monkeypatch, capsys):
-    """Simona's prompt (2026-11-19) no longer asks for an agent, so a templated body passes."""
-    _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": "x", "body": "something else"})})
-    out = capsys.readouterr().out
-    assert "did not come from an executed agent" in out and "posted to #coding-agent-testing" in out
+def test_a_body_the_agent_never_wrote_still_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run_with_agent_output(monkeypatch, {"body": json.dumps({"subject": "x", "body": "something else"})})
+    assert "did not come from the executed agent" in str(exc.value)
 
 
 def test_a_body_cut_out_of_the_agents_longer_reply_passes(sandbox, monkeypatch, capsys):

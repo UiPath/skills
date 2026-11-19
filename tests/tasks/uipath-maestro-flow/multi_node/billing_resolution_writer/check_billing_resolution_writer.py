@@ -7,9 +7,9 @@ declared inputs by meaning (`flow_io_roles.map_inputs`) and the results are
 found among its declared outputs by value:
 
 - the email body: a returned text that mentions MCS-2026-04872 and the credit
-  written "USD 1,610.00", is signed "Billing Support Team", and is prose rather
-  than a serialized JSON object. The prompt no longer asks for an agent, so
-  whether an executed agent wrote it is reported, not graded;
+  written "USD 1,610.00", is signed "Billing Support Team", is prose rather
+  than a serialized JSON object, and came from the executed agent node's own
+  output (not a template over the inputs);
 - the subject: another returned text on a single line;
 - the case reference, unchanged: a fresh value per run, so it cannot be baked
   into the flow;
@@ -105,16 +105,17 @@ def find_body(found, agent_leaves):
     signed = [(k, t) for k, t in prose if SIGNATURE in t]
     if not signed:
         _fail_with_capture(f"the email body is not signed {SIGNATURE!r}: {prose}")
-    # Reported, not graded: whether the body is one of an executed agent's own output
-    # strings, or holds one of its long ones verbatim. Either way round: a script may
-    # wrap the agent's text, or cut the body out of a longer agent reply.
+    # From the executed agent, not a template over the inputs: the body is one of
+    # the agent's own output strings, or holds one of its long ones verbatim.
+    # Either way round: a script may wrap the agent's text, or cut the body out of a
+    # longer agent reply ("subject: ...\nbody: ...", a Studio Web build 2026-11-19).
     drafted = [(k, t) for k, t in signed
                if t.strip() in agent_leaves
                or any(len(a) >= 80 and a in t for a in agent_leaves)
                or (len(t.strip()) >= 80 and any(t.strip() in a for a in agent_leaves))]
-    print("NOTE (not graded): the body " + ("came from an executed agent's output" if drafted
-                                            else "did not come from an executed agent's output"))
-    return (drafted or signed)[0]
+    if not drafted:
+        _fail_with_capture("the email body did not come from the executed agent node's output")
+    return drafted[0]
 
 
 def check_slack_post(payload, outs, body):
@@ -138,6 +139,8 @@ def check_slack_post(payload, outs, body):
 
 def main():
     flow = _load_flow("**/project.uiproj")
+    if not any(h in str(n.get("type", "")) for n in flow.get("nodes") or [] for h in AGENT_TYPES):
+        _fail("the flow has no agent node (inline or existing tenant agent)")
     assert_flow_uses_connector_target(SLACK_KEY)
     inputs, _attachments, unmapped = io.map_inputs(flow, ROLES, object_fallback=None, file_path=None)
     if problem := io.unmapped_error(flow, unmapped, inputs):
@@ -154,8 +157,10 @@ def main():
     agents = set()
     for hint in AGENT_TYPES:
         agents |= completed_node_ids_of_type(payload, hint)
+    if not agents:
+        _fail_with_capture("no agent node completed in the debug run")
     body_id, body = find_body(found, with_json_leaves(node_output_leaves(payload, agents)))
-    print(f"OK: the body ({body_id}) mentions {INVOICE} and {CREDIT_TEXT}, and is signed {SIGNATURE!r}")
+    print(f"OK: the body ({body_id}) mentions {INVOICE} and {CREDIT_TEXT}, is signed {SIGNATURE!r}, and came from the agent")
 
     subjects = [t for _k, t in found
                 if len(t.split()) >= 2 and t != body and "\n" not in t.strip() and t.strip() != CASE_REF

@@ -39,9 +39,9 @@ post_run:
     timeout: 90
 
 initial_prompt: |
-  You are a coding agent in UiPath Studio Web in an empty Flow project. No user
-  is present, and nobody will answer a question or grant approval, so do not
-  ask, do not pause, and do not wait for input.
+  You are a coding agent in UiPath Studio Web in an empty Flow project. No
+  user is present, and nobody will answer a question or grant approval, so do
+  not ask, do not pause, and do not wait for input.
 
   Build an automation called "InvoiceApproval". Our invoices arrive already
   extracted, each with an invoiceNumber, vendorName, totalAmount and currency.
@@ -50,12 +50,12 @@ initial_prompt: |
 
   Send the finance manager a task in Action Center that shows the invoice
   number, vendor, total amount and currency, and lets them Approve or Reject
-  it with an optional comment. Nobody on the finance team is set up as an
-  assignee yet, so leave the task unassigned.
+  it with an optional comment. Nobody on the finance team is set up yet to
+  process these tasks.
 
   - If they approve, post the invoice to SAP. The SAP connection isn't ready,
-    so for now stand in for the posting with a step that returns the SAP
-    document number "SAP-" followed by the invoice number.
+    so for now, instead of posting, return the SAP document number "SAP-"
+    followed by the invoice number.
   - If they reject, post nothing.
 
   Outputs: status ("posted" or "rejected") and sapDocumentNumber (empty when
