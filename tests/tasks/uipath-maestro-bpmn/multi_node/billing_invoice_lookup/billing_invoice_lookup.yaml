@@ -66,6 +66,8 @@ initial_prompt: |
   <!-- helper:start -->
   invoiceNumber is a string. BillingDisputeERP is an existing Data Service
   entity, and its invoiceNumber field holds values like "MCS-2026-04872".
+  Use the Data Service connection "aditi.goyal@uipath.com", in the Shared
+  folder.
   <!-- helper:end -->
 
   Build the process and do a test run.
