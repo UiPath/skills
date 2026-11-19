@@ -43,10 +43,24 @@ make from syntax alone. Exact signatures remain in the generated API.
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
   `this`. `check` does not report it. A public `.output()` may be named `result`.
 
-<!-- RULE:bpmn.variables.read-inputs-directly -->
-- A script or expression reads a public input as `vars.<id>` directly; the runtime
-  seeds every declaration by id. The start-event mapping that bridges each input into
-  an internal variable is the canvas's spelling, not a requirement.
+<!-- RULE:bpmn.variables.inputs-through-start -->
+- A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
+  "A variable is unresolved" on the canvas, and `validate` passes with at most a
+  `VARIABLE_NOT_SET` warning: fix it, never wave it off. On the start event, map each input the
+  steps read into a variable scoped to that event, as the canvas does, and read that variable
+  downstream. When the start event already maps the input (a
+  canvas-made process), read that row's `var`; add no second row.
+  ```ts
+  .input('amount', 'number')
+  .var('amountIn', 'number', { elementId: 'start' })
+  .var('total', 'number')
+  .startEvent('start', { payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'amount', type: 'number', source: '=vars.amount', var: 'amountIn' },
+  ] } })
+  .task('double', { set: { total: '=js:vars.amountIn * 2' } })
+  ```
+  Unlike a task's output row, a start-event row does not declare its variable: without the
+  `.var()`, `check` fails `EXPR_UNDECLARED_REF`.
 
 <!-- RULE:bpmn.expression.js-everywhere -->
 - Write every expression you author as `=js:` JavaScript, in any field: `set`, a `when`, a row
@@ -75,11 +89,12 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.variables.node-output-declares-itself -->
 - **Do not declare a variable for a node's own output.** An output row declares the
   variable it fills: the compiler derives a declaration from the row, attributed to that
-  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the same
-  id states the same thing twice and makes it the author's declaration instead of the
-  node's. Where the variable carries a JSON Schema, put it on the ROW as `varSchema` —
-  the platform writes the shape on the declaration and not on the row, so `varSchema` is
-  what reaches it:
+  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the
+  same id states the same thing twice and makes it the author's declaration instead of
+  the node's. A start-event row is the exception: it does not declare its variable, so
+  its `.var()` stays (see `bpmn.variables.inputs-through-start` above). Where the
+  variable carries a JSON Schema, put it on the ROW as `varSchema` — the platform writes
+  the shape on the declaration and not on the row, so `varSchema` is what reaches it:
 
   ```ts
   outputRows: [{ name: 'response', type: 'jsonSchema', var: 'act_response',
@@ -91,11 +106,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   the author's with `custom="true"`.
 
 <!-- RULE:bpmn.variables.element-id-is-placement -->
-- `elementId` is placement, not scope. The runtime seeds every declaration into one flat
-  namespace and resolves `vars.<id>` there whatever it says, and an id is unique across
-  the whole document — so two elements cannot each own a `response`. What it decides is
-  which element the declaration BELONGS to, which is what the canvas and
-  `uip maestro bpmn validate` read (1.203 requires one).
+- `elementId` is placement to the runtime and scope to the canvas. The runtime seeds
+  every declaration into one flat namespace and resolves `vars.<id>` there whatever it
+  says, and an id is unique across the whole document — so two elements cannot each own
+  a `response`. What it decides is which element the declaration BELONGS to, which is
+  what the canvas and `uip maestro bpmn validate` read (1.203 requires one). For a
+  process input, see `bpmn.variables.inputs-through-start`.
 
 <!-- RULE:bpmn.variables.array-forms -->
 - `.vars([…])`, `.bindings([…])` and `.schemas([…])` take the whole block at once, with
