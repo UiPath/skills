@@ -53,7 +53,7 @@ Load each applicable catalog fully and apply every rule's `detection_method` to 
 
 For guardrails, running the guardrail workflow is **mandatory** whenever `guardrails[]` is non-empty or the use case calls for guardrails — do not eyeball `agent.json`:
 
-- Low-code: **open [guardrails-review.md](guardrails/guardrails-review.md) and follow its Step 0 — you MUST run `uip agent guardrails catalog --output json` (30-min cache) and the never-cached tenant `uip agent guardrails list`** before auditing, then apply Audit Mode and Recommend Mode. Emit `LC_GUARDRAIL_ACTION_INEFFECTIVE`, `LC_GUARDRAIL_MISAPPLIED`, and `LC_GUARDRAIL_RECOMMENDED` as applicable.
+- Low-code: **open [guardrails-review.md](guardrails/guardrails-review.md) and follow its Step 0 — you MUST run `uip agent guardrails catalog --output json` (30-min cache) and the never-cached tenant `uip agent guardrails list`** before auditing, then apply Audit Mode to **every** `guardrails[]` entry first, then Recommend Mode. Emit `LC_GUARDRAIL_ACTION_INEFFECTIVE`, `LC_GUARDRAIL_MISAPPLIED`, and `LC_GUARDRAIL_RECOMMENDED` as applicable.
 - Coded: **open [coded-guardrails-review.md](guardrails/coded-guardrails-review.md) and follow it** when middleware/decorators are wired or the use case calls for guardrails. Public Python SDK docs may be fetched only when a finding must name classes not visible in source. Emit `CODED_GUARDRAIL_ACTION_INEFFECTIVE`, `CODED_GUARDRAIL_MISAPPLIED`, and `CODED_GUARDRAIL_RECOMMENDED`; do not duplicate CLI IDs `CODED_GUARDRAIL_WRONG_IMPORT`, `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS`, or `CODED_GUARDRAIL_INVALID_CONTRACT`.
 - If the guardrail catalog is unavailable, put Audit-Mode rules in Rules Skipped and retain source-only Recommend Mode detection.
 
