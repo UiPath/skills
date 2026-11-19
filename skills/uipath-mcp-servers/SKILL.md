@@ -115,9 +115,9 @@ These are the things the CLI does not advertise in `--help`.
 
 ## Automation Suite
 
-Agent Gateway on Automation Suite 26.10 has `uipath`, `coded`, `command`, `remote` and `platform` servers, and Integration Service connections; its `platform` services are the ones that environment lists (Rule 9). It does not have:
+Agent Gateway on Automation Suite 26.10 has `uipath`, `remote` and `platform` servers, and Integration Service connections; its `platform` services are the ones that environment lists (Rule 9). It does not have:
 
-- `swagger` servers: `mcp create swagger` and an `mcp update` of a swagger server fail with `not_supported` (Rule 11).
+- `swagger`, `coded` and `command` servers: `mcp create` of those types and an `mcp update` of such a server fail with `not_supported` (Rule 11).
 - Remote A2A agents: every `uip agenthub remote-a2a-agent` command fails with `not_supported`.
 
 ## Updating Servers
