@@ -53,7 +53,7 @@ initial_prompt: |
   <!-- helper:start -->
   CreditRisk is a business rule project in this solution and is not deployed on
   the tenant. Its decision RiskDecision takes creditScore (a number) and returns
-  riskBand.
+  riskBand, either LOW_RISK or HIGH_RISK.
   <!-- helper:end -->
 
   Build and do a test run of the automation.

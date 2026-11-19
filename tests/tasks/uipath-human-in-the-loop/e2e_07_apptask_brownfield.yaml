@@ -66,8 +66,14 @@ initial_prompt: |
   Leave the rest of the flow as it is.
 
   <!-- helper:start -->
-  ExpenseReviewApp has one text input, Content, and its outcomes are approve
-  and reject.
+  Edit the existing flow in this project. Use the deployed app, not a new form.
+  ExpenseReviewApp has one text input, Content (string), and its outcomes are
+  approve and reject.
+  Inputs: expenseId (string), employeeName (string), amount (number),
+  description (string).
+  Outputs: status (string), sapDocumentNumber (string). status is "posted" or
+  "rejected". When approved, sapDocumentNumber is "SAPEXP-" followed by the
+  expenseId, built by the existing posting step.
   <!-- helper:end -->
 
   Build and do a test run.

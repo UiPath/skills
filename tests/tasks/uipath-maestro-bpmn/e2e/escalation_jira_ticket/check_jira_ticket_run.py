@@ -60,6 +60,7 @@ from _shared.bpmn_live import (  # noqa: E402
 NAME = "EscalationJiraTicket"
 LIVE_RUN_DIR = Path("escalation-jira-live")
 JOURNAL = Path(".created_keys")
+UNJOURNALED_NOTE = "NOTE: not journaled, delete by hand if this run created them: "
 
 
 def assert_named(process, variables_data, name: str, expected, *, case_sensitive: bool = False) -> None:
@@ -97,6 +98,12 @@ def journal(keys) -> None:
         JOURNAL.write_text("\n".join(merged) + "\n")
 
 
+def note_unjournaled(keys, journaled) -> None:
+    missing = [key for key in dict.fromkeys(keys) if key not in journaled]
+    if missing:
+        print(UNJOURNALED_NOTE + ", ".join(missing))
+
+
 def partial_text(log_file: Path) -> str:
     return log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
 
@@ -107,10 +114,13 @@ def journal_owned_in(text: str, seed: dict) -> None:
     found = list(dict.fromkeys(re.findall(rf"\b{re.escape(seed['project_key'])}-\d+\b", text)))
     if not found:
         return
+    owned = {}
     try:
-        journal(owned_keys(found, seed["correlationId"]))
+        owned = owned_keys(found, seed["correlationId"])
+        journal(owned)
     except (SystemExit, Exception):  # noqa: BLE001 -- keep the real failure
         pass
+    note_unjournaled(found, owned)
 
 
 def owned_keys(keys, correlation: str) -> dict[str, dict]:
@@ -180,6 +190,7 @@ def main() -> None:
         journal_owned_in(partial_text(log_file) + json.dumps(variables_data, default=str), seed)
         raise
     journal(owned)  # before any assertion: the issue exists whatever the verdict
+    note_unjournaled(created_keys(variables_data, step_ids), owned)
 
     incidents, incidents_raw = fetch_incidents(instance_id)
     require_clean_run(debug_data, DebugEvidence(variables_data, variables_text, incidents, incidents_raw))

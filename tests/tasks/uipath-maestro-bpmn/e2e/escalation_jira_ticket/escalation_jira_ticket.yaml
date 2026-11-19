@@ -83,10 +83,15 @@ initial_prompt: |
   jiraIssueKey (the key of the ticket that was created).
 
   <!-- helper:start -->
-  productionDown, workaroundAvailable, hasAttachments and isDuplicate are
-  booleans; the other inputs are strings. The Jira connection is
-  "is-sandboxes-test@uipath.com-uipath-sandbox-380", in the
-  Shared/uipath-maestro-flow folder.
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), correlationId (string).
+  Outputs: severity (string), caseKey (string), jiraIssueKey (string).
+  severity is "Sev1", "Sev2" or "Sev3".
+  The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380", in
+  the Shared/uipath-maestro-flow folder. Create the issue in project CE as issue
+  type Task. The summary includes the correlationId.
   <!-- helper:end -->
 
   Build the process and do a test run.

@@ -742,5 +742,8 @@ def test_a_missing_uip_leaves_no_debug_dir_behind(tmp_path, monkeypatch):
 def test_each_graded_run_records_its_token_for_cleanup(tmp_path):
     r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), GOOD_INVOICE)
     assert r.returncode == 0, r.stdout + r.stderr
-    tokens = (tmp_path / "Sol" / live.TOKENS_FILE).read_text().split()
+    lines = (tmp_path / "Sol" / live.TOKENS_FILE).read_text().splitlines()
+    tokens = [line.split()[0] for line in lines if len(line.split()) == 1]
+    with_instance = [line.split() for line in lines if len(line.split()) == 2]
     assert len(tokens) == 2 and all(t.startswith("INV-") for t in tokens)
+    assert [t for t, _ in with_instance] == tokens and all(i == "c3d4e5f6-0000-0000-0000-000000000001" for _, i in with_instance)

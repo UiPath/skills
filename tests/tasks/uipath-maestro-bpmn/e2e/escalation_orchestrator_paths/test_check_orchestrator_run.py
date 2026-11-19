@@ -142,7 +142,9 @@ def test_sev3_needs_no_draft_response():
      "draft response: none", "Draft: no", "draft - no", "Draft = none", "Draft response: false", "response: no",
      "Response: N/A", "Response none", "Response is none", "Response (none)", "Response: null", "Response skipped", "Response omitted",
      "NoDraftNeeded", "noDraftRequired", "NoReply", "Draft not generated", "Skip draft", "SkipDraft",
-     "No automatic response", "None (Sev3)", "No reply", "Not required for Sev3", "Draft never sent", "no_reply"],
+     "No automatic response", "None (Sev3)", "No reply", "Not required for Sev3", "Draft never sent", "no_reply",
+     "None or N/A", "none or not applicable", "None OR n/a", "NODRAFT", "nodraft", "noresponse", "NORESPONSE",
+     "nodraftneeded", "n-a", "N / A", "n.a.", "N.A.", "None/N/A"],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -164,7 +166,7 @@ def test_a_process_that_never_declares_response_mode_fails_a_none_case(tmp_path)
 
 
 @pytest.mark.parametrize("value", ["draft or none", "None or draft", "Draft/None", "draft|none", "none | draft",
-                                   "Draft / No", "response/none"])
+                                   "Draft / No", "response/none", "Draft OR n/a", "draft or N / A"])
 def test_an_unrecognized_response_mode_matches_neither_mode(value):
     for case in (SEED["cases"][0], next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")):
         with pytest.raises(checker.CheckFailure, match="responseMode"):
@@ -278,6 +280,37 @@ def test_every_message_the_run_posts_is_journalled_for_teardown(tmp_path, monkey
 def test_a_failed_case_still_journals_the_message_it_posted(tmp_path, monkeypatch):
     _orchestrator_sandbox(tmp_path, monkeypatch, seed_module.build_seed()["cases"], severity="SevX")
     with pytest.raises(checker.CheckFailure):
+        checker.cases()
+    assert _journalled(tmp_path) == {("C0B2FDZD1M3", "1763405123.456789")}
+
+
+def _failing_sandbox(tmp_path, monkeypatch, *, fail_at):
+    seeded = seed_module.build_seed()["cases"]
+    _orchestrator_sandbox(tmp_path, monkeypatch, seeded)
+    case = seeded[0]
+    posted = json.dumps(_variables(case)["Variables"][0]["Elements"][1]["Outputs"])
+    other = json.dumps({"channel": "C0B2FDZD1M3", "ts": "1763400000.000001"})
+    log = f"stdout: {posted}\nunrelated {other}\n"
+
+    def run_debug(project_dir, inputs, log_file, **k):
+        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+        Path(log_file).write_text(log)
+        if fail_at == "debug":
+            raise checker.CheckFailure("debug stopped waiting")
+        return _debug(case), "inst"
+
+    def fetch(instance_id):
+        raise subprocess.TimeoutExpired("uip", 120)
+
+    monkeypatch.setattr(checker, "run_debug", run_debug)
+    if fail_at == "variables":
+        monkeypatch.setattr(checker, "fetch_variables", fetch)
+
+
+@pytest.mark.parametrize("fail_at, error", [("debug", checker.CheckFailure), ("variables", subprocess.TimeoutExpired)])
+def test_a_failed_run_journals_the_posts_in_its_log(tmp_path, monkeypatch, fail_at, error):
+    _failing_sandbox(tmp_path, monkeypatch, fail_at=fail_at)
+    with pytest.raises(error):
         checker.cases()
     assert _journalled(tmp_path) == {("C0B2FDZD1M3", "1763405123.456789")}
 

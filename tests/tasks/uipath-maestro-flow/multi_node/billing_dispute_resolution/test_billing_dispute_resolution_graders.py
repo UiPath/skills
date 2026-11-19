@@ -243,6 +243,18 @@ def test_overcharge_fails_on_a_wrong_result(effects, flow, field, wrong, message
     assert message in str(exc.value)
 
 
+def test_overcharge_accepts_an_email_without_a_greeting_and_with_a_long_closing(effects, flow):
+    draft = ("Thank you for contacting us about MCS-2026-04903.\nWe approved a credit of 4,950 for the overcharge.\n"
+             "Please reply to this email if you have any further questions.")
+    effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "draft": draft}))
+
+
+def test_overcharge_accepts_an_email_that_names_the_sop_rule_when_it_is_the_only_letter(effects, flow):
+    draft = "Dear customer,\n\nPer SOP §5.4 we credited 4,950 on MCS-2026-04903.\n\nBilling"
+    why = "The billed rate exceeds the contract by $55 per hour."
+    effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "draft": draft, "why": "Per SOP §5.4 the " + why}))
+
+
 def test_overcharge_explanation_may_cite_the_invoice_and_credit(effects, flow):
     why = "Credit of 4,950 on MCS-2026-04903 approved under SOP §5.4"
     effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "why": why}))
@@ -303,6 +315,15 @@ def test_overcharge_requires_financial_posting_function_not_any_api_workflow(eff
 def test_reject_passes_when_another_api_workflow_runs_before_the_analyst(effects, flow):
     flow = _with_decoy_api_workflow(flow)
     effects.check_reject(flow, _payload(["decoyApi"] + REJECT_PATH, REJECTED))
+
+
+def test_reject_fails_when_the_flow_has_no_posting_node(effects, flow):
+    flow = copy.deepcopy(flow)
+    flow["nodes"] = [n for n in flow["nodes"] if n["id"] != "financialpostingfunction12"]
+    flow["definitions"] = [d for d in flow.get("definitions") or [] if "FinancialPostingFunction" not in json.dumps(d)]
+    with pytest.raises(SystemExit) as exc:
+        effects.check_reject(flow, _payload(REJECT_PATH, REJECTED))
+    assert "FinancialPostingFunction" in str(exc.value)
 
 
 def test_reject_passes_on_the_rejection_path(effects, flow):

@@ -244,16 +244,14 @@ def test_two_pinned_connections_of_one_connector_map_to_two_live_ones(module, sa
 def test_a_pinned_connection_the_tenant_kept_is_not_given_to_another_pin(module, sandbox, monkeypatch):
     """The named pin is resolved first; it must not take the record the other pin still owns."""
     first, second = "6a817d24-cbbd-4389-b10d-4329214ffb8d", "bad8a81c-410f-4ee6-a642-c5679acf0c98"
-    live_flow = "55555555-5555-5555-5555-555555555555"
     (sandbox / "sdd.md").write_text(f"{first}\n{second}\n")
     _stub_uip(module, monkeypatch, {"uipath-http-webhook": [
-        {"Id": first, "Name": "auto", "Folder": "Shared", "State": "Enabled"},
-        {"Id": live_flow, "Name": "other", "Folder": "uipath-maestro-flow", "State": "Enabled"},
+        {"Id": first, "Name": "coder-eval-webhook-shared", "Folder": "Shared", "State": "Enabled"},
     ]})
 
     assert module.main() == 0
 
-    assert (sandbox / "sdd.md").read_text() == f"{first}\n{live_flow}\n"
+    assert (sandbox / "sdd.md").read_text() == f"{first}\n{second}\n"
 
 
 def test_a_crlf_fixture_keeps_its_line_endings(module, sandbox, monkeypatch):
@@ -364,3 +362,37 @@ def test_a_bindings_checker_expects_the_ids_the_localizer_wrote(checker, tmp_pat
     connections = mod.parse_fixture()["connection_ids"]
 
     assert LIVE_OUTLOOK in connections and cloud not in connections
+
+
+JIRA = "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+JIRA_NAME = "is-sandboxes-test@uipath.com-uipath-sandbox-380"
+JIRA_SPEC = {"connector": "uipath-atlassian-jira", "folder": "uipath-maestro-flow", "name": JIRA_NAME}
+
+
+def _jira(*records):
+    return {"uipath-atlassian-jira": [{"Folder": "uipath-maestro-flow", "State": "Enabled", **r} for r in records]}
+
+
+def test_a_pinned_name_matching_no_connection_is_unresolved_not_a_personal_one(module, monkeypatch):
+    _stub_uip(module, monkeypatch, _jira({"Id": LIVE_HELPDESK, "Name": "someone@example.com", "IsDefault": True}))
+
+    assert module._resolve_connection(JIRA, JIRA_SPEC, set()) is None
+
+
+def test_a_pinned_name_picks_its_connection_over_a_default_one(module, monkeypatch):
+    _stub_uip(module, monkeypatch, _jira(
+        {"Id": LIVE_HELPDESK, "Name": "someone@example.com", "IsDefault": True},
+        {"Id": LIVE_OUTLOOK, "Name": JIRA_NAME},
+    ))
+
+    assert module._resolve_connection(JIRA, JIRA_SPEC, set()) == LIVE_OUTLOOK
+
+
+def test_an_unmatched_pinned_name_is_reported_and_left_as_authored(module, sandbox, monkeypatch, capsys):
+    (sandbox / "sdd.md").write_text(f"{JIRA}\n")
+    _stub_uip(module, monkeypatch, _jira({"Id": LIVE_HELPDESK, "Name": "someone@example.com"}))
+
+    module.main()
+
+    assert (sandbox / "sdd.md").read_text() == f"{JIRA}\n"
+    assert JIRA in capsys.readouterr().err

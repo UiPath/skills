@@ -63,6 +63,16 @@ initial_prompt: |
   the overcharge and the discrepancies, and empty text for the invoice number
   and the tier.
 
+  <!-- helper:start -->
+  Inputs: invoiceNumber (string), accountNumber (string), lineNumber (number),
+  unitPrice (number), quantity (number).
+  Outputs: overcharge (number), discrepancyCount (number), matchedInvoiceNumber
+  (string), accountTier (string).
+  BillingDisputeERP and BillingDisputeCRM are existing Data Fabric entities. Use
+  the Data Service connection in the Shared folder, even though it is a personal
+  one.
+  <!-- helper:end -->
+
   Build and do a test run of the automation.
 
 success_criteria:

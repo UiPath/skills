@@ -84,6 +84,19 @@ initial_prompt: |
   - the case reference
   - the key of the ticket that was created, for example "CE-12345"
 
+  <!-- helper:start -->
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), caseReference (string).
+  Outputs: severity (string), engineeringNeeded (boolean), caseKey (string),
+  jiraIssueKey (string). severity is "Sev1", "Sev2" or "Sev3".
+  The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380", in
+  the Shared/uipath-maestro-flow folder. Create one issue per run in project CE
+  as issue type Task. The title is "[TEST] [<severity>] <caseReference>
+  <subject>" and the description is the email body.
+  <!-- helper:end -->
+
   Build and test the automation.
 success_criteria:
   # ── Advisory: the agent validated the flow (CLI commands are not graded) ─

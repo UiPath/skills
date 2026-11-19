@@ -127,6 +127,8 @@ def _resolve_connection(cloud_id: str, spec: dict, taken: set[str]) -> str | Non
         return cloud_id
     enabled = [c for c in connections if c.get("State") == "Enabled" and str(c.get("Id", "")).lower() not in taken]
     named = [c for c in enabled if spec.get("name") and c.get("Name") == spec["name"]]
+    if spec.get("name") and not named:
+        return None
     in_folder = [c for c in enabled if c.get("Folder") == spec.get("folder")]
     for candidates in (named, in_folder, enabled):
         if len(candidates) == 1:

@@ -614,7 +614,7 @@ class SeedTests(unittest.TestCase):
         A substring match on the whole YAML would also match `turn_timeout`,
         and comparing against DEBUG_TIMEOUT_SECONDS alone ignores the other
         nine calls -- both pass by construction. Parse the criterion's own
-        timeout and compare it against the real sum, so raising any one step
+        timeout and compare it against the whole worst-case path, so raising any one step
         budget past the ceiling fails here rather than as a SIGKILL that
         strands created Jira and Slack ids for post_run to sweep.
         """
@@ -630,12 +630,17 @@ class SeedTests(unittest.TestCase):
         self.assertEqual(len(behavior), 1, "expected one behavior criterion")
         criterion_timeout = behavior[0]["timeout"]
 
-        budget = sum(checker.STEP_TIMEOUTS)
+        budget = checker.WORST_CASE_PATH_TIMEOUT
+        self.assertEqual(
+            budget,
+            sum(checker.STEP_TIMEOUTS)
+            + checker.MAX_OWNED_KEY_READS * escalation_is.JIRA_READ_TIMEOUT,
+        )
         self.assertLessEqual(
             budget,
             criterion_timeout,
-            f"step budgets sum to {budget}s but the behavior criterion allows "
-            f"{criterion_timeout}s -- raise the criterion or lower a step",
+            f"the worst-case path sums to {budget}s but the behavior criterion "
+            f"allows {criterion_timeout}s -- raise the criterion or lower a step",
         )
 
     def test_task_timeout_covers_the_turn_plus_all_grading(self):

@@ -26,6 +26,7 @@ from case_run import (  # noqa: E402
     cancel_instance,
     element_of,
     instance_executions,
+    record_debug_instance,
     status_of,
 )
 from _shared.case_check import _get_ci as _ci  # noqa: E402
@@ -104,6 +105,7 @@ def debug_case(timeout: int = 1500) -> dict:
     r, envelope, data = _debug_with_retry(cmd, timeout)
 
     instance_id = str(_ci(data, "instanceId", "InstanceId"))
+    record_debug_instance(instance_id)
     executions = [row for row in _ci(data, "elementExecutions", "ElementExecutions", default=[]) or []
                   if isinstance(row, dict)]
     status = str(_ci(data, "finalStatus", "FinalStatus", "lastStatus", "LastStatus") or "")

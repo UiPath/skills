@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -186,6 +187,31 @@ def test_a_run_that_fails_grading_still_journals_its_message(tmp_path, monkeypat
     with pytest.raises(checker.CheckFailure):
         checker.main()
     assert (tmp_path / ".created-ids.jsonl").is_file()
+
+
+@pytest.mark.parametrize("fail_at", ["debug", "evidence"])
+def test_a_failed_run_journals_the_posts_in_its_log(tmp_path, monkeypatch, fail_at):
+    _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT)
+    posted = json.dumps(_variables()["Variables"][0]["Elements"][1]["Outputs"])
+    other = json.dumps({"channel": "C0B2FDZD1M3", "ts": "1763400000.000001"})
+
+    def run_debug(project_dir, inputs, log, **k):
+        Path(log).parent.mkdir(parents=True, exist_ok=True)
+        Path(log).write_text(f"{posted}\n{other}\n")
+        if fail_at == "debug":
+            raise checker.CheckFailure("debug stopped waiting")
+        return _debug(), "inst-1"
+
+    def evidence(instance_id):
+        raise subprocess.TimeoutExpired("uip", 120)
+
+    monkeypatch.setattr(checker, "run_debug", run_debug)
+    if fail_at == "evidence":
+        monkeypatch.setattr(checker, "debug_evidence", evidence)
+    with pytest.raises((checker.CheckFailure, subprocess.TimeoutExpired)):
+        checker.main()
+    lines = (tmp_path / ".created-ids.jsonl").read_text().splitlines()
+    assert [json.loads(line) for line in lines] == [{"kind": "slack_message", "value": ["C0B2FDZD1M3", TS]}]
 
 
 def test_post_run_replays_the_journal_within_the_post_run_cap():

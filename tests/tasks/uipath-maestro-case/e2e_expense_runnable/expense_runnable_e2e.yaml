@@ -6,7 +6,7 @@ description: >
   resources: WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup and
   the Maestro Case child case). Graded by validate (plain and --strict --sdd
   against the same document), the structural expense topology, and one
-  harness-run `uip maestro case debug` that must reach finalStatus=Completed
+  harness-run `uip maestro case debug` that must run until the Approved stage completes,
   having run Submission -> Manager Approval -> Finance Approval -> Payment ->
   Approved to Completed, with the Rejected and Withdrawn lanes not run and no
   element failed. The agent's own test run is advisory. Text between the
@@ -114,9 +114,10 @@ success_criteria:
     pass_threshold: 1.0
 
   # Worst case: refresh (180 s), two debug calls (2 x 720 s) and the retry sleep
-  # (15 s), then following the instance (900 s) plus one last read (420 s).
+  # (15 s), then following the instance (900 s) plus one poll (20 s) and one last
+  # read (420 s).
   - type: run_command
-    description: "Effects: one harness-run uip maestro case debug reaches finalStatus=Completed, Submission, Manager Approval, Finance Approval, Payment and Approved each ran to Completed, the Rejected and Withdrawn lanes did not run, and no element failed"
+    description: "Effects: one harness-run uip maestro case debug runs until the Approved stage completes, Submission, Manager Approval, Finance Approval, Payment and Approved each ran to Completed, the Rejected and Withdrawn lanes did not run, and no element failed"
     command: "python3 $REFERENCE_DIR/e2e_expense_runnable/check_expense_runnable_run.py"
     timeout: 3180
     expected_exit_code: 0

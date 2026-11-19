@@ -176,6 +176,31 @@ def test_a_variables_read_failure_still_journals_this_runs_key(tmp_path, monkeyp
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
 
 
+def test_a_created_key_that_is_not_journalled_is_reported(tmp_path, monkeypatch, capsys):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", summary="[Sev1] someone else's ticket")
+    with pytest.raises(checker.CheckFailure):
+        checker.main()
+    assert "NOTE: not journaled, delete by hand if this run created them: CE-4242" in capsys.readouterr().out
+
+
+def test_an_unreadable_key_is_reported(tmp_path, monkeypatch, capsys):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+
+    def unreadable(conn, key):
+        raise checker.CheckFailure("read failed")
+
+    monkeypatch.setattr(checker.jira_is, "get_issue", unreadable)
+    with pytest.raises(checker.CheckFailure):
+        checker.main()
+    assert "NOTE: not journaled, delete by hand if this run created them: CE-4242" in capsys.readouterr().out
+
+
+def test_a_journaled_key_is_not_reported(tmp_path, monkeypatch, capsys):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+    checker.main()
+    assert "NOTE" not in capsys.readouterr().out
+
+
 def test_jira_issue_key_output_must_be_the_created_key(tmp_path, monkeypatch):
     _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", exposed_key="CE-1")
     with pytest.raises(checker.CheckFailure, match="jiraIssueKey"):

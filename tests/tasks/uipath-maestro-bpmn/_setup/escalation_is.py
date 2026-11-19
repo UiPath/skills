@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Minimal live Jira/Slack helper for this task — wraps `uip is resources run`.
+"""Live Jira and Slack helper shared by the escalation e2e tasks.
 
-Plays the role `jira_is.py` plays for the flow suite's escalation_jira_ticket
-task: connection discovery, tenant rereads, and deletions, defined once so the
-grader and the post_run teardown issue identical calls. CLI plumbing comes
-from `_shared/bpmn_live.py`; this file holds only the task's tenant targets.
+Holds the tenant targets, connection discovery, Jira reads and deletes, Slack
+deletes, and the cleanup journal helpers (`record_created_id`,
+`journal_slack_posts`, `journal_slack_posts_in_log`) the graders and the
+post_run teardown share. CLI plumbing comes from `_shared/bpmn_live.py`.
 
 Assumes `uip` is on PATH and logged in and that the connections exist — this
 is a tenant-gated e2e task.
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -51,6 +52,8 @@ ISSUETYPE_NAME = "Task"  # its id is per site and per project, so it is read at 
 # The flow suite's identified target on this same connection
 # (escalation_slack_alert/check_escalation_slack_alert.py).
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
+SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
+SLACK_JOURNAL_KIND = "slack_message"
 # The run's eval target, keyed by the `uip login status` field it must match.
 # The pipeline exports these per run (a fresh org and tenant on ETE and
 # provisioned runs), and coder-eval's default env_passthrough forwards them
@@ -383,6 +386,60 @@ def journal_slack_posts(variables_data, element_ids) -> None:
         channel, timestamp = get_ci(response, "channel"), get_ci(response, "ts")
         if isinstance(channel, str) and isinstance(timestamp, str):
             record_created_id("slack_message", [channel, timestamp])
+
+
+def _slack_responses(value) -> list[tuple[str, str]]:
+    """(channel, ts) of every Slack post response found in `value`: an object
+    holding a channel, a ts and the posted `message`."""
+
+    if isinstance(value, str):
+        return _slack_responses_in(value)
+    if isinstance(value, list):
+        return [pair for item in value for pair in _slack_responses(item)]
+    if not isinstance(value, dict):
+        return []
+
+    channel, timestamp = get_ci(value, "channel"), get_ci(value, "ts")
+    own = []
+    if (
+        isinstance(channel, str)
+        and isinstance(timestamp, str)
+        and SLACK_TS_RE.match(timestamp.strip())
+        and isinstance(get_ci(value, "message"), dict)
+    ):
+        own = [(channel, timestamp.strip())]
+    return own + [pair for item in value.values() for pair in _slack_responses(item)]
+
+
+def _slack_responses_in(text: str) -> list[tuple[str, str]]:
+    decoder = json.JSONDecoder()
+    found: list[tuple[str, str]] = []
+    index = text.find("{")
+    while index != -1:
+        try:
+            value, end = decoder.raw_decode(text, index)
+        except ValueError:
+            index = text.find("{", index + 1)
+            continue
+        found += _slack_responses(value)
+        index = text.find("{", end)
+    return found
+
+
+def journal_slack_posts_in_log(log_file: Path, *payloads) -> None:
+    """Journal the Slack posts this run's log and payloads show, for a run that
+    died before its variables could be read. Only a response object with a
+    channel, a ts and the posted message counts."""
+
+    texts = [log_file.read_text(encoding="utf-8", errors="replace")] if log_file.is_file() else []
+    texts += [json.dumps(payload, default=str) for payload in payloads if payload is not None]
+    known = {tuple(value) for value in read_journal().get(SLACK_JOURNAL_KIND, [])}
+    for text in texts:
+        for pair in dict.fromkeys(_slack_responses_in(text)):
+            if pair in known:
+                continue
+            known.add(pair)
+            record_created_id(SLACK_JOURNAL_KIND, list(pair))
 
 
 def read_journal(path: Path = JOURNAL) -> dict[str, list]:

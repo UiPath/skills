@@ -165,9 +165,30 @@ def fill_object(
 TEXT_TYPE = "string"
 
 
+SUBMISSION_WORDS = ("submission", "request", "payload", "message", "claim", "dispute")
+
+
+def _camel(name: str) -> str:
+    words = _words(name)
+    return words[0] + "".join(w.capitalize() for w in words[1:]) if words else ""
+
+
 def spelled_object(roles: dict[str, dict]) -> dict:
-    """Every role under each plain name fragment, for a flow whose reads of an object input a regex cannot see."""
-    return {k: spec["value"] for spec in roles.values() for k in spec["keywords"] if _PLAIN.match(k)}
+    """Every role under each plain name fragment, plus its camelCase spellings, for a flow whose reads of an object input a regex cannot see.
+
+    JS keys are case-sensitive: a role's camelCase names are its own name
+    (`invoice number` -> `invoiceNumber`) and any `cased` list on the role."""
+    spelled: dict = {}
+    for role, spec in roles.items():
+        names = [k for k in spec["keywords"] if _PLAIN.match(k)]
+        names += [_camel(role), *spec.get("cased", [])]
+        spelled.update({k: spec["value"] for k in names if k})
+    return spelled
+
+
+def _reads_as_submission(var: dict) -> bool:
+    text = f"{var.get('id')} {var.get('description') or ''}".lower()
+    return any(w in text for w in SUBMISSION_WORDS)
 
 
 def map_inputs(
@@ -229,7 +250,8 @@ def map_inputs(
         used_vars.add(var_id)
         taken.add(role)
     missing = [r for r in roles if r not in taken]
-    free_text = [v for v in others if v["id"] not in used_vars and str(v.get("type") or "").lower() == TEXT_TYPE]
+    free_text = [v for v in others if v["id"] not in used_vars and str(v.get("type") or "").lower() == TEXT_TYPE
+                 and _reads_as_submission(v)]
     if missing and not carried and len(free_text) == 1:
         inputs[free_text[0]["id"]] = json.dumps(spelled_object(roles))
         return inputs, attachments, []

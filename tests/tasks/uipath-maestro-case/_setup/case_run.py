@@ -31,6 +31,9 @@ TASK_START_MARKERS = (
     os.path.join("_setup", ".task-start"),
     os.path.join("_setup", ".tenant-ids.map.json"),
 )
+# Debug instance ids the grader started, one per line.
+DEBUG_INSTANCE_MARKER = os.path.join("_setup", ".debug-instances")
+SCAN_DEADLINE_S = 90
 LIST_LIMIT = 500
 LIST_DEADLINE_S = 180
 LIST_CALL_TIMEOUT_S = 120
@@ -154,12 +157,31 @@ def _our_stage_ids() -> set[str]:
     return stage_ids
 
 
+def record_debug_instance(instance_id: str) -> None:
+    os.makedirs(os.path.dirname(DEBUG_INSTANCE_MARKER), exist_ok=True)
+    with open(DEBUG_INSTANCE_MARKER, "a", encoding="utf-8") as fh:
+        fh.write(f"{instance_id}\n")
+
+
+def _recorded_instances() -> list[str]:
+    try:
+        with open(DEBUG_INSTANCE_MARKER, encoding="utf-8") as fh:
+            return [line.strip() for line in fh if line.strip()]
+    except OSError:
+        return []
+
+
 def cancel_debug_instances() -> int:
     """Cancel every open Studio Web Debug instance this task started.
 
-    The tenant is shared, so an instance counts as ours only when it started
-    after this task did and its element executions carry one of our stage ids.
+    The grader's own runs are cancelled by recorded id. The tenant is shared,
+    so any other instance counts as ours only when it started after this task
+    did and its element executions carry one of our stage ids; those reads stop
+    at ``SCAN_DEADLINE_S``.
     """
+    recorded = _recorded_instances()
+    for instance_id in recorded:
+        cancel_instance(instance_id)
     since_iso = _task_start_iso()
     if since_iso is None:
         print("case_run: no task-start marker; nothing to cancel")
@@ -168,7 +190,13 @@ def cancel_debug_instances() -> int:
     if not stage_ids:
         print("case_run: no caseplan stage ids; cannot tell our instances apart")
         return 0
+    scan_ends = time.monotonic() + SCAN_DEADLINE_S
     for item in _list_instances():
+        if time.monotonic() >= scan_ends:
+            print("case_run: scan deadline reached; remaining instances left as they are")
+            break
+        if str(_ci(item, "InstanceId") or "") in recorded:
+            continue
         if str(_ci(item, "Source") or "") != "Studio Web Debug":
             continue
         if str(_ci(item, "CreatedTimeUtc") or "") < since_iso:

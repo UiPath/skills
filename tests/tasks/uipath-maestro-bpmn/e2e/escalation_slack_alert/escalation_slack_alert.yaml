@@ -71,9 +71,13 @@ initial_prompt: |
   that was posted).
 
   <!-- helper:start -->
-  productionDown and workaroundAvailable are booleans; the other inputs are
-  strings. The "is-sandboxes" Slack connection is in the
-  Shared/uipath-maestro-flow folder.
+  Inputs: senderEmail (string), subject (string), body (string), customerTier
+  (string), productionDown (boolean), workaroundAvailable (boolean),
+  correlationId (string).
+  Outputs: severity (string), engineeringNeeded (boolean), caseKey (string),
+  slackMessageId (string). severity is "Sev1", "Sev2" or "Sev3".
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
   <!-- helper:end -->
 
   Build the process and do a test run.

@@ -8,14 +8,23 @@ No tenant is touched.
 from __future__ import annotations
 
 import importlib.util
+import inspect
 from pathlib import Path
 
 import pytest
+import yaml
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("check_run", HERE / "check_expense_runnable_run.py")
 check_run = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_run)
+
+from _shared import case_run_path  # noqa: E402
+
+TASK_YAML = HERE / "expense_runnable_e2e.yaml"
+RUN_CRITERION_COMMAND = "check_expense_runnable_run.py"
+REFRESH_TIMEOUT_S = 180
+INSTANCE_READ_S = 120 + 180 + 120
 
 STAGES = {
     "Stage_sub": "Submission",
@@ -153,3 +162,27 @@ def test_a_run_ending_in_a_non_completed_status_fails(monkeypatch: pytest.Monkey
 
     with pytest.raises(SystemExit, match="finalStatus=Faulted"):
         check_run.main()
+
+
+def test_the_run_criterion_timeout_covers_the_worst_case_grader_run() -> None:
+    task = yaml.safe_load(TASK_YAML.read_text(encoding="utf-8"))
+    criterion = next(c for c in task["success_criteria"] if RUN_CRITERION_COMMAND in c.get("command", ""))
+    poll_s = inspect.signature(case_run_path.wait_for).parameters["every"].default
+    worst_case_s = (
+        REFRESH_TIMEOUT_S
+        + case_run_path.MAX_DEBUG_CALLS * check_run.DEBUG_TIMEOUT_S
+        + case_run_path.RETRY_SLEEP_S
+        + check_run.WAIT_BUDGET_S
+        + poll_s
+        + INSTANCE_READ_S
+    )
+
+    assert criterion["timeout"] >= worst_case_s
+
+
+def test_the_run_criterion_names_the_stage_it_waits_for_not_the_final_status() -> None:
+    task = yaml.safe_load(TASK_YAML.read_text(encoding="utf-8"))
+    criterion = next(c for c in task["success_criteria"] if RUN_CRITERION_COMMAND in c.get("command", ""))
+
+    assert f"{check_run.FINAL_STAGE} stage completes" in criterion["description"]
+    assert "finalStatus=Completed" not in criterion["description"]

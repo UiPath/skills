@@ -136,3 +136,106 @@ def test_a_list_that_never_ends_stops_at_the_page_cap(
 
     assert case_run.instance_folder_key("missing") is None
     assert len(calls) == case_run.MAX_LIST_PAGES
+
+
+def _sandbox_with_plan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    (tmp_path / "_setup").mkdir()
+    (tmp_path / "_setup" / ".task-start").write_text("x")
+    monkeypatch.chdir(tmp_path)
+    plan_dir = tmp_path / "Case" / "Case"
+    plan_dir.mkdir(parents=True)
+    (plan_dir / "caseplan.json").write_text(json.dumps(PLAN))
+
+
+def _row(instance_id: str) -> dict:
+    return {"InstanceId": instance_id, "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
+            "LatestRunStatus": "Running", "FolderKey": "f"}
+
+
+def test_a_recorded_debug_instance_is_cancelled_without_reading_others(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _sandbox_with_plan(monkeypatch, tmp_path)
+    case_run.record_debug_instance("ours")
+    listing = [_row(f"other{n}") for n in range(30)] + [_row("ours")]
+    cancelled: list = []
+    read: list = []
+
+    def uip(args, timeout=120):
+        if args[:4] == ["maestro", "case", "instance", "list"]:
+            return {"Result": "Success", "Data": listing}
+        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
+            read.append(args[4])
+            return {"Result": "Success", "Data": {"ElementExecutions": []}}
+        if args[:4] == ["maestro", "case", "instance", "cancel"]:
+            cancelled.append(args[4])
+            return {"Result": "Success"}
+        return {"Result": "Failure"}
+
+    monkeypatch.setattr(case_run, "_uip", uip)
+    monkeypatch.setattr(case_run, "SCAN_DEADLINE_S", 0)
+
+    assert case_run.cancel_debug_instances() == 0
+    assert cancelled == ["ours"]
+    assert read == []
+
+
+def test_a_recorded_instance_is_cancelled_even_with_no_stage_ids(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "_setup").mkdir()
+    monkeypatch.chdir(tmp_path)
+    case_run.record_debug_instance("ours")
+    cancelled: list = []
+
+    def uip(args, timeout=120):
+        if args[:4] == ["maestro", "case", "instance", "cancel"]:
+            cancelled.append(args[4])
+            return {"Result": "Success"}
+        return {"Result": "Failure"}
+
+    monkeypatch.setattr(case_run, "_uip", uip)
+
+    assert case_run.cancel_debug_instances() == 0
+    assert cancelled == ["ours"]
+
+
+def test_an_unrecorded_instance_is_read_only_within_the_scan_deadline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _sandbox_with_plan(monkeypatch, tmp_path)
+    listing = [_row(f"other{n}") for n in range(30)]
+    read: list = []
+
+    def uip(args, timeout=120):
+        if args[:4] == ["maestro", "case", "instance", "list"]:
+            return {"Result": "Success", "Data": listing}
+        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
+            read.append(args[4])
+        return {"Result": "Success", "Data": {"ElementExecutions": []}}
+
+    monkeypatch.setattr(case_run, "_uip", uip)
+    monkeypatch.setattr(case_run, "SCAN_DEADLINE_S", 0)
+
+    assert case_run.cancel_debug_instances() == 0
+    assert read == []
+
+
+def test_debug_case_records_the_instance_it_started(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sys.path.insert(0, str(SCRIPT.parent.parent))
+    from _shared import case_run_path  # noqa: PLC0415
+
+    monkeypatch.chdir(tmp_path)
+    project = tmp_path / "Case"
+    project.mkdir()
+    started = {"Data": {"instanceId": "run-1", "finalStatus": "Suspended", "elementExecutions": []}}
+    monkeypatch.setattr(case_run_path.os.path, "isdir", lambda path: path == "/solution")
+    monkeypatch.setattr("_shared.case_check.find_project_dir", lambda *a, **k: str(project))
+    monkeypatch.setattr(case_run_path, "_debug_with_retry", lambda cmd, timeout: (subprocess.CompletedProcess(cmd, 0, "", ""), started, started["Data"]))
+
+    run = case_run_path.debug_case()
+
+    assert run["instance_id"] == "run-1"
+    assert (tmp_path / "_setup" / ".debug-instances").read_text() == "run-1\n"

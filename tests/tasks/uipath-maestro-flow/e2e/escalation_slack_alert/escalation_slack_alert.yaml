@@ -70,6 +70,18 @@ initial_prompt: |
   - the case reference
   - the ID of the Slack message that was sent
 
+  <!-- helper:start -->
+  Inputs: senderEmail (string), subject (string), body (string), customerTier
+  (string), productionDown (boolean), workaroundAvailable (boolean),
+  caseReference (string).
+  Outputs: severity (string), engineeringNeeded (boolean), caseKey (string),
+  slackMessageId (string). severity is "Sev1", "Sev2" or "Sev3".
+  Post one message per run. Its first line has the severity and the
+  caseReference, followed by 2 or 3 bullet lines.
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
+  <!-- helper:end -->
+
   Build and test the automation.
 success_criteria:
   # ── Advisory: the agent validated the flow (CLI commands are not graded) ─

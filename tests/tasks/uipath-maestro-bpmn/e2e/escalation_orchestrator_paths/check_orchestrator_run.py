@@ -67,12 +67,13 @@ VISITED = 2
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
 
 
+_RUN_TOGETHER_NEGATION = re.compile(r"no(draft|response|reply)")
 _NEGATIONS = frozenset({
     "no", "not", "none", "without", "skip", "skipped", "na", "nil", "null", "never",
     "omitted", "undrafted", "noreply", "false", "nothing", "empty", "dont",
 })
-_EITHER_OR = re.compile(r"\bor\b|[/|]")
-_NOT_APPLICABLE = re.compile(r"\bn/a\b", re.IGNORECASE)
+_EITHER_OR = re.compile(r"\bor\b|[/|]", re.IGNORECASE)
+_NOT_APPLICABLE = re.compile(r"\bn[\s./-]+a\b", re.IGNORECASE)
 _NA_TOKEN = "na"
 
 
@@ -92,16 +93,19 @@ def response_mode(value) -> str | None:
         return "draft" if value else "none"
     if not isinstance(value, str):
         return None
-    stripped = _NOT_APPLICABLE.sub(_NA_TOKEN, value.strip())
-    words = _words(stripped)
-    if not words:
+    parts = [part for part in _EITHER_OR.split(_NOT_APPLICABLE.sub(_NA_TOKEN, value.strip())) if _words(part)]
+    modes = {_part_mode(part) for part in parts}
+    if not modes:
         return "none"
-    if not any(w in _NEGATIONS for w in words):
-        return "draft"
-    others = [w for w in words if w not in _NEGATIONS]
-    if _EITHER_OR.search(stripped) and others:
-        return None
-    return "none"
+    return modes.pop() if len(modes) == 1 else None
+
+
+def _is_negation(word: str) -> bool:
+    return word in _NEGATIONS or _RUN_TOGETHER_NEGATION.match(word) is not None
+
+
+def _part_mode(part: str) -> str:
+    return "none" if any(_is_negation(word) for word in _words(part)) else "draft"
 
 
 def names_path(text: str, path: str) -> bool:
@@ -196,11 +200,15 @@ def cases() -> None:
 
     imported = import_exact(bpmn_path, bpmn_path.parent, LIVE_RUN_DIR / "EscalationOrchestratorLiveEval")
     for case in seeded:
-        # timeout stays a literal: test_criterion_budgets.py prices it.
-        debug_data, instance_id = run_debug(
-            imported, case["inputs"], LIVE_RUN_DIR / f"debug-{case['name']}.log", timeout=300
-        )
-        variables_data, _text = fetch_variables(instance_id)
+        log_file = LIVE_RUN_DIR / f"debug-{case['name']}.log"
+        debug_data = None
+        try:
+            # timeout stays a literal: test_criterion_budgets.py prices it.
+            debug_data, instance_id = run_debug(imported, case["inputs"], log_file, timeout=300)
+            variables_data, _text = fetch_variables(instance_id)
+        except (CheckFailure, subprocess.TimeoutExpired):
+            escalation_is.journal_slack_posts_in_log(log_file, debug_data)
+            raise
         escalation_is.journal_slack_posts(variables_data, set(completed_ids(debug_data)) & slack)
         try:
             ts = verify_case(process, slack, case, debug_data, variables_data)

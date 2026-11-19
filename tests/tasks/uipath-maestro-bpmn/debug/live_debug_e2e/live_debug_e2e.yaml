@@ -44,6 +44,10 @@ initial_prompt: |
   variable called `product`, then the process ends. `product` should come out
   as 42.
 
+  <!-- helper:start -->
+  The process has no inputs. Process variable: product (number).
+  <!-- helper:end -->
+
   Build the process and do a test run.
 
 success_criteria:

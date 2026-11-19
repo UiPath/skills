@@ -312,11 +312,13 @@ def check_overcharge(flow, payload):
     print(f"OK: writer agent completed ({sorted(writers)})")
 
     def email(outs):
-        drafts = {k: v for k, (_t, v) in outs.items() if isinstance(v, str) and _is_letter(v) and invoice in v
-                  and any(s in v for s in _amount_spellings(credit))}
+        cites = {k: v for k, (_t, v) in outs.items() if isinstance(v, str) and invoice in v
+                 and any(s in v for s in _amount_spellings(credit))}
+        drafts = {k: v for k, v in cites.items() if not NAMES_A_RULE.search(v)}
+        drafts = drafts or {k: v for k, v in cites.items() if _is_letter(v)}
         if not drafts:
             _fail_with_capture(f"no declared output is a plain-text email citing {invoice} and the credit of {credit}: {outs}")
-        draft = max(drafts, key=lambda k: len(drafts[k]))
+        draft = max(drafts, key=lambda k: (len(drafts[k]), _is_letter(drafts[k])))
         print(f"OK: the email draft ({draft}) cites {invoice} and the credit")
         return {draft}
 
@@ -335,6 +337,8 @@ def _erp_reads(flow):
 
 def check_reject(flow, payload):
     api = _posting_ids(flow)
+    if not api:
+        _fail_with_capture(f"no API-workflow node calls {POSTING_FUNCTION}: the reject path cannot be graded")
     executed = _executed_ids(payload)
     done = _executed_ids(payload, completed=True)
     if not _erp_reads(flow) & done:

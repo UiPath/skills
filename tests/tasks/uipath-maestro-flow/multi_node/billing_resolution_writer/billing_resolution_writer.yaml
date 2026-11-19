@@ -60,6 +60,19 @@ initial_prompt: |
   - the case reference ID, unchanged
   - the ID of the Slack message that was sent
 
+  <!-- helper:start -->
+  Build a Flow in this Flow project, not an agent project.
+  Inputs: customerName (string), invoiceNumber (string), approvedCredit
+  (number), caseReference (string).
+  Outputs: emailSubject (string), emailBody (string), caseKey (string),
+  slackMessageId (string).
+  The credit is written like "USD 1,610.00" and the body ends with the signature
+  "Billing Support Team". The Slack message holds the whole email body and
+  starts with the caseReference.
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
+  <!-- helper:end -->
+
   Build and test the automation.
 
 success_criteria:

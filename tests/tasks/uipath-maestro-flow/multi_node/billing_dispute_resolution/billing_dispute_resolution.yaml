@@ -81,6 +81,23 @@ initial_prompt: |
   Rejected disputes get no email. Return "No resolution email drafted"
   instead, and explain the rejection in the explanation.
 
+  <!-- helper:start -->
+  Build a Flow in this Flow project, not an agent project.
+  Inputs: invoicePdf (file) and disputeSubmission (object) with accountNumber
+  (string), invoiceNumber (string) and disputedLineItems (array of objects with
+  lineNumber (number), quantity (number), unitPrice (number)).
+  Outputs: decision (string), recommendedAction (string), creditAmount (number),
+  explanation (string), emailDraft (string).
+  decision is "Approved" or "Rejected". recommendedAction is "credit", "reject"
+  or "manager_review". Name the SOP rule in explanation by its section number
+  in the SOP, like "§3".
+  BillingDisputeERP and BillingDisputeCRM are existing Data Fabric entities. Use
+  the Data Service connection in the Shared folder, even though it is a personal
+  one.
+  Post the cleaned invoice number to FinancialPostingFunction, as the records
+  hold it, like "MCS-2026-04903".
+  <!-- helper:end -->
+
   Build and test the automation.
 
 success_criteria:

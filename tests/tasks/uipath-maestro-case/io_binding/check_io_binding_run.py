@@ -82,13 +82,8 @@ NAMED_OUTPUTS = {
     "copiedResult": "case-seed",
     "computedResult": "literal-seed-computed",
 }
-# Where an agify-fed task's input comes from: (source task or None for a case
-# variable, the field). Its input may be null only when that source is.
-UPSTREAM = {
-    "Consume colliding output": ("Lookup colliding same name", "estimatedAge"),
-    "Consume custom output": (None, "collisionCopy"),
-}
-# The task whose output row each agify-fed task consumes: (producer, output name).
+# The task whose output each agify-fed task consumes: (producer, output name).
+# That output is also where its input is read back from, and it may be null only when the producer's is.
 CONSUMES = {
     "Consume colliding output": ("Lookup colliding same name", "estimatedAge"),
     "Consume custom output": ("Consume colliding output", "collisionCopy"),
@@ -263,7 +258,7 @@ def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
         inputs, _ = evidence.task_io(str(task.get("id")))
         values = list(leaf_values(inputs, field))
         if expected is None and (not values or _empty(values[0])):
-            upstream = _upstream(evidence, chain, *UPSTREAM[name])
+            upstream = _upstream(evidence, chain, *CONSUMES[name])
             if _empty(upstream):
                 continue  # agify's empty answer may reach the task as no value at all
             fail(f"task {name!r} ran without a {field} input although its source holds {upstream!r}")
@@ -287,7 +282,7 @@ def check_outputs(evidence: RunEvidence, chain: list[dict]) -> None:
         fail(f"metadataResult is {metadata!r}, expected the case's id {case_id or CASE_ID_PREFIX + '-…'!r}")
     collision = evidence.value("collisionCopy")
     custom = evidence.value("customReferenceCopy")
-    age = _upstream(evidence, chain, *UPSTREAM["Consume colliding output"])
+    age = _upstream(evidence, chain, *CONSUMES["Consume colliding output"])
     if not _same_number(custom, collision, age):
         fail(f"customReferenceCopy is {custom!r}, expected collisionCopy's {collision!r}")
 

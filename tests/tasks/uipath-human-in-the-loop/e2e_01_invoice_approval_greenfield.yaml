@@ -69,7 +69,11 @@ initial_prompt: |
   rejected).
 
   <!-- helper:start -->
-  totalAmount is a number; the other inputs are strings.
+  Inputs: invoiceNumber (string), vendorName (string), totalAmount (number),
+  currency (string).
+  Outputs: status (string), sapDocumentNumber (string). status is "posted" or
+  "rejected". When approved, sapDocumentNumber is "SAP-" followed by the
+  invoiceNumber, like "SAP-INV-1". When rejected it is empty text.
   <!-- helper:end -->
 
   Build and test the automation.

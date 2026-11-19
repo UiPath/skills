@@ -17,6 +17,15 @@ BEFORE = (START - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.1234567Z")
 JOB = "11111111-2222-3333-4444-555555555555"
 
 
+TOKEN = "INV-abc123"
+INSTANCE = "inst-1"
+
+
+def write_tokens(sandbox, *lines):
+    with open(os.path.join(sandbox, cleanup.TOKENS_FILE), "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
 def task(task_id, *, created=AFTER, creator=ME, status="Unassigned", job=JOB, title="t"):
     return {"Id": task_id, "Status": status, "Type": "AppTask", "FolderId": 7, "CreatedTime": created,
             "CreatorUserKey": creator, "CreatorJobKey": job, "Title": title, "AssignedToUserKey": None}
@@ -63,37 +72,69 @@ def test_the_start_and_token_files_match_the_grader():
 
 
 def test_an_open_task_carrying_this_runs_token_is_cancelled_and_closed(sandbox):
-    open(os.path.join(sandbox, cleanup.TOKENS_FILE), "w").write("INV-abc123\n")
-    uip = FakeUip([task(1)], instances=[{"InstanceId": "inst-1", "JobKey": JOB}], data={"1": {"invoiceNumber": "INV-abc123"}})
+    write_tokens(sandbox, TOKEN, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([task(1)], data={"1": {"invoiceNumber": TOKEN}})
     assert cleanup.clean(uip, sandbox) == ["1"]
-    assert uip.verbs("maestro", "flow", "debug-instance", "cancel") == [["maestro", "flow", "debug-instance", "cancel", "inst-1"]]
+    assert uip.verbs("maestro", "flow", "debug-instance", "cancel") == [["maestro", "flow", "debug-instance", "cancel", INSTANCE]]
     assert uip.verbs("tasks", "complete")[0][2] == "1"
+    assert [c[-1] for c in uip.verbs("tasks", "complete")] == ["{}"] and uip.verbs("tasks", "complete")[0][-3] == "Reject"
 
 
-def test_tasks_from_before_the_run_or_already_completed_or_other_users_are_left_alone(sandbox):
-    uip = FakeUip([task(1, created=BEFORE), task(2, status="Completed"), task(3, creator="someone-else")])
+def test_a_recorded_instance_is_cancelled_even_when_no_task_was_found(sandbox):
+    write_tokens(sandbox, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([])
+    assert cleanup.clean(uip, sandbox) == []
+    assert uip.verbs("maestro", "flow", "debug-instance", "cancel") == [["maestro", "flow", "debug-instance", "cancel", INSTANCE]]
+
+
+def test_a_token_with_no_instance_cancels_nothing(sandbox):
+    write_tokens(sandbox, TOKEN)
+    uip = FakeUip([])
+    cleanup.clean(uip, sandbox)
+    assert uip.verbs("maestro", "flow", "debug-instance", "cancel") == []
+
+
+def test_approve_is_never_a_fallback_action(sandbox):
+    write_tokens(sandbox, TOKEN)
+    uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
+    uip_fail = lambda args: None if args[:2] == ["tasks", "complete"] else uip(args)
+    cleanup.clean(uip_fail, sandbox)
+    assert "Approve" not in cleanup.CLOSE_ACTIONS
+
+
+def test_tasks_from_before_the_run_or_already_completed_are_left_alone(sandbox):
+    write_tokens(sandbox, TOKEN)
+    data = {str(i): {"n": TOKEN} for i in (1, 2, 3)}
+    uip = FakeUip([task(1, created=BEFORE), task(2, status="Completed"), task(3)], data=data)
+    assert cleanup.clean(uip, sandbox) == ["3"]
+    assert [c[2] for c in uip.verbs("tasks", "complete")] == ["3"]
+
+
+def test_tasks_without_the_token_are_left_alone(sandbox):
+    write_tokens(sandbox, TOKEN)
+    uip = FakeUip([task(1), task(3, creator="someone-else")])
     assert cleanup.clean(uip, sandbox) == []
     assert uip.verbs("tasks", "complete") == [] and uip.verbs("tasks", "assign") == []
 
 
 def test_a_task_by_the_same_identity_without_this_runs_token_is_left_alone(sandbox):
-    open(os.path.join(sandbox, cleanup.TOKENS_FILE), "w").write("INV-abc123\n")
-    uip = FakeUip([task(1)], instances=[{"InstanceId": "inst-1", "JobKey": JOB}], data={"1": {"invoiceNumber": "INV-other"}})
+    write_tokens(sandbox, TOKEN)
+    uip = FakeUip([task(1)], data={"1": {"invoiceNumber": "INV-other"}})
     assert cleanup.clean(uip, sandbox) == []
-    assert not uip.verbs("maestro", "flow", "debug-instance", "cancel")
 
 
 def test_a_task_carrying_a_recorded_token_is_closed_even_when_created_by_another_identity(sandbox):
-    with open(os.path.join(sandbox, cleanup.TOKENS_FILE), "w") as f:
-        f.write("INV-ABCD1234\n")
+    write_tokens(sandbox, "INV-ABCD1234")
     uip = FakeUip([task(1, creator="svc"), task(2, creator="svc")], data={"1": {"Data": {"n": "INV-ABCD1234"}}})
     assert cleanup.clean(uip, sandbox) == ["1"]
 
 
-def test_an_instance_unrelated_to_the_tasks_is_not_cancelled(sandbox):
-    uip = FakeUip([task(1)], instances=[{"InstanceId": "other", "JobKey": "99999999-0000-0000-0000-000000000000"}])
+def test_only_recorded_instances_are_cancelled(sandbox):
+    write_tokens(sandbox, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
     cleanup.clean(uip, sandbox)
-    assert uip.verbs("maestro", "flow", "debug-instance", "cancel") == []
+    assert [c[-1] for c in uip.verbs("maestro", "flow", "debug-instance", "cancel")] == [INSTANCE]
+    assert uip.verbs("maestro", "flow", "instances", "list") == []
 
 
 def test_nothing_is_done_without_a_start_marker(tmp_path):

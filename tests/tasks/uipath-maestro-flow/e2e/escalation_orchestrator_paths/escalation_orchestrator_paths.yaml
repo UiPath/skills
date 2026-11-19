@@ -90,6 +90,22 @@ initial_prompt: |
   - the case reference, unchanged
   - the ID of the Slack message
 
+  <!-- helper:start -->
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), caseReference (string).
+  Outputs: escalationPath (string), severity (string), engineeringNeeded
+  (boolean), responseMode (string), caseKey (string), slackMessageId (string).
+  escalationPath is "escalation", "duplicate", "unknown_customer",
+  "missing_domain" or "multiple_matches". severity is "Sev1", "Sev2", "Sev3" or
+  "informational". responseMode is "Draft" or "None". customerMatchStatus is
+  "one", "none" or "several".
+  Post one message per run. It includes the caseReference and the escalationPath.
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
+  <!-- helper:end -->
+
   Build and test the automation.
 success_criteria:
   # ── Advisory: the agent validated the flow (CLI commands are not graded) ─

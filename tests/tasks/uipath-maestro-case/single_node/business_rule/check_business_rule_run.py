@@ -42,7 +42,10 @@ from _shared.case_check import (  # noqa: E402
 RULE = "CreditRisk"
 SCORE = 742
 EXPECTED_BAND = "LOW_RISK"
-BAND_LITERAL = re.compile(r"low_risk|high_risk", re.IGNORECASE)
+BANDS = (EXPECTED_BAND, "HIGH_RISK")
+SCORE_FIELD = "creditScore"
+BAND_FIELD = "riskBand"
+BAND_LITERAL = re.compile("|".join(BANDS), re.IGNORECASE)
 RULE_OUTPUT_READ = re.compile(
     r"(?:result|output|riskdecision|riskband)(?:\.\w+|\[\d+\])*", re.IGNORECASE
 )
@@ -74,7 +77,7 @@ def _risk_band_writers(node: object, ids: set[str]) -> list[dict]:
         return [w for item in node for w in _risk_band_writers(item, ids)]
     if not isinstance(node, dict):
         return []
-    own = [node] if node.get("var") in ids or _bare(str(node.get("target") or "")) in ids else []
+    own = [node] if str(node.get("var")) in ids or _bare(str(node.get("target") or "")) in ids else []
     return own + [w for value in node.values() for w in _risk_band_writers(value, ids)]
 
 
@@ -86,15 +89,15 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
         v
         for group in ("inputOutputs", "outputs", "inputs")
         for v in variables.get(group) or []
-        if str(v.get("name") or "").lower() == "riskband"
+        if str(v.get("name") or "").lower() == BAND_FIELD.lower()
     ]
     if any(BAND_LITERAL.search(_bare(str(v.get("default") or ""))) for v in declared):
         return False
-    ids = {str(v.get("id")) for v in declared}
+    ids = {str(v["id"]) for v in declared if v.get("id")}
     writers = _risk_band_writers(plan.get("nodes"), ids)
     for row in (task.get("data") or {}).get("outputs") or []:
         source = str(row.get("source") or "")
-        if row.get("var") not in ids or not source.startswith("="):
+        if str(row.get("var")) not in ids or not source.startswith("="):
             continue
         if '"' in source or "'" in source or BAND_LITERAL.search(source):
             continue
@@ -106,7 +109,7 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
 def _bands(value) -> list:
     """The band ``value`` holds: itself when it is not an object, else every riskBand in it."""
     if isinstance(value, (dict, list)):
-        return list(leaf_values(value, "riskBand"))
+        return list(leaf_values(value, BAND_FIELD))
     return [value]
 
 
@@ -124,13 +127,13 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
     for task in credit_tasks:
         assert_completed(payload, task)
         inputs, outputs = evidence.task_io(str(task.get("id")))
-        scores = list(leaf_values(inputs, "creditScore"))
+        scores = list(leaf_values(inputs, SCORE_FIELD))
         if SCORE not in scores:
             fail(
                 f"task {task.get('displayName')!r} ran the rule with creditScore {scores or 'unset'}, "
                 f"expected {SCORE}; its inputs: {text_of(inputs)[:400]}"
             )
-        returned = list(leaf_values(outputs, "riskBand"))
+        returned = list(leaf_values(outputs, BAND_FIELD))
         if returned and any(b != EXPECTED_BAND for b in returned):
             fail(
                 f"task {task.get('displayName')!r} returned riskBand {returned} in its "
@@ -146,7 +149,7 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
                 f"does not set the riskBand case variable from its result; its output rows: {rows}"
             )
 
-    band = evidence.value("riskBand")
+    band = evidence.value(BAND_FIELD)
     bands = _bands(band)
     if not bands or any(b != EXPECTED_BAND for b in bands):
         fail(f"riskBand is {band!r} after the run, expected {EXPECTED_BAND!r} for a score of {SCORE}")

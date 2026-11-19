@@ -48,7 +48,8 @@ initial_prompt: |
   approvers as approvedCount.
 
   <!-- helper:start -->
-  The text is a string; approvedCount is an integer.
+  Build a Flow in this Flow project that calls the coded agent.
+  Input: text (string). Output: approvedCount (number).
   <!-- helper:end -->
 
   Build and test the automation.

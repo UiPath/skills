@@ -481,6 +481,9 @@ def run_with_task(
     try:
         ids = wait_for_ids(run, deadline)
         print(f"run: folder {ids.folder_id}, job {ids.job_key}, instance {ids.instance_id}")
+        if ids.instance_id:
+            with open(TOKENS_FILE, "a") as f:
+                f.write(f"{token} {ids.instance_id}\n")
         task, notes = find_run_task(
             ids,
             lambda _row, bundle: has_text(bundle, token),

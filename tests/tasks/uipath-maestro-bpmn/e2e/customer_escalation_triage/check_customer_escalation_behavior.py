@@ -82,6 +82,11 @@ STEP_TIMEOUTS = (
     VARIABLES_ALL_TIMEOUT,
     INCIDENTS_TIMEOUT,
 ) + escalation_is.STEP_TIMEOUTS
+# owned_jira_targets reads each created key once, on top of the assertion read.
+MAX_OWNED_KEY_READS = 2
+WORST_CASE_PATH_TIMEOUT = (
+    sum(STEP_TIMEOUTS) + MAX_OWNED_KEY_READS * escalation_is.JIRA_READ_TIMEOUT
+)
 OUTPUT_TYPES = {
     "severity": "string",
     "caseKey": "string",

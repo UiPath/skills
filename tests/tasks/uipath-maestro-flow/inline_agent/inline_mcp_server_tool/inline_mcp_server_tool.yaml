@@ -47,8 +47,9 @@ initial_prompt: |
   automation yet.
 
   <!-- helper:start -->
-  GitHubMcp is an existing MCP server in the tenant. repository, question and
-  answer are strings.
+  Build a Flow in this Flow project with an inline agent, not an agent project.
+  GitHubMcp is an existing MCP server in the tenant.
+  Inputs: repository (string), question (string). Outputs: answer (string).
   <!-- helper:end -->
 
   Build and test the automation.

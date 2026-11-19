@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -144,8 +145,14 @@ def main() -> None:
 
     imported = import_exact(bpmn_path, bpmn_path.parent, LIVE_RUN_DIR / f"{NAME}LiveEval")
     # Posts a real message, so no whole-run retry.
-    debug_data, instance_id = run_debug(imported, case["inputs"], LIVE_RUN_DIR / "debug.log", timeout=480)
-    evidence = debug_evidence(instance_id)
+    log_file = LIVE_RUN_DIR / "debug.log"
+    debug_data = None
+    try:
+        debug_data, instance_id = run_debug(imported, case["inputs"], log_file, timeout=480)
+        evidence = debug_evidence(instance_id)
+    except (CheckFailure, subprocess.TimeoutExpired):
+        escalation_is.journal_slack_posts_in_log(log_file, debug_data)
+        raise
     escalation_is.journal_slack_posts(evidence.variables, set(completed_ids(debug_data)) & slack_ids(process))
     require_clean_run(debug_data, evidence)
     ts = assert_outcome(process, case, debug_data, evidence.variables)

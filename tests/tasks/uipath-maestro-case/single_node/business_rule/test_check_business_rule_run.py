@@ -309,3 +309,8 @@ def test_a_binding_default_does_not_stand_in_for_the_resource_key() -> None:
     debug, variables_all = _completed()
     with pytest.raises(SystemExit, match="no business-rule task is bound to CreditRisk"):
         grader.check_run(plan, debug, grader.RunEvidence(variables_all["Data"]))
+
+
+def test_a_writer_whose_var_is_not_a_string_still_matches_its_variable_id() -> None:
+    assert grader._risk_band_writers({"var": 7}, {"7"}) == [{"var": 7}]
+    assert grader._risk_band_writers({"name": "no var"}, {"7"}) == []

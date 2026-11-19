@@ -30,7 +30,7 @@ run_limits:
   expected_turns: 55
   max_turns: 120
   # First claude nightly (09-16) killed the agent mid-work at the 1200s turn
-  # cap. task_timeout also covers the graded criteria (180 + 180 + 1600s
+  # cap. task_timeout also covers the graded criteria (180 + 180 + 1800s
   # run_commands) plus per-criterion spawn overhead. Exceeding the nightly's
   # ~3600s ROPC token TTL is safe here: the graded checker shells a fresh
   # `uip` subprocess per call (_shared/bpmn_live.py run_cli), each re-reading
@@ -101,11 +101,16 @@ initial_prompt: |
   jiraIssueKey (the key of the ticket that was created).
 
   <!-- helper:start -->
-  workaroundAvailable is a boolean; the other inputs are strings.
-  jiraIssueTypeId is the numeric id of an issue type, such as "10001".
+  Inputs: customerTier (string), serviceState (string), workaroundAvailable
+  (boolean), correlationId (string), jiraProjectKey (string), jiraIssueTypeId
+  (string), slackChannelId (string). jiraIssueTypeId is the numeric id of an
+  issue type, such as "10001".
+  Outputs: severity (string), caseKey (string), jiraIssueKey (string).
+  severity is "Sev1", "Sev2" or "Sev3".
   The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380" and
   the Slack connection is "is-sandboxes", both in the
-  Shared/uipath-maestro-flow folder.
+  Shared/uipath-maestro-flow folder. The Jira summary and the Slack message
+  include the correlationId.
   <!-- helper:end -->
 
   Build the process and do a test run.
@@ -141,7 +146,7 @@ success_criteria:
   - type: run_command
     description: "Effects: one seeded Sev1 debug run completes with no incidents; one Jira step returns an issue key and one Slack step a message ts; the Slack step's response shows a message in the seeded channel carrying the correlationId and Sev1; re-reading the created key from Jira finds an issue in the seeded project and type whose summary carries the correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
     command: "python3 $REFERENCE_DIR/e2e/customer_escalation_triage/check_customer_escalation_behavior.py"
-    timeout: 1600
+    timeout: 1800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
