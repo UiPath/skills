@@ -36,8 +36,8 @@
   `resp.items` is always `undefined`. A list action unwraps the vendor's
   envelope INSIDE `execute()` and returns the **relevant records array** — you
   filter that array yourself. Pagination is NOT concatenated
-  into that array: one invocation is one page, and the runtime carries no page
-  token (step 3). Inside a main action,
+  into that array: one invocation is one page; the next page's token round-trips via
+  `elements-next-page-token` and `request.query.nextPage` ([runtime.md](runtime.md), step 3). Inside a main action,
   operation-internal reads (e.g. the read half of read-merge-write) unwrap
   `resp.body` the same way, and the main action returns the final `intsvc.http`
   result untouched.
@@ -64,3 +64,10 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
+- **Cache reads, never writes.** A vendor read that
+  several scripts make takes `cache: { ttl }` on `intsvc.http` in each of them; a
+  script cached on its own takes `export const cache = { ttl }`. Throw on any vendor
+  failure (a 2xx `ok: false` too), or a returned failure is cached. An inline script
+  (`--inline-script`) is never cached, so edit and run it freely; `--refresh` re-fetches
+  for a published one. Fix `uip is connectors builder validate` cache findings before publishing
+  ([caching.md](caching.md)).
