@@ -185,7 +185,7 @@ def test_a_customer_id_read_gets_the_account_number(effects, path):
     assert inputs["sub"].get(path) == "ACCT-71044-AT"
 
 
-@pytest.mark.parametrize("path", ["customerStatement", "customerName", "invoiceDate"])
+@pytest.mark.parametrize("path", ["customerStatement", "customerName", "invoiceDate", "customerNote", "customerRefund", "customerNumberOfDisputes"])
 def test_a_longer_field_keeps_its_submission_value(effects, path):
     flow = {"nodes": [{"id": "s", "type": "core.action.script",
                        "inputs": {"script": f"return $vars.sub.{path};"}}],

@@ -118,7 +118,8 @@ def test_wrong_severity_fails():
     "value",
     ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "Draft, no edits required",
      "Draft ready, not sent", "Draft - no review needed", "drafted", "true", "Yes", "YES",
-     "Response required", "Response", "response needed"],
+     "Response required", "Response", "response needed", "Draft, skipped review", "Draft, omitted PII",
+     "Drafted response, skipped legal review", "Draft - null check passed"],
 )
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]

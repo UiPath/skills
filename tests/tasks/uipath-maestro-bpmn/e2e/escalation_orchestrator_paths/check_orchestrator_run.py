@@ -77,7 +77,7 @@ _NEGATED_DRAFT = re.compile(
     r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|drafted|response)\b"
     r"|\bundrafted\b"
     r"|\b(?:draft|drafted|response)\s+(?:response\s+)?(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
-    r"|\b(?:draft|drafted|response)\s+(?:none|false|n a|na|null|nil|skipped|omitted)\b"
+    r"|\b(?:draft|drafted|response)\s+(?:none|false|n a|na|null|nil|skipped|omitted)$"
     r"|\bnone\s+(?:needed|required)\b"
     r"|^(?:n a|none|no|false|skipped|skip|not applicable|not required|not needed)$"
 )
