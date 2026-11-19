@@ -42,7 +42,7 @@ Write `, uploaded` only when this turn's upload succeeded, and `, run` only when
 When the upload failed, say so in the first line's one sentence.
 <!--skill-flavor:final-status-rule:end-->
 
-When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
+When a tenant resource is missing (no connection, agent, process or queue to bind), even when `validate` passes, the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
 
 <!--skill-flavor:final-path-rule:start-->
