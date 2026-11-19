@@ -61,17 +61,8 @@ def fail(message: str) -> NoReturn:
     raise SystemExit(f"FAIL: {message}")
 
 
-def locate_bpmn() -> Path:
-    """The project's main .bpmn wherever the agent put it (Studio Web names it
-    Process.bpmn), else the only one."""
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
-
-
 def main() -> None:
-    bpmn_file = locate_bpmn()
+    bpmn_file = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     project = bpmn_file.parent
     expected_basenames = EXPECTED_ARCHIVE_BASENAMES | {bpmn_file.name}
     with tempfile.TemporaryDirectory(prefix="bpmn-eval-pack-") as output_dir:

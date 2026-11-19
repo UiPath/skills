@@ -7,8 +7,8 @@ description: >
   its own ephemeral solution, runs it once under `uip maestro bpmn debug
   --inputs`, and asserts what the run did: it completed with no incidents, a
   Jira step completed and returned an issue key, re-reading that key from
-  Jira finds an issue whose summary carries the seeded correlationId (this
-  run's ticket, not a fabricated key), and the named outputs read back
+  Jira finds a Task in project CE whose summary carries the seeded
+  correlationId (this run's ticket, not a fabricated key), and the named outputs read back
   severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>. The Jira
   step is found by connector key alone, so any Create Issue operation counts.
   The created issue is deleted in post_run. Whether the agent ran its own
@@ -112,7 +112,7 @@ success_criteria:
   # + 120 (variables-all) + 120 (incidents) + Jira connection lookup and
   # issue reread (~360, three 120s CLI calls) + 60 margin = 1410.
   - type: run_command
-    description: "Effects: one seeded Sev1 debug run completes with no incidents; a Jira step completes and returns an issue key; re-reading it from Jira finds an issue whose summary carries the seeded correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
+    description: "Effects: one seeded Sev1 debug run completes with no incidents; a Jira step completes and returns an issue key; re-reading it from Jira finds a Task in project CE whose summary carries the seeded correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
     command: "python3 $REFERENCE_DIR/e2e/escalation_jira_ticket/check_jira_ticket_run.py"
     timeout: 1600
     expected_exit_code: 0

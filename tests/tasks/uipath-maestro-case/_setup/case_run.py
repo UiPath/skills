@@ -10,7 +10,11 @@ caller judge the path. The graders import it from the reference tree; the
 task's post_run runs it from the sandbox's ``_setup`` to cancel this task's
 debug instances so none is left waiting on a human step or an SLA clock.
 
-    python3 _setup/case_run.py --cancel-debug-instances
+    python3 _setup/case_run.py --mark-task-start         # pre_run
+    python3 _setup/case_run.py --cancel-debug-instances  # post_run
+
+A task that already runs ``localize_tenant_ids.py`` as pre_run needs no mark:
+the map it writes marks the start.
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ import time
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-for candidate in (os.path.dirname(os.path.dirname(os.path.dirname(HERE))), os.getcwd()):
+for candidate in (os.path.dirname(HERE), os.getcwd()):
     if os.path.isdir(os.path.join(candidate, "_shared")):
         sys.path.insert(0, candidate)
         break
@@ -32,8 +36,11 @@ for candidate in (os.path.dirname(os.path.dirname(os.path.dirname(HERE))), os.ge
 TERMINAL = {"completed", "successful", "faulted", "failed", "cancelled", "canceled", "stopped"}
 DONE = {"completed", "successful"}
 FAILED = {"faulted", "failed", "cancelled", "canceled", "stopped"}
-# Written by the task's pre_run; its mtime marks the start of this task.
-TASK_START_MARKER = os.path.join("_setup", ".tenant-ids.map.json")
+# Written by the task's pre_run; the first that exists marks the start of this task.
+TASK_START_MARKERS = (
+    os.path.join("_setup", ".task-start"),
+    os.path.join("_setup", ".tenant-ids.map.json"),
+)
 
 
 def _uip(args: list[str], timeout: int = 120) -> dict:
@@ -340,11 +347,11 @@ def cancel_debug_instances() -> int:
     The tenant is shared, so an instance counts as ours only when it started
     after this task did and its element executions carry one of our stage ids.
     """
-    try:
-        since = datetime.fromtimestamp(os.path.getmtime(TASK_START_MARKER), timezone.utc)
-    except OSError:
+    marker = next((m for m in TASK_START_MARKERS if os.path.exists(m)), None)
+    if marker is None:
         print("case_run: no task-start marker; nothing to cancel")
         return 0
+    since = datetime.fromtimestamp(os.path.getmtime(marker), timezone.utc)
     since_iso = since.strftime("%Y-%m-%dT%H:%M:%S")
     stage_ids = _our_stage_ids()
     if not stage_ids:
@@ -364,7 +371,16 @@ def cancel_debug_instances() -> int:
     return 0
 
 
+def mark_task_start() -> int:
+    os.makedirs(os.path.dirname(TASK_START_MARKERS[0]), exist_ok=True)
+    with open(TASK_START_MARKERS[0], "w", encoding="utf-8") as fh:
+        fh.write(datetime.now(timezone.utc).isoformat() + "\n")
+    return 0
+
+
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--mark-task-start"]:
+        sys.exit(mark_task_start())
     if sys.argv[1:] == ["--cancel-debug-instances"]:
         try:
             sys.exit(cancel_debug_instances())

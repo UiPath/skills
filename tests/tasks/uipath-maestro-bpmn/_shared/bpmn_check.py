@@ -220,6 +220,14 @@ def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Pat
     return candidates[0]
 
 
+def locate_bpmn(bpmn_name: str, exclude_under: Iterable[Path]) -> Path:
+    """The live graders' lookup: :func:`resolve_bpmn_file`, else the only .bpmn."""
+    try:
+        return resolve_bpmn_file(bpmn_name, exclude_under)
+    except SystemExit:
+        return Path(find_bpmn_file(None))
+
+
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:
     path = find_bpmn_file(name_hint)
     try:

@@ -65,9 +65,6 @@ sandbox:
       path: ../../_setup
       mount_point: _setup
     - type: template_dir
-      path: _setup
-      mount_point: _setup
-    - type: template_dir
       path: fixtures
 
 # Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
@@ -153,6 +150,13 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_fieldnames.py"
     timeout: 120
     expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
     weight: 3.0
     pass_threshold: 1.0
 

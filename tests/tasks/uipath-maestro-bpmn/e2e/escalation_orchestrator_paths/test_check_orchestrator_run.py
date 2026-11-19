@@ -122,6 +122,19 @@ def test_sev3_needs_no_draft_response():
         checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, responseMode="Draft"))
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["No draft", "NoDraft", "no_draft", "Draft not needed", "Not applicable", "N/A",
+     "No response needed", "none", "", False],
+)
+def test_a_negated_response_mode_reads_as_none(value):
+    triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
+    assert checker.verify_case(PROCESS, SLACK, triage, _debug(triage), _variables(triage, responseMode=value))
+    sev1 = SEED["cases"][0]
+    with pytest.raises(checker.CheckFailure, match="responseMode"):
+        checker.verify_case(PROCESS, SLACK, sev1, _debug(sev1), _variables(sev1, responseMode=value))
+
+
 def test_message_id_must_be_the_posted_ts():
     case = SEED["cases"][3]
     with pytest.raises(checker.CheckFailure, match="slackMessageId"):
@@ -132,6 +145,36 @@ def test_message_must_carry_the_path_and_correlation_id():
     case = SEED["cases"][4]
     with pytest.raises(checker.CheckFailure, match="does not carry"):
         checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, text="triage notice"))
+
+
+@pytest.mark.parametrize(
+    "index, template",
+    [
+        (4, "Triage notice for {corr}"),
+        (0, "CustomerEscalationOrchestrator alert {corr}"),
+        (0, "New escalations: {corr}"),
+    ],
+)
+def test_message_with_the_correlation_id_but_not_the_path_fails(index, template):
+    case = SEED["cases"][index]
+    text = template.format(corr=case["inputs"]["correlationId"])
+    with pytest.raises(checker.CheckFailure, match="does not carry"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, text=text))
+
+
+@pytest.mark.parametrize(
+    "index, template",
+    [
+        (0, "Escalation alert: {corr} Sev1"),
+        (4, "Path: unknown_customer | {corr}"),
+        (4, "Unknown customer - {corr}"),
+        (6, "[multiple-matches] {corr}"),
+    ],
+)
+def test_message_naming_the_path_as_its_own_word_passes(index, template):
+    case = SEED["cases"][index]
+    text = template.format(corr=case["inputs"]["correlationId"])
+    assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, text=text))
 
 
 def test_one_slack_step_for_both_paths_passes_where_the_old_grader_failed(tmp_path, monkeypatch):

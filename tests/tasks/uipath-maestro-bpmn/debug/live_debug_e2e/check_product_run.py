@@ -11,8 +11,10 @@ Asserted on the run:
 - a script task completed in it (the multiplication really ran);
 - the process variable the request names, `product`, reads back 42.
 
-Static guard: 42 is not written into a script or an expression, so the value
-must be computed.
+Static guard: no script or expression holds a literal 42 outside a comment.
+It catches the plain `return 42`, not every way to spell the constant
+(`40 + 2`, `0x2A`), so it is not proof the value was computed; the gate is the
+run itself reading back `product` = 42.
 """
 
 from __future__ import annotations
@@ -46,14 +48,7 @@ OUTPUT = "product"
 EXPECTED = 42
 LIVE_RUN_DIR = Path("product-calc-live")
 LITERAL = re.compile(r"(?<![\w.])42(?![\w.])")
-
-
-def locate_bpmn() -> Path:
-    """The project's main .bpmn: the one named for the request, else the only one."""
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
+COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 
 
 def assert_not_hardcoded(root: ET.Element) -> None:
@@ -61,9 +56,9 @@ def assert_not_hardcoded(root: ET.Element) -> None:
     for node in root.iter():
         if node.tag in (q(UIPATH_NS, "input"), q(UIPATH_NS, "output")):
             texts.extend([node.attrib.get("value", ""), node.attrib.get("source", ""), node.text or ""])
-    hits = [t.strip() for t in texts if t and LITERAL.search(t)]
+    hits = [t.strip() for t in texts if t and LITERAL.search(COMMENT.sub("", t))]
     if hits:
-        raise CheckFailure(f"the answer 42 is written into the process instead of computed: {hits[:3]}")
+        raise CheckFailure(f"the answer 42 is written into the process as a literal: {hits[:3]}")
 
 
 def completed_types(debug_data) -> set[str]:
@@ -98,7 +93,7 @@ def assert_product(variables_data) -> None:
 
 
 def main() -> None:
-    bpmn_path = locate_bpmn()
+    bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     root = ET.parse(bpmn_path).getroot()
     assert_not_hardcoded(root)
 

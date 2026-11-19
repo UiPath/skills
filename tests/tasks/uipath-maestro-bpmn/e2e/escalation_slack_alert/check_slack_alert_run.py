@@ -33,17 +33,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
-    UIPATH_NS,
     CheckFailure,
+    assert_rule_encoded,
+    completed_ids,
     debug_evidence,
     element_output_records,
     get_ci,
     import_exact,
     index_runtime_connectors,
-    normalized_identifier,
+    named_values,
     q,
     require_clean_run,
-    root_scope,
     run_debug,
 )
 
@@ -51,42 +51,7 @@ NAME = "EscalationSlackAlert"
 SLACK_CONNECTOR = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
-SEVERITIES = ("Sev1", "Sev2", "Sev3")
 LIVE_RUN_DIR = Path("escalation-slack-alert-live")
-
-
-def locate_bpmn() -> Path:
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
-
-
-def declarations(process: ET.Element) -> list[ET.Element]:
-    variables = process.find(f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}")
-    return [] if variables is None else list(variables)
-
-
-def named_values(process: ET.Element, variables_data, name: str) -> list:
-    """Every non-null runtime value of the output called `name`: its declared
-    ids in Globals (the runtime may re-case them), any Globals key whose
-    GlobalDefinitions Name is `name`, and the `name` output of the element the
-    declaration belongs to (the end event)."""
-    wanted = normalized_identifier(name)
-    decls = [d for d in declarations(process) if normalized_identifier(d.attrib.get("name", "")) == wanted]
-    scope = root_scope(variables_data)
-    globals_ = get_ci(scope, "Globals", {}) or {}
-    definitions = get_ci(scope, "GlobalDefinitions", {}) or {}
-    ids = {normalized_identifier(d.attrib.get("id", "")) for d in decls} | {wanted}
-    keys = {k for k in globals_ if normalized_identifier(k) in ids}
-    keys |= {k for k, d in definitions.items() if normalized_identifier(get_ci(d, "Name", "")) == wanted}
-    values = [globals_[k] for k in sorted(keys) if globals_.get(k) is not None]
-    owners = tuple(d.attrib["elementId"] for d in decls if d.attrib.get("elementId"))
-    for record in element_output_records(variables_data, owners) if owners else []:
-        value = get_ci(record, name)
-        if value is not None:
-            values.append(value)
-    return values
 
 
 def _norm(value):
@@ -118,23 +83,6 @@ def slack_ids(process: ET.Element) -> set[str]:
     return ids
 
 
-def assert_rule_encoded(bpmn_text: str) -> None:
-    missing = [s for s in SEVERITIES if s not in bpmn_text]
-    if missing:
-        raise CheckFailure(
-            f"the process never names {missing}: it returns the seeded case's answer "
-            "instead of classifying by the stated rule"
-        )
-
-
-def completed_ids(debug_data) -> set[str]:
-    return {
-        get_ci(item, "ElementId")
-        for item in get_ci(debug_data, "ElementExecutions", []) or []
-        if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() == "completed"
-    }
-
-
 def posted_messages(variables_data, element_ids) -> list[tuple[str, dict]]:
     """(element id, Slack response) for each executed Slack step that returned a ts."""
     found = []
@@ -148,7 +96,7 @@ def posted_messages(variables_data, element_ids) -> list[tuple[str, dict]]:
 
 
 def assert_outcome(process, case: dict, debug_data, variables_data) -> str:
-    ran = completed_ids(debug_data) & slack_ids(process)
+    ran = set(completed_ids(debug_data)) & slack_ids(process)
     if not ran:
         raise CheckFailure("no Slack step completed in the run; the alert was not posted")
     posts = posted_messages(variables_data, ran)
@@ -186,7 +134,7 @@ def assert_outcome(process, case: dict, debug_data, variables_data) -> str:
 
 
 def main() -> None:
-    bpmn_path = locate_bpmn()
+    bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     bpmn_text = bpmn_path.read_text(encoding="utf-8")
     process = ET.fromstring(bpmn_text.encode("utf-8")).find(q(BPMN_NS, "process"))
     if process is None:

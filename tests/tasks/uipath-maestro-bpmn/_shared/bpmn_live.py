@@ -3,9 +3,7 @@
 
 Plays the role `uipath-maestro-flow/_shared/flow_check.py` plays for the flow
 suite: the CLI-surface plumbing every live BPMN grader needs, so a task
-checker holds only its own contract. Extracted after the same helpers had been
-written three times — here, in the escalation grader, and privately inside
-`debug/live_debug_e2e/check_live_debug.py`.
+checker holds only its own contract.
 
 Cannot reuse `flow_check.py` itself: the CLI surface differs. `uip maestro
 flow debug` returns variables inline and addresses outputs by name, whereas
@@ -269,6 +267,58 @@ def _element_output_records(
             if get_ci(element, "ElementId") in wanted:
                 records.append(get_ci(element, "Outputs", {}))
     return records
+
+
+def declarations(process: ET.Element) -> list[ET.Element]:
+    """The process's own `uipath:variables` entries (inputs, outputs, inOuts)."""
+    variables = process.find(f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}")
+    return [] if variables is None else list(variables)
+
+
+def named_values(process: ET.Element, variables_data: Any, name: str) -> list[Any]:
+    """Every non-null runtime value of the output called `name`: its declared
+    ids in Globals (the runtime may re-case them), any Globals key whose
+    GlobalDefinitions Name is `name`, and the `name` output of the element the
+    declaration belongs to (an end event; a branch that did not run reads back
+    null and is skipped)."""
+    wanted = normalized_identifier(name)
+    decls = [d for d in declarations(process) if normalized_identifier(d.attrib.get("name", "")) == wanted]
+    scope = root_scope(variables_data)
+    globals_ = get_ci(scope, "Globals", {}) or {}
+    definitions = get_ci(scope, "GlobalDefinitions", {}) or {}
+    ids = {normalized_identifier(d.attrib.get("id", "")) for d in decls} | {wanted}
+    keys = {k for k in globals_ if normalized_identifier(k) in ids}
+    keys |= {k for k, d in definitions.items() if normalized_identifier(get_ci(d, "Name", "")) == wanted}
+    values = [globals_[k] for k in sorted(keys) if globals_.get(k) is not None]
+    owners = tuple(d.attrib["elementId"] for d in decls if d.attrib.get("elementId"))
+    for record in element_output_records(variables_data, owners) if owners else []:
+        value = get_ci(record, name)
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def completed_ids(debug_data: Any) -> list[str]:
+    """Element ids whose execution completed, in run order, repeats kept."""
+    return [
+        get_ci(item, "ElementId")
+        for item in get_ci(debug_data, "ElementExecutions", []) or []
+        if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() == "completed"
+    ]
+
+
+SEVERITIES = ("Sev1", "Sev2", "Sev3")
+
+
+def assert_rule_encoded(bpmn_text: str) -> None:
+    """A single seeded case cannot tell a classifier from a constant, so the
+    process must at least name every severity."""
+    missing = [s for s in SEVERITIES if s not in bpmn_text]
+    if missing:
+        raise CheckFailure(
+            f"the process never names {missing}: it returns the seeded case's answer "
+            "instead of classifying by the stated rule"
+        )
 
 
 

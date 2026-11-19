@@ -2,9 +2,8 @@
 
 Studio Web's harness opens the workspace's .uipx as the session's solution and
 exports the agent's edits back to the workspace. A pre_run that moves the
-fixture out of the workspace leaves Studio Web on an empty solution
-(adhoc-2026-11-18_14-40-01: "The sandbox changed after the bridge opened it",
-then the agent found /solution empty). The graders must read the workspace copy.
+fixture out of the workspace leaves Studio Web on an empty solution, so the
+graders must read the workspace copy.
 """
 
 from __future__ import annotations

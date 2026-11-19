@@ -15,7 +15,11 @@ value the SDD wires through it is known in advance (caseInput defaults to
 
 NameToAge asks api.agify.io, which has no age for `case-seed`, so its value is
 not graded; the two tasks that consume it must receive a value, not the text of
-an unresolved reference, and customReferenceCopy must equal collisionCopy.
+an unresolved reference (null only when their source is null), and
+customReferenceCopy must equal collisionCopy.
+
+The run shows the value each task received, not how it was bound, so a literal
+that spells the expected value passes these checks as the SDD's reference does.
 
 Read from the debug instance (`uip maestro case instance variables-all`): each
 task's runtime inputs and the case variables by the names the SDD gives. The
@@ -34,8 +38,8 @@ import re
 import sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from case_run_evidence import (  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_run_evidence import (  # noqa: E402
     RunEvidence,
     assert_completed,
     execution_of,
@@ -74,6 +78,12 @@ NAMED_OUTPUTS = {
     "literalResult": "literal-assigned",
     "copiedResult": "case-seed",
     "computedResult": "literal-seed-computed",
+}
+# Where an agify-fed task's input comes from: (source task or None for a case
+# variable, the field). Its input may be null only when that source is.
+UPSTREAM = {
+    "Consume colliding output": ("Lookup colliding same name", "estimatedAge"),
+    "Consume custom output": (None, "collisionCopy"),
 }
 CASE_ID_PREFIX = "IOB"
 UNRESOLVED = re.compile(r"(^=?vars\.|\$xref\(|^=js:|^<-)")
@@ -216,12 +226,30 @@ def check_order(payload: dict, chain: list[dict]) -> None:
             )
 
 
+def _empty(value: object) -> bool:
+    """The null or NaN that agify's empty answer turns into along the chain."""
+    return value is None or (isinstance(value, float) and value != value)
+
+
+def _upstream(evidence: RunEvidence, chain: list[dict], source: str | None, field: str) -> object:
+    """``field`` as the source task returned it, else as the case variable holds it."""
+    if source is not None:
+        task = next(t for t, (name, *_) in zip(chain, CHAIN) if name == source)
+        returned = list(_leaf_values(evidence.task_io_or_empty(str(task.get("id")))[1], field))
+        if returned:
+            return returned[0]
+    return evidence.value(field) if evidence.has(field) else None
+
+
 def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
     for task, (name, _folder, field, expected) in zip(chain, CHAIN):
         inputs, _ = evidence.task_io(str(task.get("id")))
         values = list(_leaf_values(inputs, field))
-        if not values and expected is None:
-            continue  # agify's empty answer may reach the task as no value at all
+        if expected is None and (not values or _empty(values[0])):
+            upstream = _upstream(evidence, chain, *UPSTREAM[name])
+            if _empty(upstream):
+                continue  # agify's empty answer may reach the task as no value at all
+            fail(f"task {name!r} ran without a {field} input although its source holds {upstream!r}")
         if not values:
             fail(f"task {name!r} ran without a {field} input: {text_of(inputs)[:300]}")
         value = values[0]
@@ -231,7 +259,7 @@ def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
             fail(f"task {name!r} received the text {value!r} instead of the value it refers to")
 
 
-def check_outputs(evidence: RunEvidence) -> None:
+def check_outputs(evidence: RunEvidence, chain: list[dict]) -> None:
     for name, expected in NAMED_OUTPUTS.items():
         actual = evidence.value(name)
         if actual != expected:
@@ -242,15 +270,16 @@ def check_outputs(evidence: RunEvidence) -> None:
         fail(f"metadataResult is {metadata!r}, expected the case's id {case_id or CASE_ID_PREFIX + '-…'!r}")
     collision = evidence.value("collisionCopy")
     custom = evidence.value("customReferenceCopy")
-    if not _same_number(custom, collision):
+    age = _upstream(evidence, chain, *UPSTREAM["Consume colliding output"])
+    if not _same_number(custom, collision, age):
         fail(f"customReferenceCopy is {custom!r}, expected collisionCopy's {collision!r}")
 
 
-def _same_number(a: object, b: object) -> bool:
-    """Equal, or both the NaN / null that `null + 0` chains can produce."""
-    def empty(v: object) -> bool:
-        return v is None or (isinstance(v, float) and v != v)
-    return (empty(a) and empty(b)) or a == b
+def _same_number(a: object, b: object, age: object) -> bool:
+    """Equal, or both the NaN / null that `null + 0` chains produce from a null age."""
+    if _empty(a) and _empty(b):
+        return _empty(age)
+    return a == b
 
 
 def check_run(payload: dict, evidence: RunEvidence, chain: list[dict]) -> None:
@@ -258,7 +287,7 @@ def check_run(payload: dict, evidence: RunEvidence, chain: list[dict]) -> None:
         assert_completed(payload, task)
     check_order(payload, chain)
     check_inputs(evidence, chain)
-    check_outputs(evidence)
+    check_outputs(evidence, chain)
 
 
 def main() -> None:

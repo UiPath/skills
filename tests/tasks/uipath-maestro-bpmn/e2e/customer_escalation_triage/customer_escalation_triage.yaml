@@ -6,12 +6,14 @@ description: >
   imports the exact submitted project (sha256 pinned, found wherever the
   agent put it) into its own ephemeral solution, runs one seeded Sev1 case
   (unique correlationId) via `uip maestro bpmn debug`, and asserts what the
-  run did: it completed with no incidents, the Jira step and the Slack step
-  each ran once, the Slack step's own response shows a message in the seeded
-  channel carrying the correlationId and severity, re-reading the created key
-  from Jira finds an issue in the seeded project and type whose summary
-  carries the correlationId, and the named outputs read back severity=Sev1,
-  caseKey=<correlationId>, jiraIssueKey=<that key>. Connector steps are found
+  run did: it completed with no incidents, one Jira step returned an issue
+  key and one Slack step a message ts (a search, comment or lookup on the
+  same connector is not counted), the Slack step's own response shows a
+  message in the seeded channel carrying the correlationId and severity,
+  re-reading the created key from Jira finds an issue in the seeded project
+  and type whose summary carries the correlationId, and the named outputs
+  read back severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>.
+  Connector steps are found
   by connector key alone, so any Create Issue / Send Message operation
   counts; the process must name all three severities. Created records are
   cleaned up from a flat journal in post_run. The packed-bindings check and
@@ -134,7 +136,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: one seeded Sev1 debug run completes with no incidents; the Jira step and the Slack step each run once; the Slack step's response shows a message in the seeded channel carrying the correlationId and Sev1; re-reading the created key from Jira finds an issue in the seeded project and type whose summary carries the correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
+    description: "Effects: one seeded Sev1 debug run completes with no incidents; one Jira step returns an issue key and one Slack step a message ts; the Slack step's response shows a message in the seeded channel carrying the correlationId and Sev1; re-reading the created key from Jira finds an issue in the seeded project and type whose summary carries the correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
     command: "python3 $REFERENCE_DIR/e2e/customer_escalation_triage/check_customer_escalation_behavior.py"
     timeout: 1600
     expected_exit_code: 0

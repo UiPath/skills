@@ -16,7 +16,8 @@ employee expense reimbursement process, not just a structurally valid case:
   - a case-management (Payment Tracking) child task exists
   - case-exit conditions cover happy-path completion + the two terminal lanes
 
-Mechanical only; runtime behaviour is graded by check_expense_runnable_debug.py.
+Mechanical only; runtime behaviour is graded by
+e2e_expense_runnable/check_expense_runnable_run.py.
 """
 
 from __future__ import annotations

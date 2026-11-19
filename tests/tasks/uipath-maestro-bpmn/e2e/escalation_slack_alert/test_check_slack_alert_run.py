@@ -31,7 +31,6 @@ def _load(name: str, path: Path):
 
 
 checker = _load("check_slack_alert_run", HERE / "check_slack_alert_run.py")
-old = _load("old_check_escalation_slack_alert", HERE.parents[1] / "_shared" / "check_escalation_slack_alert.py")
 from _shared.bpmn_live import DebugEvidence  # noqa: E402
 
 BPMN_TEXT = (FIXTURES / "Process.bpmn").read_text()
@@ -95,12 +94,9 @@ def test_rule_is_encoded_in_the_real_process():
 
 
 def test_a_next_steps_field_name_the_request_never_gives_is_not_required():
-    """The old grader required the classifier script to return `nextSteps`
-    by that exact key; the request only asks for next steps in the message."""
-    variables = _variables(next_steps_key="followUp")
-    with pytest.raises(old.CheckFailure, match="nextSteps"):
-        old.bind_classifier(variables, ("classify",), "Sev1")
-    checker.assert_outcome(_process(), CASE, _debug(), variables)
+    """The request only asks for next steps in the message, not a field named
+    `nextSteps` on the classifier."""
+    checker.assert_outcome(_process(), CASE, _debug(), _variables(next_steps_key="followUp"))
 
 
 def test_slack_step_found_by_connector_key_alone():
@@ -142,16 +138,29 @@ def test_wrong_severity_fails():
         checker.assert_outcome(_process(), CASE, _debug(), variables)
 
 
-def test_main_in_a_studio_web_layout(tmp_path, monkeypatch):
+def _studio_web_sandbox(tmp_path, monkeypatch, bpmn_text: str) -> list:
     project = tmp_path / "EscalationSlackAlert" / "EscalationSlackAlert"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text('{"Name": "EscalationSlackAlert", "ProjectType": "ProcessOrchestration"}')
-    (project / "Process.bpmn").write_text(BPMN_TEXT)
+    (project / "Process.bpmn").write_text(bpmn_text)
     (tmp_path / "seed.json").write_text(json.dumps(SEED))
     monkeypatch.chdir(tmp_path)
     sent = []
     monkeypatch.setattr(checker, "import_exact", lambda bpmn, project_dir, solution: project_dir)
     monkeypatch.setattr(checker, "run_debug", lambda p, inputs, log, **k: (sent.append(inputs), (_debug(), "inst-1"))[1])
     monkeypatch.setattr(checker, "debug_evidence", lambda i: DebugEvidence(_variables(), "", [], []))
+    return sent
+
+
+def test_main_in_a_studio_web_layout(tmp_path, monkeypatch):
+    sent = _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT)
     checker.main()
     assert sent == [CASE["inputs"]]
+
+
+def test_main_fails_a_process_that_only_knows_the_seeded_severity(tmp_path, monkeypatch):
+    """The seeded Sev1 run alone cannot tell a classifier from a constant."""
+    sent = _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT.replace("Sev2", "SevX").replace("Sev3", "SevY"))
+    with pytest.raises(checker.CheckFailure, match="never names"):
+        checker.main()
+    assert sent == []

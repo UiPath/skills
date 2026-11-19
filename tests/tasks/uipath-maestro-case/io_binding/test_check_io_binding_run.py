@@ -1,8 +1,8 @@
 """check_io_binding_run.py against the plans of two real runs.
 
-testdata/ holds the caseplan of nightly 2026-11-18_04-23-44 (claude-code, passed)
-and of 2026-11-17_04-23-38 (codex, failed: three task inputs written as
-`vars.<id>` without the `=`, which the runtime passes on as text). No io_binding
+testdata/ holds the caseplans of two real builds, one that passed and one that
+failed (three task inputs written as `vars.<id>` without the `=`, which the
+runtime passes on as text). No io_binding
 debug run left instance evidence, so `_run()` builds it in the shape a real run
 returns (single_node/http_request/testdata and single_node/business_rule/testdata:
 PascalCased `Globals` / `GlobalDefinitions`, task inputs under `JobArguments`),
@@ -172,8 +172,7 @@ def test_a_failed_task_fails() -> None:
 
 
 def test_another_collision_id_and_binding_layout_pass(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The old grader pinned `estimatedAge2`, four deduplicated bindings and the
-    exact output-row shapes; any unique ids and any binding layout pass now."""
+    """Any unique collision id, binding layout and output-row shape passes."""
     plan = copy.deepcopy(PASSING)
     tasks = _tasks(plan)
     colliding = next(t for t in tasks if t["displayName"] == "Lookup colliding same name")
@@ -209,3 +208,41 @@ def test_a_missing_sdd_task_fails() -> None:
             node["data"]["tasks"] = [[t for t in lane if t["displayName"] != "Echo expression"] for lane in tasks]
     with pytest.raises(SystemExit, match="expected the SDD's 8 api-workflow tasks, got 7"):
         grader.check_plan(plan)
+
+
+def _with_lookup_output(evidence: object, age: object) -> object:
+    """The colliding lookup returned ``age`` in its own outputs."""
+    lookup = next(t for t in _tasks(PASSING) if t["displayName"] == "Lookup colliding same name")
+    for element in evidence.elements[lookup["id"]]:
+        element["Outputs"] = {"EstimatedAge": age}
+    return evidence
+
+
+def test_a_null_input_on_consume_colliding_output_fails_when_the_lookup_returned_an_age(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(STATE, "estimatedAge2", None)
+    values = {**GLOBALS, "estimatedAge": 31, "collisionCopy": 31, "customReferenceCopy": 31}
+    monkeypatch.setitem(STATE, "collisionCopy", 31)
+    payload, evidence = _run(PASSING, values)
+    with pytest.raises(SystemExit, match="'Consume colliding output' ran without"):
+        _check(PASSING, payload, _with_lookup_output(evidence, 31))
+
+
+def test_a_null_input_on_consume_custom_output_fails_when_collision_copy_has_a_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(STATE, "collisionCopy", None)
+    with pytest.raises(SystemExit, match="'Consume custom output' ran without"):
+        _check(PASSING, *_run(PASSING))
+
+
+def test_both_copies_null_fail_when_the_lookup_returned_an_age(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(STATE, "estimatedAge2", 31)
+    monkeypatch.setitem(STATE, "collisionCopy", 31)
+    values = {**GLOBALS, "estimatedAge": 31, "collisionCopy": None, "customReferenceCopy": None}
+    payload, evidence = _run(PASSING, values)
+    with pytest.raises(SystemExit, match="customReferenceCopy"):
+        _check(PASSING, payload, _with_lookup_output(evidence, 31))

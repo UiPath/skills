@@ -1,7 +1,7 @@
 """check_cm_golden_run: the opening path of one debug run, with `uip` stubbed.
 
 The plan restates the built CMGoldenExpense opening (stage ids and task
-shapes from the 2026-11-18_04-25-00 artifact): Stage 1 starts on
+shapes from a real build's artifact): Stage 1 starts on
 case-entered and runs agent -> process -> rpa in sequence; Stage 2 is entered
 on Stage 1's completion and opens the manager's approval. Debug payloads use
 the CLI's `Data` shape (camelCase rows), the instance follow-up uses
@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("case_run_cm", HERE / "_setup" / "case_run.py")
+spec = importlib.util.spec_from_file_location("case_run_cm", HERE.parent.parent / "_setup" / "case_run.py")
 case_run = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(case_run)
 

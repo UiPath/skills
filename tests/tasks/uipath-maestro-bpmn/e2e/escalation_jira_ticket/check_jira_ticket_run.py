@@ -5,9 +5,10 @@ case, from the grader's own sandbox, and assert what the run did.
 Asserted on the run:
 - it completed with no incidents;
 - a Jira step completed and its own response carries the created issue's key;
-- re-reading that key from Jira (CE project, Task) returns an issue whose
-  summary carries this run's correlationId: the ticket really exists and is
-  this run's (a real external effect);
+- re-reading that key from Jira returns a Task in project CE whose summary
+  carries this run's correlationId: the ticket really exists and is this
+  run's (a real external effect). The "[Sev1] ..." summary format is only the
+  request's example, so it is not required;
 - the outputs the request names read back by name: severity=Sev1,
   caseKey=<correlationId>, jiraIssueKey=<that key>.
 
@@ -38,9 +39,10 @@ import jira_is  # noqa: E402
 from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
-    UIPATH_NS,
     CheckFailure,
     DebugEvidence,
+    assert_rule_encoded,
+    completed_ids,
     connector_response_values,
     element_output_records,
     fetch_incidents,
@@ -48,51 +50,15 @@ from _shared.bpmn_live import (  # noqa: E402
     get_ci,
     import_exact,
     index_runtime_connectors,
-    normalized_identifier,
+    named_values,
     q,
     require_clean_run,
-    root_scope,
     run_debug,
 )
 
 NAME = "EscalationJiraTicket"
-SEVERITIES = ("Sev1", "Sev2", "Sev3")
 LIVE_RUN_DIR = Path("escalation-jira-live")
 JOURNAL = Path(".created_keys")
-
-
-def locate_bpmn() -> Path:
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
-
-
-def declarations(process: ET.Element) -> list[ET.Element]:
-    variables = process.find(f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}")
-    return [] if variables is None else list(variables)
-
-
-def named_values(process: ET.Element, variables_data, name: str) -> list:
-    """Every non-null runtime value of the output called `name`: its declared
-    ids in Globals (the runtime may re-case them), any Globals key whose
-    GlobalDefinitions Name is `name`, and the `name` output of the element the
-    declaration belongs to (the end event)."""
-    wanted = normalized_identifier(name)
-    decls = [d for d in declarations(process) if normalized_identifier(d.attrib.get("name", "")) == wanted]
-    scope = root_scope(variables_data)
-    globals_ = get_ci(scope, "Globals", {}) or {}
-    definitions = get_ci(scope, "GlobalDefinitions", {}) or {}
-    ids = {normalized_identifier(d.attrib.get("id", "")) for d in decls} | {wanted}
-    keys = {k for k in globals_ if normalized_identifier(k) in ids}
-    keys |= {k for k, d in definitions.items() if normalized_identifier(get_ci(d, "Name", "")) == wanted}
-    values = [globals_[k] for k in sorted(keys) if globals_.get(k) is not None]
-    owners = tuple(d.attrib["elementId"] for d in decls if d.attrib.get("elementId"))
-    for record in element_output_records(variables_data, owners) if owners else []:
-        value = get_ci(record, name)
-        if value is not None:
-            values.append(value)
-    return values
 
 
 def assert_named(process, variables_data, name: str, expected, *, case_sensitive: bool = False) -> None:
@@ -117,23 +83,6 @@ def jira_ids(process: ET.Element) -> set[str]:
     return ids
 
 
-def assert_rule_encoded(bpmn_text: str) -> None:
-    missing = [s for s in SEVERITIES if s not in bpmn_text]
-    if missing:
-        raise CheckFailure(
-            f"the process never names {missing}: it returns the seeded case's answer "
-            "instead of classifying by the stated rule"
-        )
-
-
-def completed_ids(debug_data) -> set[str]:
-    return {
-        get_ci(item, "ElementId")
-        for item in get_ci(debug_data, "ElementExecutions", []) or []
-        if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() == "completed"
-    }
-
-
 def created_keys(variables_data, element_ids) -> list[str]:
     outputs = element_output_records(variables_data, tuple(sorted(element_ids)))
     keys = [v for v in connector_response_values(outputs, "key") if isinstance(v, str) and v.strip()]
@@ -147,15 +96,29 @@ def journal(keys) -> None:
         JOURNAL.write_text("\n".join(merged) + "\n")
 
 
-def owned_keys(keys, correlation: str) -> list[str]:
-    """The keys whose Jira issue's summary carries this run's correlationId."""
+def owned_keys(keys, correlation: str) -> dict[str, dict]:
+    """key -> fields for the keys whose Jira issue's summary carries this run's
+    correlationId."""
     conn = jira_is.connection_id()
-    owned = []
+    owned = {}
     for key in keys:
         fields = jira_is.get_issue(conn, key)
         if fields is not None and correlation in str(fields.get("summary", "")):
-            owned.append(key)
+            owned[key] = fields
     return owned
+
+
+def assert_task_in_project(key: str, fields: dict, seed: dict) -> None:
+    """The request: "Open the ticket as a Task in our Jira project CE"."""
+    project = get_ci(fields.get("project"), "key")
+    if project != seed["project_key"]:
+        raise CheckFailure(f"Jira issue {key} is in project {project!r}, expected {seed['project_key']!r}")
+    issuetype = fields.get("issuetype")
+    type_id, type_name = get_ci(issuetype, "id"), get_ci(issuetype, "name")
+    if str(type_id) != seed["issuetype_id"] and str(type_name).casefold() != jira_is.ISSUETYPE_NAME.casefold():
+        raise CheckFailure(
+            f"Jira issue {key} is a {type_name!r} (id {type_id!r}), expected a {jira_is.ISSUETYPE_NAME!r}"
+        )
 
 
 def assert_outputs(process, seed: dict, variables_data, issue_key: str) -> None:
@@ -169,7 +132,7 @@ def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
     correlation = seed["correlationId"]
 
-    bpmn_path = locate_bpmn()
+    bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     bpmn_text = bpmn_path.read_text(encoding="utf-8")
     process = ET.fromstring(bpmn_text.encode("utf-8")).find(q(BPMN_NS, "process"))
     if process is None:
@@ -196,7 +159,7 @@ def main() -> None:
     print(f"OK: debug finished (instance {instance_id})")
 
     variables_data, variables_text = fetch_variables(instance_id)
-    ran = completed_ids(debug_data) & step_ids
+    ran = set(completed_ids(debug_data)) & step_ids
     keys = created_keys(variables_data, step_ids)
     journal(keys)  # before any assertion: the issue exists whatever the verdict
 
@@ -212,9 +175,12 @@ def main() -> None:
     owned = owned_keys(keys, correlation)
     if not owned:
         raise CheckFailure(f"none of {keys} is a Jira issue whose summary carries {correlation!r}")
-    print(f"OK: Jira issue {owned[0]} exists and its summary carries {correlation!r}")
+    key, fields = next(iter(owned.items()))
+    print(f"OK: Jira issue {key} exists and its summary carries {correlation!r}")
+    assert_task_in_project(key, fields, seed)
+    print(f"OK: Jira issue {key} is a {jira_is.ISSUETYPE_NAME} in {seed['project_key']}")
 
-    assert_outputs(process, seed, variables_data, owned[0])
+    assert_outputs(process, seed, variables_data, key)
     print("PASS: the run created this case's Jira ticket and returned the expected outputs")
 
 

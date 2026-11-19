@@ -39,17 +39,16 @@ from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     COMPLETED_STATUSES,
-    UIPATH_NS,
     CheckFailure,
+    completed_ids,
     element_output_records,
     fetch_incidents,
     fetch_variables,
     get_ci,
     import_exact,
     index_runtime_connectors,
-    normalized_identifier,
+    named_values,
     q,
-    root_scope,
     run_debug,
 )
 
@@ -59,41 +58,6 @@ SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
-
-
-def locate_bpmn() -> Path:
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
-
-
-def declarations(process: ET.Element) -> list[ET.Element]:
-    variables = process.find(f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}")
-    return [] if variables is None else list(variables)
-
-
-def named_values(process: ET.Element, variables_data, name: str) -> list:
-    """Every non-null runtime value of the output called `name`: its declared
-    ids in Globals (the runtime may re-case them), any Globals key whose
-    GlobalDefinitions Name is `name`, and the `name` output of the element each
-    declaration belongs to (an end event; the branch that did not run reads
-    back null and is skipped)."""
-    wanted = normalized_identifier(name)
-    decls = [d for d in declarations(process) if normalized_identifier(d.attrib.get("name", "")) == wanted]
-    scope = root_scope(variables_data)
-    globals_ = get_ci(scope, "Globals", {}) or {}
-    definitions = get_ci(scope, "GlobalDefinitions", {}) or {}
-    ids = {normalized_identifier(d.attrib.get("id", "")) for d in decls} | {wanted}
-    keys = {k for k in globals_ if normalized_identifier(k) in ids}
-    keys |= {k for k, d in definitions.items() if normalized_identifier(get_ci(d, "Name", "")) == wanted}
-    values = [globals_[k] for k in sorted(keys) if globals_.get(k) is not None]
-    owners = tuple(d.attrib["elementId"] for d in decls if d.attrib.get("elementId"))
-    for record in element_output_records(variables_data, owners) if owners else []:
-        value = get_ci(record, name)
-        if value is not None:
-            values.append(value)
-    return values
 
 
 def _norm(value):
@@ -107,21 +71,39 @@ def _loose(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(text).lower())
 
 
-_NO_RESPONSE = {"none", "", "no", "false", "noresponse", "notrequired", "noresponserequired", "na"}
+# Squashed spellings the word split cannot separate ("nodraft", "noresponserequired").
+_NO_RESPONSE = {
+    "", "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
+    "noresponseneeded", "notapplicable", "notneeded", "draftnotneeded",
+}
+_NEGATIONS = {"no", "not", "none", "false", "without"}
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", re.sub(r"([a-z])([A-Z])", r"\1 \2", text).lower())
 
 
 def response_mode(value) -> str | None:
     """'draft' or 'none' by meaning: the request no longer names the values, only
-    that a draft response is written for escalations that need engineering."""
+    that a draft response is written for escalations that need engineering.
+    Negation is read first, so "No draft" and "Draft not needed" are 'none'."""
     if isinstance(value, bool):
         return "draft" if value else "none"
     if isinstance(value, str):
         text = _loose(value)
+        if text in _NO_RESPONSE or _NEGATIONS.intersection(_words(value)):
+            return "none"
         if "draft" in text:
             return "draft"
-        if text in _NO_RESPONSE:
-            return "none"
     return None
+
+
+def names_path(text: str, path: str) -> bool:
+    """`path` appears as its own word(s), in any case and with `_`, `-` or a
+    space between its parts: "unknown customer" names unknown_customer, while
+    "CustomerEscalationOrchestrator" or "escalations" does not name escalation."""
+    parts = r"[\s_-]*".join(re.escape(p) for p in path.split("_"))
+    return re.search(rf"(?<![a-z0-9]){parts}(?![a-z0-9])", text, re.IGNORECASE) is not None
 
 
 def slack_ids(process: ET.Element) -> set[str]:
@@ -134,14 +116,6 @@ def slack_ids(process: ET.Element) -> set[str]:
     if not ids:
         raise CheckFailure(f"the process has no {SLACK_CONNECTOR} step")
     return ids
-
-
-def completed_ids(debug_data) -> list[str]:
-    return [
-        get_ci(item, "ElementId")
-        for item in get_ci(debug_data, "ElementExecutions", []) or []
-        if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() == "completed"
-    ]
 
 
 def verify_case(process, slack: set[str], case: dict, debug_data, variables_data) -> str:
@@ -189,7 +163,7 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
     message = get_ci(response, "message")
     text = get_ci(message, "text") if isinstance(message, dict) else None
     correlation = case["inputs"]["correlationId"]
-    if not isinstance(text, str) or correlation not in text or _loose(expected["escalationPath"]) not in _loose(text):
+    if not isinstance(text, str) or correlation not in text or not names_path(text, expected["escalationPath"]):
         raise CheckFailure(f"{name}: the posted message does not carry {correlation!r} and {expected['escalationPath']!r}: {text!r}")
     return ts
 
@@ -204,7 +178,7 @@ def load_process(bpmn_path: Path) -> ET.Element:
 def cases() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
     seeded = seed["cases"]
-    bpmn_path = locate_bpmn()
+    bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     process = load_process(bpmn_path)
     slack = slack_ids(process)
 
@@ -231,7 +205,7 @@ def cases() -> None:
 def slack_failure_handled() -> None:
     from _shared.check_escalation_orchestrator_paths import assert_error_handlers
 
-    bpmn_path = locate_bpmn()
+    bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     root = ET.parse(bpmn_path).getroot()
     process = root.find(q(BPMN_NS, "process"))
     assert_error_handlers(root, process, tuple(sorted(slack_ids(process))))

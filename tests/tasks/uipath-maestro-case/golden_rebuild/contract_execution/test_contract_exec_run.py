@@ -1,7 +1,7 @@
 """check_contract_exec_run: the opening path of one debug run, read offline.
 
 The plan restates the built ContractExecution opening (stage/task ids and
-shapes from the 2026-11-18_04-25-00 artifact): "Checking the request" starts
+shapes from a real build's artifact): "Checking the request" starts
 on case-entered and opens the required request check (action), the required
 counterparty pull (api-workflow) and the optional clause analysis (agent);
 the SLA-breach handler and "Add More Documents" do not start on entry.
@@ -14,7 +14,7 @@ import importlib.util
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("case_run_contract", HERE / "_setup" / "case_run.py")
+spec = importlib.util.spec_from_file_location("case_run_contract", HERE.parent.parent / "_setup" / "case_run.py")
 case_run = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(case_run)
 

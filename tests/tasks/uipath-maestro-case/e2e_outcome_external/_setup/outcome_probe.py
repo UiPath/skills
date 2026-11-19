@@ -73,12 +73,6 @@ PEER_WAIT_SECONDS = 900
 # worst honest debug duration: 600s CLI poll + INSTANCE_WAIT_SECONDS.
 STALE_LOCK_SECONDS = 1500
 
-# Clock-skew tolerance when comparing a third-party timestamp to our debug start.
-# Kept small because the agent is asked to test its build: its own debug run
-# writes token-bearing records shortly before this floor. The harness's run
-# lands its records well after the floor (refresh + upload + start come first).
-SKEW_SECONDS = 5
-
 
 def precondition_failed(msg: str) -> None:
     """Fail loudly and label the cause as environmental.
@@ -463,10 +457,11 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     kept, dropped = [], []
     for hit in hits:
         when = _to_epoch(hit.get(stamp_key))
-        # Small negative skew only: measured Graph/Atlassian stamps agreed with
-        # ours to the second, and a wide window would let an execution that ran
-        # just BEFORE the floor (e.g. an agent that ran debug itself) slip in.
-        if when is None or when >= floor - SKEW_SECONDS:
+        # No skew allowance: the agent is asked to test its build, so its own
+        # run writes token-bearing records seconds before the floor, while the
+        # harness's run cannot write before it starts (measured Graph/Atlassian
+        # stamps agreed with ours to the second).
+        if when is None or when >= floor:
             kept.append(hit)
         else:
             dropped.append(hit)

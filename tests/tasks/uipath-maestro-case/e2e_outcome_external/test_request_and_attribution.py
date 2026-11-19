@@ -64,10 +64,12 @@ def test_a_record_from_the_agents_own_test_run_is_not_counted(
     assert probe._only_after([agents, harness], "created", "jira") == [harness]
 
 
-def test_a_harness_record_stamped_slightly_early_still_counts(
+def test_a_record_stamped_seconds_before_the_harness_debug_start_is_not_counted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The harness's run cannot write before it starts; the agent's run can."""
     _floor(monkeypatch, tmp_path, "2026-11-18T10:00:00+00:00")
-    record = {"subject": "x", "received": "2026-11-18T09:59:57Z"}
+    early = {"subject": "x", "received": "2026-11-18T09:59:57Z"}
+    on_time = {"subject": "y", "received": "2026-11-18T10:00:00Z"}
 
-    assert probe._only_after([record], "received", "email") == [record]
+    assert probe._only_after([early, on_time], "received", "email") == [on_time]

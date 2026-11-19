@@ -48,6 +48,9 @@ sandbox:
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
     timeout: 300
+  # Marks the task start for the post_run debug-instance cancel.
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
 
 reference:
   directory: ..
@@ -110,14 +113,19 @@ success_criteria:
     weight: 4.0
     pass_threshold: 1.0
 
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 720 s), plus refresh (2 x 120 s)
+  # and the retry sleeps (3 x 15 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug reaches finalStatus=Completed, Submission, Manager Approval, Finance Approval, Payment and Approved each ran to Completed, the Rejected and Withdrawn lanes did not run, and no element failed"
     command: "python3 $REFERENCE_DIR/e2e_expense_runnable/check_expense_runnable_run.py"
-    timeout: 900
+    timeout: 3180
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

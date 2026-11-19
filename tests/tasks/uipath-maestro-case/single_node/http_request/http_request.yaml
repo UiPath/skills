@@ -6,8 +6,9 @@ description: >
   instance back (`uip maestro case instance variables-all`): the task that
   called the service completed, and the case variable the prompt names,
   echoResponse, holds the echo of the invoice number, the probe value and the
-  `source` query, which proves the request really went out as asked. It also
-  refuses a credential header. That the agent ran its own test run is advisory.
+  `source` query, with the fields only the service fills in (`args`, `url`),
+  which proves the request really went out as asked. It also refuses a
+  credential header, in the plan or among the headers the service received. That the agent ran its own test run is advisory.
   The endpoint is third-party: an outage there fails the run check, not the
   build checks.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, path-to-ga, outcome-graded]
@@ -21,6 +22,11 @@ run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+# Marks the task start for the post_run debug-instance cancel.
+pre_run:
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
 
 reference:
   directory: ../..
@@ -63,10 +69,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 540 s), plus refresh (2 x 120 s),
+  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
+  # (2 x 180 s).
   - type: run_command
     description: "Effects: one debug run in which the task that called postman-echo.com/post completed, and echoResponse holds the echo of INV-1042, the probe and source=skills-case-eval"
     command: "python3 $REFERENCE_DIR/single_node/http_request/check_http_request_run.py"
-    timeout: 900
+    timeout: 2850
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -79,5 +89,7 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

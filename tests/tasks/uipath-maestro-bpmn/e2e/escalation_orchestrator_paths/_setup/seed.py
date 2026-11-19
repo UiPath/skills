@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """Seed path cases for the escalation-orchestrator outcome eval.
 
-Each case pins the flow inputs that steer one branch and the outputs the grader
-asserts. `expect_slack: true` means the run must have actually posted a Slack
-message (escalation alert on the escalation path, triage notice on the triage
-paths) — a non-empty slackMessageId proves it.
-
-Every expected value below was verified by running the reference orchestrator
-through `uip maestro flow debug --inputs` on codereval/alpha. The checker
-iterates this list generically, so new paths (e.g. multiple-match, missing-domain,
-Sev2-with-attachments) drop in here with no checker change.
+Each case pins the process inputs that steer one branch and the outputs the
+grader asserts. Every case posts one Slack message (the escalation alert or
+the triage notice); check_orchestrator_run.py runs each case under `uip
+maestro bpmn debug --inputs` and requires slackMessageId to equal the ts in
+the Slack step's own response. It iterates this list generically, so a new
+path drops in here with no checker change.
 """
 
 from __future__ import annotations

@@ -39,6 +39,7 @@ checker = _load("escalation_behavior", "check_customer_escalation_behavior.py")
 packager = _load("escalation_package", "check_customer_escalation_package.py")
 escalation_is = sys.modules["escalation_is"]
 import _shared.bpmn_live as live  # noqa: E402
+from _shared import bpmn_check  # noqa: E402
 
 SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -244,9 +245,9 @@ class StudioWebLayoutTests(unittest.TestCase):
             os.chdir(tmp)
             try:
                 self.assertFalse(Path("CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn").is_file())
-                found = checker.locate_bpmn()
+                found = bpmn_check.locate_bpmn(f"{checker.NAME}.bpmn", [checker.LIVE_RUN_DIR])
                 self.assertEqual(found.name, "Process.bpmn")
-                self.assertEqual(packager.locate_bpmn(), found)
+                self.assertEqual((packager.NAME, packager.LIVE_RUN_DIR), (checker.NAME, checker.LIVE_RUN_DIR))
                 contract = checker.resolve_contract(found)
             finally:
                 os.chdir(cwd)
@@ -312,6 +313,56 @@ class OutcomeAssertionTests(unittest.TestCase):
         response = variables["Variables"][0]["Elements"][1]["Outputs"]["response"]
         response["message"]["text"] = "[Sev1] escalation"
         self.assert_fails(good_debug_data(), variables, [], "text")
+
+
+def with_lookup_steps(debug: dict, variables: dict) -> tuple:
+    """The good run plus a Jira search before the create, a Jira comment after
+    it and a Slack channel lookup: same connectors, none returns an issue key
+    or a message ts (Jira /search/jql, /issue/{id}/comment, Slack
+    conversations.info response shapes)."""
+    contract = checker.Contract(
+        output_ids=CONTRACT.output_ids,
+        jira_create_ids=("JiraComment1", "JiraCreate1", "JiraSearch1"),
+        slack_send_ids=("SlackInfo1", "SlackSend1"),
+    )
+    debug["ElementExecutions"][1:1] = [{"ElementId": "JiraSearch1"}, {"ElementId": "SlackInfo1"}]
+    debug["ElementExecutions"].append({"ElementId": "JiraComment1"})
+    variables["Variables"][0]["Elements"] += [
+        {"ElementId": "JiraSearch1", "Outputs": {"response": {"issues": [], "isLast": True}}},
+        {
+            "ElementId": "JiraComment1",
+            "Outputs": {
+                "response": {
+                    "self": "https://x/rest/api/3/issue/10001/comment/10050",
+                    "id": "10050",
+                    "created": "2026-11-19T10:00:00.000+0000",
+                }
+            },
+        },
+        {
+            "ElementId": "SlackInfo1",
+            "Outputs": {"response": {"ok": True, "channel": {"id": "C0B2FDZD1M3", "name": "coding-agent-testing"}}},
+        },
+    ]
+    return contract, debug, variables
+
+
+class OtherStepsOnTheSameConnectorTests(unittest.TestCase):
+    def test_a_search_comment_and_lookup_do_not_count_as_the_create_or_the_post(self):
+        contract, debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_a_comment_id_is_not_journalled_as_an_issue_to_delete(self):
+        contract, _debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        effects = checker.harvest_side_effects(contract, variables)
+        self.assertEqual(effects["jira_issues"], ["10001"])
+        self.assertEqual(effects["jira_keys"], ["CE-101"])
+
+    def test_the_create_running_twice_still_fails(self):
+        contract, debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        debug["ElementExecutions"].append({"ElementId": "JiraCreate1"})
+        with self.assertRaisesRegex(checker.CheckFailure, "Jira create"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
 
 
 class SideEffectHarvestTests(unittest.TestCase):

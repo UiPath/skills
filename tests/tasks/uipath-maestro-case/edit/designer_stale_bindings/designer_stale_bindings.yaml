@@ -4,21 +4,19 @@ description: >
   a Designer save leaves it: the Designer rewrites bindings_v2.json on publish
   and debug, but a save rewrites it only when an entry point, a file name or
   the BPMN changed, so a task added in the canvas can be missing from it, and
-  packing ships the file as it is (PO.Frontend develop 6e9f81386,
-  CanvasModelProvider / PackagingFileCreator; observed on an alpha Designer
-  save, 2026-10-15). Reuses the designer_saved_plan fixture, with the RPA
+  packing ships the file as it is (PO.Frontend CanvasModelProvider /
+  PackagingFileCreator; observed on an alpha Designer save). Reuses the designer_saved_plan fixture, with the RPA
   Workflow resource removed from bindings_v2.json before the run. The edit
   itself touches no binding; graded on the sidecar matching the plan
-  afterwards, however the agent regenerates it (`uip maestro case compile`
-  syncs it when run in the project, as every passing run on 2026-11-17/18 did;
-  `uip maestro case bindings sync` does too). Local only; nothing is uploaded
+  afterwards, however the agent regenerates it (`uip maestro case compile` run
+  in the project syncs it, and so does `uip maestro case bindings sync`). Local
+  only; nothing is uploaded
   or debugged, because a debug run regenerates the sidecar itself and never
   reaches Stage 5 (entered by a webhook). Asked the way a Studio Web user would
   ask it. The fixture stays in the workspace: the Studio Web harness opens its
   .uipx as the session's solution (projects under /solution/, where the in-page
-  SDK compiles) and exports edits back, so the graders read the workspace copy.
-  Moving it to /solution/ in pre_run left Studio Web on an empty solution
-  (2026-11-18).
+  SDK compiles) and exports edits back, so the graders read the workspace copy;
+  moving it to /solution/ in pre_run leaves Studio Web on an empty solution.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 

@@ -13,12 +13,8 @@ returns:
   comes back as `EchoResponse.Json.Probe`), so every read here ignores case.
 
 The folder key comes from `uip maestro case instance list`, which lists Studio
-Web Debug instances across folders. Shapes recorded from real debug runs on
-alpha, 2026-11-18 (single_node/http_request/testdata/http_run_evidence.json).
-
-Identical copies sit in single_node/http_request, single_node/business_rule and
-io_binding, because the Studio Web sandbox mounts only the task's own folder
-and `_shared`. Change all three together.
+Web Debug instances across folders. Shapes as recorded from real debug runs in
+single_node/http_request/testdata/http_run_evidence.json.
 """
 
 from __future__ import annotations
@@ -30,11 +26,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-_d = os.path.dirname(os.path.abspath(__file__))
-while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
-    _d = os.path.dirname(_d)
-if _d not in sys.path:
-    sys.path.insert(0, _d)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import _get_ci, _parse_json, _run, iter_tasks  # noqa: E402
 
 LIST_ATTEMPTS = 6

@@ -15,15 +15,12 @@ description: >
   Studio Web user would ask it. Not run under debug: the edited stage is
   entered only by a user's choice after a human approval and a webhook, which
   a debug run never reaches, so the graded outcome is the plan file Studio Web
-  will load. Needs a CLI that
-  reads 32.0.4 (UiPath/cli#5001, in @dev since 1.205.0-dev.9162). Passes on the
-  skill as it stands (2026-10-09, one run each with and without #3817's
-  brownfield commit): the guard is against regressions in edits to Designer
-  plans, not a test of that commit. The fixture stays in the workspace: the
+  will load. Needs a CLI that reads schema 32.0.4. The guard is against
+  regressions in edits to Designer plans. The fixture stays in the workspace: the
   Studio Web harness opens its .uipx as the session's solution (projects under
   /solution/, where the in-page SDK compiles) and exports edits back, so the
-  graders read the workspace copy. Moving it to /solution/ in pre_run left
-  Studio Web on an empty solution (2026-11-18).
+  graders read the workspace copy; moving it to /solution/ in pre_run leaves
+  Studio Web on an empty solution.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 

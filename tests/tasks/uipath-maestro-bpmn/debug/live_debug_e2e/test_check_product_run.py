@@ -13,8 +13,6 @@ import copy
 import importlib.util
 import json
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -58,27 +56,15 @@ def test_real_run_passes(tmp_path, monkeypatch):
     checker.main()
 
 
-def test_passes_with_no_agent_evidence_where_the_old_grader_failed(tmp_path, monkeypatch):
-    """adhoc-2026-11-14_08-01-54: Studio Web refused the agent's debug
-    (UnavailableInHost), so it saved no evidence and the old evidence-based
-    grader failed a correct process. The new grader runs the debug itself."""
-    _sandbox(tmp_path)
-    old = subprocess.run(
-        [sys.executable, str(HERE / "check_live_debug.py")],
-        cwd=tmp_path, capture_output=True, text=True,
-        env={"PATH": "/nonexistent"},
-    )
-    assert old.returncode != 0 and "no debug-evidence" in old.stderr
-    monkeypatch.chdir(tmp_path)
-    _patch_live(monkeypatch)
-    checker.main()
-
-
 def test_studio_web_process_bpmn_is_found(tmp_path, monkeypatch):
     project = _sandbox(tmp_path)
     (project / "ProductCalc.bpmn").rename(project / "Process.bpmn")
     monkeypatch.chdir(tmp_path)
-    assert checker.locate_bpmn().name == "Process.bpmn"
+    _patch_live(monkeypatch)
+    graded = []
+    monkeypatch.setattr(checker, "import_exact", lambda bpmn, project, solution: graded.append(bpmn.name) or project)
+    checker.main()
+    assert graded == ["Process.bpmn"]
 
 
 def test_product_must_read_back_42(monkeypatch):
@@ -111,6 +97,25 @@ def test_a_run_without_a_completed_script_task_fails(tmp_path, monkeypatch):
 def test_hardcoded_answer_fails(tmp_path, monkeypatch):
     hardcoded = (FIXTURES / "ProductCalc.bpmn").read_text().replace("return 6 * 7;", "return 42;")
     _sandbox(tmp_path, hardcoded)
+    monkeypatch.chdir(tmp_path)
+    _patch_live(monkeypatch)
+    with pytest.raises(checker.CheckFailure, match="written into the process"):
+        checker.main()
+
+
+@pytest.mark.parametrize(
+    "script",
+    ["return 6 * 7; // 42", "return 6 * 7; /* 42 */", "/* product\n is 42 */\nreturn 6 * 7;"],
+)
+def test_a_42_in_a_comment_is_not_a_hardcoded_answer(tmp_path, monkeypatch, script):
+    _sandbox(tmp_path, (FIXTURES / "ProductCalc.bpmn").read_text().replace("return 6 * 7;", script))
+    monkeypatch.chdir(tmp_path)
+    _patch_live(monkeypatch)
+    checker.main()
+
+
+def test_a_hardcoded_answer_beside_a_comment_still_fails(tmp_path, monkeypatch):
+    _sandbox(tmp_path, (FIXTURES / "ProductCalc.bpmn").read_text().replace("return 6 * 7;", "return 42; // 6 * 7"))
     monkeypatch.chdir(tmp_path)
     _patch_live(monkeypatch)
     with pytest.raises(checker.CheckFailure, match="written into the process"):

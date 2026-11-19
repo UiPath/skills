@@ -1,8 +1,8 @@
 """check_http_request_run.py against a real debug run's instance evidence.
 
-testdata/ holds what alpha returned on 2026-11-18 for the HttpRequestSingleCase
-artifact of nightly 2026-11-18_04-23-44: the `case debug` Data, the instance
-list row and `instance variables-all`, plus that run's plan. No tenant is touched.
+testdata/ holds what alpha returned for a real HttpRequestSingleCase debug run:
+the `case debug` Data, the instance list row and `instance variables-all`, plus
+that run's plan. No tenant is touched.
 
     cd tests && uv run -q --with pytest python -m pytest -q tasks/uipath-maestro-case/single_node/http_request
 """
@@ -31,7 +31,9 @@ def _load(name: str, path: Path):
 
 
 grader = _load("check_http_request_run_under_test", HERE / "check_http_request_run.py")
-evidence_mod = _load("case_run_evidence_http_under_test", HERE / "case_run_evidence.py")
+evidence_mod = _load(
+    "case_run_evidence_http_under_test", HERE.parent.parent / "_shared" / "case_run_evidence.py"
+)
 
 
 def _evidence(variables_all: dict | None = None):
@@ -124,3 +126,25 @@ def test_an_instance_missing_from_the_list_fails(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(evidence_mod, "LIST_SLEEP_S", 0)
     with pytest.raises(SystemExit, match="is not in"):
         evidence_mod.folder_key_of("00000000-0000-0000-0000-000000000000", "2026-11-18T13:00:00Z")
+
+
+@pytest.mark.parametrize("header", ["Authorization", "XApiKey", "Cookie"])
+def test_a_credential_header_the_service_received_fails(header: str) -> None:
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    _globals(variables_all)["EchoResponse"]["Headers"][header] = "secret"
+    with pytest.raises(SystemExit, match=header):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))
+
+
+def test_a_variable_bound_to_the_request_instead_of_the_echo_fails() -> None:
+    """The request inputs carry the invoice, the probe and the source query too."""
+    variables_all = copy.deepcopy(EVIDENCE["variables_all"])
+    request = next(
+        element["Inputs"]["Body"]
+        for block in variables_all["Data"]["Variables"]
+        for element in block["Elements"]
+        if element["ElementId"] == "trBBgDSNV"
+    )
+    _globals(variables_all)["EchoResponse"] = copy.deepcopy(request)
+    with pytest.raises(SystemExit, match="Args"):
+        grader.check_run(PLAN, EVIDENCE["debug"]["Data"], _evidence(variables_all))

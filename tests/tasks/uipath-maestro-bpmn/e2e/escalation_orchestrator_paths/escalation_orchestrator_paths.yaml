@@ -32,7 +32,8 @@ sandbox:
 run_limits:
   expected_turns: 80
   max_turns: 200
-  task_timeout: 5400
+  # turn 1800 + criteria 180 + 30 + 3400 + 30 = 5440, plus margin.
+  task_timeout: 5600
   turn_timeout: 1800
 
 pre_run:

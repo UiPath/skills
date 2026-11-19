@@ -24,7 +24,8 @@ sandbox:
 # grader's own debug run) on top.
 run_limits:
   expected_turns: 30
-  task_timeout: 3300
+  # turn 2400 + criteria 180 + 30 + 30 + 900 = 3540, plus margin.
+  task_timeout: 3700
   max_turns: 120
   turn_timeout: 2400
 

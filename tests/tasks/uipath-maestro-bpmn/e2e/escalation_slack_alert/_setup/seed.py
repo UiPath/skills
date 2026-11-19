@@ -3,9 +3,9 @@
 
 Writes seed.json with one Enterprise / production-down / no-workaround case.
 A fresh correlationId per run keeps the posted Slack message and the caseKey
-assertion isolated across runs. The grader (check_escalation_slack_alert.py)
-runs `flow debug --inputs <inputs>` and asserts both the classification outputs
-and that a Slack message was actually posted.
+assertion isolated across runs. The grader (check_slack_alert_run.py) runs
+`uip maestro bpmn debug --inputs <inputs>` and asserts the classification
+outputs and the message the Slack step's own response shows it posted.
 """
 
 from __future__ import annotations

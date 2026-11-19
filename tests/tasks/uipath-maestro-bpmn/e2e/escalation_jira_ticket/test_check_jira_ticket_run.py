@@ -2,8 +2,8 @@
 
 Fixtures: `sw_generic_issue_Process.bpmn` is the Studio Web agent's process
 from run adhoc-2026-11-14_08-01-54, whose Create Issue step the builder
-emitted as the generic `issue` object (POST /issue), and which the old grader
-rejected before running it. `nightly_curated_EscalationJiraTicket.bpmn` and
+emitted as the generic `issue` object (POST /issue).
+`nightly_curated_EscalationJiraTicket.bpmn` and
 `run_seed.json` are from claude-code nightly 2026-11-17_04-23-30 (passed), which
 used `curated_create_issue`.
 """
@@ -31,7 +31,6 @@ def _load(name: str, path: Path):
 
 
 checker = _load("check_jira_ticket_run", HERE / "check_jira_ticket_run.py")
-old = _load("old_check_escalation_jira_ticket", HERE.parents[1] / "_shared" / "check_escalation_jira_ticket.py")
 
 SEED = json.loads((FIXTURES / "run_seed.json").read_text())
 CORR = SEED["correlationId"]
@@ -81,13 +80,17 @@ def test_static_checks_accept_both_create_operations(text):
     checker.assert_rule_encoded(text)
 
 
-def test_the_old_grader_rejected_the_studio_web_create_issue_step():
-    with pytest.raises(old.CheckFailure, match="curated_create_issue"):
-        old.resolve_contract(_root(SW))
+def test_the_studio_web_generic_issue_step_is_the_jira_step():
     assert checker.jira_ids(_process(SW)) == {"createJiraIssue"}
 
 
-def _sandbox(tmp_path, monkeypatch, text, step, *, summary=None, exposed_key=None):
+TASK_IN_CE = {
+    "project": {"id": "10000", "key": "CE", "name": "Coder Eval"},
+    "issuetype": {"id": SEED["issuetype_id"], "name": "Task", "subtask": False},
+}
+
+
+def _sandbox(tmp_path, monkeypatch, text, step, *, summary=None, exposed_key=None, fields=None):
     project = tmp_path / "EscalationJiraTicket" / "EscalationJiraTicket"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text('{"Name": "EscalationJiraTicket", "ProjectType": "ProcessOrchestration"}')
@@ -101,8 +104,29 @@ def _sandbox(tmp_path, monkeypatch, text, step, *, summary=None, exposed_key=Non
     monkeypatch.setattr(checker.jira_is, "connection_id", lambda: "conn")
     monkeypatch.setattr(
         checker.jira_is, "get_issue",
-        lambda conn, key: {"summary": summary if summary is not None else f"[Sev1] {CORR} Production down"},
+        lambda conn, key: {"summary": summary if summary is not None else f"[Sev1] {CORR} Production down", **(fields or TASK_IN_CE)},
     )
+
+
+@pytest.mark.parametrize(
+    "fields, problem",
+    [
+        ({**TASK_IN_CE, "project": {"id": "10001", "key": "OPS", "name": "Operations"}}, "project"),
+        ({**TASK_IN_CE, "issuetype": {"id": "10004", "name": "Bug", "subtask": False}}, "Task"),
+    ],
+    ids=["other-project", "bug-not-task"],
+)
+def test_the_ticket_must_be_a_task_in_ce(tmp_path, monkeypatch, fields, problem):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", fields=fields)
+    with pytest.raises(checker.CheckFailure, match=problem):
+        checker.main()
+
+
+def test_the_summary_format_is_only_an_example(tmp_path, monkeypatch):
+    """The prompt gives "[Sev1] <correlationId> <subject>" "for example"; only
+    the correlationId is required."""
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", summary=f"Checkout outage ({CORR})")
+    checker.main()
 
 
 def test_studio_web_process_passes_end_to_end(tmp_path, monkeypatch):

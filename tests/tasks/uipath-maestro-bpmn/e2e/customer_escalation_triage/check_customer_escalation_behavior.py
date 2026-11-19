@@ -110,15 +110,6 @@ class Contract:
     slack_send_ids: tuple[str, ...]
 
 
-def locate_bpmn() -> Path:
-    """The project's main .bpmn: the one named for the request (or Studio
-    Web's Process.bpmn in a project of that name), else the only one."""
-    try:
-        return bpmn_check.resolve_bpmn_file(f"{NAME}.bpmn", exclude_under=[LIVE_RUN_DIR])
-    except SystemExit:
-        return Path(bpmn_check.find_bpmn_file(None))
-
-
 def resolve_contract(path: Path) -> Contract:
     text = path.read_text(encoding="utf-8")
     missing_severities = [s for s in SEVERITIES if s not in text]
@@ -195,6 +186,25 @@ def resolve_contract(path: Path) -> Contract:
     )
 
 
+def steps_returning(
+    variables_data: object, element_ids: tuple[str, ...], field: str
+) -> tuple[str, ...]:
+    """The steps among `element_ids` whose own response carries `field`: the
+    Jira step that created the issue (`key`) or the Slack step that posted
+    (`ts`), not a search, comment or lookup on the same connector."""
+
+    return tuple(
+        element_id
+        for element_id in element_ids
+        if any(
+            isinstance(value, str) and value
+            for value in connector_response_values(
+                element_output_records(variables_data, element_id), field
+            )
+        )
+    )
+
+
 def harvest_side_effects(
     contract: Contract, variables_data: object
 ) -> dict[str, list]:
@@ -205,7 +215,8 @@ def harvest_side_effects(
     """
 
     jira_outputs = element_output_records(
-        variables_data, contract.jira_create_ids
+        variables_data,
+        steps_returning(variables_data, contract.jira_create_ids, "key"),
     )
     jira_keys = [
         value
@@ -273,20 +284,23 @@ def assert_outcome(
     if incidents:
         raise CheckFailure(f"unexpected incidents: {incidents}")
 
-    # Execution evidence: each connector activity ran exactly once. Counts sum
-    # across every element id bound to the same operation.
+    # Execution evidence: one issue created and one message posted. Counts sum
+    # across the connector's steps that returned a key / ts, so a search,
+    # comment or lookup on the same connector is not counted.
     executions = get_ci(debug_data, "ElementExecutions", [])
     executed_ids = [
         get_ci(item, "ElementId") for item in executions if isinstance(item, dict)
     ]
-    for label, element_ids in (
-        ("Jira create", contract.jira_create_ids),
-        ("Slack send", contract.slack_send_ids),
+    for label, element_ids, field in (
+        ("Jira create", contract.jira_create_ids, "key"),
+        ("Slack send", contract.slack_send_ids, "ts"),
     ):
-        count = sum(executed_ids.count(element_id) for element_id in element_ids)
+        creating = steps_returning(variables_data, element_ids, field)
+        count = sum(executed_ids.count(element_id) for element_id in creating)
         if count != 1:
             raise CheckFailure(
-                f"{label} {list(element_ids)} expected 1 execution, got {count}"
+                f"{label} {list(element_ids)} expected 1 execution that "
+                f"returned a {field!r}, got {count}"
             )
 
     # Public outputs, addressed by id in the root scope's globals.
@@ -387,7 +401,7 @@ def assert_jira_issue_on_tenant(
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    bpmn_file = locate_bpmn()
+    bpmn_file = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     project = bpmn_file.parent
     contract = resolve_contract(bpmn_file)
     original_hash = sha256(bpmn_file)

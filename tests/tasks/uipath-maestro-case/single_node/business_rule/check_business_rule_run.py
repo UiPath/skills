@@ -5,20 +5,24 @@ rule decided.
 The staged CreditRisk rule (decision RiskDecision) returns LOW_RISK for a
 creditScore of 700 or more and HIGH_RISK below it. The request starts the case
 with 742 when no score is given, which is what a debug run does, so the right
-result is LOW_RISK. The grader reads it from the debug instance by the names the
-request gives (`creditScore`, `riskBand`), and checks that the business-rule
-task completed with 742 as its input. Any binding, task name or variable layout
-that gets there passes; a rule that was edited, unbound or fed the wrong score
-does not.
+result is LOW_RISK. From the debug instance the grader checks that a
+business-rule task bound to CreditRisk completed with 742 as its input, and
+that the case variable the request names, riskBand, holds LOW_RISK. When the
+run shows the task's own riskBand output it must be LOW_RISK; when it shows
+none, the plan must set riskBand from the rule's result (not a literal or a
+default). Any binding layout, task name or input wiring that gets there
+passes; a rule that was edited, unbound, swapped or fed the wrong score does
+not, nor does a riskBand that holds LOW_RISK without the rule producing it.
 """
 
 from __future__ import annotations
 
 import os
+import re
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from case_run_evidence import (  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_run_evidence import (  # noqa: E402
     RunEvidence,
     assert_completed,
     fail,
@@ -26,11 +30,17 @@ from case_run_evidence import (  # noqa: E402
     since_iso,
     text_of,
 )
-from _shared.case_check import iter_tasks, read_caseplan, run_debug  # noqa: E402
+from _shared.case_check import (  # noqa: E402
+    get_bindings,
+    get_variables,
+    iter_tasks,
+    read_caseplan,
+    run_debug,
+)
 
+RULE = "CreditRisk"
 SCORE = 742
 EXPECTED_BAND = "LOW_RISK"
-OTHER_BAND = "HIGH_RISK"
 
 
 def _leaf_values(value, key: str):
@@ -45,29 +55,88 @@ def _leaf_values(value, key: str):
             yield from _leaf_values(item, key)
 
 
+def _rule_names(plan: dict, task: dict) -> set[str]:
+    """The rule a business-rule task names, literally or through its binding."""
+    name = str((task.get("data") or {}).get("name") or "")
+    if not name.startswith("=bindings."):
+        return {name}
+    binding_id = name[len("=bindings."):]
+    names = set()
+    for binding in get_bindings(plan):
+        if binding.get("id") == binding_id:
+            names.add(str(binding.get("default") or ""))
+            names.add(str(binding.get("resourceKey") or "").rsplit(".", 1)[-1])
+    return names
+
+
+def _binds_risk_band(plan: dict, task: dict) -> bool:
+    """An output row of ``task`` writes the riskBand case variable from the rule's result."""
+    variables = get_variables(plan)
+    ids = {
+        str(v.get("id"))
+        for group in ("inputOutputs", "outputs", "inputs")
+        for v in variables.get(group) or []
+        if str(v.get("name") or "").lower() == "riskband"
+    }
+    for row in (task.get("data") or {}).get("outputs") or []:
+        source = str(row.get("source") or "")
+        if row.get("var") not in ids or not source.startswith("="):
+            continue
+        if re.search(r"low_risk|high_risk", source, re.IGNORECASE):
+            continue
+        if re.search(r"riskband|riskdecision|result", source, re.IGNORECASE):
+            return True
+    return False
+
+
+def _bands(value) -> list:
+    """The band ``value`` holds: itself when it is not an object, else every riskBand in it."""
+    if isinstance(value, (dict, list)):
+        return list(_leaf_values(value, "riskBand"))
+    return [value]
+
+
 def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
     rule_tasks = [t for t in iter_tasks(plan) if t.get("type") == "business-rule"]
     if not rule_tasks:
         types = sorted({str(t.get("type")) for t in iter_tasks(plan)})
         fail(f"the case has no business-rule task to run CreditRisk; task types: {types}")
-    for task in rule_tasks:
+    credit_tasks = [
+        t for t in rule_tasks if RULE.lower() in {n.lower() for n in _rule_names(plan, t)}
+    ]
+    if not credit_tasks:
+        bound = {str(t.get("displayName")): sorted(_rule_names(plan, t)) for t in rule_tasks}
+        fail(f"no business-rule task is bound to {RULE}; the rule tasks name {bound}")
+    for task in credit_tasks:
         assert_completed(payload, task)
-        inputs, _ = evidence.task_io(str(task.get("id")))
+        inputs, outputs = evidence.task_io(str(task.get("id")))
         scores = list(_leaf_values(inputs, "creditScore"))
         if SCORE not in scores:
             fail(
                 f"task {task.get('displayName')!r} ran the rule with creditScore {scores or 'unset'}, "
                 f"expected {SCORE}; its inputs: {text_of(inputs)[:400]}"
             )
+        returned = list(_leaf_values(outputs, "riskBand"))
+        if returned and any(b != EXPECTED_BAND for b in returned):
+            fail(
+                f"task {task.get('displayName')!r} returned riskBand {returned} in its "
+                f"Outputs, expected {EXPECTED_BAND!r}; its outputs: {text_of(outputs)[:400]}"
+            )
+        if not returned and not _binds_risk_band(plan, task):
+            rows = [
+                (o.get("var"), o.get("source"))
+                for o in (task.get("data") or {}).get("outputs") or []
+            ]
+            fail(
+                f"the run shows no riskBand from task {task.get('displayName')!r}, and the plan "
+                f"does not set the riskBand case variable from its result; its output rows: {rows}"
+            )
 
-    score = evidence.value("creditScore")
-    if score != SCORE:
-        fail(f"creditScore is {score!r} in the run, expected the default {SCORE}")
     band = evidence.value("riskBand")
-    band_text = text_of(band)
-    if EXPECTED_BAND.lower() not in band_text or OTHER_BAND.lower() in band_text:
+    bands = _bands(band)
+    if not bands or any(b != EXPECTED_BAND for b in bands):
         fail(f"riskBand is {band!r} after the run, expected {EXPECTED_BAND!r} for a score of {SCORE}")
-    return [str(t.get("displayName")) for t in rule_tasks]
+    return [str(t.get("displayName")) for t in credit_tasks]
 
 
 def main() -> None:
@@ -77,7 +146,7 @@ def main() -> None:
     evidence = read_run(payload, since)
     names = check_run(plan, payload, evidence)
     print(
-        f"OK: debug Completed; business-rule task(s) {names} completed with creditScore "
+        f"OK: debug Completed; {RULE} task(s) {names} completed with creditScore "
         f"{SCORE}; riskBand={EXPECTED_BAND}"
     )
 

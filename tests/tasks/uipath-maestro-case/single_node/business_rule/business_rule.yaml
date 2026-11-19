@@ -6,9 +6,11 @@ description: >
   user would ask it. No rule is deployed on the tenant, so the agent must find
   and bind the sibling. The grader runs the case once under
   `uip maestro case debug` and reads the debug instance back
-  (`uip maestro case instance variables-all`): the business-rule task completed
-  with the default creditScore 742 as its input, and the case variable the
-  prompt names, riskBand, is LOW_RISK. That the agent ran its own test run is
+  (`uip maestro case instance variables-all`): a business-rule task bound to
+  CreditRisk completed with the default creditScore 742 as its input, and the
+  case variable the prompt names, riskBand, is LOW_RISK. A riskBand in the
+  task's own run outputs must be LOW_RISK; when the run shows none, the plan
+  must set riskBand from the rule's result, not a literal or a default. That the agent ran its own test run is
   advisory. Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry, path-to-ga, outcome-graded]
@@ -24,6 +26,11 @@ run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
+
+# Marks the task start for the post_run debug-instance cancel.
+pre_run:
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
 
 reference:
   directory: ../..
@@ -78,10 +85,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
 
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 540 s), plus refresh (2 x 120 s),
+  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
+  # (2 x 180 s).
   - type: run_command
-    description: "Effects: one debug run in which the business-rule task completed with creditScore 742, and riskBand is LOW_RISK"
+    description: "Effects: one debug run in which a business-rule task bound to CreditRisk completed with creditScore 742, riskBand comes from its result, and riskBand is LOW_RISK"
     command: "python3 $REFERENCE_DIR/single_node/business_rule/check_business_rule_run.py"
-    timeout: 900
+    timeout: 2850
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -94,5 +105,7 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
