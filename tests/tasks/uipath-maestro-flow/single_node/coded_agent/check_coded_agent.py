@@ -38,7 +38,7 @@ SENTENCE = (
 )
 EXPECTED = 3
 ROLES = {"text": {"value": SENTENCE, "keywords": [
-    "sentence", "outcome", "review", "description", "summary", "message", "text", "input", "."]}}
+    "sentence", "outcome", "review", "description", "summary", "message", "text", "input"]}}
 
 
 def check(payload):

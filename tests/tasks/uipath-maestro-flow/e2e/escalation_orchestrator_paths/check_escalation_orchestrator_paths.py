@@ -83,8 +83,6 @@ STATE_WORDS = (
 )
 # The prompt's own words, when the flow's code names no word for a state.
 DEFAULT_WORD = {"one": "one", "none": "none", "several": "several"}
-# The five paths the prompt names, normalized.
-PATH_WORDS = {"missingdomain", "unknowncustomer", "multiplematches", "duplicate", "escalation"}
 COUNT = {"one": 1, "none": 0, "several": 2}
 _Q = "[\"'`]"
 _LIT = rf"{_Q}([^\"'`\n]{{1,40}}){_Q}"
@@ -101,14 +99,24 @@ def state_of(literal: str) -> str | None:
                  if io.means([literal.strip()], words, substring=False)), None)
 
 
+def _block(code: str, start: int) -> str:
+    """The text from `start` to the brace that closes the block it opens."""
+    depth = 1
+    for i in range(start, len(code)):
+        depth += {"{": 1, "}": -1}.get(code[i], 0)
+        if depth == 0:
+            return code[start:i]
+    return code[start:]
+
+
 def match_words(flow: dict) -> dict[str, str]:
     """The literal the flow compares the match input with, per state.
 
     The words a text input expects exist only in the flow's code, so they are
     read from it: comparisons of the input that means the match (by
     `flow_io_roles`), an object field or a local copied from it, or its
-    membership in a list, first, then the input's description, then literals
-    near those identifiers. Each literal is classed by what its words mean
+    membership in a list, and `case` labels of a switch on it, first, then
+    the input's description. Each literal is classed by what its words mean
     (`state_of`). A state no literal names gets the prompt's own word."""
     code = "\n".join(io.texts(flow.get("nodes") or []))
     idents = {v["id"] for v in _match_vars(flow)}
@@ -120,7 +128,7 @@ def match_words(flow: dict) -> dict[str, str]:
     for alias, rhs in re.findall(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\n]*)", code):
         if any(re.search(rf"(?<![\w$]){re.escape(i)}(?![\w$])", rhs) for i in idents):
             idents.add(alias)
-    compared, near = [], []
+    compared = []
     # Sorted: a set's order changes with the hash seed, and so would the pick.
     for ident in sorted(idents):
         e = rf"(?<![\w$]){re.escape(ident)}(?![\w$])"
@@ -129,14 +137,11 @@ def match_words(flow: dict) -> dict[str, str]:
         # Membership: `["several", "multiple"].indexOf(match)` or `.includes(match)`.
         for listed in re.findall(rf"\[([^\[\]]{{1,300}})\]\s*\.\s*(?:indexOf|includes)\(\s*{e}", code):
             compared += re.findall(_LIT, listed)
-        for m in re.finditer(e, code):
-            near += re.findall(_LIT, code[max(0, m.start() - 200): m.end() + 400])
-    # A path the prompt names ("multiple_matches") is an output set near the
-    # match check, so it is the last guess for how the input is spelled.
-    near.sort(key=lambda literal: io.normalize(literal) in PATH_WORDS)
+        for sw in re.finditer(rf"switch\s*\(\s*{e}(?:\s*\.\s*\w+\(\s*\))*\s*\)\s*\{{", code):
+            compared += re.findall(rf"\bcase\s+{_LIT}\s*:", _block(code, sw.end()))
     described = [w for v in _match_vars(flow) for w in re.findall(r"[\w-]+", str(v.get("description") or ""))]
     words: dict[str, str] = {}
-    for literal in [*compared, *described, *near]:
+    for literal in [*compared, *described]:
         state = state_of(literal)
         if state and state not in words:
             words[state] = literal.strip()

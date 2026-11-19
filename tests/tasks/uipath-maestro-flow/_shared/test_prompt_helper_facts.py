@@ -143,7 +143,7 @@ TASKS = {
             "matchedInvoiceNumber": _type_name(invoice.FOUND[0][1]),
             "lineItemCount": _type_name(invoice.FOUND[0][2]),
         },
-        literals=("BillingDisputeERP", "Shared", invoice.FOUND[0][1]),
+        literals=("BillingDisputeERP", "Shared"),
         meanings={"invoiceNumber": invoice.KEYWORDS},
     ),
     "billing_discrepancy_detector": Facts(
@@ -174,7 +174,7 @@ TASKS = {
             "caseKey": _type_name(writer.CASE_REF),
             "slackMessageId": "string",
         },
-        literals=(writer.CREDIT_TEXT, writer.SIGNATURE, *SLACK_LITERALS),
+        literals=('written like "USD 1,234.56"', writer.SIGNATURE, *SLACK_LITERALS),
         meanings={**_meanings(writer.ROLES, WRITER_NAMES), "emailSubject": writer.SUBJECT_KEYWORDS},
     ),
     "billing_dispute_resolution": Facts(
@@ -353,8 +353,7 @@ def test_every_path_to_ga_task_is_covered():
 def test_helper_types_every_input_and_output(task):
     helper = _helper(TASKS[task].path)
     for name, type_name in {**TASKS[task].inputs, **TASKS[task].outputs}.items():
-        shown = "array" if type_name == "array" else type_name
-        assert f"{name} ({shown}" in helper, f"{name} ({type_name})"
+        assert f"{name} ({type_name}" in helper, f"{name} ({type_name})"
 
 
 @pytest.mark.parametrize("task", TASKS)
@@ -402,6 +401,17 @@ def test_the_helpers_name_the_rule_without_an_example_to_copy():
         assert not re.search(r"§\s*\d", helper), task
 
 
+def test_the_writer_helper_shows_a_credit_format_but_not_the_graded_credit():
+    helper = _helper(TASKS["billing_resolution_writer"].path)
+    assert writer.CREDIT_TEXT not in helper
+    assert writer.INVOICE not in helper
+
+
+def test_the_lookup_helper_shows_no_invoice_the_grader_expects():
+    helper = _helper(TASKS["billing_invoice_lookup"].path)
+    assert not [expected for _raw, expected, _count, _label in invoice.FOUND if expected in helper]
+
+
 def test_the_resolution_helper_names_the_cleaned_invoice_form():
     helper = _helper(TASKS["billing_dispute_resolution"].path)
     assert 'FinancialPostingFunction, as the records hold it' in helper
@@ -435,8 +445,6 @@ def test_the_opener_names_no_harness_and_carries_the_guard(task):
     assert GUARD in opener, task
 
 
-def test_the_hitl_helpers_put_the_sap_step_after_the_approval():
-    invoice = _helper(TASKS["e2e_01_invoice_approval_greenfield"].path)
-    assert 'The step that builds the "SAP-" number goes after the approval' in invoice
+def test_the_expense_helper_puts_the_posting_step_after_the_review():
     expense = _helper(TASKS["e2e_07_apptask_brownfield"].path)
     assert "The posting step goes after the review" in expense

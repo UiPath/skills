@@ -22,7 +22,7 @@ Agent-facing test scenarios for the `uipath-human-in-the-loop` skill — detects
 |---|---|
 | Deploy or execute a flow at runtime | NOT TESTED — tests validate authored `.flow` JSON only |
 | Run a live HITL approval from a robot | NOT TESTED |
-| AppTask surface (`e2e_07`) | SKIPPED — requires live tenant with deployed Action App |
+| AppTask surface (`e2e_07`) | Graded on a live run against the deployed ExpenseReviewApp |
 
 ---
 
@@ -116,17 +116,17 @@ The `variable` property creates a separate workflow-global variable (`$vars.appr
 | ✅ Present | [quality_10_dev_mistake_binding_direction.yaml](quality_10_dev_mistake_binding_direction.yaml) | `skill-hitl-quality-dev-mistake-binding-direction` | Input fields get binding from upstream; output fields get NO binding; bindings use `variables.nodes` paths | 🟢 Green |
 | ✅ Present | [quality_11_inout_field_access.yaml](quality_11_inout_field_access.yaml) | `skill-hitl-quality-inout-field-access` | inOut fields: pre-filled via binding AND appear in `$vars.nodeId.output` after submit (same as output) | 🟢 Green |
 
-### E2E — 7 of 7 present (1 skipped) ✅⏭
+### E2E — 7 of 7 present ✅
 
 | Status | File | Task ID | What it tests | Type |
 |---|---|---|---|---|
-| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | SharePoint → HITL → SAP; full Discover→Plan→Build→Verify; wires both outcome ports, captures `$vars.output` | 🟤 Brown |
+| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | Invoice approval → HITL → SAP stand-in; graded on two live runs: the grader approves one task (status `posted`, `SAP-` number) and rejects another (status `rejected`, empty number) | 🟤 Brown |
 | ✅ Present | [e2e_02_ai_escalation_brownfield.yaml](e2e_02_ai_escalation_brownfield.yaml) | `skill-hitl-e2e-ai-escalation-brownfield` | Inserts HITL escalation node into existing `ComplaintTriage` flow on low-confidence path; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_03_gdpr_compliance_greenfield.yaml](e2e_03_gdpr_compliance_greenfield.yaml) | `skill-hitl-e2e-gdpr-compliance-greenfield` | GDPR deletion flow from scratch; P7D timeout duration (ISO 8601); wires both outcome ports | 🟢 Green |
 | ✅ Present | [e2e_04_multi_hitl_brownfield.yaml](e2e_04_multi_hitl_brownfield.yaml) | `skill-hitl-e2e-multi-hitl-brownfield` | Inserts **two** HITL nodes into `HROnboarding` flow (doc review + IT access); every outcome port on both wired | 🟤 Brown |
 | ✅ Present | [e2e_05_expense_approval_brownfield.yaml](e2e_05_expense_approval_brownfield.yaml) | `skill-hitl-e2e-expense-approval-brownfield` | Inserts single HITL node between two existing nodes in minimal `ExpenseApproval` flow; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_06_invoice_approval_greenfield_simple.yaml](e2e_06_invoice_approval_greenfield_simple.yaml) | `skill-hitl-e2e-invoice-approval-greenfield-simple` | Creates `InvoiceApproval` project from scratch (`uip solution new` + `flow init`); wires both outcome ports; validates | 🟢 Green |
-| ⏭ **Skipped** | [e2e_07_apptask_brownfield.yaml](e2e_07_apptask_brownfield.yaml) | `skill-hitl-e2e-apptask-brownfield` | AppTask surface (`inputs.type = "custom"`): inserts HITL backed by deployed Action App; `skip: true` — blocked on live tenant + `~/.uipath/.auth` | 🟤 Brown |
+| ✅ Present | [e2e_07_apptask_brownfield.yaml](e2e_07_apptask_brownfield.yaml) | `skill-hitl-e2e-apptask-brownfield` | AppTask surface (`inputs.type = "custom"`): inserts HITL backed by deployed ExpenseReviewApp; graded on live approve and reject runs (`check_hitl_expense_apptask_run.py`) | 🟤 Brown |
 
 ---
 
@@ -174,5 +174,3 @@ Each quality test targets a specific failure pattern observed in agent behavior:
 #### 🟠 `smoke_09_neg_invalid_flow_path.yaml`
 No test covers what happens when the agent tries to add a HITL node to a `.flow` file that doesn't exist. Agent must surface the CLI error cleanly and must not create a blank `.flow` file as a workaround.
 
-#### 🟡 Unblock `e2e_07_apptask_brownfield.yaml`
-[e2e_07](e2e_07_apptask_brownfield.yaml) is `skip: true` — it requires a live tenant with a deployed Action App and valid `~/.uipath/.auth` credentials. No new test file needed; this is an infra prerequisite.

@@ -6,7 +6,7 @@ description: |
   agent writes the email). The grader maps the seeded
   values onto the flow's declared inputs by meaning and reads the results among
   its declared outputs by value. One debug run: the returned body mentions the
-  invoice and "USD 1,610.00" and is signed "Billing Support Team"; the subject
+  invoice and "USD 2,475.50" and is signed "Billing Support Team"; the subject
   is one line; the per-run case reference comes back unchanged; and the
   returned Slack ts is the response of an executed send to
   #coding-agent-testing whose message starts with the case reference and
@@ -70,7 +70,7 @@ initial_prompt: |
   (number), caseReference (string).
   Outputs: emailSubject (string), emailBody (string), caseKey (string),
   slackMessageId (string).
-  The credit is written like "USD 1,610.00" and the body ends with the signature
+  The credit is written like "USD 1,234.56" and the body ends with the signature
   "Billing Support Team". The Slack message holds the whole email body and
   starts with the caseReference.
   The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
@@ -97,7 +97,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-04872 and "USD 1,610.00" and is signed "Billing Support Team"; the output named for the subject holds a one-line subject; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message starts with the case reference and carries the invoice and the body'
+    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-05128 and "USD 2,475.50" and is signed "Billing Support Team"; the output named for the subject holds a one-line subject; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message starts with the case reference and carries the invoice and the body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0

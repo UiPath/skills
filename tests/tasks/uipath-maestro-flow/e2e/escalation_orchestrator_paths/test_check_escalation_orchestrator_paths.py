@@ -261,6 +261,29 @@ def test_the_match_vocabulary_is_read_from_a_membership_list_not_the_path_it_set
     assert json.loads(out.stdout) == {"one": "one", "none": "none", "several": "several"}
 
 
+SWITCH_SCRIPT = """
+  const s = String($vars.start.output.customerMatchStatus ?? "").toLowerCase();
+  let responseMode = 'None';
+  switch (s) {
+    case 'none': break;
+    case 'several': break;
+    default: break;
+  }
+  return { responseMode };
+"""
+
+
+def test_a_switch_on_the_match_input_names_its_states_by_its_case_labels():
+    assert _grader().match_words(_flow(TWO_BRANCH, script=SWITCH_SCRIPT)) == {
+        "one": "one", "none": "none", "several": "several"}
+
+
+def test_a_state_with_no_compared_literal_gets_the_prompts_word():
+    script = 'let m = $vars.start.output.customerMatchStatus; const r = m ? { mode: "None" } : {};'
+    assert _grader().match_words(_flow(TWO_BRANCH, script=script)) == {
+        "one": "one", "none": "none", "several": "several"}
+
+
 def test_the_match_vocabulary_falls_back_to_the_inputs_description():
     flow = _flow(TWO_BRANCH, script="return {};")
     var = next(v for v in flow["variables"]["globals"] if v["id"] == "customerMatchStatus")

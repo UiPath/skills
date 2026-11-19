@@ -47,7 +47,7 @@ SCORE_FIELD = "creditScore"
 BAND_FIELD = "riskBand"
 BAND_LITERAL = re.compile("|".join(BANDS), re.IGNORECASE)
 RULE_OUTPUT_READ = re.compile(
-    r"(?:result|output|riskdecision|riskband)(?:\.\w+|\[\d+\])*", re.IGNORECASE
+    r"(?:result|outputs?|riskdecision|riskband)(?:\.\w+|\[\d+\])*", re.IGNORECASE
 )
 JS_PREFIX = "=js:"
 
@@ -81,19 +81,35 @@ def _risk_band_writers(node: object, ids: set[str]) -> list[dict]:
     return own + [w for value in node.values() for w in _risk_band_writers(value, ids)]
 
 
-def _binds_risk_band(plan: dict, task: dict) -> bool:
-    """The only row in the plan that writes the riskBand case variable is an output row
-    of ``task`` that sets it from the rule's result."""
+def _declared_band(plan: dict) -> list[dict]:
     variables = get_variables(plan)
-    declared = [
+    return [
         v
         for group in ("inputOutputs", "outputs", "inputs")
         for v in variables.get(group) or []
         if str(v.get("name") or "").lower() == BAND_FIELD.lower()
     ]
+
+
+def _forges_risk_band(plan: dict) -> bool:
+    """The plan hands riskBand a band as a literal: a declared default, or a writer row with a literal source."""
+    declared = _declared_band(plan)
     if any(BAND_LITERAL.search(_bare(str(v.get("default") or ""))) for v in declared):
-        return False
+        return True
     ids = {str(v["id"]) for v in declared if v.get("id")}
+    for writer in _risk_band_writers(plan.get("nodes"), ids):
+        source = str(writer.get("source") or writer.get("value") or "")
+        if '"' in source or "'" in source or BAND_LITERAL.search(source):
+            return True
+    return False
+
+
+def _binds_risk_band(plan: dict, task: dict) -> bool:
+    """The only row in the plan that writes the riskBand case variable is an output row
+    of ``task`` that sets it from the rule's result."""
+    if _forges_risk_band(plan):
+        return False
+    ids = {str(v["id"]) for v in _declared_band(plan) if v.get("id")}
     writers = _risk_band_writers(plan.get("nodes"), ids)
     for row in (task.get("data") or {}).get("outputs") or []:
         source = str(row.get("source") or "")
@@ -138,6 +154,11 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
             fail(
                 f"task {task.get('displayName')!r} returned riskBand {returned} in its "
                 f"Outputs, expected {EXPECTED_BAND!r}; its outputs: {text_of(outputs)[:400]}"
+            )
+        if _forges_risk_band(plan):
+            fail(
+                f"the plan hands the riskBand case variable a literal band (a default or a literal "
+                f"source) instead of setting it from the rule's result"
             )
         if not returned and not _binds_risk_band(plan, task):
             rows = [

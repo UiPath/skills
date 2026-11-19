@@ -39,6 +39,11 @@ SW = (FIXTURES / "sw_generic_issue_Process.bpmn").read_text()
 NIGHTLY = (FIXTURES / "nightly_curated_EscalationJiraTicket.bpmn").read_text()
 
 
+@pytest.fixture(autouse=True)
+def _live_target(monkeypatch):
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", lambda: {})
+
+
 def _root(text: str) -> ET.Element:
     return ET.fromstring(text.encode())
 
@@ -120,6 +125,36 @@ def _sandbox(tmp_path, monkeypatch, text, step, *, summary=None, exposed_key=Non
 def test_the_ticket_must_be_a_task_in_ce(tmp_path, monkeypatch, fields, problem):
     _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", fields=fields)
     with pytest.raises(checker.CheckFailure, match=problem):
+        checker.main()
+
+
+def test_main_checks_the_live_target_before_any_debug(tmp_path, monkeypatch):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+
+    def refuse():
+        raise checker.CheckFailure("wrong tenant")
+
+    def no_debug(*a, **k):
+        raise AssertionError("debug ran before the target check")
+
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", refuse)
+    monkeypatch.setattr(checker, "run_debug", no_debug)
+    monkeypatch.setattr(checker, "import_exact", no_debug)
+    with pytest.raises(checker.CheckFailure, match="wrong tenant"):
+        checker.main()
+
+
+def test_two_owned_issues_from_the_jira_step_fail(tmp_path, monkeypatch):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+    variables = _variables("createJiraIssue")
+    variables["Variables"][0]["Elements"].insert(
+        1, {"ElementId": "createJiraIssue", "Outputs": {"Response": {"id": "9", "key": "CE-9"}}}
+    )
+    monkeypatch.setattr(checker, "fetch_variables", lambda i: (variables, ""))
+    monkeypatch.setattr(
+        checker.jira_is, "get_issue", lambda conn, key: {"summary": f"[Sev1] {CORR} down", **TASK_IN_CE}
+    )
+    with pytest.raises(checker.CheckFailure, match="exactly one Jira issue"):
         checker.main()
 
 

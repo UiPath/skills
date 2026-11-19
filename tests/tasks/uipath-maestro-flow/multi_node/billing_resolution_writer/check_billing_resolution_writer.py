@@ -6,8 +6,8 @@ The prompt names no variables, so the seeded values are mapped onto the flow's
 declared inputs by meaning (`flow_io_roles.map_inputs`) and the results are
 found among its declared outputs by value:
 
-- the email body: a returned text that mentions MCS-2026-04872 and the credit
-  written "USD 1,610.00", is signed "Billing Support Team", is prose rather
+- the email body: a returned text that mentions MCS-2026-05128 and the credit
+  written "USD 2,475.50", is signed "Billing Support Team", is prose rather
   than a serialized JSON object, and came from the executed agent node's own
   output (not a template over the inputs);
 - the subject: a one-line text in the output that means the subject by its
@@ -46,8 +46,8 @@ from _shared.flow_check import (  # noqa: E402
 )
 from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
-INVOICE = "MCS-2026-04872"
-CREDIT_TEXT = "USD 1,610.00"
+INVOICE = "MCS-2026-05128"
+CREDIT_TEXT = "USD 2,475.50"
 SIGNATURE = "Billing Support Team"
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
 CASE_REF = f"RESO-{uuid4().hex[:12]}"
@@ -56,7 +56,7 @@ ROLES = {
         "customername", "clientname", "companyname", "recipient", "customer", "client", "name"]},
     "invoice number": {"value": INVOICE, "keywords": [
         "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoice"]},
-    "approved credit": {"value": 1610, "keywords": [
+    "approved credit": {"value": 2475.5, "keywords": [
         "creditamount", "approvedcredit", "credit", "amount", "refund", "usd"]},
     "case reference": {"value": CASE_REF, "keywords": [
         "casereference", "caseref", "caseid", "casenumber", "correlation", "case", "reference", "ticket"]},

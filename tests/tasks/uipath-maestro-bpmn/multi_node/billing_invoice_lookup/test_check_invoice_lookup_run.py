@@ -30,7 +30,6 @@ def _load(name: str, path: Path):
 
 
 checker = _load("check_invoice_lookup_run", HERE / "check_invoice_lookup_run.py")
-old = _load("old_check_billing_invoice_lookup", HERE.parents[1] / "_shared" / "check_billing_invoice_lookup.py")
 from _shared.bpmn_live import DebugEvidence, input_echo_ids, output_leaves  # noqa: E402
 
 PROCESS = ET.parse(BPMN).getroot().find(f"{{{checker.BPMN_NS}}}process")
@@ -91,13 +90,12 @@ def test_the_data_service_step_is_found_by_connector_key():
     assert QUERY_IDS == {"queryBillingDisputeERP"}
 
 
-def test_outputs_are_read_by_name_where_the_old_grader_searched_every_value():
+def test_outputs_are_read_by_name_not_found_among_every_value():
     """A run that queried the entity but returned neither output: the query's
-    rows still carry the invoice number and LineNumber 8, which the old
-    any-value search accepted."""
+    rows still carry the invoice number and LineNumber 8."""
     variables = _variables("2026-04872", "MCS-2026-04872", 8, outputs=False)
     leaves = output_leaves(variables, skip=input_echo_ids(PROCESS))
-    assert old.assert_output_value(leaves, "MCS-2026-04872") and old.assert_output_value(leaves, 8)
+    assert "MCS-2026-04872" in leaves and 8 in leaves
     with pytest.raises(checker.CheckFailure, match="matchedInvoiceNumber"):
         checker.check_run(PROCESS, QUERY_IDS, _debug(), variables, "MCS-2026-04872", 8, "missing prefix")
 

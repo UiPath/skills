@@ -1054,7 +1054,24 @@ def start_debug(
     payload = data.get("Data") if isinstance(data, dict) and "Data" in data else data
     if not isinstance(payload, dict):
         _fail(f"case debug payload is not a JSON object: {type(payload).__name__}\n{r.stdout[:1000]}")
+    _record_debug_instance(payload)
     return payload
+
+
+def _record_debug_instance(payload: dict) -> None:
+    """Record the debug instance so post_run cancels it."""
+    instance_id = _get_ci(payload, "instanceId", "InstanceId")
+    if not instance_id:
+        return
+    setup = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_setup")
+    if setup not in sys.path:
+        sys.path.insert(0, setup)
+    try:
+        from case_run import record_debug_instance  # noqa: PLC0415
+
+        record_debug_instance(str(instance_id))
+    except Exception as error:  # noqa: BLE001 - recording is a cleanup backstop, never a grading failure
+        print(f"case_check: could not record debug instance {instance_id}: {error}", file=sys.stderr)
 
 
 def payload_contains(

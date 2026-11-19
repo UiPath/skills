@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 # Walk up to the directory that holds `_shared` so the import works regardless
@@ -106,6 +107,25 @@ TEARDOWN_TIMEOUT = (
     + TEARDOWN_READ_TIMEOUT
     + 2 * TEARDOWN_DELETE_TIMEOUT
 )
+# The sweep stops starting uip calls once the next one could outlast this, so
+# it exits on its own before coder_eval kills it at POST_RUN_TIMEOUT_CAP.
+TEARDOWN_BUDGET = POST_RUN_TIMEOUT_CAP - 10
+
+
+def _now() -> float:
+    return time.monotonic()
+
+
+class TeardownClock:
+    """Wall-clock budget for the post_run sweep."""
+
+    def __init__(self, budget: float | None = None) -> None:
+        self._budget = TEARDOWN_BUDGET if budget is None else budget
+        self._start = _now()
+
+    def allows(self, call_timeout: float) -> bool:
+        """True when a call that may take `call_timeout` still fits the budget."""
+        return _now() - self._start + call_timeout <= self._budget
 
 
 def _normalize_target_value(value: object) -> str:

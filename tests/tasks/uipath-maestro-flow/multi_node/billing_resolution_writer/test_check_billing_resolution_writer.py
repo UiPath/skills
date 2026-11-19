@@ -35,11 +35,11 @@ RENAMES = {"customerName": "customer", "invoiceNumber": "invoice", "creditAmount
            "caseKey": "caseRefOut", "slackMessageId": "slackTs"}
 
 PLAIN_BODY = (
-    "Dear Northwind Traders,\n\nWe have completed our review of invoice MCS-2026-04872 "
-    "and approved a credit of USD 1,610.00.\n\nThe credit will appear on your next statement.\n\n"
+    "Dear Northwind Traders,\n\nWe have completed our review of invoice MCS-2026-05128 "
+    "and approved a credit of USD 2,475.50.\n\nThe credit will appear on your next statement.\n\n"
     "Kind regards,\nBilling Support Team"
 )
-SUBJECT = "Resolution of your billing dispute on invoice MCS-2026-04872"
+SUBJECT = "Resolution of your billing dispute on invoice MCS-2026-05128"
 
 
 def _load_checker():
@@ -104,8 +104,8 @@ def _run(monkeypatch, **kw):
 
 def test_inputs_are_mapped_by_meaning(sandbox, monkeypatch):
     checker, sent = _run(monkeypatch)
-    assert sent == {"customer": "Northwind Traders", "invoice": "MCS-2026-04872",
-                    "approvedCreditUsd": 1610, "caseReference": checker.CASE_REF}
+    assert sent == {"customer": "Northwind Traders", "invoice": "MCS-2026-05128",
+                    "approvedCreditUsd": 2475.5, "caseReference": checker.CASE_REF}
 
 
 def test_a_signed_prose_email_posted_by_the_bot_passes(sandbox, monkeypatch, capsys):
@@ -116,8 +116,8 @@ def test_a_signed_prose_email_posted_by_the_bot_passes(sandbox, monkeypatch, cap
 
 def test_the_credit_not_written_as_usd_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
-        _run(monkeypatch, body=PLAIN_BODY.replace("USD 1,610.00", "$1,610"))
-    assert "USD 1,610.00" in str(exc.value)
+        _run(monkeypatch, body=PLAIN_BODY.replace("USD 2,475.50", "$2,475"))
+    assert "USD 2,475.50" in str(exc.value)
 
 
 def test_an_unsigned_email_fails(sandbox, monkeypatch):
@@ -135,7 +135,7 @@ def test_packed_json_email_body_fails(sandbox, monkeypatch):
 
 def test_a_multi_line_subject_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
-        _run(monkeypatch, subject="Resolution\nInvoice MCS-2026-04872")
+        _run(monkeypatch, subject="Resolution\nInvoice MCS-2026-05128")
     assert "one-line email subject" in str(exc.value)
 
 
@@ -196,7 +196,7 @@ def test_a_slack_message_opening_with_a_subject_line_carrying_the_reference_pass
 def test_a_slack_message_without_the_body_fails(sandbox, monkeypatch):
     checker = _load_checker()
     monkeypatch.setattr(checker, "run_debug", lambda *, inputs, **_: _payload(
-        inputs, slack_text=f"{inputs['caseReference']} credit approved for MCS-2026-04872"))
+        inputs, slack_text=f"{inputs['caseReference']} credit approved for MCS-2026-05128"))
     with pytest.raises(SystemExit) as exc:
         checker.main()
     assert "missing required text" in str(exc.value)

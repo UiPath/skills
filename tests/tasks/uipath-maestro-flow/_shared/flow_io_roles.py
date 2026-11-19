@@ -357,9 +357,10 @@ def equals_exact(expected: str):
 GRADER_ERROR_EXIT = 3
 """Exit code a checker uses when the grader, not the agent, may be at fault.
 
-Nothing reads it: every criterion expects exit 0, so it scores as a failure
-like any other non-zero exit. It and the stderr label only tell whoever
-triages the run to look at the grader's mapping first."""
+`unmapped_error` and the Jira checker exit with it. The harness does not read
+it: every criterion expects exit 0, so it scores as a failure like any other
+non-zero exit. It and the stderr label only tell whoever triages the run to
+look at the grader's mapping first."""
 
 
 def unmapped_error(flow: dict, unmapped: list[str], inputs: dict | None = None) -> str | None:

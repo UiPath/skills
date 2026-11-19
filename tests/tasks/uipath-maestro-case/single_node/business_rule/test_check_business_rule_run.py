@@ -314,3 +314,28 @@ def test_a_binding_default_does_not_stand_in_for_the_resource_key() -> None:
 def test_a_writer_whose_var_is_not_a_string_still_matches_its_variable_id() -> None:
     assert grader._risk_band_writers({"var": 7}, {"7"}) == [{"var": 7}]
     assert grader._risk_band_writers({"name": "no var"}, {"7"}) == []
+
+
+@pytest.mark.parametrize("default", ['"LOW_RISK"', "LOW_RISK"])
+def test_a_literal_default_fails_even_when_the_run_returned_the_band(default: str) -> None:
+    plan = copy.deepcopy(PLAN)
+    _default_risk_band(plan, default)
+    task = _rule_task(plan)
+    task["data"]["outputs"] = [o for o in task["data"]["outputs"] if o["var"] != "riskBand"]
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(variables_all["Data"])
+    with pytest.raises(SystemExit, match="literal band"):
+        grader.check_run(plan, debug, evidence)
+
+
+def test_a_literal_source_row_fails_even_when_the_run_returned_the_band() -> None:
+    plan = copy.deepcopy(PLAN)
+    next(o for o in _rule_task(plan)["data"]["outputs"] if o["var"] == "riskBand")["source"] = '=js:"LOW_RISK"'
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(variables_all["Data"])
+    with pytest.raises(SystemExit, match="literal band"):
+        grader.check_run(plan, debug, evidence)
+
+
+def test_the_rule_output_read_accepts_the_plural_outputs() -> None:
+    assert grader.RULE_OUTPUT_READ.fullmatch("outputs.riskBand")

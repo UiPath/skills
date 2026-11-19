@@ -43,6 +43,11 @@ PROCESS = checker.load_process(BPMN)
 SLACK = checker.slack_ids(PROCESS)
 
 
+@pytest.fixture(autouse=True)
+def _live_target(monkeypatch):
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", lambda: {})
+
+
 def _slack_step(case, shared_node=False) -> str:
     if shared_node:
         return "sendEscalationAlert"
@@ -242,6 +247,21 @@ def test_main_runs_every_case(tmp_path, monkeypatch):
     monkeypatch.setattr(checker, "fetch_variables", lambda i: (_variables(state["case"]), ""))
     checker.cases()
     assert sent == [c["inputs"] for c in seeded]
+
+
+def test_cases_checks_the_live_target_before_any_debug(tmp_path, monkeypatch):
+    def refuse():
+        raise checker.CheckFailure("wrong tenant")
+
+    def no_debug(*a, **k):
+        raise AssertionError("debug ran before the target check")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", refuse)
+    monkeypatch.setattr(checker, "run_debug", no_debug)
+    monkeypatch.setattr(checker, "import_exact", no_debug)
+    with pytest.raises(checker.CheckFailure, match="wrong tenant"):
+        checker.cases()
 
 
 def _journalled(tmp_path) -> set:

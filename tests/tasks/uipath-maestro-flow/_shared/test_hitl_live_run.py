@@ -348,7 +348,7 @@ def test_invoice_approval_finds_the_task_by_its_data_without_a_job_key(tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
 
 
-def test_invoice_approval_fails_when_posting_runs_before_the_approval(tmp_path):
+def test_invoice_approval_only_warns_when_a_prep_step_before_the_approval_builds_the_number(tmp_path):
     flow = invoice_flow()
     flow["edges"] = [
         {"sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "postToSap"},
@@ -360,8 +360,8 @@ def test_invoice_approval_fails_when_posting_runs_before_the_approval(tmp_path):
                     on_reject={"executed": ["start", "postToSap", "financeApproval", "end2"],
                                "globals": {"status": "rejected", "sapDocumentNumber": ""}})
     r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, scenario)
-    assert r.returncode != 0
-    assert "can run without the finance manager's approval" in r.stdout + r.stderr
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "WARN: the SAP step(s) ['postToSap'] can run without" in r.stdout
 
 
 def test_invoice_approval_fails_when_a_rejection_still_posts(tmp_path):
@@ -501,6 +501,13 @@ def test_expense_app_task_fails_when_the_content_lacks_the_employee(tmp_path):
     assert "employee" in r.stdout + r.stderr
 
 
+def test_expense_app_task_fails_when_the_content_lacks_the_description(tmp_path):
+    scenario = dict(GOOD_EXPENSE, task_data={"Content": "Expense {expenseId}: {employeeName}, USD {amount}"})
+    r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
+    assert r.returncode != 0
+    assert "description" in r.stdout + r.stderr
+
+
 def test_expense_app_task_fails_when_posting_does_not_run(tmp_path):
     scenario = dict(GOOD_EXPENSE, executed=["start", "managerReview", "end"])
     r = run_check(tmp_path, "check_hitl_expense_apptask_run.py", expense_flow(), scenario, "run")
@@ -562,6 +569,36 @@ def test_expense_structure_accepts_the_app_by_key_alone(tmp_path):
 
 
 # ── pure helpers ────────────────────────────────────────────────────────────
+
+class _FakeRun:
+    def __init__(self, ids):
+        self.ids = ids
+        self.proc = type("P", (), {"poll": lambda self: None})()
+
+    def refresh_ids(self):
+        return self.ids
+
+
+def _fake_clock(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(live.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(live.time, "sleep", lambda seconds: now.__setitem__(0, now[0] + seconds))
+    return now
+
+
+@pytest.mark.parametrize("known", [{"job_key": "job-1"}, {"instance_id": "inst-1"}])
+def test_wait_for_ids_returns_once_the_run_is_named_without_a_folder(monkeypatch, known):
+    now = _fake_clock(monkeypatch)
+    ids = live.wait_for_ids(_FakeRun(live.RunIds(**known)), 600.0)
+    assert ids.folder_id is None
+    assert live.FOLDER_GRACE_SECONDS <= now[0] < live.FOLDER_GRACE_SECONDS + 10
+
+
+def test_wait_for_ids_keeps_waiting_while_nothing_is_named(monkeypatch):
+    now = _fake_clock(monkeypatch)
+    live.wait_for_ids(_FakeRun(live.RunIds()), 600.0)
+    assert now[0] >= 600.0
+
 
 def test_run_ids_read_the_cli_log_lines():
     ids = live.RunIds()

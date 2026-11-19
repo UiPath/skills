@@ -36,7 +36,7 @@ run_limits:
   # `uip` subprocess per call (_shared/bpmn_live.py run_cli), each re-reading
   # the bind-mounted auth the refresher re-mints every 3000s — no token is
   # held in-process across the live window.
-  task_timeout: 4600
+  task_timeout: 4800
   turn_timeout: 2400
 
 sandbox:
@@ -66,7 +66,9 @@ post_run:
     # Covers escalation_is.TEARDOWN_TIMEOUT: a connection lookup plus, per
     # record, a delete, one retry and a confirming reread. Killing this sweep
     # leaks live Jira issues and Slack messages, so it is budgeted for its
-    # worst case rather than its typical one. post_run runs outside the
+    # worst case rather than its typical one. The sweep also stops starting
+    # calls at escalation_is.TEARDOWN_BUDGET and names what it skipped.
+    # post_run runs outside the
     # task_timeout watchdog, so this does not compete with grading.
     timeout: 300
 

@@ -261,3 +261,9 @@ def test_seed_expects_v3_severities():
     assert expected == {"enterprise-down-no-workaround-sev1": ("Sev1", True),
                         "standard-down-no-workaround-sev3": ("Sev3", False),
                         "standard-down-with-workaround-sev2": ("Sev2", True)}
+
+
+def test_posted_texts_reads_a_payload_with_capitalized_variable_keys(v3):
+    payload = _payload(V3_IO)
+    payload["Variables"] = {"Globals": payload.pop("variables")["globals"]}
+    assert _text("Sev1", REF) in v3.posted_texts(payload, TS)

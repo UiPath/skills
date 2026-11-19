@@ -15,7 +15,6 @@ the map it writes marks the start.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import subprocess
@@ -33,7 +32,6 @@ TASK_START_MARKERS = (
 )
 # Debug instance ids the grader started, one per line.
 DEBUG_INSTANCE_MARKER = os.path.join("_setup", ".debug-instances")
-SCAN_DEADLINE_S = 90
 LIST_LIMIT = 500
 LIST_DEADLINE_S = 180
 LIST_CALL_TIMEOUT_S = 120
@@ -140,23 +138,6 @@ def cancel_instance(instance_id: str) -> None:
 # ── post_run: cancel this task's debug instances ─────────────────────────────
 
 
-def _our_stage_ids() -> set[str]:
-    """Stage ids of every case plan in the sandbox (post_run has no ``_shared``)."""
-    stage_ids: set[str] = set()
-    for name in ("caseplan.case", "caseplan.json"):
-        for path in glob.glob(f"**/{name}", recursive=True):
-            try:
-                with open(path, encoding="utf-8") as fh:
-                    plan = json.load(fh)
-            except (OSError, ValueError):
-                continue
-            stage_ids.update(
-                str(node.get("id")) for node in plan.get("nodes") or []
-                if "Stage" in str(node.get("type")) and node.get("id")
-            )
-    return stage_ids
-
-
 def record_debug_instance(instance_id: str) -> None:
     os.makedirs(os.path.dirname(DEBUG_INSTANCE_MARKER), exist_ok=True)
     with open(DEBUG_INSTANCE_MARKER, "a", encoding="utf-8") as fh:
@@ -172,41 +153,13 @@ def _recorded_instances() -> list[str]:
 
 
 def cancel_debug_instances() -> int:
-    """Cancel every open Studio Web Debug instance this task started.
+    """Cancel the debug instances this task's graders recorded.
 
-    The grader's own runs are cancelled by recorded id. The tenant is shared,
-    so any other instance counts as ours only when it started after this task
-    did and its element executions carry one of our stage ids; those reads stop
-    at ``SCAN_DEADLINE_S``.
+    The tenant is shared with parallel runs, so an instance that was not
+    recorded is never touched, whatever its stages are called.
     """
-    recorded = _recorded_instances()
-    for instance_id in recorded:
+    for instance_id in _recorded_instances():
         cancel_instance(instance_id)
-    since_iso = _task_start_iso()
-    if since_iso is None:
-        print("case_run: no task-start marker; nothing to cancel")
-        return 0
-    stage_ids = _our_stage_ids()
-    if not stage_ids:
-        print("case_run: no caseplan stage ids; cannot tell our instances apart")
-        return 0
-    scan_ends = time.monotonic() + SCAN_DEADLINE_S
-    for item in _list_instances():
-        if time.monotonic() >= scan_ends:
-            print("case_run: scan deadline reached; remaining instances left as they are")
-            break
-        if str(_ci(item, "InstanceId") or "") in recorded:
-            continue
-        if str(_ci(item, "Source") or "") != "Studio Web Debug":
-            continue
-        if str(_ci(item, "CreatedTimeUtc") or "") < since_iso:
-            continue
-        if str(_ci(item, "LatestRunStatus") or "").lower() in TERMINAL:
-            continue
-        instance_id = str(_ci(item, "InstanceId") or "")
-        rows = instance_executions(instance_id)
-        if any(element_of(row) in stage_ids for row in rows):
-            cancel_instance(instance_id)
     return 0
 
 

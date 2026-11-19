@@ -16,6 +16,7 @@ from pathlib import Path
 JOURNAL = Path(".slack-posts.jsonl")
 CLEANUP_ENV = "FLOW_E2E_CLEANUP"
 CLEANUP_NEVER = "never"
+CHANNEL_ID = "C0B2FDZD1M3"  # #coding-agent-testing
 CONNECTOR_KEY = "uipath-salesforce-slack"
 CONNECTION_NAME = "is-sandboxes"
 FOLDER_NAME = "uipath-maestro-flow"
@@ -53,7 +54,7 @@ def read_posts() -> list[tuple[str, str]]:
             channel, ts = json.loads(line)
         except (ValueError, TypeError):
             continue
-        if isinstance(channel, str) and isinstance(ts, str):
+        if channel == CHANNEL_ID and isinstance(ts, str):
             posts.append((channel, ts))
     return list(dict.fromkeys(posts))
 

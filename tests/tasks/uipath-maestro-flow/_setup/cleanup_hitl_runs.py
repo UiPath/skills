@@ -6,15 +6,19 @@ touches only those created at or after that time that carry a token the grader
 recorded in `.hitl-run-tokens`. Parallel tasks share the eval identity, so the
 creator never marks a task as this run's. Each line is `token` or
 `token instanceId`: it cancels each instance recorded by id, then completes each
-task so it leaves the inbox. Best-effort: always exits 0.
+task so it leaves the inbox. Tokens not shaped like the ones the graders mint
+are ignored. No `uip` call starts after DEADLINE_SECONDS. Best-effort: always
+exits 0.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Callable
 
@@ -23,6 +27,8 @@ TOKENS_FILE = ".hitl-run-tokens"  # written by _shared/hitl_live_run.py
 CLEANUP_ENV = "FLOW_E2E_CLEANUP"
 CLEANUP_NEVER = "never"
 CALL_TIMEOUT = 120
+DEADLINE_SECONDS = 270  # under the post_run timeout of 300 in the HITL tasks
+TOKEN_SHAPE = re.compile(r"(?:INV|EXP)-[0-9A-F]{8}")
 CLOSE_ACTIONS = ("Reject", "reject", "Cancel")
 
 Runner = Callable[[list[str]], dict | None]
@@ -78,9 +84,14 @@ def own_tasks(rows: list[dict], started: datetime, tokens: list[str], task_text:
         created = parse_time(row.get("CreatedTime"))
         if not is_open(row) or created is None or created < started:
             continue
-        if any(t in task_text(row) for t in tokens):
+        text = task_text(row)
+        if any(t in text for t in tokens):
             mine.append(row)
     return mine
+
+
+def within(deadline: float, uip: Runner) -> Runner:
+    return lambda args: uip(args) if time.monotonic() < deadline else None
 
 
 def cancel_instances(instance_ids: list[str], uip: Runner) -> None:
@@ -102,17 +113,19 @@ def close_task(task: dict, email: str, uip: Runner) -> bool:
     return False
 
 
-def clean(uip: Runner | None = None, cwd: str = ".") -> list[str]:
-    uip = uip or run_uip
+def clean(uip: Runner | None = None, cwd: str = ".", seconds: float = DEADLINE_SECONDS) -> list[str]:
+    uip = within(time.monotonic() + seconds, uip or run_uip)
     if os.environ.get(CLEANUP_ENV, "").lower() == CLEANUP_NEVER:
         return []
     marker = read_lines(os.path.join(cwd, START_FILE))
     started = parse_time(marker[0]) if marker else None
     if started is None:
         return []
-    entries = [line.split() for line in read_lines(os.path.join(cwd, TOKENS_FILE))]
+    entries = [e for e in (line.split() for line in read_lines(os.path.join(cwd, TOKENS_FILE)))
+               if TOKEN_SHAPE.fullmatch(e[0])]
     tokens = list(dict.fromkeys(e[0] for e in entries))
     instances = list(dict.fromkeys(e[1] for e in entries if len(e) > 1))
+    cancel_instances(instances, uip)
     me = (uip(["login", "status"]) or {}).get("Data") or {}
     email = str(me.get("UserEmail") or me.get("UserName") or "")
 
@@ -121,7 +134,6 @@ def clean(uip: Runner | None = None, cwd: str = ".") -> list[str]:
         return json.dumps(data) + str(row.get("Title") or "")
 
     tasks = own_tasks(data_rows(uip(["tasks", "list"])), started, tokens, task_text)
-    cancel_instances(instances, uip)
     return [str(t.get("Id")) for t in tasks if close_task(t, email, uip)]
 
 

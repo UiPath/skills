@@ -108,6 +108,7 @@ def check_task(task: live.FoundTask, expense: str) -> None:
             (f"expense id {expense}", live.has_text(task.data, expense)),
             (f"employee {EMPLOYEE!r}", live.has_text(task.data, EMPLOYEE)),
             (f"amount {AMOUNT}", live.has_amount(task.data, AMOUNT)),
+            (f"description {DESCRIPTION!r}", live.has_text(task.data, DESCRIPTION)),
         )
         if not ok
     ]
@@ -118,7 +119,7 @@ def check_task(task: live.FoundTask, expense: str) -> None:
         )
     if task.task_type.lower() != "apptask":
         live.fail(f"task {task.task_id} is a {task.task_type}, not an app task")
-    print(f"OK: app task {task.task_id} shows {expense}, {EMPLOYEE}, {AMOUNT}")
+    print(f"OK: app task {task.task_id} shows {expense}, {EMPLOYEE}, {AMOUNT}, {DESCRIPTION}")
 
 
 def answer_data(task: live.FoundTask, comment: str) -> dict:

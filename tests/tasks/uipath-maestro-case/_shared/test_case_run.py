@@ -1,8 +1,6 @@
-"""post_run cancel of _setup/case_run.py in a task with no pinned tenant IDs.
+"""post_run cancel of _setup/case_run.py: recorded debug instances only.
 
-Such a task runs no localize pre_run, so the task-start mark comes from
-`case_run.py --mark-task-start`, run as pre_run from the sandbox. No tenant is
-touched.
+No tenant is touched.
 """
 
 from __future__ import annotations
@@ -24,37 +22,12 @@ SPEC.loader.exec_module(case_run)
 PLAN = {"nodes": [{"id": "Stage_ours1", "type": "case-management:Stage"}]}
 
 
-def test_a_task_marked_at_start_cancels_its_open_debug_instance(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_a_task_marked_at_start_writes_its_start_marker(tmp_path: Path) -> None:
     (tmp_path / "_setup").mkdir()
     subprocess.run(
         [sys.executable, str(SCRIPT), "--mark-task-start"], cwd=tmp_path, check=True
     )
-    monkeypatch.chdir(tmp_path)
-    plan_dir = tmp_path / "Case" / "Case"
-    plan_dir.mkdir(parents=True)
-    (plan_dir / "caseplan.json").write_text(json.dumps(PLAN))
-    listing = [
-        {"InstanceId": "ours", "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-         "LatestRunStatus": "Running", "FolderKey": "f"},
-    ]
-    cancelled = []
-
-    def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "list"]:
-            return {"Result": "Success", "Data": listing}
-        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
-            return {"Result": "Success", "Data": {"ElementExecutions": [{"ElementId": "Stage_ours1"}]}}
-        if args[:4] == ["maestro", "case", "instance", "cancel"]:
-            cancelled.append(args[4])
-            return {"Result": "Success"}
-        return {"Result": "Failure"}
-
-    monkeypatch.setattr(case_run, "_uip", uip)
-
-    assert case_run.cancel_debug_instances() == 0
-    assert cancelled == ["ours"]
+    assert (tmp_path / "_setup" / ".task-start").exists()
 
 
 def _paged_uip(pages: dict, calls: list):
@@ -90,38 +63,6 @@ def test_folder_key_is_found_on_a_later_page_of_a_filtered_list(
     assert calls[1][calls[1].index("--next-page") + 1] == "c2"
 
 
-def test_cancel_follows_pagination_to_an_instance_on_page_two(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    (tmp_path / "_setup").mkdir()
-    (tmp_path / "_setup" / ".task-start").write_text("x")
-    monkeypatch.chdir(tmp_path)
-    plan_dir = tmp_path / "Case" / "Case"
-    plan_dir.mkdir(parents=True)
-    (plan_dir / "caseplan.json").write_text(json.dumps(PLAN))
-    ours = {"InstanceId": "ours", "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-            "LatestRunStatus": "Running", "FolderKey": "f"}
-    pages = {
-        None: {"Result": "Success", "Data": [], "Pagination": {"HasMore": True, "NextPage": "c2"}},
-        "c2": {"Result": "Success", "Data": [ours], "Pagination": {"HasMore": False}},
-    }
-    cancelled: list = []
-    base = _paged_uip(pages, [])
-
-    def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
-            return {"Result": "Success", "Data": {"ElementExecutions": [{"ElementId": "Stage_ours1"}]}}
-        if args[:4] == ["maestro", "case", "instance", "cancel"]:
-            cancelled.append(args[4])
-            return {"Result": "Success"}
-        return base(args, timeout)
-
-    monkeypatch.setattr(case_run, "_uip", uip)
-
-    assert case_run.cancel_debug_instances() == 0
-    assert cancelled == ["ours"]
-
-
 def test_a_list_that_never_ends_stops_at_the_page_cap(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -138,87 +79,75 @@ def test_a_list_that_never_ends_stops_at_the_page_cap(
     assert len(calls) == case_run.MAX_LIST_PAGES
 
 
-def _sandbox_with_plan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def _row(instance_id: str) -> dict:
+    return {"InstanceId": instance_id, "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
+            "LatestRunStatus": "Running", "FolderKey": "f"}
+
+
+def _cancel_recorder(cancelled: list, listing: list):
+    def uip(args, timeout=120):
+        if args[:4] == ["maestro", "case", "instance", "list"]:
+            return {"Result": "Success", "Data": listing}
+        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
+            return {"Result": "Success", "Data": {"ElementExecutions": [{"ElementId": "Stage_ours1"}]}}
+        if args[:4] == ["maestro", "case", "instance", "cancel"]:
+            cancelled.append(args[4])
+            return {"Result": "Success"}
+        return {"Result": "Failure"}
+
+    return uip
+
+
+def test_an_unrecorded_instance_with_our_stage_id_is_not_cancelled(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     (tmp_path / "_setup").mkdir()
     (tmp_path / "_setup" / ".task-start").write_text("x")
     monkeypatch.chdir(tmp_path)
     plan_dir = tmp_path / "Case" / "Case"
     plan_dir.mkdir(parents=True)
     (plan_dir / "caseplan.json").write_text(json.dumps(PLAN))
-
-
-def _row(instance_id: str) -> dict:
-    return {"InstanceId": instance_id, "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-            "LatestRunStatus": "Running", "FolderKey": "f"}
-
-
-def test_a_recorded_debug_instance_is_cancelled_without_reading_others(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    _sandbox_with_plan(monkeypatch, tmp_path)
     case_run.record_debug_instance("ours")
-    listing = [_row(f"other{n}") for n in range(30)] + [_row("ours")]
     cancelled: list = []
-    read: list = []
-
-    def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "list"]:
-            return {"Result": "Success", "Data": listing}
-        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
-            read.append(args[4])
-            return {"Result": "Success", "Data": {"ElementExecutions": []}}
-        if args[:4] == ["maestro", "case", "instance", "cancel"]:
-            cancelled.append(args[4])
-            return {"Result": "Success"}
-        return {"Result": "Failure"}
-
-    monkeypatch.setattr(case_run, "_uip", uip)
-    monkeypatch.setattr(case_run, "SCAN_DEADLINE_S", 0)
+    monkeypatch.setattr(case_run, "_uip", _cancel_recorder(cancelled, [_row("ours"), _row("parallel")]))
 
     assert case_run.cancel_debug_instances() == 0
     assert cancelled == ["ours"]
-    assert read == []
 
 
-def test_a_recorded_instance_is_cancelled_even_with_no_stage_ids(
+def test_a_recorded_instance_is_cancelled_with_no_plan_or_marker(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     (tmp_path / "_setup").mkdir()
     monkeypatch.chdir(tmp_path)
     case_run.record_debug_instance("ours")
     cancelled: list = []
-
-    def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "cancel"]:
-            cancelled.append(args[4])
-            return {"Result": "Success"}
-        return {"Result": "Failure"}
-
-    monkeypatch.setattr(case_run, "_uip", uip)
+    monkeypatch.setattr(case_run, "_uip", _cancel_recorder(cancelled, []))
 
     assert case_run.cancel_debug_instances() == 0
     assert cancelled == ["ours"]
 
 
-def test_an_unrecorded_instance_is_read_only_within_the_scan_deadline(
+def test_case_check_run_debug_records_the_instance_it_started(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    _sandbox_with_plan(monkeypatch, tmp_path)
-    listing = [_row(f"other{n}") for n in range(30)]
-    read: list = []
+    sys.path.insert(0, str(SCRIPT.parent.parent))
+    from _shared import case_check  # noqa: PLC0415
 
-    def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "list"]:
-            return {"Result": "Success", "Data": listing}
-        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
-            read.append(args[4])
-        return {"Result": "Success", "Data": {"ElementExecutions": []}}
+    monkeypatch.chdir(tmp_path)
+    project = tmp_path / "Case"
+    project.mkdir()
+    payload = {"Data": {"instanceId": "run-9", "finalStatus": "Completed"}}
+    monkeypatch.setattr(case_check.os.path, "isdir", lambda path: path == "/solution")
+    monkeypatch.setattr(case_check, "find_project_dir", lambda *a, **k: str(project))
+    monkeypatch.setattr(
+        case_check, "_run",
+        lambda cmd, timeout=0, what="": subprocess.CompletedProcess(cmd, 0, json.dumps(payload), ""),
+    )
 
-    monkeypatch.setattr(case_run, "_uip", uip)
-    monkeypatch.setattr(case_run, "SCAN_DEADLINE_S", 0)
+    case_check.run_debug()
 
-    assert case_run.cancel_debug_instances() == 0
-    assert read == []
+    assert (tmp_path / "_setup" / ".debug-instances").read_text() == "run-9\n"
 
 
 def test_debug_case_records_the_instance_it_started(

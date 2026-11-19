@@ -1,6 +1,7 @@
 """cleanup_hitl_runs cancels and closes only what this run created."""
 import importlib.util
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -17,7 +18,7 @@ BEFORE = (START - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.1234567Z")
 JOB = "11111111-2222-3333-4444-555555555555"
 
 
-TOKEN = "INV-abc123"
+TOKEN = "INV-ABC12345"
 INSTANCE = "inst-1"
 
 
@@ -158,3 +159,41 @@ def test_a_failing_cli_never_fails_the_step(sandbox, monkeypatch):
 
     monkeypatch.setattr(cleanup, "run_uip", boom)
     assert cleanup.main(["x", "clean"]) == 0
+
+
+def test_a_token_not_shaped_like_a_minted_one_is_ignored(sandbox):
+    write_tokens(sandbox, "INV", f"abc {INSTANCE}", "INV-abc12345 inst-2")
+    uip = FakeUip([task(1)], data={"1": {"n": "INV abc INV-abc12345"}})
+    assert cleanup.clean(uip, sandbox) == []
+    assert uip.verbs("tasks", "complete") == [] and uip.verbs("maestro") == []
+
+
+def test_each_tasks_data_is_read_once_however_many_tokens_are_recorded(sandbox):
+    write_tokens(sandbox, "INV-AAAAAAAA", "INV-BBBBBBBB", "EXP-CCCCCCCC")
+    uip = FakeUip([task(1), task(2)])
+    cleanup.clean(uip, sandbox)
+    assert [c[3] for c in uip.verbs("tasks", "data", "get")] == ["1", "2"]
+
+
+def test_recorded_instances_are_cancelled_before_tasks_are_scanned(sandbox):
+    write_tokens(sandbox, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
+    cleanup.clean(uip, sandbox)
+    kinds = [c[0] for c in uip.calls]
+    assert kinds.index("maestro") < kinds.index("tasks")
+
+
+def test_no_uip_call_starts_after_the_deadline(sandbox):
+    write_tokens(sandbox, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
+    assert cleanup.clean(uip, sandbox, seconds=-1) == []
+    assert uip.calls == []
+
+
+def test_the_deadline_is_under_the_post_run_timeout_in_both_hitl_tasks():
+    hitl = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        "uipath-human-in-the-loop")
+    for name in ("e2e_01_invoice_approval_greenfield.yaml", "e2e_07_apptask_brownfield.yaml"):
+        text = open(os.path.join(hitl, name)).read()
+        match = re.search(r"cleanup_hitl_runs\.py clean\n\s+timeout: (\d+)", text)
+        assert match and cleanup.DEADLINE_SECONDS < int(match.group(1)), name

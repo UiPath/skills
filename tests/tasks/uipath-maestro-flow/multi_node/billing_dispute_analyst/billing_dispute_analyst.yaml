@@ -6,8 +6,9 @@ description: |
   (it names no variables). The graders map the seeded
   values onto the flow's declared inputs by meaning and read the decision and
   reasoning among its declared outputs by value. Three debug runs on real ERP
-  lines: a $55/h rate error over 90 h must come back as "manager_review" (the
-  SOP's $500-$5,000 band, which the prompt never states), a line billed at its
+  lines: a $55/h rate error over 90 h must come back as "manager_review" or
+  "credit" (the SOP's $500-$5,000 band decides, which the prompt never
+  states), a line billed at its
   contracted rate as "reject", and a description too thin to check as
   "manager_review"; each with reasoning that names an SOP rule. The grounding
   must also be live (a resource.json in the inline agent project).

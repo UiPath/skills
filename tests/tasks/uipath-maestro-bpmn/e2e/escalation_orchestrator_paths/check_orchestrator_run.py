@@ -58,9 +58,6 @@ from _shared.bpmn_live import (  # noqa: E402
 )
 
 NAME = "CustomerEscalationOrchestrator"
-SLACK_CONNECTOR = "uipath-salesforce-slack"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
 VISITING = 1
 VISITED = 2
@@ -120,11 +117,11 @@ def slack_ids(process: ET.Element) -> set[str]:
     ids = {
         element_id
         for (key, _path, _obj), element_ids in index_runtime_connectors(process).items()
-        if key == SLACK_CONNECTOR
+        if key == escalation_is.SLACK_CONNECTOR
         for element_id in element_ids
     }
     if not ids:
-        raise CheckFailure(f"the process has no {SLACK_CONNECTOR} step")
+        raise CheckFailure(f"the process has no {escalation_is.SLACK_CONNECTOR} step")
     return ids
 
 
@@ -158,7 +155,7 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
     (element_id,) = ran
     responses = [get_ci(r, "response") for r in element_output_records(variables_data, element_id)]
     response = next(
-        (r for r in responses if isinstance(r, dict) and SLACK_TS_RE.match(str(get_ci(r, "ts") or "").strip())),
+        (r for r in responses if isinstance(r, dict) and escalation_is.SLACK_TS_RE.match(str(get_ci(r, "ts") or "").strip())),
         None,
     )
     if response is None:
@@ -174,8 +171,8 @@ def verify_case(process, slack: set[str], case: dict, debug_data, variables_data
     if sends_as != ["user"]:
         raise CheckFailure(f"{name}: Slack step {element_id!r} must post as 'user', found send_as={sends_as!r}")
     channel = get_ci(response, "channel")
-    if channel != SLACK_CHANNEL:
-        raise CheckFailure(f"{name}: posted to channel {channel!r}, expected {SLACK_CHANNEL!r} (#coding-agent-testing)")
+    if channel != escalation_is.SLACK_CHANNEL:
+        raise CheckFailure(f"{name}: posted to channel {channel!r}, expected {escalation_is.SLACK_CHANNEL!r} (#coding-agent-testing)")
     message = get_ci(response, "message")
     text = get_ci(message, "text") if isinstance(message, dict) else None
     correlation = case["inputs"]["correlationId"]
@@ -192,6 +189,7 @@ def load_process(bpmn_path: Path) -> ET.Element:
 
 
 def cases() -> None:
+    escalation_is.assert_live_target()
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
     seeded = seed["cases"]
     bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
@@ -280,7 +278,7 @@ def assert_error_handlers(root: ET.Element, process: ET.Element, slack_step_ids:
             bad.append((slack_id, "error boundary event does not reach a terminating, connector-free path"))
 
     if bad:
-        raise CheckFailure(f"{SLACK_CONNECTOR} sendTask(s) do not degrade gracefully on failure: {bad}")
+        raise CheckFailure(f"{escalation_is.SLACK_CONNECTOR} sendTask(s) do not degrade gracefully on failure: {bad}")
 
 
 def slack_failure_handled() -> None:

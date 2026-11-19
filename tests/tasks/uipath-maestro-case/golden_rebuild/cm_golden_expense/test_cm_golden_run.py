@@ -181,33 +181,15 @@ def test_a_debug_that_never_started_an_instance_fails(fake) -> None:
         case_run_path.run_opening_path(PLAN)
 
 
-def test_post_run_cancels_only_this_tasks_open_debug_instances(
+def test_post_run_cancels_only_the_recorded_debug_instances(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "_setup").mkdir()
-    (tmp_path / "_setup" / ".tenant-ids.map.json").write_text("{}")
-    plan_dir = tmp_path / "CMGoldenExpense" / "CMGoldenExpense"
-    plan_dir.mkdir(parents=True)
-    (plan_dir / "caseplan.case").write_text(json.dumps(PLAN))
-    listing = [
-        {"InstanceId": "ours", "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-         "LatestRunStatus": "Running", "FolderKey": "f"},
-        {"InstanceId": "theirs", "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-         "LatestRunStatus": "Running", "FolderKey": "f"},
-        {"InstanceId": "old", "Source": "Studio Web Debug", "CreatedTimeUtc": "2000-01-01T00:00:00",
-         "LatestRunStatus": "Running", "FolderKey": "f"},
-        {"InstanceId": "done", "Source": "Studio Web Debug", "CreatedTimeUtc": "2999-01-01T00:00:00",
-         "LatestRunStatus": "Completed", "FolderKey": "f"},
-    ]
+    case_run.record_debug_instance("ours")
     cancelled = []
 
     def uip(args, timeout=120):
-        if args[:4] == ["maestro", "case", "instance", "list"]:
-            return {"Result": "Success", "Data": listing}
-        if args[:4] == ["maestro", "case", "instance", "element-executions"]:
-            element = "Stage_ydR2Tr" if args[4] == "ours" else "Stage_someoneElse"
-            return {"Result": "Success", "Data": {"ElementExecutions": [{"ElementId": element}]}}
         if args[:4] == ["maestro", "case", "instance", "cancel"]:
             cancelled.append(args[4])
             return {"Result": "Success"}

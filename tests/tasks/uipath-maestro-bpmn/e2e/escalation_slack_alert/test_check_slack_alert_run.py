@@ -40,6 +40,11 @@ CORR = CASE["inputs"]["correlationId"]
 TS = "1763405123.456789"
 
 
+@pytest.fixture(autouse=True)
+def _live_target(monkeypatch):
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", lambda: {})
+
+
 def _process(text: str = BPMN_TEXT) -> ET.Element:
     return ET.fromstring(text.encode()).find(f"{{{checker.BPMN_NS}}}process")
 
@@ -122,6 +127,30 @@ def test_slack_step_found_by_connector_key_alone():
 def test_message_id_must_be_the_posted_ts():
     with pytest.raises(checker.CheckFailure, match="not the ts"):
         checker.assert_outcome(_process(), CASE, _debug(), _variables(message_id="1700000000.000001"))
+
+
+def test_two_distinct_posted_messages_fail():
+    variables = _variables()
+    second = {"ok": True, "channel": "C0B2FDZD1M3", "ts": "1763405999.000001", "message": {"text": CORR}}
+    variables["Variables"][0]["Elements"].append({"ElementId": "sendSlackAlert", "Outputs": {"Response": second}})
+    with pytest.raises(checker.CheckFailure, match="exactly one posted"):
+        checker.assert_outcome(_process(), CASE, _debug(), variables)
+
+
+def test_main_checks_the_live_target_before_any_debug(tmp_path, monkeypatch):
+    _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT)
+
+    def refuse():
+        raise checker.CheckFailure("wrong tenant")
+
+    def no_debug(*a, **k):
+        raise AssertionError("debug ran before the target check")
+
+    monkeypatch.setattr(checker.escalation_is, "assert_live_target", refuse)
+    monkeypatch.setattr(checker, "run_debug", no_debug)
+    monkeypatch.setattr(checker, "import_exact", no_debug)
+    with pytest.raises(checker.CheckFailure, match="wrong tenant"):
+        checker.main()
 
 
 def test_wrong_channel_fails():

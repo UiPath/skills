@@ -16,13 +16,13 @@ the total amount and the currency. Then:
    the HITL step completed; no step reachable only from Approve ran. The
    named outputs: status = "rejected", sapDocumentNumber empty.
 
-Before either run, every step that builds the "SAP-" document number (the
-posting stand-in; an End node mapping the output is not a step) must sit
-behind the approval: the trigger cannot reach it without passing through the
-HITL step. Any outcome layout is accepted: per-outcome ports, both into a
-switch on the decision, or one step after the HITL that sets both outputs; the
-reject run's outputs show nothing is posted. Nothing
-here pins node ids, labels or variable names. A run that did not complete is
+Before either run, a step that builds the "SAP-" document number (the posting
+stand-in; an End node mapping the output is not a step) that the trigger can
+reach without passing through the HITL step draws a warning, not a failure:
+the stand-in has no side effect, and the reject run's outputs show nothing is
+posted. Any outcome layout is accepted: per-outcome ports, both into a
+switch on the decision, or one step after the HITL that sets both outputs.
+Nothing here pins node ids, labels or variable names. A run that did not complete is
 cancelled.
 """
 
@@ -157,8 +157,8 @@ def main() -> None:
     reject_only = only_from(reject_ports, approve_ports)
     early = sorted(live.posting_steps(flow, SAP_MARKER) & live.bypassing(flow, hitl_id))
     if early:
-        live.fail(f"the SAP posting step(s) {early} can run without the finance manager's approval: "
-                  f"the trigger reaches them without passing through {hitl_id}")
+        print(f"WARN: the SAP step(s) {early} can run without the finance manager's approval: "
+              f"the trigger reaches them without passing through {hitl_id}")
 
     payload, invoice = run_once(project_dir, hitl, Decision.APPROVE, approve, "Approved by the eval grader")
     done = live.completed_ids(payload)

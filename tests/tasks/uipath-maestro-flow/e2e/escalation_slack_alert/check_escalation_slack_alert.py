@@ -49,6 +49,7 @@ from _shared.escalation_inputs import (  # noqa: E402
 )
 from _shared.flow_check import (  # noqa: E402
     _fail_with_capture,
+    _get_ci,
     _leaves,
     _op_matches,
     assert_flow_uses_connector_target,
@@ -70,7 +71,7 @@ def feed(flow: dict, case: dict) -> dict:
 
 def posted_texts(payload: dict, ts: str) -> list[str]:
     """Every text in the response of the completed Slack send that returned `ts`."""
-    globals_ = (payload.get("variables") or {}).get("globals") or {}
+    globals_ = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
     for node_id in completed_connector_node_ids(payload, SLACK_KEY, native_op_hint=SLACK_SEND):
         out = globals_.get(f"{node_id}.output")
         if isinstance(out, (dict, list)) and ts in {str(x).strip() for x in _leaves(out) if isinstance(x, str)}:

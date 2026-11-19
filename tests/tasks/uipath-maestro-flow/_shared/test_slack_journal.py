@@ -236,3 +236,8 @@ def test_each_posting_grader_journals_around_its_debug_run(grader):
     assert "with journal_slack_posts():\n" in text
     guarded = text.split("with journal_slack_posts():\n", 1)[1].lstrip().split("\n", 1)[0]
     assert "run_debug(" in guarded
+
+
+def test_teardown_reads_only_posts_in_the_test_channel(sandbox):
+    _seed(sandbox, [CHANNEL, TS], ["C0OTHERCHAN", OTHER_TS], ["D0DIRECT", "1.2"])
+    assert teardown.read_posts() == [(CHANNEL, TS)]

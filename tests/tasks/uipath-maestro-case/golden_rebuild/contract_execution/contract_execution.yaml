@@ -41,14 +41,15 @@ tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-nod
 # cold restart. Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a
 # caseplan-sized extended-thinking response is not fatal.
 #
-# turn_timeout MUST NOT be smaller than task_timeout here: one harness "turn"
-# is the ENTIRE agent query stream, so turn_timeout caps the whole session and
-# is the binding limit. A smaller value silently makes task_timeout dead config
-# and kills a healthy long build with status=ERROR / score 0.0 regardless of
-# work completed (observed 2026-08-21: killed at 9000s after 492 turns and 297
-# commands, mid-caseplan, nothing graded). Measured healthy builds: 92-150 min.
+# task_timeout must be at least turn_timeout plus the criteria timeouts (turn
+# 18000 + criteria 5400 + margin): one harness "turn" is the ENTIRE agent query
+# stream, so turn_timeout caps the whole session and is the binding limit, and
+# a task_timeout that does not leave room for grading kills a healthy long
+# build with status=ERROR / score 0.0 regardless of work completed (observed
+# 2026-08-21: killed at 9000s after 492 turns and 297 commands, mid-caseplan,
+# nothing graded). Measured healthy builds: 92-150 min.
 run_limits:
-  task_timeout: 18000
+  task_timeout: 24000
   max_turns: 700
   turn_timeout: 18000
 
@@ -176,11 +177,11 @@ success_criteria:
   # complete; the grader follows the instance until the opening path is
   # decided, then cancels it. timeout covers refresh (180 s) + 2 debug calls at
   # most (2 x 1500 s, retries share that cap) + retry sleep (15 s) + follow-up
-  # (480 s) + cancel (180 s) + margin (445 s).
+  # (480 s) + cancel (180 s) + margin (945 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug enters the case-entered stage, completes its required ContractOperationsApi counterparty pull, opens its required request-check human task, and fails no required task or stage"
     command: "python3 $REFERENCE_DIR/golden_rebuild/contract_execution/check_contract_exec_run.py"
-    timeout: 4300
+    timeout: 4800
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

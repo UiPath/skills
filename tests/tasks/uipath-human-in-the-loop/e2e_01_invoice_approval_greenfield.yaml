@@ -9,8 +9,7 @@ description: >
   manager, and checks the run then completed down the Approve path only, with
   status=posted and sapDocumentNumber=SAP-<invoice>; then a second run is
   rejected and must complete with nothing on the Approve path run,
-  status=rejected and an empty sapDocumentNumber. The SAP posting stand-in
-  must sit behind the approval. Structural checks accept any outcome layout.
+  status=rejected and an empty sapDocumentNumber. Structural checks accept any outcome layout.
   Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga, outcome-graded]
@@ -76,8 +75,6 @@ initial_prompt: |
   Outputs: status (string), sapDocumentNumber (string). status is "posted" or
   "rejected". When approved, sapDocumentNumber is "SAP-" followed by the
   invoiceNumber, like "SAP-INV-1". When rejected it is empty text.
-  The step that builds the "SAP-" number goes after the approval, never
-  before it.
   <!-- helper:end -->
 
   Build and test the automation.
@@ -134,7 +131,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: the SAP posting stand-in sits behind the approval; a real run created an Action Center task showing the run's invoice number, Northwind Office Supplies, 4870.25 and EUR; after the grader approved it the run completed, a step reachable only from Approve ran when there is one and none reachable only from Reject did, and the outputs are status=posted and sapDocumentNumber=SAP-<invoice>; a second run the grader rejected completed with no step reachable only from Approve run, status=rejected and sapDocumentNumber empty"
+    description: "Effects: a real run created an Action Center task showing the run's invoice number, Northwind Office Supplies, 4870.25 and EUR; after the grader approved it the run completed, a step reachable only from Approve ran when there is one and none reachable only from Reject did, and the outputs are status=posted and sapDocumentNumber=SAP-<invoice>; a second run the grader rejected completed with no step reachable only from Approve run, status=rejected and sapDocumentNumber empty"
     command: "python3 $REFERENCE_DIR/_shared/check_hitl_invoice_approval_run.py"
     # Two runs, each with a 600s deadline that bounds every uip call, then a cancel.
     timeout: 1800

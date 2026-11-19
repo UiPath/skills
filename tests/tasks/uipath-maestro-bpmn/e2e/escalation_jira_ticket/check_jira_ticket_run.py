@@ -35,7 +35,9 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "_setup"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), "_setup"))
 
+import escalation_is  # noqa: E402
 import jira_is  # noqa: E402
 from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
@@ -156,6 +158,7 @@ def assert_outputs(process, seed: dict, variables_data, issue_key: str) -> None:
 
 
 def main() -> None:
+    escalation_is.assert_live_target()
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
     correlation = seed["correlationId"]
 
@@ -204,6 +207,8 @@ def main() -> None:
     ran_owned = {key: fields for key, fields in owned.items() if key in keys}
     if not ran_owned:
         raise CheckFailure(f"none of {keys} is a Jira issue whose summary carries {correlation!r}")
+    if len(ran_owned) != 1:
+        raise CheckFailure(f"expected exactly one Jira issue owned by this run, found {sorted(ran_owned)}")
     key, fields = next(iter(ran_owned.items()))
     print(f"OK: Jira issue {key} exists and its summary carries {correlation!r}")
     assert_task_in_project(key, fields, seed)

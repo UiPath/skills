@@ -55,6 +55,7 @@ PIMS_TERMINAL = {"completed", "faulted", "cancelled", "canceled", "failed"}
 TASK_POLL_SECONDS = 10
 STATUS_POLL_SECONDS = 5
 MAX_CANDIDATES = 25
+FOLDER_GRACE_SECONDS = 60
 ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
 MIN_CALL_SECONDS = 30
 DEADLINE_SECONDS = 600
@@ -249,11 +250,17 @@ def start_debug(project_dir: str, inputs: dict, cli_timeout: int) -> DebugRun:
 
 
 def wait_for_ids(run: DebugRun, deadline: float) -> RunIds:
-    """Block until the CLI has named the folder and the run, or has exited."""
+    """Block until the CLI has named the folder and the run, or has exited.
+    Once the run is named, wait FOLDER_GRACE_SECONDS more for the folder."""
+    named_at = None
     while time.monotonic() < deadline:
         ids = run.refresh_ids()
         if ids.folder_id and (ids.job_key or ids.instance_id):
             return ids
+        if ids.job_key or ids.instance_id:
+            named_at = named_at if named_at is not None else time.monotonic()
+            if time.monotonic() - named_at >= FOLDER_GRACE_SECONDS:
+                return ids
         if run.proc.poll() is not None:
             return run.refresh_ids()
         time.sleep(3)

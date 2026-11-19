@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -53,9 +52,6 @@ from _shared.bpmn_live import (  # noqa: E402
 )
 
 NAME = "EscalationSlackAlert"
-SLACK_CONNECTOR = "uipath-salesforce-slack"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 LIVE_RUN_DIR = Path("escalation-slack-alert-live")
 
 
@@ -73,11 +69,11 @@ def slack_ids(process: ET.Element) -> set[str]:
     ids = {
         element_id
         for (key, _path, _obj), element_ids in index_runtime_connectors(process).items()
-        if key == SLACK_CONNECTOR
+        if key == escalation_is.SLACK_CONNECTOR
         for element_id in element_ids
     }
     if not ids:
-        raise CheckFailure(f"the process has no {SLACK_CONNECTOR} step")
+        raise CheckFailure(f"the process has no {escalation_is.SLACK_CONNECTOR} step")
     return ids
 
 
@@ -88,7 +84,7 @@ def posted_messages(variables_data, element_ids) -> list[tuple[str, dict]]:
         for record in element_output_records(variables_data, element_id):
             response = get_ci(record, "response")
             ts = get_ci(response, "ts") if isinstance(response, dict) else None
-            if isinstance(ts, str) and SLACK_TS_RE.match(ts.strip()):
+            if isinstance(ts, str) and escalation_is.SLACK_TS_RE.match(ts.strip()):
                 found.append((element_id, response))
     return found
 
@@ -100,6 +96,10 @@ def assert_outcome(process, case: dict, debug_data, variables_data) -> str:
     posts = posted_messages(variables_data, ran)
     if not posts:
         raise CheckFailure(f"Slack step(s) {sorted(ran)} completed but returned no message ts")
+
+    distinct = {get_ci(r, "ts").strip() for _, r in posts}
+    if len(distinct) != 1:
+        raise CheckFailure(f"expected exactly one posted Slack message, the run posted {sorted(distinct)}")
 
     expected = case["expected"]
     correlation = case["inputs"]["correlationId"]
@@ -121,8 +121,8 @@ def assert_outcome(process, case: dict, debug_data, variables_data) -> str:
         raise CheckFailure(f"Slack step {element_id!r} must post as 'user', found send_as={sends_as!r}")
 
     channel = get_ci(response, "channel")
-    if channel != SLACK_CHANNEL:
-        raise CheckFailure(f"the alert went to channel {channel!r}, expected {SLACK_CHANNEL!r} (#coding-agent-testing)")
+    if channel != escalation_is.SLACK_CHANNEL:
+        raise CheckFailure(f"the alert went to channel {channel!r}, expected {escalation_is.SLACK_CHANNEL!r} (#coding-agent-testing)")
     message = get_ci(response, "message")
     text = get_ci(message, "text") if isinstance(message, dict) else None
     missing = [t for t in (correlation, expected["severity"]) if not isinstance(text, str) or t not in text]
@@ -132,6 +132,7 @@ def assert_outcome(process, case: dict, debug_data, variables_data) -> str:
 
 
 def main() -> None:
+    escalation_is.assert_live_target()
     bpmn_path = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
     bpmn_text = bpmn_path.read_text(encoding="utf-8")
     process = ET.fromstring(bpmn_text.encode("utf-8")).find(q(BPMN_NS, "process"))

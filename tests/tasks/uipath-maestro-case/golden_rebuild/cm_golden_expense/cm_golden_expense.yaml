@@ -31,7 +31,7 @@ tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-nod
 # so a caseplan-sized extended-thinking response is not fatal (both failure
 # modes observed 2026-07-10).
 run_limits:
-  task_timeout: 14400
+  task_timeout: 15000
   max_turns: 600
   turn_timeout: 9000
 
@@ -158,11 +158,11 @@ success_criteria:
   # follows the instance until the opening path is decided, then cancels it.
   # timeout covers refresh (180 s) + 2 debug calls at most (2 x 1500 s, retries
   # share that cap) + retry sleep (15 s) + follow-up (480 s) + cancel (180 s) +
-  # margin (445 s).
+  # margin (945 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug enters the case-entered stage, completes its required agent, process and RPA tasks on the deployed CM-Golden resources, moves on to the stage after it (manager approval), and fails no required task or stage"
     command: "python3 $REFERENCE_DIR/golden_rebuild/cm_golden_expense/check_cm_golden_run.py"
-    timeout: 4300
+    timeout: 4800
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0

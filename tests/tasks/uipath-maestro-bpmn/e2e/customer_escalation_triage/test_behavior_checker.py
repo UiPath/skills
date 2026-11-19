@@ -954,10 +954,41 @@ class TeardownRetryTests(unittest.TestCase):
                     "teardown_run", SHARED_SETUP / "teardown_escalation.py"
                 )
                 module = importlib.util.module_from_spec(spec)
+                out = io.StringIO()
                 try:
-                    spec.loader.exec_module(module)
+                    with redirect_stdout(out):
+                        spec.loader.exec_module(module)
                 except SystemExit:
                     pass
+        return out.getvalue()
+
+    def test_sweep_stops_at_the_deadline_and_names_what_it_skipped(self):
+        now = [0.0]
+        started = []
+
+        def slow_slack(_conn, _channel, ts, **_kwargs):
+            started.append(now[0])
+            now[0] += escalation_is.TEARDOWN_DELETE_TIMEOUT
+            return True
+
+        records = {
+            "jira_issue": [],
+            "slack_message": [["C1", f"1700000000.{n:06d}"] for n in range(11)],
+        }
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            delete_slack_message=slow_slack,
+            _now=lambda: now[0],
+        )
+        skipped = [line for line in output.splitlines() if line.startswith("WARN: skipped Slack")]
+        self.assertTrue(skipped, "nothing was skipped past the deadline")
+        self.assertEqual(len(started) + len(skipped), 11)
+        for ts in ("1700000000.%06d" % n for n in range(11 - len(skipped), 11)):
+            self.assertTrue(any(ts in line for line in skipped), ts)
+        self.assertLessEqual(
+            max(started) + escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            escalation_is.POST_RUN_TIMEOUT_CAP,
+        )
 
     def test_transient_first_failure_is_retried(self):
         attempts = []

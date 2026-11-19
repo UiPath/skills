@@ -205,6 +205,12 @@ def test_helper_carries_the_targets_the_grader_binds(task):
         assert literal in helper, literal
 
 
+def test_billing_helper_carries_no_graded_invoice():
+    helper = _helper(TASKS["billing_invoice_lookup"].path)
+    for graded in ("04872", "05128"):
+        assert graded not in helper
+
+
 def test_orchestrator_helper_states_both_response_modes_and_the_boolean():
     facts = TASKS["escalation_orchestrator_paths"]
     assert facts.enums["responseMode"] == {"Draft", "None"}

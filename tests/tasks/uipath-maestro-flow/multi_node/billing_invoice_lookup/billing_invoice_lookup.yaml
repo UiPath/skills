@@ -53,7 +53,7 @@ initial_prompt: |
   Inputs: invoiceNumber (string).
   Outputs: matchedInvoiceNumber (string), lineItemCount (number).
   BillingDisputeERP is an existing Data Fabric entity, and its invoiceNumber
-  field holds values like "MCS-2026-04872". Use the Data Service connection in
+  field holds values like "MCS-" then the year and a five-digit number. Use the Data Service connection in
   the Shared folder, even though it is a personal one.
   <!-- helper:end -->
 

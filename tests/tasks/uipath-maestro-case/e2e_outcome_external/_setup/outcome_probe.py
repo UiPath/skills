@@ -49,6 +49,8 @@ DEBUG_LOCK = "debug_result.lock"
 # The incident WARN line is among the last lines `case debug` writes to stderr.
 STDERR_TAIL_CHARS = 4000
 
+CLOCK_SKEW_S = 2
+
 # Two independent sources of lag, so the budget is generous (~10 min):
 #   1. Graph is not immediately consistent — a delivered message can take minutes
 #      to become searchable.
@@ -56,7 +58,6 @@ STDERR_TAIL_CHARS = 4000
 #      keeps running server-side. Measured 2026-08-07: the CLI timed out at 600 s
 #      and the case's effects landed ~7 min later. A short probe budget reports a
 #      false negative for a case that did its job.
-CLOCK_SKEW_S = 2
 POLL_ATTEMPTS = 20
 POLL_SLEEP = 30
 

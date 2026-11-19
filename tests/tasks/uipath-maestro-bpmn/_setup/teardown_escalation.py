@@ -26,23 +26,29 @@ try:
         timeout=escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT
     )
     leaked = 0
+    clock = escalation_is.TeardownClock()
+    delete_timeout = escalation_is.TEARDOWN_DELETE_TIMEOUT
+    read_timeout = escalation_is.TEARDOWN_READ_TIMEOUT
     jira_connection = connections[escalation_is.JIRA_CONNECTOR]
     for issue in dict.fromkeys(records.get("jira_issue", [])):
+        if not clock.allows(delete_timeout):
+            print(f"WARN: skipped Jira {issue}: teardown deadline reached "
+                  f"-- may be leaked in the {escalation_is.PROJECT_KEY} project")
+            leaked += 1
+            continue
         # Retry once on an unconfirmed (transient) failure, then confirm via a
         # tenant reread before giving up -- only a confirmed deletion or a
         # confirmed not-found counts. Mirrors the flow suite's teardown, and
         # keeps a 5xx from leaking a real ticket in the shared CE project.
         ok = escalation_is.delete_jira_issue(
-            jira_connection, issue, timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT
+            jira_connection, issue, timeout=delete_timeout
         )
-        if not ok:
+        if not ok and clock.allows(delete_timeout):
             ok = escalation_is.delete_jira_issue(
-                jira_connection,
-                issue,
-                timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
+                jira_connection, issue, timeout=delete_timeout
             )
-        if not ok and escalation_is.jira_issue_absent(
-            jira_connection, issue, timeout=escalation_is.TEARDOWN_READ_TIMEOUT
+        if not ok and clock.allows(read_timeout) and escalation_is.jira_issue_absent(
+            jira_connection, issue, timeout=read_timeout
         ):
             ok = True
         print(f"OK: deleted Jira {issue}" if ok
@@ -62,14 +68,16 @@ try:
         if (channel_id, timestamp) in seen:
             continue
         seen.add((channel_id, timestamp))
+        if not clock.allows(delete_timeout):
+            print(f"WARN: skipped Slack {timestamp}: teardown deadline reached")
+            leaked += 1
+            continue
         ok = escalation_is.delete_slack_message(
-            slack_connection, channel_id, timestamp,
-            timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            slack_connection, channel_id, timestamp, timeout=delete_timeout,
         )
-        if not ok:
+        if not ok and clock.allows(delete_timeout):
             ok = escalation_is.delete_slack_message(
-                slack_connection, channel_id, timestamp,
-                timeout=escalation_is.TEARDOWN_DELETE_TIMEOUT,
+                slack_connection, channel_id, timestamp, timeout=delete_timeout,
             )
         print(f"OK: deleted Slack {timestamp}" if ok
               else f"WARN: could NOT confirm deletion of Slack {timestamp}")
