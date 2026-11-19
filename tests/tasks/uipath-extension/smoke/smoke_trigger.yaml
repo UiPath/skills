@@ -3,8 +3,8 @@ description: >
   Smoke test: agent should trigger the uipath-extension skill when asked to
   check, upload or submit a Maestro community node built from a UiPath function.
   Fans out over five direct requests and grades the trigger RATE (recall.yes)
-  so single-run routing nondeterminism does not flake the gate. Verifies the skill fires on the Maestro community node signal
-  and is NOT routed to the plain function skill.
+  so single-run routing nondeterminism does not flake the gate. Verifies the
+  skill fires on the Maestro community node signal.
 tags: [uipath-extension, smoke, mode:build, lifecycle:discover]
 
 run_limits:

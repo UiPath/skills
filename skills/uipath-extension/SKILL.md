@@ -1,6 +1,6 @@
 ---
 name: uipath-extension
-description: "Maestro Extensions community nodes (`uip extension validate|upload|submit`; a JavaScript job function with a `maestro-extensions.json` template). Adopt a `uip function new` project, run the community-index gates, upload a dev build or a release to Orchestrator, and open the pull request that registers the node in the community index. For a plain coded function with no node →uipath-functions. For LLM or agent projects →uipath-agents."
+description: "UiPath Maestro Extensions community nodes (`uip extension validate|upload|submit`; a JavaScript job function with a `maestro-extensions.json` template). Adopt a `uip function new` project, run the community-index gates, upload a dev build or a release to Orchestrator, and open the pull request that registers the node in the community index. For a plain coded function with no node →uipath-functions. For LLM or agent projects →uipath-agents. For authoring or running a `.flow` →uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -41,9 +41,9 @@ Ask the user where the node goes with `AskUserQuestion`, then follow that row.
 
 | Destination | Command | Notes |
 |---|---|---|
-| Personal workspace, for a quick try | `uip extension upload --run --input '<INPUT_JSON>'` | Uploads `<PACKAGE_VERSION>-dev.<TIMESTAMP>` to your personal workspace feed and runs a job. No gates run. |
-| A tenant folder | `uip extension upload --release --folder-path "<FOLDER_PATH>" --yes` | Runs the gates, then uploads the package version. |
-| The community index | `uip extension submit --security-contact "<SECURITY_CONTACT>"` | Needs `gh` signed in with push access to the index repository. |
+| Personal workspace, for a quick try | `uip extension upload --run --input '<INPUT_JSON>' --output json` | Uploads `<PACKAGE_VERSION>-dev.<TIMESTAMP>` to your personal workspace feed and runs a job. No gates run. |
+| A tenant folder | `uip extension upload --release --folder-path "<FOLDER_PATH>" --yes --output json` | Runs the gates, then uploads the package version. |
+| The community index | `uip extension submit --security-contact "<SECURITY_CONTACT>" --output json` | Needs `gh` signed in with push access to the index repository. |
 
 Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
 
@@ -59,16 +59,16 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
 2. Adopt it. This run prints the files and stops.
 
    ```bash
-   uip extension submit <PUBLISHER>.<NAME>
+   uip extension submit <PUBLISHER>.<NAME> --output json
    ```
 
    After the user agrees, write them. The command exits 1 with `AdoptWritten`, which is the expected stop.
 
    ```bash
-   uip extension submit <PUBLISHER>.<NAME> --yes
+   uip extension submit <PUBLISHER>.<NAME> --yes --output json
    ```
 
-   Adopt writes `maestro-extensions.json`, renames the package to `maestro-extensions.<PUBLISHER>.<NAME>`, and adds `maestro/connection.ts` when the function reads connection inputs. It reports a missing `assets/icon.png` and entry point inputs that have no description, and it never deletes a file.
+   Adopt writes `maestro-extensions.json`, renames the package to `maestro-extensions.<PUBLISHER>.<NAME>`, and adds `maestro/connection.ts` when the function reads connection inputs. It reports a missing icon file in the project's assets folder and entry point inputs that have no description, and it never deletes a file.
 
 3. Fill the `TODO` fields, then check the project.
 
@@ -81,7 +81,7 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
 4. Run the command from the destination table. For the index, check first.
 
    ```bash
-   uip extension submit --security-contact "<SECURITY_CONTACT>" --dry-run
+   uip extension submit --security-contact "<SECURITY_CONTACT>" --dry-run --output json
    ```
 
    Run it again without `--dry-run` after the user approves the pull request.
@@ -92,7 +92,7 @@ A success prints an envelope with the code `ExtensionValidate`, `ExtensionUpload
 
 | Code | Meaning | Next step |
 |---|---|---|
-| `GatesFailed` | A gate failed. `Data` holds the report. | Fix each finding, then run `validate` again. |
+| `GatesFailed` | A gate failed. `Data` holds the report. | Fix each finding, then run `validate` again. After 3 failing runs, show the user the report and ask how to proceed. |
 | `ConfirmationRequired` | The command needs `--yes`. | Show the user what it will do, then repeat with `--yes`. |
 | `InputRequired` | An input is missing or two inputs conflict. | Read `Instructions` and pass the missing input. |
 | `AdoptWritten` | `submit` wrote the adopt files. | Review them, fill the `TODO` fields, run `validate`, then run `submit` again. |

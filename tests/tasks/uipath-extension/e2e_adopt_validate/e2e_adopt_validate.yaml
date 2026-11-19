@@ -60,6 +60,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "The community node gates pass on the finished project"
+    command: "uip extension validate --path word-count --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never uploaded the node and never opened a pull request"
+    command_pattern: 'uip\s+extension\s+upload\b|gh\s+pr\s+create\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "The project is adopted as acme.word-count, the template is schema 2 with no placeholder left, and the node does not depend on the Maestro Extensions SDK"
     command: "python3 $REFERENCE_DIR/check_adopt_validate.py"
     timeout: 30
