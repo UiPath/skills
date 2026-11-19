@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -169,8 +170,8 @@ def main() -> None:
 
     try:
         variables_data, variables_text = fetch_variables(instance_id)
-    except CheckFailure:
-        journal_owned_in(json.dumps(debug_data, default=str), seed)
+    except (CheckFailure, subprocess.TimeoutExpired):
+        journal_owned_in(partial_text(log_file) + json.dumps(debug_data, default=str), seed)
         raise
     ran = set(completed_ids(debug_data)) & step_ids
     keys = created_keys(variables_data, step_ids)

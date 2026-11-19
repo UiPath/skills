@@ -139,7 +139,8 @@ def test_sev3_needs_no_draft_response():
      "Don't draft", "Without a draft", "Draft: false", False, "not drafted", "not_drafted", "undrafted",
      "draft_response_not_needed", "Response not required", "none required", "skipped", "false", "No response",
      "Not required", "Not needed", "no", "No.", None, "", "   ", "-", "nothing", "nil", "empty", "Nil", "Empty",
-     "draft response: none", "Draft: no", "draft - no", "Draft = none", "Draft response: false", "response: no"],
+     "draft response: none", "Draft: no", "draft - no", "Draft = none", "Draft response: false", "response: no",
+     "Response: N/A", "Response none", "Response (none)", "Response: null", "Response skipped", "Response omitted"],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -147,6 +148,17 @@ def test_a_negated_response_mode_reads_as_none(value):
     sev1 = SEED["cases"][0]
     with pytest.raises(checker.CheckFailure, match="responseMode"):
         checker.verify_case(PROCESS, SLACK, sev1, _debug(sev1), _variables(sev1, responseMode=value))
+
+
+def test_a_process_that_never_declares_response_mode_fails_a_none_case(tmp_path):
+    bpmn = tmp_path / "Process.bpmn"
+    bpmn.write_text(BPMN.read_text().replace('name="responseMode"', 'name="routing"'))
+    process = checker.load_process(bpmn)
+    triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
+    variables = _variables(triage)
+    del variables["Variables"][0]["Globals"]["ResponseMode"]
+    with pytest.raises(checker.CheckFailure, match="responseMode"):
+        checker.verify_case(process, checker.slack_ids(process), triage, _debug(triage), variables)
 
 
 @pytest.mark.parametrize("value", ["maybe", "pending", "draft or none", "None or draft", "Draft/None", "draft|none", "none | draft",

@@ -174,6 +174,17 @@ def test_a_bare_string_read_of_invoice_or_customer_gets_the_scalar(effects, path
     assert str(inputs["sub"][path]).strip().upper() == value
 
 
+@pytest.mark.parametrize("path", ["customerId", "customerNumber", "customerNo", "customerCode", "customerRef"])
+def test_a_customer_id_read_gets_the_account_number(effects, path):
+    flow = {"nodes": [{"id": "s", "type": "core.action.script",
+                       "inputs": {"script": f"return $vars.sub.{path};"}}],
+            "variables": {"globals": [
+                {"id": "pdf", "direction": "in", "type": "file"},
+                {"id": "sub", "direction": "in", "type": "object"}]}}
+    inputs, _ = effects.build_inputs(flow, "overcharge")
+    assert inputs["sub"].get(path) == "ACCT-71044-AT"
+
+
 @pytest.mark.parametrize("path", ["customerStatement", "customerName", "invoiceDate"])
 def test_a_longer_field_keeps_its_submission_value(effects, path):
     flow = {"nodes": [{"id": "s", "type": "core.action.script",

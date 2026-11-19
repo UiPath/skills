@@ -156,7 +156,7 @@ success_criteria:
   # follows the instance until the opening path is decided, then cancels it.
   # timeout covers refresh (180 s) + 2 debug calls at most (2 x 1500 s, retries
   # share that cap) + retry sleep (15 s) + follow-up (480 s) + cancel (180 s) +
-  # margin (85 s).
+  # margin (445 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug enters the case-entered stage, completes its required agent, process and RPA tasks on the deployed CM-Golden resources, moves on to the stage after it (manager approval), and fails no required task or stage"
     command: "python3 $REFERENCE_DIR/golden_rebuild/cm_golden_expense/check_cm_golden_run.py"

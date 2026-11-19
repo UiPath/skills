@@ -93,7 +93,7 @@ success_criteria:
       - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && data.timeDuration=='PT10M'])"
         operator: equals
         expected: 1
-      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && (!entryConditions || contains(not_null(entryConditions[].rules[][].rule, `[]`), 'current-stage-entered'))])"
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && contains(not_null(entryConditions[].rules[][].rule, `[]`), 'current-stage-entered')])"
         operator: equals
         expected: 1
       - expression: "length(nodes[].data.tasks[][])"

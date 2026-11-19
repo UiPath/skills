@@ -140,7 +140,8 @@ def submission_roles(case):
     c = CASES[case]
     return {
         "account number": {"value": c["account"], "keywords": [
-            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct", "^customer$"]},
+            "accountnumber", "accountno", "accountid", "acctno", "acctnumber", "account", "acct",
+            "customerid", "customerno", "customernumber", "customercode", "customerref", "^customer$"]},
         "invoice number": {"value": c["typed"], "keywords": [
             "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoicenum", "^invoice$"]},
         "disputed lines": {"value": [line_item(case)], "keywords": ["lineitems", "lines", "items", "disputes"]},

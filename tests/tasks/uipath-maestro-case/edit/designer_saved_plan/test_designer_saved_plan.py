@@ -75,15 +75,10 @@ def test_edit_check_passes_once_the_optional_timer_is_added(workspace: Path):
     assert _json_check("The edit landed", workspace)
 
 
-@pytest.mark.parametrize("kwargs", [{"duration": "PT5M"}, {"duration": "PT10S"}, {"entry": "adhoc"}, {"entry": "runs-sequentially"}])
+@pytest.mark.parametrize("kwargs", [{"duration": "PT5M"}, {"duration": "PT10S"}, {"entry": "adhoc"}, {"entry": "runs-sequentially"}, {"entry": None}])
 def test_edit_check_fails_on_the_wrong_wait_or_entry_rule(workspace: Path, kwargs: dict):
     _add_cool_off(workspace, **kwargs)
     assert not _json_check("The edit landed", workspace)
-
-
-def test_edit_check_passes_when_the_timer_has_no_entry_conditions(workspace: Path):
-    _add_cool_off(workspace, entry=None)
-    assert _json_check("The edit landed", workspace)
 
 
 def test_designer_fields_check_passes_on_the_fixture_and_fails_on_a_lowered_version(workspace: Path):

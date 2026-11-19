@@ -77,11 +77,11 @@ _NEGATED_DRAFT = re.compile(
     r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|drafted|response)\b"
     r"|\bundrafted\b"
     r"|\b(?:draft|drafted|response)\s+(?:response\s+)?(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
-    r"|\bdraft(?:ed)?\s+(?:none|false|n a|na)\b"
+    r"|\b(?:draft|drafted|response)\s+(?:none|false|n a|na|null|nil|skipped|omitted)\b"
     r"|\bnone\s+(?:needed|required)\b"
     r"|^(?:n a|none|no|false|skipped|skip|not applicable|not required|not needed)$"
 )
-_LABELLED_NO = re.compile(r"\b(?:draft|response)(?:\s+response)?\s*[:=\-\u2013]\s*(?:no|none|false|nil)\W*$")
+_LABELLED_NO = re.compile(r"\b(?:draft|response)(?:\s+response)?\s*[:=\-\u2013]\s*(?:no|none|false|nil|null|n a|na)\W*$")
 _DRAFT = re.compile(r"\bdraft(?:ed)?\b|\bresponse\b|^(?:true|yes)$")
 _EITHER_OR = re.compile(r"\bor\b|[/|]")
 _NOT_APPLICABLE = re.compile(r"\bn/a\b")

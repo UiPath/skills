@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -148,14 +149,14 @@ def test_a_variables_read_failure_still_journals_this_runs_key(tmp_path, monkeyp
     monkeypatch.setattr(checker, "run_debug", lambda *a, **k: (debug, "inst-1"))
 
     def unreadable(instance_id):
-        raise checker.CheckFailure("variables read timed out")
+        raise subprocess.TimeoutExpired("uip", 120)
 
     monkeypatch.setattr(checker, "fetch_variables", unreadable)
     monkeypatch.setattr(
         checker.jira_is, "get_issue",
         lambda conn, key: {"summary": f"[Sev1] {CORR} down" if key == "CE-4242" else "someone else's"},
     )
-    with pytest.raises(checker.CheckFailure, match="variables read"):
+    with pytest.raises(subprocess.TimeoutExpired):
         checker.main()
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
 
