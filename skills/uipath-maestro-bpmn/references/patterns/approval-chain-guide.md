@@ -120,7 +120,7 @@ Both chains can share the approver variables because only one runs per instance.
 
 ## What to bind
 
-- **Approver tasks**: `.humanTask()`, an inline form, or `{ app, folder }` when the user names a deployed Action App.
+- **Approver tasks**: `.humanTask()`, an inline form, or `{ app, folder }` when the user names a deployed Action App (SDK 6.120.18 or later; see [Human tasks](../bpmn-runtime.md#human-task-outcomes)).
   Map `=Action` and each form field into that approver's own variables.
   Resolving *who* approves is a lookup against your directory; the process holds the task, not the roster.
 - **Per-step SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).

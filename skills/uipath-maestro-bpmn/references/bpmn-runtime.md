@@ -356,12 +356,15 @@ make from syntax alone. Exact signatures remain in the generated API.
   - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
 - The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
   With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
-  Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()`, or to `app` unless the user names a deployed app.
+  Then tell the user to enable the quick-form flag on the tenant; do not fall back to `.task()` or to an `app` the user did not name.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
 
 <!-- RULE:bpmn.hitl.app-task -->
 - When the request names a deployed Action App, bind it: `.humanTask(id, { app: 'InvoiceApproval', folder: 'Shared', title, input, outputs: { decision: '=Action' } })`.
+  Needs `@uipath/maestro-builder-sdk` 6.120.18 or later (`npm ls -g @uipath/maestro-builder-sdk` shows the installed version); an older SDK rejects `folder` or writes a v1 task with only an `appId`, which fails at run time with 170000, so upgrade first with `npm install -g @uipath/maestro-builder-sdk@latest`.
   `app` is the app's NAME and `folder` its Orchestrator folder path, never an app id; read both from `uip solution resources list --kind App --search "<term>" --output json` (`Name`, `Folder`).
+  That list holds every kind of app, with no field telling an Action App from a web app, so use only a row whose `Name` is the name the user gave, never the first hit.
+  When no row has that name, or the lookup cannot run (no `uip login`), write the inline form, never an invented `app` or `folder`, and tell the user the task is not bound to their app yet.
   The SDK writes the v2 `Actions.HITL` task Studio Web saves: `name` and `folderPath` as `=bindings.<id>` references to two `resource="app"` bindings keyed `<folder>.<app>`, which it declares for you.
   Either value may instead be an `=bindings.<id>` reference to an `app` binding you declared.
   The app defines its own outcomes; read the one picked with `outputs: { decision: '=Action' }`.
