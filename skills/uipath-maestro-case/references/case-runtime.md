@@ -212,8 +212,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 - An `sla-status-change` breach response uses only `{ sla }`; an at-risk response
   also names `{ escalation }`. Put an enter-stage response on an
-  `exceptionStage(...)` and call `.required(false)` so the secondary stage does
-  not gate `required-stages-completed`.
+  `exceptionStage(...)` with `.required(false)` ([Completion and
+  optionality](#completion-and-optionality)).
 
 <!-- RULE:case.sla.escalation-absent -->
 - An ABSENT `escalation` is the persisted representation of Breached — not a
@@ -264,13 +264,16 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:case.optionality.explicit -->
-- A task or stage the request calls optional gets `.required(false)`.
-  Omitting `.required()` leaves `isRequired` out of the plan, which is not
-  `false`, and a `required-stages-completed` exit reads that flag to decide
-  which stages gate completion.
+- A task or stage the request (or SDD `Required` / `Required for Case
+  Completion: No`) calls optional gets `.required(false)`; one that must gate
+  gets `.required()`. Omitting it writes no `isRequired`, which run time reads
+  as not required: `required-tasks-completed` waits only on tasks, and
+  `required-stages-completed` only on primary stages, marked `isRequired: true`.
+  The Designer writes the flag explicitly, so write it either way.
 - SDD `Stage Kind: secondary` is `.exceptionStage(label, fn)`, never
-  `.stage()`: only `exceptionStage` writes the exception stage type. Add
-  `.required(false)` so it does not gate normal completion.
+  `.stage()`: only `exceptionStage` writes `stageType: secondary`. Add
+  `.required(false)`: the Designer writes it on every secondary stage, and
+  `check` warns `EXCEPTION_STAGE_REQUIRED` without it.
 
 ## Activation modes
 
