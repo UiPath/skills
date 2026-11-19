@@ -101,31 +101,31 @@ When the package is **already deployed**, `deploy run` stops before installing a
 ```bash
 # By key (the Key from `deploy list`): name, package and feed are read from
 # the deployment, so nothing else is needed
-uip solution deploy upgrade <deployment-key> --output json
+uip solution deploy upgrade <DEPLOYMENT_KEY> --output json
 
 # By name, to the newest published version (default), waiting for it to finish
-uip solution deploy upgrade --name <deployment-name> --package-name <pkg> --output json
+uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --output json
 
 # A specific version — the CI/CD form: no version lookup
-uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
+uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> \
   --version 2.0.0 --output json
 
 # A deployment in your Personal Workspace feed
-uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
+uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> \
   --personal-workspace --output json
 
 # Start it and return immediately
-uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
+uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> \
   --no-wait --output json
 
 # Discard the pending draft a rejected attempt left behind, then upgrade
-uip solution deploy upgrade <deployment-key> --version 2.0.0 --discard-draft --output json
+uip solution deploy upgrade <DEPLOYMENT_KEY> --version 2.0.0 --discard-draft --output json
 
 # Change only the configuration: same version, edited config file
-uip solution deploy upgrade <deployment-key> --version <deployed-version> --config-file config.json --output json
+uip solution deploy upgrade <DEPLOYMENT_KEY> --version <DEPLOYED_VERSION> --config-file config.json --output json
 
 # Confirm the permanent deletion of resources the upgrade stops using (newer CLI builds)
-uip solution deploy upgrade <deployment-key> --version 2.0.0 --acknowledge-permanent-deletion --output json
+uip solution deploy upgrade <DEPLOYMENT_KEY> --version 2.0.0 --acknowledge-permanent-deletion --output json
 ```
 
 Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus, OrchestratorUrl, FolderUrl }`, plus `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey`, the state fields, and the links are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none. With `--acknowledge-permanent-deletion`, `PermanentlyDeletedResources` names each resource (`kind 'name'`) that was confirmed and deleted; it is absent otherwise.
@@ -138,7 +138,7 @@ On newer CLI builds a successful upgrade also checks that the deployment's folde
 
 - The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
 - **Both forms work from CI/CD.** The key form resolves the key through a Pipelines lookup that external apps (client-credentials) can call, so it needs neither `--package-name` nor `--personal-workspace`: name, package and feed come from the deployment itself, and a key stored before an earlier upgrade still resolves to the deployment's current generation — so pass either the `Key` from `deploy list` or an `InstallDeploymentKey` you stored; both reach the live deployment. The name form needs `--package-name` because nothing name-keyed in Pipelines reports the package; with `--version` as well it makes no version lookup. It does check the name exists first — the install route treats an unknown name as a fresh install, so a typo fails with `ErrorCode: not_found` instead of creating a deployment. On a server that predates the by-key lookup, a key answers `ErrorCode: not_found` and the message points at the name form.
-- **An external app upgrades a Personal Workspace or folder-feed deployment only by key, and only on a server that applies the feed to client-credentials requests.** Before the first feed-scoped request the CLI asks the server once (a single-row deployment search sent with the feed) and goes ahead only when the response echoes the feed header back. When the echo is missing or the check fails, the upgrade is refused (`ErrorCode: permission_denied`, `Retry: RetryWillNotFix`) rather than run against the tenant feed, where it would create a new deployment under the same name. The check is a read, so the app also needs `Solutions.Deployments.Read`; the refusal names it when that is what failed. The name form with `--personal-workspace` is always refused to an external app (an app has no Personal Workspace). Tenant-feed deployments work everywhere. When refused, run the upgrade with a user session.
+- **An external app upgrades a Personal Workspace or folder-feed deployment only by key, and only on a server that applies the feed to client-credentials requests.** Before the first feed-scoped request the CLI asks the server once (a single-row deployment search sent with the feed) and goes ahead only when the response echoes the feed header back. When the echo is missing or the server refuses the check, the upgrade is refused (`ErrorCode: permission_denied`, `Retry: RetryWillNotFix`) rather than run against the tenant feed, where it would create a new deployment under the same name. A check that gets no answer (no connection, timeout) decides nothing: it fails `ErrorCode: network_error`, `Retry: RetryLater`, sends no feed request, and is worth retrying. The check is a read, so the app also needs `Solutions.Deployments.Read`; the refusal names it when that is what failed. The name form with `--personal-workspace` is always refused to an external app (an app has no Personal Workspace). Tenant-feed deployments work everywhere. When refused, run the upgrade with a user session.
 - **`Operation` is what tells you a version moved.** The install endpoint is unified, so asking for the version *already* deployed is a configuration change, not an upgrade. `Operation: "VersionChange"` means the version moved; `"ConfigurationChange"` means it did not and the configuration was re-applied instead. Read it rather than treating `DeploymentSucceeded` as proof of a new version — there is no pre-flight refusal: the name form makes no read that knows the deployed version, and the key form reports what the server did rather than second-guessing it (its `FromVersion` is there for the comparison if you want one).
 - **The package is validated against the target before anything is installed.** The upgrade goes through the same Pipelines install as `deploy run`, which the server treats as an in-place upgrade when the deployment name already exists with the same package and a different version. Validation runs first, so a configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions` and **the deployment still on its current version** — nothing is half-installed. Earlier CLI versions installed straight away and a late validation failure could strand the deployment in a state that offered only *Uninstall*.
 - **A rejected attempt leaves a pending draft, and the draft owns the deployment until it is finished or discarded** — the same rule as the Orchestrator UI, which then offers only "continue editing" and "delete draft". The live version keeps running, but the next request for that deployment would reuse the draft rather than do what was asked. `Instructions` on the failure name the draft by its key. While it exists, `deploy upgrade` refuses the deployment before sending anything (`ErrorCode: invalid_argument`, naming the draft's key and the version it targets), with or without `--config-file`, because the server would re-run the rejected attempt in place of the upgrade. Two ways out:
@@ -292,7 +292,7 @@ Remove a specific version of a published package from the solution feed:
 uip solution packages delete "MySolution" "1.0.0" --yes --output json
 ```
 
-Arguments: `<package-name> <package-version>`. This deletes only the specified version, not all versions of the package. `--yes` is required and the CLI never prompts, so it is the only check: delete a published version only when the user asks. Never delete one to get past a publish 409 — bump the version instead ([Version Bumping](pack-and-deploy.md#version-bumping)).
+Arguments: `<package-name> <package-version>`. This deletes only the specified version, not all versions of the package. `--yes` is required and never prompts: delete a version only when the user asks, never to get past a publish 409 ([Version Bumping](pack-and-deploy.md#version-bumping)).
 
 ## Step 7: Delete from Studio Web
 

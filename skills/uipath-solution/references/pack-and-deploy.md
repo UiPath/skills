@@ -80,9 +80,9 @@ The output is a `.zip` file named `<name>_<version>.zip` — **underscore betwee
 
 **A failed pack names the broken file in `Data.Projects`, not in `Message`.** Read it per project — fields in [Read `Data.Projects` on a failed pack](pack-build-guide.md#read-dataprojects-on-a-failed-pack).
 
-**Controlling package sources.** `--nuget-sources-config-path` *adds* the sources of a local `NuGet.config` to the tenant and built-in feeds; it does not replace them. To resolve from an approved set only, add `--exclude-configured-sources`, and, unless the tenant's library feeds include the host libraries feed (UiPath-Official on Automation Cloud), keep a mirror of the official activity packages in that `NuGet.config` — without one a bare `--exclude-configured-sources` fails the restore there. `pack`, `restore` and `cleanup` all take these options; see [Dependency feeds](pack-build-guide.md#dependency-feeds).
+**Controlling package sources.** `--nuget-sources-config-path` *adds* the sources of a local `NuGet.config`; it does not replace the tenant and built-in feeds. Before using `--exclude-configured-sources`, read [Dependency feeds](pack-build-guide.md#dependency-feeds): bare, it can fail the restore of official activity packages. `pack`, `restore` and `cleanup` all take these options.
 
-**Governance does not gate.** When AutomationOps cannot be asked (unreachable, or an external-app login), `pack` still exits `0` with the shipped rules or your `--governance-file-path`. The only sign is a stderr warning, which `--log-level error` hides. See [Governance does not gate a build](pack-build-guide.md#governance-does-not-gate-a-build).
+**Governance does not gate:** `pack` can exit `0` without the tenant policy — see [Governance does not gate a build](pack-build-guide.md#governance-does-not-gate-a-build).
 
 **Coded apps are built by `pack`** (install, then the `build` script). Git-ignore the `.uipath-build.json` it writes; see [Coded apps](pack-build-guide.md#coded-apps-pack-builds-them).
 
@@ -518,7 +518,13 @@ uip solution deploy run -n "MySolution-Prod" --package-name "MySolution" --packa
 
 Always increment the version when republishing (patch for fixes, minor for features, major for breaking changes). The solution feed rejects duplicate name+version pairs.
 
-**Publish 409 means the version is taken.** Bump the version, pack again with `--version <NEW_VERSION>`, and publish that package. Never delete the published version to reuse its number: deployments made from it depend on it. Delete it only when the user asks. `uip solution packages delete <PACKAGE_NAME> <VERSION> --yes` never prompts, so `--yes` is the only check — ask first.
+**Publish 409 means the version is taken.** Publish the same package under a new version:
+
+```bash
+uip solution publish <PACKAGE_ZIP> --package-version <NEW_VERSION> --output json
+```
+
+`--package-version` rewrites the version inside a packed `.zip`. With the solution source at hand, you can instead pack again with `--version <NEW_VERSION>` and publish that package. Never delete the published version to reuse its number: deployments made from it depend on it. Delete it only when the user asks. `uip solution packages delete <PACKAGE_NAME> <VERSION> --yes` never prompts, so `--yes` is the only check — ask first.
 
 ---
 
