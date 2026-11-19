@@ -1,0 +1,68 @@
+task_id: skill-extension-e2e-adopt-validate
+description: >
+  Maestro community node e2e via the `uip extension` CLI. A request to turn a new
+  function into a community node and check it must be routed to the
+  `uipath-extension` skill. Verifies the agent creates the project with
+  `uip function new`, adopts it with `uip extension submit <publisher>.<name>
+  --yes` after showing the plan, fills the template, and runs
+  `uip extension validate`. The checker reads the project files, so the run is
+  graded on what is on disk and not on what the agent says. The task never
+  opens a pull request and never uploads.
+tags: [uipath-extension, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 1200
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a UiPath function named `word-count` that takes `text` (string) and
+  returns `words` (integer, the number of whitespace-separated words). Make it
+  a Maestro community node with the identity `acme.word-count`, fill in the
+  template with the license MIT, the label `Word Count`, a one-line
+  description, the tag `text`, no network egress, and the minimum Maestro
+  version 2026.10, then check it with the community node gates until they pass.
+
+  Do NOT upload it and do NOT open any pull request.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent recognised a Maestro community node request and invoked the uipath-extension skill"
+    skill_name: "uipath-extension"
+    expected_skill: "uipath-extension"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the project with uip function new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+functions?\s+new\s+word-count'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent adopted the project with uip extension submit and the identity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+extension\s+submit\b(?=[^|;&\n]*\bacme\.word-count\b)(?=[^|;&\n]*--yes\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the community node gates with uip extension validate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+extension\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The project is adopted as acme.word-count, the template is schema 2 with no placeholder left, and the node does not depend on the Maestro Extensions SDK"
+    command: "python3 $REFERENCE_DIR/check_adopt_validate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
