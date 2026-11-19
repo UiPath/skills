@@ -174,7 +174,7 @@ def test_a_bare_string_read_of_invoice_or_customer_gets_the_scalar(effects, path
     assert str(inputs["sub"][path]).strip().upper() == value
 
 
-@pytest.mark.parametrize("path", ["customerId", "customerNumber", "customerNo", "customerCode", "customerRef"])
+@pytest.mark.parametrize("path", ["customerId", "customerNumber", "customerNo", "customerCode", "customerRef", "customerIdNumber"])
 def test_a_customer_id_read_gets_the_account_number(effects, path):
     flow = {"nodes": [{"id": "s", "type": "core.action.script",
                        "inputs": {"script": f"return $vars.sub.{path};"}}],
