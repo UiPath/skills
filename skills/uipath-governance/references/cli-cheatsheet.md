@@ -18,7 +18,7 @@ uip login                                      # interactive OAuth
 uip login --authority "<AUTHORITY_URL>"        # non-default host
 ```
 
-See [auth-context.md](auth-context.md) for reading `~/.uipath/.auth` (the canonical source for `UIPATH_TENANT_ID`, `UIPATH_TENANT_NAME`, `UIPATH_ORGANIZATION_ID`, `UIPATH_ACCESS_TOKEN`).
+See [auth-context.md](auth-context.md) for reading tenant and organization names and IDs from `uip login status --output json` (`Data.Tenant`, `Data.TenantId`, `Data.Organization`, `Data.OrganizationId`).
 
 ## Products
 
@@ -187,8 +187,8 @@ uip gov compliance-packs catalog list --output json
 uip gov compliance-packs catalog get <packId> --output json
 
 # State (tenant-scoped; Policy:Read for coverage/get/list; Policy:Write for enable/disable/restore)
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
-ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
+ORG_ID=$(uip login status --output json | sed -n 's/.*"OrganizationId": *"\([^"]*\)".*/\1/p')
 
 # Tenant scope
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json

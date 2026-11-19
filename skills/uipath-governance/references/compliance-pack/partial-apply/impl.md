@@ -268,7 +268,7 @@ uip gov aops-policy deployment tenant configure $TENANT_ID \
 └──────────────────────┴──────────────────────────────────────────────┘
 (omit ⚠ table if no SKIPped settings)
 
-Applied by: <UIPATH_USER from ~/.uipath/.auth>  ·  <tenantName>  ·  <date>
+Applied by: <Data.Identity from uip login status>  ·  <tenantName>  ·  <date>
 
 To configure all <packName> settings: 'Apply the full <packName> standard'
 ```
