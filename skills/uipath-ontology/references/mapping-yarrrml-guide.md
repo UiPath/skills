@@ -104,6 +104,7 @@ A `RELATIONSHIP` field on the referencing entity holds the target's key. The joi
 equal(str1=$(customer), str2=$(Id))
 ```
 
+<!-- skill-lint-disable-next-line CODE-FENCE-PARSE reason="valid YAML; the linter strips the nesting of a top-level fence (skill-linter _md.fences, indent 0)" -->
 ```yaml
 - p: ont:placedBy
   o:

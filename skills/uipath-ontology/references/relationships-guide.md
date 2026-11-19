@@ -34,6 +34,7 @@ InverseObjectProperties(:places :placedBy)
 
 Mapping, on the `SalesOrder` block:
 
+<!-- skill-lint-disable-next-line CODE-FENCE-PARSE reason="valid YAML; the linter strips the nesting of a top-level fence (skill-linter _md.fences, indent 0)" -->
 ```yaml
 - p: ont:placedBy
   o:
