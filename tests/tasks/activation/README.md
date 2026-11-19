@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 31 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 33 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.
@@ -47,7 +47,7 @@ Early stop: every criterion carries a `stop_early: {on_pass: stop}` block (coder
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1747 rows total (1666 positives + 81 negatives). The agent runs ONCE per row regardless of criteria count, and the 31 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$85–175**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1838 rows total (1755 positives + 83 negatives). The agent runs ONCE per row regardless of criteria count, and the 33 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$90–185**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 
@@ -59,15 +59,15 @@ Document Understanding / AI Center vs `uipath-ixp`, a CNCF Serverless Workflow
 spec vs `uipath-api-workflow`, a Claude Desktop / FastMCP server vs
 `uipath-mcp-servers`) — these exercise cross-skill precision, not just recall.
 
-`uipath-vertical-solutions` and `uipath-automationhub` positives were not mined: they were written from each skill's
+`uipath-vertical-solutions`, `uipath-automationhub` and `uipath-aops` positives were not mined: they were
+written from each skill's
 `SKILL.md` and `references/`, then checked against real questions in the
 product's Slack help channels, Confluence and GitHub (read-only) for phrasing
 and missing intents. Prompts with no sign of a real user asking were dropped.
 
 ## Coverage
 
-Covers 31 of the 32 skills in the repo (`uipath-aops` has no
-dataset yet). Skill positives target user **intent** (the
+Covers all 33 skills in the repo. Skill positives target user **intent** (the
 task a prompt is asking for), not exact CLI surface, so coverage stays valid
 while a Preview skill's commands are still in flux. Narrower-scope skills hold
 fewer rows than 50 without padding (e.g. `uipath-ixp` at 30,
