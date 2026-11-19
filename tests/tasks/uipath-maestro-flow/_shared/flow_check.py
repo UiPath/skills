@@ -57,6 +57,8 @@ from typing import Any, Iterable, Sequence
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
 _LAST_DEBUG_STDERR: str | None = None
+# Stdout of every attempt of the most recent run_debug: a re-run can repeat a side effect.
+_DEBUG_ATTEMPT_RAWS: list[str] = []
 
 # Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
 # / ``--attachment``). Stashed because the runtime returns every global — `in` and
@@ -402,7 +404,8 @@ def run_debug(
     env = dict(os.environ)
     env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
     global _LAST_DEBUG_RAW, _LAST_DEBUG_STDERR, _LAST_DEBUG_INPUT_IDS
-    global _LAST_DEBUG_PROJECT_DIR
+    global _LAST_DEBUG_PROJECT_DIR, _DEBUG_ATTEMPT_RAWS
+    _DEBUG_ATTEMPT_RAWS = []
     # Record what we bound as input, and where the project lives, so output
     # assertions can discount echoes of our own inputs.
     _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
@@ -480,6 +483,7 @@ def run_debug(
             timeout_stdout = _as_text(exc.stdout) or timeout_stdout
             timeout_stderr = _as_text(exc.stderr) or timeout_stderr
             _LAST_DEBUG_RAW = timeout_stdout
+            _DEBUG_ATTEMPT_RAWS.append(timeout_stdout)
             _LAST_DEBUG_STDERR = timeout_stderr
             subprocess_timeouts += 1
             fundable = (
@@ -504,6 +508,7 @@ def run_debug(
                 f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
+        _DEBUG_ATTEMPT_RAWS.append(r.stdout or "")
         # Keep the CLI's stderr too: it is where `flow debug` reports what it
         # could not do (e.g. the output-variables fetch). Dropping it on a zero
         # exit is how the 2026-08-31/09-01 move-node failures lost their cause.
@@ -1058,6 +1063,10 @@ def assert_outputs_contain(
 def get_last_debug_stderr() -> str | None:
     """Return the stderr of the most recent ``run_debug`` call, or ``None``."""
     return _LAST_DEBUG_STDERR
+
+
+def get_debug_attempt_raws() -> list[str]:
+    return list(_DEBUG_ATTEMPT_RAWS)
 
 
 def get_last_debug_raw() -> str | None:

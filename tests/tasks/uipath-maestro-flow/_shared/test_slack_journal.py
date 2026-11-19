@@ -40,7 +40,7 @@ def sandbox(tmp_path, monkeypatch):
                       {"id": SEND_ID, "type": SEND_TYPE}, {"id": READ_ID, "type": READ_TYPE}], "edges": []}
     (project / "P.flow").write_text(json.dumps(flow))
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(flow_check, "_LAST_DEBUG_RAW", None)
+    monkeypatch.setattr(flow_check, "_DEBUG_ATTEMPT_RAWS", [])
     return tmp_path
 
 
@@ -48,8 +48,8 @@ def _envelope(globals_):
     return json.dumps({"Result": "Success", "Data": {"finalStatus": "Completed", "variables": {"globals": globals_}}})
 
 
-def _last_run(monkeypatch, raw):
-    monkeypatch.setattr(flow_check, "_LAST_DEBUG_RAW", raw)
+def _last_run(monkeypatch, *raws):
+    monkeypatch.setattr(flow_check, "_DEBUG_ATTEMPT_RAWS", list(raws))
 
 
 def _journal(sandbox):
@@ -77,6 +77,14 @@ def test_an_unparseable_run_journals_the_response_shaped_post(sandbox, monkeypat
     _last_run(monkeypatch, f"timeout, partial stdout {json.dumps(_response())} cut off {{")
     slack_journal.journal_last_debug()
     assert _journal(sandbox) == [(CHANNEL, TS)]
+
+
+def test_a_retried_run_journals_the_earlier_attempts_post(sandbox, monkeypatch):
+    first = _envelope({f"{SEND_ID}.output": _response()})
+    second = _envelope({f"{SEND_ID}.output": _response(OTHER_TS)})
+    _last_run(monkeypatch, first, second)
+    slack_journal.journal_last_debug()
+    assert _journal(sandbox) == [(CHANNEL, TS), (CHANNEL, OTHER_TS)]
 
 
 def test_decoys_are_not_journaled(sandbox, monkeypatch):

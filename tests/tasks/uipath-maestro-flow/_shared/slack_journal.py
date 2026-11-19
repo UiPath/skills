@@ -1,8 +1,9 @@
 """Journal of the Slack messages a grader's own debug runs posted.
 
-`_setup/teardown_slack_posts.py` deletes them in post_run. The journal is
-written even when the run fails, so a post is not left behind in
-#coding-agent-testing.
+`_setup/teardown_slack_posts.py` deletes them in post_run. Every attempt of a
+debug is read, and the journal is written even when the check fails. Still left
+in #coding-agent-testing: posts from an attempt with no readable outputs or a
+CLI timeout, and the agent's own test runs.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from _shared.flow_check import (
     _connector_node_ids,
     _get_ci,
     _parse_json,
-    get_last_debug_raw,
+    get_debug_attempt_raws,
 )
 
 JOURNAL = Path(".slack-posts.jsonl")
@@ -94,12 +95,12 @@ def read_journal(path: Path = JOURNAL) -> list[Post]:
 
 
 def journal_last_debug() -> None:
-    raw = get_last_debug_raw()
-    if not raw:
+    raws = [raw for raw in get_debug_attempt_raws() if raw]
+    if not raws:
         return
 
     try:
-        posts = _send_posts(raw)
+        posts = [post for raw in raws for post in _send_posts(raw)]
         known = set(read_journal())
         with JOURNAL.open("a", encoding="utf-8") as handle:
             for post in dict.fromkeys(posts):

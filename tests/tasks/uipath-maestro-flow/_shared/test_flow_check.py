@@ -962,6 +962,16 @@ def test_run_debug_retries_transient_504_then_completes(monkeypatch):
     assert flow_check._get_ci(payload, "finalStatus") == "Completed"
 
 
+def test_run_debug_keeps_every_attempts_stdout(monkeypatch):
+    _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_TRANSIENT_504, _COMPLETED]
+
+    _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_COMPLETED]
+
+
 def test_run_debug_does_not_retry_real_fault(monkeypatch):
     """A run that returns exit 0 but did not complete is a real flow fault —
     fail immediately, no retry."""
