@@ -35,6 +35,20 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+<!-- RULE:case.action.names-app -->
+- An action task opens an Action App, and `.action({ ... })` with no `app`
+  names none. In a plan that binds any other resource, `case check` warns
+  `STRICT_BINDINGS_TASK_ABSENT` on it (SDK with builder-sdk#2184) and
+  `case validate --strict` fails: the task cannot run. Name the app:
+
+  ```ts
+  .action({ title: 'Approve', recipient: 'approver@corp.com', app: { name: 'ApprovalApp', folder: 'Shared' } })
+  ```
+
+  If the app is not published yet, write `t.unresolved('action')` instead and
+  fill the task in once it is; do not invent an app name. Brownfield: a
+  decompiled quick form (an inline form, no app) is fine as is.
+
 ## Action recipients and the go-live trap
 
 <!-- RULE:case.recipient.externalize -->
