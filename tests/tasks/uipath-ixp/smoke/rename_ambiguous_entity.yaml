@@ -48,8 +48,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Case-insensitive: a list that labels its candidates "Project title", "Field group" and "Field"
-  # names all three, and file_contains has no case option.
+  # A regex because file_contains is case-sensitive: "Project title" / "Field group" / "Field"
+  # names all three candidates. All three words, any order, any case.
   - type: file_matches_regex
     description: "The question surfaces the discovered three-way collision — names the project, the group, and the field as candidates"
     path: "clarification.txt"

@@ -107,8 +107,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The hint's trap. The confirm above does not exclude it: an agent can confirm and also
-  # write its own value.
+  # The hint's trap: writing a hand-read value back. The confirm check above still passes an
+  # agent that confirms and also does this.
   - type: cli_called
     description: "Task 2: did NOT write its own value for f-001 via --corrections (Critical Rule #8)"
     verb: "ixp labellings confirm"
