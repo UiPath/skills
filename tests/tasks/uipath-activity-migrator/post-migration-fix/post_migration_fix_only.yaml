@@ -77,7 +77,7 @@ success_criteria:
   # The fix-only entry never re-migrates; the project is already Windows.
   - type: command_not_executed
     description: "Agent did not run the migrator on an already-migrated project"
-    command_pattern: 'UiPath\.Upgrade\.exe'
+    command_pattern: 'UiPath\.Upgrade\.exe|\brpa\s+project\s+migrate\s+(?:analyze|upgrade|bulk)\b'
     weight: 1.5
     pass_threshold: 1.0
 

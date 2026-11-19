@@ -49,8 +49,8 @@ success_criteria:
 
   # Rule 1: the tool never runs here, through any route.
   - type: command_not_executed
-    description: "Agent never invoked the migrator, directly or through wine or dotnet"
-    command_pattern: 'UiPath\.Upgrade\.(exe|dll)|\bwine\b'
+    description: "Agent never invoked the migrator, directly, through uip, or through wine or dotnet"
+    command_pattern: 'UiPath\.Upgrade\.(exe|dll)|\bwine\b|\brpa\s+project\s+migrate\b'
     weight: 3.0
     pass_threshold: 1.0
 
