@@ -6,13 +6,13 @@ task_id: skill-hitl-e2e-apptask-brownfield
 description: >
   Authoring E2E test (AppTask surface): agent inserts a HITL node backed by an
   existing deployed Action App into a brownfield flow. Tests the full AppTask
-  authoring path: credentials from ~/.uipath/.auth, solution context resolution,
+  authoring path: session details from uip login status, solution context resolution,
   app search, retrieve-configuration, resource file writing, debug overwrites,
   node JSON with inputs.type=custom. Does not deploy or execute the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga]
 skip: true
-# Blocked: requires live tenant with a deployed Action App and ~/.uipath/.auth
-# credentials. Cannot be run in tempdir sandbox without real infrastructure.
+# Blocked: requires live tenant with a deployed Action App and a uip login.
+# Cannot be run in tempdir sandbox without real infrastructure.
 # Unblock when a shared staging app + tenant are available for CI.
 
 run_limits:

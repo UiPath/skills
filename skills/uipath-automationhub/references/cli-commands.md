@@ -8,7 +8,7 @@ The CLI wraps the same Open API endpoints as [`api-endpoints.md`](api-endpoints.
 
 `uip` resolves credentials itself, in this order:
 1. **Delegate runtime env-auth**: the Delegate injects `UIPATH_CLI_AUTH_TOKEN` + org/tenant vars; `uip` consumes them natively. No setup.
-2. **`uip login` session** (`~/.uipath/.auth`).
+2. **`uip login` session** (check it with `uip login status --output json`).
 
 If a command fails with an authentication error, tell the user to run `uip login` — never ask for or handle a raw token yourself.
 

@@ -1,52 +1,38 @@
-# Auth Context — `~/.uipath/.auth`
+# Auth Context — `uip login status`
 
-Every capability in this skill reads tenant, org, and token identifiers from the `uip` CLI auth file. This is the canonical source — never decode JWTs or ask the user when the file is available.
-
-## File location
-
-- Linux / macOS: `~/.uipath/.auth`
-- Windows: `C:\Users\<user>\.uipath\.auth`
-
-## Format
-
-`KEY=VALUE` per line (env-style, **NOT** JSON). Written by `uip login`, kept current by the CLI.
+Every capability in this skill reads tenant and organization identifiers from `uip login status --output json`. This is the canonical source — never decode JWTs, never read the CLI's credentials file (it holds the access and refresh tokens), and never ask the user for values the command returns.
 
 ## Read recipe
 
 ```bash
-AUTH_FILE="$HOME/.uipath/.auth"
-UIPATH_URL=$(grep               '^UIPATH_URL='                "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_ORGANIZATION_NAME=$(grep '^UIPATH_ORGANIZATION_NAME='  "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_ORGANIZATION_ID=$(grep   '^UIPATH_ORGANIZATION_ID='    "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_TENANT_NAME=$(grep       '^UIPATH_TENANT_NAME='        "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_TENANT_ID=$(grep         '^UIPATH_TENANT_ID='          "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_ACCESS_TOKEN=$(grep      '^UIPATH_ACCESS_TOKEN='       "$AUTH_FILE" | cut -d'=' -f2-)
+uip login status --output json
 ```
+
+Read the values from the JSON output; none of them is a secret.
 
 ## Available fields
 
-| Key | Example | Used by |
+| Field | Example | Used by |
 |---|---|---|
-| `UIPATH_URL` | `https://cloud.uipath.com` | principals-lookup (URL construction) |
-| `UIPATH_ORGANIZATION_NAME` | `procodeapps` | principals-lookup (URL path segment) |
-| `UIPATH_ORGANIZATION_ID` | `3aa10965-a82d-4d9e-8366-0eff8e87bf7a` | principals-lookup (Directory Search GUID) |
-| `UIPATH_TENANT_NAME` | `DefaultTenant` | display / audit records |
-| `UIPATH_TENANT_ID` | `edb2c1a2-246e-4cd3-a5f1-08aea1cbecec` | `deployment tenant configure/get` target, diagnosis tenant fetch |
-| `UIPATH_ACCESS_TOKEN` | `eyJ...` (JWT) | Raw API calls (principals lookup, until CLI wraps it) |
-| `UIPATH_REFRESH_TOKEN` | `...` | Do not use — CLI manages refresh |
+| `Data.Status` | `Logged in` | Preflight check |
+| `Data.BaseUrl` | `https://cloud.uipath.com` | Tenant-intent validation, display |
+| `Data.Organization` | `procodeapps` | Organization name — display, confirmation gates |
+| `Data.OrganizationId` | `3aa10965-a82d-4d9e-8366-0eff8e87bf7a` | `organizationId` in a `PolicyDefinition` |
+| `Data.Tenant` | `DefaultTenant` | Tenant name — display, audit records |
+| `Data.TenantId` | `edb2c1a2-246e-4cd3-a5f1-08aea1cbecec` | `tenantId` in a `PolicyDefinition`, `deployment tenant configure/get` target, diagnosis tenant fetch |
+| `Data.Identity` | `admin@example.com` | "Applied by" line in audit records |
+
+When a profile is active (`--profile <name>`), pass the same flag to `uip login status` so the values match the login the other commands use.
 
 ## Preflight check
 
-Before any capability runs, verify:
-
-1. `uip login status --output json` returns `Data.Status == "Logged in"`.
-2. `~/.uipath/.auth` exists and `UIPATH_TENANT_ID` is non-empty.
+Before any capability runs, verify that `uip login status --output json` returns `Data.Status == "Logged in"` and a non-empty `Data.TenantId`.
 
 If either fails, halt and ask the user to run `uip login` (or `uip login --authority "<AUTHORITY_URL>"` for a non-default host).
 
 ## Tenant-intent validation (Apply / Advise / Diagnose)
 
-When the user's prompt names a specific tenant (e.g., *"on staging tenant"*, *"in production"*, *"apply to the prod tenant"*), compare their named tenant against `UIPATH_TENANT_NAME` and `UIPATH_URL` **before** taking any mutation action.
+When the user's prompt names a specific tenant (e.g., *"on staging tenant"*, *"in production"*, *"apply to the prod tenant"*), compare their named tenant against `Data.Tenant` and `Data.BaseUrl` **before** taking any mutation action.
 
 Detection: match the named tenant against these substrings — `staging`, `prod`, `production`, `alpha`, `dev`, `development`, `sandbox`, `qa`, `test`, or any explicit tenant display name the user gives (e.g., *"MedCore-Prod"*).
 

@@ -9,7 +9,7 @@ Removes all policy deployments configured by the compliance standard.
 ## Check current state first
 
 ```bash
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
 uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json
 ```
 

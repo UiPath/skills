@@ -220,7 +220,7 @@ Resource Catalog tags are tenant-scoped labels that feed `selectors[].tags.value
 uip admin rcs tag list --output json
 ```
 
-With no `--tenant`, the command targets the tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` is read from `~/.uipath/.auth`). This default is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
+With no `--tenant`, the command targets the tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` is read from `uip login status --output json`). This default is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
 
 | Flag | Required? | Purpose |
 |------|-----------|---------|
@@ -250,16 +250,12 @@ With no `--tenant`, the command targets the tenant in the current `uip login` co
 
 ### Tenant alignment
 
-The access-policy `tenantId` is read from `~/.uipath/.auth` (`UIPATH_TENANT_ID`) and pinned at `create` time — the policy can only ever resolve tags from **that** tenant at evaluation.
+The access-policy `tenantId` is read from `uip login status --output json` (`Data.TenantId`) and pinned at `create` time — the policy can only ever resolve tags from **that** tenant at evaluation.
 
 - **Default (no `--tenant`)** — verify tags for the in-flight policy. Use this for every Phase 1 / Phase 2 confirmation prompt.
 - **`--tenant <OTHER_NAME>`** — comparison only (e.g. "do these tag names also exist in our staging tenant?"). Never use a result from another tenant as evidence that a tag will work in the policy's tenant. If the user explicitly asks to check a different tenant, run the call but surface a one-line warning: `Tags from <OTHER_NAME> do not affect a policy authored in <POLICY_TENANT>; copy the tag in the Resource Catalog of <POLICY_TENANT> if it is missing there.`
 
-To recover the policy's tenant name (for the warning above) without echoing the bearer token:
-
-```bash
-grep "^UIPATH_TENANT_NAME=" ~/.uipath/.auth | cut -d= -f2
-```
+The policy's tenant name (for the warning above) is `Data.Tenant` in `uip login status --output json`.
 
 ---
 

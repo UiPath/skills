@@ -9,10 +9,15 @@ This is the shared auth + endpoint catalog for both flows — [`publish-process.
 ### Getting the cloud token + org/tenant (in priority order)
 
 1. **Runtime env-auth (preferred — this is how UiPath Delegate provides it).** The runtime runs `uip` in a virtual shell with `UIPATH_CLI_ENABLE_ENV_AUTH=true` and sets `UIPATH_CLI_AUTH_TOKEN` (the user's cloud bearer token) plus `UIPATH_CLI_ORGANIZATION_NAME` / `UIPATH_CLI_TENANT_NAME` (and `..._ID` variants). If `UIPATH_CLI_AUTH_TOKEN` is set, use it as the bearer and take org/tenant from those vars. Base URL defaults to `https://cloud.uipath.com` unless the environment specifies another. *(If a parent `uip` process instead exported `UIPATH_ACCESS_TOKEN` + `UIPATH_URL` — the `{base}/{org}/{tenant}` shape — use those.)*
-2. **Logged-in `uip` session.** Otherwise, if the user has run `uip login`, read `~/.uipath/.auth` (JSON). Use its `accessToken`, `baseUrl`, `organizationName`, `tenantName`. If the file is missing or has no `accessToken`, tell the user to run `uip login` (and `uip login tenant set <name>` to pick the tenant).
-3. **User-provided (last resort).** Ask the user to paste a cloud bearer token plus their **org** and **tenant** slugs (the two path segments after the host in their AH URL).
+2. **Logged-in `uip` session.** Otherwise run `uip login status --output json` and use `Data.BaseUrl`, `Data.Organization`, `Data.Tenant`. When `Data.Status` is not `Logged in`, tell the user to run `uip login` (and `uip login tenant set <name>` to pick the tenant). Take the token from `uip login refresh --output json` (`Data.AccessToken`). Never read the CLI's credentials file.
 
-Never fall back to an admin OpenAPI token. If none of the above yields a token, stop and explain that the skill needs the user's cloud session (`uip login`) or a host-provided token.
+Set `$ACCESS_TOKEN` in the same shell invocation as each request, and never print it:
+
+```bash
+ACCESS_TOKEN=${UIPATH_CLI_AUTH_TOKEN:-$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')}
+```
+
+Never run `uip login refresh --output json` on its own: its output includes the token. Never ask the user to paste a token, and never fall back to an admin OpenAPI token. If neither source yields a token, stop and explain that the skill needs the user's cloud session (`uip login`) or a host-provided token.
 
 ### Base URL
 
@@ -33,7 +38,7 @@ e.g. `https://cloud.uipath.com/acme/prod/automationhub_/api/v1/openapi`. Always 
 
 ### Token expiry
 
-Cloud access tokens are short-lived. If any call returns **401** and the token came from `~/.uipath/.auth`, tell the user to run `uip login` again (or re-provide a token) and retry.
+Cloud access tokens are short-lived. If any call returns **401** with a `uip login` session, re-run it (its `uip login refresh` renews the token); if it still fails, tell the user to run `uip login` again and retry.
 
 ## Endpoints used by this skill
 

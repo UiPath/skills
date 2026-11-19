@@ -14,30 +14,27 @@ Before writing the node JSON, resolve the app and register it with the solution.
 
 ### Step 1 — Resolve solution context and credentials
 
-**Read credentials from the active `uip` session:**
+**Read session details from the active `uip` session** — never read, `cat`, or `source` the CLI's credentials file:
 
 ```bash
-source "$HOME/.uipath/.auth"
-# Variables now available:
-# UIPATH_ACCESS_TOKEN       — bearer token
-# UIPATH_URL                — e.g. https://cloud.uipath.com
-# UIPATH_ORGANIZATION_NAME  — org name (slug)
-# UIPATH_ORGANIZATION_ID    — org UUID
-# UIPATH_TENANT_NAME
-# UIPATH_TENANT_ID
-# UIPATH_PROJECT_ID
+uip login status --output json
 ```
 
-Map to working variables:
+Map to working variables (`Data.Status` must be `Logged in`; otherwise ask the user to run `uip login`):
 
 | Variable | Source |
 |---|---|
-| `BASE_URL` | `$UIPATH_URL` |
-| `ORG_NAME` | `$UIPATH_ORGANIZATION_NAME` |
-| `ORG_ID` | `$UIPATH_ORGANIZATION_ID` |
-| `TENANT_ID` | `$UIPATH_TENANT_ID` |
-| `ACCESS_TOKEN` | `$UIPATH_ACCESS_TOKEN` |
-| `USER_ID` | `sub` claim — base64url-decode the middle segment of `ACCESS_TOKEN`, parse JSON, read `sub` |
+| `BASE_URL` | `Data.BaseUrl` |
+| `ORG_NAME` | `Data.Organization` |
+| `ORG_ID` | `Data.OrganizationId` |
+| `TENANT_ID` | `Data.TenantId` |
+| `USER_ID` | `Data.UserId` |
+
+**Bearer token** — set `ACCESS_TOKEN` in the same shell invocation as each request below, and never print it. Never run `uip login refresh --output json` on its own: its output includes the token.
+
+```bash
+ACCESS_TOKEN=$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')
+```
 
 **Resolve solution context:**
 
