@@ -43,7 +43,7 @@ reference:
 pre_run:
   - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-staged" python3 _setup/cleanup_exclusion_marker.py'
     timeout: 120
-  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-staged-before" EXCL_RENAME_BASE="ce-audit-excl-staged-after" EXCL_STATUS="Success" EXCL_INACTIVE=1 python3 _setup/setup_exclusion_rule.py'
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-staged-before" EXCL_RENAME_BASE="ce-audit-excl-staged-after" EXCL_STATUS="Success" EXCL_INACTIVE=1 EXCL_TYPE_SLOT=3 python3 _setup/setup_exclusion_rule.py'
     timeout: 120
 
 post_run:
