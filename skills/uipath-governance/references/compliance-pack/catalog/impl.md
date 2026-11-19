@@ -66,7 +66,7 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `cata
 ## List currently configured standards
 
 ```bash
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
 uip gov compliance-packs state list tenant $TENANT_ID --output json
 ```
 

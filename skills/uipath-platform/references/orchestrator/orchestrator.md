@@ -96,7 +96,7 @@ The CLI uses GUID keys for all entity references. Numeric IDs are never exposed 
 
 ## REST API Fallback
 
-When the CLI does not cover an operation, you can fall back to the Orchestrator REST API using the access token stored in `~/.uipath/.auth`. Always check `uip or --help` first — most operations are covered by the CLI, and a command is safer and more consistent than hand-rolled REST. Only reach for REST when there is genuinely no command for what you need (and consider reporting the gap so the CLI can cover it).
+When the CLI does not cover an operation, you can fall back to the Orchestrator REST API using the token from `uip login refresh --output json` (`Data.AccessToken`; base URL, organization and tenant from `uip login status --output json`). Capture the token into a shell variable and use it in the same shell invocation; never print it, write it to a file, or ask the user to paste one. Always check `uip or --help` first — most operations are covered by the CLI, and a command is safer and more consistent than hand-rolled REST. Only reach for REST when there is genuinely no command for what you need (and consider reporting the gap so the CLI can cover it).
 
 REST callers are subject to the same per-tenant rate limits and export quotas as the CLI. Honor `Retry-After` on a 429. See [api-limits.md](api-limits.md).
 
