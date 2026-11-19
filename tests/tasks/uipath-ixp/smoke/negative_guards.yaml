@@ -97,7 +97,7 @@ success_criteria:
   # The prompt carries the document text, because every uip call fails here, `documents
   # download` too, and the labelling guide skips a document it cannot download.
   - type: cli_called
-    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned (Critical Rules #8, #19)"
+    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned (Critical Rules #8, #10, #18)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
@@ -110,7 +110,7 @@ success_criteria:
   # The hint's trap: writing a hand-read value back. The confirm check above still passes an
   # agent that confirms and also does this.
   - type: cli_called
-    description: "Task 2: did NOT write its own value for f-001 via --corrections (Critical Rule #8)"
+    description: "Task 2: did NOT write its own value for f-001 via --corrections (Critical Rules #8, #9, #10)"
     verb: "ixp labellings confirm"
     tool: "uip"
     flags:
@@ -145,7 +145,7 @@ success_criteria:
   # Names the document: without it, confirming f-002 on Task 2's doc-abc-123 — or on
   # nothing at all, since document-id is optional on `confirm` — earned Task 3.
   - type: cli_called
-    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456, pinning the reviewed version (Critical Rule #19)"
+    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456, pinning the reviewed version (Critical Rule #18)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-def-456"]
@@ -172,7 +172,7 @@ success_criteria:
 
   # Task 5: mark-missing is only valid when IXP also predicted empty.
   - type: cli_called
-    description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #12)"
+    description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #11)"
     verb: "ixp labellings mark-missing"
     tool: "uip"
     flags:
@@ -204,7 +204,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Task 6: entered the metrics flow with the project Name - list-models resolves the version first (Critical Rules #7, #21)"
+    description: "Task 6: entered the metrics flow with the project Name - list-models resolves the version first (Critical Rules #7, #20)"
     verb: "ixp projects list-models"
     tool: "uip"
     positional: ["quarterly_reports-7b2c-ixp"]
