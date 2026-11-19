@@ -39,17 +39,28 @@ What to look for:
 
 ## Investigation
 
-1. **Confirm the trigger type, and resolve a name to a key.** Event triggers are
-   folder-scoped, so a folder is required.
+1. **Get the trigger key.** Everything below needs it, and event triggers are
+   folder-scoped, so a folder is required too.
 
-   ```bash
-   uip or triggers list --type event --folder-path "<folder>" --output json
-   ```
+   - **The user gave a key** — go to step 2. `uip is trigger-traces list --trigger-key`
+     validates the type itself: it fails with `not an Integration Service event trigger`
+     and names the real type when the key belongs to a time, queue or HTTP trigger.
+   - **The user gave only a name** — try to resolve it:
 
-   Match on `Name` to get `Key`. If the user gave a key already, confirm it is an event
-   trigger — `uip is trigger-traces list --trigger-key` fails with
-   `not an Integration Service event trigger` and names the real type when it is not.
-   A time, queue or HTTP trigger ends this playbook: use
+     ```bash
+     uip or triggers list --type event --folder-path "<folder>" --output json
+     ```
+
+     then match on `Name` to read `Key`.
+
+   **`--type event` exists only on CLI builds that include cli#5902.** On a build
+   without it the command answers `Invalid trigger type: 'event'`. That is not a
+   diagnosis — it means the name cannot be resolved here. Ask the user to copy the key
+   from Orchestrator → folder → **Triggers** → **Event triggers**, and continue from
+   step 2. Do not substitute `--type api`: that reads HTTP triggers, a different store,
+   and will report the trigger as missing.
+
+   A time, queue or HTTP trigger ends this playbook — use
    `uip or triggers history <key> --folder-path "<folder>" --output json` for its failed
    fire attempts instead.
 

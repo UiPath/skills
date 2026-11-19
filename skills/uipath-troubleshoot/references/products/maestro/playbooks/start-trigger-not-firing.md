@@ -67,6 +67,12 @@ What to look for:
    list them for the user and confirm which one the missing events should have hit
    rather than assuming the first.
 
+   **`--type event` exists only on CLI builds that include cli#5902.** On a build
+   without it the command answers `Invalid trigger type: 'event'`, and no other CLI
+   command lists event triggers. Ask the user for the trigger key from Orchestrator →
+   folder → **Triggers** → **Event triggers**, then continue from step 3 — the rest of
+   this playbook needs the key, not the process.
+
 3. **Read the traces for the reported window.** `--source maestro` is what lets this
    authorize without a folder-scoped grant.
 
