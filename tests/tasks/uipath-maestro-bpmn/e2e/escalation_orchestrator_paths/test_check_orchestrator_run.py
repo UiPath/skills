@@ -116,10 +116,9 @@ def test_wrong_severity_fails():
 
 @pytest.mark.parametrize(
     "value",
-    ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "Draft, no edits required",
-     "Draft ready, not sent", "Draft - no review needed", "drafted", "true", "Yes", "YES",
-     "Response required", "Response", "response needed", "Draft, skipped review", "Draft, omitted PII",
-     "Drafted response, skipped legal review", "Draft - null check passed"],
+    ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "drafted", "true", "Yes", "YES",
+     "Response required", "Response", "response needed", "DraftRequired", "DraftResponse", "draftRequired",
+     "Auto-reply", "AI-generated reply", "Draft", "maybe", "pending"],
 )
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]
@@ -141,7 +140,9 @@ def test_sev3_needs_no_draft_response():
      "draft_response_not_needed", "Response not required", "none required", "skipped", "false", "No response",
      "Not required", "Not needed", "no", "No.", None, "", "   ", "-", "nothing", "nil", "empty", "Nil", "Empty",
      "draft response: none", "Draft: no", "draft - no", "Draft = none", "Draft response: false", "response: no",
-     "Response: N/A", "Response none", "Response is none", "Response (none)", "Response: null", "Response skipped", "Response omitted"],
+     "Response: N/A", "Response none", "Response is none", "Response (none)", "Response: null", "Response skipped", "Response omitted",
+     "NoDraftNeeded", "noDraftRequired", "NoReply", "Draft not generated", "Skip draft", "SkipDraft",
+     "No automatic response", "None (Sev3)", "No reply", "Not required for Sev3", "Draft never sent", "no_reply"],
 )
 def test_a_negated_response_mode_reads_as_none(value):
     triage = next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")
@@ -162,7 +163,7 @@ def test_a_process_that_never_declares_response_mode_fails_a_none_case(tmp_path)
         checker.verify_case(process, checker.slack_ids(process), triage, _debug(triage), variables)
 
 
-@pytest.mark.parametrize("value", ["maybe", "pending", "draft or none", "None or draft", "Draft/None", "draft|none", "none | draft",
+@pytest.mark.parametrize("value", ["draft or none", "None or draft", "Draft/None", "draft|none", "none | draft",
                                    "Draft / No", "response/none"])
 def test_an_unrecognized_response_mode_matches_neither_mode(value):
     for case in (SEED["cases"][0], next(c for c in SEED["cases"] if c["expected"]["escalationPath"] == "duplicate")):
@@ -238,6 +239,56 @@ def test_main_runs_every_case(tmp_path, monkeypatch):
     monkeypatch.setattr(checker, "fetch_variables", lambda i: (_variables(state["case"]), ""))
     checker.cases()
     assert sent == [c["inputs"] for c in seeded]
+
+
+def _journalled(tmp_path) -> set:
+    path = tmp_path / ".created-ids.jsonl"
+    if not path.is_file():
+        return set()
+    return {tuple(json.loads(line)["value"]) for line in path.read_text().splitlines()}
+
+
+def _orchestrator_sandbox(tmp_path, monkeypatch, seeded, **variable_overrides):
+    project = tmp_path / "CustomerEscalationOrchestrator" / "CustomerEscalationOrchestrator"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text('{"Name": "CustomerEscalationOrchestrator"}')
+    (project / "Process.bpmn").write_text(BPMN.read_text())
+    (tmp_path / "seed.json").write_text(json.dumps({"cases": seeded}))
+    monkeypatch.chdir(tmp_path)
+    state = {}
+
+    def fake_debug(project_dir, inputs, log, **k):
+        state["case"] = next(c for c in seeded if c["inputs"] == inputs)
+        return _debug(state["case"]), "inst"
+
+    monkeypatch.setattr(checker, "import_exact", lambda bpmn, project_dir, solution: project_dir)
+    monkeypatch.setattr(checker, "run_debug", fake_debug)
+    monkeypatch.setattr(
+        checker, "fetch_variables", lambda i: (_variables(state["case"], **variable_overrides), "")
+    )
+    monkeypatch.setattr(checker, "fetch_incidents", lambda i: ([], ""))
+
+
+def test_every_message_the_run_posts_is_journalled_for_teardown(tmp_path, monkeypatch):
+    _orchestrator_sandbox(tmp_path, monkeypatch, seed_module.build_seed()["cases"])
+    checker.cases()
+    assert _journalled(tmp_path) == {("C0B2FDZD1M3", "1763405123.456789")}
+
+
+def test_a_failed_case_still_journals_the_message_it_posted(tmp_path, monkeypatch):
+    _orchestrator_sandbox(tmp_path, monkeypatch, seed_module.build_seed()["cases"], severity="SevX")
+    with pytest.raises(checker.CheckFailure):
+        checker.cases()
+    assert _journalled(tmp_path) == {("C0B2FDZD1M3", "1763405123.456789")}
+
+
+def test_post_run_replays_the_journal_within_the_post_run_cap():
+    import yaml
+
+    task = yaml.safe_load((HERE / "escalation_orchestrator_paths.yaml").read_text())
+    sweeps = [step for step in task["post_run"] if "teardown_escalation.py" in step["command"]]
+    assert len(sweeps) == 1
+    assert sweeps[0]["timeout"] <= 300
 
 
 def test_slack_failure_advisory_accepts_the_real_process(tmp_path, monkeypatch):

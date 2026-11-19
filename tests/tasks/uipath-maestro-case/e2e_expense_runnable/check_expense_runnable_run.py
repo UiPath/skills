@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """ExpenseReimbursementRunnable: run the case once and check the path it took.
 
-Runs ``uip maestro case debug`` on the live tenant (``run_debug`` refreshes the
-solution resources first and requires finalStatus Completed), then reads the
-run's ``elementExecutions`` against the built caseplan:
+Runs ``uip maestro case debug`` on the live tenant (``debug_case`` refreshes the
+solution resources first). When the CLI stops polling before the run ends, the
+instance is followed to its end, then its ``elementExecutions`` are read against
+the built caseplan:
 
   - every happy-path stage the design names (Submission, Manager Approval,
     Finance Approval, Payment, Approved) ran to Completed, so the expense ended
@@ -26,8 +27,8 @@ from _shared.case_check import (  # noqa: E402
     existing_caseplan,
     find_stages,
     read_caseplan,
-    run_debug,
 )
+from _shared.case_run_path import debug_case, wait_for  # noqa: E402
 
 EXPECTED_CASEPLAN = os.path.join(
     "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
@@ -35,6 +36,9 @@ EXPECTED_CASEPLAN = os.path.join(
 HAPPY_PATH = ("Submission", "Manager Approval", "Finance Approval", "Payment", "Approved")
 NOT_ON_PATH = ("Rejected", "Withdrawn")
 DONE = {"completed", "successful"}
+DEBUG_TIMEOUT_S = 720
+WAIT_BUDGET_S = 900
+FINAL_STAGE = "Approved"
 # Element states that mean the element never started.
 NOT_STARTED = {"", "notstarted", "pending", "skipped"}
 FAILED = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
@@ -100,9 +104,22 @@ def check_path(plan: dict, payload: dict) -> list[str]:
     return happy
 
 
+def _run_ended(plan: dict):
+    def ended(executions: list[dict]) -> bool:
+        if any(FAILED.search(str(_get_ci(e, "status", "Status") or "")) for e in executions):
+            return True
+        statuses = stage_statuses(plan, {"elementExecutions": executions})
+        return any(s.lower() in DONE for s in statuses[_stage(statuses, FINAL_STAGE)])
+
+    return ended
+
+
 def main() -> None:
     plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
-    payload = run_debug(timeout=720)
+    run = wait_for(debug_case(timeout=DEBUG_TIMEOUT_S), _run_ended(plan), budget=WAIT_BUDGET_S)
+    if FAILED.search(run["status"]):
+        _fail(f"case did not complete (finalStatus={run['status']})")
+    payload = {"elementExecutions": run["executions"]}
     happy = check_path(plan, payload)
     print(
         "OK: the expense ran Completed through "

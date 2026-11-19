@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 TERMINAL = {"completed", "successful", "faulted", "failed", "cancelled", "canceled", "stopped"}
@@ -30,6 +31,10 @@ TASK_START_MARKERS = (
     os.path.join("_setup", ".task-start"),
     os.path.join("_setup", ".tenant-ids.map.json"),
 )
+LIST_LIMIT = 500
+LIST_DEADLINE_S = 180
+LIST_CALL_TIMEOUT_S = 120
+MAX_LIST_PAGES = 10
 
 
 def _uip(args: list[str], timeout: int = 120) -> dict:
@@ -70,8 +75,38 @@ def element_of(row: dict) -> str:
     return str(_ci(row, "elementId", "ElementId") or "")
 
 
+def _task_start_iso() -> str | None:
+    marker = next((m for m in TASK_START_MARKERS if os.path.exists(m)), None)
+    if marker is None:
+        return None
+    since = datetime.fromtimestamp(os.path.getmtime(marker), timezone.utc)
+    return since.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _list_instances():
+    """Instances started since this task did, following ``Pagination.NextPage``."""
+    since = _task_start_iso()
+    deadline = time.monotonic() + LIST_DEADLINE_S
+    cursor = None
+    for _page in range(MAX_LIST_PAGES):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return
+        args = ["maestro", "case", "instance", "list", "--limit", str(LIST_LIMIT)]
+        if since:
+            args += ["--from-date", f"{since}Z"]
+        if cursor:
+            args += ["--next-page", cursor]
+        payload = _uip(args, timeout=int(min(LIST_CALL_TIMEOUT_S, remaining)))
+        yield from (row for row in _rows(payload, "Items") if isinstance(row, dict))
+        pagination = _ci(payload, "Pagination") or {}
+        cursor = _ci(pagination, "NextPage")
+        if not _ci(pagination, "HasMore") or not cursor:
+            return
+
+
 def instance_folder_key(instance_id: str) -> str | None:
-    for item in _rows(_uip(["maestro", "case", "instance", "list"]), "Items"):
+    for item in _list_instances():
         if str(_ci(item, "InstanceId") or "") == instance_id:
             return _ci(item, "FolderKey")
     return None
@@ -125,17 +160,15 @@ def cancel_debug_instances() -> int:
     The tenant is shared, so an instance counts as ours only when it started
     after this task did and its element executions carry one of our stage ids.
     """
-    marker = next((m for m in TASK_START_MARKERS if os.path.exists(m)), None)
-    if marker is None:
+    since_iso = _task_start_iso()
+    if since_iso is None:
         print("case_run: no task-start marker; nothing to cancel")
         return 0
-    since = datetime.fromtimestamp(os.path.getmtime(marker), timezone.utc)
-    since_iso = since.strftime("%Y-%m-%dT%H:%M:%S")
     stage_ids = _our_stage_ids()
     if not stage_ids:
         print("case_run: no caseplan stage ids; cannot tell our instances apart")
         return 0
-    for item in _rows(_uip(["maestro", "case", "instance", "list"]), "Items"):
+    for item in _list_instances():
         if str(_ci(item, "Source") or "") != "Studio Web Debug":
             continue
         if str(_ci(item, "CreatedTimeUtc") or "") < since_iso:

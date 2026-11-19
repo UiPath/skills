@@ -110,16 +110,23 @@ def test_the_passing_run_passes() -> None:
     _check(PASSING, *_run(PASSING))
 
 
-def test_the_codex_plan_passes_the_static_checks() -> None:
-    """Its defect is invisible to the plan's shape; the run is what shows it."""
-    assert [t["displayName"] for t in grader.check_plan(FAILING)][2] == "Echo prior output"
+@pytest.fixture
+def unbound_consumers_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(grader, "assert_consumers_bound", lambda tasks: None)
 
 
+def test_the_codex_plan_fails_on_the_literal_its_consumer_binds() -> None:
+    with pytest.raises(SystemExit, match="'Consume colliding output' must bind APIInput1 to '=vars.estimatedAge2'"):
+        grader.check_plan(FAILING)
+
+
+@pytest.mark.usefixtures("unbound_consumers_allowed")
 def test_the_codex_run_fails_on_the_text_its_input_received() -> None:
     with pytest.raises(SystemExit, match="'Echo prior output' received APIInput1='vars.APIOutput1'"):
         _check(FAILING, *_run(FAILING))
 
 
+@pytest.mark.usefixtures("unbound_consumers_allowed")
 def test_an_unresolved_reference_on_an_agify_fed_task_fails() -> None:
     plan = copy.deepcopy(PASSING)
     consumer = next(t for t in _tasks(plan) if t["displayName"] == "Consume custom output")
@@ -246,3 +253,24 @@ def test_both_copies_null_fail_when_the_lookup_returned_an_age(
     payload, evidence = _run(PASSING, values)
     with pytest.raises(SystemExit, match="customReferenceCopy"):
         _check(PASSING, payload, _with_lookup_output(evidence, 31))
+
+
+@pytest.mark.parametrize(
+    ("consumer", "expected"),
+    [("Consume colliding output", "=vars.estimatedAge2"), ("Consume custom output", "=vars.collisionCopy")],
+)
+@pytest.mark.parametrize("bound", [None, "", "literal-seed", "=vars.estimatedAge", "vars.estimatedAge2"])
+def test_an_agify_fed_input_not_bound_to_its_producer_fails(consumer: str, expected: str, bound: object) -> None:
+    plan = copy.deepcopy(PASSING)
+    task = next(t for t in _tasks(plan) if t["displayName"] == consumer)
+    task["data"]["inputs"][0]["value"] = bound
+    with pytest.raises(SystemExit, match=f"'{consumer}' must bind APIInput1 to '{expected}'"):
+        grader.check_plan(plan)
+
+
+def test_an_agify_fed_task_without_the_input_row_fails() -> None:
+    plan = copy.deepcopy(PASSING)
+    task = next(t for t in _tasks(plan) if t["displayName"] == "Consume custom output")
+    task["data"]["inputs"] = []
+    with pytest.raises(SystemExit, match="'Consume custom output' must bind APIInput1"):
+        grader.check_plan(plan)

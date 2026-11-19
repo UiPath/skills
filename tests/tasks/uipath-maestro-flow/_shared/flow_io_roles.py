@@ -162,6 +162,14 @@ def fill_object(
     return _merge_under(fallback or {}, built), placed
 
 
+TEXT_TYPE = "string"
+
+
+def spelled_object(roles: dict[str, dict]) -> dict:
+    """Every role under each plain name fragment, for a flow whose reads of an object input a regex cannot see."""
+    return {k: spec["value"] for spec in roles.values() for k in spec["keywords"] if _PLAIN.match(k)}
+
+
 def map_inputs(
     flow: dict,
     roles: dict[str, dict],
@@ -178,6 +186,8 @@ def map_inputs(
     only a non-list. A file input gets `file_path`. A role counts as mapped
     when an input took it, or when an object input was filled with a non-empty
     `object_fallback` (which carries every role under its common spellings).
+    An object input whose read paths are not found, and no `object_fallback`,
+    gets `spelled_object` in its place.
     """
     inputs: dict = {}
     attachments: dict = {}
@@ -191,9 +201,12 @@ def map_inputs(
                 attachments[var["id"]] = file_path
             continue
         if var_type in ("object", "jsonschema"):
-            inputs[var["id"]], placed = fill_object(flow, var["id"], roles, object_fallback)
+            fallback = object_fallback
+            if fallback is None and not referenced_paths(flow, var["id"]):
+                fallback = spelled_object(roles)
+            inputs[var["id"]], placed = fill_object(flow, var["id"], roles, fallback)
             taken |= placed
-            carried = carried or bool(object_fallback)
+            carried = carried or bool(fallback)
             continue
         others.append(var)
     pairs = []
@@ -215,7 +228,12 @@ def map_inputs(
         inputs[var_id] = _coerce(roles[role]["value"], var_type)
         used_vars.add(var_id)
         taken.add(role)
-    return inputs, attachments, [] if carried else [r for r in roles if r not in taken]
+    missing = [r for r in roles if r not in taken]
+    free_text = [v for v in others if v["id"] not in used_vars and str(v.get("type") or "").lower() == TEXT_TYPE]
+    if missing and not carried and len(free_text) == 1:
+        inputs[free_text[0]["id"]] = json.dumps(spelled_object(roles))
+        return inputs, attachments, []
+    return inputs, attachments, [] if carried else missing
 
 
 def _named(payload: dict, name: str) -> Any:

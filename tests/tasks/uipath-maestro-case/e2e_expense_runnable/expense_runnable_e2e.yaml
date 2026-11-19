@@ -31,7 +31,7 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
 
 run_limits:
-  task_timeout: 4800
+  task_timeout: 8400  # turn 4800 + criteria 3420 + margin 180
   max_turns: 500
   turn_timeout: 4800
 
@@ -113,9 +113,8 @@ success_criteria:
     weight: 4.0
     pass_threshold: 1.0
 
-  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
-  # each with one transient-fault retry (4 x 720 s), plus refresh (2 x 120 s)
-  # and the retry sleeps (3 x 15 s).
+  # Worst case: refresh (180 s), two debug calls (2 x 720 s) and the retry sleep
+  # (15 s), then following the instance (900 s) plus one last read (420 s).
   - type: run_command
     description: "Effects: one harness-run uip maestro case debug reaches finalStatus=Completed, Submission, Manager Approval, Finance Approval, Payment and Approved each ran to Completed, the Rejected and Withdrawn lanes did not run, and no element failed"
     command: "python3 $REFERENCE_DIR/e2e_expense_runnable/check_expense_runnable_run.py"

@@ -11,6 +11,7 @@ instance helpers come from ``_setup/case_run.py``, which post_run runs.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -27,7 +28,6 @@ from case_run import (  # noqa: E402
     instance_executions,
     status_of,
 )
-from _shared import task_types  # noqa: E402
 from _shared.case_check import _get_ci as _ci  # noqa: E402
 
 CANCELLED = "Cancelled"
@@ -136,8 +136,16 @@ def wait_for(run: dict, done, *, budget: int = 480, every: int = 20) -> dict:
 
 HUMAN_TYPES = {"action", "wait-for-user"}
 WAITING_TYPES = {"wait-for-timer", "wait-for-connector"}
+TASK_TYPES_SNAPSHOT = os.path.join(CASE_ROOT, "_shared", "task_types.json")
+
+
+def _snapshot_authorable() -> list[dict]:
+    with open(TASK_TYPES_SNAPSHOT, encoding="utf-8") as snapshot:
+        return json.load(snapshot)["Data"]["Authorable"]
+
+
 AUTOMATED_TYPES = (
-    {entry["Type"] for entry in task_types.load()["Authorable"]} - HUMAN_TYPES - WAITING_TYPES
+    {entry["Type"] for entry in _snapshot_authorable()} - HUMAN_TYPES - WAITING_TYPES
 )
 STARTS_ON_ENTRY = {"current-stage-entered", "runs-sequentially"}
 CHAINED = "selected-tasks-completed"

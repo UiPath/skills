@@ -397,13 +397,31 @@ def test_invoice_approval_passes_when_the_reject_branch_returns_an_empty_documen
     assert r.returncode == 0, r.stdout + r.stderr
 
 
-def test_invoice_approval_fails_when_a_rejection_posts_through_a_shared_step(tmp_path):
+def test_invoice_approval_passes_when_a_shared_step_ran_on_a_rejection_with_rejected_outputs(tmp_path):
     scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
                                              "globals": {"status": "rejected", "sapDocumentNumber": ""}})
     r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", shared_posting_flow(), scenario)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_invoice_approval_fails_when_a_rejection_posts_through_a_shared_step(tmp_path):
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
+                                             "globals": {"status": "rejected", "sapDocumentNumber": "SAP-{invoiceNumber}"}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", shared_posting_flow(), scenario)
     assert r.returncode != 0
-    assert "posting step" in r.stdout + r.stderr
-    assert "ran after a rejection" in r.stdout + r.stderr
+    assert "must be empty after a rejection" in r.stdout + r.stderr
+
+
+def test_invoice_approval_passes_with_one_script_that_sets_both_outputs_on_either_decision(tmp_path):
+    script = ('const approved = $vars.financeApproval.output.decision === "approve"; '
+              'return { status: approved ? "posted" : "rejected", '
+              'sapDocumentNumber: approved ? "SAP-" + $vars.start.output.invoiceNumber : "" };')
+    flow = shared_posting_flow()
+    flow["nodes"] = [dict(n, inputs={"script": script}) if n["id"] == "postToSap" else n for n in flow["nodes"]]
+    scenario = dict(GOOD_INVOICE, on_reject={"executed": ["start", "financeApproval", "postToSap", "end"],
+                                             "globals": {"status": "rejected", "sapDocumentNumber": ""}})
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", flow, scenario)
+    assert r.returncode == 0, r.stdout + r.stderr
 
 
 def assembled_marker_flow(posting: dict, end_expression: str, edges: list[dict]) -> dict:
@@ -639,6 +657,20 @@ def test_find_run_task_stops_reading_tasks_at_the_deadline():
     assert reads == []
 
 
+def test_find_run_task_rereads_a_task_whose_first_read_failed():
+    rows = [{"Id": 7, "Status": "Unassigned", "Type": "AppTask", "FolderId": 42,
+             "CreatorJobKey": "00000000-0000-0000-0000-000000000000"}]
+    reads = iter([None, {"token": "run-1"}])
+
+    ids = live.RunIds(folder_id="42", job_key="52c347d7-d166-49f8-8480-f6fb55763afd")
+    task, notes = live.find_run_task(
+        ids, lambda _row, bundle: bundle["data"] == {"token": "run-1"}, time.monotonic() + live.TASK_POLL_SECONDS + 5, None,
+        lister=lambda *_a, **_k: rows, data_reader=lambda *_: next(reads), sleep=lambda _s: None,
+    )
+    assert task is not None, notes
+    assert task.task_id == "7"
+
+
 class FakeProc:
     def __init__(self, running: bool):
         self.running = running
@@ -705,3 +737,10 @@ def test_a_missing_uip_leaves_no_debug_dir_behind(tmp_path, monkeypatch):
     with pytest.raises(FileNotFoundError):
         live.start_debug(str(tmp_path), {}, 30)
     assert list(scratch.iterdir()) == []
+
+
+def test_each_graded_run_records_its_token_for_cleanup(tmp_path):
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), GOOD_INVOICE)
+    assert r.returncode == 0, r.stdout + r.stderr
+    tokens = (tmp_path / "Sol" / live.TOKENS_FILE).read_text().split()
+    assert len(tokens) == 2 and all(t.startswith("INV-") for t in tokens)

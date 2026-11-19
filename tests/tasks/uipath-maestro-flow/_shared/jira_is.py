@@ -201,16 +201,12 @@ def create_issue(conn_id: str, summary: str) -> str:
 
 
 def get_issue(conn_id: str, key: str) -> dict | None:
-    """Return the issue's `fields` dict (includes `summary`, `status`, and
-    `comment`), or None if it doesn't exist (404)."""
-    try:
-        type_id = issuetype_id(conn_id)
-    except RuntimeError:
-        return None  # the site has no such project or type, so no such issue can be read
+    """Return the issue's `fields` dict (includes `summary`, `issuetype`, `description`,
+    `status` and `comment`) for an issue of any type, or None if it doesn't exist (404)."""
     env = _run(
         "is", "resources", "run", "get", CONNECTOR, "curated_get_issue",
         "--connection-id", conn_id,
-        "--query", f"project={PROJECT_KEY}&issuetype={type_id}&issueId={key}",
+        "--query", f"project={PROJECT_KEY}&issueId={key}",
     )
     if env.get("Result") == "Failure":
         return None
@@ -222,14 +218,10 @@ def issue_absent(conn_id: str, key: str) -> bool:
     404). False when it exists OR when the read itself failed (transient 5xx /
     auth) — so a caller never treats an ambiguous read as proof of deletion.
     Distinct from :func:`get_issue`, which collapses every failure to ``None``."""
-    try:
-        type_id = issuetype_id(conn_id)
-    except RuntimeError:
-        return False  # the site has no such project or type, so no such issue can be read
     env = _run(
         "is", "resources", "run", "get", CONNECTOR, "curated_get_issue",
         "--connection-id", conn_id,
-        "--query", f"project={PROJECT_KEY}&issuetype={type_id}&issueId={key}",
+        "--query", f"project={PROJECT_KEY}&issueId={key}",
     )
     if str(env.get("Result", "")).lower() != "failure":
         return False  # a successful read means the issue still exists

@@ -29,6 +29,7 @@ sys.path.insert(0, _directory)
 from _shared.bpmn_live import (  # noqa: E402
     CheckFailure,
     delete_target_is_absent,
+    element_output_records,
     get_ci,
     payload_data,
     run_cli,
@@ -370,6 +371,18 @@ def record_created_id(kind: str, value) -> None:
             handle.write(json.dumps({"kind": kind, "value": value}) + "\n")
     except OSError:
         pass  # journalling is a cleanup backstop; never fail grading over it
+
+
+def journal_slack_posts(variables_data, element_ids) -> None:
+    """Journal the channel and ts each of these Slack steps returned in this run."""
+
+    for record in element_output_records(variables_data, tuple(sorted(element_ids))):
+        response = get_ci(record, "response")
+        if not isinstance(response, dict):
+            continue
+        channel, timestamp = get_ci(response, "channel"), get_ci(response, "ts")
+        if isinstance(channel, str) and isinstance(timestamp, str):
+            record_created_id("slack_message", [channel, timestamp])
 
 
 def read_journal(path: Path = JOURNAL) -> dict[str, list]:

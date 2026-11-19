@@ -40,8 +40,12 @@ reference:
 pre_run:
   - command: "python3 -c \"import json,uuid;p='ExpenseAppTask/ExpenseAppTask.uipx';d=json.load(open(p));d['SolutionId']=str(uuid.uuid4());json.dump(d,open(p,'w'),indent=2)\""
     timeout: 30
+  - command: python3 _setup/cleanup_hitl_runs.py mark
+    timeout: 30
 
 post_run:
+  - command: python3 _setup/cleanup_hitl_runs.py clean
+    timeout: 300
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 
@@ -70,7 +74,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "uip flow validate passes against the edited .flow file"
+    description: "uip maestro flow validate passes against the edited .flow file"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0

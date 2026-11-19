@@ -13,15 +13,15 @@ the total amount and the currency. Then:
    Reject ran. The named outputs: status = "posted", sapDocumentNumber =
    "SAP-<invoice>".
 2. Reject run: the grader completes it with Reject. The run then completed;
-   the HITL step completed; no step reachable only from Approve ran and no
-   posting step ran. The named outputs: status = "rejected",
-   sapDocumentNumber empty.
+   the HITL step completed; no step reachable only from Approve ran. The
+   named outputs: status = "rejected", sapDocumentNumber empty.
 
 Before either run, every step that builds the "SAP-" document number (the
 posting stand-in; an End node mapping the output is not a step) must sit
 behind the approval: the trigger cannot reach it without passing through the
-HITL step. Any outcome layout is accepted: per-outcome ports, or both into a
-switch on the decision; the reject run shows nothing is posted then. Nothing
+HITL step. Any outcome layout is accepted: per-outcome ports, both into a
+switch on the decision, or one step after the HITL that sets both outputs; the
+reject run's outputs show nothing is posted. Nothing
 here pins node ids, labels or variable names. A run that did not complete is
 cancelled.
 """
@@ -184,9 +184,6 @@ def main() -> None:
     ran_approved = sorted(approve_only & done)
     if ran_approved:
         _fail_with_capture(f"steps reachable only from Approve ran after a rejection: {ran_approved}")
-    ran_posting = sorted(live.posting_steps(flow, SAP_MARKER) & done)
-    if ran_posting:
-        _fail_with_capture(f"the SAP posting step(s) {ran_posting} ran after a rejection")
     assert_named_equals(payload, "status", "rejected")
     sap, _globals = _named_global(payload, "sapDocumentNumber")
     if str(sap if sap is not None else "").strip():

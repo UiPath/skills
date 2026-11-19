@@ -26,7 +26,9 @@ task's runtime inputs and the case variables by the names the SDD gives. The
 eight tasks must complete in the SDD's order. Static checks keep only what the
 SDD states (task names, the resources and folders, run once, no inline API
 project) and what any correct plan has (no unresolved `$xref`, unique task
-output ids); they accept any binding, id or output-row layout.
+output ids), plus the two agify-fed tasks binding their input to the producing
+task's output, since a null upstream passes any input; they accept any other
+binding, id or output-row layout.
 """
 
 from __future__ import annotations
@@ -86,6 +88,13 @@ UPSTREAM = {
     "Consume colliding output": ("Lookup colliding same name", "estimatedAge"),
     "Consume custom output": (None, "collisionCopy"),
 }
+# The task whose output row each agify-fed task consumes: (producer, output name).
+CONSUMES = {
+    "Consume colliding output": ("Lookup colliding same name", "estimatedAge"),
+    "Consume custom output": ("Consume colliding output", "collisionCopy"),
+}
+CONSUMED_FIELD = "APIInput1"
+VARS_PREFIX = "=vars."
 CASE_ID_PREFIX = "IOB"
 UNRESOLVED = re.compile(r"(^=?vars\.|\$xref\(|^=js:|^<-)")
 
@@ -166,6 +175,23 @@ def assert_sdd_output_contract() -> None:
         fail(f"sdd.md:{line_number} Outputs row was rewritten: {stripped}")
 
 
+def _output_reference(task: dict, output_name: str) -> str:
+    rows = (task.get("data") or {}).get("outputs") or []
+    row = one([r for r in rows if r.get("name") == output_name], f"{output_name!r} output of {task.get('displayName')!r}")
+    return VARS_PREFIX + str(row.get("id") or row.get("var"))
+
+
+def assert_consumers_bound(tasks: list[dict]) -> None:
+    """A null upstream passes any input at run time, so the binding is read from the plan."""
+    by_name = {t.get("displayName"): t for t in tasks}
+    for name, (producer, output_name) in CONSUMES.items():
+        expected = _output_reference(by_name[producer], output_name)
+        rows = (by_name[name].get("data") or {}).get("inputs") or []
+        bound = [r.get("value") for r in rows if r.get("name") == CONSUMED_FIELD]
+        if bound != [expected]:
+            fail(f"task {name!r} must bind {CONSUMED_FIELD} to {expected!r}, got {bound!r}")
+
+
 def check_plan(plan: dict) -> list[dict]:
     """The eight SDD tasks in SDD order, after the static checks."""
     assert_tasks_nested(plan)
@@ -191,6 +217,7 @@ def check_plan(plan: dict) -> list[dict]:
     duplicates = sorted({i for i in output_ids if output_ids.count(i) > 1})
     if duplicates:
         fail(f"task output ids collide: {duplicates}")
+    assert_consumers_bound(tasks)
     return chain
 
 

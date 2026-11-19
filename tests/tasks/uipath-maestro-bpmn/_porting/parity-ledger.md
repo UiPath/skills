@@ -206,7 +206,7 @@ The buckets the ports were chosen from. The ledger above supersedes a row once i
 | `multi_node/bellevue_weather/bellevue_weather.yaml` | HttpExecution sendTask + scriptTask + exclusiveGateway; debug via bpmn_live |
 | `multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml` | two DF reads in parallelGateway fork/join; no agent |
 | `multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml` | Data Fabric via Intsvc.ActivityExecution (uipath-dataservice); no agent |
-| `multi_node/slack_channel_description/slack_channel_description.yaml` | Intsvc.ActivityExecution Slack; Slack plumbing in e2e/customer_escalation_triage/escalation_is.py |
+| `multi_node/slack_channel_description/slack_channel_description.yaml` | Intsvc.ActivityExecution Slack; Slack plumbing in _setup/escalation_is.py |
 | `multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml` | HttpExecution + Slack ActivityExecution; live debug |
 
 ### Portable pending a feasibility probe (15)

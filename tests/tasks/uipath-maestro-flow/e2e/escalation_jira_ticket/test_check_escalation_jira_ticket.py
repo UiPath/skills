@@ -37,13 +37,14 @@ CREATE_NODE = {
         "detail": {
             "connector": "uipath-atlassian-jira",
             "endpoint": "/curated_create_issue",
-            "connectionId": "ac8506ff-65fd-4a7d-8698-c6a912134b11",
+            "connectionId": "00000000-0000-0000-0000-00000000a001",
             "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
             "bodyParameters": {"fields.project.key": "CE", "fields.issuetype.id": "11457"},
         }
     },
 }
-TASK = {"name": "Task"}
+TASK = {"name": "Task", "id": "11457", "subtask": False, "hierarchyLevel": 0}
+WORKSTREAM = {**TASK, "name": "Workstream", "id": "11456"}
 INS = [("senderEmail", "string"), ("senderDomain", "string"), ("emailSubject", "string"),
        ("emailBody", "string"), ("customerTier", "string"), ("isProductionDown", "boolean"),
        ("hasWorkaround", "boolean"), ("hasAttachments", "boolean"), ("matchType", "string"),
@@ -211,6 +212,14 @@ def test_fails_when_the_ticket_is_not_a_task(grader, issuetype):
     with pytest.raises(SystemExit) as exc:
         _check(grader, _payload())
     assert "is not a Task" in str(exc.value)
+
+
+def test_a_wrong_type_ticket_with_the_case_ref_is_still_journaled(grader, tmp_path):
+    grader.issues["CE-3481"]["issuetype"] = WORKSTREAM
+    with pytest.raises(SystemExit) as exc:
+        _check(grader, _payload())
+    assert "is not a Task (issue type 'Workstream')" in str(exc.value)
+    assert (tmp_path / ".created_keys").read_text().split() == ["CE-3481"]
 
 
 def test_a_missing_description_fails_as_not_holding_the_body(grader):

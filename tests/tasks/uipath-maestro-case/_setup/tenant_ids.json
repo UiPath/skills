@@ -10,7 +10,8 @@
     },
     "f5273a4d-d492-4bcd-a106-5a20bf89a3ef": {
       "connector": "uipath-atlassian-jira",
-      "folder": "uipath-maestro-flow"
+      "folder": "uipath-maestro-flow",
+      "name": "is-sandboxes-test@uipath.com-uipath-sandbox-380"
     },
     "6a817d24-cbbd-4389-b10d-4329214ffb8d": {
       "connector": "uipath-http-webhook",

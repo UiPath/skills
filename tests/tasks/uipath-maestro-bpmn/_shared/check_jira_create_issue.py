@@ -143,7 +143,7 @@ def _import_jira_is():
     seed.json/bpmn checks above, rather than an ImportError traceback here.
 
     This checker lives in `_shared/`, not the task dir, so `jira_is` is not a
-    sibling module (unlike escalation_is.py, imported from the task's own
+    sibling module (unlike escalation_is.py, imported from the shared
     `_setup/`). Grading runs with CWD at the sandbox root, where the task's
     `_setup/jira_is.py` is mounted -- the same file pre_run/post_run use.
     """

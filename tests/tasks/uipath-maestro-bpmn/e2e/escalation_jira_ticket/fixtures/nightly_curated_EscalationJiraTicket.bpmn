@@ -23,8 +23,8 @@
         <uipath:output id="jiraIssueKey" name="jiraIssueKey" type="string" elementId="done" />
       </uipath:variables>
       <uipath:bindings version="v1">
-        <uipath:binding id="jira" name="jira" type="string" default="ac8506ff-65fd-4a7d-8698-c6a912134b11" resource="Connection" resourceKey="ac8506ff-65fd-4a7d-8698-c6a912134b11" propertyAttribute="ConnectionId" />
-        <uipath:binding id="jiraFolder" name="jiraFolder" type="string" default="5da18ec0-7de1-4e57-aaf1-ddc8a369c199" resource="Connection" resourceKey="ac8506ff-65fd-4a7d-8698-c6a912134b11" propertyAttribute="folderKey" />
+        <uipath:binding id="jira" name="jira" type="string" default="00000000-0000-0000-0000-00000000a001" resource="Connection" resourceKey="00000000-0000-0000-0000-00000000a001" propertyAttribute="ConnectionId" />
+        <uipath:binding id="jiraFolder" name="jiraFolder" type="string" default="5da18ec0-7de1-4e57-aaf1-ddc8a369c199" resource="Connection" resourceKey="00000000-0000-0000-0000-00000000a001" propertyAttribute="folderKey" />
       </uipath:bindings>
       <uipath:migrationVersion version="21" />
     </bpmn:extensionElements>
@@ -64,7 +64,7 @@ return { severity: sev, engineeringNeeded: sev === "Sev1" || sev === "Sev2" };</
           <uipath:context>
             <uipath:input name="connectorKey" type="string" value="uipath-atlassian-jira" />
             <uipath:input name="connection" type="string" value="=bindings.jira" />
-            <uipath:input name="resourceKey" type="string" value="ac8506ff-65fd-4a7d-8698-c6a912134b11" />
+            <uipath:input name="resourceKey" type="string" value="00000000-0000-0000-0000-00000000a001" />
             <uipath:input name="folderKey" type="string" value="=bindings.jiraFolder" />
             <uipath:input name="objectName" type="string" value="curated_create_issue" />
             <uipath:input name="method" type="string" value="POST" />

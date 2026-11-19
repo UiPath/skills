@@ -243,6 +243,18 @@ def test_overcharge_fails_on_a_wrong_result(effects, flow, field, wrong, message
     assert message in str(exc.value)
 
 
+def test_overcharge_explanation_may_cite_the_invoice_and_credit(effects, flow):
+    why = "Credit of 4,950 on MCS-2026-04903 approved under SOP §5.4"
+    effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "why": why}))
+
+
+def test_overcharge_fails_when_only_the_explanation_cites_the_invoice_and_credit(effects, flow):
+    why = "Credit of 4,950 on MCS-2026-04903 approved under SOP §5.4"
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(ALL_NODES, {**POSTED, **APPROVED, "why": why, "draft": "Done."}))
+    assert "plain-text email" in str(exc.value)
+
+
 def test_overcharge_fails_when_the_posting_reply_is_for_the_uncleaned_number(effects, flow):
     with pytest.raises(SystemExit) as exc:
         effects.check_overcharge(flow, _payload(ALL_NODES, {
@@ -286,6 +298,11 @@ def test_overcharge_requires_financial_posting_function_not_any_api_workflow(eff
     with pytest.raises(SystemExit) as exc:
         effects.check_overcharge(_with_decoy_api_workflow(flow), _payload(executed, {**POSTED, **APPROVED}))
     assert "FinancialPostingFunction did not complete" in str(exc.value)
+
+
+def test_reject_passes_when_another_api_workflow_runs_before_the_analyst(effects, flow):
+    flow = _with_decoy_api_workflow(flow)
+    effects.check_reject(flow, _payload(["decoyApi"] + REJECT_PATH, REJECTED))
 
 
 def test_reject_passes_on_the_rejection_path(effects, flow):

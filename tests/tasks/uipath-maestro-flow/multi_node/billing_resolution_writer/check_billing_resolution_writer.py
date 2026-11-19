@@ -148,7 +148,7 @@ def check_slack_post(payload, outs, body):
     globals_ = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
     sent = [x for k, v in globals_.items() if str(k).endswith(".output") and ts in _leaves(v)
             for x in _leaves(v) if isinstance(x, str)]
-    if not any(re.match(r"^\W*" + re.escape(CASE_REF), x.strip()) for x in sent):
+    if not any(re.match(r"^\W*(?:(?i:subject)\s*:\s*)?" + re.escape(CASE_REF), x.strip()) for x in sent):
         _fail_with_capture(f"the posted Slack message does not start with the case reference {CASE_REF}")
     print(f"OK: Slack message {ts} posted to #coding-agent-testing, starting with {CASE_REF} and carrying the body")
 

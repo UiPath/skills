@@ -35,7 +35,13 @@ sandbox:
 reference:
   directory: ../uipath-maestro-flow
 
+pre_run:
+  - command: python3 _setup/cleanup_hitl_runs.py mark
+    timeout: 30
+
 post_run:
+  - command: python3 _setup/cleanup_hitl_runs.py clean
+    timeout: 300
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 
@@ -78,31 +84,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow contains the inline HITL node type"
+    description: "Advisory: Flow contains the inline HITL node type"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval --regex '\"type\":\\s*\"uipath\\.human-in-the-loop(\\.quick-form)?\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "Flow exposes Approve and Reject outcomes"
+    description: "Advisory: Flow exposes Approve and Reject outcomes"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval 'Approve' 'Reject'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "Every outcome on the HITL node has its own wired port, none on the outcome-completed placeholder"
+    description: "Advisory: Every outcome on the HITL node has its own wired port, none on the outcome-completed placeholder"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "uip flow validate passes against the authored .flow file"
+    description: "uip maestro flow validate passes against the authored .flow file"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0

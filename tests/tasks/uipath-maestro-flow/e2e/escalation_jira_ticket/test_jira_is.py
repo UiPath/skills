@@ -69,3 +69,34 @@ def test_delete_issue_structured_404_counts_as_gone(monkeypatch: pytest.MonkeyPa
         "Message": "Request failed with status code '404': Issue does not exist or you do not have permission to see it.",
     })
     assert jira_is.delete_issue("conn", "CE-1257") is True
+
+
+SHARED = HERE.parents[1] / "_shared" / "jira_is.py"
+WORKSTREAM = {"Result": "Success", "Data": {"fields": {"summary": "[TEST] ESC-1", "issuetype": {"name": "Workstream"}}}}
+
+
+def _load_shared() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("shared_jira_is", SHARED)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("load", [_load_module, _load_shared])
+def test_get_issue_reads_any_issue_type(monkeypatch: pytest.MonkeyPatch, load) -> None:
+    jira_is = load()
+    seen = _stub(monkeypatch, jira_is, WORKSTREAM)
+    fields = jira_is.get_issue("conn", "CE-9")
+    assert fields["issuetype"]["name"] == "Workstream"
+    (cmd,) = seen
+    assert "curated_get_issue" in cmd and "issuetype" not in " ".join(cmd)
+
+
+@pytest.mark.parametrize("load", [_load_module, _load_shared])
+def test_issue_absent_reads_any_issue_type(monkeypatch: pytest.MonkeyPatch, load) -> None:
+    jira_is = load()
+    seen = _stub(monkeypatch, jira_is, WORKSTREAM)
+    assert jira_is.issue_absent("conn", "CE-9") is False
+    (cmd,) = seen
+    assert "curated_get_issue" in cmd and "issuetype" not in " ".join(cmd)

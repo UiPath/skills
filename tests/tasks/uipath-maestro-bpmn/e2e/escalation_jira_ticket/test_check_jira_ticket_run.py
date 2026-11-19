@@ -136,10 +136,25 @@ def test_studio_web_process_passes_end_to_end(tmp_path, monkeypatch):
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
 
 
-def test_a_ticket_without_this_runs_correlation_id_fails_but_is_still_journalled(tmp_path, monkeypatch):
+def test_a_ticket_without_this_runs_correlation_id_fails_and_is_not_journalled(tmp_path, monkeypatch):
     _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue", summary="[Sev1] someone else's ticket")
     with pytest.raises(checker.CheckFailure, match="summary carries"):
         checker.main()
+    assert not (tmp_path / ".created_keys").exists()
+
+
+def test_only_the_key_owned_by_this_run_is_journalled(tmp_path, monkeypatch):
+    _sandbox(tmp_path, monkeypatch, SW, "createJiraIssue")
+    variables = _variables("createJiraIssue")
+    variables["Variables"][0]["Elements"].insert(
+        1, {"ElementId": "createJiraIssue", "Outputs": {"Response": {"id": "9", "key": "CE-9"}}}
+    )
+    monkeypatch.setattr(checker, "fetch_variables", lambda i: (variables, ""))
+    monkeypatch.setattr(
+        checker.jira_is, "get_issue",
+        lambda conn, key: {"summary": f"[Sev1] {CORR} down" if key == "CE-4242" else "an existing ticket", **TASK_IN_CE},
+    )
+    checker.main()
     assert (tmp_path / ".created_keys").read_text().split() == ["CE-4242"]
 
 

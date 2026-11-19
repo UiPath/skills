@@ -186,6 +186,13 @@ def test_a_slack_message_that_does_not_start_with_the_case_reference_fails(sandb
     assert "does not start with the case reference" in str(exc.value)
 
 
+def test_a_slack_message_opening_with_a_subject_line_carrying_the_reference_passes(sandbox, monkeypatch):
+    checker = _load_checker()
+    monkeypatch.setattr(checker, "run_debug", lambda *, inputs, **_: _payload(
+        inputs, slack_text=f"Subject: {inputs['caseReference']}\n\n{PLAIN_BODY}"))
+    checker.main()
+
+
 def test_a_slack_message_without_the_body_fails(sandbox, monkeypatch):
     checker = _load_checker()
     monkeypatch.setattr(checker, "run_debug", lambda *, inputs, **_: _payload(

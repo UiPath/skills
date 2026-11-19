@@ -1,4 +1,5 @@
 """flow_io_roles maps seeded values onto agent-chosen inputs and finds outputs by value."""
+import json
 import os
 import sys
 
@@ -159,3 +160,45 @@ def test_ties_go_to_the_closer_name_whatever_the_declaration_order():
                   [("invoice", "string"), ("invoiceLine", "number")]):
         inputs, _, _ = io.map_inputs(_flow(order), DETECTOR_ROLES, object_fallback=None, file_path=None)
         assert inputs == {"invoice": "MCS-2026-04872", "invoiceLine": 5}
+
+
+_SPELLED_ROLES = {
+    "invoice": {"value": "MCS-1", "keywords": ["invoicenumber", "invoice"]},
+    "line": {"value": 5, "keywords": ["lineno", "line"]},
+}
+
+
+def test_an_object_read_through_an_alias_is_fed_every_role_under_its_names():
+    node = {"id": "s", "inputs": {"script": "const d = $vars.start.output.dispute; return d.invoiceNumber"}}
+    flow = _flow([("dispute", "object")], nodes=[node])
+    inputs, _, unmapped = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=None, file_path=None)
+    assert unmapped == []
+    assert inputs["dispute"]["invoicenumber"] == "MCS-1" and inputs["dispute"]["line"] == 5
+
+
+def test_an_object_read_by_destructuring_is_fed_every_role_under_its_names():
+    node = {"id": "s", "inputs": {"script": "const { invoiceNumber, lineNo } = $vars.start.output.dispute;"}}
+    flow = _flow([("dispute", "object")], nodes=[node])
+    inputs, _, unmapped = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=None, file_path=None)
+    assert unmapped == []
+    assert inputs["dispute"]["invoicenumber"] == "MCS-1"
+
+
+def test_a_lone_free_text_submission_gets_every_role_as_json():
+    flow = _flow([("invoicePdf", "file"), ("disputeSubmission", "string")])
+    inputs, _, unmapped = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=None, file_path="inv.pdf")
+    assert unmapped == []
+    assert json.loads(inputs["disputeSubmission"])["invoicenumber"] == "MCS-1"
+
+
+def test_two_unmatched_text_inputs_still_report_the_roles():
+    flow = _flow([("notes", "string"), ("summary", "string")])
+    _, _, unmapped = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=None, file_path=None)
+    assert sorted(unmapped) == ["invoice", "line"]
+
+
+def test_an_object_with_resolved_paths_gets_no_spelling_fallback():
+    node = {"id": "s", "inputs": {"script": "return $vars.start.output.dispute.invoiceNumber"}}
+    flow = _flow([("dispute", "object")], nodes=[node])
+    inputs, _, unmapped = io.map_inputs(flow, _SPELLED_ROLES, object_fallback=None, file_path=None)
+    assert inputs["dispute"] == {"invoiceNumber": "MCS-1"} and unmapped == ["line"]

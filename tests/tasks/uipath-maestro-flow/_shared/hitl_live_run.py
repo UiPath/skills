@@ -60,6 +60,7 @@ MIN_CALL_SECONDS = 30
 DEADLINE_SECONDS = 600
 CLI_TIMEOUT = 540
 END_TYPE = "core.control.end"
+TOKENS_FILE = ".hitl-run-tokens"  # read by _setup/cleanup_hitl_runs.py
 _call_deadline: float | None = None
 
 
@@ -355,8 +356,10 @@ def find_run_task(
             task_id = str(_get_ci(row, "Id"))
             row_folder = str(_get_ci(row, "FolderId", "OrganizationUnitId") or folder or "")
             if task_id not in seen_data:
-                seen_data[task_id] = data_reader(task_id, row_folder)
-            data = seen_data[task_id]
+                read = data_reader(task_id, row_folder)
+                if read is not None:
+                    seen_data[task_id] = read
+            data = seen_data.get(task_id)
             bundle = {"title": _get_ci(row, "Title"), "data": data}
             if row in by_job or matches(row, bundle):
                 return FoundTask(row, data, row_folder), notes
@@ -471,6 +474,8 @@ def run_with_task(
     the completed run's payload. Cancels the instance unless it completed."""
     deadline = time.monotonic() + DEADLINE_SECONDS
     bound_calls_by(deadline)
+    with open(TOKENS_FILE, "a") as f:
+        f.write(f"{token}\n")
     run = start_debug(project_dir, inputs, CLI_TIMEOUT)
     payload = None
     try:

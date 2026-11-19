@@ -173,6 +173,30 @@ def test_main_in_a_studio_web_layout(tmp_path, monkeypatch):
     assert sent == [CASE["inputs"]]
 
 
+def test_main_journals_the_message_the_run_posted(tmp_path, monkeypatch):
+    _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT)
+    checker.main()
+    lines = (tmp_path / ".created-ids.jsonl").read_text().splitlines()
+    assert [json.loads(line) for line in lines] == [{"kind": "slack_message", "value": ["C0B2FDZD1M3", TS]}]
+
+
+def test_a_run_that_fails_grading_still_journals_its_message(tmp_path, monkeypatch):
+    _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT)
+    monkeypatch.setattr(checker, "debug_evidence", lambda i: DebugEvidence(_variables(text="no ids"), "", [], []))
+    with pytest.raises(checker.CheckFailure):
+        checker.main()
+    assert (tmp_path / ".created-ids.jsonl").is_file()
+
+
+def test_post_run_replays_the_journal_within_the_post_run_cap():
+    import yaml
+
+    task = yaml.safe_load((HERE / "escalation_slack_alert.yaml").read_text())
+    sweeps = [step for step in task["post_run"] if "teardown_escalation.py" in step["command"]]
+    assert len(sweeps) == 1
+    assert sweeps[0]["timeout"] <= 300
+
+
 def test_main_fails_a_process_that_only_knows_the_seeded_severity(tmp_path, monkeypatch):
     """The seeded Sev1 run alone cannot tell a classifier from a constant."""
     sent = _studio_web_sandbox(tmp_path, monkeypatch, BPMN_TEXT.replace("Sev2", "SevX").replace("Sev3", "SevY"))

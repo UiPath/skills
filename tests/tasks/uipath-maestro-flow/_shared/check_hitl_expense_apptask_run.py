@@ -17,7 +17,8 @@ name, resource key or system name, not an inline quick form.
    the review completed, the posting step did not run, and status =
    "rejected". An app task has one `completed` port, so where the flow routes
    on the outcome is not pinned: the two runs show posting happens on approve
-   only. Before either run, the posting step must sit behind the review: the
+   only. No output proves a rejection posted nothing here, so the posting must
+   be a dedicated node. Before either run, the posting step must sit behind the review: the
    trigger cannot reach it without passing through the review step.
 
 A run that did not complete is cancelled. ExpenseReviewApp's schema (as

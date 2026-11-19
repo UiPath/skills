@@ -325,6 +325,8 @@ SEVERITIES = ("Sev1", "Sev2", "Sev3")
 _CODE_TAGS = frozenset({q(BPMN_NS, "script"), q(BPMN_NS, "conditionExpression")})
 _UIPATH_VALUE_TAGS = frozenset(q(UIPATH_NS, name) for name in ("input", "output", "expression"))
 _UIPATH_VALUE_ATTRIBUTES = ("value", "source", "expression")
+COMMENT = re.compile(r"""('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
+KEEP_LITERAL = r"\1"
 
 
 def _encoded_text(root: ET.Element) -> str:
@@ -336,7 +338,7 @@ def _encoded_text(root: ET.Element) -> str:
             continue
         chunks.append(element.text or "")
         chunks.extend(element.attrib.get(name, "") for name in _UIPATH_VALUE_ATTRIBUTES)
-    return "\n".join(chunks)
+    return "\n".join(COMMENT.sub(KEEP_LITERAL, chunk) for chunk in chunks)
 
 
 def assert_rule_encoded(bpmn_text: str) -> None:

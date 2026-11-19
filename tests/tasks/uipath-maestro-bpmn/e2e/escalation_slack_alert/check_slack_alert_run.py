@@ -28,8 +28,11 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_SUITE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _SUITE_DIR)
+sys.path.insert(0, os.path.join(_SUITE_DIR, "_setup"))
 
+import escalation_is  # noqa: E402
 from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -143,6 +146,7 @@ def main() -> None:
     # Posts a real message, so no whole-run retry.
     debug_data, instance_id = run_debug(imported, case["inputs"], LIVE_RUN_DIR / "debug.log", timeout=480)
     evidence = debug_evidence(instance_id)
+    escalation_is.journal_slack_posts(evidence.variables, set(completed_ids(debug_data)) & slack_ids(process))
     require_clean_run(debug_data, evidence)
     ts = assert_outcome(process, case, debug_data, evidence.variables)
     print(f"OK: {case['name']}: Sev1 + engineering, correlationId kept, Slack alert posted (ts={ts})")

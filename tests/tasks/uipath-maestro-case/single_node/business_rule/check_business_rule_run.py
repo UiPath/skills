@@ -10,7 +10,7 @@ business-rule task bound to CreditRisk completed with 742 as its input, and
 that the case variable the request names, riskBand, holds LOW_RISK. When the
 run shows the task's own riskBand output it must be LOW_RISK; when it shows
 none, the plan must set riskBand from the rule's result (not a literal or a
-default). Any binding layout, task name or input wiring that gets there
+default), with no other row writing riskBand. Any binding layout, task name or input wiring that gets there
 passes; a rule that was edited, unbound, swapped or fed the wrong score does
 not, nor does a riskBand that holds LOW_RISK without the rule producing it.
 """
@@ -55,12 +55,11 @@ def _rule_names(plan: dict, task: dict) -> set[str]:
     if not name.startswith("=bindings."):
         return {name}
     binding_id = name[len("=bindings."):]
-    names = set()
-    for binding in get_bindings(plan):
-        if binding.get("id") == binding_id:
-            names.add(str(binding.get("default") or ""))
-            names.add(str(binding.get("resourceKey") or "").rsplit(".", 1)[-1])
-    return names
+    return {
+        str(binding.get("resourceKey") or "").rsplit(".", 1)[-1]
+        for binding in get_bindings(plan)
+        if binding.get("id") == binding_id
+    }
 
 
 def _bare(expression: str) -> str:
@@ -69,8 +68,19 @@ def _bare(expression: str) -> str:
     return text.removeprefix(JS_PREFIX).removeprefix("=")
 
 
+def _risk_band_writers(node: object, ids: set[str]) -> list[dict]:
+    """Every row under ``node`` whose ``var`` or ``target`` is one of the riskBand variable ids."""
+    if isinstance(node, list):
+        return [w for item in node for w in _risk_band_writers(item, ids)]
+    if not isinstance(node, dict):
+        return []
+    own = [node] if node.get("var") in ids or _bare(str(node.get("target") or "")) in ids else []
+    return own + [w for value in node.values() for w in _risk_band_writers(value, ids)]
+
+
 def _binds_risk_band(plan: dict, task: dict) -> bool:
-    """An output row of ``task`` writes the riskBand case variable from the rule's result."""
+    """The only row in the plan that writes the riskBand case variable is an output row
+    of ``task`` that sets it from the rule's result."""
     variables = get_variables(plan)
     declared = [
         v
@@ -81,6 +91,7 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
     if any(BAND_LITERAL.search(_bare(str(v.get("default") or ""))) for v in declared):
         return False
     ids = {str(v.get("id")) for v in declared}
+    writers = _risk_band_writers(plan.get("nodes"), ids)
     for row in (task.get("data") or {}).get("outputs") or []:
         source = str(row.get("source") or "")
         if row.get("var") not in ids or not source.startswith("="):
@@ -88,7 +99,7 @@ def _binds_risk_band(plan: dict, task: dict) -> bool:
         if '"' in source or "'" in source or BAND_LITERAL.search(source):
             continue
         if RULE_OUTPUT_READ.fullmatch(_bare(source)):
-            return True
+            return len(writers) == 1 and writers[0] is row
     return False
 
 

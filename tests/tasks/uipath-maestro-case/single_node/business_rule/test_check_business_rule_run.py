@@ -261,3 +261,51 @@ def test_no_run_outputs_pass_for_a_direct_read_of_the_rule_output(source: str) -
     debug, variables_all = _completed()
     evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
     assert grader.check_run(plan, debug, evidence)
+
+
+def _foreign_writer(row: dict) -> dict:
+    return {"id": "tOther", "displayName": "Other", "type": "process", "data": {"outputs": [row]}}
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"name": "x", "id": "x1", "var": "riskBand", "source": "=js:'LOW_RISK'", "target": "=riskBand"},
+        {"name": "x", "id": "x2", "var": "vOther", "source": "=js:'LOW_RISK'", "target": "=riskBand"},
+    ],
+)
+def test_no_run_outputs_fail_when_another_task_also_writes_risk_band(row: dict) -> None:
+    plan = copy.deepcopy(PLAN)
+    next(n for n in plan["nodes"] if n["data"].get("tasks"))["data"]["tasks"][0].append(_foreign_writer(row))
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+def test_no_run_outputs_fail_when_the_task_has_a_second_risk_band_row() -> None:
+    plan = copy.deepcopy(PLAN)
+    outputs = _rule_task(plan)["data"]["outputs"]
+    outputs.append({**outputs[-1], "name": "riskBand2", "id": "riskBand2", "source": "=js:'LOW_RISK'"})
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    with pytest.raises(SystemExit, match="riskBand"):
+        grader.check_run(plan, debug, evidence)
+
+
+def test_a_task_that_only_reads_risk_band_does_not_count_as_a_writer() -> None:
+    plan = copy.deepcopy(PLAN)
+    reader = _foreign_writer({"name": "y", "id": "y1", "var": "vY", "source": "=js:vars.riskBand", "target": "=vY"})
+    next(n for n in plan["nodes"] if n["data"].get("tasks"))["data"]["tasks"][0].append(reader)
+    debug, variables_all = _completed()
+    evidence = grader.RunEvidence(_without_outputs(variables_all)["Data"])
+    assert grader.check_run(plan, debug, evidence) == ["Score Credit Risk"]
+
+
+def test_a_binding_default_does_not_stand_in_for_the_resource_key() -> None:
+    plan = copy.deepcopy(PLAN)
+    for binding in plan["bindings"]:
+        binding["resourceKey"] = "solution_folder.FraudRisk"
+    debug, variables_all = _completed()
+    with pytest.raises(SystemExit, match="no business-rule task is bound to CreditRisk"):
+        grader.check_run(plan, debug, grader.RunEvidence(variables_all["Data"]))

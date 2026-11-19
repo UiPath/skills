@@ -174,8 +174,12 @@ def main() -> None:
         journal_owned_in(partial_text(log_file) + json.dumps(debug_data, default=str), seed)
         raise
     ran = set(completed_ids(debug_data)) & step_ids
-    keys = created_keys(variables_data, step_ids)
-    journal(keys)  # before any assertion: the issue exists whatever the verdict
+    try:
+        owned = owned_keys(created_keys(variables_data, step_ids), correlation)
+    except (SystemExit, Exception):  # noqa: BLE001 -- keep the real failure
+        journal_owned_in(partial_text(log_file) + json.dumps(variables_data, default=str), seed)
+        raise
+    journal(owned)  # before any assertion: the issue exists whatever the verdict
 
     incidents, incidents_raw = fetch_incidents(instance_id)
     require_clean_run(debug_data, DebugEvidence(variables_data, variables_text, incidents, incidents_raw))
@@ -186,10 +190,10 @@ def main() -> None:
     if not keys:
         raise CheckFailure(f"the Jira step(s) {sorted(ran)} returned no issue key; no ticket was created")
 
-    owned = owned_keys(keys, correlation)
-    if not owned:
+    ran_owned = {key: fields for key, fields in owned.items() if key in keys}
+    if not ran_owned:
         raise CheckFailure(f"none of {keys} is a Jira issue whose summary carries {correlation!r}")
-    key, fields = next(iter(owned.items()))
+    key, fields = next(iter(ran_owned.items()))
     print(f"OK: Jira issue {key} exists and its summary carries {correlation!r}")
     assert_task_in_project(key, fields, seed)
     print(f"OK: Jira issue {key} is a {jira_is.ISSUETYPE_NAME} in {seed['project_key']}")

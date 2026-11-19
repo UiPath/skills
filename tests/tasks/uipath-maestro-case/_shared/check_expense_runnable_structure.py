@@ -30,6 +30,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
     existing_caseplan,
+    find_caseplan,
     find_stages,
     find_transitions,
     find_triggers,
@@ -43,9 +44,7 @@ from _shared.case_check import (  # noqa: E402
 EXPECTED_CASEPLAN = os.path.join(
     "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
 )
-EXPECTED_BINDINGS_V2 = os.path.join(
-    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "bindings_v2.json"
-)
+BINDINGS_V2 = "bindings_v2.json"
 PRIMARY_STAGES = ["Submission", "Manager Approval", "Finance Approval", "Payment", "Approved"]
 TERMINAL_LANES = ["Rejected", "Withdrawn"]
 REQUIRED_TASK_TYPES = {
@@ -125,10 +124,12 @@ def _assert_required_external_bindings(bindings: dict) -> None:
 
 
 def main():
-    plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
-    if not os.path.exists(EXPECTED_BINDINGS_V2):
-        _fail(f"missing required {EXPECTED_BINDINGS_V2}")
-    with open(EXPECTED_BINDINGS_V2, encoding="utf-8") as f:
+    plan_path = existing_caseplan(EXPECTED_CASEPLAN) or find_caseplan()
+    plan = read_caseplan(plan_path)
+    bindings_path = os.path.join(os.path.dirname(plan_path), BINDINGS_V2)
+    if not os.path.exists(bindings_path):
+        _fail(f"missing required {bindings_path}")
+    with open(bindings_path, encoding="utf-8") as f:
         bindings = json.load(f)
     _assert_required_external_bindings(bindings)
 

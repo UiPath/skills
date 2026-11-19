@@ -98,6 +98,11 @@ def build_seed() -> dict:
             {"escalationPath": "missing_domain", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
         ),
         _case(
+            "missing-domain-beats-multiple-matches", r, "MDMULTI",
+            {"subject": "Help", "body": "an issue", "senderDomain": "", "customerMatchStatus": "multiple"},
+            {"escalationPath": "missing_domain", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+        ),
+        _case(
             "unknown-customer-beats-duplicate", r, "UNKDUP",
             {"subject": "Prod down", "body": "urgent", "customerMatchStatus": "none", "isDuplicate": True,
              "productionDown": True, "workaroundAvailable": False},

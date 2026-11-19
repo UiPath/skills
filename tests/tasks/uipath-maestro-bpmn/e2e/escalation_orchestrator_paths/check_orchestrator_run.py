@@ -31,8 +31,11 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_SUITE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, _SUITE_DIR)
+sys.path.insert(0, os.path.join(_SUITE_DIR, "_setup"))
 
+import escalation_is  # noqa: E402
 from _shared import bpmn_check, graph  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
@@ -64,63 +67,41 @@ VISITED = 2
 OUTPUTS = ("escalationPath", "severity", "engineeringNeeded", "responseMode", "caseKey")
 
 
-def _loose(text: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", str(text).lower())
-
-
-_NO_RESPONSE = {
-    "na", "nodraft", "noresponse", "notrequired", "noresponserequired",
-    "noresponseneeded", "notapplicable", "notneeded", "draftnotneeded",
-    "nothing", "nil", "empty",
-}
-_NEGATED_DRAFT = re.compile(
-    r"\b(?:no|not|without|dont|do not|none)\s+(?:a\s+|any\s+)?(?:draft|drafted|response)\b"
-    r"|\bundrafted\b"
-    r"|\b(?:draft|drafted|response)\s+(?:response\s+)?(?:is\s+)?(?:not|no)\s+(?:needed|required|applicable|necessary)\b"
-    r"|\b(?:draft|drafted|response)\s+(?:is\s+)?(?:none|false|n a|na|null|nil|skipped|omitted)$"
-    r"|\bnone\s+(?:needed|required)\b"
-    r"|^(?:n a|none|no|false|skipped|skip|not applicable|not required|not needed)$"
-)
-_LABELLED_NO = re.compile(r"\b(?:draft|response)(?:\s+response)?\s*[:=\-\u2013]\s*(?:no|none|false|nil|null|n a|na)\W*$")
-_DRAFT = re.compile(r"\bdraft(?:ed)?\b|\bresponse\b|^(?:true|yes)$")
+_NEGATIONS = frozenset({
+    "no", "not", "none", "without", "skip", "skipped", "na", "nil", "null", "never",
+    "omitted", "undrafted", "noreply", "false", "nothing", "empty", "dont",
+})
 _EITHER_OR = re.compile(r"\bor\b|[/|]")
-_NOT_APPLICABLE = re.compile(r"\bn/a\b")
-_NONE_WORD = re.compile(r"\b(?:none|no|n a|na|false)\b")
+_NOT_APPLICABLE = re.compile(r"\bn/a\b", re.IGNORECASE)
+_NA_TOKEN = "na"
 
 
-def _words(text: str) -> str:
+def _words(text: str) -> list[str]:
     unquoted = re.sub(r"['\u2019]", "", text)
-    return " ".join(re.findall(r"[a-z0-9]+", re.sub(r"([a-z])([A-Z])", r"\1 \2", unquoted).lower()))
+    return re.findall(r"[a-z0-9]+", re.sub(r"([a-z])([A-Z])", r"\1 \2", unquoted).lower())
 
 
 def response_mode(value) -> str | None:
-    """'draft' or 'none' by meaning: the request no longer names the values, only
-    that a draft response is written for escalations that need engineering.
-    An unset value (null, "", "-") is none. A negation counts only when it
-    governs the draft ("No draft", "Draft: no", "Draft not needed"), so "Draft,
-    no edits required" is still 'draft'. "Draft or none", "Draft/None" and
-    anything else unrecognized is None."""
+    """'draft' or 'none' by shape: an unset value (null, "", whitespace, false)
+    or one containing a negation word ("No reply", "Skip draft", "None (Sev3)",
+    "NoDraft") is none; any other non-empty string or true is draft. "Draft or
+    none" and "Draft/None" name both and are None."""
     if value is None:
         return "none"
     if isinstance(value, bool):
         return "draft" if value else "none"
     if not isinstance(value, str):
         return None
-    raw = _NOT_APPLICABLE.sub("n a", value.strip().lower())
-    text = _words(raw)
-    if not text:
+    stripped = _NOT_APPLICABLE.sub(_NA_TOKEN, value.strip())
+    words = _words(stripped)
+    if not words:
         return "none"
-    negated = (
-        _loose(value) in _NO_RESPONSE
-        or _NEGATED_DRAFT.search(text) is not None
-        or _LABELLED_NO.search(raw) is not None
-    )
-    drafted = _DRAFT.search(text) is not None
-    if _EITHER_OR.search(raw) and drafted and (negated or _NONE_WORD.search(text)):
+    if not any(w in _NEGATIONS for w in words):
+        return "draft"
+    others = [w for w in words if w not in _NEGATIONS]
+    if _EITHER_OR.search(stripped) and others:
         return None
-    if negated:
-        return "none"
-    return "draft" if drafted else None
+    return "none"
 
 
 def names_path(text: str, path: str) -> bool:
@@ -220,6 +201,7 @@ def cases() -> None:
             imported, case["inputs"], LIVE_RUN_DIR / f"debug-{case['name']}.log", timeout=300
         )
         variables_data, _text = fetch_variables(instance_id)
+        escalation_is.journal_slack_posts(variables_data, set(completed_ids(debug_data)) & slack)
         try:
             ts = verify_case(process, slack, case, debug_data, variables_data)
         except CheckFailure as error:

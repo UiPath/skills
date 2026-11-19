@@ -43,6 +43,7 @@ Usage: check_e2e_billing_dispute_resolution.py overcharge|reject
 """
 import json
 import os
+import re
 import sys
 
 _d = os.path.dirname(os.path.abspath(__file__))
@@ -64,6 +65,8 @@ from _shared.flow_check import (  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 NO_EMAIL = "No resolution email drafted"
+GREETING = re.compile(r"(dear|hello|hi|hey|good (morning|afternoon|day))\b", re.I)
+MAX_SIGNATURE_WORDS = 6
 LOOKUP_ENTITIES = ("BillingDisputeCRM", "BillingDisputeERP")
 POSTING_FUNCTION = "FinancialPostingFunction"
 
@@ -250,6 +253,14 @@ def _amount_spellings(amount):
     return spellings
 
 
+def _is_letter(text):
+    """A greeting first, or a short closing line after at least one other line."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if lines and GREETING.match(lines[0]):
+        return True
+    return len(lines) >= 2 and len(lines[-1].split()) <= MAX_SIGNATURE_WORDS
+
+
 def check_results(case, outs, *, email):
     """Decision, action, credit and explanation by value; `email` grades the draft output."""
     c = CASES[case]
@@ -301,12 +312,13 @@ def check_overcharge(flow, payload):
     print(f"OK: writer agent completed ({sorted(writers)})")
 
     def email(outs):
-        drafts = [k for k, (_t, v) in outs.items() if isinstance(v, str) and invoice in v
-                  and any(s in v for s in _amount_spellings(credit))]
+        drafts = {k: v for k, (_t, v) in outs.items() if isinstance(v, str) and _is_letter(v) and invoice in v
+                  and any(s in v for s in _amount_spellings(credit))}
         if not drafts:
             _fail_with_capture(f"no declared output is a plain-text email citing {invoice} and the credit of {credit}: {outs}")
-        print(f"OK: the email draft ({drafts}) cites {invoice} and the credit")
-        return set(drafts)
+        draft = max(drafts, key=lambda k: len(drafts[k]))
+        print(f"OK: the email draft ({draft}) cites {invoice} and the credit")
+        return {draft}
 
     outs = io.out_values(flow, payload)
     print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
@@ -322,7 +334,7 @@ def _erp_reads(flow):
 
 
 def check_reject(flow, payload):
-    api = _ids_of(flow, "uipath.core.api-workflow")
+    api = _posting_ids(flow)
     executed = _executed_ids(payload)
     done = _executed_ids(payload, completed=True)
     if not _erp_reads(flow) & done:

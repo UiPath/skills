@@ -5,17 +5,17 @@ description: >
   seeded inputs. The agent builds a manual-start BPMN process whose routing
   depends only on its inputs (the Outlook email-received trigger is not
   reliably debug-testable). The grader imports the exact submitted project
-  into its own ephemeral solution and runs ten seeded cases under `uip
+  into its own ephemeral solution and runs eleven seeded cases under `uip
   maestro bpmn debug --inputs`: Sev1/Sev2/Sev3 escalations, the four
   triage reasons (missing_domain / unknown_customer / multiple_matches /
-  duplicate) and three inputs that trip several routing rules at once, where
+  duplicate) and four inputs that trip several routing rules at once, where
   the first rule in the stated order wins. For each run it asserts what the
   run did: it completed, exactly one Slack step completed and its own response shows a message in
   #coding-agent-testing, posted as user, carrying the correlationId and the
   path; and the named outputs read back escalationPath, severity,
   engineeringNeeded, responseMode, caseKey=<correlationId> and
   slackMessageId=<that message's ts>. responseMode is read by meaning (draft
-  or none), and Sev3 needs no draft. Ten cases with different answers
+  or none), and Sev3 needs no draft. Eleven cases with different answers
   prove the routing is computed, so no node layout is required. Graceful
   Slack-failure handling and the agent's own test run are advisory.
   Salesforce is not called (match status is an input).
@@ -32,8 +32,8 @@ sandbox:
 run_limits:
   expected_turns: 80
   max_turns: 200
-  # turn 1800 + criteria 180 + 30 + 4650 + 30 = 6690, plus margin.
-  task_timeout: 6850
+  # turn 1800 + criteria 180 + 30 + 5070 + 30 = 7110, plus margin.
+  task_timeout: 7270
   turn_timeout: 1800
 
 pre_run:
@@ -46,6 +46,8 @@ reference:
 post_run:
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
+  - command: "python3 _setup/teardown_escalation.py"
+    timeout: 300
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
@@ -114,11 +116,11 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: ten seeded debug runs (Sev1, Sev2, Sev3, duplicate, unknown_customer, missing_domain, multiple_matches, and three overlaps won by the first rule in the stated order) each complete, post exactly one Slack message to #coding-agent-testing as user carrying the correlationId and the path, and return the expected escalationPath, severity, engineeringNeeded, responseMode, caseKey=<correlationId> and slackMessageId=<that message's ts>"
+    description: "Effects: eleven seeded debug runs (Sev1, Sev2, Sev3, duplicate, unknown_customer, missing_domain, multiple_matches, and four overlaps won by the first rule in the stated order) each complete, post exactly one Slack message to #coding-agent-testing as user carrying the correlationId and the path, and return the expected escalationPath, severity, engineeringNeeded, responseMode, caseKey=<correlationId> and slackMessageId=<that message's ts>"
     command: "python3 $REFERENCE_DIR/e2e/escalation_orchestrator_paths/check_orchestrator_run.py cases"
-    # 10 x (300 debug + 120 variables-all) + 90 solution init + 180 solution
-    # import + 120 incidents on a miss + 60 margin = 4650.
-    timeout: 4650  # budget-guard: manual x10
+    # 11 x (300 debug + 120 variables-all) + 90 solution init + 180 solution
+    # import + 120 incidents on a miss + 60 margin = 5070.
+    timeout: 5070  # budget-guard: manual x11
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

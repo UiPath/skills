@@ -31,6 +31,8 @@ from _shared import bpmn_check  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     UIPATH_NS,
+    COMMENT,
+    KEEP_LITERAL,
     CheckFailure,
     DebugRetry,
     debug_evidence,
@@ -48,8 +50,6 @@ OUTPUT = "product"
 EXPECTED = 42
 LIVE_RUN_DIR = Path("product-calc-live")
 LITERAL = re.compile(r"(?<![\w.])42(?![\w.])")
-COMMENT = re.compile(r"""('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
-KEEP_LITERAL = r"\1"
 
 
 def assert_not_hardcoded(root: ET.Element) -> None:

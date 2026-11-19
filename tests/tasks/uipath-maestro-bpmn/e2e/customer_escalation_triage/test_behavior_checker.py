@@ -24,6 +24,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
+SHARED_SETUP = HERE.parent.parent / "_setup"
 
 
 def _load(name: str, filename: str):
@@ -450,6 +451,35 @@ class SideEffectHarvestTests(unittest.TestCase):
         self.assertEqual(effects["jira_issues"], ["CE-101"])
 
 
+class OwnedJiraTargetTests(unittest.TestCase):
+    CORRELATION = SEED["correlationId"]
+
+    def _owned(self, effects, summaries):
+        def read(_connection, key):
+            summary = summaries[key]
+            if isinstance(summary, Exception):
+                raise summary
+            return {"summary": summary}
+
+        with patch.object(escalation_is, "get_issue_fields", side_effect=read):
+            return checker.owned_jira_targets(effects, "conn", self.CORRELATION)
+
+    def test_only_issues_whose_summary_carries_the_correlation_id_are_owned(self):
+        effects = {"jira_targets": {"CE-101": "10001", "CE-7": "7"}}
+        owned = self._owned(
+            effects, {"CE-101": f"[Sev1] {self.CORRELATION} escalation", "CE-7": "an existing ticket"}
+        )
+        self.assertEqual(owned, ["10001"])
+
+    def test_an_unreadable_issue_is_not_owned(self):
+        effects = {"jira_targets": {"CE-101": "10001"}}
+        self.assertEqual(self._owned(effects, {"CE-101": checker.CheckFailure("boom")}), [])
+
+    def test_harvest_maps_each_key_to_its_deletion_target(self):
+        effects = checker.harvest_side_effects(CONTRACT, good_variables_data())
+        self.assertEqual(effects["jira_targets"], {"CE-101": "10001"})
+
+
 class JournalTests(unittest.TestCase):
     def test_roundtrip_and_bad_line_tolerance(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -548,7 +578,7 @@ class SeedTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 # The issue-type id is read from the tenant; this test runs offline.
-                env={**os.environ, "ESCALATION_JIRA_ISSUETYPE_ID": "10009"},
+                env={**os.environ, "ESCALATION_JIRA_ISSUETYPE_ID": "10009", "PYTHONPATH": str(SHARED_SETUP)},
             )
             seed = json.loads((Path(directory) / "seed.json").read_text())
         self.assertEqual(set(seed["inputs"]), set(SEED["inputs"]))
@@ -865,7 +895,7 @@ class TeardownRetryTests(unittest.TestCase):
             journal = Path(tmp) / ".created-ids.jsonl"
             with patch.multiple(escalation_is, JOURNAL=journal, **defaults):
                 spec = importlib.util.spec_from_file_location(
-                    "teardown_run", HERE / "_setup" / "teardown_escalation.py"
+                    "teardown_run", SHARED_SETUP / "teardown_escalation.py"
                 )
                 module = importlib.util.module_from_spec(spec)
                 try:

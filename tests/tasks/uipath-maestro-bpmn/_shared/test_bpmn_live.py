@@ -305,6 +305,25 @@ def test_assert_rule_encoded_ignores_names_and_documentation() -> None:
         bpmn_live.assert_rule_encoded(text)
 
 
+@pytest.mark.parametrize(
+    "script",
+    [
+        '// Sev2 Sev3\nreturn {severity: "Sev1"};',
+        '/* Sev2 Sev3 */ return {severity: "Sev1"};',
+        'return "Sev1"; // Sev2\n/* Sev3 */',
+    ],
+)
+def test_assert_rule_encoded_ignores_names_in_comments(script: str) -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match="never names"):
+        bpmn_live.assert_rule_encoded(_rule_process(script=script))
+
+
+def test_assert_rule_encoded_keeps_comment_markers_inside_strings() -> None:
+    script = 'var u = "http://x"; return vars.down ? (vars.workaround ? "Sev2" : "Sev1") : "Sev3"; // done'
+    bpmn_live.assert_rule_encoded(_rule_process(script=script))
+    bpmn_live.assert_rule_encoded(_rule_process(script='var a = "//"; var b = "/*"; return ["Sev1", "Sev2", "Sev3"];'))
+
+
 def test_assert_rule_encoded_reports_the_missing_severities() -> None:
     with pytest.raises(bpmn_live.CheckFailure, match=r"\['Sev2', 'Sev3'\]"):
         bpmn_live.assert_rule_encoded(_rule_process(script='return "Sev1";'))

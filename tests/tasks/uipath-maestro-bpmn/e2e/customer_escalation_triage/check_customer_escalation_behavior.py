@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "_setup"))  # local escalation_is (which also wires up _shared)
+sys.path.insert(0, os.path.join(HERE, "..", "..", "_setup"))  # escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
 from _shared import bpmn_check, bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
@@ -254,6 +254,14 @@ def harvest_side_effects(
         for value in connector_response_values(jira_outputs, "id")
         if isinstance(value, str)
     ])
+    jira_targets = {}
+    for output in jira_outputs:
+        response = get_ci(output, "response")
+        key = get_ci(response, "key")
+        if not isinstance(key, str):
+            continue
+        identifier = get_ci(response, "id")
+        jira_targets.setdefault(key, identifier if isinstance(identifier, str) else key)
     slack_outputs = element_output_records(
         variables_data, contract.slack_send_ids
     )
@@ -268,8 +276,26 @@ def harvest_side_effects(
         "jira_keys": jira_keys,
         # Deletion targets prefer the numeric id; the key still works.
         "jira_issues": jira_ids or jira_keys,
+        "jira_targets": jira_targets,
         "slack_messages": _distinct(slack_messages),
     }
+
+
+def owned_jira_targets(
+    effects: dict[str, list], jira_connection_id: str, correlation: str
+) -> list[str]:
+    """Deletion targets of the issues whose tenant summary carries this run's
+    correlationId; a step that merely read an existing ticket is not owned."""
+
+    owned = []
+    for key, target in effects["jira_targets"].items():
+        try:
+            fields = escalation_is.get_issue_fields(jira_connection_id, key)
+        except (CheckFailure, subprocess.TimeoutExpired):
+            continue
+        if correlation in str(get_ci(fields, "summary", "")):
+            owned.append(target)
+    return owned
 
 
 def assert_outcome(
@@ -490,7 +516,10 @@ def main() -> None:
     # the records exist regardless of the verdict, and post_run replays the
     # journal even if this process is killed mid-assertion.
     effects = harvest_side_effects(contract, variables_data)
-    for issue in effects["jira_issues"]:
+    owned_issues = owned_jira_targets(
+        effects, connections[escalation_is.JIRA_CONNECTOR], seed["correlationId"]
+    )
+    for issue in owned_issues:
         escalation_is.record_created_id("jira_issue", issue)
     for message in effects["slack_messages"]:
         escalation_is.record_created_id("slack_message", message)
@@ -515,7 +544,7 @@ def main() -> None:
     # Best-effort in-band cleanup; post_run replays the journal for anything
     # this leaves behind (it re-deletes idempotently — deletion is only
     # confirmed on success or an issue-specific not-found).
-    for issue in effects["jira_issues"]:
+    for issue in owned_issues:
         if not escalation_is.delete_jira_issue(
             connections[escalation_is.JIRA_CONNECTOR], issue
         ):

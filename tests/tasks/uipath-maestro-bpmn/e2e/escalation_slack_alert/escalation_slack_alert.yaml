@@ -39,6 +39,8 @@ reference:
 post_run:
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
+  - command: "python3 _setup/teardown_escalation.py"
+    timeout: 300
 
 initial_prompt: |
   You are a coding agent in UiPath Studio Web in an empty Agentic Process
