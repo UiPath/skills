@@ -41,8 +41,8 @@ When the path line is the local path, write the plain path, such as InvoiceIntak
 
 List every task box, in order, including a box that needs no resource, and nothing else: not the start event, a timer, a gateway or the end event.
 A box line is the box's label exactly as its `.task()` name spells it, `→ variable` suffix included, and never a branch condition, an arm label or a route: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`.
-After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates ending in `which one?` (`<A> in <folder> or <B> in <folder>, which one? Build it takes <A>`, leaving out ` in <folder>` for a row with no folder name), or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
-Give each box one short clause: no element type ids, no build-time plans, and no alternatives for the kind.
+After the label, write `: ` and exactly one status: the resource's name with its folder, the two candidates and the default *Build it* takes (`<A> in <folder> or <B> in <folder>, which one? Build it takes the first`, leaving out ` in <folder>` for a row with no folder name), or one of the fixed phrases `none yet, create it or name one`, `not checked` and `no resource needed`, word for word.
+Give each box one short clause (the which-of-two status is the one two-part form): no element type ids, no build-time plans, and no alternatives for the kind.
 <!--skill-flavor:gate-not-checked-rule:start-->
 Write `not checked` only for a box whose lookup ran and failed, or when this run found no `uip login`; a box you have not looked up is not a reply line yet, so run its lookup first.
 <!--skill-flavor:gate-not-checked-rule:end-->
@@ -54,7 +54,7 @@ Do not describe the shape in any other form.
 Send no `Flow:` or `The shape:` line, no drawn diagram or code block, no line about a gateway, its condition or the variable it reads, no table, no heading and no step log.
 The canvas, or the box lines when there is no upload, already shows the shape, and Autopilot's chat panel is narrow: anything extra pushes the question out of view.
 That also rules out an explanation of a validation warning, a note about a default you chose (beyond the first line's one sentence), and a question of your own (a time zone, which app); anything the user should settle waits for *Change it*.
-A which-of-two resource question is the exception: it goes on its box line, in this same message.
+A which-of-two resource question, with the default *Build it* takes, is the exception: it goes on its box line, in this same message.
 
 Before you send it, compare the message with the template line by line and delete every line the template does not have.
 
