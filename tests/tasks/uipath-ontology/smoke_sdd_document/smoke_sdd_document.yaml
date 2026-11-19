@@ -1,0 +1,140 @@
+task_id: skill-ontology-sdd-document
+description: >
+  Smoke (Document mode): from a small equipment-maintenance SDD, the agent
+  confirms the model table by table with a simulated domain owner, saves it to
+  input/model.md, writes the entity definitions and authors the choice set and
+  entities locally in a new solution. The user stops the run at the artifact
+  batch confirmation. The SDD names an entity `Group`, which the CLI refuses,
+  and a file field. Grades that the SDD's names, references and choice set
+  reach the entity definitions and the local resources, that `Group` is
+  renamed before any create, that the file field stays FILE, that the saved
+  model holds the confirmed tables, and that no Data Fabric write ran without
+  --local. No login needed beyond `uip login status`.
+tags: [uipath-ontology, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_sdd_crews
+
+run_limits:
+  task_timeout: 1500
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create an ontology called "maintenance" from maintenance-sdd.md and build it
+  as a new local UiPath solution named MaintenanceModel in the current
+  directory.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the plant maintenance lead who wrote maintenance-sdd.md. You know
+    exactly what it says and nothing more.
+  goal: |
+    Confirm the ontology model the assistant extracts from the SDD. Once the
+    solution and its entities exist and the assistant asks you to confirm the
+    ontology artifact files, tell it to stop there: you will review the model
+    first.
+  constraints:
+    - "Answer in one short sentence, or pick the recommended / first option. Never bounce the decision back."
+    - "Approve each table that matches the SDD. If one contradicts the SDD, name the single correction."
+    - "Accept the folder names the assistant proposes. There is no external data source."
+    - "If the assistant proposes another name for an entity the SDD names, accept it."
+    - "If the assistant warns about the file field, keep it as a file field."
+    - "When asked to confirm the ontology artifact files (schema, mapping), say: stop here, I'll review the model first. Then end the conversation."
+  max_turns: 25
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-ontology skill for the SDD"
+    skill_name: uipath-ontology
+    expected_skill: uipath-ontology
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The confirmed model was saved to input/model.md"
+    path: "maintenance/input/model.md"
+    includes:
+      - "CONFIRMED_THROUGH: model"
+      - "WorkOrderPriority"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Asset keeps the SDD's file field as FILE"
+    path: "maintenance/input/entities/Asset.json"
+    assertions:
+      - expression: "fields[?name=='manual'] | [0].type"
+        operator: equals
+        expected: "FILE"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "WorkOrder definition keeps the SDD's references and choice set, by name"
+    path: "maintenance/input/entities/WorkOrder.json"
+    assertions:
+      - expression: "fields[?name=='priority'] | [0].choiceSetName"
+        operator: equals
+        expected: "WorkOrderPriority"
+      - expression: "fields[?name=='asset'] | [0].referenceEntityName"
+        operator: equals
+        expected: "Asset"
+      - expression: "fields[?name=='assignedTo'] | [0].referenceEntityName"
+        operator: equals
+        expected: "Technician"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "WorkOrderPriority choice set authored locally in the solution"
+    path: "MaintenanceModel/resources/solution_folder/choiceSet/WorkOrderPriority.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Asset, WorkOrder, Technician and the renamed crew entity authored locally; no entity named Group"
+    command: "cd MaintenanceModel/resources/solution_folder/entity/native && test -f Asset.json && test -f WorkOrder.json && test -f Technician.json && test ! -f Group.json && test $(ls *.json | wc -l) -eq 4"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The choice set was created with the local CLI, not written by hand"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+choice-sets\s+create[^;&|\n]*--local\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The entities were created with the local CLI, not written by hand"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+entities\s+create[^;&|\n]*--local\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Data Fabric write without --local (nothing created on the tenant)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+\S+\s+(create|update|delete)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:local|help)\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "The refused name was caught before any create: no `entities create Group`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+entities\s+create\s+"?Group\b(?!-|_)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No publish or deploy"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|activate)'
+    weight: 1.0
+    pass_threshold: 1.0

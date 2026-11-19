@@ -64,6 +64,7 @@ export const VALID_SKILLS = new Set([
   "uipath-agents", "uipath-functions", "uipath-api-workflow", "uipath-coded-apps",
   "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
   "uipath-solution", "uipath-human-in-the-loop", "uipath-rules",
+  "uipath-ontology",
 ]);
 export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / Deployment, never in Build With or Components
   "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
