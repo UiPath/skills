@@ -68,9 +68,10 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/check_planted_defect.py
       --marker "DepotMap/src/api/client.ts::mk_live_FAKE_7d3e91b2c4a8f605"
+      --subject "MAPKIT_API_KEY|client.ts|mapkit"
       --flag "hardcod|hard-cod|hard cod|plaintext|plain text|plain-text|cleartext|clear text|in clear|embedded|inline|literal|exposed|committed|checked in|baked in|ships in|shipped"
       --mention "api key|apikey|api_key|token|secret|credential"
-      --mention "critical"
+      --severity "critical"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

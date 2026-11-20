@@ -28,6 +28,12 @@ Arguments
                           "missing"), where a negation is the finding itself.
   --mention T1|T2         Plain case-insensitive mention anywhere in the report
                           (no problem framing). Repeatable.
+  --severity WORD         The finding must be rated WORD (e.g. critical). A
+                          line that names the subject (or, with no subject, a
+                          flag term) must carry WORD, carry a finding id with
+                          its initial ("C-001"), or sit under a heading that
+                          contains WORD. "Critical: none" elsewhere, or the
+                          finding filed under Warnings, does not count.
   --near N                Characters kept on each side of a subject mention
                           (default 500).
   --min-bytes N           Minimum report size (default 500).
@@ -36,6 +42,7 @@ Exit 0 on PASS. Every FAIL names the unmet requirement.
 """
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -66,6 +73,39 @@ def _scope(text: str, subjects: list, near: int) -> str:
     return "\n".join(parts)
 
 
+_DENIAL = r"(?:\bnot|n't|\bno\s+longer|\bnever|\bno)\s+(?:(?:an?|the|actually|really|considered|flagged\s+as)\s+)?"
+
+
+def _without_denials(text: str, terms: list) -> str:
+    """Blank out absence terms the report explicitly denies ("is not missing",
+    "not an orphan", "no longer stale"). For an absence defect a negation
+    INSIDE the term is the finding ("not listed"); a negation in FRONT of the
+    term says the defect is absent, and must not satisfy the check."""
+    for t in terms:
+        text = re.sub(_DENIAL + re.escape(t), lambda m: " " * len(m.group(0)), text,
+                      flags=re.IGNORECASE)
+    return text
+
+
+def _rated(text: str, word: str, anchors: list) -> bool:
+    """True if a line naming one of `anchors` is rated `word`: the word or a
+    finding id with its initial is on the line, or the nearest heading above
+    contains the word."""
+    word = word.lower()
+    finding_id = re.compile(rf"(?<![a-z0-9]){re.escape(word[0])}-(?:[a-z]-)?\d+", re.IGNORECASE)
+    heading = ""
+    for line in text.split("\n"):
+        low = line.lower()
+        if low.lstrip().startswith("#"):
+            heading = low
+            continue
+        if not any(a.lower() in low for a in anchors):
+            continue
+        if word in heading or re.search(rf"\b{re.escape(word)}\b", low) or finding_id.search(line):
+            return True
+    return False
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--marker", action="append", default=[])
@@ -74,6 +114,7 @@ def main() -> None:
     ap.add_argument("--flag", action="append", default=[])
     ap.add_argument("--flag-absence", action="append", default=[])
     ap.add_argument("--mention", action="append", default=[])
+    ap.add_argument("--severity", default="")
     ap.add_argument("--near", type=int, default=500)
     ap.add_argument("--min-bytes", type=int, default=500)
     a = ap.parse_args()
@@ -107,12 +148,19 @@ def main() -> None:
             sys.exit(f"FAIL: report does not flag the defect as a problem{where} — "
                      f"expected one of {_terms(group)}.")
     for group in a.flag_absence:
-        if not asserts_any(scope, _terms(group), presence=False):
+        terms = _terms(group)
+        if not asserts_any(_without_denials(scope, terms), terms, presence=False):
             sys.exit(f"FAIL: report does not flag the defect as a problem{where} — "
                      f"expected one of {_terms(group)}.")
     for group in a.mention:
         if not any(t.lower() in text.lower() for t in _terms(group)):
             sys.exit(f"FAIL: report does not mention any of {_terms(group)}.")
+
+    if a.severity:
+        anchors = subjects or [t for g in a.flag + a.flag_absence for t in _terms(g)]
+        if not _rated(text, a.severity, anchors):
+            sys.exit(f"FAIL: the finding is not rated {a.severity.title()} — no line naming "
+                     f"{anchors[:6]} carries that severity or sits under a {a.severity.title()} heading.")
 
     print("OK: planted defect identified" + where)
     print("PASS")

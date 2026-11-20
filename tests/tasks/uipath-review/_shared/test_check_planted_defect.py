@@ -97,3 +97,50 @@ def test_missing_or_short_report_fails(tmp_path):
                        capture_output=True, text=True)
     assert r.returncode != 0
     assert "suspiciously short" in r.stderr
+
+
+def test_denied_absence_defect_fails(tmp_path):
+    """PR #5046 review: "X is not missing; it is registered" denies the defect.
+    A negation in front of an absence term must not satisfy the check."""
+    for report in ("LoanNotify is not missing; the directory is present.",
+                   "ClaimsAudit is not an orphan. It isn't missing from the manifest.",
+                   "OrderArchive is no longer stale."):
+        r = run(tmp_path, report, "--subject", "LoanNotify|ClaimsAudit|OrderArchive",
+                "--flag-absence", "missing|orphan|stale|missing from")
+        assert r.returncode != 0, report
+
+
+def test_negation_inside_absence_term_still_passes(tmp_path):
+    r = run(tmp_path, "ClaimsAudit is not registered in the solution.",
+            "--subject", "ClaimsAudit", "--flag-absence", "not registered|orphan")
+    assert r.returncode == 0, r.stderr
+
+
+SECRET_ROW = "| {id} | — | `Workflow.json`: hardcoded Bearer token in the Authorization header. |"
+
+
+def _severity(tmp_path, report):
+    return run(tmp_path, report, "--subject", "Authorization|Bearer", "--flag", "hardcod",
+               "--severity", "critical")
+
+
+def test_severity_under_critical_heading_passes(tmp_path):
+    r = _severity(tmp_path, "### Critical Findings\n\n" + SECRET_ROW.format(id="F-1"))
+    assert r.returncode == 0, r.stderr
+
+
+def test_severity_by_finding_id_or_word_on_the_line_passes(tmp_path):
+    assert _severity(tmp_path, "### Findings\n\n" + SECRET_ROW.format(id="C-001")).returncode == 0
+    assert _severity(tmp_path, "Critical: hardcoded Bearer token in Workflow.json.").returncode == 0
+
+
+def test_severity_filed_under_warnings_fails(tmp_path):
+    report = "### Critical Findings\n\nNone.\n\n### Warnings\n\n" + SECRET_ROW.format(id="W-001")
+    r = _severity(tmp_path, report)
+    assert r.returncode != 0
+    assert "not rated Critical" in r.stderr
+
+
+def test_severity_word_elsewhere_does_not_count(tmp_path):
+    report = "Critical: none.\n\n### Warnings\n\n" + SECRET_ROW.format(id="W-001")
+    assert _severity(tmp_path, report).returncode != 0

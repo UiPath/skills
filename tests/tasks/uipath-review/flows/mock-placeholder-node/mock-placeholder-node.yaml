@@ -62,8 +62,8 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/check_planted_defect.py
       --marker "TicketTriageSolution/TicketTriage/TicketTriage.flow::core.logic.mock"
+      --subject "core.logic.mock|routeToTeam1|Route to team"
       --flag "mock|placeholder"
-      --mention "core.logic.mock|Route to team|routeToTeam1|mock node|mock placeholder|placeholder node"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

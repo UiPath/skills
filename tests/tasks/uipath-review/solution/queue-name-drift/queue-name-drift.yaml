@@ -66,6 +66,7 @@ success_criteria:
       --marker "InvoiceSolution/InvoicePerformer/Main.xaml::InvoiceInputQueue"
       --mention "InvoiceIntakeQueue"
       --mention "InvoiceInputQueue"
+      --subject "InvoiceIntakeQueue|InvoiceInputQueue"
       --flag-absence "mismatch|differ|inconsisten|does not match|do not match|don't match|doesn't match|drift|never be processed|never processed|never picked|not the same|wrong queue|typo|two different|separate queue|never consumed|will not be processed|not consumed|disconnected|diverge"
     timeout: 30
     expected_exit_code: 0

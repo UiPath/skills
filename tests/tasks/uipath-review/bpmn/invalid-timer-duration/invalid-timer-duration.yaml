@@ -61,7 +61,7 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/check_planted_defect.py
       --marker "QuoteFollowUp/QuoteFollowUp.bpmn::2 hours"
-      --mention "timer|duration"
+      --subject "2 hours|PT2H|Timer_Wait|timeDuration|Wait for customer"
       --flag-absence "iso 8601|iso-8601|iso8601|pt2h|invalid|not a valid|not valid|malformed|free text|free-text|unparseable|cannot be parsed|incorrect format|wrong format"
     timeout: 30
     expected_exit_code: 0

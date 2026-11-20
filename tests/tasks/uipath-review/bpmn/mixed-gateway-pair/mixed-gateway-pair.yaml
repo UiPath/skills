@@ -64,7 +64,8 @@ success_criteria:
       --marker "OrderFulfilment/OrderFulfilment.bpmn::Gw_Merge"
       --mention "parallel"
       --mention "exclusive"
-      --flag "mismatch|mixed|deadlock|unbalanced|incorrect|wrong|must be|should be|unsynchron|not synchron|improper|inconsistent|twice|multiple tokens|race|does not wait|doesn't wait|without waiting|do not match|does not match|must match|replace"
+      --subject "Gw_Merge|Gw_Split|Both done|Fulfil in parallel"
+      --flag "mismatch|mixed|deadlock|unbalanced|unsynchron|not synchron|multiple tokens|does not wait|doesn't wait|without waiting|do not match|does not match|must match|must be a parallel|should be a parallel|twice|race"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
