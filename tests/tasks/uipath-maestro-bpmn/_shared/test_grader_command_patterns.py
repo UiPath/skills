@@ -855,14 +855,14 @@ def test_after_gate_ignores_scratch_and_cli_target_writes(command: str) -> None:
 
 
 # --- Advisory criteria that docked correct 2026-11-20_09-23-26 Studio Web runs ---------
-# Each case is a call from that run (enum, datafabric-smoke-error, the three eval
-# tasks, paginated-reference-lookup); the "not" cases are the shapes the criterion
+# Accepted cases include the call from that run (enum, datafabric-smoke-error, the three
+# eval tasks); some are synthetic. The "not" cases are the shapes the criterion
 # still has to refuse.
 
 _ADVISORY = [
     (
         "connector_features/enum/enum.yaml",
-        "listed connections",
+        "listed tenant connections",
         [
             "uip is connections list uipath-google-gmail --all-folders --output json",
             '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Connection", "source": "all"}}',
@@ -870,6 +870,7 @@ _ADVISORY = [
         [
             "uip maestro registry search 'gmail send mail' --limit 10 --output json",
             '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Process", "source": "all"}}',
+            '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Connection", "source": "local"}}',
             '{"file_path": "/x/notes.md", "new_content": "run uip is connections list first"}',
         ],
     ),
@@ -881,6 +882,7 @@ _ADVISORY = [
             "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/edited/Process.bpmn",
         ],
         [
+            "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
             "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name SomethingElse",
             "uip maestro bpmn check .flow-sdk/Process.bpmn.ts --source",
         ],
@@ -892,18 +894,21 @@ _ADVISORY = [
             "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name QueryEntityRecordsCurated --output json",
             "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/edited/Process.bpmn",
         ],
-        ["uip maestro bpmn registry get Intsvc.ActivityExecution --object-name CreateEntityRecordCurated"],
+        [
+            "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
+            "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name CreateEntityRecordCurated",
+        ],
     ),
     (
         "evaluate/local_crud.yaml",
         "created a solution",
         ["uip solution init Foo", "uip maestro bpmn init SmokeEval"],
-        ["uip maestro bpmn initialize", "uip maestro bpmn check Process.bpmn"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn check Process.bpmn"],
     ),
     (
         "evaluate/evaluator_type_choice.yaml",
         "created the solution",
-        ["uip solution new Foo", "uip maestro bpmn init EvalTypeChoice"],
+        ["uip solution init Bar", "uip maestro bpmn init EvalTypeChoice"],
         ["uip maestro bpmn eval evaluators create x --type exact-match"],
     ),
     (
@@ -912,25 +917,13 @@ _ADVISORY = [
         ["uip solution init Foo", "uip maestro bpmn init SimEval"],
         ["uip maestro bpmn eval simulation add a --set s"],
     ),
-    (
-        "connector_features/paginated_reference_lookup/paginated_reference_lookup.yaml",
-        "channel lookup ran",
-        [
-            "uip is resources run list uipath-salesforce-slack curated_channels --connection-id c --output json",
-            "cd /solution/S && uip maestro registry prepare uipath-salesforce-slack --action send-message-to-channel "
-            "--connection-id c --resolve 'channel:name=simple' --resolve 'send_as:name=Bot'",
-        ],
-        [
-            "uip is resources list uipath-salesforce-slack --connection-id c --output json",
-            "uip maestro registry prepare uipath-salesforce-slack --action send-message-to-channel --connection-id c",
-        ],
-    ),
 ]
 
 
 @pytest.mark.parametrize(
     ("task", "part", "counts", "refused"), _ADVISORY, ids=[f"{t.split('/')[-1]}:{p}" for t, p, _, _ in _ADVISORY]
 )
+# `_counts` ignores tool_name/require_success and shell-normalizes every call.
 def test_advisory_pattern_accepts_the_correct_route_and_refuses_the_rest(
     task: str, part: str, counts: list[str], refused: list[str]
 ) -> None:

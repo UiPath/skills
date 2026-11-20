@@ -69,16 +69,16 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Advisory: agent built the Create Entity Record node on the non-existent entity (registry get, or SDK .dataService() compile)"
+    description: "Advisory: agent built the Create Entity Record node on the non-existent entity (registry get, or SDK .dataService() compile of the edited source)"
     tool_name: "Bash"
-    command_pattern: '(?:uip|\$UIP)\s+maestro\s+bpmn\s+(?:registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(?:CreateEntityRecordCurated|CreateEntityRecord_V3|NonExistentEntity)|compile\b)'
+    command_pattern: '(?:uip|\$UIP)\s+maestro\s+bpmn\s+(?:registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(?:CreateEntityRecordCurated|CreateEntityRecord_V3|NonExistentEntity)|compile\s+(?!\S*\.baseline\.bpmn\.ts)\S)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
   - type: command_executed
-    description: "Advisory: agent built the follow-up Query Entity Records nodes (registry get, or SDK .dataService() compile)"
+    description: "Advisory: agent built the follow-up Query Entity Records nodes (registry get, or SDK .dataService() compile of the edited source)"
     tool_name: "Bash"
-    command_pattern: '(?:uip|\$UIP)\s+maestro\s+bpmn\s+(?:registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(?:QueryEntityRecordsCurated|QueryEntityRecords_V3|FlowCodeEvalEntity)|compile\b)'
+    command_pattern: '(?:uip|\$UIP)\s+maestro\s+bpmn\s+(?:registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(?:QueryEntityRecordsCurated|QueryEntityRecords_V3|FlowCodeEvalEntity)|compile\s+(?!\S*\.baseline\.bpmn\.ts)\S)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
