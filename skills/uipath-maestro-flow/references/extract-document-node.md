@@ -177,6 +177,8 @@ A node from before CLI provisioning, written by hand, or compiled by an SDK olde
 uip maestro flow nodes provision <file> --output json
 ```
 
+`nodes provision` is the whole repair. Do not decompile and compile afterwards: compiling builder source over the `.flow` rewrites every node, variable and definition and re-mints the extraction source id.
+
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 
 A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; supply both inputs at creation, since nothing adds them later:
