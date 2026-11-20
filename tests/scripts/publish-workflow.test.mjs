@@ -108,12 +108,16 @@ test("dist-tag resolution fails closed and never moves latest backwards", () => 
 });
 
 // npm 12 prints `npm view --json` as an array; `.preview` on it fails the publish.
-test("dist-tag lookup reads both npm 11 and npm 12 output", () => {
-  const filter = PUBLISH.match(/TAGS=\$\(echo "\$TAGS" \| jq -c '([^']+)'\)/)?.[1];
+// Any other shape must stop the publish, not read as "no tags".
+test("dist-tag lookup reads npm 11 and npm 12 output and fails closed on anything else", () => {
+  const filter = PUBLISH.match(/TAGS=\$\(echo "\$TAGS" \| jq -cn '([^']+)'\)/)?.[1];
   assert.ok(filter, "publish.yml normalizes the npm view output");
-  const tags = (out) => JSON.parse(execFileSync("jq", ["-c", filter], { input: out }).toString());
+  const tags = (out) =>
+    JSON.parse(execFileSync("jq", ["-cn", filter], { input: out, stdio: ["pipe", "pipe", "ignore"] }).toString());
   const expected = { latest: "1.206.1", preview: "1.207.0-preview.1" };
   assert.deepEqual(tags(JSON.stringify(expected)), expected);
   assert.deepEqual(tags(JSON.stringify([expected])), expected);
-  assert.deepEqual(tags("[]"), {});
+  for (const bad of ["", "[]", "null", '""', JSON.stringify([expected, expected])]) {
+    assert.throws(() => tags(bad), `${JSON.stringify(bad)} is refused`);
+  }
 });
