@@ -96,6 +96,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | `itemResults` | array | `[]` | One `{ item, ok }` per item, appended by the body or the net |
 | `batchSummary` | jsonSchema | | Totals, success count, failure breakdown |
 | `policySatisfied` | boolean | `false` | Did the run meet the configured policy |
+| `batchId` | string | | Parallel only: tags this run's records for the read-back |
 
 `policySatisfied` defaults to `false` so a run whose `aggregate` never wrote it ends as failed, not completed.
 
@@ -107,13 +108,13 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | Parallel | Must items run several at a time? | Drop `sequential`, and record each result outside the process |
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
-Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`.
-Have `fetchBatch` also set a `batchId` variable and write it on every item's record. After the sub-process, read the batch's records back with a `.dataService()` `query` whose `where` filters on it, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
-Keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
+When the request names no store, do not invent an entity or connection, and do not stop to ask: keep `sequential: true`, which collects results correctly, and put on the final report's `Assumed:` line that items run one at a time because no store was named.
+Otherwise write each item's outcome to the store, one Data Fabric record per item: a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`).
+Declare `.var('batchId', 'string')`, set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`, and write it on every record.
+After the sub-process, read the batch back with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
+Keep `aggregate` a `.scriptTask()` that totals the records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does; a `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` at its `false` default.
 On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).
 A record count below `vars.batchItems.length` is an item that left no result: count it as a failure.
-Aggregation and the policy value stay in that script: a `.task()` without `set` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
-When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and name it on the final report's `Assumed:` line (running several at a time needs a store); do not stop to ask.
 This variant is not verified end to end.
 
 ## What to bind
