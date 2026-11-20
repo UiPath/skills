@@ -179,7 +179,7 @@ On a Flow project such an entry is refused (`CONNECTOR_NO_FLOW_DEFINITION`); if 
 An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
 It never asks Integration Service for a connector the catalog does serve: a misspelt action on Jira gets the catalog's closest action.
 
-Only when `prepare` cannot reach the tenant at all, or the tenant refuses connection-scoped reads (end of this section), fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
+Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
 Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
 A draft that cannot wait for access takes the form in §7.
 The identity comes from the catalog, never from the connector's OpenAPI document:
@@ -197,19 +197,12 @@ Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
 On this `.activity()`, `path` is the operation's route under the connector, copied from `Operation.Path` of `uip is resources describe <key> <object> --operation <Verb> --output json` (`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
-Never the provider's own REST route: the runtime prefixes the connector's base itself, so `/rest/api/2/issue` goes out as `/rest/api/2/rest/api/2/issue`; `validate` accepts it and the debug run faults with incident `102001 Integration Services resource not found`.
-An `.http()` `url` is the other way round: the vendor's own endpoint ([HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work)).
+Never the provider's own REST route (`/rest/api/2/issue`): `validate` accepts it and the debug run faults at the node (observed on Jira Create Issue: `102002 Integration Services operation failed`, provider 401).
 Copy the `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, `activityConfigurationVersion: 'v2'` included.
 Without `--input-details` the command returns only the extension type's V1 template (`activityConfigurationVersion` defaults to `v1` there), whose context a V2 task does not carry.
 `--input-details` takes the node's values as JSON, `'{}'` when you have none yet; `Data.V2.MissingRequired` lists the required inputs still unset.
 A `{param}` in the path goes in `inputs: { pathParameters: { <param>: … } }` and a query parameter in `inputs: { queryParameters: { … } }`, the element's two json rows; a bare `inputs: { <param> }` lands in the body (see [the parameter rows](bpmn-runtime.md#connectors-and-bindings)).
 For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id> --output json`, `method` is the catalog's **Integration Service method** for that verb (`GETBYID` for a single record (Retrieve), `GET` for a list, `POST` to create, `PATCH`/`PUT` to update, `DELETE`), not the HTTP verb (both retrieval and listing travel as HTTP GET; the platform matches on `GETBYID` vs `GET`), and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
-
-Some tenants refuse the connection-scoped reads: `describe --connection-id` answers `400 A provided parameter was of an invalid type`, `resources list --connection-id` answers `404`, and `registry get --connection-id` with `--operation` named reports `IS enrichment returned no data`.
-That is a tenant gap, not a missing object, and `prepare` fails with it, since it describes through the connection.
-It is the one case where the tenant still answers, so authoring does not wait: hand-fill the `.activity()` from the connector-level reads.
-`objectName` and `method` still come from `uip is activities list <key> --output json` (a generic record verb's object from `uip is resources list <key> --output json`); take only `path` from `uip is resources describe <key> <object> --operation <Verb> --output json`, both without `--connection-id`.
-A field only the connection discovers has no such fallback: stop on one you cannot resolve; never invent it.
 
 ## 5. Data Fabric is not this
 

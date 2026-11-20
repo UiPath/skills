@@ -362,23 +362,12 @@ value, so pass `--operation Create`.
 differs per operation and is not always `/<objectName>` (`issue_properties` is
 `/issue/{issueIdOrKey}/properties`), so never derive it. `uip is resources
 list` prints the object's base `Path`, without an operation's `{placeholder}`.
-Never put the provider's own REST route there: the runtime prefixes the
-connector's base itself, so `/rest/api/2/issue` goes out as
-`/rest/api/2/rest/api/2/issue`. `validate` accepts it, and the debug run faults
-with incident `102001 Integration Services resource not found`. A connector-mode
+Never put the provider's own REST route there (`/rest/api/2/issue`): `validate` accepts
+it and the debug run faults at the node (observed on Jira Create Issue:
+`102002 Integration Services operation failed`, provider 401).
+A connector-mode
 `Intsvc.UnifiedHttpRequest` `url` is the other way round: the vendor's own
 endpoint, relative to the connection's base URL.
-
-Some tenants refuse the connection-scoped calls: `describe --connection-id`
-answers `400 A provided parameter was of an invalid type`, `resources list
---connection-id` answers `404`, and `registry get --connection-id` with
-`--operation` named reports `IS enrichment returned no data` (without
-`--operation` that message has the cause in
-[v2-connector-nodes.md](v2-connector-nodes.md)). The connector-level calls
-still answer there: take `objectName`, `Operation.Name` and `path` from the
-connector-level describe and hand-author the node by this section. Field
-discovery (`--field`) has no such fallback: stop on a field you cannot resolve
-rather than invent one.
 
 ### Set every required `RequestFields` entry
 
