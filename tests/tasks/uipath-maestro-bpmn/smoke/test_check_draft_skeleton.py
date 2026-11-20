@@ -159,6 +159,11 @@ class ForkExitTests(unittest.TestCase):
         self.stalls('<bpmn:exclusiveGateway id="G" />', "S>F F>A F>B A>G G>J G>F B>J J>End",
                     "parallel fork F has 2 incoming flows")
 
+    def test_handler_merge_from_the_box_before_the_fork_stalls(self):
+        # Pre has an onError handler H that does not end: H rejoins at F, so F has two incoming flows.
+        self.stalls('<bpmn:task id="Pre" /><bpmn:task id="H" />',
+                    "S>Pre Pre>F H>F F>A F>B A>J B>J J>End", "or timer handler that does not end")
+
     def test_two_forks_in_sequence_pass(self):
         self.passes(SECOND, "S>F F>A F>B A>J B>J J>F2 F2>C F2>D C>J2 D>J2 J2>End")
 
