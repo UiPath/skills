@@ -4,7 +4,7 @@
 
 Start a coded or low-code agent and wait for its output. It may be published in Orchestrator or registered as a sibling project in this solution.
 
-Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, inputSchema?, returns?, flavour? })`
 
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
@@ -163,26 +163,9 @@ instead of copying the two ids:
 - An older SDK ignores `project` and refuses the step for its missing key
   (`AGENT_NO_KEY`, `RPA_NO_KEY`, …). Then use the id recipe above.
 
-## Argument types (`inputSchema`)
-
-Compile declares each passed input with a type taken from its value: a number,
-boolean, array or object literal by its shape, and anything else (an expression,
-`input()`, `out()`) as `string`. When the process types an argument differently
-(an object filled from an expression, or an argument the step does not pass),
-write the argument JSON Schema as `inputSchema`. Compile writes it verbatim as
-the definition's `inputDefinition`:
-
-```ts
-inputs: { payload: input('request') },
-inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
-```
-
-A decompiled step carries `inputSchema` when its saved definition holds more
-than compile would infer; keep it. `check` reports an object or array literal
-whose declared type does not allow it (`PROCESS_INPUT_SCHEMA_TYPE`; `flow
-validate` reports the same value as `TYPE_MISMATCH`), and an `inputSchema` that
-is not a plain object (`PROCESS_INPUT_SCHEMA_INVALID`). Needs a builder SDK
-release that includes UiPath/builder-sdk#2198.
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Evidence boundary
 

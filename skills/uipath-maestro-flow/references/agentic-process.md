@@ -4,7 +4,7 @@
 
 Invoke a deployed Maestro agentic process.
 
-Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, returns? })`
+Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns? })`
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
@@ -23,7 +23,7 @@ See [Orchestrator Processes](or-processes.md) and use the `ProcessOrchestration`
 
 Run a deployed Maestro agentic process synchronously.
 
-Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, returns?, form?, completion? })`.
+Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns?, form?, completion? })`.
 
 ```ts
 .step('intake', agenticProcess({ name: 'ProcurementProcess', folderPath: 'Shared',
@@ -57,26 +57,9 @@ through `.onError(...)`. Local replay treats it as dispatch-only.
   inputs: { claimId: input('claimId') } }))
 ```
 
-## Argument types (`inputSchema`)
-
-Compile declares each passed input with a type taken from its value: a number,
-boolean, array or object literal by its shape, and anything else (an expression,
-`input()`, `out()`) as `string`. When the process types an argument differently
-(an object filled from an expression, or an argument the step does not pass),
-write the argument JSON Schema as `inputSchema`. Compile writes it verbatim as
-the definition's `inputDefinition`:
-
-```ts
-inputs: { payload: input('request') },
-inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
-```
-
-A decompiled step carries `inputSchema` when its saved definition holds more
-than compile would infer; keep it. `check` reports an object or array literal
-whose declared type does not allow it (`PROCESS_INPUT_SCHEMA_TYPE`; `flow
-validate` reports the same value as `TYPE_MISMATCH`), and an `inputSchema` that
-is not a plain object (`PROCESS_INPUT_SCHEMA_INVALID`). Needs a builder SDK
-release that includes UiPath/builder-sdk#2198.
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## In-solution sibling
 

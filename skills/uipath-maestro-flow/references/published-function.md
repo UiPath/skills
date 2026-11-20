@@ -7,8 +7,8 @@ as its own resource. `publishedFunction()` invokes one as a single step
 (`uipath.core.function.<key>`, dispatched as
 `Orchestrator.ExecuteFunctionAsync`).
 
-Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`, or
-`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, returns? })`
+Signature: `publishedFunction({ key, name, folderPath, inputs?, inputSchema?, returns? })`, or
+`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, inputSchema?, returns? })`
 for a coded function in the same solution (see [In the same solution](#in-the-same-solution)).
 
 ```ts
@@ -121,26 +121,9 @@ read is rejected (`FUNCTION_READ_WITHOUT_RETURNS`) — nothing here could tell a
 real field from a typo. `registry get uipath.core.function.<key>` shows what the
 platform synthesizes for a deployed one.
 
-## Argument types (`inputSchema`)
-
-Compile declares each passed input with a type taken from its value: a number,
-boolean, array or object literal by its shape, and anything else (an expression,
-`input()`, `out()`) as `string`. When the process types an argument differently
-(an object filled from an expression, or an argument the step does not pass),
-write the argument JSON Schema as `inputSchema`. Compile writes it verbatim as
-the definition's `inputDefinition`:
-
-```ts
-inputs: { payload: input('request') },
-inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
-```
-
-A decompiled step carries `inputSchema` when its saved definition holds more
-than compile would infer; keep it. `check` reports an object or array literal
-whose declared type does not allow it (`PROCESS_INPUT_SCHEMA_TYPE`; `flow
-validate` reports the same value as `TYPE_MISMATCH`), and an `inputSchema` that
-is not a plain object (`PROCESS_INPUT_SCHEMA_INVALID`). Needs a builder SDK
-release that includes UiPath/builder-sdk#2198.
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Which family to reach for
 
