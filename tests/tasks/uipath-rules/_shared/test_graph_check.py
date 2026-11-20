@@ -134,6 +134,19 @@ class TestDiagram:
     def test_fixture_has_no_overlap(self):
         gc.check_no_overlap(fixture_root())
 
+    def test_a_file_with_no_diagram_passes(self):
+        # Rule 10 tells the agent to leave DMNDI out of a new graph; the editor lays it out.
+        root = fixture_root()
+        root.remove(next(root.iter(f"{{{gc.DMNDI_NS}}}DMNDI")))
+        gc.check_no_overlap(root)
+
+    def test_an_element_the_diagram_never_placed_fails(self):
+        # The edit added a decision and never ran `uip rules format`.
+        root = fixture_root()
+        ET.SubElement(root, f"{{{gc.DMN_NS}}}decision", {"id": "decision_approved", "name": "approved"})
+        with pytest.raises(SystemExit):
+            gc.check_no_overlap(root)
+
     def test_overlap_is_measured_at_the_drawn_size(self):
         # 200 apart clears a 180-wide box in the file but not the 288-wide card the designer draws.
         root = edited_root('<dc:Bounds x="640" y="64" width="288" height="96" />', '<dc:Bounds x="408" y="304" width="180" height="80" />')

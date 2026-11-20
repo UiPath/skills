@@ -209,9 +209,18 @@ def check_shapes_kept(before: ET.Element, after: ET.Element) -> None:
 
 
 def check_no_overlap(root: ET.Element) -> None:
-    """No two placed cards overlap at the size the designer draws them."""
+    """Every drawable element is placed, or none is, and no two cards overlap at the drawn size."""
     kinds = {e.get("id"): e.tag.replace(f"{{{DMN_NS}}}", "") for e in root}
-    boxes = [(element, x, y, *DRAWN_SIZE[kinds[element]]) for element, (x, y) in shapes(root).items()
+    placed = shapes(root)
+    drawable = {element for element, kind in kinds.items() if element and kind in DRAWN_SIZE}
+    # No diagram at all is fine: the editor lays one out when it opens a file with no shapes. A
+    # partial diagram is not, because it leaves the unplaced elements off the canvas — which is
+    # what `uip rules format` prevents. Without this, an element with no shape never enters
+    # `boxes` below, so an edit that adds a decision and skips `format` grades as clean.
+    missing = sorted(drawable - set(placed))
+    if placed and missing:
+        fail(f"the diagram places some elements but not {missing}; run 'uip rules format'")
+    boxes = [(element, x, y, *DRAWN_SIZE[kinds[element]]) for element, (x, y) in placed.items()
              if kinds.get(element) in DRAWN_SIZE]
     for index, (first, ax, ay, aw, ah) in enumerate(boxes):
         for second, bx, by, bw, bh in boxes[index + 1:]:
