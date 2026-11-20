@@ -49,6 +49,10 @@ def declares_unavailable(text: str, subject: str) -> bool:
     next_heading = re.search(r"^#+\s", body, re.MULTILINE)
     if next_heading:
         body = body[: next_heading.start()]
+    # A negated predicate says the opposite. Observed false positive: a Rules
+    # Skipped row explaining a catalog re-fetch ended "The catalog was not
+    # unavailable." -- the catalog WORKED. Blank negated predicates first.
+    body = re.sub(rf"(?:\b(?:not|never)|n't)\s+{_UNAVAILABLE}", " ", body, flags=re.IGNORECASE)
     return bool(re.search(rf"({subject})[^.\n]*{_UNAVAILABLE}", body, re.IGNORECASE))
 
 
