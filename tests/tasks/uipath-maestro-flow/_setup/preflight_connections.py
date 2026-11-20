@@ -39,23 +39,54 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import time
+
+
+#: `uip` exit code for AuthenticationError. In CI it shows up intermittently on
+#: a call whose siblings authenticate fine, so it is retried before it is believed.
+AUTH_EXIT_CODE = 2
+LIST_ATTEMPTS = 3
+LIST_BACKOFF_S = 5
+
+
+def _failure_detail(proc: subprocess.CompletedProcess) -> str:
+    """Exit code plus whatever `uip` said: stderr, and the JSON envelope on stdout."""
+    parts = [f"exited {proc.returncode}"]
+    if proc.stderr.strip():
+        parts.append(proc.stderr.strip())
+    try:
+        envelope = json.loads(proc.stdout)
+    except (json.JSONDecodeError, TypeError):
+        envelope = None
+    if isinstance(envelope, dict):
+        for field in ("Message", "Instructions"):
+            if envelope.get(field):
+                parts.append(f"{field}: {envelope[field]}")
+    elif proc.stdout.strip():
+        parts.append(proc.stdout.strip())
+    return ": ".join(parts)
 
 
 def _connections(key: str) -> list[dict]:
-    try:
-        proc = subprocess.run(
-            ["uip", "is", "connections", "list", key, "--all-folders", "--output", "json"],
-            capture_output=True,
-            text=True,
-            timeout=90,
-        )
-    except subprocess.TimeoutExpired as exc:
-        # Fatal, unlike a ping timeout: without the candidate list there is
-        # nothing to fall back to. Reported as a message rather than left to
-        # surface as a traceback from inside a pre_run step.
-        raise RuntimeError(f"`uip is connections list {key}` did not answer within {exc.timeout:.0f}s") from exc
-    if proc.returncode != 0:
-        raise RuntimeError(f"`uip is connections list {key}` exited {proc.returncode}: {proc.stderr.strip()}")
+    for attempt in range(1, LIST_ATTEMPTS + 1):
+        try:
+            proc = subprocess.run(
+                ["uip", "is", "connections", "list", key, "--all-folders", "--output", "json"],
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+        except subprocess.TimeoutExpired as exc:
+            # Fatal, unlike a ping timeout: without the candidate list there is
+            # nothing to fall back to. Reported as a message rather than left to
+            # surface as a traceback from inside a pre_run step.
+            raise RuntimeError(f"`uip is connections list {key}` did not answer within {exc.timeout:.0f}s") from exc
+        if proc.returncode == 0:
+            break
+        if proc.returncode == AUTH_EXIT_CODE and attempt < LIST_ATTEMPTS:
+            time.sleep(LIST_BACKOFF_S * attempt)
+            continue
+        raise RuntimeError(f"`uip is connections list {key}` {_failure_detail(proc)} ({attempt} of {LIST_ATTEMPTS} attempts)")
     payload = json.loads(proc.stdout)
     if payload.get("Result") != "Success":
         raise RuntimeError(f"connections list for {key} failed: {payload.get('Message', payload)}")
