@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -33,7 +34,7 @@ VALIDATION = _proc(3, json.dumps({"Result": "Failure", "Message": "bad key"}))
 @pytest.fixture(params=SCRIPTS, ids=lambda p: p.parts[-3])
 def pf(request, monkeypatch):
     mod = _load(request.param)
-    monkeypatch.setattr(mod.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
     return mod
 
 
@@ -44,7 +45,7 @@ def _script(monkeypatch, pf, results):
         calls.append(1)
         return results[min(len(calls), len(results)) - 1]
 
-    monkeypatch.setattr(pf.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     return calls
 
 
@@ -58,7 +59,7 @@ def test_persistent_auth_fails_with_stdout_message(pf, monkeypatch):
     calls = _script(monkeypatch, pf, [AUTH])
     with pytest.raises(RuntimeError) as exc:
         pf._connections("k")
-    assert len(calls) == pf.LIST_ATTEMPTS
+    assert len(calls) == 3
     msg = str(exc.value)
     assert "exited 2" in msg and "Token expired" in msg and "Run uip login" in msg
 
