@@ -60,7 +60,7 @@ success_criteria:
   # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
     description: "Agent discovered the memory space with uip solution resources list --kind MemorySpace (or ManageSolutionResources)"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b.*--kind\s+MemorySpace|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"MemorySpace)'
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b(?:\\\n|[^;&|\n])*?--kind[\s=]+MemorySpace\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"MemorySpace)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

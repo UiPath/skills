@@ -262,6 +262,8 @@ KEY = "be88b8d6-ec4d-484c-9474-805dd82d8d68"
         (APIWF_LIST, "uip solution resources list --kind Process --source remote --search WeatherAPI --output json"),
         (APIWF_GET, f'uip solution resources get "{KEY}" --output json'),
         (ESCALATION_LIST, "uip solution resources list --kind App --output json"),
+        (APIWF_LIST, "uip solution resources list --source remote \\\n  --kind Process --output json"),
+        (APIWF_LIST, "uip solution resources list --kind=Process --output json"),
     ],
 )
 def test_resource_lookup_counts_the_cli_or_the_host_tool(pattern, call):
@@ -277,6 +279,9 @@ def test_resource_lookup_counts_the_cli_or_the_host_tool(pattern, call):
         (APIWF_GET, _host_call(action="list", kind="Process", source="remote")),
         (APIWF_GET, _host_call(action="add", kind="Process", source="remote", name="WeatherAPI")),
         (ESCALATION_LIST, _host_call(action="get", resourceKey=KEY)),
+        # A kind named by a later command in the same call is not this list's kind.
+        (APIWF_LIST, "uip solution resources list --kind App && uip solution resources add --kind Process --name X"),
+        (APIWF_LIST, "uip solution resources list --kind App\nuip solution resources add --kind Process --name X"),
     ],
 )
 def test_resource_lookup_needs_the_same_action_and_kind(pattern, call):
