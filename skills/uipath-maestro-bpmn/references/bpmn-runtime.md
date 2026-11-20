@@ -42,6 +42,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`, `bindings`, `datafabric`,
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
   `this`. `check` does not report it. A public `.output()` may be named `result`.
+  A job node's `outputs` key and `outputVar` are variable names too: `outputs: { result: '=result.x' }` fails `validate`. Name the key for the value (`jobStatus`), not `result`/`status`-style namespace words.
 
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
@@ -298,6 +299,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
   The same `outputs` option reads an RPA process's (`.startProcess()`), an agent's (`.startAgent()`) and a waited-for agentic or case process's (`.startAgenticProcess()`, `.startCaseProcess()` without `async`) output arguments.
+  Only the documented option keys apply; `outputRows` is not one on these builders. Map each argument through `outputs`.
   `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
 
