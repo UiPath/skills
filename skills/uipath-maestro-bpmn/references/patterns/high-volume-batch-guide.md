@@ -108,12 +108,12 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
 Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`.
-After the sub-process, read the batch's records back with a `.dataService()` `query` filtered by `where` to the batch id, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
+Have `fetchBatch` also set a `batchId` variable and write it on every item's record. After the sub-process, read the batch's records back with a `.dataService()` `query` whose `where` filters on it, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
 Keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
-On a tenant entity the response is a bare array of records, `[]` when none (a debug run settled it; read `.length` and `.filter` on it directly).
-A record count below `vars.batchItems.length` is an item that left no result: treat it as policy not met.
+On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).
+A record count below `vars.batchItems.length` is an item that left no result: count it as a failure.
 Aggregation and the policy value stay in that script: a `.task()` without `set` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
-When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and say in the final report that running several at a time needs a store; do not stop to ask.
+When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and name it on the final report's `Assumed:` line (running several at a time needs a store); do not stop to ask.
 This variant is not verified end to end.
 
 ## What to bind
