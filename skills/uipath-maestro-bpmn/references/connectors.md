@@ -130,7 +130,7 @@ uip is connections ping <CONNECTION_ID> --output json                 # Data.Sta
 - A connection is a sender's identity. Never bind, or offer on an outline, a connection that is another person's
   (its folder is `<USER_NAME>'s workspace`, or its Name is someone else's email), and never bind one as a stand-in for a
   mailbox, channel or account the request names (`ar@…`) that has no connection. Bind the requester's own personal connection
-  only when they say to. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
+  only when they say to, or pick *Build it* on a draft gate that named it. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
@@ -205,7 +205,7 @@ For a generic record verb (`Create Record`, `Delete Record`), the catalog row's 
 ## 5. Data Fabric is not this
 
 Data Fabric (Data Service) records and file fields are `.dataService(id, { entity, connection, folder, op, … })`, one of eight operations.
-A folder-scoped entity is `entity: { name, folder: '<folder path>' }`, which writes the connector's `_V3` operation once `check`'s `prepare` has recorded its keys; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings).
+A folder-scoped entity is `entity: { name, folder: '<folder path>' }`, which writes the connector's `_V3` operation once `check`'s `prepare` has recorded its keys: `create`, `update`, `get` and `query` as the V2 task Studio Web saves, `delete` as a V1 task; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings) for these and the other V1 cases.
 The library ships one Data Service operation, so `.connector()` cannot author the rest, and a hand-filled `.activity()` gets `objectName`, the parameter targets and the folder binding wrong in ways `validate` does not report.
 See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `examples/ContractRegistry.bpmn.ts`.
 

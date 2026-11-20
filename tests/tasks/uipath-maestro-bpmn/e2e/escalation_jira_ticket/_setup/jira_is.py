@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import time
 
 CONNECTOR = "uipath-atlassian-jira"
 FOLDER_PATH = "Shared/uipath-maestro-flow"
@@ -49,13 +50,34 @@ def _issue_not_found(env: dict) -> bool:
 
 
 def _run(*args: str) -> dict:
+    left = time_left()
+    if left <= 0:
+        raise TimeoutError("teardown deadline reached")
     out = subprocess.run(
         ["uip", *args, "--output", "json"],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True, text=True, timeout=min(CALL_TIMEOUT, left),
     ).stdout
     # Tolerate diagnostic/log lines the CLI may print before the JSON envelope.
     i = out.find("{")
     return json.loads(out[i:] if i > 0 else out)
+
+
+CALL_TIMEOUT = 120
+_deadline: float | None = None
+
+
+def _now() -> float:
+    return time.monotonic()
+
+
+def set_deadline(seconds: float) -> None:
+    """Cap every later `uip` call so the whole run ends `seconds` from now."""
+    global _deadline
+    _deadline = _now() + seconds
+
+
+def time_left() -> float:
+    return float("inf") if _deadline is None else _deadline - _now()
 
 
 _ISSUETYPE_IDS: dict[str, str] = {}

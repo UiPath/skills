@@ -29,7 +29,7 @@ def test_gate_reply_rules() -> None:
     assert "for every box's `.task()` id" in text
     assert "each changed box's `name` attribute, decoded" in text
     assert "carries no new user instruction and only resumes" in text
-    assert "ending in `which one?`" in text
+    assert "which one? Build it takes the first" in text
 
 
 def test_draft_skeleton_rules() -> None:

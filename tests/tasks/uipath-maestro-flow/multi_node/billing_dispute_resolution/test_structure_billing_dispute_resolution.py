@@ -2,7 +2,7 @@
 """Unit tests for `check_structure_billing_dispute_resolution.assert_topology`.
 
 The function's own section header has claimed "unit-testable against the
-reference" since #1320 and nothing tested it, so the gating structural criterion
+reference" since #1320 and nothing tested it, so the advisory structural criterion
 was only ever exercised by a live eval run. That is what let the connector-only
 entity-read gate survive #3249: both billing references sit in this directory,
 and neither was ever fed to the assertion that rejects one of them.
@@ -41,7 +41,7 @@ def _graph(filename):
 
 @pytest.mark.parametrize("reference", [CONNECTOR_REFERENCE, NATIVE_REFERENCE])
 def test_assert_topology_accepts_both_reference_shapes(reference):
-    """Neither entity-read shape may fail the gating topology assertion."""
+    """Neither entity-read shape may fail the topology assertion."""
     nodes_by_id, edges = _graph(reference)
     _checker().assert_topology(nodes_by_id, edges)
 

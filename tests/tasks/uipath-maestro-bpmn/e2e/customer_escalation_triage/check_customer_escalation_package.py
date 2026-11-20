@@ -28,11 +28,11 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
     _directory = os.path.dirname(_directory)
 sys.path.insert(0, _directory)
 
-from _shared import bpmn_live  # noqa: E402
+from _shared import bpmn_check, bpmn_live  # noqa: E402
 
-PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
+NAME = "CustomerEscalationTriage"
+LIVE_RUN_DIR = Path("customer-escalation-live")
 EXPECTED_ARCHIVE_BASENAMES = {
-    "CustomerEscalationTriage.bpmn",
     "bindings_v2.json",
     "entry-points.json",
     "operate.json",
@@ -62,8 +62,9 @@ def fail(message: str) -> NoReturn:
 
 
 def main() -> None:
-    if not PROJECT.is_dir():
-        fail(f"missing project directory: {PROJECT}")
+    bpmn_file = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
+    project = bpmn_file.parent
+    expected_basenames = EXPECTED_ARCHIVE_BASENAMES | {bpmn_file.name}
     with tempfile.TemporaryDirectory(prefix="bpmn-eval-pack-") as output_dir:
         result = subprocess.run(
             [
@@ -71,7 +72,7 @@ def main() -> None:
                 "maestro",
                 "bpmn",
                 "pack",
-                str(PROJECT),
+                str(project),
                 output_dir,
                 "--output",
                 "json",
@@ -107,7 +108,7 @@ def main() -> None:
 
         with zipfile.ZipFile(package) as archive:
             by_basename = {Path(name).name: name for name in archive.namelist()}
-            missing = sorted(EXPECTED_ARCHIVE_BASENAMES - set(by_basename))
+            missing = sorted(expected_basenames - set(by_basename))
             if missing:
                 fail(f"packed archive is missing expected content: {missing}")
             bindings = json.loads(archive.read(by_basename["bindings_v2.json"]))

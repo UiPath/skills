@@ -40,6 +40,21 @@ again this way, naming the `.parallel` `<node>Fork` after the node the arms
 leave. A canvas arm that runs a step before its Terminate is the exception: it
 stays an unstructured fan-out (see [brownfield.md](brownfield.md)).
 
+## A Merge after a branch never completes
+
+A Merge waits for every edge into it, and a `.branch()` or `.switch()` takes one arm.
+So a Merge that only one Decision's or Switch's arms reach stops the run there: `check` refuses it (`MERGE_NEVER_COMPLETES`), and so does `uip maestro flow validate`.
+Do not put a Merge after a `.branch()`: its arms meet at the next step on their own.
+Inside a `.parallel` arm, put a step after the `.branch()` so its arms meet there before the join.
+
+```ts
+.branch('d', cond, (t) => t.step('A', work), (e) => e.step('B', work))
+.step('after', work)   // A and B both lead here; no Merge
+```
+
+Decompile keeps a canvas Merge drawn after a Decision as a `rawNode('core.logic.merge')` step, so a brownfield file with one reports this finding on an unchanged node.
+The run of the original never finishes either; tell the user, and remove the Merge step only if they ask for the fix.
+
 ## At a glance
 
 Fan out independent arms and join them at a Merge.

@@ -669,6 +669,18 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
         flow_check.assert_no_flow_files()
 
 
+def test_find_project_ignores_the_clis_investigation_copies(tmp_path, monkeypatch):
+    """Round 11 codex: the CLI downloaded the cloud project under
+    .local/investigations/cloud/<id>/, which made two Flow projects match."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ApproverCountAgent").mkdir()
+    _make_proj(tmp_path / "ApproverCountAgent", "ApproverCountAgent", "Flow")
+    copy = tmp_path / ".local" / "investigations" / "cloud" / "a31f9733"
+    copy.mkdir(parents=True)
+    _make_proj(copy, "ApproverCountAgent", "Flow")
+    assert _find_project("**/project.uiproj") == os.path.join("ApproverCountAgent", "ApproverCountAgent")
+
+
 def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
     """No project.uiproj at all — original failure message preserved."""
     monkeypatch.chdir(tmp_path)
@@ -960,6 +972,16 @@ def test_run_debug_retries_transient_504_then_completes(monkeypatch):
     payload = run_debug(inputs={"x": 1})
     assert calls["n"] == 2
     assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_run_debug_keeps_every_attempts_stdout(monkeypatch):
+    _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_TRANSIENT_504, _COMPLETED]
+
+    _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_COMPLETED]
 
 
 def test_run_debug_does_not_retry_real_fault(monkeypatch):

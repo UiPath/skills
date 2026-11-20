@@ -13,7 +13,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parent
-TOPOLOGY_CHECKER = ROOT.parent.parent / "_shared" / "check_cm_golden_case.py"
+# The task grades with the wrapper, which runs the shared checker unchanged
+# except that a plan without metadata.intsvcActivityConfig counts as "v2".
+TOPOLOGY_CHECKER = ROOT / "check_cm_golden_topology.py"
 
 
 def condition(rule_name: str, **rule_fields: object) -> dict:
@@ -309,6 +311,24 @@ class CMGoldenCheckerTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("expected exactly 15 tasks, got 16", result.stdout + result.stderr)
+
+    def test_topology_checker_accepts_a_studio_web_plan_without_activity_config(self) -> None:
+        """Studio Web's case scaffold has no intsvcActivityConfig key."""
+        plan = expected_caseplan()
+        plan["metadata"].pop("intsvcActivityConfig")
+
+        result = run_topology_checker(plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_topology_checker_rejects_another_activity_config(self) -> None:
+        plan = expected_caseplan()
+        plan["metadata"]["intsvcActivityConfig"] = "v1"
+
+        result = run_topology_checker(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("intsvcActivityConfig must be 'v2'", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
