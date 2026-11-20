@@ -147,7 +147,7 @@ The sketch collects them itself: each iteration appends to `itemResults`, and `s
 A Maestro debug run of this shape over `[1, -2, 3]` completed with three results, the `-2` one caught by the net, and `aggregate` counted 3 / 2 ok.
 
 Parallel iterations overwrite each other's writes to one variable: the engine's variable store is last-writer-wins, and a Maestro run appending 12 items in parallel kept 11.
-Never append to one variable from parallel iterations; use the parallel variant's external store.
+Never append to one variable from parallel iterations; write to the parallel variant's external store, or keep `sequential: true` when none is named.
 
 The append is a `set` expression because it reads `iterator` directly and validates clean.
 Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.
