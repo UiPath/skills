@@ -14,3 +14,7 @@ With no session library (Automation Suite), `check` and `compile` fetch a missin
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs a connection on the tenant (you are already signed in). Run it when `check` asks for it, not speculatively.
 <!--skill-flavor:prepare-live:end-->
+
+<!--skill-flavor:sdk-event-entity:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.123.0 or later. Studio Web ships its own SDK: when `check` warns `EVENT_NO_SCOPE` on a trigger that sets `entity`, this build ignores `entity`. Tell the user that this Studio Web build cannot write a folder entity trigger's picker yet; do not fall back to `filter: { folderEntityName }` or hand-write the rows.
+<!--skill-flavor:sdk-event-entity:end-->

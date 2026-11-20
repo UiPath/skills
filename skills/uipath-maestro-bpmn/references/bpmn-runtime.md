@@ -474,6 +474,7 @@ binding half, which is the same for every connector-backed node.
   A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: a `.connector()` call would drop the picker, so decompile keeps the task as it is, and it compiles back unchanged.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
+- A Data Fabric entity trigger takes the same `entity: { name, folder }` option on `.eventTrigger()`: [connector events](connectors.md#6-connector-events).
 - Do not add entity bindings by hand: compile writes the pair.
   A V2 task reads it, so its entity can be re-pointed per environment at deploy; a `delete` task's entity is fixed at compile time.
 
