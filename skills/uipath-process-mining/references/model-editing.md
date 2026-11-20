@@ -58,7 +58,9 @@ uip pm apps model update <app> --file model.json --etag 'W/"3"'
 ```
 
 Prefer `fields set` for a targeted change: no ETag to thread, and it can't clobber unrelated parts of
-the model. After editing, `publish` to reach the dashboards, and re-ingest if a data kind changed.
+the model. Exception: a kind change that a comparison must follow takes one `model update` (see
+[the data-kind rule](#the-data-kind-rule)). After editing, `publish` to reach the dashboards, and
+re-ingest if a data kind changed.
 
 ## The data-kind rule
 
@@ -75,12 +77,47 @@ UserError_UnsupportedOperatorArgumentDataKind
 
 The `fields set` / `update` commands **run this validation synchronously** and refuse an edit that
 would create the mismatch, surfacing a hint that names the conflicting comparison. So via the CLI you
-cannot flip a field to `duration` while a calculated field / metric compares it to a numeric constant —
-update or remove that comparison first, or make the constant a `duration`. This synchronous check is
-exactly what the **data-manager UI does not do** (it defers the kind change to the next re-ingestion —
-the footgun below), so `fields set` is the *safe* way to change a kind. Caveat: the check covers
-comparisons in the typed model `data` (calculated fields, metrics); a kind change that conflicts only
-with an opaque dashboard **view** filter/chart is not caught, so publish and re-open to confirm.
+cannot flip a field to `duration` while a calculated field / metric compares it to a numeric constant.
+This synchronous check is exactly what the **data-manager UI does not do** (it defers the kind change
+to the next re-ingestion — the footgun below), so the CLI is the *safe* way to change a kind. Caveat:
+the check covers comparisons in the typed model `data` (calculated fields, metrics); a kind change that
+conflicts only with an opaque dashboard **view** filter/chart is not caught, so publish and re-open to
+confirm.
+
+### Retyping a field that a comparison uses — one `model update`
+
+Two `fields set` calls cannot do this, in either order. The right operand must have the **left
+operand's** kind, so re-typing the constant first is refused too (`lt(numeric, duration)`: `actual:
+"duration", expected: "numeric"`). And `fields set` edits only fields (`data.tables[].fields[]`) — a
+metric lives in `data.metrics[]` and its comparison sits inside the metric's `expression`. Change the
+field and every comparison against it in ONE whole-model write, which is validated as a whole:
+
+1. `uip pm apps model get <APP_ID> --destination model.json` — note `Data.ETag`. `fields list` /
+   `metrics list` show the ids to look for.
+2. In `model.json`: set the field's `kind` to `duration`, and the `dataType` of every constant compared
+   to it to `duration` — in metrics' `expression` and in calculated fields' `expression`. Keep the
+   constant's `value`: a duration constant is milliseconds, as before (10 days = `864000000`). The
+   slice of the file this touches (abridged — keep every other key `model get` returned, including
+   the `view` section with the dashboards):
+   ```json
+   { "data": {
+       "tables": [ { "id": "Cases", "fields": [
+         { "id": "<FIELD_ID>", "display": "Throughput time", "kind": "numeric" } ] } ],
+       "metrics": [ { "id": "<METRIC_ID>", "display": "% On time",
+         "expression": { "type": "aggregate", "aggregation": "PERCENTAGE",
+           "argument": { "type": "operator", "operation": "lt",
+             "left":  { "type": "reference", "referenceType": "field", "reference": "<FIELD_ID>" },
+             "right": { "type": "constant", "dataType": "numeric", "value": 864000000 } } } } ] } }
+   ```
+   Both `"numeric"` values become `"duration"`.
+3. `uip pm apps model update <APP_ID> --file model.json --etag '<ETAG>'`. On 409/412 re-`get` and
+   redo step 2 on the new model.
+4. Re-ingest `dev` so its data matches the new kind (`uip pm ingestions create <APP_ID> --wait`),
+   then `uip pm apps publish <APP_ID>`; when it answers `IngestionNeeded: true`, run
+   `uip pm ingestions create <APP_ID> --stage published --wait`.
+
+Do not "fix" the refusal by deleting the metric or calculated field: that removes something the user
+did not ask to remove (Critical Rule 11).
 
 ## The data-kind footgun
 

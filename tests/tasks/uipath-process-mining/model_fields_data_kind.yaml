@@ -1,19 +1,21 @@
 task_id: skill-pm-model-fields-data-kind
 description: >
-  Critical Rule 10: change a field's data kind with `apps model fields set
-  --kind`, and reconcile every comparison against it in the same edit. Covers
-  the DNA-46960 footgun — flipping a throughput field to `duration` while a
-  metric still compares it to a `numeric` constant persists an invalid model
-  that throws at dashboard open ("Must be duration, not numeric, for the 'lt'
-  input"), leaving only the data-upload module reachable.
+  Critical Rule 10: retype a field that a metric compares, without breaking
+  the app. Covers the DNA-46960 footgun — flipping a throughput field to
+  `duration` while a metric still compares it to a `numeric` constant
+  persists an invalid model that throws at dashboard open ("Must be duration,
+  not numeric, for the 'lt' input"), leaving only the data-upload module
+  reachable.
 
-  The skill's whole reason for teaching `fields set` over the data manager is
-  that the CLI validates the comparison synchronously and refuses the mismatch.
-  An agent that only flips the kind has written the bug, not the fix.
+  The field kind and the constant's dataType have to change in ONE write.
+  The backend requires the right operand to have the left operand's kind
+  (`OperatorRelationalOrdering`), so two `fields set` calls are refused in
+  either order, and `fields set` cannot edit a metric (`data.metrics[]`)
+  anyway. The fix is `apps model get` → edit model.json → `apps model update
+  --etag`. An agent that only flips the kind has written the bug, not the fix.
 
   Command-construction only — no live tenant. Commands fail;
-  what matters is which commands the agent chooses and what expression it
-  writes.
+  what matters is which commands the agent chooses and the model it pushes.
 tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, model-editing, data-kind]
 
 run_limits:
@@ -33,15 +35,15 @@ initial_prompt: |
   skill and follow its workflow.
 
   Important:
-  - Write any expression JSON you push to ./expression.json (this test
-    inspects that exact path).
+  - Write any model JSON you push to ./model.json (this test inspects that
+    exact path).
   - The `uip` CLI is available but is not connected to a live tenant.
     Commands WILL fail — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
-  - If a command you needed an id from fails, substitute a placeholder id
-    of the same shape and still run the remaining commands, so we can
-    verify their shape.
+  - If a command you needed an id or a file from fails, substitute a
+    placeholder of the same shape and still run the remaining commands, so we
+    can verify their shape.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -54,38 +56,51 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the real field ids instead of inventing them"
+    description: "Agent read the model (or its field / metric ids) instead of inventing it"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+apps\s+model\s+fields\s+list\b'
+    command_pattern: 'uip\s+pm\s+apps\s+model\s+(get|fields\s+list|metrics\s+list)\b(?![^\n]*--help)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retyped the field to duration via the semantic model"
+    description: "Agent pushed ./model.json in one ETag-guarded model update (field and metric together)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+apps\s+model\s+fields\s+set\b.*--kind\s+duration\b'
+    command_pattern: 'uip\s+pm\s+apps\s+model\s+update\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--file[\s=]+["'']?\S*model\.json)(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--etag\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent also rewrote the comparison, rather than only flipping the kind"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+apps\s+model\s+fields\s+set\b.*--expression\b'
-    min_count: 1
-    weight: 2.5
+  # Walks the whole document (a placeholder model's exact nesting varies):
+  # records each field's kind by id, then requires every comparison against
+  # the 864000000 constant to have a duration constant AND reference a field
+  # whose kind is duration — so an unrelated duration field can't satisfy it.
+  - type: run_command
+    description: "The pushed model retypes the compared field and its comparison constant to duration"
+    command: |-
+      python3 -c "import json, sys
+      kinds, cmps = {}, []
+      def walk(n, key=None):
+          if isinstance(n, dict):
+              if 'kind' in n: kinds[n.get('id', key)] = n['kind']
+              for c, o in ((n.get('left'), n.get('right')), (n.get('right'), n.get('left'))):
+                  if isinstance(c, dict) and str(c.get('value')) == '864000000' and isinstance(o, dict):
+                      cmps.append((c.get('dataType'), o.get('reference')))
+              for k, v in n.items(): walk(v, k)
+          elif isinstance(n, list):
+              for v in n: walk(v)
+      walk(json.load(open('model.json')))
+      sys.exit(0 if cmps and all(t == 'duration' and kinds.get(r) == 'duration' for t, r in cmps) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "The pushed expression compares against a duration constant, not a numeric one"
-    path: "expression.json"
-    includes:
-      - 'duration'
-    excludes:
-      - '"numeric"'
-    weight: 2.5
-    pass_threshold: 1.0
+  - type: command_not_executed
+    description: "Agent must NOT remove the metric or a field to get past the refusal"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+model\s+fields\s+remove\b'
+    weight: 1.5
 
   - type: command_not_executed
     description: "Agent must NOT invent a data kind outside the settable enum"
