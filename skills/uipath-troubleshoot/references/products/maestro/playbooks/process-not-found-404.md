@@ -35,7 +35,7 @@ What to look for:
 
 ## Resolution
 
-- **If ReleaseKey is stale or missing:** re-publish the solution against the correct folder; update bindings; re-deploy
+- **If ReleaseKey is stale or missing:** update bindings to the correct folder; they take effect on the next publish and deploy, which are a later decision
 - **If solution was cross-imported:** re-create the folder mapping or re-bind dependencies in the destination environment
 - **If debug mode:** change the debug config from "Will be deployed in Debug folder" to use the already-deployed dependency in the target folder
 - **If API call:** include the `X-UIPATH-OrganizationUnitId` header pointing at the correct folder

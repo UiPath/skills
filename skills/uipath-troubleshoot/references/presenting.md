@@ -72,7 +72,7 @@ Immediate fix:
 1. {What to do — concrete action with exact navigation path or command}
   - Why: {cite evidence that makes this step necessary}
   - Where: {exact file, UI path, setting, or command}
-  - Who: {RPA developer | admin | platform team | process owner}
+  - Who: {RPA developer | admin | platform team | process owner, or the owner labels the domain's presentation.md defines}
   - Source: {playbook path or docsai URL}
 
 ### {Domain} (Propagation)
@@ -89,7 +89,7 @@ Preventive fix:
 
 Next action:
 
-- Repair: {the Immediate fix steps that are not Later decisions, by owner; omit when every step is deferred}
+- Repair: {Immediate fix step numbers with their Who:; omit when every step is deferred}
 - Re-check (not run): `{one read-only command, documented form, IDs filled in}`; omit when no run exists or none is documented
 - Later decision: {any run/publish/deploy action, unless the matched playbook prescribes it alone as the fix; one bundled after another fix step is split out here; omit when nothing is deferred}
 ```
@@ -98,9 +98,9 @@ Next action:
 
 When a root cause is confirmed, the resolution ends with, in this order:
 
-1. **Repair, by owner** — a change to the faulty artifact or setting: source, workflow (including migrating it to other activities or packages), config, binding, permission, connection. Immediate fix steps, each with its `Who:`. Omit this line when every Immediate fix step is a Later decision; the Re-check then leads.
-2. **Re-check (not run)** — one line naming one read-only command that shows the run's current state before the later decision (e.g. `uip or jobs get <JOB_KEY> --no-download --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), entity ID filled in. Copy it in its documented form from the investigation guide or the matched playbook. Name it; do NOT run it. No run to read, or no such command documented in the investigation guide or the matched playbook (e.g. Assistant sign-in, local dev-server failures) → omit this line; never compose one.
-3. **Later decision** — any action that runs, publishes or deploys something (run, retry, resume, restart, instance migrate, upload, publish, deploy; first time or again), on its own line as the user's call after the re-check, unless the matched playbook's `## Resolution` prescribes that action alone as the fix for the confirmed cause (transient fault) — then it is the repair. A run, publish or deploy that follows another fix step is a Later decision: split it out of bundled playbook text. Exception: a restart whose only purpose is to load the setting the preceding fix step changed (service, app or dev-server restart) stays in the Repair. Nothing deferred → omit this line.
+1. **Repair, by owner** — a change to the faulty artifact or setting: source, workflow (including migrating it to other activities or packages), config, binding, permission, connection. Name the Immediate fix steps by number, each with its `Who:`; Immediate fix itself lists no Later decision step. Omit this line when every fix step is a Later decision; the Re-check then leads.
+2. **Re-check (not run)** — one line naming one read-only command that shows the run's current state before the later decision (e.g. `uip or jobs get <JOB_KEY> --no-download --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json`), entity ID filled in. A faulted run stays faulted after the repair: the read shows the state the later decision acts on, not that the repair worked. Copy it in its documented form from the investigation guide or the matched playbook. Name it; do NOT run it. No run to read, or no such command documented in the investigation guide or the matched playbook (e.g. Assistant sign-in, local dev-server failures) → omit this line; never compose one.
+3. **Later decision** — any action that runs, publishes or deploys something (run, retry, resume, restart, instance migrate, upload, publish, deploy; first time or again), on its own line as the user's call after the re-check, unless the matched playbook's `## Resolution` prescribes that action alone as the fix for the confirmed cause (transient fault) — then it is the repair. On a Maestro instance, retry, resume and migrate are always a Later decision. A run, publish or deploy that follows another fix step is a Later decision: split it out of bundled playbook text. Exception: a restart whose only purpose is to load the setting the preceding fix step changed (service, app or dev-server restart) stays in the Repair. Nothing deferred → omit this line.
 
 The closing message and any written diagnosis file carry every Next action line that applies. In the closing message, the Later decision stays its own line after the Re-check, never an item in a numbered next-steps list.
 
