@@ -632,10 +632,10 @@ binding half, which is the same for every connector-backed node.
   for or throw a named message, give it the name: `message: 'OrderPlaced'`.
 
 <!--skill-flavor:sdk-no-message:start-->
-  A source decompiled by an SDK without `NO_MESSAGE` carries `message: ''` instead; with
-  that SDK it compiles to one nameless `Message_1` shared by every such event, which
-  `validate` rejects. Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`
-  and decompile again.
+  Needs `@uipath/maestro-builder-sdk` 6.122.5 or later; an older SDK decompiles the event
+  as `message: ''` and compiles that to one nameless `Message_1` shared by every such
+  event, which `validate` rejects. Upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
 <!--skill-flavor:sdk-no-message:end-->
 
 <!-- RULE:bpmn.brownfield.format -->
