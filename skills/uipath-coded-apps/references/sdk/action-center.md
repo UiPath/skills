@@ -42,7 +42,7 @@ const handleTaskAction = async (task: TaskGetResponse, action: 'approve' | 'reje
 
 `action` is free-form and must match what the workflow designer configured. If `task.action` is set, that's the expected string. Common patterns: `'Approve'` / `'Reject'`, `'Submit'`. Maestro HITL tasks are typically `TaskType.App` or `TaskType.External`; pass `data: {}` for App tasks with no form data.
 
-For `TaskType.DocumentValidation`, the Validation Station widget owns the data contract — call `task.complete({ type: TaskType.DocumentValidation, action: 'Completed' })` from `onSaveComplete`. Do NOT pass `data` yourself; the widget already uploaded the validated payload to the bucket before firing the callback. See [../widgets/validation-station.md](../widgets/validation-station.md).
+For `TaskType.DocumentValidation`, the Validation Station widget owns the data contract — call `task.complete({ type: TaskType.DocumentValidation, action: 'Completed' })` from `onSubmit`, once its `result?.success` is `true`. Do NOT pass `data` yourself; the widget already uploaded the validated payload to the bucket before firing the callback. See [../widgets/validation-station.md](../widgets/validation-station.md).
 
 ## Linking Tasks to Maestro Process Instances
 

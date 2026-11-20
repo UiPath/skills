@@ -16,8 +16,8 @@ If the user just wants a generic form (no DU document), use the standard Action 
 
 ## Critical Rules
 
-1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.2`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
-2. **Call `configureValidationStationWc({ includeFonts: true })` once at startup**, before rendering anything from the package. The widget is a separately loaded bundle, not an import: without this call no custom element is registered and every component renders **nothing** — no error, no empty state. `includeFonts` pulls in `fonts.css`, the bundle's only source of `@font-face`; omit it and the icons render blank.
+1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.5.1` (the web component itself declares that SDK peer). The Vite scaffold pins React 19.2+, but verify in `package.json` before installing — an app on SDK 1.4.x must upgrade it first.
+2. **Call `configureValidationStationWc({ includeFonts: true })` once at startup**, before rendering anything from the package. The widget is a separately loaded bundle, not an import: without this call no custom element is registered and every component renders **nothing** — no error, no empty state. `includeFonts` pulls in `fonts.css`, which carries **Material Icons only**; omit it and every icon renders as its ligature text (`warning`, `error`, `circle`). Leave it off only if the app already loads Material Icons, e.g. through `@uipath/apollo-fonts`' `font.css`.
 3. **Stage that bundle at `<app base>/du-vs-wc`** — where the loader looks for it by default. See "Static Assets" below.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **Reuse the app's own `UiPath` instance** — from `useAuth()` (web app) or `src/uipath.ts` (action app). Do not construct a second SDK for the widget; auth state will diverge.
@@ -30,12 +30,15 @@ If the user just wants a generic form (no DU document), use the standard Action 
 From inside the scaffolded app directory:
 
 ```bash
-npm install @uipath/ui-widgets-validation-station@1.1.0 --save-exact --@uipath:registry=https://registry.npmjs.org
+npm install @uipath/ui-widgets-validation-station@1.2.0 --save-exact --@uipath:registry=https://registry.npmjs.org
+npm install -D @uipath/du-validation-station-wc@1.0.0-rc.2 --save-exact --@uipath:registry=https://registry.npmjs.org
 ```
 
 Registry flag forces the public npm registry (skill default — users may have `@uipath` scoped to GitHub Packages).
 
-Pinned exactly on purpose: this package has changed its API in a minor before (1.0.1 → 1.1.0), so a `^` range is not safe. This file documents the 1.1 API.
+Pinned exactly on purpose: this package has changed its API in a minor before (1.0.1 → 1.1.0), so a `^` range is not safe. This file documents the 1.2 API. The web component is pinned to the version the widget's own `dependencies` name (1.2.0 → `1.0.0-rc.2`): the staged copy is what runs, and nothing checks it against the widget's types, so keep the two in step on every upgrade.
+
+The text fonts (Poppins, Noto Sans) are not in the bundle, so the widget's text inherits the app's font stack. For UiPath typography, install `@uipath/apollo-fonts` and import its `font.css`.
 
 ## Static Assets — staging the web component
 
@@ -137,8 +140,9 @@ export default defineConfig({
 - **Build:** `dist/du-vs-wc/` contains `main.js`, `polyfills.js`, `styles.css`, `fonts.css`, `du-assets/`.
 - **Dev:** run the app — the widget renders, and icons are glyphs rather than the words `warning` / `error` / `circle`.
 
-> **Size.** The staged bundle is ~75 MB, most of it fonts under `media/`. Do not trim them — an app in
-> an iframe inherits no `@font-face` rules from the page around it, so the icons go blank.
+> **Size.** The staged bundle is ~34 MB. Do not trim `media/` — it holds the Material Icons font
+> `fonts.css` points at, and an app in an iframe inherits no `@font-face` rules from the page around
+> it, so the icons fall back to their ligature text.
 
 ## Key Props
 
@@ -148,16 +152,17 @@ Full table in the package README. Inside a coded app you usually only touch:
 |------|----------|-------|
 | `sdk` | Yes* | `UiPath` instance — from `useAuth()` or `src/uipath.ts`. *Required only in self-fetching mode (`sdk` + `data`); omit when passing pre-fetched `artifacts`. |
 | `data` | Yes* | `ContentValidationData` — for action apps, from the task payload. **It must name the folder** (`FolderId` or `FolderKey`): there is no `folderId` prop, so merge the task's folder in when the payload arrives without one. |
-| `artifacts` | No | Pre-fetched artifacts from `useDuDocumentArtifacts`. When supplied, no fetch happens and `sdk`/`data` are not needed. |
+| `artifacts` | No | Pre-fetched artifacts from `useDuDocumentArtifacts`. When supplied, no fetch happens and `sdk`/`data` are not needed to render — pass them anyway if the widget should own the bucket write-back. The optional `predictedExtractionResult` (the unedited model output) feeds the prediction diff — see [Comparing against the prediction](#comparing-against-the-prediction). |
 | `theme` | No | `'light' \| 'dark' \| 'light-hc' \| 'dark-hc'`. Keep in sync with body class. |
 | `language` | No | `ValidationStationLanguage` enum exported from the package (e.g. `English`, `German`, `Japanese`, `ChineseSimplified`). |
 | `isReadonly` | No | `true` to render in read-only mode (e.g., audit view). |
-| `options` | No | `IValidationStationOptions` — fine-grained WC feature flags. Set `emitDtoStateChanges: true` to enable save-as-draft. |
+| `options` | No | `IValidationStationOptions` — fine-grained WC feature flags. Set `emitDtoStateChanges: true` to enable save-as-draft. Also trims the compact field-filter toolbar (`fieldFilterOptions`), sizes the fields panel (`defaultFieldsAreaPercentage` / `defaultFieldsAreaWidth`) and configures the embedded viewer (`documentViewerOptions`). |
 | `save` | No | Controlled trigger from a button. `{ validate: true }` = **submit** (validate, then save). `{ validate: false }` = **save as draft** (requires `options.emitDtoStateChanges: true`, else no-op). |
 | `discardChanges` | No | Controlled trigger: `{ value: true }` to discard pending edits. Pass a fresh object each time — the widget watches for the new reference, so repeated `{ value: true }` calls all fire. |
 | `onSubmit` | No | Fires after **submit** (`save={{ validate: true }}`): ProcessExtractedData + bucket upload. `(request, result?)` — `result` only when the widget owned the write-back. Complete the task here. |
 | `onSaveAsDraft` | No | Fires after **save as draft** (`save={{ validate: false }}`): uploads in-progress data, no ProcessExtractedData. Same `(request, result?)` shape. |
 | `onReportException` | No | Fires when the user reports an exception. Receives `(request)` — the reason is on `request.exceptionReport`, the document id on `request.documentId`. Widget makes **no API call**; persist via `OrchestratorDuModule.submitExceptionReport(...)`. Web apps only; see [Report as exception in an action app](#report-as-exception-in-an-action-app). |
+| `onWcMessage` | No | Messages from the element's bus, typed `IVsWcMessage` and discriminated on `type`. Today: `indicator-overlay-show` / `indicator-overlay-hide`, for replacing the confidence-indicator popover with your own. See the package README. |
 
 The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host `(request, result?)`; `result` is a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }` — and is present only when the widget did the write-back itself. **Report as exception** is forwarded as a request object with no API call, and in an action app cannot be persisted at all (see [Report as exception in an action app](#report-as-exception-in-an-action-app)). The widget renders no failure UI for any flow — handle it in the callback yourself (toast, retry, log).
 
@@ -199,6 +204,45 @@ that flag to `false`, so without it the callback never fires** (it is the same f
 needs). Available on `ValidationStation`, `CompactFieldsForm`, `CompactTableEditor` and
 `CompactBusinessRules` — the components that share the extraction store; `DocumentViewer` and
 `CompactDocTypeField` do not expose it.
+
+## Comparing against the prediction
+
+`DuDocumentArtifacts.predictedExtractionResult` is the model's prediction — the extraction output
+nobody edited — as opposed to `extractionResult`, the one the reviewer works on. Self-fetching fills
+it from `data.AutomaticExtractionResultsPath` (one extra bucket read when a validated result exists;
+a failed read leaves it `null` and the review still opens). In pre-fetched mode it is optional.
+
+**On its own it changes nothing visible.** It drives the `EnablePredictionDiff` customization flag
+(compact mode, on `ValidationStation`, `CompactFieldsForm` and `CompactTableEditor`): where the
+prediction differs from the current value, the element shows the predicted value with a button that
+takes it over. Turn the flag on by merging it into the artifacts' `customizationInfo` — never
+replace the object, it carries the bucket's other customizations:
+
+```typescript
+import { useMemo } from 'react';
+import {
+  useDuDocumentArtifacts,
+  type ICustomizationInfoDTO,
+} from '@uipath/ui-widgets-validation-station';
+
+// `data` memoised, as in the subcomponents section below.
+const { artifacts } = useDuDocumentArtifacts(sdk, data);
+const withDiff = useMemo(() => {
+  if (!artifacts) return null;
+  const fetched = artifacts.customizationInfo as ICustomizationInfoDTO | undefined;
+  return {
+    ...artifacts,
+    customizationInfo: {
+      ...fetched,
+      FeatureCustomization: { ...fetched?.FeatureCustomization, EnablePredictionDiff: true },
+    } satisfies ICustomizationInfoDTO,
+  };
+}, [artifacts]);
+
+// Keep passing sdk + data alongside the artifacts: the save flows key on those, not on
+// `artifacts`, so the widget still owns the bucket write-back.
+// {withDiff && <ValidationStation sdk={sdk} data={data} artifacts={withDiff} ... />}
+```
 
 ## Report as exception in an action app
 
