@@ -316,6 +316,73 @@ make from syntax alone. Exact signatures remain in the generated API.
   task gets the same explicit `lane`. Every `runs-sequentially` task needs an
   explicit `lane`.
 
+## Task exit rules
+
+<!-- RULE:case.task-exit.semantics -->
+- A `task-exited` rule reacts to a task of its own stage that ended without
+  completing: `failed` (the task failed on its own, after its retries) or
+  `userExited` (a person ended the running task through the exit API). A task
+  the case itself cancelled (an interrupting stage) is neither and fires no
+  rule. The rule fires once EVERY task it names has exited; for "any one of
+  them", write one rule per task. An exited task does not satisfy
+  `required-tasks-completed`: the stage stays open until a rule moves the case
+  on, or an operator re-runs the task.
+
+<!-- RULE:case.task-exit.placement -->
+- Put the rule on the entry of the task that should start (a manual fallback),
+  or on an exit of the failing task's stage with `{ marksStageComplete: false }`
+  and enter the next stage with `rule('selected-stage-exited', { stage })`.
+  Elsewhere the rule is written and never fires: at a stage entry, on an exit
+  that marks the stage complete (unless `type: 'wait-for-user'`), or at case
+  completion (`check`: `TASK_EXITED_PLACEMENT`;
+  `validate`: `CASE_MGMT_CASE_CONDITION_RULE_TASK_EXITED_NOT_HERE`; at a stage
+  entry `validate` also refuses it, `CASE_MGMT_RULE_SLOT_MISMATCH`). Name only
+  tasks of the rule's own stage (`TASK_EXITED_TASK_OUTSIDE_STAGE`), and never
+  the task whose entry holds the rule: that re-runs it after every failure
+  until the case guardrail stops the loop (`TASK_EXITED_SELF_RERUN`).
+
+  ```ts
+  // --- stage 'Intake' ---
+  .exitWhen(rule('task-exited', { tasks: ['Fetch Policy'], exitReasons: ['failed'], errorCategories: ['Deployment'] }),
+    { displayName: 'Fetch failed to deploy', marksStageComplete: false })
+  .task('Enter Policy By Hand', t => t.action({ title: 'Enter the policy' }).required(false)
+    .entryWhen(rule('task-exited', { tasks: ['Fetch Policy'] })))
+  // --- stage 'Review' ---
+  .entryWhen(rule('selected-stage-exited', { stage: 'Intake' }))
+  ```
+
+<!-- RULE:case.task-exit.filters -->
+- `exitReasons` narrows the rule to `failed`, `userExited`, or both; omit it
+  for either. `errorCategories` (`User`, `System`, `Deployment`) applies only
+  to a failures-only rule (`exitReasons: ['failed']`): only a failure carries an
+  error, and the platform ignores the filter on any other rule
+  (`TASK_EXITED_FILTER_IGNORED`). Anything finer than the category, such as the
+  error code or message, is an `expression` over the task's error, not a
+  filter.
+
+<!-- RULE:case.task-exit.flags -->
+- A plan with a `task-exited` rule compiles with both case flags on,
+  `caseExecutionExitsOnTaskFailure` (a failing task exits and the case keeps
+  running instead of faulting) and `caseExecutionUsesTaskExitRules` (the rules
+  react to exits). Call `.exitOnTaskFailure()` on the `casePlan()` chain alone
+  for a case that wants the exit behaviour without a rule. Call
+  `.exitOnTaskFailure(false)` or `.taskExitRules(false)` only to keep the old
+  behaviour, which makes every `task-exited` rule a no-op
+  (`TASK_EXITED_IGNORED`). A decompiled plan carries the calls explicitly, so
+  keep them.
+
+<!-- RULE:case.task-exit.cli -->
+- The rule needs an SDK and a `uip` that both know it. An SDK without it
+  answers `UNKNOWN_RULE` (`Unknown rule "task-exited"`) at `check --source`.
+  A `uip` that knows it lists `task-exited` under `task-entry` and `stage-exit`
+  in `uip maestro case rule-types list --output json`; one that does not
+  rejects the rule at `validate` as an invalid discriminator.
+<!--skill-flavor:task-exit-upgrade:start-->
+  Upgrade the one that is behind (the SDK with `npm install -g
+  @uipath/maestro-builder-sdk@latest`), then compile. Never remove the rule to
+  pass.
+<!--skill-flavor:task-exit-upgrade:end-->
+
 ## Design fidelity
 
 <!-- RULE:case.sdd.declared-shapes -->
