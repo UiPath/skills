@@ -699,16 +699,35 @@ def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[s
     )
 
 
+def _json_or_object(raw):
+    """``raw`` as a mapping: the canvas stores some configurations as an object, others as a JSON string."""
+    return raw if isinstance(raw, dict) else json.loads(raw)
+
+
 def _catalog_verb(task: ET.Element) -> str:
     """The catalog verb (``getbyid``) the activity was picked by, or ``""``.
 
-    Read from ``activityMetadata.activity.configuration.httpMethod`` of the
-    context ``metadata`` input, where the canvas serializes the picked operation.
+    Read from the context ``metadata`` input, where the canvas serializes the picked
+    operation: ``activityMetadata.activity.configuration.httpMethod`` first, else
+    ``activityPropertyConfiguration.configuration`` (``=jsonString:`` + JSON, or an
+    object) at ``essentialConfiguration.instanceParameters.httpMethod``. Either
+    configuration may be an object or a JSON string.
     """
     try:
         metadata = json.loads(context_value(task, "metadata"))
-        configuration = json.loads(metadata["activityMetadata"]["activity"]["configuration"])
-        return str(configuration["httpMethod"]).strip().lower()
+    except (TypeError, ValueError):
+        return ""
+    try:
+        activity = _json_or_object(metadata["activityMetadata"]["activity"]["configuration"])
+        return str(activity["httpMethod"]).strip().lower()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        pass
+    try:
+        raw = metadata["activityPropertyConfiguration"]["configuration"]
+        if isinstance(raw, str):
+            raw = raw.removeprefix("=jsonString:")
+        essential = _json_or_object(raw)["essentialConfiguration"]
+        return str(essential["instanceParameters"]["httpMethod"]).strip().lower()
     except (KeyError, TypeError, ValueError, AttributeError):
         return ""
 
@@ -733,8 +752,10 @@ def _operation_matches(
             return recorded == operation.operation.lower()
         # `method` in the context is the HTTP method (`GET`); the catalog verb the
         # operation was picked by (`GETBYID`) is only in the node's metadata
-        # (`instanceParameters.httpMethod`). That verb decides when the node has it;
-        # a bare `GET` with no metadata stays a list read, not a get-by-id.
+        # (`activityMetadata.activity.configuration.httpMethod`, else
+        # `activityPropertyConfiguration` ... `instanceParameters.httpMethod`). That
+        # verb decides when the node has it; a bare `GET` with no metadata verb
+        # stays a list read, not a get-by-id.
         verb = _catalog_verb(task)
         if verb:
             # A catalog verb in the context `method` itself (`GETBYID`, what the

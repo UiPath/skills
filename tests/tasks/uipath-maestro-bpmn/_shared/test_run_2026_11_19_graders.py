@@ -375,3 +375,39 @@ def test_get_by_id_in_context_method_still_matches_whatever_the_metadata_says(tm
     text = text.replace('\\"httpMethod\\":\\"GETBYID\\"', '\\"httpMethod\\":\\"GET\\"')
     path.write_text(text, encoding="utf-8")
     bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
+
+
+def _configuration_as_objects(root: Path, *, drop_activity_metadata: bool = False) -> None:
+    import json
+    import re
+
+    path = _bpmn(root)
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r'(<uipath:input name="metadata" type="json">)(.*?)(</uipath:input>)', text.split('id="getRecord"', 1)[1], re.S)
+    metadata = json.loads(match.group(2))
+    activity = metadata["activityMetadata"]["activity"]
+    if drop_activity_metadata:
+        del metadata["activityMetadata"]
+    else:
+        activity["configuration"] = json.loads(activity["configuration"])
+    prop = metadata["activityPropertyConfiguration"]
+    prop["configuration"] = json.loads(prop["configuration"].removeprefix("=jsonString:"))
+    text = text.replace(match.group(2), json.dumps(metadata))
+    path.write_text(text, encoding="utf-8")
+
+
+def test_get_by_id_matches_when_configuration_is_an_object(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    _configuration_as_objects(root)
+    assert '"configuration": {' in _bpmn(root).read_text(encoding="utf-8")
+    bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
+    with pytest.raises(SystemExit):
+        bpmn_check.require_operations(_requests(root), [LIST], "test case")
+
+
+def test_get_by_id_falls_back_to_the_property_configuration(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    _configuration_as_objects(root, drop_activity_metadata=True)
+    bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
+    with pytest.raises(SystemExit):
+        bpmn_check.require_operations(_requests(root), [LIST], "test case")
