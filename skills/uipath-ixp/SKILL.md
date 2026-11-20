@@ -76,6 +76,7 @@ If the user provides a taxonomy file — or wants this project to carry another 
 
 | User request | Action |
 |-------------|--------|
+| "Check I'm logged in" / "which tenant am I on" | `uip login status --output json` — see [CLI Reference § Session](references/cli-reference.md#session). |
 | "Create an IXP project" / "Upload documents to a new project" | [Project Setup Guide](references/project-setup-guide.md) — **new** projects only (uploads + taxonomy in one call). For **existing** projects, see the "Upload a document" row below. |
 | "Import this taxonomy" / provides a taxonomy file / "give this project the same taxonomy as another project" | [Project Setup Guide](references/project-setup-guide.md) — Option B (`--skip-taxonomy` + `import-taxonomy`); for a copy, export the source with `projects get-taxonomy` first. **The target's taxonomy must be empty** — check `projects get-taxonomy` on it, and if `label_groups` is non-empty, apply the change as targeted `groups`/`fields`/`data-types` calls instead (Critical Rule 23). |
 | "Rename / edit / restructure the taxonomy" / "replace the taxonomy with this file" / "edit the taxonomy JSON" | Targeted commands only — the "Add / delete / rename" rows below, plus `projects update-prompt` for the overall instructions. Not `import-taxonomy`, and not `groups delete` + `groups add` (Critical Rule 23). With no targeted command (a `Choice` type's values), report and route in-product — see [Unsupported Capabilities](#unsupported-capabilities). |

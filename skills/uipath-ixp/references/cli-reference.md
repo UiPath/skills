@@ -8,6 +8,12 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 
 > **Length limits.** Instructions and prompts are at most **4096 characters**, at every level. Names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. A longer value fails the whole call with `Result: ValidationError` and nothing is written. Shorten it and retry — do not split one prompt across calls.
 
+## Session
+
+| Command | Description |
+|---------|-------------|
+| `uip login status --output json` | Check the session before tenant work. Logged in: `Data.Status` is `Logged in`, and `Data.Organization` / `Data.Tenant` name where `uip ixp` commands run. Any other result → ask the user to sign in with `uip login`; do not re-authenticate when the user said not to. |
+
 ## Projects
 
 | Command | Description |
