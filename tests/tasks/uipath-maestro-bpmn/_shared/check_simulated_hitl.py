@@ -22,8 +22,10 @@ template instead of hand-authoring per-field outputs. The
 `taskTitle`), exactly ONE
 `<uipath:input name="HitlTaskArguments" type="json" target="bodyField">` body
 holding every field's value/expression, and exactly ONE
-`<uipath:output name="Process response" type="Actions.HITL" var="...">`
+`<uipath:output name="Process response" type="Actions.HITL" source="=result" var="...">`
 (opaque -- the registry explicitly forbids coercing this to a concrete type).
+An output with no `source` (and no CDATA body) is never written by the engine,
+so neither form counts one as capturing reviewer data.
 Individual field *types* live on the variable(s) referenced from that body
 (flat `type=` or nested `properties.<field>.type` in a `jsonSchema`
 variable's CDATA), and the decision/reason are read downstream as
@@ -215,6 +217,16 @@ def activity_outputs(task: ET.Element) -> list[ET.Element]:
     return task.findall("bpmn:extensionElements/uipath:activity/uipath:output", NS)
 
 
+def filled_outputs(task: ET.Element) -> list[ET.Element]:
+    """Outputs the runtime writes: a `var` plus a `source` or a CDATA body.
+    The engine drops a row with neither when it parses the file."""
+    return [
+        o
+        for o in activity_outputs(task)
+        if o.attrib.get("var") and (o.attrib.get("source") or (o.text or "").strip())
+    ]
+
+
 def declared_var_types(root: ET.Element) -> dict[str, str]:
     types: dict[str, str] = {}
     for var in declared_variable_elements(root):
@@ -389,9 +401,9 @@ def check_schema(root: ET.Element) -> None:
     inputs = context_inputs(task)
     if not inputs:
         fail("need an input mapping presenting read-only context to the reviewer")
-    outputs = [o for o in activity_outputs(task) if o.attrib.get("var")]
+    outputs = filled_outputs(task)
     if not outputs:
-        fail("need an output mapping (var=) capturing the reviewer's fill-in data")
+        fail("need an output mapping (var= and source=) capturing the reviewer's fill-in data")
     if not approve_reject_present(root, task, outputs):
         fail(
             "need Approve and Reject represented in the HITL activity (title, action, or "
@@ -504,9 +516,12 @@ def check_expense(root: ET.Element) -> None:
     if not inputs:
         fail("HITL activity has no input mapping presenting context to the reviewer")
 
-    outputs = [o for o in activity_outputs(hitl) if o.attrib.get("var")]
+    outputs = filled_outputs(hitl)
     if not outputs:
-        fail("HITL activity has no output mapping (var=) capturing the reviewer's returned fields")
+        fail(
+            "HITL activity has no output mapping (var= and source=) capturing the reviewer's "
+            "returned fields"
+        )
 
     flat_types = declared_var_types(root)
     schema_props = declared_schema_properties(root)
