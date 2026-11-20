@@ -126,7 +126,7 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
 
 
-def test_timer_xml_check_is_linear_on_a_run_of_backslashes() -> None:
+def test_xml_regex_time_bound() -> None:
     # Both branches of the quoted-program loop used to match a backslash, so a long
     # run of them with no ET.parse after it backtracked exponentially and hung the
     # grader (skills#4712). A subprocess bounds the check, since a stuck
