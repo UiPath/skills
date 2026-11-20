@@ -44,7 +44,6 @@ stages:
           - template: Sonar/prepare-sonar-coverage.yml@sonar
             parameters:
               configFile: sonar-project.properties
-              serviceConnectionName: ${{ parameters.sonarServiceConnection }}
           # A failing suite still leaves both reports behind; keep going so the
           # analysis uploads what was measured.
           - script: node scripts/run-coverage.mjs
