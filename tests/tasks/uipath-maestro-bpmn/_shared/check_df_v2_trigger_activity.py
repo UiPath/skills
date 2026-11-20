@@ -12,7 +12,9 @@ Web opens it, and the builder SDK does not write the marker):
      design-time metadata, and the entity on `folderEntityName`.
   2. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
      for CreateEntityRecord_V3, V2 the same way, picking the
-     entity and setting `title` to `V2Test`.
+     entity, with its `queryParameters` `folderEntityName` a `=bindings.<id>`
+     read of a root binding (the solution-resource picker, not a literal),
+     and setting `title` to `V2Test`.
   3. `bindings_v2.json` beside the .bpmn has an EventTrigger resource whose
      EntryPointUniqueId is the trigger's entry point id, and the entity
      resource; `entry-points.json` lists the trigger start.
@@ -34,6 +36,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
     root_bindings,
 )
 from _shared.check_df_picker_folder_entity import (  # noqa: E402
@@ -121,6 +124,9 @@ def main() -> None:
     require_v2(path, activity, "activity")
     if not picker_values(activity, bindings) & entity:
         fail(f"{path}: the activity does not pick {fixture['name']} on folderEntityName")
+    picker = query_parameters(activity).get("folderEntityName", "")
+    if not (picker.startswith("=bindings.") and picker[len("=bindings.") :] in bindings):
+        fail(f"{path}: the activity's folderEntityName is not a solution-resource picker on a root binding")
     if title_of(activity) != TITLE:
         fail(f"{path}: the activity sets title to {title_of(activity)!r}, not {TITLE!r}")
 
