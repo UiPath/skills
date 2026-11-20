@@ -30,7 +30,7 @@ initial_prompt: |
   Complete the task in one pass: take the best available option and supply the
   most defensible value where one is missing. The actions this task implies are
   authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, except what the task asks you to change, and do not publish to a shared
+  overwrite anything this run did not create, and do not publish to a shared
   destination unless the task asks for it. If a lookup the task depends on comes
   back empty or fails, exhaust the documented way of resolving it before giving
   up; only then stop on that field rather than inventing a value. Record every
