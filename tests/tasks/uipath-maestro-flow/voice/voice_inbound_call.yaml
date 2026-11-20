@@ -102,10 +102,14 @@ success_criteria:
 
   # `flow debug` rejects any flow with a core.trigger.voice node ("Inbound voice
   # flows cannot be debugged from the CLI."), so reaching for it is a wasted turn.
+  # Counted only at a command position (start, newline, ; & | ( or $( ), after
+  # optional VAR=x, shell keywords (if ! then do while until { ...) and wrapper
+  # commands (env, time, timeout, nohup, nice, sudo, npx ...) with their flags, so a
+  # README, heredoc or string that MENTIONS `uip maestro flow debug` does not count.
   - type: command_not_executed
     description: "Agent did not try to debug an inbound voice flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+debug'
+    command_pattern: '(?:^|[\n;&|(]|\$\()[ \t]*(?:(?:[A-Za-z_]\w*=\S*|!|\{|if|then|else|elif|do|while|until|time|exec|command|builtin|nohup|env|timeout|gtimeout|nice|ionice|sudo|stdbuf|setsid|xargs|npx)[ \t]+(?:(?:-\S+|\d+(?:\.\d+)?[smhd]?)[ \t]+)*)*(?:\S*/)?["'']?(uip|\$UIP|\$\{UIP\})["'']?\s+(maestro\s+)?flow\s+debug'
     weight: 2.0
     pass_threshold: 1.0
 
