@@ -273,6 +273,10 @@ When the `--config-file` links a resource (`deploy config link`, `linkToResource
 
 `-y, --yes` is not this consent: it only skips the already-deployed check. Nothing prompts. The same stop applies to `deploy upgrade` when the new version replaces an installed resource with a link, and there the confirming re-run must not add `--discard-draft` — see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place). The flag only exists on newer CLI builds; on an older one the option is unknown (check `uip solution deploy run --help`). Against a server that predates the confirmation, such a deploy never reaches a terminal status, and the CLI reports its usual timeout ("may still be in progress").
 
+### Solutions that carry an ontology
+
+Name conflicts, the post-deploy check and install errors for a solution with an ontology: see [scenarios/ontology-solution.md](scenarios/ontology-solution.md).
+
 ## Step 5: Check Deployment Status
 
 The `deploy run` command returns a pipeline deployment ID. Use it to check progress:

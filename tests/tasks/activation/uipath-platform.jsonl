@@ -149,3 +149,4 @@
 {"id": "uipath-platform-063", "prompt": "Create the runtime Integration Service connection for our custom LLM connector and point the BYO config at it", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-064", "prompt": "Make an Anthropic Messages compatible BYO connector in front of our proxy that needs a custom token exchange", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-065", "prompt": "Bring our own LLM that is not OpenAI-compatible to UiPath Autopilot through a custom connector", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-051", "prompt": "Create a Data Fabric entity named Vendor with name and country fields on my tenant", "expected_skill": "uipath-platform"}
