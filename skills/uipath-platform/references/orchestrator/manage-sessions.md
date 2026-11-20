@@ -24,10 +24,10 @@ Monitor robot sessions, check runtime availability, toggle debug mode, and manag
 Before starting jobs, verify that the target folder has available runtime slots:
 
 ```bash
-uip or folders runtimes <folder-key> --output json
+uip or folders runtimes "<folder-key-or-path>" --output json
 ```
 
-This shows runtime capacity per type: total slots, connected machines, and available (idle) slots. If available slots are zero, jobs will queue in Pending state until a slot frees up.
+This shows runtime capacity per type: total slots, connected machines, and available (idle) slots. If available slots are zero, jobs will queue in Pending state until a slot frees up. Before offering to publish, schedule or run something, read the result as [end-to-end-readiness-guide.md](end-to-end-readiness-guide.md) describes.
 
 ## Step 2: List Attended Sessions
 
@@ -151,7 +151,7 @@ Check runtime availability, inspect sessions, enable debug mode for troubleshoot
 
 ```bash
 # 1. Check if the folder has available runtimes
-uip or folders runtimes <folder-key> --output json
+uip or folders runtimes "<folder-key-or-path>" --output json
 
 # 2. List unattended sessions to find the target robot
 uip or sessions unattended list \
