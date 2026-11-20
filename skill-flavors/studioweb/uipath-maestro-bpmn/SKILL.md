@@ -153,11 +153,11 @@ uip maestro bpmn format <Name>.bpmn
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
   them; the edited file shows `merge` no change, so it writes the target back as it was.
-  After `merge`, run `cmp -s <Name>.bpmn .flow-sdk/original/<Name>.bpmn`. Identical means `merge` changed nothing, so the baseline holds the edit
+  After `merge`, run `diff -q <Name>.bpmn .flow-sdk/original/<Name>.bpmn`. No output means identical: `merge` changed nothing, so the baseline holds the edit
   (an add, a removal and a property change each make the file differ). Judge by this, never by the `Authored` or `Removed` counts.
-  When `merge` cannot open the baseline or the files are identical, run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again,
+  When `merge` cannot open the baseline or `diff -q` prints nothing, run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again,
   compile the edit again, and run step 3's `merge` again. Step 1's other lines stay unrun: they would overwrite the edit.
-  When the files are still identical, stop: run no other step and send no final report. Tell the user in one sentence that the edit did not reach `<Name>.bpmn` and the file is as it was.
+  When `diff -q` still prints nothing, stop: run no other step and send no final report. Tell the user in one sentence that the edit did not reach `<Name>.bpmn` and the file is as it was.
 - **Step 5b keeps the user's layout.** `merge` keeps every shape
   of the target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
