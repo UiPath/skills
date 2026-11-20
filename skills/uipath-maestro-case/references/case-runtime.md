@@ -231,7 +231,8 @@ make from syntax alone. Exact signatures remain in the generated API.
   `=vars.<id>` is a C# expression, which the Designer marks for removal. The
   variable holds the same shape as a literal: an ISO-8601 duration
   (`PT10S`), date, or repeating cycle. Give an input a default so a manual
-  start or `case debug` has a value.
+  start or `case debug` has a value, and never copy that default into the
+  timer: a literal timer ignores the value the case is started with.
 
 ## SLA and runtime semantics
 

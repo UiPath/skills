@@ -66,7 +66,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | HTTP requests | `httpRequest({ method, url or path, headers?, query?, body?, connector? })` (SDK 6.82.1+) | [HTTP requests](references/case-runtime.md#http-requests) | `examples/HttpRequestSingleCase.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
-| Timers | `waitForTimer`; a value from a variable is `'=js:vars.<id>'` ([timers](references/case-runtime.md#timers)) | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
+| Timers | `waitForTimer`; a wait the request ties to an input or variable reads it, `'=js:vars.<id>'`, never its default as a literal ([timers](references/case-runtime.md#timers)) | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
