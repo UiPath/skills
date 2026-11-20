@@ -35,6 +35,28 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+<!-- RULE:case.action.designer-outputs -->
+- The Case Designer saves every action task with three outputs besides its
+  form fields: `Action`, the outcome the assignee picked, with the app's
+  outcomes as its `options` (a coded action app's are the `outcomes` in its
+  `action-schema.json`); `hitlTask`, the task; and `Error`. `compile` adds
+  none of them, so declare them with the form fields:
+
+  ```ts
+  .action({ ..., outputs: [
+    { name: 'decision', type: 'string', value: 'decision2' },
+    { name: 'Action', type: 'string', value: 'action2', options: OUTCOMES.map((v) => ({ value: v, label: v })) },
+    { name: 'hitlTask', type: 'jsonSchema', value: 'hitlTask2' },
+    { name: 'Error', type: 'jsonSchema', value: 'error2' },
+  ] })
+  ```
+
+  An output's `value` is unique in the plan. The designer numbers it per task
+  (`action`, `action2`, …), and `compile` numbers a repeated one the same way:
+  a second task that maps a field to `value: 'decision'` writes `decision2`,
+  never the first task's variable, and `check` reports nothing. Downstream
+  rules read each task's own variable.
+
 ## Action recipients and the go-live trap
 
 <!-- RULE:case.recipient.externalize -->
