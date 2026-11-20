@@ -108,9 +108,12 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
 Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`.
-After the sub-process, read the batch's records back with a `.dataService()` `query`, then keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` (a bare array of records, `[]` when none, so read `.length` and `.filter` on it directly) and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
-Aggregation and the policy value stay in that script: a bare `.task()` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
-When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and tell the user that running several at a time needs a store.
+After the sub-process, read the batch's records back with a `.dataService()` `query` filtered by `where` to the batch id, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
+Keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
+On a tenant entity the response is a bare array of records, `[]` when none (a debug run settled it; read `.length` and `.filter` on it directly).
+A record count below `vars.batchItems.length` is an item that left no result: treat it as policy not met.
+Aggregation and the policy value stay in that script: a `.task()` without `set` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
+When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and say in the final report that running several at a time needs a store; do not stop to ask.
 This variant is not verified end to end.
 
 ## What to bind
@@ -118,7 +121,7 @@ This variant is not verified end to end.
 - **`fetchBatch`**: the source (database query, file, API list, queue); batch size and filters are decided here.
 - **The per-item work** inside `processEach`: a UiPath agent, an RPA job, Document Understanding, an API call.
   Place and bind the node; the per-item work happens at runtime, not while authoring.
-- **`aggregate`**: count `itemResults`, apply the policy and set `policySatisfied`.
+- **`aggregate`**: count `itemResults` (Parallel: the query's records), apply the policy and set `policySatisfied`.
   Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above a threshold.
   Evaluate it here, in a node, rather than as the loop's `completion` condition.
   A completion condition stops the block early, which is a different thing from judging the run afterwards, and it cannot see the per-item results the policy needs.
@@ -132,7 +135,7 @@ That is the common case when this pattern is nested inside another.
 Drop `policyGate` and `endFailed` when every run succeeds by definition and only the counts matter.
 Keep `sendReport`.
 
-Keep both `recordResult` and `recordItemFailure` when you change the body: an item that leaves no result is one `aggregate` cannot count.
+Keep both `recordResult` and `recordItemFailure` (Parallel: their store writes) when you change the body: an item that leaves no result is one `aggregate` cannot count.
 Add fields to the record (a reason, a skipped flag) as the policy needs them.
 
 ## Getting results to `aggregate`
