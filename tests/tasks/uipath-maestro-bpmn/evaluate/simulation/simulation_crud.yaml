@@ -8,7 +8,7 @@ description: >
   explicit `--output-schema`. Purely local, with no authentication, upload, or
   evaluation run. Verifies that the requested simulation state persists into
   the eval-set JSON.
-tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, feature:eval]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, feature:eval, studio-web-unsupported, studio-web-unsupported:no-eval-in-host]
 
 run_limits:
   expected_turns: 25
