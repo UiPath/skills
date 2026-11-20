@@ -1,6 +1,6 @@
 # CSV Activities Playbooks
 
-**Overview:** [overview.md](./overview.md) — CSV file activities (`Read CSV` / `Write CSV` / `Append To CSV`) in `UiPath.System.Activities`, the bundled `CsvHelper` dependency, and common failure patterns
+**Overview:** [overview.md](./overview.md) — CSV file activities (`Read CSV` / `Write CSV` / `Append To CSV`) in `UiPath.Excel.Activities`, the bundled `CsvHelper` dependency, and common failure patterns
 
 | Issue | Confidence | Description | Playbook |
 |-------|:---:|-------------|----------|

@@ -21,7 +21,7 @@ When testing hypotheses for System Activities issues, gather and verify these be
 3. **Execution folder** — which Orchestrator folder the job ran in, and whether it is a classic or modern folder
 4. **Robot identity** — the robot account, its role, and whether it has View permission on Assets in the target folder
 5. **Robot connectivity** — whether the robot is Connected + Licensed in the Orchestrator Robots view
-6. **Package version** — confirm `UiPath.System.Activities` version; authentication and asset retrieval behavior differs across versions (especially 20.10.x, 2021.10.x, 22.10.x)
+6. **Package version** — confirm `UiPath.System.Activities` version; authentication and asset retrieval behavior differs across versions (especially 20.10.x, 21.10.x, 22.10.x)
 7. **Credential store type** — if using an external vault (CyberArk, Azure Key Vault, Thycotic), confirm the vault type and check connectivity separately
 
 ## Local File, Compression, and Download Activities

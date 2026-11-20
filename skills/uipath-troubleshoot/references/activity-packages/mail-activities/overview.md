@@ -1,9 +1,9 @@
 # Mail Activities (classic)
 
-Activities from the classic mail packages that talk to a mail system directly from the Robot — distinct from the modern Graph/OAuth activities in **o365-activities** (`UiPath.MicrosoftOffice365.Activities`) and the Gmail activities in **gsuite-activities**. The classic mail packages are:
+Activities in the classic `UiPath.Mail.Activities` package (grouped by namespace below) that talk to a mail system directly from the Robot — distinct from the modern Graph/OAuth activities in **o365-activities** (`UiPath.MicrosoftOffice365.Activities`) and the Gmail activities in **gsuite-activities**. Its namespaces include:
 
 - **Outlook (desktop COM)** — `UiPath.Mail.Outlook.Activities`. Drives the locally installed **Outlook desktop application** through COM interop: `Send Outlook Mail Message` (`SendOutlookMail`), `Get Outlook Mail Messages` (`GetOutlookMailMessages`), `Move Outlook Mail Message`, `Reply To Outlook Mail Message`, `Mark Outlook As Read`. Requires Outlook installed **and** a configured mail profile in the session the Robot runs as.
-- **SMTP / IMAP / POP3 / Exchange** — `UiPath.Mail.SMTP.Activities` (`Send SMTP Mail Message`), `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.EWS.Activities`. Protocol-level mail that talks to a mail server directly, with no desktop client dependency.
+- **SMTP / IMAP / POP3 / Exchange** — `UiPath.Mail.SMTP.Activities` (`Send SMTP Mail Message`), `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.Exchange.Activities`. Protocol-level mail that talks to a mail server directly, with no desktop client dependency.
 
 ## How Outlook (desktop COM) activities run
 
@@ -26,4 +26,4 @@ Because the call goes through the desktop application, failures cluster around t
 
 ## Package
 
-NuGet: `UiPath.Mail.Outlook.Activities` (desktop COM), `UiPath.Mail.SMTP.Activities` (SMTP), `UiPath.Mail.IMAP.Activities` / `UiPath.Mail.POP3.Activities` / `UiPath.Mail.EWS.Activities` (protocol). The Outlook COM activities require Outlook installed and a profile on the Robot host; protocol activities require only network access to the mail server.
+NuGet: `UiPath.Mail.Activities`, which contains the namespaces `UiPath.Mail.Outlook.Activities` (desktop COM), `UiPath.Mail.SMTP.Activities` (SMTP), and `UiPath.Mail.IMAP.Activities` / `UiPath.Mail.POP3.Activities` / `UiPath.Mail.Exchange.Activities` (protocol). The Outlook COM activities require Outlook installed and a profile on the Robot host; protocol activities require only network access to the mail server.

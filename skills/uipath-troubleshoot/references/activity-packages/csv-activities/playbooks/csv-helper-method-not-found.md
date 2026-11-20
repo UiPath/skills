@@ -12,7 +12,7 @@ What this looks like:
 - The failure is at the **first CSV activity that runs** (or at compile), before any row is meaningfully processed — not a data error.
 
 What can cause it:
-- A **`CsvHelper` version conflict.** `CsvHelper.dll` is bundled in `UiPath.System.Activities` (which provides the CSV activities) and in other packages that also ship it — notably `UiPath.Excel.Activities` and `UiPath.IntelligentOCR.Activities`. When two of these are at versions that ship **incompatible `CsvHelper` builds**, the CSV activity is compiled against one `CsvHelper` API but binds the other at runtime — so the constructor/method signature it calls does not exist, and .NET throws `Method not found` (or, on `Read CSV`, fails to load the document).
+- A **`CsvHelper` version conflict.** `CsvHelper.dll` is bundled in `UiPath.Excel.Activities` (which provides the CSV activities) and in other packages that also ship it — notably `UiPath.System.Activities` and `UiPath.IntelligentOCR.Activities`. When two of these are at versions that ship **incompatible `CsvHelper` builds**, the CSV activity is compiled against one `CsvHelper` API but binds the other at runtime — so the constructor/method signature it calls does not exist, and .NET throws `Method not found` (or, on `Read CSV`, fails to load the document).
 - Typically surfaces after a **Studio upgrade** or after one package was upgraded (or added) without the other, leaving the project with two packages that disagree on `CsvHelper`. A previously-working file that now throws `Unable to load document` after such an upgrade is the same dependency conflict.
 
 What to look for:

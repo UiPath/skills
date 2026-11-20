@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- `Write CSV` faults (often at load/compile, or on first execution) with `Cannot set unknown member '<Type>.<Property>'` — e.g. `Cannot set unknown member 'UiPath.Core.Activities.WriteCsvFile.<prop>'`.
+- `Write CSV` faults (often at load/compile, or on first execution) with `Cannot set unknown member '<Type>.<Property>'` — e.g. `Cannot set unknown member 'UiPath.CSV.Activities.WriteCsvFile.<prop>'`.
 - The workflow opens and runs fine on the **developer's** machine but fails on the **robot / execution server**.
 
 What can cause it:
