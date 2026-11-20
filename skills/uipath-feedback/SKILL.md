@@ -21,6 +21,18 @@ Send structured bug reports or improvement suggestions to UiPath with auto-captu
 5. **Use `--output json`** on `uip feedback send` to parse the result programmatically.
 6. **If `uip feedback send` fails**, save the report to `./feedback-report.md` so the user does not lose the gathered context.
 
+## Sanitization Rules
+
+Apply these rules to ALL content before it is included in the description or attachments:
+
+1. **Strip secrets.** Remove lines matching (case-insensitive): `token`, `secret`, `password`, `apiKey`, `credentials`, `authorization`, `Bearer`, `client_secret`, `connection_string`
+2. **Redact PII in paths.** Replace home directory prefixes with `~` (e.g., `C:\Users\john.doe\projects\` -> `~/projects/`). Replace usernames in URLs or paths with `<USER>`
+3. **Redact GUIDs** in connection/binding fields: replace values with `<REDACTED>`
+4. **Truncate long content.** Files over 150 lines: keep first 100 + `... [truncated N lines] ...` + last 30. Full description: max 4000 characters
+5. **Never include**: `~/.uipath/.auth`, `.env`, `.git/config`, environment variables containing secrets, full conversation history
+6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org from `uip login status`
+7. **Sanitize sample prompts.** Apply rules 1-3 and 6 to every captured prompt before including it under `## Sample prompts`. Replace customer names, email addresses, project codenames, account IDs, ticket IDs, internal URLs, and file paths revealing usernames with `<REDACTED>`. If a prompt cannot be sanitized without losing its signal (the prompt is mostly customer-specific data), drop that prompt and pick another from Step 2e. Never quote a prompt verbatim if it contains a secret, even if the user typed it.
+
 ## Workflow
 
 ### Step 1 -- Check prerequisites
@@ -145,7 +157,7 @@ Default to `normal` when ambiguous.
 
 #### 2h. Sanitize everything
 
-Apply all rules from the [Sanitization Rules](#sanitization-rules) section below to every piece of captured content before proceeding.
+Apply all rules from the [Sanitization Rules](#sanitization-rules) section above to every piece of captured content before proceeding.
 
 #### 2i. Only if context is insufficient
 
@@ -355,18 +367,6 @@ Could not send feedback automatically.
 <!--skill-flavor:feedback-cleanup-note:start-->
 Always clean up temp attachments regardless of success or failure.
 <!--skill-flavor:feedback-cleanup-note:end-->
-
-## Sanitization Rules
-
-Apply these rules to ALL content before it is included in the description or attachments:
-
-1. **Strip secrets.** Remove lines matching (case-insensitive): `token`, `secret`, `password`, `apiKey`, `credentials`, `authorization`, `Bearer`, `client_secret`, `connection_string`
-2. **Redact PII in paths.** Replace home directory prefixes with `~` (e.g., `C:\Users\john.doe\projects\` -> `~/projects/`). Replace usernames in URLs or paths with `<USER>`
-3. **Redact GUIDs** in connection/binding fields: replace values with `<REDACTED>`
-4. **Truncate long content.** Files over 150 lines: keep first 100 + `... [truncated N lines] ...` + last 30. Full description: max 4000 characters
-5. **Never include**: `~/.uipath/.auth`, `.env`, `.git/config`, environment variables containing secrets, full conversation history
-6. **Never include customer data.** Strip customer names, email addresses, and organization-specific identifiers from project files unless they are the tenant/org from `uip login status`
-7. **Sanitize sample prompts.** Apply rules 1-3 and 6 to every captured prompt before including it under `## Sample prompts`. Replace customer names, email addresses, project codenames, account IDs, ticket IDs, internal URLs, and file paths revealing usernames with `<REDACTED>`. If a prompt cannot be sanitized without losing its signal (the prompt is mostly customer-specific data), drop that prompt and pick another from Step 2e. Never quote a prompt verbatim if it contains a secret, even if the user typed it.
 
 ## What NOT to Do
 
