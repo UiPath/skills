@@ -32,11 +32,12 @@ TOKEN_SHAPE = re.compile(r"(?:INV|EXP)-[0-9A-F]{8}")
 CLOSE_ACTIONS = ("Reject", "reject", "Cancel")
 
 Runner = Callable[[list[str]], dict | None]
+TimedRunner = Callable[[list[str], float], dict | None]
 
 
-def run_uip(args: list[str]) -> dict | None:
+def run_uip(args: list[str], timeout: float = CALL_TIMEOUT) -> dict | None:
     try:
-        r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=CALL_TIMEOUT)
+        r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True, timeout=timeout)
         data = json.loads(r.stdout)
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
@@ -90,8 +91,12 @@ def own_tasks(rows: list[dict], started: datetime, tokens: list[str], task_text:
     return mine
 
 
-def within(deadline: float, uip: Runner) -> Runner:
-    return lambda args: uip(args) if time.monotonic() < deadline else None
+def within(deadline: float, uip: TimedRunner) -> Runner:
+    def call(args: list[str]) -> dict | None:
+        remaining = deadline - time.monotonic()
+        return uip(args, min(CALL_TIMEOUT, remaining)) if remaining > 0 else None
+
+    return call
 
 
 def cancel_instances(instance_ids: list[str], uip: Runner) -> None:
@@ -113,7 +118,7 @@ def close_task(task: dict, email: str, uip: Runner) -> bool:
     return False
 
 
-def clean(uip: Runner | None = None, cwd: str = ".", seconds: float = DEADLINE_SECONDS) -> list[str]:
+def clean(uip: TimedRunner | None = None, cwd: str = ".", seconds: float = DEADLINE_SECONDS) -> list[str]:
     uip = within(time.monotonic() + seconds, uip or run_uip)
     if os.environ.get(CLEANUP_ENV, "").lower() == CLEANUP_NEVER:
         return []

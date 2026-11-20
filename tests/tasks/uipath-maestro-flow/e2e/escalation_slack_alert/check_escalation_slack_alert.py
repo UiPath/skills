@@ -59,7 +59,7 @@ from _shared.flow_check import (  # noqa: E402
 )
 from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
-BULLET_RE = re.compile(r"^\s*(?:[-*•◦▪‣–·]|\d+[.)])\s*\S")
+BULLET_RE = re.compile(r"^\s*(?:[-*•◦▪‣–·]|\d+[.)])\s+\S")
 # The roles the graded results depend on. The others are fed when declared.
 REQUIRED = ("tier", "productionDown", "workaround", "caseRef")
 

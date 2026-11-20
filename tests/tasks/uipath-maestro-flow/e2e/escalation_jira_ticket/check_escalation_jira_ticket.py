@@ -57,6 +57,7 @@ from _shared.flow_check import (  # noqa: E402
     _fail_with_capture,
     assert_flow_uses_connector_target,
     completed_connector_node_ids,
+    get_debug_attempt_raws,
     get_last_debug_raw,
     node_output_leaves,
     run_debug,
@@ -117,6 +118,16 @@ def _record_partial(exc: BaseException, conn: str, ref: str, project: str) -> li
     if owned:
         _record(owned)
     return list(owned)
+
+
+def _record_attempts(conn: str, ref: str, project: str) -> None:
+    """Record this run's tickets from every debug attempt, not only the last:
+    a re-run attempt may have created a ticket `check_case` never sees."""
+    raw = "\n".join(get_debug_attempt_raws())
+    owned, unread = _owned(conn, re.findall(rf"\b{re.escape(project)}-\d+\b", raw), ref)
+    _note_unread(unread)
+    if owned:
+        _record(owned)
 
 
 def _read(conn: str, key: str) -> dict | None:
@@ -260,6 +271,7 @@ def main() -> None:
                 f"{case['name']}: flow debug timed out after {exc.timeout}s"
                 + (f"; recorded this run's key(s) {owned} for teardown" if owned else "")
             )
+        _record_attempts(conn, ref, project)
         per_case.append(check_case(flow, payload, case, conn, project))
         print(f"OK: {case['name']}: {case['expected']['severity']}, engineering needed "
               f"{case['expected']['engineering']}, ticket opened and read back")

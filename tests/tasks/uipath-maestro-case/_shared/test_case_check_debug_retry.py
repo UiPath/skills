@@ -23,6 +23,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import case_check  # noqa: E402
 
+SUSPENDED = json.dumps({
+    "Result": "Failure",
+    "Message": "Debug session Suspended. No incident details returned by PIMS.",
+    "Data": {"finalStatus": "Suspended"},
+})
+SUSPENDED_WITH_INCIDENT = json.dumps({
+    "Result": "Failure",
+    "Message": "Debug session Suspended. Incident: [E1] boom",
+    "Data": {"finalStatus": "Suspended", "incidents": [{"code": "E1"}]},
+})
+
 TRANSIENT = [
     # verbatim shapes from the 2026-09-11 nightlies and CI run 34510099349
     'Failed during poll-instance-status: 403 Forbidden on GET /api/v1/debug-instances/fc07737f/element-executions',
@@ -30,14 +41,15 @@ TRANSIENT = [
     '{"Result": "Success", "Code": "CaseDebug", "Data": {"finalStatus": "Cancelled"}}',
     'Failed during start-instance: 429 Too Many Requests',
     'Failed during poll-instance-status: 503 Service Unavailable',
+    SUSPENDED,
 ]
-
 PLAN_FAULTS = [
     'Failed during start-instance: 400 Bad Request',
     'ValidationError: unknown option "-instance-id"',
     '{"Result": "Failure", "ErrorCode": "invalid_argument", "Message": "Resource is not configured"}',
     '{"Result": "Success", "Data": {"finalStatus": "Faulted"}}',
     'Failed during poll-instance-status: 404 Not Found',
+    SUSPENDED_WITH_INCIDENT,
 ]
 
 
@@ -132,3 +144,44 @@ def test_faulted_is_not_retried_by_run_debug(
     with pytest.raises(SystemExit):
         case_check.run_debug()
     assert rec.debug_calls == 1, "a Faulted case is the plan's fault"
+
+
+def test_suspended_without_incident_retries_once_and_succeeds(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rec = _Recorder((1, SUSPENDED), (0, OK_PAYLOAD))
+    monkeypatch.setattr(subprocess, "run", rec)
+    assert case_check.start_debug()["finalStatus"] == "Completed"
+    assert rec.debug_calls == 2
+    assert "retrying" in capsys.readouterr().out
+
+
+def test_suspended_without_incident_twice_fails_after_one_retry(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None
+) -> None:
+    rec = _Recorder((1, SUSPENDED), (1, SUSPENDED))
+    monkeypatch.setattr(subprocess, "run", rec)
+    with pytest.raises(SystemExit) as exc:
+        case_check.start_debug()
+    assert rec.debug_calls == 2
+    assert "after one retry" in str(exc.value)
+
+
+def test_suspended_with_incident_is_not_retried(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None
+) -> None:
+    rec = _Recorder((1, SUSPENDED_WITH_INCIDENT), (0, OK_PAYLOAD))
+    monkeypatch.setattr(subprocess, "run", rec)
+    with pytest.raises(SystemExit):
+        case_check.start_debug()
+    assert rec.debug_calls == 1
+
+
+def test_clean_exit_suspended_without_incident_is_retried_by_run_debug(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None
+) -> None:
+    suspended = (0, json.dumps({"Result": "Success", "Data": {"finalStatus": "Suspended"}}))
+    rec = _Recorder(suspended, (0, OK_PAYLOAD))
+    monkeypatch.setattr(subprocess, "run", rec)
+    assert case_check.run_debug()["finalStatus"] == "Completed"
+    assert rec.debug_calls == 2

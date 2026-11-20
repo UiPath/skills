@@ -448,3 +448,16 @@ def test_the_opener_names_no_harness_and_carries_the_guard(task):
 def test_the_expense_helper_puts_the_posting_step_after_the_review():
     expense = _helper(TASKS["e2e_07_apptask_brownfield"].path)
     assert "The posting step goes after the review" in expense
+
+
+GRADED_VALUES = {
+    "billing_discrepancy_detector": ("1610", detector.INVOICE, detector.TIER),
+    "billing_invoice_lookup": tuple(expected for _raw, expected, _count, _label in invoice.FOUND),
+    "billing_resolution_writer": (writer.INVOICE, writer.CREDIT_TEXT),
+}
+
+
+@pytest.mark.parametrize("task", sorted(GRADED_VALUES))
+def test_no_request_text_example_equals_a_graded_value(task):
+    prompt = _flat(_prompt(TASKS[task].path))
+    assert not [value for value in GRADED_VALUES[task] if value in prompt], task

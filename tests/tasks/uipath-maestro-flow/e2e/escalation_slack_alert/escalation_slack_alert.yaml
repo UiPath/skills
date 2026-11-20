@@ -26,7 +26,7 @@ sandbox:
 run_limits:
   expected_turns: 55
   max_turns: 120
-  task_timeout: 2400
+  task_timeout: 2700
   turn_timeout: 1200
 
 pre_run:

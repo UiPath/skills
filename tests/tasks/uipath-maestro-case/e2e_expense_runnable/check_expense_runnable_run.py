@@ -42,10 +42,30 @@ FINAL_STAGE = "Approved"
 # Element states that mean the element never started.
 NOT_STARTED = {"", "notstarted", "pending", "skipped"}
 FAILED = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
+FAILED_ANY = re.compile(r"fail|fault|error", re.IGNORECASE)
 
 
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (text or "").lower())
+
+
+def optional_ids(plan: dict) -> set[str]:
+    """Ids of tasks the plan marks not required; one may end Cancelled (a timer that never fires)."""
+    return {
+        str(task.get("id"))
+        for node in plan.get("nodes") or []
+        for lane in (node.get("data") or {}).get("tasks") or []
+        for task in (lane if isinstance(lane, list) else [lane])
+        if isinstance(task, dict) and task.get("isRequired") is False
+    }
+
+
+def element_failed(execution: dict, optional: set[str]) -> bool:
+    status = str(_get_ci(execution, "status", "Status") or "")
+    if FAILED_ANY.search(status):
+        return True
+    element = str(_get_ci(execution, "elementId", "ElementId") or "")
+    return element not in optional and bool(FAILED.search(status))
 
 
 def _fail(message: str) -> None:
@@ -81,7 +101,7 @@ def check_path(plan: dict, payload: dict) -> list[str]:
         f"{_get_ci(e, 'elementId', 'ElementId')} ({_get_ci(e, 'elementType', 'ElementType')}) "
         f"{_get_ci(e, 'status', 'Status')}"
         for e in _get_ci(payload, "elementExecutions", "ElementExecutions") or []
-        if isinstance(e, dict) and FAILED.search(str(_get_ci(e, "status", "Status") or ""))
+        if isinstance(e, dict) and element_failed(e, optional_ids(plan))
     ]
     if failed:
         _fail(f"elements failed during the run: {failed}")
@@ -106,7 +126,8 @@ def check_path(plan: dict, payload: dict) -> list[str]:
 
 def _run_ended(plan: dict):
     def ended(executions: list[dict]) -> bool:
-        if any(FAILED.search(str(_get_ci(e, "status", "Status") or "")) for e in executions):
+        optional = optional_ids(plan)
+        if any(element_failed(e, optional) for e in executions if isinstance(e, dict)):
             return True
         statuses = stage_statuses(plan, {"elementExecutions": executions})
         return any(s.lower() in DONE for s in statuses[_stage(statuses, FINAL_STAGE)])

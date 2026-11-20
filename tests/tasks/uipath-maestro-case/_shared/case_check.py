@@ -659,9 +659,13 @@ def _fail(msg: str) -> NoReturn:
 # still fails on the first attempt: a plan defect must never be retried into a
 # pass, and a real platform regression must still turn the suite red — which is
 # why the retry announces itself on stdout instead of absorbing the fault.
+# 2026-11-19, skill-case-single-business-rule: grader debug exit 1, finalStatus
+# Suspended, "No incident details returned by PIMS", while the agent's debug of the same plan completed.
 _TRANSIENT_DEBUG_HTTP = frozenset({"403", "408", "409", "425", "429", "500", "502", "503", "504"})
 _DEBUG_PHASE_FAULT = re.compile(r"Failed during [\w-]+:\s*(\d{3})\b")
 _DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
+_DEBUG_SUSPENDED = re.compile(r'"finalStatus"\s*:\s*"Suspended"', re.IGNORECASE)
+_DEBUG_NO_INCIDENT = "No incident details returned by PIMS"
 _DEBUG_RETRY_SLEEP_S = 15
 
 
@@ -672,6 +676,13 @@ def retry_after_cancelled() -> None:
         flush=True,
     )
     time.sleep(_DEBUG_RETRY_SLEEP_S)
+
+
+def _suspended_without_incident(payload: dict | None) -> bool:
+    """A clean exit carries only ``Data``, not the CLI message, so no incidents stands in for it."""
+    payload = payload or {}
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
+    return status == "Suspended" and not _get_ci(payload, "incidents", "Incidents")
 
 
 def debug_fault_is_transient(output: str) -> str | None:
@@ -687,6 +698,8 @@ def debug_fault_is_transient(output: str) -> str | None:
         return f"HTTP {match.group(1)} from the debug service"
     if _DEBUG_CANCELLED.search(output):
         return "the debug instance was cancelled mid-run"
+    if _DEBUG_SUSPENDED.search(output) and _DEBUG_NO_INCIDENT in output:
+        return "the debug session suspended with no incident details"
     return None
 
 
@@ -781,6 +794,11 @@ def format_debug_failure(payload: Any, stderr: str = "") -> str:
     return "Why:\n  - " + "\n  - ".join(lines) if lines else ""
 
 
+_INSTANCE_ID_RE = re.compile(
+    r'instanceId"?\s*[:=]\s*"?([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', re.I
+)
+
+
 def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
     """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
 
@@ -796,6 +814,10 @@ def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.Completed
             s.decode("utf-8", "replace") if isinstance(s, bytes) else (s or "")
             for s in (e.stdout, e.stderr)
         )
+        if "case debug" in what:
+            found = _INSTANCE_ID_RE.search(f"{out}\n{err}")
+            if found:
+                _record_debug_instance({"instanceId": found.group(1)})
         _fail(f"{what} timed out after {timeout}s\nstdout: {out}\nstderr: {err}")
 
 
@@ -957,7 +979,7 @@ def run_debug(
         refresh_timeout=refresh_timeout,
     )
     status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
-    if status == "Cancelled":
+    if status == "Cancelled" or _suspended_without_incident(payload):
         # Same tenant-side fault as the non-zero-exit path, reported through a
         # clean exit. One retry, announced, then it counts.
         retry_after_cancelled()

@@ -9,6 +9,7 @@ CLI timeout, and the agent's own test runs.
 from __future__ import annotations
 
 import json
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
@@ -106,8 +107,8 @@ def journal_last_debug() -> None:
             for post in dict.fromkeys(posts):
                 if post not in known:
                     handle.write(json.dumps(post) + "\n")
-    except (Exception, SystemExit):
-        return
+    except (Exception, SystemExit) as error:
+        print(f"WARN: slack_journal could not journal this run's Slack posts: {error!r}", file=sys.stderr)
 
 
 @contextmanager

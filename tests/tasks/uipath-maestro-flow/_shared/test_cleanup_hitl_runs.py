@@ -36,9 +36,11 @@ class FakeUip:
     def __init__(self, tasks, instances=(), data=None):
         self.tasks, self.instances, self.data = tasks, list(instances), data or {}
         self.calls = []
+        self.timeouts = []
 
-    def __call__(self, args):
+    def __call__(self, args, timeout=None):
         self.calls.append(args)
+        self.timeouts.append(timeout)
         head = args[:2]
         if head == ["login", "status"]:
             return {"Result": "Success", "Data": {"UserId": ME, "UserEmail": "me@x.com"}}
@@ -98,7 +100,7 @@ def test_a_token_with_no_instance_cancels_nothing(sandbox):
 def test_approve_is_never_a_fallback_action(sandbox):
     write_tokens(sandbox, TOKEN)
     uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
-    uip_fail = lambda args: (uip(args), None)[1] if args[:2] == ["tasks", "complete"] else uip(args)
+    uip_fail = lambda args, timeout=None: (uip(args), None)[1] if args[:2] == ["tasks", "complete"] else uip(args)
     cleanup.clean(uip_fail, sandbox)
     attempts = uip.verbs("tasks", "complete")
     assert attempts and all("Approve" not in call for call in attempts)
@@ -154,7 +156,7 @@ def test_cleanup_never_leaves_everything(sandbox, monkeypatch):
 
 def test_a_failing_cli_never_fails_the_step(sandbox, monkeypatch):
     monkeypatch.chdir(sandbox)
-    def boom(args):
+    def boom(args, timeout=None):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(cleanup, "run_uip", boom)
@@ -188,6 +190,13 @@ def test_no_uip_call_starts_after_the_deadline(sandbox):
     uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
     assert cleanup.clean(uip, sandbox, seconds=-1) == []
     assert uip.calls == []
+
+
+def test_a_call_near_the_deadline_gets_a_timeout_that_ends_before_it(sandbox):
+    write_tokens(sandbox, f"{TOKEN} {INSTANCE}")
+    uip = FakeUip([task(1)], data={"1": {"n": TOKEN}})
+    cleanup.clean(uip, sandbox, seconds=5)
+    assert uip.timeouts and all(t <= 5 for t in uip.timeouts)
 
 
 def test_the_deadline_is_under_the_post_run_timeout_in_both_hitl_tasks():

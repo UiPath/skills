@@ -103,6 +103,23 @@ def test_every_seeded_path_passes_on_the_real_process(case):
     assert checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case))
 
 
+def test_seed_covers_a_workaround_without_an_outage():
+    seeded = seed_module.build_seed()["cases"]
+    case = next(c for c in seeded if c["inputs"]["workaroundAvailable"] and not c["inputs"]["productionDown"]
+                and c["expected"]["escalationPath"] == "escalation")
+    assert case["expected"]["severity"] == "Sev3"
+    assert case["expected"]["engineeringNeeded"] is False
+    assert case["expected"]["responseMode"] == "None"
+    assert case["inputs"]["correlationId"].endswith("-SEV3WA")
+    assert len(seeded) == 12
+
+
+def test_sev2_for_a_workaround_without_an_outage_fails():
+    case = next(c for c in seed_module.build_seed()["cases"] if c["name"] == "sev3-workaround-without-outage")
+    with pytest.raises(checker.CheckFailure, match="severity"):
+        checker.verify_case(PROCESS, SLACK, case, _debug(case), _variables(case, severity="Sev2"))
+
+
 def test_slack_steps_found_by_connector_key():
     assert SLACK == {"sendEscalationAlert", "sendTriageNotice"}
 

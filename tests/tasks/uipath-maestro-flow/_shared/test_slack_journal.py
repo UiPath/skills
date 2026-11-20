@@ -114,6 +114,19 @@ def test_journalling_never_masks_the_runs_failure(sandbox, monkeypatch):
             sys.exit("boom")
 
 
+def test_a_swallowed_journal_error_warns_on_stderr(sandbox, monkeypatch, capsys):
+    _last_run(monkeypatch, _envelope({f"{SEND_ID}.output": _response()}))
+    monkeypatch.setattr(slack_journal, "read_journal", lambda: (_ for _ in ()).throw(OSError("disk")))
+    slack_journal.journal_last_debug()
+    err = capsys.readouterr().err
+    assert err.count("WARN") == 1 and "disk" in err
+
+
+def test_the_teardown_channel_is_the_graders_channel():
+    from _shared.escalation_inputs import SLACK_CHANNEL
+    assert teardown.CHANNEL_ID == SLACK_CHANNEL
+
+
 def test_the_grader_and_teardown_share_the_journal_file():
     assert str(slack_journal.JOURNAL) == str(teardown.JOURNAL)
 

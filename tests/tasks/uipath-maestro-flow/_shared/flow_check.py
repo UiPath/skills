@@ -156,10 +156,15 @@ class AgentFaultRetry(Enum):
     RETRY = "retry"
 
 
+# `node_modules`: the preview workspace symlinks the baked SDK tree there, and
+# `glob` follows directory symlinks under `**`. `.local`: the CLI writes
+# downloaded copies of cloud projects under `.local/investigations/`.
+_PRUNED_DIRS = frozenset({"node_modules", ".local"})
+
+
 def _rglob_pruned(pattern: str) -> list[str]:
-    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
-    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
-    there, and ``glob`` follows directory symlinks under ``**``)."""
+    """``glob.glob(pattern, recursive=True)`` from the CWD, never descending into
+    ``_PRUNED_DIRS``."""
     if "**" not in pattern:
         return sorted(glob.glob(pattern, recursive=True))
     prefix, _, suffix = pattern.partition("**")
@@ -167,7 +172,7 @@ def _rglob_pruned(pattern: str) -> list[str]:
     suffix = suffix.lstrip("/")
     matches: list[str] = []
     for dirpath, dirnames, _ in os.walk(root, followlinks=True):
-        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        dirnames[:] = [d for d in dirnames if d not in _PRUNED_DIRS]
         matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
     if root == ".":
         matches = [m[2:] if m.startswith("./") else m for m in matches]

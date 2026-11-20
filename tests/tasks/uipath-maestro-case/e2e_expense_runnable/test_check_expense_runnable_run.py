@@ -89,6 +89,34 @@ def test_a_failed_element_fails_even_when_stages_completed() -> None:
         check_run.check_path(PLAN, payload(rows))
 
 
+def _plan_with_timer(required: bool) -> dict:
+    stage = {
+        "id": "Stage_mgr", "type": "case-management:Stage",
+        "data": {"label": "Manager Approval", "tasks": [[
+            {"id": "tTimer", "type": "wait-for-timer", "isRequired": required}
+        ]]},
+    }
+    nodes = [n for n in PLAN["nodes"] if n["id"] != "Stage_mgr"] + [stage]
+    return {"nodes": nodes}
+
+
+def test_a_cancelled_optional_timer_passes() -> None:
+    rows = happy_rows() + [("tTimer", "Timer", "Cancelled")]
+    assert len(check_run.check_path(_plan_with_timer(False), payload(rows))) == 5
+
+
+def test_a_cancelled_required_task_fails() -> None:
+    rows = happy_rows() + [("tTimer", "Timer", "Cancelled")]
+    with pytest.raises(SystemExit, match="elements failed during the run"):
+        check_run.check_path(_plan_with_timer(True), payload(rows))
+
+
+def test_a_faulted_optional_timer_still_fails() -> None:
+    rows = happy_rows() + [("tTimer", "Timer", "Faulted")]
+    with pytest.raises(SystemExit, match="elements failed during the run"):
+        check_run.check_path(_plan_with_timer(False), payload(rows))
+
+
 def test_pascal_cased_rows_are_read_too() -> None:
     data = {
         "FinalStatus": "Completed",

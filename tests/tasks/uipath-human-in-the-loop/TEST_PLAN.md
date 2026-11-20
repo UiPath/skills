@@ -20,8 +20,8 @@ Agent-facing test scenarios for the `uipath-human-in-the-loop` skill — detects
 
 | Operation | Status |
 |---|---|
-| Deploy or execute a flow at runtime | NOT TESTED — tests validate authored `.flow` JSON only |
-| Run a live HITL approval from a robot | NOT TESTED |
+| Deploy or execute a flow at runtime | Tested by the e2e tasks: e2e_01 and e2e_07 debug the flow on the live tenant |
+| Run a live HITL approval | Tested by e2e_01 and e2e_07: the grader completes the Action Center task (approve, then reject) |
 | AppTask surface (`e2e_07`) | Graded on a live run against the deployed ExpenseReviewApp |
 
 ---

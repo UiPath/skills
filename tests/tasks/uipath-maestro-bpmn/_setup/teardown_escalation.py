@@ -17,19 +17,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import escalation_is
 
+clock = escalation_is.TeardownClock()
 try:
     records = escalation_is.read_journal()
     if not records:
         print("OK: nothing journalled to delete")
         sys.exit(0)
+    journalled = tuple(
+        connector
+        for connector, kind in (
+            (escalation_is.JIRA_CONNECTOR, "jira_issue"),
+            (escalation_is.SLACK_CONNECTOR, "slack_message"),
+        )
+        if records.get(kind)
+    )
     connections = escalation_is.connection_ids(
-        timeout=escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT
+        timeout=max(1, int(min(
+            escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT, clock.remaining()
+        ))),
+        connectors=journalled,
     )
     leaked = 0
-    clock = escalation_is.TeardownClock()
     delete_timeout = escalation_is.TEARDOWN_DELETE_TIMEOUT
     read_timeout = escalation_is.TEARDOWN_READ_TIMEOUT
-    jira_connection = connections[escalation_is.JIRA_CONNECTOR]
+    jira_connection = connections.get(escalation_is.JIRA_CONNECTOR)
     for issue in dict.fromkeys(records.get("jira_issue", [])):
         if not clock.allows(delete_timeout):
             print(f"WARN: skipped Jira {issue}: teardown deadline reached "
@@ -55,7 +66,7 @@ try:
               else f"WARN: could NOT confirm deletion of Jira {issue} "
                    f"-- may be leaked in the {escalation_is.PROJECT_KEY} project")
         leaked += 0 if ok else 1
-    slack_connection = connections[escalation_is.SLACK_CONNECTOR]
+    slack_connection = connections.get(escalation_is.SLACK_CONNECTOR)
     seen: set = set()
     for record in records.get("slack_message", []):
         # A malformed record must not abort the sweep and strand every id
@@ -65,6 +76,10 @@ try:
             print(f"WARN: skipping malformed Slack journal record {record!r}")
             continue
         channel_id, timestamp = record
+        if not escalation_is.is_target_slack_post(channel_id, timestamp):
+            print(f"WARN: skipping Slack record outside {escalation_is.SLACK_CHANNEL}: "
+                  f"{record!r}")
+            continue
         if (channel_id, timestamp) in seen:
             continue
         seen.add((channel_id, timestamp))

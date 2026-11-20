@@ -669,6 +669,18 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
         flow_check.assert_no_flow_files()
 
 
+def test_find_project_ignores_the_clis_investigation_copies(tmp_path, monkeypatch):
+    """Round 11 codex: the CLI downloaded the cloud project under
+    .local/investigations/cloud/<id>/, which made two Flow projects match."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ApproverCountAgent").mkdir()
+    _make_proj(tmp_path / "ApproverCountAgent", "ApproverCountAgent", "Flow")
+    copy = tmp_path / ".local" / "investigations" / "cloud" / "a31f9733"
+    copy.mkdir(parents=True)
+    _make_proj(copy, "ApproverCountAgent", "Flow")
+    assert _find_project("**/project.uiproj") == os.path.join("ApproverCountAgent", "ApproverCountAgent")
+
+
 def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
     """No project.uiproj at all — original failure message preserved."""
     monkeypatch.chdir(tmp_path)

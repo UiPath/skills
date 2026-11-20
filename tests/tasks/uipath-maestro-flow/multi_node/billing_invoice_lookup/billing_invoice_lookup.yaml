@@ -46,7 +46,7 @@ initial_prompt: |
   without the "MCS-" prefix. Clean it up before looking it up.
 
   Return the invoice number exactly as it appears in our records, for example
-  "MCS-2026-04872", and the number of lines as a whole number. If the invoice
+  "MCS-2026-00001", and the number of lines as a whole number. If the invoice
   doesn't exist, don't fail: return empty text and 0.
 
   <!-- helper:start -->

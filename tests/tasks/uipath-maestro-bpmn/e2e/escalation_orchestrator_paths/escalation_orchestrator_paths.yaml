@@ -5,7 +5,7 @@ description: >
   seeded inputs. The agent builds a manual-start BPMN process whose routing
   depends only on its inputs (the Outlook email-received trigger is not
   reliably debug-testable). The grader imports the exact submitted project
-  into its own ephemeral solution and runs eleven seeded cases under `uip
+  into its own ephemeral solution and runs twelve seeded cases under `uip
   maestro bpmn debug --inputs`: Sev1/Sev2/Sev3 escalations, the four
   triage reasons (missing_domain / unknown_customer / multiple_matches /
   duplicate) and four inputs that trip several routing rules at once, where
@@ -15,7 +15,7 @@ description: >
   path; and the named outputs read back escalationPath, severity,
   engineeringNeeded, responseMode, caseKey=<correlationId> and
   slackMessageId=<that message's ts>. responseMode is read by meaning (draft
-  or none), and Sev3 needs no draft. Eleven cases with different answers
+  or none), and Sev3 needs no draft. Twelve cases with different answers
   prove the routing is computed, so no node layout is required. Graceful
   Slack-failure handling and the agent's own test run are advisory.
   Salesforce is not called (match status is an input).
@@ -32,8 +32,8 @@ sandbox:
 run_limits:
   expected_turns: 80
   max_turns: 200
-  # turn 1800 + criteria 180 + 30 + 5070 + 30 = 7110, plus margin.
-  task_timeout: 7270
+  # turn 1800 + criteria 180 + 30 + 5490 + 30 = 7530, plus margin.
+  task_timeout: 7690
   turn_timeout: 1800
 
 pre_run:
@@ -127,11 +127,11 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Effects: eleven seeded debug runs (Sev1, Sev2, Sev3, duplicate, unknown_customer, missing_domain, multiple_matches, and four overlaps won by the first rule in the stated order) each complete, post exactly one Slack message to #coding-agent-testing as user carrying the correlationId and the path, and return the expected escalationPath, severity, engineeringNeeded, responseMode, caseKey=<correlationId> and slackMessageId=<that message's ts>"
+    description: "Effects: twelve seeded debug runs (Sev1, Sev2, Sev3, Sev3 with a workaround and no outage, duplicate, unknown_customer, missing_domain, multiple_matches, and four overlaps won by the first rule in the stated order) each complete, post exactly one Slack message to #coding-agent-testing as user carrying the correlationId and the path, and return the expected escalationPath, severity, engineeringNeeded, responseMode, caseKey=<correlationId> and slackMessageId=<that message's ts>"
     command: "python3 $REFERENCE_DIR/e2e/escalation_orchestrator_paths/check_orchestrator_run.py cases"
-    # 11 x (300 debug + 120 variables-all) + 90 solution init + 180 solution
-    # import + 120 incidents on a miss + 60 margin = 5070.
-    timeout: 5070  # budget-guard: manual x11
+    # 12 x (300 debug + 120 variables-all) + 90 solution init + 180 solution
+    # import + 120 incidents on a miss + 60 margin = 5490.
+    timeout: 5490  # budget-guard: manual x12
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

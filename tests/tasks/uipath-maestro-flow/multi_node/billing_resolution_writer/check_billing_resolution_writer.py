@@ -49,6 +49,7 @@ from _shared.slack_journal import journal_slack_posts  # noqa: E402
 INVOICE = "MCS-2026-05128"
 CREDIT_TEXT = "USD 2,475.50"
 SIGNATURE = "Billing Support Team"
+SIGNED_AT_END = re.compile(re.escape(SIGNATURE) + r"\W*$")
 AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
 CASE_REF = f"RESO-{uuid4().hex[:12]}"
 ROLES = {
@@ -102,9 +103,9 @@ def find_body(found, agent_leaves):
     prose = [(k, t) for k, t in cited if not is_serialized_object(t)]
     if not prose:
         _fail_with_capture(f"the email body is a serialized JSON object, not plain text: {cited}")
-    signed = [(k, t) for k, t in prose if SIGNATURE in t]
+    signed = [(k, t) for k, t in prose if SIGNED_AT_END.search(t)]
     if not signed:
-        _fail_with_capture(f"the email body is not signed {SIGNATURE!r}: {prose}")
+        _fail_with_capture(f"the email body does not end with the signature {SIGNATURE!r}: {prose}")
     # From the executed agent, not a template over the inputs: the body is one of
     # the agent's own output strings, or holds one of its long ones verbatim.
     # Either way round: a script may wrap the agent's text, or cut the body out of a

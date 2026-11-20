@@ -59,6 +59,7 @@ FOLDER_GRACE_SECONDS = 60
 ALL_FOLDERS_EVERY = 6  # polls; the tenant-wide list is ~5 MB, so not every poll
 MIN_CALL_SECONDS = 30
 DEADLINE_SECONDS = 600
+RESULT_FLOOR_SECONDS = 120  # the run's own time to finish once its task is completed
 CLI_TIMEOUT = 540
 END_TYPE = "core.control.end"
 TOKENS_FILE = ".hitl-run-tokens"  # read by _setup/cleanup_hitl_runs.py
@@ -514,6 +515,8 @@ def run_with_task(
             )
         check_task(task)
         complete_task(task, actions, answer(task))
+        deadline = max(deadline, time.monotonic() + RESULT_FLOOR_SECONDS)
+        bound_calls_by(deadline)
         payload = wait_for_result(run, deadline)
         require_completed(payload)
     finally:

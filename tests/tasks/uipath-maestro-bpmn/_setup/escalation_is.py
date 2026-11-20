@@ -51,7 +51,7 @@ FOLDER_NAME = "uipath-maestro-flow"  # leaf of the path, as reported
 PROJECT_KEY = "CE"  # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_NAME = "Task"  # its id is per site and per project, so it is read at run time
 # The flow suite's identified target on this same connection
-# (escalation_slack_alert/check_escalation_slack_alert.py).
+# (the flow suite's escalation_slack_alert checker).
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 SLACK_JOURNAL_KIND = "slack_message"
@@ -123,6 +123,9 @@ class TeardownClock:
         self._budget = TEARDOWN_BUDGET if budget is None else budget
         self._start = _now()
 
+    def remaining(self) -> float:
+        return self._budget - (_now() - self._start)
+
     def allows(self, call_timeout: float) -> bool:
         """True when a call that may take `call_timeout` still fits the budget."""
         return _now() - self._start + call_timeout <= self._budget
@@ -170,8 +173,12 @@ def assert_live_target() -> dict[str, str]:
     return expected
 
 
-def connection_ids(*, timeout: int = CONNECTIONS_LIST_TIMEOUT) -> dict[str, str]:
-    """Resolve the enabled Jira and Slack connection ids, scoped by folder."""
+def connection_ids(
+    *, timeout: int = CONNECTIONS_LIST_TIMEOUT, connectors: tuple[str, ...] | None = None
+) -> dict[str, str]:
+    """Resolve the enabled Jira and Slack connection ids, scoped by folder.
+
+    `connectors` limits resolution to those connector keys (default: both)."""
 
     listed = run_cli(
         ["uip", "is", "connections", "list", "--all-folders", "--refresh"],
@@ -182,6 +189,8 @@ def connection_ids(*, timeout: int = CONNECTIONS_LIST_TIMEOUT) -> dict[str, str]
         raise CheckFailure("connector discovery returned no list")
     ids: dict[str, str] = {}
     for connector_key, name in CONNECTION_NAMES.items():
+        if connectors is not None and connector_key not in connectors:
+            continue
         by_name = [
             row
             for row in rows
@@ -396,6 +405,16 @@ def record_created_id(kind: str, value) -> None:
         pass  # journalling is a cleanup backstop; never fail grading over it
 
 
+def is_target_slack_post(channel: object, timestamp: object) -> bool:
+    """True only for a message in the eval's own Slack channel with a real ts."""
+
+    return (
+        channel == SLACK_CHANNEL
+        and isinstance(timestamp, str)
+        and bool(SLACK_TS_RE.match(timestamp.strip()))
+    )
+
+
 def journal_slack_posts(variables_data, element_ids) -> None:
     """Journal the channel and ts each of these Slack steps returned in this run."""
 
@@ -404,8 +423,8 @@ def journal_slack_posts(variables_data, element_ids) -> None:
         if not isinstance(response, dict):
             continue
         channel, timestamp = get_ci(response, "channel"), get_ci(response, "ts")
-        if isinstance(channel, str) and isinstance(timestamp, str):
-            record_created_id("slack_message", [channel, timestamp])
+        if is_target_slack_post(channel, timestamp):
+            record_created_id("slack_message", [channel, timestamp.strip()])
 
 
 def _slack_responses(value) -> list[tuple[str, str]]:
@@ -422,9 +441,7 @@ def _slack_responses(value) -> list[tuple[str, str]]:
     channel, timestamp = get_ci(value, "channel"), get_ci(value, "ts")
     own = []
     if (
-        isinstance(channel, str)
-        and isinstance(timestamp, str)
-        and SLACK_TS_RE.match(timestamp.strip())
+        is_target_slack_post(channel, timestamp)
         and isinstance(get_ci(value, "message"), dict)
     ):
         own = [(channel, timestamp.strip())]

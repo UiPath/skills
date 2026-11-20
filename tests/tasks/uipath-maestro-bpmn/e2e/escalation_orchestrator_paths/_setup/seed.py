@@ -69,6 +69,14 @@ def build_seed() -> dict:
             {"subject": "Report formatting off", "body": "The export looks wrong"},
             {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "None"},
         ),
+        _case(
+            # productionDown False with a workaround: pins that Sev2 needs
+            # productionDown, so a classifier keyed on workaroundAvailable alone fails.
+            "sev3-workaround-without-outage", r, "SEV3WA",
+            {"subject": "Minor glitch", "body": "A workaround exists",
+             "productionDown": False, "workaroundAvailable": True},
+            {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "None"},
+        ),
         # ── Triage paths (Slack triage notice) ─────────────────────────────
         _case(
             "duplicate-escalation", r, "DUP",

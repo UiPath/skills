@@ -8,7 +8,9 @@ description: >
   "mcp"` resource.json for GitHubMcp, in any project layout), then by one debug
   run in which the inline agent completes and the named output `answer` gives
   octocat/Hello-World's default branch. Text between the helper markers is
-  lower-tier guidance (experiments/use-case-tiers.yaml) and is not graded.
+  lower-tier guidance (experiments/use-case-tiers.yaml); the names it fixes (inputs
+  repository and question, output answer) and GitHubMcp are what the criteria
+  read.
 tags: [uipath-maestro-flow, e2e-blocked, mode:build, lifecycle:generate, low-code, inline-flow, path-to-ga, outcome-graded, resource]
 skip: true
 # Skipped for now: wiring an inline MCP server tool into the flow is not yet

@@ -821,3 +821,29 @@ def test_an_instance_id_that_arrives_after_the_job_key_is_still_recorded(tmp_pat
     with pytest.raises(SystemExit):
         live.run_with_task(str(tmp_path), {}, "TOK-1", {}, [], lambda t: None, lambda t: {}, "task")
     assert (tmp_path / live.TOKENS_FILE).read_text().splitlines() == ["TOK-1", "TOK-1 inst-9"]
+
+
+def test_a_task_found_at_the_deadline_still_leaves_the_run_its_floor(tmp_path, monkeypatch):
+    seen = {}
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(live, "DEADLINE_SECONDS", 0)
+    monkeypatch.setattr(live, "start_debug", lambda *a, **k: _LateInstanceRun())
+    monkeypatch.setattr(live, "wait_for_ids", lambda r, d: r.refresh_ids())
+    monkeypatch.setattr(live, "find_run_task", lambda *a, **k: (object(), []))
+    monkeypatch.setattr(live, "complete_task", lambda *a, **k: None)
+    monkeypatch.setattr(live, "cancel", lambda r: None)
+    monkeypatch.setattr(live, "is_completed", lambda p: True)
+    monkeypatch.setattr(live, "require_completed", lambda p: None)
+
+    def wait_for_result(run, deadline):
+        seen["left"] = deadline - time.monotonic()
+        seen["bound"] = live._call_deadline - time.monotonic()
+        return {}
+
+    monkeypatch.setattr(live, "wait_for_result", wait_for_result)
+    try:
+        live.run_with_task(str(tmp_path), {}, "TOK-1", {}, [], lambda t: None, lambda t: {}, "task")
+    finally:
+        live.bound_calls_by(None)
+    assert seen["left"] > live.RESULT_FLOOR_SECONDS - 5
+    assert seen["bound"] > live.RESULT_FLOOR_SECONDS - 5

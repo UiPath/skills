@@ -207,6 +207,16 @@ def test_numbered_or_dashed_steps_count_as_the_list(v3):
     v3.check_case(_flow(V3_IO), _payload(V3_IO, text=text), CASE)
 
 
+def test_a_bold_header_and_three_bullets_pass(v3):
+    text = f"[SEV-1] {REF}\n*Next steps:*\n• Page on-call\n• Open a bridge\n• Update the customer"
+    v3.check_case(_flow(V3_IO), _payload(V3_IO, text=text), CASE)
+
+
+@pytest.mark.parametrize("line", ["*Next steps:*", "---", "1.5 hours of downtime", "-no space"])
+def test_markers_without_a_following_space_are_not_bullets(v3, line):
+    assert not v3.BULLET_RE.match(line)
+
+
 def test_a_node_that_only_echoes_the_ts_is_not_taken_for_the_send(v3):
     payload = _payload(V3_IO)
     globals_ = payload["variables"]["globals"]

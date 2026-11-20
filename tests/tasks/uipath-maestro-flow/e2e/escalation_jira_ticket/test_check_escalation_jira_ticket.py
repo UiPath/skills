@@ -315,6 +315,16 @@ def test_main_opens_a_ticket_for_the_duplicate_too(grader, tmp_path, monkeypatch
     assert [(f["customerTier"], f["isDuplicate"]) for f in fed] == [("Enterprise", False), ("Standard", True)]
 
 
+def test_tickets_from_every_debug_attempt_are_recorded(grader, tmp_path, monkeypatch):
+    (tmp_path / "seed.json").write_text(json.dumps({"project_key": "CE", "cases": [CASE]}))
+    grader.issues["CE-9001"] = {"summary": _summary(CASE, "Sev1"), "description": _adf(BODY), "issuetype": TASK}
+    grader.issues["CE-9002"] = {"summary": _summary(CASE, "Sev1"), "description": _adf(BODY), "issuetype": TASK}
+    monkeypatch.setattr(grader, "get_debug_attempt_raws", lambda: ["created CE-9001", "created CE-9002"])
+    monkeypatch.setattr(grader, "run_debug", lambda **kw: _payload())
+    grader.main()
+    assert set((tmp_path / ".created_keys").read_text().split()) == {"CE-9001", "CE-9002", "CE-3481"}
+
+
 def test_seed_preflights_jira_and_expects_v3_severities(tmp_path, monkeypatch):
     calls = []
     stub = types.SimpleNamespace(

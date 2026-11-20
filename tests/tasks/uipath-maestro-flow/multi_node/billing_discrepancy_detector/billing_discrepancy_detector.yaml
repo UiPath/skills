@@ -53,13 +53,13 @@ initial_prompt: |
   The overcharge is what the customer was billed for the line (unit price
   times quantity) minus the contracted amount for that line, or zero if they
   weren't billed more than the contract. Give me back four results:
-  - the overcharge as a plain number in USD, for example 1610, or 0 when there
+  - the overcharge as a plain number in USD, for example 250, or 0 when there
     is none
   - the number of discrepancies as 1 or 0
   - the invoice number exactly as it appears in our records, for example
-    "MCS-2026-04872"
+    "MCS-2026-00001"
   - the account tier as written in our customer records, for example
-    "Enterprise"
+    "Standard"
 
   If the invoice line or the customer can't be found, don't fail. Return 0 for
   the overcharge and the discrepancies, and empty text for the invoice number

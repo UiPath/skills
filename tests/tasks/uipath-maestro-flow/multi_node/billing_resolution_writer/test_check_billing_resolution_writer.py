@@ -123,7 +123,18 @@ def test_the_credit_not_written_as_usd_fails(sandbox, monkeypatch):
 def test_an_unsigned_email_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _run(monkeypatch, body=PLAIN_BODY.replace("Billing Support Team", "Billing"))
-    assert "not signed" in str(exc.value)
+    assert "does not end with the signature" in str(exc.value)
+
+
+def test_a_signature_followed_by_more_text_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run(monkeypatch, body=PLAIN_BODY + "\n\nP.S. Call us any time.")
+    assert "does not end with the signature" in str(exc.value)
+
+
+@pytest.mark.parametrize("tail", ["", "\n", ".", "  \n\n"])
+def test_trailing_whitespace_or_punctuation_after_the_signature_passes(sandbox, monkeypatch, tail):
+    _run(monkeypatch, body=PLAIN_BODY + tail)
 
 
 def test_packed_json_email_body_fails(sandbox, monkeypatch):

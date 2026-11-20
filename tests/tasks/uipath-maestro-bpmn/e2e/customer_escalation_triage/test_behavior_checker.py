@@ -533,6 +533,53 @@ class SlackLogScanTests(unittest.TestCase):
         self.assertEqual(records["slack_message"], [["C0B2FDZD1M3", "1763405123.456789"]])
 
 
+class OtherChannelJournalTests(unittest.TestCase):
+    OTHER = {"channel": "C0OTHER0000", "ts": "1763405123.456789", "message": {}}
+
+    def test_other_channel_post_is_not_journalled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / "debug.log"
+            log.write_text(json.dumps(self.OTHER), encoding="utf-8")
+            with patch.object(escalation_is, "JOURNAL", root / "ids.jsonl"):
+                escalation_is.journal_slack_posts_in_log(log)
+                escalation_is.journal_slack_posts_in_log(root / "none.log", self.OTHER)
+                with patch.object(
+                    escalation_is, "element_output_records",
+                    return_value=[{"response": self.OTHER}],
+                ):
+                    escalation_is.journal_slack_posts({}, {"SlackSend1"})
+                records = escalation_is.read_journal(root / "ids.jsonl")
+        self.assertNotIn("slack_message", records)
+
+    def test_teardown_does_not_delete_a_planted_other_channel_pair(self):
+        deleted = []
+        planted = [["C0OTHER0000", "1763405123.456789"]]
+        mine = [escalation_is.SLACK_CHANNEL, "1763405124.456789"]
+        records = {"jira_issue": [], "slack_message": planted + [mine]}
+        with tempfile.TemporaryDirectory() as tmp:
+            patches = {
+                "JOURNAL": Path(tmp) / "ids.jsonl",
+                "read_journal": lambda: records,
+                "connection_ids": lambda **_k: {
+                    escalation_is.JIRA_CONNECTOR: "j",
+                    escalation_is.SLACK_CONNECTOR: "s",
+                },
+                "delete_slack_message": lambda _c, ch, ts, **_k: deleted.append((ch, ts)) or True,
+            }
+            with patch.multiple(escalation_is, **patches):
+                spec = importlib.util.spec_from_file_location(
+                    "teardown_planted", SHARED_SETUP / "teardown_escalation.py"
+                )
+                module = importlib.util.module_from_spec(spec)
+                with redirect_stdout(io.StringIO()):
+                    try:
+                        spec.loader.exec_module(module)
+                    except SystemExit:
+                        pass
+        self.assertEqual(deleted, [tuple(mine)])
+
+
 class PartialRunJournalTests(unittest.TestCase):
     PARTIAL_LOG = (
         'created CE-7 and then CE-8 in the project\n'
@@ -962,6 +1009,25 @@ class TeardownRetryTests(unittest.TestCase):
                     pass
         return out.getvalue()
 
+    def test_slack_only_journal_does_not_need_the_jira_connection(self):
+        deleted = []
+        asked = []
+
+        def resolve(*, connectors=None, **_kwargs):
+            asked.append(connectors)
+            if escalation_is.JIRA_CONNECTOR in (connectors or escalation_is.CONNECTION_NAMES):
+                raise escalation_is.CheckFailure("no Jira connection")
+            return {escalation_is.SLACK_CONNECTOR: "slack-conn"}
+
+        records = {"jira_issue": [], "slack_message": [[escalation_is.SLACK_CHANNEL, "1700000000.000001"]]}
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            connection_ids=resolve,
+            delete_slack_message=lambda _c, ch, ts, **_k: deleted.append((ch, ts)) or True,
+        )
+        self.assertEqual(deleted, [(escalation_is.SLACK_CHANNEL, "1700000000.000001")], output)
+        self.assertEqual(asked, [(escalation_is.SLACK_CONNECTOR,)])
+
     def test_sweep_stops_at_the_deadline_and_names_what_it_skipped(self):
         now = [0.0]
         started = []
@@ -973,7 +1039,7 @@ class TeardownRetryTests(unittest.TestCase):
 
         records = {
             "jira_issue": [],
-            "slack_message": [["C1", f"1700000000.{n:06d}"] for n in range(11)],
+            "slack_message": [[escalation_is.SLACK_CHANNEL, f"1700000000.{n:06d}"] for n in range(11)],
         }
         output = self._run_teardown(
             read_journal=lambda: records,
@@ -989,6 +1055,41 @@ class TeardownRetryTests(unittest.TestCase):
             max(started) + escalation_is.TEARDOWN_DELETE_TIMEOUT,
             escalation_is.POST_RUN_TIMEOUT_CAP,
         )
+
+    def test_slow_connection_lookup_spends_the_same_budget(self):
+        now = [0.0]
+        lookup_timeouts = []
+        started = []
+
+        def slow_lookup(**kwargs):
+            lookup_timeouts.append(kwargs["timeout"])
+            now[0] += kwargs["timeout"]
+            return {
+                escalation_is.JIRA_CONNECTOR: "jira-conn",
+                escalation_is.SLACK_CONNECTOR: "slack-conn",
+            }
+
+        def slow_slack(_conn, _channel, ts, **_kwargs):
+            started.append(now[0])
+            now[0] += escalation_is.TEARDOWN_DELETE_TIMEOUT
+            return True
+
+        records = {
+            "jira_issue": [],
+            "slack_message": [[escalation_is.SLACK_CHANNEL, f"1700000000.{n:06d}"] for n in range(11)],
+        }
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            connection_ids=slow_lookup,
+            delete_slack_message=slow_slack,
+            _now=lambda: now[0],
+        )
+        self.assertTrue([l for l in output.splitlines() if l.startswith("WARN: skipped Slack")])
+        self.assertLessEqual(
+            max(started) + escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            escalation_is.POST_RUN_TIMEOUT_CAP,
+        )
+        self.assertLessEqual(lookup_timeouts[0], escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT)
 
     def test_transient_first_failure_is_retried(self):
         attempts = []
