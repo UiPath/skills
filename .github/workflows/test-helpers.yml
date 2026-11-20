@@ -282,6 +282,25 @@ jobs:
       - name: Run contract guard
         run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
 
+  access-token-flag-guard:
+    runs-on: uipath-ubuntu-latest
+    name: access-token flag contract guard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Fails if any file uses the hidden `uip login refresh` flag that prints
+      # the CLI's access token. It is for programs that spawn
+      # uip (the Flow VSCode extension), never for skills.
+      - name: Run contract guard
+        run: pytest tests/scripts/test_no_access_token_flag.py -v
+
   ontology-skill-contract:
     runs-on: uipath-ubuntu-latest
     name: ontology skill contract guards
