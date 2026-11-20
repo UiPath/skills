@@ -220,7 +220,7 @@ Both resolve against the same library and both take the same `connection` / `fol
 - A folder entity on a Data Fabric entity trigger (`record-created-preview-`, `record-updated-preview-`; object `EntityTriggers_V3`) is `entity: { name, folder: '<folder path>' }`, never `filter: { entityScope, folderEntityName }`: a literal filter watches the records but writes no picker, so `refresh` declares no entity and a deploy cannot re-point it.
   `check` reports `RESOURCE_UNRESOLVED` and prints the `uip maestro registry prepare --entity <name> --folder-path <path>` that records the keys, as for `.dataService()`; the trigger and a task on that entity share one binding pair. Run `uip maestro bpmn refresh` after `compile`.
 <!--skill-flavor:sdk-event-entity:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.123.0 or later; an older SDK rejects `entity` (`check` reports `TS2353` on it, and `compile` drops it with `EVENT_NO_SCOPE`), so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`; do not drop `entity` for `filter`.
+  Not released yet: builder-sdk#2220 adds `entity`, so on a released SDK `check` reports `TS2353` on it. Until a release carries it, copy `Data.V2.ElementXml` of `uip maestro bpmn registry get Intsvc.EventTrigger --object-name EntityTriggers_V3 --operation <UPDATED_V3 or CREATED_V3> --connection-id <CONNECTION_ID> --input-details '{"queryParameters":{"entityScope":"folder","folderEntityName":"<ENTITY_NAME>"}}' --solution-folder <SOLUTION_DIR> --output json` into `.activity(id, 'Intsvc.EventTrigger', …)` and its `RootBindings` into `.binding()`s, as [§4](#4-when-the-connector-is-not-in-the-library) describes. Never the literal `filter`.
 <!--skill-flavor:sdk-event-entity:end-->
 
 ```bash

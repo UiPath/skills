@@ -16,5 +16,5 @@ With no session library (Automation Suite), `check` and `compile` fetch a missin
 <!--skill-flavor:prepare-live:end-->
 
 <!--skill-flavor:sdk-event-entity:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.123.0 or later. Studio Web ships its own SDK: when `check` reports `TS2353` on `entity` or warns `EVENT_NO_SCOPE` on a trigger that sets it, this build predates `entity`. Tell the user that this Studio Web build cannot write a folder entity trigger's picker yet; do not fall back to `filter: { folderEntityName }` or hand-write the rows.
+  Not released yet: builder-sdk#2220 adds `entity`, and Studio Web ships its own SDK. When `check` reports `TS2353` on `entity`, this build predates it: copy `Data.V2.ElementXml` of `uip maestro bpmn registry get Intsvc.EventTrigger --object-name EntityTriggers_V3 --operation <UPDATED_V3 or CREATED_V3> --connection-id <CONNECTION_ID> --input-details '{"queryParameters":{"entityScope":"folder","folderEntityName":"<ENTITY_NAME>"}}' --solution-folder <SOLUTION_DIR> --output json` into `.activity(id, 'Intsvc.EventTrigger', …)` and its `RootBindings` into `.binding()`s, as [§4](#4-when-the-connector-is-not-in-the-library) describes. If `registry get` fails too, tell the user that this build cannot write the picker. Never the literal `filter`.
 <!--skill-flavor:sdk-event-entity:end-->

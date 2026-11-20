@@ -10,7 +10,7 @@ Web opens it, and the builder SDK does not write the marker):
      for EntityTriggers_V3 / UPDATED_V3, with `activityConfigurationVersion`
      v2, a V2 `connection` (not V1 `connectionId`), a `uipath:entryPointId`,
      design-time metadata, and the entity on `folderEntityName` as a
-     `=bindings.<id>` read of the entity's `resource="entity"` picker binding
+     `=bindings.<id>` read of the entity's `resource="entity"` name binding
      (a literal watches the entity but writes no picker).
   2. A bpmn:sendTask carries Intsvc.ActivityExecution on the same connector
      for CreateEntityRecord_V3, V2 the same way, picking the
@@ -110,7 +110,11 @@ def main() -> None:
         fail(f"{path}: the trigger does not pick {fixture['name']} on folderEntityName")
     name_read = str(body_parameters(trigger).get("folderEntityName") or "")
     picked = bindings.get(name_read[len("=bindings.") :], {}) if name_read.startswith("=bindings.") else {}
-    if picked.get("resource") != "entity" or picked.get("resourceKey", "").lower() != fixture["key"].lower():
+    if (
+        picked.get("resource") != "entity"
+        or picked.get("propertyAttribute") != "name"
+        or picked.get("resourceKey", "").lower() != fixture["key"].lower()
+    ):
         fail(
             f"{path}: the trigger's folderEntityName is {name_read!r}, not a read of "
             f"{fixture['name']}'s resource=\"entity\" picker binding"

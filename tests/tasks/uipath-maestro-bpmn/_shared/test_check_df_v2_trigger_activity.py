@@ -48,7 +48,8 @@ def _bpmn(
         'xmlns:uipath="http://uipath.org/schema/bpmn"><bpmn:process id="p"><bpmn:extensionElements>'
         '<uipath:bindings version="v1">'
         '<uipath:binding id="bConn" default="c" resource="Connection" resourceKey="c" />'
-        f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" />'
+        f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" propertyAttribute="name" />'
+        f'<uipath:binding id="bFolder" default="f" resource="entity" resourceKey="{ENTITY_KEY}" propertyAttribute="folderKey" />'
         f'<uipath:binding id="bOther" default="SkillPickerEvalEntity" resource="Property" resourceKey="{ENTITY_KEY}" />'
         "</uipath:bindings>"
         + ('<uipath:intsvcActivityConfig version="v2" />' if marker else "")
@@ -121,5 +122,11 @@ def test_trigger_literal_entity_is_not_a_picker(tmp_path: Path) -> None:
 
 def test_trigger_read_of_a_binding_that_is_not_the_entity_picker_fails(tmp_path: Path) -> None:
     rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bOther")
+    assert rc != 0
+    assert "not a read of" in out
+
+
+def test_trigger_read_of_the_entity_folder_binding_is_not_the_name_picker(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bFolder")
     assert rc != 0
     assert "not a read of" in out
