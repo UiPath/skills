@@ -350,7 +350,7 @@ test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, 
   assert.ok(skill.includes("**An existing `.bpmn` outside a `/solution` project**"));
   assert.ok(skill.includes("Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`"));
   assert.ok(skill.includes("Never run `init` to give an existing file outside `/solution` a project."));
-  assert.ok(skill.includes("**The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**"));
+  assert.ok(skill.includes("**The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`, never a copy of the target or a compile of the edited `.flow-sdk/<Name>.bpmn.ts`.**"));
   assert.ok(skill.includes("and the target is in a project, delete that key"));
 });
 
@@ -584,6 +584,9 @@ test("the studioweb BPMN skill finds the project before writing and never builds
   assert.match(skill, /ask the user whether to replace its process or use a new project/);
   assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
   assert.match(skill, /Never pass `--force`/);
+  assert.match(skill, /Never `mkdir`\/`cp` the nested layout by hand/);
+  assert.match(skill, /that project exists: apply step 2 to it, never copy it/);
+  assert.match(skill, /`\/solution` projects are flat/);
 });
 
 test("the default BPMN skill carries no Studio Web Rule 13", (t) => {

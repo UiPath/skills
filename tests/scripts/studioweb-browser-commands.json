@@ -428,12 +428,12 @@
       {
         "file": "SKILL.md",
         "command": "or folders explore",
-        "reason": "CLI step for personal-workspace connection setup \u2014 not available in Studio Web's browser bundle."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       },
       {
         "file": "SKILL.md",
         "command": "or folders stop-exploring",
-        "reason": "CLI step for personal-workspace connection setup \u2014 not available in Studio Web's browser bundle."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       }
     ],
     "ceiling": {
@@ -659,7 +659,7 @@
       {
         "file": "references/integration-service/activity-generation/runtime.md",
         "command": "is resources",
-        "reason": "Prose in a diagram (`uip is resources reads the file \u2026`), not a command."
+        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
       },
       {
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
