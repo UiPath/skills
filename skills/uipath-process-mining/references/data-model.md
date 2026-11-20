@@ -25,7 +25,7 @@ the add-table round-trip.
 | Table | PK / link | Fields | Use it for |
 |-------|-----------|--------|------------|
 | **Cases** | `Case_ID` (root) | case attributes | One row per process instance (the case). The root everything links to. |
-| **Event_log** | FK→Cases | activity, timestamp, resource… | The event log — one row per activity. The process itself. Not directly group-by-able (it drives the process graph). |
+| **Event_log** | FK→Cases | activity, timestamp, resource… | The event log — one row per activity. The process itself. Not directly group-by-able (it drives the process graph): query the mined events table `__Process_Events` instead ([`querying.md`](querying.md#restrictions--other-subcommands)). |
 | **Tags** | `Tag_ID`, FK→Cases | `Tag` (label), `Tag_type` (category) | **Multi-valued categorical labels per case.** A case can carry many tags. Use for flags/segments/attributes that don't fit one Case column — e.g. `Tag_type="Region", Tag="EU"`; `Tag_type="Flag", Tag="Escalated"`. Filter/group cases by tag. |
 | **Due_dates** | `Due_date_ID`, FK→Cases | `Due_date`/`Due_date_type` (which deadline), `Expected_date`, `Actual_date`, `On_time` (bool), `Cost` (currency), `Difference` (duration) | **Per-case SLA / deadline / milestone tracking.** A case can have many due dates (multiple SLAs/milestones). Use for on-time %, SLA-breach counts, cost-of-breach, expected-vs-actual gaps. |
 

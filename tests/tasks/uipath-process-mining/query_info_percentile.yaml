@@ -1,10 +1,10 @@
 task_id: skill-pm-query-info-percentile
 description: >
-  Critical Rule 7's mechanism, not just its sugar: query bodies take hashed
-  `F__<Table>__<Col>__<hash>` field ids, and the only way to learn them is
-  `query info`. `percentile` has no `--group-by/--metric` shorthand to hide
-  that — it takes `--field <id>` directly, so an agent that skips discovery
-  and guesses a column name gets `UserError_FieldNotFound`.
+  Critical Rule 7's mechanism, not just its sugar: `percentile --field`
+  resolves a column name, but case throughput time is a process measure with
+  no column name to type. Its `PF__…` id is listed only in `query info`
+  (`InternalFields.Processes[].Cases.CaseThroughputTime`), so an agent that
+  skips discovery and guesses a name gets `UserError_FieldNotFound`.
 
   Complements query_group_by_sugar, which covers the sugar path where ids are
   resolved for the agent.
@@ -52,15 +52,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran percentile against a field id"
+    description: "Agent ran percentile against the process field id (or a variable holding it from query info)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+percentile\b.*--field\b'
+    command_pattern: 'uip\s+pm\s+query\s+percentile\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--field[\s=]+["'']?(PF__|\$)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent must NOT pass a bare column name as the percentile field id"
+    description: "Agent must NOT pass a guessed name instead of the throughput field id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+percentile\b.*--field\s+(?!\s)(?!["'']?F__)'
+    command_pattern: 'uip\s+pm\s+query\s+percentile\b(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--field[\s=]+(?!\s)(?!["'']?(PF__|\$))'
     weight: 2.5
