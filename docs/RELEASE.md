@@ -6,7 +6,8 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 > Azure DevOps release gate (`.pipelines/release-gate.yml`), which runs the
 > per-release FOSSA scan (blocking for `latest`) and the sensitive-content scan
 > of the packed tarball (blocking for every channel; same
-> `scripts/check-sensitive-content.py` as the PR check). A gate failure stops the publish — there is
+> `scripts/check-sensitive-content.py` as the PR check), and Delegate's bundle
+> checks from UiPath/Autopilot (blocking for every channel). A gate failure stops the publish — there is
 > no ungated fallback. `dev` builds on GitHub Packages skip the gate, and
 > flavor packages ship no `hooks/` at all. Package integrity on npmjs is the
 > `--provenance` attestation; the hooks are Node scripts (`hooks/*.mjs`) and
