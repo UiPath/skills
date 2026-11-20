@@ -31,6 +31,6 @@ What to look for:
 
 ## Resolution
 
-- **If duplicate entry points:** delete the duplicate start points in Studio Web and republish
+- **If duplicate entry points:** delete the duplicate start points in Studio Web; republish is a later decision
 - **If cross-tenant trigger conflict:** deploy to a fresh tenant as a workaround; check latest release notes for a permanent fix
-- **If stale trigger references:** do not manually delete triggers from Orchestrator UI; redeploy the solution cleanly
+- **If stale trigger references:** do not manually delete triggers from Orchestrator UI; a clean redeploy of the solution is a later decision
