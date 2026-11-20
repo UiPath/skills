@@ -711,8 +711,16 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Fix:** Delete both files from the project directory and re-run `uip solution pack`. The packager regenerates them.
 
 ### `.nupkg` produced but missing workflow files
-- **Cause:** Workflow JSON not located in the project directory the packager scanned
-- **Fix:** Verify `Workflow.json` is in the project folder whose `project.uiproj` is declared in the solution `.uipx`
+- **Cause:** Workflow JSON not located in the project directory the packager scanned, or in a location the packager leaves out (a dot-folder, `node_modules/`, a non-JSON file outside `evals/`). An older CLI also drops every file in a sub-folder other than `evals/`.
+- **Fix:** Verify `Workflow.json` is in the project folder whose `project.uiproj` is declared in the solution `.uipx`. Read the pack warning that lists left-out files, and list the package with `unzip -l <nupkg> | grep content/`. See [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships).
+
+### `The package is inconsistent, so it would publish and then fail at run time: ...`
+- **Cause:** A `run.workflow` name points at a file the package does not contain, or at data JSON, or breaks the runtime's naming rules, or two packaged paths collide by case. The message lists each problem with package paths (`content/...`). An entry point or `operate.json` `main` naming a missing file is only a warning ("The package names entry points it may not find at run time"); fix it the same way.
+- **Fix:** Use the table in [multi-workflow-projects-guide.md](multi-workflow-projects-guide.md#what-a-package-ships): fix the name (path from the project root, no `.json`, exact case), the entry `filePath`, or move the file out of a left-out location. Delete a stale hand-written `operate.json`.
+
+### Pack succeeds but prints API workflow validation warnings
+- **Cause:** The CLI ran `validate`'s rules on each workflow while packing. It reports the problems and packs anyway, so a validator gap never blocks a publish.
+- **Fix:** Fix each one as a `validate` error (rule 20). The exception is `Unknown activityType 'RunWorkflow'` / `Unknown property 'workflow'` on an invoke task from an older CLI: that is a CLI gap, not a workflow error.
 
 ### API workflow runs/deploys fine but does NOT appear or open in Studio Web
 - **Symptom:** The workflow runs under `uip api-workflow run`, the solution packs, publishes, and deploys as an API process — but after uploading the solution to Studio Web the API project is invisible / not editable. Importing it directly fails with `Failed to import new projects at the overwrite operations`.
