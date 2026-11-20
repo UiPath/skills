@@ -16,7 +16,7 @@ Studio Web does not use these gates. Its loop is
 [SKILL.md — Lifecycle](../SKILL.md#lifecycle). An edit runs
 `check --source --baseline` against the target `.flow`, each `prepare` it names,
 `merge` of the stamped source into the target `.flow`, then `validate`. A new flow runs `check --source`, each
-`prepare` it names, `compile` into its `.flow` (compile lays it out), then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
+`prepare` it names, `compile` into its `.flow` (compile lays it out), then `validate`. There is no compiled-artifact `check`; `validate` is that rung. `validate` needs no login or `registry pull`; the pull serves `check`, so a validate failure is never fixed by re-pulling.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
