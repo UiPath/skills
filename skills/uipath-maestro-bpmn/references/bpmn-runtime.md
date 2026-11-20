@@ -42,7 +42,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`, `bindings`, `datafabric`,
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
   `this`. `check` does not report it. A public `.output()` may be named `result`.
-  A job node's `outputs` key and `outputVar` are variable names too: `outputs: { result: '=result.x' }` fails `validate`. Name the key for the value (`jobStatus`), not `result`/`status`-style namespace words.
+  A job node's `outputs` key and `outputVar` are variable names too: `outputs: { result: '=result.x' }` fails `validate`. Name the key for the value (`jobResult`), never one of the reserved names.
 
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
