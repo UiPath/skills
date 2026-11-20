@@ -56,7 +56,11 @@
         "Type": "wait-for-timer"
       }
     ],
-    "StudioWebOnly": [],
+    "StudioWebOnly": [
+      {
+        "Type": "data-fabric"
+      }
+    ],
     "NotTaskTypes": [
       {
         "Spelling": "connector-activity",
