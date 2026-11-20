@@ -23,7 +23,8 @@ A freeze refusal is `Result: Failure` with `ErrorCode: configuration_error` (whi
 | `Message` | Fix |
 | --- | --- |
 | `This CLI is <VERSION>, but this config freezes the CLI at <CLI_PIN>, so the command was not run.` | `uip update --output json`. |
-| `'<VERB>' runs @uipath/<TOOL>-tool@<VERSION>, but this config freezes it at <TOOL_PIN>, ...` or `@uipath/<TOOL>-tool <TOOL_PIN> is pinned but not installed, ...` | `uip update --output json`. |
+| `'<VERB>' runs @uipath/<TOOL>-tool@<VERSION>, but this config freezes it at <TOOL_PIN>, ...` | `uip update --output json`. |
+| `@uipath/<TOOL>-tool <TOOL_PIN> is pinned but not installed, and automatic tool installation is disabled (UIPATH_CLI_DISABLE_AUTOINSTALL).` | The user turned automatic installs off: show them the `Message` and `Instructions` and ask before running `uip update`. |
 | `The config <PATH> freezes @uipath/<TOOL>-tool at <TOOL_PIN>, not <VERSION>, so nothing was installed.` | `uip tools install <TOOL> --output json` with no version (installs the pin), or `uip update --output json`. |
 | `This config is frozen, but it does not list these installed tools: ...`, with `Instructions` naming `uip update --no-tools` | `uip update --no-tools --output json` (moves the CLI and pinned skills, not the tools), then `uip update --output json` once more. If that is refused for unlisted tools, stop as in the next row. |
 | Any other `Message` saying the config `does not list` a tool | Stop. Quote `Message` and `Instructions`, and ask the user whether to change the freeze. |
@@ -31,7 +32,7 @@ A freeze refusal is `Result: Failure` with `ErrorCode: configuration_error` (whi
 
 Every other failure in a frozen repo, such as `Not logged in`, a 404 or a validation error, is not a freeze refusal: handle it as usual, not with this table.
 
-When the row names `uip update`, or the `Instructions` start with `Run 'uip update'`, run `uip update` once, then run the refused command again. If anything fails again, stop and quote it.
+When the row names `uip update`, or the `Instructions` start with `Run 'uip update'`, and the `Message` does not say `automatic tool installation is disabled`, run `uip update` once, then run the refused command again. If anything fails again, stop and quote it.
 
 While the CLI is off its pin, `uip <VERB> --help` can fail with `unknown command '<VERB>'`. Fix the CLI pin first.
 
