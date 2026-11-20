@@ -19,7 +19,7 @@ A Business Rules project holds one `.dmn` rule of one or more decision tables. D
 
 1. **Write DMN 1.5.** Use the MODEL and DMNDI namespaces `https://www.omg.org/spec/DMN/20230324/...` and DC/DI `http://www.omg.org/spec/DMN/20180521/...`. When editing a file on an older DMN version, rewrite it to these namespaces.
 2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`.
-3. **Every decision's logic is a decision table.** A rule may hold several decisions linked by `informationRequirement`; a decision reads another decision by that decision's `variable` name, never by its output column name. When the user asks for a business knowledge model, knowledge source, decision service, import, or literal expression, say authoring it is not supported yet, then offer to express the logic as decision tables. Never write the unsupported element.
+3. **Every decision's logic is a decision table.** A rule may hold several decisions linked by `informationRequirement`; read the [Decision Graphs Guide](references/drd-guide.md) before authoring or editing one, and remember a decision reads another decision by that decision's `variable` name, never by its output column name. When the user asks for a business knowledge model, knowledge source, decision service, import, or literal expression, say authoring it is not supported yet, then offer to express the logic as decision tables. Never write the unsupported element.
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
@@ -111,6 +111,7 @@ Binding a rule into a process, workflow, or case belongs to that artifact's skil
 
 | Reference | When to read |
 |---|---|
+| [Decision Graphs Guide](references/drd-guide.md) | The rule holds, or needs, more than one decision |
 | [Failure Modes Guide](references/failure-modes-guide.md) | A `uip rules` command reports an error |
 
 ## Anti-patterns
