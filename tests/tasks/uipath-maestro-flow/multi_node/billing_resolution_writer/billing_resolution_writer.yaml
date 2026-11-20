@@ -97,7 +97,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-05128 and "USD 2,475.50" and is signed "Billing Support Team"; the output named for the subject holds a one-line subject; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message's first line carries the case reference (optionally after a Subject: label) and carries the invoice and the body'
+    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-05128 and "USD 2,475.50" and is signed "Billing Support Team"; the output named for the subject holds a one-line subject; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message carries the case reference on its first line (optionally after a Subject: label), the invoice and the body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0

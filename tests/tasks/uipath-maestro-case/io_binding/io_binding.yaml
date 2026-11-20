@@ -54,8 +54,10 @@ initial_prompt: |
   redesign it.
 
   <!-- helper:start -->
-  Echo literal's APIOutput1 has no Outputs row in the design because it is the
-  workflow's own result, which Echo prior output reads; don't add a row for it.
+  Echo literal's APIOutput1 has no Outputs row in sdd.md because it is the
+  workflow's own result, which Echo prior output reads; leave sdd.md as it is.
+  The case plan still declares APIOutput1 on Echo literal, so the reference to
+  it resolves.
   <!-- helper:end -->
 
   Build and do a test run of the automation.

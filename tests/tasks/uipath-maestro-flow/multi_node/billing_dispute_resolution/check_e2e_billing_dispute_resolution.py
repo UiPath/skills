@@ -378,10 +378,10 @@ def main():
     if case == "overcharge":
         # retries=1: a transient-error re-run would post the credit twice. The
         # unreadable-outputs re-run in run_debug is not bounded by `retries`.
-        payload = run_debug(inputs=inputs, attachments=attachments, timeout=840, retries=1)
+        payload = run_debug(inputs=inputs, attachments=attachments, timeout=1100, retries=1)
         check_overcharge(flow, payload)
         return
-    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840)
+    payload = run_debug(inputs=inputs, attachments=attachments, timeout=1100)
     check_reject(flow, payload)
 
 

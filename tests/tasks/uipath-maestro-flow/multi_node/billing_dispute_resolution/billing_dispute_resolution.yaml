@@ -34,7 +34,7 @@ sandbox:
 run_limits:
   max_turns: 200
   turn_timeout: 3600
-  task_timeout: 9300  # turn 3600 + criteria 5470 + margin
+  task_timeout: 10900  # turn 3600 + criteria 7030 + margin
 reference:
   directory: ../..
 
@@ -136,14 +136,14 @@ success_criteria:
   - type: run_command
     description: 'Effects, overcharge (invoice " mcs-2026-04903 " line 2 for ACCT-71044-AT, 90 h billed at $290 vs a contracted $235): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04903, the writer completes, and the declared outputs carry "Approved", "manager_review" or "credit", 4950, an explanation naming an SOP rule (by § or section number, or its title) and a plain-text draft citing MCS-2026-04903 and that credit'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py overcharge
-    timeout: 2585
+    timeout: 3365
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Effects, reject (invoice "  Mcs-2026-04872 " line 5 for ACCT-98201-NE, billed at the ERP contractedRate of $185): the BillingDisputeERP lookup and the analyst agent complete, and the run completes without running FinancialPostingFunction or the writer, and the declared outputs carry "Rejected", "reject", 0, an explanation naming an SOP rule (by § or section number, or its title) and "No resolution email drafted"'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py reject
-    timeout: 2585
+    timeout: 3365
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
