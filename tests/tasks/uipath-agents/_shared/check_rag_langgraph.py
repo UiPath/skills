@@ -2,15 +2,18 @@
 """ContextGrounding-based RAG coded-agent shape check.
 
 Asserts:
-  1. `main.py` uses one of the two accepted retrieval patterns:
+  1. The agent modules use one of the two accepted retrieval patterns:
      - `ContextGroundingRetriever` from `uipath_langchain.retrievers`
        (preferred — LangChain-native, integrates with graph pipeline)
      - `sdk.context_grounding.search` / `search_async` (raw SDK, also valid)
-  2. The index name "company_docs" and folder "Shared" appear in the file.
+  2. The index name "company_docs" and folder "Shared" appear in them.
   3. `bindings.json` declares the `index` resource for
      company_docs / Shared with the standard binding shape.
   4. No module-level UiPath* construction — retriever and LLM must be
      inside node bodies.
+
+Agent modules are the entry module `langgraph.json` registers plus every
+project module it imports (see `project_sources.py`).
 """
 
 from __future__ import annotations
@@ -18,7 +21,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.project_root import find_project_root  # noqa: E402
@@ -33,20 +35,7 @@ from _shared.bindings_assertions import (  # noqa: E402
     assert_metadata_field,
 )
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
-
-
-def _read_text(path: Path) -> str:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def find_graph_module() -> Path:
-    for candidate in ("main.py", "graph.py"):
-        path = ROOT / candidate
-        if path.is_file():
-            return path
-    sys.exit(f"FAIL: neither main.py nor graph.py found under {ROOT}")
+from _shared.project_sources import agent_modules, find_entry_module, read_sources  # noqa: E402
 
 
 def check_imports_and_calls(text: str) -> None:
@@ -55,7 +44,7 @@ def check_imports_and_calls(text: str) -> None:
 
     if not uses_retriever and not uses_sdk:
         sys.exit(
-            "FAIL: main.py uses neither ContextGroundingRetriever nor "
+            "FAIL: the agent modules use neither ContextGroundingRetriever nor "
             "sdk.context_grounding.search — no context grounding retrieval found."
         )
 
@@ -68,15 +57,15 @@ def check_imports_and_calls(text: str) -> None:
                 "FAIL: ContextGroundingRetriever must be imported from "
                 "`uipath_langchain.retrievers`."
             )
-        print("OK: main.py uses ContextGroundingRetriever (LangChain-native pattern)")
+        print("OK: agent uses ContextGroundingRetriever (LangChain-native pattern)")
     else:
-        print("OK: main.py uses sdk.context_grounding.search (raw SDK pattern)")
+        print("OK: agent uses sdk.context_grounding.search (raw SDK pattern)")
 
     if not re.search(r'["\']company_docs["\']', text):
-        sys.exit('FAIL: index name "company_docs" not found in file')
+        sys.exit('FAIL: index name "company_docs" not found in the agent modules')
     if not re.search(r'["\']Shared["\']', text):
-        sys.exit('FAIL: folder path "Shared" not found in file')
-    print('OK: index "company_docs" / folder "Shared" referenced in file')
+        sys.exit('FAIL: folder path "Shared" not found in the agent modules')
+    print('OK: index "company_docs" / folder "Shared" referenced')
 
 
 def check_index_binding() -> None:
@@ -91,10 +80,9 @@ def check_index_binding() -> None:
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
-    module = find_graph_module()
-    text = _read_text(module)
-    check_imports_and_calls(text)
-    violations = find_module_level_llm_clients(module)
+    modules = agent_modules(ROOT, find_entry_module(ROOT))
+    check_imports_and_calls(read_sources(modules))
+    violations = [v for m in modules for v in find_module_level_llm_clients(m)]
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: no module-level UiPath* construction (retriever + LLM both lazy)")
