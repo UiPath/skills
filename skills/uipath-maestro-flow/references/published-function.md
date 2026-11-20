@@ -7,8 +7,8 @@ as its own resource. `publishedFunction()` invokes one as a single step
 (`uipath.core.function.<key>`, dispatched as
 `Orchestrator.ExecuteFunctionAsync`).
 
-Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`, or
-`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, returns? })`
+Signature: `publishedFunction({ key, name, folderPath, inputs?, inputSchema?, returns? })`, or
+`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, inputSchema?, returns? })`
 for a coded function in the same solution (see [In the same solution](#in-the-same-solution)).
 
 ```ts
@@ -120,6 +120,10 @@ output arguments live on the tenant and authoring is offline, so an undeclared
 read is rejected (`FUNCTION_READ_WITHOUT_RETURNS`) — nothing here could tell a
 real field from a typo. `registry get uipath.core.function.<key>` shows what the
 platform synthesizes for a deployed one.
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Which family to reach for
 

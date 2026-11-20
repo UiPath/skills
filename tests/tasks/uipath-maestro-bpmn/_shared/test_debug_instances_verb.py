@@ -7,7 +7,7 @@ matched only the singular, and the mocks answered it with `{}`. Each grader must
 count both spellings, the live grader and the no-operate guard must not count
 `--help`, and the mocks must return fixture data for both. Known gap: an id-less
 live call that ends a line still matches (`\\s+` crosses the newline); the
-weight-6 `check_live_debug.py` run is the real gate there.
+weight-6 `check_product_run.py` run is the real gate there.
 """
 
 from __future__ import annotations

@@ -1,120 +1,67 @@
 #!/usr/bin/env python3
-"""BillingInvoiceLookup (BPMN): four modes, one per Flow checker script.
+"""BillingInvoiceLookup (BPMN): three offline modes, selected by argv[1]:
+`server_side_filter`, `bindings`, `advisory`. The live 3x debug check is
+`multi_node/billing_invoice_lookup/check_invoice_lookup_run.py`.
 
-Ported from `uipath-maestro-flow/multi_node/billing_invoice_lookup/`:
-`check_billing_invoice_lookup.py` (live 3x debug), `check_server_side_filter.py`
-(advisory), `_shared/check_bindings_no_stubs.py` (advisory), and
-`_shared/advisory_billing_invoice_lookup.py` (advisory structural gate). Kept
-as ONE file with a mode-dispatch positional argument (`lookup` /
-`server_side_filter` / `bindings` / `advisory`) per BATCH1/PORTING-BRIEF
-instructions -- no new `_shared` module. The dispatch shape (module-level
-functions + a DISPATCH dict keyed on `sys.argv[1]`) mirrors
-`check_outlook_trigger_inbox.py`, and doubles as the entry point
-`tests/_shared/test_criterion_budgets.py` prices per subcommand.
+The dispatch shape (module-level functions + a DISPATCH dict keyed on
+`sys.argv[1]`) mirrors `check_outlook_trigger_inbox.py`, and doubles as the
+entry point `tests/_shared/test_criterion_budgets.py` prices per subcommand.
 
-Assertion map (Flow -> BPMN):
-  F check_billing_invoice_lookup.py:45   assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
-                                          -> query_entity_nodes() non-empty (lookup)
-  F check_billing_invoice_lookup.py:47-50 read_flow_input_vars()/var = in_vars[0]
-                                          -> declared_input_names(root)[0] (lookup)
-  F check_billing_invoice_lookup.py:52-58 CASES loop, run_debug(inputs=...), assert_output_value x2
-                                          -> CASES loop, bpmn_live.run_debug(project, inputs, log, timeout=180)
-                                             + assert_output_value() over output_leaves() (lookup)
-  I                locate/parse .bpmn; ephemeral solution init + `solution projects
-                    import` + sha256 pin; `bpmn debug` returns an instance id, not
-                    inline variables; `debug-instance variables-all`/`incidents` reads
-                    replace the single inline debug payload
-                                          -> LIVE-ADDENDUM canonical live pattern
-                                             (mirrors e2e/jira_get_issue/_shared/check_jira_get_issue.py) (lookup)
-  T                curated|generic entity-CRUD classification; entity anywhere in
-                    inputs/objectName/path; GETBYID/GET(List) equivalence
-                    (BATCH1-ADDENDUM)         -> query_entity_nodes() / entity_ok() (all modes)
+Assertion map:
+  curated|generic entity-CRUD classification; entity anywhere in
+  inputs/objectName/path; GETBYID/GET(List) equivalence
+                    -> query_entity_nodes() / entity_ok() (all modes)
 
-  F check_server_side_filter.py:65-80, advisory_flow_utils.has_filter/filters_server_side
-                                          -> has_nonempty_filter() (server_side_filter)
-                    DROPPED: the native core.datafabric.read branch -- BPMN has
-                    no native Data Fabric node (BATCH1-ADDENDUM); only the
-                    connector shape applies here.
+  server_side_filter: the query carries a non-empty filter
+                    -> has_nonempty_filter()
+                    BPMN has no native Data Fabric node, so only the connector
+                    shape applies.
 
-  F _shared/check_bindings_no_stubs.py:45-47,67-80 is_real_key/UUID/STUB_UUID,
-                    invalid_ids() over bindings[].resourceKey/default
-                                          -> is_real_connection_key(), stubbed-key scan (bindings)
-                    DROPPED: the "no bindings file needed" branch for a native
-                    entity read -- this port always uses the connector, so a
-                    Connection resource is always required (BATCH1-ADDENDUM).
-                    I  bindings_v2.json is emitted only at PACK time for BPMN
-                    (authoring leaves the connection as a symbolic
-                    `=bindings.<id>` reference, unlike Flow's compiler, which
-                    resolved it straight into the node) -> `uip maestro bpmn
-                    pack` + zip read, modeled on
-                    e2e/customer_escalation_triage/check_customer_escalation_package.py
-                    (PORTING-BRIEF's pointer)
+  bindings: no stubbed connection key
+                    -> is_real_connection_key(), stubbed-key scan over the
+                    packed bindings_v2.json resources. bindings_v2.json is
+                    emitted only at PACK time for BPMN (authoring leaves the
+                    connection as a symbolic `=bindings.<id>` reference), so
+                    the check runs `uip maestro bpmn pack` and reads the zip,
+                    modeled on
+                    e2e/customer_escalation_triage/check_customer_escalation_package.py.
+                    A connection binding is always required (connector only).
 
-  F advisory_billing_invoice_lookup.py:64-67   exactly ONE entity-read node
-                                          -> len(reads) != 1 check (advisory)
-  F advisory_billing_invoice_lookup.py:71-74   no raw HTTP fallback
-                                          -> no Intsvc.HttpExecution node check (advisory)
-  F advisory_billing_invoice_lookup.py:76-79   entity slot carries ENTITY
-                                          -> entity_ok() (advisory)
-  F advisory_billing_invoice_lookup.py:82      filter COMPUTED from input, not constant
-                                          -> filter_reference_ids() + derives_from(ref, {input_id}) (advisory)
-                    T  does not pin the filter to one named column (Flow's
-                    `column="invoiceNumber"`): no local Data Service connection
-                    exists to `describe` the entity's real filter field name
-                    (BATCH1-ADDENDUM), so any input at any depth that derives
-                    from the declared input is accepted.
-  F advisory_billing_invoice_lookup.py:85-96   canonical answer + raw test inputs
-                    never appear as literals -> raw substring scan on the .bpmn
-                    text (I: re-homed from Flow's `_authored_values` walk over
-                    JSON to a whole-file text scan, matching this suite's own
-                    convention in check_jira_get_issue.py's `JIRA_KEY not in raw`
-                    / `issue_key not in raw` checks) (advisory)
-  F advisory_billing_invoice_lookup.py:98-108  outputs declared with contract's
-                    names AND types -> declared_outputs() (advisory)
-  F advisory_billing_invoice_lookup.py:110-127 outputs READ FROM the query step
+  advisory:
+  exactly ONE entity-read node
+                    -> len(reads) != 1 check
+  no raw HTTP fallback
+                    -> no Intsvc.HttpExecution node check
+  entity slot carries ENTITY
+                    -> entity_ok()
+  filter COMPUTED from input, not constant
+                    -> filter_reference_ids() + derives_from(ref, {input_id}).
+                    Does not pin one filter column: no local Data Service
+                    connection exists to `describe` the entity's field name,
+                    so any input at any depth deriving from the declared input
+                    is accepted.
+  canonical answer + raw test inputs never appear as literals
+                    -> raw substring scan on the .bpmn text
+  outputs declared with the contract's names AND types
+                    -> declared_outputs()
+  outputs READ FROM the query step
                     -> derives_from(output_id, query_out_vars) over the
                     var-source graph built from every `<uipath:output var=
-                    source=>` in the document, T: transitive derivation through
-                    BPMN.Variables copy tasks (BATCH1-ADDENDUM), extended here
-                    to also follow a scriptTask's own `<bpmn:script>` CDATA
-                    `vars.<id>` reads when its output's `source` starts with
-                    `=result` (a script's return value cannot be traced through
-                    `source=` alone -- see build_var_graph()) (advisory)
-  F advisory_billing_invoice_lookup.py:130-141 `assert_read_resolves` -- SPLIT
-                    across two artifact stages, since BPMN resolves a
-                    connection binding in two steps Flow's compiler collapsed
-                    into one:
-                    (a) connection/folder DISTINCT, non-blank `default`
-                    values -- fully visible in the raw authored .bpmn (the
-                    registry-workflow.md §4 two-binding shape), so checked
-                    here in `advisory` mode as connection_and_folder_distinct().
-                    This directly ports the Flow assertion's failure mode
-                    ("the two collapse into one binding... answering 401").
-                    (b) the connection id is a REAL (non-stub) tenant uuid --
-                    Flow's compiler baked the resolved connection straight into
-                    the node's own `inputs.detail`; a hand-authored .bpmn keeps
-                    it SYMBOLIC (`=bindings.<id>`) even when correct, so there
-                    is no real id to inspect until pack time. Carried instead
-                    by the `bindings` mode (packed bindings_v2.json), which is
-                    where BPMN actually materializes a resolved connection
-                    value. Note bindings_v2.json's `resources[]` never carries
-                    a folder key at all -- "Only the ConnectionId binding
-                    becomes a bindings_v2.json resource" (registry-workflow.md
-                    §4) -- so the folder side of the distinctness check has no
-                    packed carrier and stays authoring-time-only (a), not
-                    duplicated in (b).
-                    What IS checkable at the authoring stage -- that the
-                    query's `connection` input is a `=bindings.<id>` reference
-                    resolving to a declared `resource="Connection"` binding --
-                    is asserted here
-                    as `connection_binding_wired()`.
-  DROPPED          require_no_private_connector_values / require_sequence_integrity /
-                    require_di_for_visible_elements / uniqueness rules beyond the
-                    one Flow itself asserted -- not in Flow; `bpmn validate`
-                    criterion covers structure.
-
-No tenant re-read is performed outside the `lookup` mode's own live sequence,
-matching Flow's own grader (the query result IS the tenant re-read).
+                    source=>`, with transitive derivation through
+                    BPMN.Variables copy tasks. A scriptTask's `<bpmn:script>`
+                    CDATA `vars.<id>` reads are also followed when its
+                    output's `source` starts with `=result` (see
+                    build_var_graph()).
+  connection binding wired
+                    -> connection_binding_wired(): the query's `connection`
+                    input is a `=bindings.<id>` reference to a declared
+                    resource="Connection" binding.
+  connection and folder bindings DISTINCT
+                    -> connection_and_folder_distinct(): non-blank, different
+                    `default` values (registry-workflow.md section 4). Equal
+                    values collapse into one binding and answer 401.
+                    bindings_v2.json `resources[]` carries no folder key, so
+                    this half is authoring-time only.
 """
 
 from __future__ import annotations
@@ -145,14 +92,7 @@ from _shared.bpmn_check import (  # noqa: E402
     resolve_project,
 )
 from _shared import bpmn_live  # noqa: E402
-from _shared.bpmn_live import (  # noqa: E402
-    CheckFailure,
-    debug_evidence,
-    import_exact,
-    input_echo_ids,
-    output_leaves,
-    require_clean_run,
-)
+from _shared.bpmn_live import CheckFailure  # noqa: E402
 
 NAME_HINT = "BillingInvoiceLookup"
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -160,41 +100,19 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "BillingDisputeERP"
 QUERY_CURATED_OBJECTS = {"queryentityrecordscurated", "queryentityrecords_v3"}
 
-EXPECTED_INVOICE = "MCS-2026-04872"
-EXPECTED_LINE_COUNT = 8
-CANONICAL = EXPECTED_INVOICE
-# raw input form the caller might send -> human label for failure messages
-# (verbatim from Flow's check_billing_invoice_lookup.py CASES).
-CASES = [
-    ("2026-04872", "missing MCS- prefix"),
-    ("mcs-2026-04872", "wrong casing"),
-    (" MCS-2026-04872", "leading whitespace"),
+CANONICAL = "MCS-2026-04872"
+# Malformed caller forms: a literal of any would let a lookup table pass.
+RAW_INPUTS = [
+    "2026-04872",
+    "mcs-2026-04872",
+    "MCS-2026-05128",
+    "2026-05128",
+    "mcs-2026-05128",
 ]
-# The malformed forms the offline CASES above drive -- carried as a literal
-# would let a lookup-table pass every case (advisory_billing_invoice_lookup.py).
-RAW_INPUTS = ["2026-04872", "mcs-2026-04872"]
-
-FILTER_INPUT_NAMES = {"queryexpression", "where", "filter", "filtergroup", "filtervariables"}
 
 LIVE_RUN_DIR = Path("billing-invoice-lookup-live")
+FILTER_INPUT_NAMES = {"queryexpression", "where", "filter", "filtergroup", "filtervariables"}
 
-# Worst-case wall clock, priced the way _shared/test_criterion_budgets.py
-# prices a run_debug(...) call inside a static loop: bpmn_live.debug_budget(180)
-# x 3 (the module-level CASES list) = 540s, which the guard multiplies
-# automatically. The guard prices only run_debug calls; the surrounding CLI
-# round trips run once (solution init, solution import) or three times
-# (variables-all, incidents per case) and are added by hand here, the same way
-# e2e/jira_get_issue/_shared/check_jira_get_issue.py documents its own
-# arithmetic:
-#   90 (solution init) + 180 (solution import)
-#   + 3 x (180 debug + 120 variables-all + 120 incidents)
-#   + bpmn_live.CRITERION_MARGIN_SECONDS (60)
-#   = 90 + 180 + 1260 + 60 = 1590
-# billing_invoice_lookup.yaml raises this criterion's timeout from Flow's 1200
-# to 1590 to cover it -- the LIVE-ADDENDUM-sanctioned deviation for the extra
-# CLI round trips a `bpmn debug` sequence needs per case that
-# `flow_check.run_debug`'s single inline call did not. The guard's own
-# arithmetic only requires >= 540 + 60 = 600s, comfortably inside 1590.
 
 
 # ── shared XML helpers (copied from check_df_smoke_query_filter.py /
@@ -276,9 +194,6 @@ def structured_filter_leaves(parsed_json) -> list:
     return leaves
 
 
-# ── mode: lookup (F: check_billing_invoice_lookup.py) ────────────────────────
-
-
 def _variable_children(root: ET.Element, tag: str) -> list[ET.Element]:
     variables = root.find(".//uipath:variables", NS)
     if variables is None:
@@ -305,71 +220,6 @@ def input_id_for_name(root: ET.Element, name: str) -> str | None:
         if (c.attrib.get("name") or "").strip().lower() == name.lower():
             return c.attrib.get("id")
     return None
-
-
-def assert_output_value(leaves: list, expected) -> bool:
-    """F: flow_check.assert_output_value -- exact-equal numerics, case-insensitive substring strings."""
-    for v in leaves:
-        if v == expected:
-            return True
-        if isinstance(expected, str) and isinstance(v, str) and expected.lower() in v.lower():
-            return True
-    return False
-
-
-def lookup() -> None:
-    bpmn_path = find_bpmn_file(NAME_HINT)
-    try:
-        root = ET.parse(bpmn_path).getroot()
-    except ET.ParseError as exc:
-        fail(f"{bpmn_path} is not well-formed XML: {exc}")
-
-    if not query_entity_nodes(root):
-        fail("bpmn does not reference a Data Service Query Entity Records connector node (Intsvc.ActivityExecution)")
-    print(f"OK: bpmn references a Query Entity Records node against {ENTITY}")
-
-    input_names = declared_input_names(root)
-    if not input_names:
-        fail("process declares no public uipath:input variable for the invoice number")
-    var_name = input_names[0]
-
-    process = root.find("bpmn:process", NS)
-    if process is None:
-        fail(f"{bpmn_path} has no bpmn:process")
-    echoes = input_echo_ids(process)
-
-    project_dir = resolve_project(os.path.basename(bpmn_path), exclude_under=[LIVE_RUN_DIR])
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        imported_project = import_exact(
-            Path(bpmn_path), project_dir, LIVE_RUN_DIR / "BillingInvoiceLookupLiveEval"
-        )
-
-        for raw_value, label in CASES:
-            inputs = {var_name: raw_value}
-            print(f"[{label}] debug inputs: {inputs}")
-            debug_data, instance_id = bpmn_live.run_debug(
-                imported_project,
-                inputs,
-                LIVE_RUN_DIR / f"debug-{label.replace(' ', '-')}.log",
-                timeout=180,
-            )
-            evidence = debug_evidence(instance_id)
-            try:
-                require_clean_run(debug_data, evidence)
-            except CheckFailure as error:
-                raise CheckFailure(f"[{label}] {error}") from error
-
-            leaves = output_leaves(evidence.variables, skip=echoes)
-            if not assert_output_value(leaves, EXPECTED_INVOICE):
-                raise CheckFailure(f"[{label}] no output equals expected {EXPECTED_INVOICE!r}")
-            if not assert_output_value(leaves, EXPECTED_LINE_COUNT):
-                raise CheckFailure(f"[{label}] no output equals expected {EXPECTED_LINE_COUNT!r}")
-            print(f"OK: [{label}] instance {instance_id} -> {EXPECTED_INVOICE}, {EXPECTED_LINE_COUNT} line items")
-    except CheckFailure as error:
-        fail(str(error))
-
-    print(f"OK: all {len(CASES)} malformed forms normalized and queried correctly")
 
 
 # ── mode: server_side_filter (F: check_server_side_filter.py) ────────────────
@@ -468,7 +318,7 @@ def bindings() -> None:
         print(f"OK: {len(resources)} connection binding(s) across bindings_v2.json, all non-stub")
 
 
-# ── mode: advisory (F: _shared/advisory_billing_invoice_lookup.py) ───────────
+# ── mode: advisory ───────────────────────────────────────────────────────────
 
 
 def build_var_graph(root: ET.Element) -> tuple[dict[str, str], dict[str, set]]:
@@ -527,7 +377,7 @@ def filter_reference_ids(task: ET.Element) -> set:
 def connection_binding_wired(root: ET.Element, task: ET.Element) -> bool:
     """The query's `connection` input is `=bindings.<id>` and that id is a
     declared `resource="Connection"` binding (registry-workflow.md §4). This is
-    the authoring-time half of Flow's `assert_read_resolves`; the real-ID half
+    the authoring-time half of the connection check; the real-ID half
     is checked by the `bindings` mode after packing (see module docstring)."""
     connection_ref = context_value(task, "connection")
     match = re.match(r"^=bindings\.([A-Za-z0-9_]+)$", connection_ref.strip())
@@ -543,10 +393,9 @@ def connection_binding_wired(root: ET.Element, task: ET.Element) -> bool:
 
 
 def connection_and_folder_distinct(root: ET.Element, task: ET.Element) -> bool | None:
-    """F: advisory_billing_invoice_lookup.py's `assert_read_resolves` distinctness
-    half -- "the two collapse into one binding at FIL emission and the live
-    dispatch sends the folder key as --connection-id, answering 401". Fully
-    visible pre-pack: a folder-scoped connector activity declares TWO bindings
+    """Connection and folder bindings must differ: the same value sends the folder key as --connection-id and answers 401.
+
+    Fully visible pre-pack: a folder-scoped connector activity declares TWO bindings
     sharing one `resourceKey` (registry-workflow.md §4), so this compares their
     `default` values directly in the authored XML. Returns None when the
     activity is not folder-scoped (no sibling folderKey binding) -- nothing to
@@ -586,7 +435,7 @@ def advisory() -> None:
     except ET.ParseError as exc:
         fail(f"{bpmn_path} is not well-formed XML: {exc}")
 
-    # 1. exactly one entity-read node (F: advisory_billing_invoice_lookup.py:64-67)
+    # 1. exactly one entity-read node
     reads = query_entity_nodes(root)
     if len(reads) != 1:
         fail(f"expected exactly ONE Data Service Query Entity Records node, found {len(reads)}")
@@ -675,7 +524,6 @@ def advisory() -> None:
 
 
 DISPATCH = {
-    "lookup": lookup,
     "server_side_filter": server_side_filter,
     "bindings": bindings,
     "advisory": advisory,
