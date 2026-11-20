@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Data Fabric SDK direct-access coded-agent shape check.
 
+Checks the agent modules: the entry module `langgraph.json` registers
+plus every project module it imports (see `project_sources.py`), so a
+tool kept in a helper module such as `order_tools.py` counts.
+
 Asserts:
-  1. `main.py` (or `graph.py`) imports `UiPath` from `uipath.platform`.
-  2. The graph module calls a specific sdk.entities retrieval method
+  1. An agent module imports `UiPath` from `uipath.platform`.
+  2. An agent module calls a specific sdk.entities retrieval method
      (list_records, retrieve_records, query_entity_records, or get_record).
   3. A `filter=` or `filter_group=` parameter is present in the retrieval call.
   4. An `entity_key=` parameter references a discovered entity.
   5. A `@tool`-decorated function wraps the SDK call.
-  6. No module-level `UiPath()` or LLM client construction.
+  6. No module-level `UiPath()` or LLM client construction in any agent
+     module.
   7. `bindings.json` exists with valid envelope.
 """
 
@@ -17,28 +22,19 @@ from __future__ import annotations
 import os
 import re
 import sys
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.project_root import find_project_root  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.bindings_assertions import load_bindings  # noqa: E402
+from _shared.project_sources import (  # noqa: E402
+    agent_modules,
+    describe,
+    find_entry_module,
+    read_sources,
+)
 
 ROOT = find_project_root("order-lookup")
-
-
-def _read_text(path: Path) -> str:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def find_graph_module() -> Path:
-    for candidate in ("main.py", "graph.py"):
-        path = ROOT / candidate
-        if path.is_file():
-            return path
-    sys.exit(f"FAIL: neither main.py nor graph.py found under {ROOT}")
 
 
 def check_sdk_import(text: str) -> None:
@@ -106,14 +102,15 @@ def check_bindings() -> None:
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
-    module = find_graph_module()
-    text = _read_text(module)
+    modules = agent_modules(ROOT, find_entry_module(ROOT))
+    print(f"OK: grading agent modules {describe(modules, ROOT)}")
+    text = read_sources(modules)
     check_sdk_import(text)
     check_entities_usage(text)
     check_filter_usage(text)
     check_entity_key(text)
     check_tool_decorator(text)
-    violations = find_module_level_llm_clients(module)
+    violations = [v for m in modules for v in find_module_level_llm_clients(m)]
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: no module-level UiPath/LLM construction (lazy init)")

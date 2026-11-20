@@ -30,13 +30,17 @@ def assert_langgraph_config(root: Path, module: Path) -> None:
     if not isinstance(graphs, dict) or not graphs:
         sys.exit("FAIL: langgraph.json must contain a non-empty `graphs` object")
 
-    expected_targets = {f"./{module.name}:graph", f"{module.name}:graph"}
+    try:
+        rel = module.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        rel = module.name
+    expected_targets = {f"./{rel}:graph", f"{rel}:graph"}
     if not any(target in expected_targets for target in graphs.values()):
         sys.exit(
             "FAIL: langgraph.json must map a graph entry to the exported graph "
             f"({', '.join(sorted(expected_targets))}); got {graphs!r}"
         )
-    print(f"OK: langgraph.json registers {module.name}:graph")
+    print(f"OK: langgraph.json registers {rel}:graph")
 
 
 def _base_name(node: ast.expr) -> str | None:
@@ -92,8 +96,12 @@ def _exports_compiled_graph(tree: ast.Module) -> bool:
     return False
 
 
-def assert_graph_module_shape(path: Path) -> None:
+def assert_graph_module_shape(path: Path, modules: list[Path] | None = None) -> None:
     """Assert the module has LangGraph agent shape, ignoring class names.
+
+    `modules` are the agent modules `path` imports (see
+    `project_sources.agent_modules`); schema classes defined in any of
+    them count, so models kept in a `models.py` pass.
 
     Class names are not an invariant — `references/coded/frameworks/
     agent-patterns.md` explicitly allows `Input`/`Output` or
@@ -124,6 +132,15 @@ def assert_graph_module_shape(path: Path) -> None:
 
     models = _pydantic_models(tree)
     classes = _defined_classes(tree)
+    for other in modules or []:
+        if other.resolve() == path.resolve():
+            continue
+        try:
+            other_tree = ast.parse(other.read_text(encoding="utf-8"), filename=str(other))
+        except SyntaxError as exc:
+            sys.exit(f"FAIL: {other.name} is not valid Python: {exc}")
+        models |= _pydantic_models(other_tree)
+        classes |= _defined_classes(other_tree)
     schemas: dict[str, str] = {}
     if call.args:
         schemas["state"] = ast.unparse(call.args[0])
@@ -135,7 +152,7 @@ def assert_graph_module_shape(path: Path) -> None:
     if state is not None and state not in classes:
         sys.exit(
             f"FAIL: {path.name} passes StateGraph state schema `{state}`, which is "
-            f"not a class defined in the module (found: {sorted(classes) or 'none'})"
+            f"not a class defined in the agent modules (found: {sorted(classes) or 'none'})"
         )
 
     io_schemas = {k: v for k, v in schemas.items() if k in _IO_KEYWORDS}
@@ -144,7 +161,7 @@ def assert_graph_module_shape(path: Path) -> None:
         sys.exit(
             f"FAIL: {path.name} passes StateGraph input/output schema(s) "
             f"{non_models} that are not Pydantic BaseModel subclasses defined in "
-            f"the module (found models: {sorted(models) or 'none'})"
+            f"the agent modules (found models: {sorted(models) or 'none'})"
         )
 
     outputs = {io_schemas[k] for k in _OUTPUT_KEYWORDS if k in io_schemas}
