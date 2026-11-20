@@ -86,7 +86,7 @@ Response wrapper: `{Result, Code: "ResourceConfiguration", Data: {...}}`. `Data`
 | Field | Use as |
 |-------|--------|
 | `name` | Display name. |
-| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration` / `Flow`); lowercase it when copying into the agent-level `resource.json`. |
+| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration` / `Flow`); lowercase the first letter when copying into the agent-level `resource.json` (`ProcessOrchestration` → `processOrchestration`). |
 | `package.name` / `package.key` | Package identity. Refresh writes the package decl from this. |
 | `entryPointUniqueId` / `entryPointName` | Entry point IDs. Refresh embeds these in the solution-level decl. |
 | `inputArgumentsSchemaV2` | JSON Schema string (Agent / API / Agentic / deployed Flow). Parse → agent-level `inputSchema`. |
@@ -146,11 +146,11 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
 
 | Field | Source | Same rule for local & external |
 |---|---|---|
-| `type` | lowercase `Type` from `resource list` | yes |
+| `type` | `Type` from `resource list`, copied as returned — except `Flow` → `flow` | yes |
 | `referenceKey` | lowercase `Key` GUID from `resource list` | yes |
 | `properties.folderPath` | literal `Folder` from `resource list` | yes |
 | `properties.exampleCalls` | required (can be `[]`) | yes |
-| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA). Local projects (`Source: "Local"`) return neither — parse the `Data.Spec.EntryPoints` JSON string and use the matching `entryPoints[].input` / `.output` (same content as the project's `entry-points.json`). A local Flow project has no `EntryPoints` either — see [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool). See [Copy the process schema exactly](#copy-the-process-schema-exactly) | yes |
+| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA). Local projects (`Source: "Local"`) return neither — parse the `Data.Spec.EntryPoints` JSON string and use the matching `entryPoints[].input` / `.output` (same content as the project's `entry-points.json`). See [Copy the process schema exactly](#copy-the-process-schema-exactly). A local Flow project has no `EntryPoints` either — build its schemas per [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) | yes |
 
 ### Copy the process schema exactly
 
@@ -169,27 +169,36 @@ Copy the process's `input` / `output` schemas into the tool's `inputSchema` / `o
 
 **Deployed Flow.** `Data.Spec.EntryPoints` lists the Flow's trigger entry point plus one entry per inline agent inside the Flow. Take the tool contract from the top-level `InputArgumentsSchemaV2` / `OutputArgumentsSchemaV2` — they describe the entry point named by `Data.Spec.EntryPointName` — not from an inline-agent entry.
 
-**Flow project in the same solution.** List its variables (read-only — changing the Flow belongs to the `uipath-maestro-flow` skill):
+**Flow project in the same solution.** The tool starts the Flow's **default entry point**: the trigger node with `inputs.isDefaultEntryPoint: true` in the `.flow` file's `nodes[]`, or the first trigger node when none is marked. List the Flow's variables (read-only — changing the Flow belongs to the `uipath-maestro-flow` skill):
 
 ```bash
 uip maestro flow variables list "<FLOW_FILE>" --output json
 ```
 
-Parse `.Data.Variables[]` — the packed Flow's entry point takes and returns only these:
+Parse `.Data.Variables[]` — the packed default entry point takes and returns only these:
 
 | Variable | Goes in |
 |---|---|
-| `Direction: "in"` with `TriggerNodeId` = the Flow's start trigger node | `inputSchema.properties.<Id>`, with its `Type` and `Description` |
-| `Direction: "out"` | `outputSchema.properties.<Id>`, with its `Type` and `Description` |
-| `Direction: "inout"` | Neither — internal Flow state |
+| `Direction: "in"` with `TriggerNodeId` = the default entry point's trigger node | `inputSchema.properties.<Id>` |
+| `Direction: "in"` with `TriggerNodeId` = another trigger node | Neither — input of a different entry point |
 | `Direction: "in"` without `TriggerNodeId` | Neither — dropped when the Flow is packed |
+| `Direction: "out"` | `outputSchema.properties.<Id>` |
+| `Direction: "inout"` | Neither — internal Flow state |
 
-`Type: "file"` → `{ "$ref": "#/definitions/job-attachment" }` plus the `job-attachment` definition ([agent-definition.md § File Attachments](../../agent-definition.md#file-attachments-job-attachment)). No matching variable → that schema is `{ "type": "object", "properties": {} }`.
+Build each property from the variable's `Type`:
 
-Flow-specific rules:
+| `Type` | Property |
+|---|---|
+| `string`, `number`, `integer`, `boolean` | `{ "type": "<Type>", "description": "<Description>" }`. Any other scalar type → `"type": "string"` |
+| `object`, `array` | `variables list` does not return the nested shape. Read the variable in the `.flow` file (`variables.globals[]`, matched by `id`): when it has a `schema`, the property is that `schema` — its `properties` / `items` included — without the `$schema` key, plus the `description`; a nested `"type": "file"` becomes the `job-attachment` `$ref` (last row). No `schema` → `{ "type": "<Type>", "description": "<Description>" }` |
+| `jsonSchema` | The property is the variable's `body` in the `.flow` file (a JSON Schema), without the `$schema` key. Never write `"type": "jsonSchema"` |
+| `file` | `{ "$ref": "#/definitions/job-attachment" }` plus the `job-attachment` definition ([agent-definition.md § File Attachments](../../agent-definition.md#file-attachments-job-attachment)) |
 
-1. **Write `"type": "flow"` in lowercase.** Copying the remote row's `Type: "Flow"` verbatim fails `uip agent validate` with `resource.json: Invalid input`.
-2. **Agent Builder offers Flows in its tool picker only on tenants where the Flow tool is enabled.** A Flow missing from the picker is not a reason to change the resource: the `resource.json` shape, `uip agent validate`, and `uip solution resources refresh` do not depend on the picker.
+Each schema is `{ "type": "object", "properties": { … } }` with no top-level `required` list — the packed entry point has none. No matching variable → `{ "type": "object", "properties": {} }`. These schemas are built, not copied, so [Copy the process schema exactly](#copy-the-process-schema-exactly) does not apply to them.
+
+**Write `"type": "flow"` in lowercase.** Copying the remote row's `Type: "Flow"` verbatim fails `uip agent validate` with `resource.json: Invalid input`.
+
+> Agent Builder offers Flows in its tool picker only on tenants where the Flow tool is enabled. A Flow missing from the picker is not a reason to change the resource: the `resource.json` shape, `uip agent validate`, and `uip solution resources refresh` do not depend on the picker.
 
 ## Solution-Level Files
 
@@ -214,7 +223,7 @@ For in-solution agents already registered with the parent solution — auto-regi
 | `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` |
 | `Flow` | `flow` | `Flow` | `process/flow/` |
 
-**Hand-authoring fallback** — when refresh cannot run (offline, missing RCS match, custom deployment), see [solution-files.md](solution-files.md) for the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and debug_overwrites templates. Maestro Flow declarations have no hand-authoring template — generate them with refresh.
+**Hand-authoring fallback** — when refresh cannot run (offline, missing RCS match, custom deployment), see [solution-files.md](solution-files.md) for the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and debug_overwrites templates. Maestro Flow declarations have no hand-authoring template — only refresh writes them. If refresh cannot run for a Flow tool, stop and tell the user it is required; do not adapt Template B.
 
 ## Walkthrough
 
@@ -228,8 +237,9 @@ uip solution resources list --source remote --kind Process --search "<NAME>" --o
 uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 # Parse .Data[]. Each entry: Source, Key, Name, Kind, Type, Folder, FolderKey.
 # Source: "Local" → location: "solution". "Remote" → location: "external".
-# Use Key as referenceKey, Name as processName, Type (lowercased — a deployed
-# Maestro Flow returns "Flow") for the agent-level type, Folder as properties.folderPath.
+# Use Key as referenceKey, Name as processName, Type for the agent-level type
+# (copied as returned, except a deployed Maestro Flow's "Flow" → "flow"),
+# Folder as properties.folderPath.
 
 # 3. Pull the full configuration
 uip solution resources get <KEY> --output json
@@ -241,7 +251,7 @@ uip solution resources get <KEY> --output json
 #   package.name / package.key, entryPointUniqueId / entryPointName
 ```
 
-Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (lowercase), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA, or `Data.Spec.EntryPoints` for Local projects, or the Flow's variables for a local Flow project), copied exactly per [Copy the process schema exactly](#copy-the-process-schema-exactly).
+Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (`Flow` → `flow`), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA, or `Data.Spec.EntryPoints` for Local projects), copied exactly per [Copy the process schema exactly](#copy-the-process-schema-exactly). For a local Flow project, build the schemas from the Flow's variables per [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool).
 
 ```bash
 # 4. Configure agent.json (system prompt, model, schemas)
@@ -297,7 +307,7 @@ UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<
 
 ## Gotchas
 
-See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 18, and 24 also apply. For `type: "flow"`, the two rules in [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) apply on top.
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 18, and 24 also apply. For `type: "flow"`, [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) applies on top.
 
 ## References
 

@@ -89,6 +89,30 @@
         "triggerNodeId": "start"
       },
       {
+        "id": "customer",
+        "direction": "in",
+        "type": "object",
+        "description": "Customer who placed the order",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "description": "Email address the order was placed with"
+            },
+            "accountNumber": {
+              "type": "string",
+              "description": "Customer account number"
+            }
+          },
+          "required": [
+            "email"
+          ]
+        },
+        "triggerNodeId": "start"
+      },
+      {
         "id": "status",
         "direction": "out",
         "type": "string",

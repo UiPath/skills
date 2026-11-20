@@ -36,7 +36,7 @@ It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding ex
 
 The process declaration directory depends on the tool type. Place the file in the subdirectory matching the `ProcessType` from the Releases API: `process/` for RPA, `agent/` for agents, `api/` for API workflows, `processOrchestration/` for agentic processes.
 
-> **Maestro Flow (`type: "flow"`) is not covered by the templates below.** `uip solution resources refresh` writes its declaration to `process/flow/<Name>.json` — Template B's layout with `resource.type: "flow"`, `spec.type: "Flow"`, and a `spec.runtimeProfile` field. Generate it with refresh; do not hand-author it. See [process.md § Maestro Flow as a Tool](process.md#maestro-flow-as-a-tool).
+> **Maestro Flow (`type: "flow"`) has no hand-authoring fallback.** Only `uip solution resources refresh` writes its declaration (`process/flow/<Name>.json`). When refresh cannot run for a Flow tool, stop and tell the user it is required — do not adapt the templates below. See [process.md § Maestro Flow as a Tool](process.md#maestro-flow-as-a-tool).
 
 ## Process Declaration
 
@@ -484,7 +484,7 @@ Returns, for each match:
   - `agent` → `process/agent/`
   - `api` → `process/api/`
   - `processOrchestration` → `process/processOrchestration/`
-  - `Flow` (deployed Maestro Flow; agent resource `type` is `flow`) → `process/flow/` — written by refresh, no template in this file
+  - `Flow` (deployed Maestro Flow; agent resource `type` is `flow`) → `process/flow/` — written only by refresh, no template in this file. When refresh cannot run, stop and tell the user
 - `Folder` — literal Orchestrator folder path (e.g., `"Shared/Sales"`). Use as: agent-level `resource.json` `properties.folderPath`, solution-level `folders[].fullyQualifiedName` (in both process and package declarations), and `folderFullyQualifiedName` in `debug_overwrites.json`.
 - `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
 

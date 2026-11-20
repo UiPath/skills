@@ -2,9 +2,10 @@
 """Solution Maestro Flow tool resource check.
 
 The fixture solution `OrdersSol` ships a registered Flow project `OrderFlow`
-with one `in` variable bound to the start trigger (`orderId`), one `out`
-variable (`status`) and one `inout` variable (`retryCount`, internal Flow
-state). The agent adds `OrderDeskAgent` and wires the Flow in as a tool.
+with two `in` variables bound to the start trigger (`orderId`, a string, and
+`customer`, an object whose nested fields live in the variable's `schema`),
+one `out` variable (`status`) and one `inout` variable (`retryCount`, internal
+Flow state). The agent adds `OrderDeskAgent` and wires the Flow in as a tool.
 
 Validates the tool resource under OrderDeskAgent/resources/:
   1. $resourceType == "tool" and type == "flow" — lowercase. A deployed Flow is
@@ -18,11 +19,16 @@ Validates the tool resource under OrderDeskAgent/resources/:
      declaration (resources/solution_folder/process/flow/OrderFlow.json).
   5. id is a UUID, isEnabled is truthy, guardrail.policies is a list, and the
      resource folder is named after the resource `name`.
-  6. inputSchema.properties == {orderId} and outputSchema.properties ==
-     {status}: a local Flow project exposes no schema through
-     `uip solution resources get`, so the contract comes from the Flow's
-     `in` / `out` variables and is copied exactly. The `inout` variable is
-     not part of the packed entry point and must appear in neither schema.
+  6. inputSchema.properties == {orderId, customer} and
+     outputSchema.properties == {status}: a local Flow project exposes no
+     schema through `uip solution resources get`, so the contract is built
+     from the Flow's `in` / `out` variables. The `inout` variable is not part
+     of the packed entry point and must appear in neither schema.
+  7. inputSchema.properties.customer carries the nested fields {email,
+     accountNumber}. `uip maestro flow variables list` reports the variable as
+     a bare `object`; the fields are in `variables.globals[].schema` in the
+     Flow file, and packing keeps them. A bare `{"type": "object"}` hides
+     them from the model.
 """
 
 import json
@@ -38,8 +44,9 @@ FLOW_DECLARATION = (
     SOLUTION / "resources" / "solution_folder" / "process" / "flow" / "OrderFlow.json"
 )
 FLOW_NAME = "OrderFlow"
-EXPECTED_INPUTS = {"orderId"}
+EXPECTED_INPUTS = {"orderId", "customer"}
 EXPECTED_OUTPUTS = {"status"}
+EXPECTED_CUSTOMER_FIELDS = {"email", "accountNumber"}
 
 
 def load_resources() -> list:
@@ -186,6 +193,18 @@ def assert_schemas(resource: dict) -> None:
         f"OK: inputSchema.properties={sorted(inputs)}, "
         f"outputSchema.properties={sorted(outputs)}"
     )
+
+    customer = resource["inputSchema"]["properties"]["customer"]
+    nested = customer.get("properties") if isinstance(customer, dict) else None
+    if not isinstance(nested, dict) or set(nested) != EXPECTED_CUSTOMER_FIELDS:
+        got = sorted(nested) if isinstance(nested, dict) else customer
+        sys.exit(
+            "FAIL: inputSchema.properties.customer should carry exactly the nested "
+            f"fields {sorted(EXPECTED_CUSTOMER_FIELDS)} from the Flow variable's "
+            "`schema` (`variables.globals[]` in OrderFlow.flow — `uip maestro flow "
+            f"variables list` does not return it), got {got!r}"
+        )
+    print(f"OK: inputSchema.properties.customer.properties={sorted(nested)}")
 
 
 def main() -> None:

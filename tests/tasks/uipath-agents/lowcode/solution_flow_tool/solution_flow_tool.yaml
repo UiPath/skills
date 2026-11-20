@@ -2,16 +2,18 @@ task_id: skill-agent-solution-flow-tool
 description: >
   Use a Maestro Flow as an agent tool inside an existing solution
   (brownfield). The fixture ships an `OrdersSol` solution that already
-  contains a registered `OrderFlow` Flow project with one `in` variable
-  (`orderId`), one `out` variable (`status`) and one `inout` variable
-  (`retryCount`, internal state). The agent must add a NEW
+  contains a registered `OrderFlow` Flow project with two `in` variables
+  (`orderId`, and `customer` — an object whose nested fields are in the Flow
+  file, not in `uip maestro flow variables list`), one `out` variable
+  (`status`) and one `inout` variable (`retryCount`, internal state). The
+  agent must add a NEW
   `OrderDeskAgent` project and wire the pre-existing `OrderFlow` in as a
   tool — reusing it, NOT re-creating it and NOT re-initializing the
   solution. Verifies the tool resource.json uses `type: "flow"`
   (lowercase), `location: "solution"`, `folderPath: "solution_folder"`,
   the Flow's release key as `referenceKey`, and input/output schemas
-  copied from the Flow's `in` / `out` variables, with the `inout` variable
-  in neither.
+  built from the Flow's `in` / `out` variables — `customer` with its nested
+  fields — with the `inout` variable in neither.
 tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code]
 
 run_limits:
@@ -119,7 +121,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow tool resource shape (type flow lowercase, location, folderPath, referenceKey, schemas from the Flow's variables)"
+    description: "Flow tool resource shape (type flow lowercase, location, folderPath, referenceKey, schemas from the Flow's variables incl. the object variable's nested fields)"
     command: "python3 $REFERENCE_DIR/check_solution_flow_tool.py"
     timeout: 30
     expected_exit_code: 0
