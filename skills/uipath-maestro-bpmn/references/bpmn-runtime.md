@@ -461,8 +461,14 @@ binding half, which is the same for every connector-backed node.
   A decompiled process shows a `{ name, folder }` task as an `.activity()` with its query rows and its two `Entity` bindings; it compiles back as it is.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
+<<<<<<< HEAD
 - The entity and its folder are literals in the compiled task: the two `Entity` bindings declare the entity in the solution, and the task does not read them.
   Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
+=======
+- A Data Fabric entity trigger takes the same `entity: { name, folder }` option on `.eventTrigger()`: [connector events](connectors.md#6-connector-events).
+- Do not add entity bindings by hand: compile writes the pair.
+  A V2 task reads it, so its entity can be re-pointed per environment at deploy; a `delete` task's entity is fixed at compile time.
+>>>>>>> 2052daa34 (fix(uipath-maestro-bpmn): author a Data Fabric entity trigger's folder entity with entity, not a literal filter (#5082))
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
