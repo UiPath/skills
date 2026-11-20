@@ -74,10 +74,7 @@ SKILL.md; the symptoms below are debug-only:
   one. Bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`). A brand-new
   connector publishes with NO `--version` (`init` seeds `latestVersion = "1.0.0"`).
 - **Published but not visible**: Studio Web shows a fresh publish ~5–10 min after `SUCCESS`.
-- **Live smoke test**: `uip is connectors probe --connection-id <id>` proxies each on-disk SR
-  through a real connection (GET-only; `--include-mutations` to add POST/PUT/PATCH/DELETE).
-  Catches `metadata.method.<VERB>.path` typos that static `validate` cannot.
-- **Auth**: `import` / `download` / `publish` / `publish-status` / `probe` all require `uip login`.
+- **Auth**: `import` / `download` / `publish` / `publish-status` all require `uip login`.
 
 ## See also
 - [hooks.md](hooks.md), [events.md](events.md), [configuration.md](configuration.md),
