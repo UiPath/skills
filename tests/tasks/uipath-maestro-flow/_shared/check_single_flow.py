@@ -2,7 +2,10 @@
 """Assert the Flow project holds one ``.flow`` file, and that the flow is built in it.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_single_flow.py
+    python3 $REFERENCE_DIR/_shared/check_single_flow.py [--allow-unbuilt]
+
+``--allow-unbuilt`` keeps the one-file rule but accepts a trigger-only flow,
+for a task whose prompt only scaffolds the flow.
 
 A task that asks for one new flow ends with one ``.flow`` in the project:
 ``<Name>.flow`` from the Node CLI, ``new.flow`` in Studio Web. Studio Web seeds
@@ -25,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_check import _HUSK_MAX_NODES, _flow_file_node_count, find_project_dir  # noqa: E402
 
 
-def single_flow_problem(project_dir: str) -> str | None:
+def single_flow_problem(project_dir: str, allow_unbuilt: bool = False) -> str | None:
     """Why ``project_dir`` is not one built flow, or ``None`` when it is."""
     flows = sorted(glob.glob(os.path.join(glob.escape(project_dir), "*.flow")))
     counts = [(path, _flow_file_node_count(path)) for path in flows]
@@ -33,18 +36,19 @@ def single_flow_problem(project_dir: str) -> str | None:
     if len(flows) != 1:
         return f"{project_dir} holds {len(flows)} .flow files, expected 1: {listed or 'none'}"
     count = counts[0][1]
-    if count is None or count <= _HUSK_MAX_NODES:
+    if count is None or (count <= _HUSK_MAX_NODES and not allow_unbuilt):
         return f"{project_dir} holds only an unbuilt flow: {listed}"
     return None
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    allow_unbuilt = "--allow-unbuilt" in (sys.argv[1:] if argv is None else argv)
     project_dir = find_project_dir()  # exits with its own message when there is no single Flow project
-    problem = single_flow_problem(project_dir)
+    problem = single_flow_problem(project_dir, allow_unbuilt)
     if problem:
         print(f"FAIL: {problem}", file=sys.stderr)
         return 1
-    print(f"OK: {project_dir} holds one built .flow")
+    print(f"OK: {project_dir} holds one {'' if allow_unbuilt else 'built '}.flow")
     return 0
 
 

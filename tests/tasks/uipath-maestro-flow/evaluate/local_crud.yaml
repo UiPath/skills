@@ -80,8 +80,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The project holds one .flow, with the flow built in it"
-    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    description: "The project holds one .flow (the prompt only scaffolds it, so trigger-only is fine)"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py --allow-unbuilt"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
