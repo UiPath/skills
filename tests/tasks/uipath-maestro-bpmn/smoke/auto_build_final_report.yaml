@@ -110,3 +110,54 @@ success_criteria:
 
       Score 1.0 only if every item holds; otherwise 0.0. In findings, list
       each failed item by number and quote the offending line.
+
+  # Records the warnings `validate` reports on the shipped process: each is one
+  # the agent kept. Informational; the judge below grades the report against it.
+  - type: run_command
+    description: "Recorded the validate warnings the built process keeps"
+    command: "python3 $REFERENCE_DIR/smoke/write_validate_warnings.py .validate-warnings.txt"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final report names, in plain words on Needs:, Assumed: or Unverified:, each validate warning the built process keeps"
+    include_reference: false
+    include_agent_output: true
+    files:
+      - .validate-warnings.txt
+    max_file_chars: 60000
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      `.validate-warnings.txt` lists the warnings `uip maestro bpmn validate`
+      reports on the process the agent shipped, or holds `none`. A first
+      line starting with `unknown`, or a missing file, means they could not
+      be read.
+
+      WHICH TEXT TO GRADE. AGENT OUTPUT holds every message the agent sent in
+      this turn. If it contains a `[RESULT - ...]` marker, grade the text
+      after the LAST such marker. Otherwise grade the text from the LAST
+      occurrence of `LoyaltyDiscount: built` (markdown emphasis around the
+      name allowed) to the end of AGENT OUTPUT. The harness instruction that
+      follows AGENT OUTPUT and this grading prompt are not part of it.
+
+      - If the file is missing or starts with `unknown`, score 0.0.
+      - If the file holds `none`, score 1.0 only if no `Assumed:` or
+        `Unverified:` clause presents something as a `validate` warning or
+        validator finding. A clause about a value, such as "a missing order
+        total counts as 0", is fine.
+      - Otherwise score 1.0 only if the report's `Needs:`, `Assumed:` and
+        `Unverified:` lines together cover every distinct warning in the
+        file. Warnings that differ only in which element raised them count
+        as one. A warning is covered when a clause names its input, step or
+        path in plain words and says what the warning says about it (for
+        example "the approval step can be reached with no approver set"). A
+        clause that names none of them does not cover a warning. A warning code (such as `VARIABLE_NOT_SET`) or a
+        raw variable id in place of plain words does not cover it, and text
+        about warnings outside the report does not count.
+
+      Score 0.0 otherwise. In findings, quote the `Needs:`, `Assumed:` and
+      `Unverified:` lines, or say they are missing, and name each warning
+      they do not cover.

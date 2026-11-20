@@ -45,6 +45,8 @@ When the upload failed, say so in the first line's one sentence.
 When validation fails only because tenant resources are missing (no connection, agent, process or queue to bind), the first line reads `<Name>: built, not runnable yet (<draft|auto> mode).` and `Needs:` names each missing resource in the user's words, such as `a Slack connection` or `the ticket triage agent`.
 Drop `Needs:` when nothing is missing.
 
+Report each `validate` warning you kept as one clause in the user's words that names its input, step or path: on `Needs:` as the tenant resource it needs, on `Assumed:` only with a reason you can point to in the process, otherwise on `Unverified:`. Warnings on the same input or step share one clause. No warning codes or variable ids, and no word about warnings anywhere else in the reply.
+
 <!--skill-flavor:final-path-rule:start-->
 The path line belongs to this final message.
 A Studio Web link shown earlier in the turn, before a tool call, does not count: write it again here, on its own line.
