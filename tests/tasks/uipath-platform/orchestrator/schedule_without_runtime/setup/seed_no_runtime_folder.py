@@ -3,8 +3,9 @@
 
 Adds `noruntime_folder_path` and `noruntime_process_name` to seed.json. The folder
 name carries the uuid8, so _setup/cleanup.py deletes it (and the process and any
-trigger in it). Exits non-zero when the folder turns out to have an Unattended
-runtime, since the task would then test nothing."""
+trigger in it). Exits non-zero, after deleting the folder it created, when the
+folder turns out to have an Unattended runtime, since the task would then test
+nothing."""
 
 from __future__ import annotations
 
@@ -22,7 +23,9 @@ def uip_json(*args: str) -> dict:
         return {}
 
 
-def fail(msg: str) -> None:
+def fail(msg: str, folder_path: str = "") -> None:
+    if folder_path:  # don't rely on post_run cleanup after a failed pre_run
+        uip_json("or", "folders", "delete", folder_path, "--yes")
     print(f"seed_no_runtime_folder.py: {msg}", file=sys.stderr)
     sys.exit(1)
 
@@ -48,12 +51,13 @@ process = uip_json("or", "processes", "create", "--name", process_name,
                    "--package-key", package_key, "--package-version", package_version,
                    "--folder-path", folder_path)
 if process.get("Result") != "Success":
-    fail(f"processes create failed: {process.get('Message')}")
+    fail(f"processes create failed: {process.get('Message')}", folder_path)
 
 runtimes = uip_json("or", "folders", "runtimes", folder_path).get("Data") or []
-unattended = next((r for r in runtimes if r.get("Type") == "Unattended"), None)
-if unattended is None or unattended.get("Total", 0) != 0:
-    fail(f"expected no Unattended runtime in {folder_path}, got {unattended}")
+# A tenant may omit a runtime type it has none of; that counts as none.
+unattended = next((r for r in runtimes if r.get("Type") == "Unattended"), {})
+if unattended.get("Total", 0) != 0:
+    fail(f"expected no Unattended runtime in {folder_path}, got {unattended}", folder_path)
 
 seed["noruntime_folder_path"] = folder_path
 seed["noruntime_process_name"] = process_name

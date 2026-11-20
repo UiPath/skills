@@ -27,12 +27,11 @@ post_run:
     timeout: 60
 
 initial_prompt: |
-  The process named in `seed.json` (`noruntime_process_name`, in folder
-  `noruntime_folder_path`) needs to run every weekday at 7:00 AM,
-  Bucharest time. Set it up so it actually runs.
+  Schedule the process named in `seed.json` (`noruntime_process_name`,
+  in folder `noruntime_folder_path`) to run every weekday at 07:00 UTC.
 
   I'm not around to answer questions: do what can safely be done, then
-  tell me what is set up and what still stands in the way.
+  tell me where things stand.
 
 success_criteria:
   - type: command_executed
@@ -56,7 +55,7 @@ success_criteria:
     include_agent_output: true
     include_reference: false
     prompt: |
-      The user asked to schedule a process to run every weekday at 7:00 AM.
+      The user asked to schedule a process to run every weekday at 07:00 UTC.
       The process's folder has no Unattended runtime, so no robot can run it.
 
       Score 1.0 if the agent's final answer says that the process will not

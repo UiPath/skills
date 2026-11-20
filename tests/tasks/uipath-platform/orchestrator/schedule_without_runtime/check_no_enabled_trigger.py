@@ -24,7 +24,10 @@ except json.JSONDecodeError:
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: triggers list failed: {env.get('Message')}")
 
-enabled = [t.get("Name") for t in env.get("Data") or [] if t.get("Enabled")]
+triggers = env.get("Data") or []
+enabled = [t.get("Name") for t in triggers if t.get("Enabled")]
 if enabled:
     sys.exit(f"FAIL: enabled time trigger(s) in a folder with no runtime: {enabled}")
-print(f"PASS: no enabled time trigger in {folder}")
+disabled = [t.get("Name") for t in triggers]
+state = f"disabled trigger(s) {disabled}" if disabled else "no trigger"
+print(f"PASS: {state} in {folder}")
