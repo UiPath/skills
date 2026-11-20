@@ -244,7 +244,7 @@ It is the turn's last tool call: before it, read [gate-reply-template.md](gate-r
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
 - **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[?contains(Name,'<KEYWORD>') || contains(Name,'<keyword>')].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
-  A tenant holds hundreds of entities, so never list them unfiltered. `contains` is case-sensitive: test each singular keyword from the box's label (`Hotel`, `Pilot`) capitalized and lowercase, all joined with `||`.
+  A tenant holds hundreds of entities, so never list them unfiltered. `contains` is case-sensitive: test each keyword from the box's label as written, capitalized and lowercase, and a plural by its stem (`Compan` for `companies`, matching `Company` and `Companies`), all joined with `||`.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
