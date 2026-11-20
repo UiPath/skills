@@ -1,0 +1,153 @@
+{
+ "id": "case-ZsuA1W5bub",
+ "name": "TimerHoldCase",
+ "version": "32.0.3",
+ "bindings": [],
+ "variables": {
+  "inputOutputs": [
+   {
+    "id": "holdFor",
+    "name": "holdFor",
+    "type": "string",
+    "elementId": "trigger_1"
+   }
+  ],
+  "inputs": [
+   {
+    "id": "vKjcxhjbW",
+    "name": "holdFor",
+    "type": "string",
+    "default": "PT10S",
+    "elementId": "trigger_1"
+   }
+  ]
+ },
+ "metadata": {
+  "caseIdentifier": "TP",
+  "caseAppEnabled": false,
+  "caseIdentifierType": "constant",
+  "publishVersion": 2,
+  "caseExitRules": [
+   {
+    "id": "Condition_XhGs8y",
+    "displayName": "Case complete",
+    "rules": [
+     [
+      {
+       "rule": "required-stages-completed",
+       "id": "Rule_d8Ivvu"
+      }
+     ]
+    ],
+    "marksCaseComplete": true
+   }
+  ],
+  "intsvcActivityConfig": "v2"
+ },
+ "nodes": [
+  {
+   "id": "trigger_1",
+   "type": "uipath.case.trigger",
+   "data": {
+    "typeVersion": "1.0.0",
+    "display": {
+     "label": "Manual start"
+    },
+    "inputs": {
+     "outputs": [
+      {
+       "name": "holdFor",
+       "type": "string",
+       "source": "=vars.vKjcxhjbW",
+       "var": "holdFor"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "Stage_6G2h5n",
+   "type": "case-management:Stage",
+   "data": {
+    "label": "Wait",
+    "parentElement": {
+     "id": "root",
+     "type": "case-management:root"
+    },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": [
+     [
+      {
+       "id": "tnzBfCFOS",
+       "displayName": "Hold",
+       "type": "wait-for-timer",
+       "data": {
+        "timerType": "timeDuration",
+        "timeDuration": "=js:vars.holdFor"
+       },
+       "elementId": "Stage_6G2h5n-tnzBfCFOS",
+       "isRequired": true,
+       "entryConditions": [
+        {
+         "id": "Condition_mALqav",
+         "displayName": "Hold entry",
+         "rules": [
+          [
+           {
+            "rule": "current-stage-entered",
+            "id": "Rule_kfT0AY"
+           }
+          ]
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "isRequired": true,
+    "entryConditions": [
+     {
+      "id": "Condition_Qx3HDj",
+      "displayName": "Wait entry",
+      "rules": [
+       [
+        {
+         "rule": "case-entered",
+         "id": "Rule_ol5uYr"
+        }
+       ]
+      ]
+     }
+    ],
+    "exitConditions": [
+     {
+      "id": "Condition_8n5M36",
+      "displayName": "Wait complete",
+      "rules": [
+       [
+        {
+         "rule": "required-tasks-completed",
+         "id": "Rule_YzoEGv"
+        }
+       ]
+      ],
+      "marksStageComplete": true,
+      "type": "exit-only"
+     }
+    ]
+   }
+  }
+ ],
+ "edges": [],
+ "layout": {
+  "nodes": {
+   "Stage_6G2h5n": {
+    "position": {
+     "x": 100,
+     "y": 200
+    }
+   }
+  }
+ }
+}

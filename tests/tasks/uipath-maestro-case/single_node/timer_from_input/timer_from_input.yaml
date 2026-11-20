@@ -1,0 +1,97 @@
+task_id: skill-case-single-timer-from-input
+description: >
+  A single-task Case whose wait-for-timer duration comes from a case input, not
+  a literal (MST-18607). The Case Designer saves a variable-driven timer as
+  `"timeDuration": "=js:vars.<id>"`; a bare `=vars.<id>` is a C# expression the
+  Designer marks for removal. The grader checks the plan's timer reads the
+  holdFor input through that JavaScript form and that holdFor defaults to PT10S,
+  then runs the case once under `uip maestro case debug` and checks the timer
+  task completed. That the agent ran its own test run is advisory.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, outcome-graded]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 5700  # turn 1500 + criteria 4050 + margin
+  max_turns: 120
+  turn_timeout: 1500
+
+# Marks the task start for the post_run debug-instance cancel.
+pre_run:
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
+
+  Build a case called "TimerHoldCase" that, once someone starts it by hand,
+  waits for a hold period the person starting it gives, and then finishes.
+
+  - The hold period is an ISO-8601 duration given in an input called holdFor.
+    Use PT10S when none is given.
+  - The case's only task waits for the holdFor period. The case is done once
+    that wait is over.
+
+  Build and do a test run of the automation.
+success_criteria:
+  # The plan is found wherever the agent put it (any solution or project name).
+  - type: run_command
+    description: "uip maestro case validate passes on the case plan the agent built"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import find_caseplan; print(find_caseplan())' \"$REFERENCE_DIR\") && uip maestro case validate \"$p\" --output json"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The plan's wait-for-timer reads the holdFor input as =js:vars.<id>, and holdFor defaults to PT10S"
+    command: "python3 $REFERENCE_DIR/single_node/timer_from_input/check_timer_from_input_run.py --plan-only"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 840 s), plus refresh (2 x 120 s),
+  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
+  # (2 x 180 s).
+  - type: run_command
+    description: "Effects: one debug run in which the wait-for-timer task that reads holdFor completed"
+    command: "python3 $REFERENCE_DIR/single_node/timer_from_input/check_timer_from_input_run.py"
+    timeout: 4050
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

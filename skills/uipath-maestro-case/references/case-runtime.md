@@ -221,6 +221,18 @@ make from syntax alone. Exact signatures remain in the generated API.
   5. `uip solution resources refresh --solution-folder {solution} --output json`
 <!--skill-flavor:orphan-cleanup:end-->
 
+## Timers
+
+<!-- RULE:case.timer.variable-value -->
+- A `waitForTimer` value can come from a case variable or input. Write it as a
+  JavaScript expression, `=js:vars.<id>`, where `<id>` is the variable's id (an
+  input's id is its name): `waitForTimer({ duration: '=js:vars.holdFor' })`.
+  The Case Designer saves exactly this when a variable is picked. A bare
+  `=vars.<id>` is a C# expression, which the Designer marks for removal. The
+  variable holds the same shape as a literal: an ISO-8601 duration
+  (`PT10S`), date, or repeating cycle. Give an input a default so a manual
+  start or `case debug` has a value.
+
 ## SLA and runtime semantics
 
 <!-- RULE:case.sla.calendar -->
