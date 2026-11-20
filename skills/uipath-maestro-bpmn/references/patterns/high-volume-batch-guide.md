@@ -107,7 +107,10 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | Parallel | Must items run several at a time? | Drop `sequential`, and record each result outside the process |
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
-Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`, and have `aggregate` read the batch's records back.
+Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`.
+After the sub-process, read the batch's records back with a `.dataService()` `query`, then keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
+Aggregation and the policy value stay in that script: a bare `.task()` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
+Check the query response's record path in the node's `_response` before reading it in the script.
 This variant is not verified end to end.
 
 ## What to bind
