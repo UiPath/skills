@@ -30,6 +30,8 @@ Before work, check `.claude/rules/project-context.md` in the project directory. 
 
 Before creating/modifying anything, resolve the project using [environment-setup.md § Step 0.1](references/environment-setup.md#step-01-establish-project-root). Find `project.json` to establish `{projectRoot}`; no Studio Desktop check is needed for the standard loop. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `files diff` and `focus-activity`. Coded UI `ObjectRepository.cs` (`Descriptors.*`) regenerates on per-file `validate` after a `[Workflow]`/`[TestCase]` `.cs` exists (§ Capture-First Fast Path step 2; [coded/operations-guide.md § Configure UI Targets](references/coded/operations-guide.md#configure-ui-targets-object-repository)).
 
+A `~<name>` file beside a workflow (`~Main.xaml`, `~Process.cs`) is Studio Desktop's backup of unsaved designer changes, not a workflow: exclude it from file listings and never edit, validate, delete, or commit it. Before editing `<name>` itself, follow [environment-setup.md § Rules](references/environment-setup.md#rules), Rule 5.
+
 ## Project Type Detection
 
 After resolving `PROJECT_DIR`, inspect `project.json` `targetFramework` first:
