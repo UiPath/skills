@@ -378,8 +378,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `hitlTask` object with `CompletedByUser`, `AssignedToUser` and `CompletionTime` comes only from an
   Action App task. So never build a control on identity (four-eyes, "a different approver", an
   audit "who") from a field the user types. When the user names a deployed Action App, write the
-  task as `.humanTask(id, { app, folder })` (the app-task rule above) and read the completer from
-  its typed response, `vars.<id>_processResponse.CompletedByUser` (empty in local runs).
+  task as `.humanTask(id, { app, folder })` (the app-task rule above) and map the completer out
+  of its `hitlTask` result: `outputs: { decision: '=Action', completedBy: '=hitlTask.CompletedByUser.EmailAddress' }`,
+  then read `vars.completedBy` (empty in local runs). Never read `vars.<id>_processResponse`: that
+  row has no `source`, so the engine never fills it.
   Otherwise build the routing, and tell the user the identity check needs a deployed Action App
   to name, or task assignment (assignee groups) in Action Center.
 
