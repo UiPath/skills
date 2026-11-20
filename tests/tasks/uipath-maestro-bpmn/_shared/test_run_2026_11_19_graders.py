@@ -24,6 +24,7 @@ import bpmn_check  # noqa: E402
 FIXTURES = HERE / "fixtures" / "run_2026_11_19"
 SIMPLE_APPROVAL = HERE / "check_simple_approval_bpmn.py"
 SCRIPT_JINT = HERE / "check_script_jint_guidance.py"
+TESTMANAGER = HERE / "check_testmanager_generic_records.py"
 
 END_MAPPING = '<uipath:output name="decision" type="string" source="=js:vars.decisionValue" var="decision" />'
 JINT_END_MAPPING = '<uipath:output name="riskScore" type="number" source="=js:vars.riskScoreValue" var="riskScore" />'
@@ -151,6 +152,50 @@ def test_script_jint_still_rejects_unscoped_input(tmp_path: Path) -> None:
         '<uipath:inputOutput id="amountIn" name="amountIn" type="number" />',
     )
     assert _run(SCRIPT_JINT, root).returncode == 1
+
+
+# ---- 4. get-by-id --------------------------------------------------------------------
+
+GET_BY_ID = bpmn_check.ConnectorOperation("get a test case", "TestCase", {"getbyid"}, "/v2/{ProjectId}/testcases/{id}")
+LIST = bpmn_check.ConnectorOperation("list test cases", "TestCase", {"get"}, "/v2/{ProjectId}/testcases")
+
+
+def _requests(root: Path):
+    import xml.etree.ElementTree as ET
+
+    process = ET.parse(_bpmn(root)).getroot()
+    # Only the get-by-id node: the real artifact also has a list node.
+    return [r for r in bpmn_check.connector_requests(process, "uipath-uipath-testmanager") if r[0].get("id") == "getRecord"]
+
+
+def test_native_get_by_id_node_matches_get_by_id_operation(tmp_path: Path) -> None:
+    # context method=GET, metadata instanceParameters.httpMethod=GETBYID
+    root = _copy(tmp_path, "testmanager")
+    assert len(_requests(root)) == 1
+    bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
+
+
+def test_native_get_by_id_node_is_not_a_list(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    with pytest.raises(SystemExit):
+        bpmn_check.require_operations(_requests(root), [LIST], "test case")
+
+
+def test_get_node_without_get_by_id_metadata_is_not_a_get_by_id(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    path = _bpmn(root)
+    text = path.read_text(encoding="utf-8")
+    text = text.replace('\\"httpMethod\\":\\"GETBYID\\"', '\\"httpMethod\\":\\"GET\\"')
+    assert "GETBYID" not in text
+    path.write_text(text, encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
+
+
+def test_testmanager_generic_records_grader_passes_the_real_artifact(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    result = _run(TESTMANAGER, root)
+    assert result.returncode == 0, result.stderr
 
 
 # ---- 3. stale scratch copy -----------------------------------------------------------
@@ -318,3 +363,15 @@ def test_devcon_resolves_declared_type_through_js_prefix() -> None:
     assert devcon.resolve_expr_type("=js:vars.approved", types, schemas) == "boolean"
     assert devcon.resolve_expr_type("=js:vars.claim.reason", types, schemas) == "string"
     assert devcon.resolve_expr_type("=js:vars.approved + 1", types, schemas) is None
+
+
+def test_get_by_id_in_context_method_still_matches_whatever_the_metadata_says(tmp_path: Path) -> None:
+    root = _copy(tmp_path, "testmanager")
+    path = _bpmn(root)
+    text = path.read_text(encoding="utf-8")
+    old = '<uipath:input name="method" type="string" value="GET" />'
+    assert old in text
+    text = text.replace(old, '<uipath:input name="method" type="string" value="GETBYID" />')
+    text = text.replace('\\"httpMethod\\":\\"GETBYID\\"', '\\"httpMethod\\":\\"GET\\"')
+    path.write_text(text, encoding="utf-8")
+    bpmn_check.require_operations(_requests(root), [GET_BY_ID], "test case")
