@@ -150,7 +150,7 @@ Validate reads the entity types the project last generated. After a Data Fabric 
 
 `uip rpa build` compiles every workflow in the project, not just files passed to `validate` (§ What each phase covers); it is required before returning a project (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). It takes the project directory positionally, runs independently of Studio IPC, and exposes log level, `skip-analyze`, governance, and NuGet-source flags through `uip rpa build --help`.
 
-`run` and `debug start` compile internally but do not apply analyzer rules. A successful smoke test proves compilation, not `build`. A successful `build` writes `entry-points.json` (each entry point's argument schema) and `bindings_v2.json` (resources such as the queue a Get Queue Item names) under `.local/content/`, which `pack` ships, and deletes a root `entry-points.json` (templates ship one). Leave the root file deleted: restoring it changes nothing, and the next build deletes it again.
+`run` and `debug start` compile internally but do not apply analyzer rules. A successful smoke test proves compilation, not `build`. A successful `build` writes `entry-points.json` (each entry point's argument schema) and `bindings_v2.json` (resources such as the queue a Get Queue Item names) under `.local/content/`, which `pack` ships, plus a root copy of `entry-points.json` that needs no action.
 
 ## analyzer-rules list
 
