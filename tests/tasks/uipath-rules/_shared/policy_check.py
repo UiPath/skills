@@ -12,8 +12,8 @@ policy) into a BusinessRules project named ReimbursementRules. Modes:
             answer key; it lives here and is never staged into the sandbox).
   norefs    no uipdm:sourceRef with a box or blockId (no digitizer positions were supplied);
             a page-only sourceRef is allowed.
-  record    the .dmn carries at least one uipdm:qualityWarning (assumptions and limits live in the rule,
-            not in a notes file) and records the items this fixture plants.
+  record    the .dmn carries a uipdm:qualityWarning, its decision description names the policy and its
+            version, and (for the multi-document fixtures) the record says which documents were not applied.
   refs      every uipdm:sourceRef box is exactly the box of a contiguous run of
             words in _setup/policy_digitized/dom.json, on the page it names.
 
@@ -187,33 +187,45 @@ def find_one(name: str) -> Path:
     return found[0]
 
 
-# The .dmn is the reviewer's durable record: each decision's description (documents applied, amendments not
-# yet effective, documents read and not used) and every uipdm:qualityWarning (assumptions and limits).
-# One item per fixture, tied to a clause the fixture plants. multi_doc_check.configure replaces it.
-RECORD_FIXTURE: list[tuple[str, str]] = []
+# The .dmn is the reviewer's durable record: each decision's description (the documents and their status)
+# and every uipdm:qualityWarning (assumptions and limits). Each fixture item is (label, regex, where): `where`
+# is "description" (the decision's description) or "record" (descriptions and qualityWarnings together).
+# multi_doc_check.configure replaces the list.
+RECORD_FIXTURE: list[tuple[str, str, str]] = [
+    ("the policy's title in the decision description", r"remote work equipment", "description"),
+    ("the policy's version in the decision description", r"\b3\.0\b|version 3\b", "description"),
+]
+# The limit the uipdm guide asks for when there is no digitizer. It is expected, but it is not an assumption.
+NO_BOX = re.compile(r"\bbox(es)?\b|position data|without (source )?positions|no dom\.json", re.I)
+
+
+def description_text(root: ET.Element) -> str:
+    return "\n".join(el.text or "" for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "description")
+
+
+def warning_texts(root: ET.Element) -> list[str]:
+    return ["".join(el.itertext()) for el in uipdm_elements(root, "qualityWarning")]
 
 
 def record_text(root: ET.Element) -> str:
     """What the rule file itself tells a reviewer: every description and every uipdm:qualityWarning."""
-    parts = [el.text or "" for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "description"]
-    parts += ["".join(el.itertext()) for el in uipdm_elements(root, "qualityWarning")]
-    return "\n".join(parts)
+    return "\n".join([description_text(root), *warning_texts(root)])
 
 
-def record_missing(text: str) -> list[str]:
-    """Labels of the fixture items the rule file does not record."""
-    text = text.lower()
-    return [label for label, pattern in RECORD_FIXTURE if not re.search(pattern, text)]
+def record_missing(root: ET.Element) -> list[str]:
+    """Labels of the fixture items the rule file does not record, each looked for where the fixture says."""
+    texts = {"description": description_text(root).lower(), "record": record_text(root).lower()}
+    return [label for label, pattern, where in RECORD_FIXTURE if not re.search(pattern, texts[where])]
 
 
 def grade_record() -> None:
     _, _, root = load()
-    if not uipdm_elements(root, "qualityWarning"):
+    if not warning_texts(root):
         fail("the .dmn carries no uipdm:qualityWarning: its assumptions and limits are not recorded in the rule")
-    missing = record_missing(record_text(root))
+    missing = record_missing(root)
     if missing:
-        fail("the .dmn (descriptions and qualityWarnings) does not record: " + "; ".join(missing))
-    print("OK: the .dmn records its assumptions and limits as qualityWarning, and the fixture's items")
+        fail("the .dmn does not record: " + "; ".join(missing))
+    print("OK: the .dmn records its limits as qualityWarning, and its description and warnings hold the fixture's items")
 
 
 def word_run_texts(dom: dict) -> dict[int, dict[str, str]]:

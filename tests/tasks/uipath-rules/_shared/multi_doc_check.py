@@ -87,10 +87,16 @@ PROFILES = {
 }
 
 
+# A supporting document counts as recorded only when the same sentence says it does not override the policy.
+NOT_APPLIED = r"(not override|not applied|not used|guidance only|no rows|not a source of rules|does not change|do not change)"
+DOC_FACTS = [("the base policy's title in the decision description", r"travel expense", "description"),
+             ("the base policy's version in the decision description", r"\b2\.0\b|version 2\b", "description")]
 RECORD_FIXTURE = {
-    "full": [("the SOP's high-cost-city practice, not applied", r"\bsop\b"),
-             ("the FAQ's verbal approval, not applied", r"faq|verbal")],
-    "light": [("the FAQ's verbal approval, not applied", r"faq|verbal")],
+    "full": DOC_FACTS + [
+        ("the SOP, recorded as not overriding the policy", r"\bsop\b[^.\n]{0,160}" + NOT_APPLIED, "record"),
+        ("the FAQ, recorded as not overriding the policy", r"(faq|verbal)[^.\n]{0,160}" + NOT_APPLIED, "record")],
+    "light": DOC_FACTS + [
+        ("the FAQ, recorded as not overriding the policy", r"(faq|verbal)[^.\n]{0,160}" + NOT_APPLIED, "record")],
 }
 
 

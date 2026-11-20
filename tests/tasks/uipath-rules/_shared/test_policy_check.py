@@ -108,19 +108,32 @@ def test_page_only_source_refs_are_allowed_without_digitizer_positions():
     assert pc.positioned_refs([page_only, boxed, block]) == [boxed, block]
 
 
-RECORD_DMN = """<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"
-  xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model">
-  <extensionElements><uipdm:qualityWarning>Citations carry a page and no source box.</uipdm:qualityWarning></extensionElements>
-  <decision id="d" name="d"><description>Remote-work policy v2, effective 2026-01-01.</description></decision>
-</definitions>"""
+def record_dmn(description: str, *warnings: str) -> ET.Element:
+    qw = "".join(f"<uipdm:qualityWarning>{w}</uipdm:qualityWarning>" for w in warnings)
+    return ET.fromstring('<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" '
+                         'xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model">'
+                         f"<extensionElements>{qw}</extensionElements>"
+                         f'<decision id="d" name="d"><description>{description}</description></decision></definitions>')
+
+
+NO_BOX_WARNING = "Citations carry a page and no source box."
 
 
 def test_record_text_reads_descriptions_and_quality_warnings():
-    text = pc.record_text(ET.fromstring(RECORD_DMN))
-    assert "no source box" in text and "Remote-work policy v2" in text
+    text = pc.record_text(record_dmn("Remote Work Equipment Reimbursement Policy, version 3.0.", NO_BOX_WARNING))
+    assert "no source box" in text and "Remote Work Equipment" in text
 
 
-def test_record_names_each_missing_fixture_item(monkeypatch):
-    monkeypatch.setattr(pc, "RECORD_FIXTURE", [("the FAQ, not applied", r"faq")])
-    assert pc.record_missing("Assumptions recorded.") == ["the FAQ, not applied"]
-    assert pc.record_missing("The FAQ's verbal approval was not applied.") == []
+def test_record_needs_the_policy_title_and_version_in_the_description():
+    assert pc.record_missing(record_dmn("Remote Work Equipment Reimbursement Policy, version 3.0.", NO_BOX_WARNING)) == []
+    assert len(pc.record_missing(record_dmn("Reimbursement rule.", NO_BOX_WARNING))) == 2
+
+
+def test_the_policy_named_only_in_a_warning_does_not_count():
+    root = record_dmn("Reimbursement rule.", NO_BOX_WARNING, "Remote Work Equipment Reimbursement Policy 3.0 applied.")
+    assert len(pc.record_missing(root)) == 2
+
+
+def test_the_no_box_limit_is_recognised():
+    assert pc.NO_BOX.search(NO_BOX_WARNING) and pc.NO_BOX.search("Citations carry page numbers without source boxes.")
+    assert not pc.NO_BOX.search("Assumption: 90 days of service means at least 90 calendar days.")

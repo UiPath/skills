@@ -146,11 +146,34 @@ def test_ledger_accepts_filenames_hyphens_and_other_not_applied_wording():
     assert mdc.ledger_ok("Amendment 1 and Amendment 10 not applied.") is not None
 
 
-def test_record_needs_the_fixture_trap_for_each_profile():
-    base = "Travel policy v3, as of 2026-10-30. "
-    mdc.configure("light")
-    assert pc.record_missing(base) != [] and pc.record_missing(base + "The FAQ verbal approval was not applied.") == []
+# Taken from a passing e2e run (multi_doc_full, by-path layout): what a correct agent writes.
+E2E_DESCRIPTION = ("Travel Expense Reimbursement Policy, Version 2.0, effective 2026-01-01, issued by Finance. Reflects policy "
+                   "in force as of 2026-10-30. Amendment 1 effective 2026-07-01 is applied. Amendment 2 is not yet effective. "
+                   "SOP, FAQ, and rate schedule were read but do not override policy.")
+E2E_WARNINGS = ["Source documents have page markers but no dom.json; citations carry page numbers without source boxes.",
+                "SOP and FAQ are guidance; rate schedule is reference data. They do not override the policy and create no rows."]
+
+
+def multi_dmn(description, warnings):
+    from test_policy_check import record_dmn
+    return record_dmn(description, *warnings)
+
+
+def test_record_passes_on_a_real_e2e_rule_for_each_profile():
+    for profile in ("full", "light"):
+        mdc.configure(profile)
+        assert pc.record_missing(multi_dmn(E2E_DESCRIPTION, E2E_WARNINGS)) == []
     mdc.configure("full")
-    assert pc.record_missing(base + "FAQ not applied.") != []
-    assert pc.record_missing(base + "FAQ not applied. SOP practice not applied.") == []
+
+
+def test_naming_a_document_without_saying_it_was_not_applied_fails():
+    mdc.configure("full")
+    listed = "Travel Expense Reimbursement Policy, Version 2.0. Documents: Amendment 1, Amendment 2, SOP, FAQ."
+    missing = pc.record_missing(multi_dmn(listed, E2E_WARNINGS[:1]))
+    assert any("SOP" in m for m in missing) and any("FAQ" in m for m in missing)
+
+
+def test_record_needs_the_base_policy_facts():
+    mdc.configure("light")
+    assert any("title" in m for m in pc.record_missing(multi_dmn("FAQ read; it does not override the policy.", [])))
     mdc.configure("full")
