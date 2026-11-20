@@ -69,3 +69,22 @@ def test_validation_error_not_retried(pf, monkeypatch):
     with pytest.raises(RuntimeError, match="exited 3.*bad key"):
         pf._connections("k")
     assert len(calls) == 1
+
+
+def test_non_json_stdout_is_reported(pf, monkeypatch):
+    _script(monkeypatch, pf, [_proc(1, "plain text boom")])
+    with pytest.raises(RuntimeError, match="exited 1.*plain text boom"):
+        pf._connections("k")
+
+
+def test_timeout_not_retried(pf, monkeypatch):
+    calls = []
+
+    def run(*_a, **_k):
+        calls.append(1)
+        raise subprocess.TimeoutExpired("uip", 90)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    with pytest.raises(RuntimeError, match="did not answer"):
+        pf._connections("k")
+    assert len(calls) == 1
