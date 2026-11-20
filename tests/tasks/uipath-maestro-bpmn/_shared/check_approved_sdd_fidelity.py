@@ -79,7 +79,7 @@ def main() -> None:
     if sorted(ACTIVITIES) != names:
         missing = sorted(ACTIVITIES - set(names))
         extra = [n for n in names if n not in ACTIVITIES]
-        duplicated = sorted({n for n in names if n in ACTIVITIES and names.count(n) > 1})
+        duplicated = sorted({n for n in names if names.count(n) > 1})
         fail(
             f"activities must be exactly the SDD's five, each built once; "
             f"missing {missing}, extra {extra}, duplicated {duplicated}"
