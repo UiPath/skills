@@ -37,8 +37,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:case.action.names-app -->
 - An action task opens an Action App, and `.action({ ... })` with no `app`
-  names none. In a plan that binds any other resource, `case check` warns
-  `STRICT_BINDINGS_TASK_ABSENT` on it (SDK with builder-sdk#2184) and
+  names none. In a plan that binds any other resource, `case check`
+  (SDK 6.121.1+) warns `STRICT_BINDINGS_TASK_ABSENT` on it and
   `case validate --strict` fails: the task cannot run. Name the app:
 
   ```ts
@@ -47,7 +47,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 
   If the app is not published yet, write `t.unresolved('action')` instead and
   fill the task in once it is; do not invent an app name. Brownfield: a
-  decompiled quick form (an inline form, no app) is fine as is.
+  decompiled quick form (an inline form, no app) is fine as is. `case check`
+  does not warn on it, but `case validate --strict` still reports
+  `STRICT_BINDINGS_TASK_ABSENT` there (a CLI false positive): keep the quick
+  form and do not add an app to silence it.
 
 ## Action recipients and the go-live trap
 
