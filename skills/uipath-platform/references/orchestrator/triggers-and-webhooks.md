@@ -14,7 +14,7 @@ Automate job execution with time, queue, and API triggers, and set up webhooks f
 ## Prerequisites
 
 - Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
-- Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
+- Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md)). A trigger can be created without them, but it cannot run a job; check with `uip or folders runtimes "<folder>" --output json` and tell the user before creating it ([end-to-end-readiness-guide.md](end-to-end-readiness-guide.md))
 - Process (release) created -- you need the release key from `uip or processes list`
 
 ---
