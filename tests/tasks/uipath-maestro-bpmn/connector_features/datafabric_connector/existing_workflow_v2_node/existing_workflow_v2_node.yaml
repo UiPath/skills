@@ -3,8 +3,9 @@ description: >
   Brownfield edit of an existing workflow saved before Studio Web moved new
   workflows to V2: it has configured V1 Data Service nodes and no V2 marker.
   The agent adds a "Get Entity Record by ID" step after the existing Create
-  step. The new node is a V2 element from `registry get --input-details`, the
-  workflow gets no V2 marker, and the existing V1 nodes are left as they are.
+  step. The new node is a V2 element (`.dataService()` compiled, or `registry get
+  --input-details`), the workflow gets no V2 marker, and the existing V1 nodes
+  are left as they are.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", connector, uipath-uipath-dataservice, "feature:entities", data-fabric]
 
 sandbox:
@@ -53,9 +54,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent built the new node as a V2 element"
+    description: "Agent built the new node as a V2 element (SDK compile, or registry get --input-details)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get(?:(?!uip\s)[^&;|])*--input-details'
+    command_pattern: 'uip\s+maestro\s+bpmn\s+(?:compile\b|registry\s+get(?:(?!uip\s)[^&;|])*--input-details)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
