@@ -266,7 +266,7 @@ binding half, which is the same for every connector-backed node.
   `create`, `update`, `get` and `query` are the V2 task Studio Web's connector panel saves: `folderEntityName` is a solution-resource picker on the entity's two `resource="entity"` bindings, which the task reads, so a deploy can re-point the entity.
   `delete` is a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, the two bindings beside it; its V2 form cannot be built yet.
 <!--skill-flavor:sdk-df-folder-v2:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.97.0 or later; an older SDK writes every record operation on a folder entity as a V1 task, which still validates and runs, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again when a V2 task is asked for; do not hand-convert its rows.
+  Needs `@uipath/maestro-builder-sdk` 6.122.0 or later; an older SDK writes every record operation on a folder entity as a V1 task, which still validates and runs, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again when a V2 task is asked for; do not hand-convert its rows.
 <!--skill-flavor:sdk-df-folder-v2:end-->
   A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
 <!--skill-flavor:folder-entity-resources:start-->
