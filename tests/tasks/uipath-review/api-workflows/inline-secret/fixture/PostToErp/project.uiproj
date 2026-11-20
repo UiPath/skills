@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Api",
+  "Name": "PostToErp",
+  "Description": "Posts an approved invoice to the ERP accounts-payable API and returns the ERP document number.",
+  "MainFile": "Workflow.json"
+}

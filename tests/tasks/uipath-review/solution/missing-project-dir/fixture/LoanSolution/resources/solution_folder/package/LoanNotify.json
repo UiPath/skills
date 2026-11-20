@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoanNotify",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b46db97e-60b9-429e-9c73-8415de499282",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LoanNotify"
+    },
+    "locks": [],
+    "key": "ab3a6b03-1e38-43ea-9499-3f0fe6bf0d5e",
+    "files": []
+  }
+}

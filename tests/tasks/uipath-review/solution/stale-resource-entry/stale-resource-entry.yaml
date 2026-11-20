@@ -1,0 +1,72 @@
+task_id: skill-review-solution-stale-resource-entry
+description: >
+  Solution structure review.
+  `resources/solution_folder/process/flow/OrderArchive.json` declares a
+  process for a project that is not registered in the .uipx and has no folder
+  on disk (a leftover from a removed project). A dry-run pack does not catch
+  it. The report must name OrderArchive as a stale / unbacked declaration.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath solution exists at `OrderEnrichSolution` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `OrderEnrichSolution/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `OrderEnrichSolution/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside OrderEnrichSolution/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*OrderEnrichSolution/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside OrderEnrichSolution/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*OrderEnrichSolution/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the OrderArchive resource declaration as having no project behind it"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "OrderEnrichSolution/resources/solution_folder/process/flow/OrderArchive.json::OrderArchive"
+      --marker-absent "OrderEnrichSolution/OrderArchive"
+      --subject "OrderArchive"
+      --flag-absence "stale|orphan|leftover|left over|left-over|dangling|no project|not registered|unregistered|not listed|not in the|no matching|no corresponding|removed|not backed|unbacked|missing|does not exist|doesn't exist|not found|not present|no such|absent|cannot be found|not on disk|nonexistent|non-existent|no longer exists|unresolved|broken reference|dangling"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

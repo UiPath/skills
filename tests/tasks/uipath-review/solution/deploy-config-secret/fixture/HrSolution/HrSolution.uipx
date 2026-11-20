@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "3de33878-ee17-4245-9454-2ce36fc7ae6d",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "HrOnboarding/project.json",
+      "Id": "4a1dc555-61f0-48d2-8a14-cab1f21e4b54"
+    }
+  ]
+}

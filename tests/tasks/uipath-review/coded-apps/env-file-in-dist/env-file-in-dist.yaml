@@ -1,0 +1,78 @@
+task_id: skill-review-coded-app-env-file-in-dist
+description: >
+  Coded app pack-readiness review. The build output contains `dist/.env` with
+  a database password, so packing `dist/` publishes the secret. The source is
+  clean; only a look at the build output finds it. The report must flag the
+  `.env` file in `dist/`.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  - command: "python3 _setup/seed_build_output.py && rm -rf _setup"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath Coded App project exists at `DepotBoard` in the current directory. The team is about to pack and publish it.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `DepotBoard/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `DepotBoard/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside DepotBoard/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*DepotBoard/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside DepotBoard/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*DepotBoard/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the .env file shipped in dist/"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "DepotBoard/dist/.env::Board_FAKE_2026_DoNotUse"
+      --subject ".env"
+      --flag "secret|credential|sensitive|password|expos|leak"
+      --mention "dist|build output"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

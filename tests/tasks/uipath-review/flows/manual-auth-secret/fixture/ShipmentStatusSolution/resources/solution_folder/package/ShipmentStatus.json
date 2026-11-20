@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ShipmentStatus",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "af47d11e-4894-433a-85de-1a096e6c3b92",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ShipmentStatus"
+    },
+    "locks": [],
+    "key": "b9c90963-58f9-4fa7-9548-7a8a14bb0660",
+    "files": []
+  }
+}

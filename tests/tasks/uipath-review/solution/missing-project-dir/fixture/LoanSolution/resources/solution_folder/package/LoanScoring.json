@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoanScoring",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d9cb51c2-4cce-43cc-9e5d-672b04bee924",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LoanScoring"
+    },
+    "locks": [],
+    "key": "6be28f05-ae4b-4b14-b6eb-ae3ba011b375",
+    "files": []
+  }
+}

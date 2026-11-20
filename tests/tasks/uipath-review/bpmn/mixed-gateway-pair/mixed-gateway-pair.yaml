@@ -1,0 +1,72 @@
+task_id: skill-review-bpmn-mixed-gateway-pair
+description: >
+  BPMN structural review. A parallel gateway splits into "Reserve stock" and
+  "Charge card", but the branches are merged by an exclusive gateway, so "Ship
+  order" does not wait for both. Split and merge gateway types must match. The
+  report must flag the parallel/exclusive pair.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath Maestro BPMN project exists at `OrderFulfilment` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `OrderFulfilment/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `OrderFulfilment/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside OrderFulfilment/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*OrderFulfilment/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside OrderFulfilment/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*OrderFulfilment/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the parallel split merged by an exclusive gateway"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "OrderFulfilment/OrderFulfilment.bpmn::Gw_Merge"
+      --mention "parallel"
+      --mention "exclusive"
+      --subject "Gw_Merge|Gw_Split|Both done|Fulfil in parallel"
+      --flag "mismatch|mixed|deadlock|unbalanced|unsynchron|not synchron|multiple tokens|does not wait|doesn't wait|without waiting|do not match|does not match|must match|must be a parallel|should be a parallel|twice|race"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

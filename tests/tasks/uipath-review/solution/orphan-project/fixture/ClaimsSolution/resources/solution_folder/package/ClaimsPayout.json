@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ClaimsPayout",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c8665f98-aad7-4b5c-8508-638cc10bea94",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ClaimsPayout"
+    },
+    "locks": [],
+    "key": "94a8f2ae-e795-4577-a93b-4a16d27829e3",
+    "files": []
+  }
+}

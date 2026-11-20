@@ -1,0 +1,36 @@
+{
+  "name": "VendorSync",
+  "projectId": "7c1e9a2b-9438-4f3a-8b6d-2e4c6a8b0d1f",
+  "description": "Pulls the vendor master list from the vendor portal API.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[24.10.7]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "24.10.7.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow"
+  },
+  "designOptions": {
+    "projectProfile": "Development",
+    "outputType": "Process",
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "0d3b6f1a-1000-4c2e-9a7b-5e1f2a3b4c00",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "targetFramework": "Windows"
+}

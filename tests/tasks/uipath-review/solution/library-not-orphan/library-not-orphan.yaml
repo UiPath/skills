@@ -1,0 +1,69 @@
+task_id: skill-review-solution-library-not-orphan
+description: >
+  Precision test. FinanceRepo holds one process (InvoiceBot) and the library
+  it consumes (FinanceUtils, pinned at the library's own version). There is no
+  .uipx and none is needed: a library is published to a feed, not bundled in a
+  solution. The report must classify FinanceUtils as a library and must NOT
+  report a missing .uipx, recommend wrapping the repo in a solution, or call
+  the library an orphan.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A repository with UiPath projects exists at `FinanceRepo` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `FinanceRepo/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `FinanceRepo/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside FinanceRepo/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*FinanceRepo/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside FinanceRepo/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*FinanceRepo/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report classifies FinanceUtils as a library and does not ask for a .uipx"
+    command: >-
+      python3 $REFERENCE_DIR/solution/library-not-orphan/check_library_not_orphan.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

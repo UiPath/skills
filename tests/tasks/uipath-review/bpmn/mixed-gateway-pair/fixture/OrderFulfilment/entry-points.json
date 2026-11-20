@@ -1,0 +1,20 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/OrderFulfilment.bpmn#Start_1",
+      "uniqueId": "2a4c6e80-1b3d-4f5a-8c7e-9d0b2f4a6c8e",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "output": {
+        "type": "object",
+        "properties": {}
+      },
+      "displayName": "Order received"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+task_id: skill-review-solution-queue-name-drift
+description: >
+  Cross-project consistency review. The dispatcher adds items to
+  `InvoiceIntakeQueue` while the performer reads `InvoiceInputQueue`, so
+  queued invoices are never processed. Each project is fine alone; only a
+  solution-wide review sees it. The report must name both queue names and flag
+  the mismatch.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath solution exists at `InvoiceSolution` in the current directory. It contains a dispatcher and a performer.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `InvoiceSolution/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `InvoiceSolution/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside InvoiceSolution/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*InvoiceSolution/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside InvoiceSolution/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*InvoiceSolution/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags that dispatcher and performer use different queue names"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "InvoiceSolution/InvoiceDispatcher/Main.xaml::InvoiceIntakeQueue"
+      --marker "InvoiceSolution/InvoicePerformer/Main.xaml::InvoiceInputQueue"
+      --mention "InvoiceIntakeQueue"
+      --mention "InvoiceInputQueue"
+      --subject "InvoiceIntakeQueue|InvoiceInputQueue"
+      --flag-absence "mismatch|differ|inconsisten|does not match|do not match|don't match|doesn't match|drift|never be processed|never processed|never picked|not the same|wrong queue|typo|two different|separate queue|never consumed|will not be processed|not consumed|disconnected|diverge"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

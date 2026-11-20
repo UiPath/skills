@@ -1,0 +1,70 @@
+task_id: skill-review-rpa-library-continue-on-error
+description: >
+  Library review. The library's public workflow sends mail with
+  `ContinueOnError="True"`, then logs success: a failed send is invisible to
+  every consumer, and the decision to continue belongs to the consumer, not
+  the library. The report must flag ContinueOnError in the library workflow.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath library project exists at `Acme.Email.Utilities` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `Acme.Email.Utilities/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `Acme.Email.Utilities/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside Acme.Email.Utilities/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*Acme.Email.Utilities/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside Acme.Email.Utilities/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*Acme.Email.Utilities/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags ContinueOnError inside the library workflow"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "Acme.Email.Utilities/SendNotificationEmail.xaml::ContinueOnError="
+      --subject "SendNotificationEmail|Send SMTP Mail|SendMail|ContinueOnError"
+      --flag "continueonerror|continue on error|continue-on-error"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
