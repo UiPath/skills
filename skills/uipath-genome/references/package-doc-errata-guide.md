@@ -44,6 +44,12 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Get File List, Upload Files | declare the `Result` / `AllResults` variable as `scg:List(umo365fm:O365DriveRemoteItem)` | Both are `OutArgument<O365DriveRemoteItem[]>`: bind a `umo365fm:O365DriveRemoteItem[]` variable. A `List` variable fails to load (`Set property '…Result' threw an exception`) |
 | Set Email Categories | `CategoriesToAssign` / `SpecificCategoriesToRemove` only as a VB flat attribute, since an `InArgument` cannot be typed `String[]` | `<InArgument x:TypeArguments="s:String[]">` works in VB and C# projects; only `x:String[]` fails to load |
 
+## `UiPath.UIAutomation.Activities` — docs shipped with 26.10.8 and earlier
+
+| Activity | Installed doc says | The activity does |
+|---|---|---|
+| Check App State (`NCheckState`) | Two branches, "Target appears" and "Target does not appear", with no names for the other modes; `Exists` is "the detected state of the target" | The branches follow `Mode`. `WaitDisappear`: "Target disappears" in `IfExists`, run when the target is gone or goes within `Timeout`, and "Target does not disappear" in `IfNotExists`, run after the whole `Timeout` when it is still there. `WindowNotActive`: "Window not in foreground" in `IfExists`, run when the target's top-level window leaves the foreground or the target goes within `Timeout`, and "Window still active" in `IfNotExists`. `Exists` is the target's presence when the check ends: `false` after `IfExists` in these two modes, `true` after "does not disappear" and "still active"; with `CheckVisibility`, a present but hidden target counts as gone. Work for "the element went" goes in `IfExists`, work for "still shown" in `IfNotExists` |
+
 ## Tools — defects seen in builds, until fixed
 
 Each row was met in a build that validated and packed, or in a live search against the application; the third column is what that build did instead. Versions: Flow builder SDK `@uipath/maestro-builder-sdk` 6.15.3, `uip` 1.204.
