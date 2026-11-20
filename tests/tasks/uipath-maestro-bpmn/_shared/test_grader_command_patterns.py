@@ -98,6 +98,9 @@ TIMER_PARSES = [
     "p = next(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn'))\nr = ET.parse(p).getroot()\nPY",
     "python3 - ScheduledReportBpmn/ScheduledReportBpmn.bpmn <<'EOF'\n"
     "import sys, xml.etree.ElementTree as ET\nET.parse(sys.argv[1])\nEOF",
+    # Studio Web: validate loads the XML and reports XML_NOT_WELL_FORMED.
+    "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
+    "uip maestro bpmn validate ScheduledReportBpmn --output json",
     # Studio Web: the main file is Process.bpmn, and there is no python3.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/ScheduledReportBpmn/Process.bpmn')\"",
     "node -e \"const {DOMParser}=require('@xmldom/xmldom');"
@@ -110,7 +113,8 @@ TIMER_PARSES = [
 
 TIMER_NOT_PARSES = [
     # No parse at all.
-    "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
+    "uip maestro bpmn check ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
+    "uip maestro bpmn validate OtherProject --output json",
     "xmllint --noout ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     # A parse of something else; the name only in a LATER, unrelated command.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; "
@@ -145,6 +149,8 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
 _AUTHOR = "smoke/author_validate.yaml"
 
 AUTHOR_PARSES = [
+    "uip maestro bpmn validate InvoiceApproval/InvoiceApproval.bpmn --output json",
+    "uip maestro bpmn validate InvoiceApproval --output json",
     "python3 -c \"import xml.etree.ElementTree as ET, pathlib; "
     "ET.parse(next(pathlib.Path('.').rglob('InvoiceApproval/*.bpmn')))\"",
     # The name comes before ET.parse.
@@ -159,7 +165,7 @@ AUTHOR_PARSES = [
 ]
 
 AUTHOR_NOT_PARSES = [
-    "uip maestro bpmn validate InvoiceApproval/InvoiceApproval.bpmn --output json",
+    "uip maestro bpmn check InvoiceApproval/InvoiceApproval.bpmn",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; ls InvoiceApproval/InvoiceApproval.bpmn",
     "node -e \"console.log(require('fs').readFileSync('InvoiceApproval/Process.bpmn','utf8').length)\"",
     "grep -c 'bpmn:process' InvoiceApproval/InvoiceApproval.bpmn",
@@ -184,6 +190,7 @@ def test_author_prompt_is_surface_neutral() -> None:
 def test_timer_prompt_is_surface_neutral() -> None:
     prompt = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))["initial_prompt"]
     assert "node" in prompt
+    assert "bpmn validate" in prompt
 
 
 def test_xml_regex_time_bound() -> None:
