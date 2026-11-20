@@ -61,6 +61,7 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/check_planted_defect.py
       --marker "OrderEnrichSolution/OrderEnrich/OrderEnrich.flow::Compute total"
+      --marker 'OrderEnrichSolution/OrderEnrich/OrderEnrich.flow::"id": "normalizeOrder1"::2'
       --subject "normalizeOrder1"
       --flag "duplicate|duplicated|not unique|non-unique|same id|share|identical|collid|reused|appears twice|used twice|two nodes|ambiguous"
     timeout: 30

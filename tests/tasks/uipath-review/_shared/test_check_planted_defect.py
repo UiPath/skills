@@ -155,3 +155,15 @@ def test_severity_on_a_different_finding_naming_the_subject_fails(tmp_path):
     r = _severity(tmp_path, report)
     assert r.returncode != 0
     assert "not rated Critical" in r.stderr
+
+
+def test_marker_count_guards_duplicate_based_defects(tmp_path):
+    """PR #5046 review: a duplicate is gone once ONE copy is edited, yet the
+    needle is still in the file. `::N` requires N occurrences."""
+    args = ("--marker", "ids.json::abc-123::2", "--flag", "duplicate")
+    (tmp_path / "ids.json").write_text('["abc-123", "abc-123"]', encoding="utf-8")
+    assert run(tmp_path, "Duplicate uniqueId in ids.json.", *args).returncode == 0
+    (tmp_path / "ids.json").write_text('["abc-123", "fixed-456"]', encoding="utf-8")
+    r = run(tmp_path, "Duplicate uniqueId in ids.json.", *args)
+    assert r.returncode != 0
+    assert "2 times (found 1)" in r.stderr

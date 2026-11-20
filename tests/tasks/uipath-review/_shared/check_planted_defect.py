@@ -11,9 +11,12 @@ share one tested matcher instead of twenty hand-rolled copies.
         --flag-absence "orphan|not listed|not registered"
 
 Arguments
-  --marker PATH::NEEDLE   Fixture file (relative to the sandbox cwd) must still
-                          contain NEEDLE. Repeatable. Guards against an agent
-                          that edits the defect away through the shell.
+  --marker PATH::NEEDLE[::N]
+                          Fixture file (relative to the sandbox cwd) must still
+                          contain NEEDLE, at least N times when N is given (a
+                          duplicate-based defect is gone once one copy is
+                          edited). Repeatable. Guards against an agent that
+                          edits the defect away through the shell.
   --marker-absent PATH    Path must still NOT exist (defects that are a missing
                           file or directory). Repeatable.
   --subject A|B           The report must name at least one of these literals
@@ -128,13 +131,18 @@ def main() -> None:
 
     for m in a.marker:
         rel, _, needle = m.partition("::")
+        want = 1
+        head, sep, tail = needle.rpartition("::")
+        if sep and tail.isdigit():
+            needle, want = head, int(tail)
         p = cwd / rel
         try:
-            ok = p.is_file() and needle in p.read_text(encoding="utf-8", errors="replace")
+            found = p.read_text(encoding="utf-8", errors="replace").count(needle) if p.is_file() else 0
         except OSError:
-            ok = False
-        if not ok:
-            sys.exit(f"FAIL: {rel} no longer contains the planted marker {needle!r} "
+            found = 0
+        if found < want:
+            times = f" {want} times (found {found})" if want > 1 else ""
+            sys.exit(f"FAIL: {rel} no longer contains the planted marker {needle!r}{times} "
                      "(fixture appears mutated).")
     for rel in a.marker_absent:
         if (cwd / rel).exists():

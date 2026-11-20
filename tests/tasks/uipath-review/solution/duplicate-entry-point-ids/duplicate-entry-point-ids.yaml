@@ -61,7 +61,7 @@ success_criteria:
     description: "Report flags the duplicated entry-point uniqueId"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_planted_defect.py
-      --marker "ReturnsProcess/entry-points.json::5d2c8e41-7a39-4b6f-9c10-3e8f1a2b4c6d"
+      --marker "ReturnsProcess/entry-points.json::5d2c8e41-7a39-4b6f-9c10-3e8f1a2b4c6d::2"
       --flag "duplicate|duplicated|not unique|non-unique|same uniqueid|same id|share|identical|collid|reused|appears twice|used twice"
       --subject "5d2c8e41|uniqueId|entry-points.json|entry point|entry-point|entrypoint"
     timeout: 30
