@@ -116,8 +116,8 @@ success_criteria:
          too: it is part of the box's name, not a resource status and not a
          line explaining a variable. There is no line
          for a start event, timer, gateway, branch, or end event. Each line is
-         one short clause, under about 200 characters, except a
-         which-of-two status, written `<A> in <folder> or <B> in <folder>, which one? Build it takes the first` (a row with no folder drops ` in <folder>`), may be longer: it is one status, not extra prose.
+         one short clause, under about 200 characters, except that a
+         which-of-two status written exactly `<A> in <folder> or <B> in <folder>, which one? Build it takes the first` (a row with no folder drops ` in <folder>`) may exceed that length: it is one status. Any text after `takes the first`, or a which-of-two in another form, counts toward the limit.
       4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
          `2.` Change it, `3.` Keep it, each with any short description. Nothing

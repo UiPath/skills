@@ -41,6 +41,6 @@ Service tasks are a BPMN concept — use the `bpmn` subcommand. For Flow/Case se
 
 ## Resolution
 
-- **Resolve the open incident** to unblock the BPMN instance — either retry the service task or mark the incident as resolved, depending on process design
+- **Fix the child job's cause** first (see the last bullet); retrying the service task or resolving the open incident to unblock the instance is a later decision, depending on process design
 - **Add a boundary error event** to the service task in Studio Web so future child job failures are caught and routed to an error-handling flow (retry, notification, or alternative path) instead of blocking the instance with an unresolved incident
 - **Root cause is in the child domain** - the fix comes from the Orchestrator/package playbook reached in Investigation step 6, not from this one
