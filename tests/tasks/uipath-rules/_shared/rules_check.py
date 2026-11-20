@@ -84,15 +84,15 @@ def load_graph(project: Path) -> tuple[Path, ET.Element]:
     root = ET.fromstring(text)
     if root.tag != f"{{{DMN_NS}}}definitions":
         fail(f"{dmn_files[0]} is not a DMN 1.5 <definitions>")
-    for unsupported in ("businessKnowledgeModel", "knowledgeSource", "decisionService"):
+    for unsupported in ("knowledgeSource", "decisionService"):
         if root.findall(f"dmn:{unsupported}", NS):
             fail(f"{dmn_files[0]} declares a {unsupported}")
     decisions = root.findall("dmn:decision", NS)
     if not decisions:
         fail(f"{dmn_files[0]} holds no decision")
     for decision in decisions:
-        if decision.find("dmn:decisionTable", NS) is None:
-            fail(f"{dmn_files[0]}: the logic of decision {decision.get('name')!r} is not a decisionTable")
+        if decision.find("dmn:decisionTable", NS) is None and decision.find("dmn:literalExpression", NS) is None:
+            fail(f"{dmn_files[0]}: the logic of decision {decision.get('name')!r} is neither a decisionTable nor a literalExpression")
     return dmn_files[0], root
 
 
@@ -133,7 +133,10 @@ def check_annotations_in_order(table: ET.Element, expected: list[str]) -> None:
         fail(f"the rows' annotations read {annotations(table)}, expected {expected} among them in that order")
 
 
-def check_named_rules(table: ET.Element) -> None:
+def check_named_rules(table: ET.Element | None) -> None:
+    # A literal expression has no rules, so no annotation column and nothing to name.
+    if table is None:
+        return
     clauses = len(table.findall("dmn:annotation", NS))
     if clauses != 1:
         fail(f"the table declares {clauses} <annotation> columns, expected 1")
@@ -239,6 +242,11 @@ def literal(text: str) -> object:
         return float(text)
     if text in ("true", "false"):
         return text == "true"
+    # A call or a formula is neither a literal nor a pass-through name. Returning the raw source
+    # here would grade `scoreModel(1)` as the string "scoreModel(1)" and silently mark a correct
+    # rule wrong. The engine grades those (graph_check.py engine).
+    if re.search(r"[()+*/]|(?<![<>=!])-(?!\s*$)", text):
+        fail(f"output cell {text!r} is a call or a formula; grade it with 'graph_check.py engine'")
     return text
 
 

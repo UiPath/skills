@@ -147,11 +147,99 @@ class TestDiagram:
         with pytest.raises(SystemExit):
             gc.check_no_overlap(root)
 
+    def test_drawn_sizes_match_the_designer(self):
+        # PO.Frontend DrdLayout.ts: decision 288x96, inputData 240x96,
+        # businessKnowledgeModel 224x96, textAnnotation 224x64.
+        assert gc.DRAWN_SIZE == {"decision": (288, 96), "inputData": (240, 96),
+                                 "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
+
     def test_overlap_is_measured_at_the_drawn_size(self):
         # 200 apart clears a 180-wide box in the file but not the 288-wide card the designer draws.
         root = edited_root('<dc:Bounds x="640" y="64" width="288" height="96" />', '<dc:Bounds x="408" y="304" width="180" height="80" />')
         with pytest.raises(SystemExit):
             gc.check_no_overlap(root)
+
+
+class TestKnowledgeModels:
+    """A knowledge model is callable, wired to a caller, and part of no cycle."""
+
+    MODEL = ('<businessKnowledgeModel id="bkm_score" name="scoreModel">'
+             '<variable id="v_bkm" name="scoreModel" />'
+             '<encapsulatedLogic id="el"><literalExpression id="le"><text>1</text></literalExpression></encapsulatedLogic>'
+             "</businessKnowledgeModel>")
+    CALL = '<knowledgeRequirement id="kr"><requiredKnowledge href="#bkm_score" /></knowledgeRequirement>'
+
+    def with_model(self, model=None, call=None):
+        text = (FIXTURE / DMN).read_text(encoding="utf-8")
+        text = text.replace("</definitions>", (model if model is not None else self.MODEL) + "</definitions>")
+        return ET.fromstring(text.replace('<variable id="variable_risk" name="risk" typeRef="string" />',
+                                          '<variable id="variable_risk" name="risk" typeRef="string" />'
+                                          + (call if call is not None else self.CALL)))
+
+    def test_a_wired_model_passes(self):
+        gc.check_knowledge_models(self.with_model())
+
+    def test_a_model_with_no_variable_fails(self):
+        bare = '<businessKnowledgeModel id="bkm_score" name="scoreModel"><encapsulatedLogic id="el" /></businessKnowledgeModel>'
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(model=bare))
+
+    def test_a_variable_named_differently_fails(self):
+        mismatched = self.MODEL.replace('name="scoreModel" />', 'name="other" />', 1)
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(model=mismatched))
+
+    def test_a_model_with_no_encapsulated_logic_fails(self):
+        empty = ('<businessKnowledgeModel id="bkm_score" name="scoreModel">'
+                 '<variable id="v_bkm" name="scoreModel" /></businessKnowledgeModel>')
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(model=empty))
+
+    def test_a_model_nothing_calls_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(call=""))
+
+    def test_a_requirement_naming_no_model_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(
+                call='<knowledgeRequirement id="kr"><requiredKnowledge href="#bkm_missing" /></knowledgeRequirement>'))
+
+    def test_models_calling_each_other_fail(self):
+        pair = (self.MODEL.replace("</businessKnowledgeModel>",
+                                   '<knowledgeRequirement id="kr2"><requiredKnowledge href="#bkm_other" /></knowledgeRequirement>'
+                                   "</businessKnowledgeModel>")
+                + '<businessKnowledgeModel id="bkm_other" name="other"><variable id="v_o" name="other" />'
+                  '<encapsulatedLogic id="el2" />'
+                  '<knowledgeRequirement id="kr3"><requiredKnowledge href="#bkm_score" /></knowledgeRequirement>'
+                  "</businessKnowledgeModel>")
+        with pytest.raises(SystemExit):
+            gc.check_knowledge_models(self.with_model(model=pair))
+
+
+class TestTextAnnotations:
+    NOTE = '<textAnnotation id="ta_1"><text>Reviewed quarterly.</text></textAnnotation>'
+    TIE = '<association id="assoc_1" sourceRef="#decision_risk" targetRef="#ta_1" />'
+
+    def with_note(self, note=None, tie=None):
+        text = (FIXTURE / DMN).read_text(encoding="utf-8")
+        extra = (note if note is not None else self.NOTE) + (tie if tie is not None else self.TIE)
+        return ET.fromstring(text.replace("</definitions>", extra + "</definitions>"))
+
+    def test_a_tied_annotation_passes(self):
+        gc.check_annotations_attached(self.with_note())
+
+    def test_an_empty_annotation_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.with_note(note='<textAnnotation id="ta_1"><text>  </text></textAnnotation>'))
+
+    def test_an_annotation_tied_to_nothing_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.with_note(tie=""))
+
+    def test_an_association_pointing_at_a_missing_element_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.with_note(
+                tie='<association id="assoc_1" sourceRef="#decision_gone" targetRef="#ta_1" />'))
 
 
 class TestProject:

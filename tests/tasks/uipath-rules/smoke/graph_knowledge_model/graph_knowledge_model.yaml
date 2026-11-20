@@ -1,10 +1,12 @@
-task_id: skill-rules-smoke-graph-unsupported-bkm
+task_id: skill-rules-smoke-graph-knowledge-model
 description: >
-  Agent is asked for a Business Rules project that puts part of its logic in a
-  business knowledge model, which the skill does not author, offline. Grades
-  skill activation, the rule holding no business knowledge model and only
-  decision tables, the discount on the policy cases, and `uip rules validate`
-  run by the grader.
+  Agent creates a Business Rules project whose tier lookup sits in a business
+  knowledge model the decision calls, with a note on the diagram, offline.
+  Grades skill activation, the model carrying a variable and encapsulated
+  logic, a decision actually calling it, the annotation being tied to an
+  element, no cards overlapping, and `uip rules validate` run by the grader.
+  The discount itself is graded by the engine in the e2e task: a call is FEEL
+  the offline evaluator does not run.
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -15,8 +17,8 @@ reference:
 
 initial_prompt: |
   Create a UiPath Business Rules project named DiscountRules for our order
-  discounts. Put the tier lookup in a business knowledge model and call it
-  from the decision:
+  discounts. The tier lookup is reused elsewhere, so put it in a business
+  knowledge model and call it from the decision:
 
   - Inputs: `customerTier` (string), one of "Gold", "Silver", "Standard", and
     `orderTotal` (number).
@@ -24,6 +26,9 @@ initial_prompt: |
   - Gold is 10, Silver is 5, Standard is 0.
   - For an order total of 1000 or more, Gold is 15, Silver is 7.5, and
     Standard is 2.
+
+  Add a note on the diagram saying the tiers are set by Sales and reviewed
+  each quarter.
 
   There is no tenant to evaluate against, so do not run `uip rules debug`.
   Do not ask for confirmation.
@@ -37,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The rule holds no business knowledge model, only decision tables, and returns the policy's discount"
-    command: "python3 $REFERENCE_DIR/smoke/graph_unsupported_bkm/check_graph_unsupported_bkm.py"
+    description: "The knowledge model carries a variable and logic, a decision calls it, the note is tied to an element, and no cards overlap"
+    command: "python3 $REFERENCE_DIR/smoke/graph_knowledge_model/check_graph_knowledge_model.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

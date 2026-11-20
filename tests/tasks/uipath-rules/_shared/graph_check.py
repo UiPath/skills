@@ -36,7 +36,8 @@ from rules_check import (
 DMNDI_NS = "https://www.omg.org/spec/DMN/20230324/DMNDI/"
 DC_NS = "http://www.omg.org/spec/DMN/20180521/DC/"
 # The size the designer draws each card, whatever width and height the file holds.
-DRAWN_SIZE = {"decision": (288, 96), "inputData": (216, 96)}
+DRAWN_SIZE = {"decision": (288, 96), "inputData": (240, 96),
+              "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
 
 LOAN_PROJECT = "LoanRules"
 LOAN_INPUTS = {"creditScore": "number", "income": "number", "loanAmount": "number"}
@@ -67,10 +68,20 @@ def reference_name(decision: ET.Element) -> str:
     return (variable.get("name") if variable is not None else None) or decision.get("name") or ""
 
 
-def required(decision: ET.Element, kind: str) -> list[str]:
-    """Ids the decision requires; `kind` is `requiredInput` or `requiredDecision`."""
+# Each reference sits inside the requirement element of its own kind, so the holder is not
+# always `informationRequirement`: a call to a knowledge model is a `knowledgeRequirement`.
+REQUIREMENT_HOLDER = {
+    "requiredInput": "informationRequirement",
+    "requiredDecision": "informationRequirement",
+    "requiredKnowledge": "knowledgeRequirement",
+}
+
+
+def required(element: ET.Element, kind: str) -> list[str]:
+    """Ids the element requires; `kind` is `requiredInput`, `requiredDecision` or `requiredKnowledge`."""
+    holder = REQUIREMENT_HOLDER[kind]
     return [(e.get("href") or "").lstrip("#")
-            for e in decision.findall(f"dmn:informationRequirement/dmn:{kind}", NS)]
+            for e in element.findall(f"dmn:{holder}/dmn:{kind}", NS)]
 
 
 def decision_for_output(root: ET.Element, output: str) -> ET.Element:
@@ -115,6 +126,9 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             single = hit is not None and len(hit) == 1
             context[reference_name(by_id[upstream_id])] = next(iter(hit.values())) if single else hit
         table = decision.find("dmn:decisionTable", NS)
+        if table is None:
+            hits[decision_id] = None
+            return
         values = {}
         for column in input_columns(table):
             found, value = resolve(context, column)
@@ -127,7 +141,10 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
         run(decision_id, ())
     outputs: dict = {}
     for decision_id, decision in by_id.items():
-        for name in output_names(decision.find("dmn:decisionTable", NS)):
+        table = decision.find("dmn:decisionTable", NS)
+        if table is None:
+            continue
+        for name in output_names(table):
             outputs[name] = (hits[decision_id] or {}).get(name)
     return outputs
 
@@ -137,7 +154,8 @@ def check_graph_cases(root: ET.Element, cases: list) -> None:
         actual = evaluate_graph(root, inputs)
         for name, value in expected.items():
             if name not in actual:
-                fail(f"no decision returns an output named {name}")
+                fail(f"no decision table returns an output named {name}; a literal expression or a "
+                     f"knowledge model is graded by the engine (graph_check.py engine), not here")
             if actual[name] != value:
                 fail(f"{inputs} returned {name}={actual[name]!r}, expected {value!r}")
 
@@ -226,6 +244,68 @@ def check_no_overlap(root: ET.Element) -> None:
         for second, bx, by, bw, bh in boxes[index + 1:]:
             if ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
                 fail(f"the shapes of {first} and {second} overlap on the canvas")
+
+
+def knowledge_models(root: ET.Element) -> list[ET.Element]:
+    return root.findall("dmn:businessKnowledgeModel", NS)
+
+
+def check_knowledge_models(root: ET.Element) -> None:
+    """Every knowledge model is callable, wired to a caller, and part of no cycle."""
+    models = {m.get("id"): m for m in knowledge_models(root)}
+    if not models:
+        fail("the rule declares no businessKnowledgeModel")
+    for model_id, model in models.items():
+        name = model.get("name")
+        variable = model.find("dmn:variable", NS)
+        # The engine rejects a model with no variable and `validate` does not catch it, so the
+        # rule would pass every offline check and fail at run time.
+        if variable is None or not variable.get("name"):
+            fail(f"knowledge model {name or model_id!r} declares no named <variable>; the engine rejects it")
+        if variable.get("name") != name:
+            fail(f"knowledge model {name!r} has a variable named {variable.get('name')!r}; they must match")
+        if model.find("dmn:encapsulatedLogic", NS) is None:
+            fail(f"knowledge model {name!r} has no <encapsulatedLogic>, so nothing to call")
+
+    callers = {e.get("id"): required(e, "requiredKnowledge") for e in root
+               if e.tag in (f"{{{DMN_NS}}}decision", f"{{{DMN_NS}}}businessKnowledgeModel")}
+    for caller_id, needed in callers.items():
+        for model_id in needed:
+            if model_id not in models:
+                fail(f"{caller_id} requires knowledge {model_id}, which the file does not hold")
+    wired = {model_id for needed in callers.values() for model_id in needed}
+    orphans = sorted(set(models) - wired)
+    if orphans:
+        fail(f"no decision or knowledge model calls {orphans}; a model nothing requires is dead")
+
+    def walk(model_id: str, path: tuple[str, ...]) -> None:
+        if model_id in path:
+            fail(f"the knowledge models call each other in a cycle: {' -> '.join(path + (model_id,))}")
+        for nxt in callers.get(model_id, []):
+            walk(nxt, path + (model_id,))
+    for model_id in models:
+        walk(model_id, ())
+
+
+def check_annotations_attached(root: ET.Element) -> None:
+    """Every text annotation says something and is tied to an element that is there."""
+    notes = {n.get("id"): n for n in root.findall("dmn:textAnnotation", NS)}
+    if not notes:
+        fail("the rule declares no textAnnotation")
+    ids = {e.get("id") for e in root if e.get("id")}
+    for note_id, note in notes.items():
+        if not (note.findtext("dmn:text", default="", namespaces=NS) or "").strip():
+            fail(f"text annotation {note_id} is empty")
+    tied = set()
+    for association in root.findall("dmn:association", NS):
+        ends = [(association.get(end) or "").lstrip("#") for end in ("sourceRef", "targetRef")]
+        for end in ends:
+            if end not in ids:
+                fail(f"association {association.get('id')} points at {end}, which the file does not hold")
+        tied |= {end for end in ends if end in notes}
+    loose = sorted(set(notes) - tied)
+    if loose:
+        fail(f"text annotations {loose} are tied to nothing; add an <association>")
 
 
 def check_all_named(root: ET.Element) -> None:
