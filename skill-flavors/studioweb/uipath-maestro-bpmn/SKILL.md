@@ -217,3 +217,7 @@ Outside plan mode, a mermaid diagram or outline in chat is not the deliverable; 
 The skeleton goes into the open target and makes no `registry` calls.
 The canvas shows it, so there is no upload: the gate reply names the target path, and *Build it* ends with the [final report](references/final-report-template.md).
 <!--skill-flavor:draft-upload-summary:end-->
+
+<!--skill-flavor:git-studioweb-rule:start-->
+13. **Leave `.git` and `.git-studioweb` entries alone.** Studio Web manages the solution's local repository itself, in a `.git-studioweb` folder when the browser cannot create `.git`. Never create, edit or delete a `.git` or `.git-studioweb` entry with file tools. For desktop git or VS Code on that folder, tell the user to link it from a terminal on their own machine (`uipath-solution` skill, Git Studio Web Layout).
+<!--skill-flavor:git-studioweb-rule:end-->
