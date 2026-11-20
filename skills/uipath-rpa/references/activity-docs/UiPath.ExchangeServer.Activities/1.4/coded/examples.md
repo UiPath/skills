@@ -2,7 +2,7 @@
 
 Examples using the `exchangeserver` service from `UiPath.ExchangeServer.Activities` package.
 
-**Required package:** `"UiPath.ExchangeServer.Activities": "[1.0.0]"`
+**Required package:** `"UiPath.ExchangeServer.Activities": "[1.4.0]"`
 
 ---
 

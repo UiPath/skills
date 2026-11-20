@@ -2,7 +2,7 @@
 
 Examples using the `gcp` service from `UiPath.GoogleCloud.Activities` package.
 
-**Required package:** `"UiPath.GoogleCloud.Activities": "[1.0.0]"`
+**Required package:** `"UiPath.GoogleCloud.Activities": "[2.5.2]"`
 
 ---
 

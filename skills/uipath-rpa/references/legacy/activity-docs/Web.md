@@ -1,7 +1,7 @@
 # UiPath Web Activities - Legacy Reference
 
 ## Overview
-HTTP/REST, SOAP, JSON, and XML activities. Package: `UiPath.Web.Activities`.
+HTTP/REST, SOAP, JSON, and XML activities. Package: `UiPath.WebAPI.Activities` (assembly `UiPath.Web.Activities`).
 
 ---
 

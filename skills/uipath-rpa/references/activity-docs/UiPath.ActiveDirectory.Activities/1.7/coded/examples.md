@@ -2,7 +2,7 @@
 
 Examples using the `activeDirectoryDomainServices` service from `UiPath.ActiveDirectoryDomainServices.Activities` package.
 
-**Required package:** `"UiPath.ActiveDirectoryDomainServices.Activities": "[1.4.1]"`
+**Required package:** `"UiPath.ActiveDirectoryDomainServices.Activities": "[1.7.2]"`
 
 ---
 

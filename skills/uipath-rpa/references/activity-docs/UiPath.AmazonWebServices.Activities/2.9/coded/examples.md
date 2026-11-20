@@ -2,7 +2,7 @@
 
 Examples using the `aws` service from `UiPath.AmazonWebServices.Activities` package.
 
-**Required package:** `"UiPath.AmazonWebServices.Activities": "[1.4.1]"`
+**Required package:** `"UiPath.AmazonWebServices.Activities": "[2.9.2]"`
 
 ---
 

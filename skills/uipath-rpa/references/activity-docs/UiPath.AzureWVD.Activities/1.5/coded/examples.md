@@ -2,7 +2,7 @@
 
 Examples using the `azureWVD` service from `UiPath.AzureWindowsVirtualDesktop.Activities` package.
 
-**Required package:** `"UiPath.AzureWindowsVirtualDesktop.Activities": "[1.4.1]"`
+**Required package:** `"UiPath.AzureWindowsVirtualDesktop.Activities": "[1.5.1]"`
 
 ---
 
