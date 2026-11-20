@@ -85,6 +85,7 @@ Inputs, outputs, and vars take one of the six types the Flow CLI and Workbench o
   siblings exist but do nothing, so the output goes nowhere
   ([script runtime](script.md#the-javascript-runtime)). Return the value to
   inspect: `return { debug: value }`.
+- **Never throw in a script on the format of agent or LLM output.** A regex check for markdown, length, or wording (`/[*#]/.test(reasoning)`) faults the flow on valid text such as `(290-235)*90`. Fix the agent prompt and output schema; normalise or pass through ([script](script.md)).
 - **Never put every `$vars` reference in an expression inside double quotes.** An End-node `=js:` expression such as `'No results for "' + $vars.start.output.topic + '".'` evaluates to null without warning; keep at least one reference outside quotes.
 - **Never rely on dotted JSON keys surviving `$vars`.** `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`; pass JSON as a string and `JSON.parse` it in a script.
 - **Never treat green `validate` as business-correctness proof.** It checks structure. Named outputs, reference IDs, and connector values require evidence from [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
