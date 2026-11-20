@@ -1,0 +1,54 @@
+task_id: skill-datastore-schema-smoke-greenfield-tenant
+description: >
+  Agent adds a tenant-scoped Schema resource to an empty solution, offline:
+  two tables with a primary key, a unique column, a decimal default, a foreign
+  key, and seed rows guarded by a precondition. Grades skill activation, the
+  CLI scaffold, and the resource against the changeset grammar Data Service
+  enforces at deploy.
+tags: [uipath-datastore-schema, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  `Warehouse/` is a UiPath solution. Add SQL tables to it that every
+  deployment of the solution in the tenant shares:
+
+  - Product: an Id (GUID) primary key, a required unique Sku of up to 50
+    characters, a required Name of up to 200 characters, and a Price
+    (decimal, 2 places) that defaults to 0.
+  - StockLevel: an Id (big integer) primary key, a required ProductId that
+    references Product, and a required Quantity (integer) that defaults to 0.
+  - Seed two products, but only when the Product table is empty.
+
+  Do not deploy anything. Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-datastore-schema skill"
+    skill_name: "uipath-datastore-schema"
+    expected_skill: "uipath-datastore-schema"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the Schema resource with uip solution resources add"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+solution\s+resources\s+add\b.*--kind\s+schema'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The resource is tenant-scoped, follows the changeset grammar, and holds the tables, key, defaults, and guarded seed"
+    command: "python3 $REFERENCE_DIR/smoke/greenfield_tenant/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

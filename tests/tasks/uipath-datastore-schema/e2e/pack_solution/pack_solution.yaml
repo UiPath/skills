@@ -1,0 +1,53 @@
+task_id: skill-datastore-schema-e2e-pack-solution
+description: >
+  Agent creates a solution, adds a folder-scoped Schema resource with the
+  uip CLI, writes its changesets, and packs the solution. Grades the CLI
+  commands and the Schema resource as it lands in the packed package, against
+  the changeset grammar Data Service enforces at deploy.
+tags: [uipath-datastore-schema, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath solution named Helpdesk with SQL tables of its own in each
+  folder it is deployed to:
+
+  - Ticket: an Id (big integer) primary key, a required Title of up to 200
+    characters, a required Status of up to 20 characters that defaults to
+    "Open", and a CreatedAt timestamp.
+  - TicketComment: an Id (big integer) primary key, a required TicketId that
+    references Ticket (deleting a ticket deletes its comments), and a Body
+    of unlimited length.
+
+  Pack the solution into `./output` as version 1.0.0. Do NOT publish or
+  deploy. Do NOT ask for approval, confirmation, or feedback.
+  Before starting, load the uipath-datastore-schema skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the Schema resource with uip solution resources add"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+solution\s+resources\s+add\b.*--kind\s+schema'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packed the solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The packed package holds a folder-scoped Schema resource with both tables and the cascading foreign key"
+    command: "python3 $REFERENCE_DIR/e2e/pack_solution/check_pack.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
