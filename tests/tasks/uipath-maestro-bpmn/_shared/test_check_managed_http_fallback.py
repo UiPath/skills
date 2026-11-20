@@ -45,3 +45,40 @@ def test_split_url_and_path_passes() -> None:
 
 def test_missing_show_hidden_fails() -> None:
     assert _missing(_node(query="<![CDATA[{}]]>")) == ["showhidden", "true"]
+
+
+# Trimmed from skill-bpmn-query-params 2026-11-20: connector mode, relative URL.
+def _connector_node(body: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:sendTask xmlns:bpmn="{BPMN_NS}" xmlns:uipath="{UIPATH_NS}" id="T">'
+        f'<bpmn:extensionElements><uipath:activity version="v1">'
+        f'<uipath:type value="Intsvc.UnifiedHttpRequest" version="v1" /><uipath:context>'
+        f'<uipath:input name="connectorKey" type="string" value="{grader.GENERIC_HTTP_CONNECTOR_KEY}" />'
+        f"</uipath:context>"
+        f'<uipath:input name="body" type="json" target="body"><![CDATA[{body}]]></uipath:input>'
+        f"</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def _connector_missing(body: str) -> list[str]:
+    node = _connector_node(body)
+    check = grader.FALLBACK_CHECKS["query_params"]
+    return grader.require_all(grader.node_blob(node), grader.required_for(node, check))
+
+
+def test_connector_mode_relative_url_needs_no_host() -> None:
+    body = (
+        '{"authentication":"connector","method":"GET","targetConnector":"uipath-uipath-http",'
+        '"url":"/tasks/v1/lists/@default/tasks","query":{"showHidden":true}}'
+    )
+    assert _connector_missing(body) == []
+
+
+def test_manual_mode_still_needs_host() -> None:
+    body = '{"authentication":"manual","method":"GET","url":"/tasks/v1/lists/@default/tasks","query":{"showHidden":true}}'
+    assert _connector_missing(body) == ["tasks.googleapis.com"]
+
+
+def test_connector_mode_without_show_hidden_fails() -> None:
+    body = '{"authentication":"connector","method":"GET","url":"/tasks/v1/lists/@default/tasks","query":{}}'
+    assert _connector_missing(body) == ["showhidden", "true"]

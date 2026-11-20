@@ -65,6 +65,7 @@ Usage (from a task's run_command, cwd = sandbox root):
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -115,6 +116,10 @@ FALLBACK_CHECKS: dict[str, dict[str, object]] = {
             "showhidden",
             "true",
         ],
+        # A connector-mode request carries a URL relative to the bound
+        # connection's base URL (an absolute one fails MANAGED_HTTP_ABSOLUTE_URL),
+        # so the host is only required of a manual-mode request.
+        "host_only_in_manual_mode": "tasks.googleapis.com",
     },
     "enum": {
         "label": "Gmail send-mail enum HTTP fallback",
@@ -136,6 +141,26 @@ def node_blob(node: ET.Element) -> str:
     ``json.dumps(http_nodes, sort_keys=True).lower()`` whole-node blob
     search."""
     return ET.tostring(node, encoding="unicode").lower()
+
+
+def is_connector_mode_relative(node: ET.Element) -> bool:
+    """True when the node's request body is connector mode with a relative URL."""
+    try:
+        body = json.loads(context_value(node, "body") or "{}")
+    except ValueError:
+        return False
+    if not isinstance(body, dict) or body.get("authentication") != "connector":
+        return False
+    url = str(body.get("url") or body.get("path") or "")
+    return url.startswith("/") or url.startswith("=js:'/")
+
+
+def required_for(node: ET.Element, check: dict[str, object]) -> list[str]:
+    required = list(check["required"])  # type: ignore[arg-type]
+    host = check.get("host_only_in_manual_mode")
+    if host and is_connector_mode_relative(node):
+        required.remove(str(host))
+    return required
 
 
 def require_all(haystack: str, needles: list[str]) -> list[str]:
@@ -173,10 +198,9 @@ def main() -> None:
         )
 
     label = str(check["label"])
-    required = list(check["required"])  # type: ignore[arg-type]
     best_missing: list[str] | None = None
     for node in fallback_nodes:
-        missing = require_all(node_blob(node), required)
+        missing = require_all(node_blob(node), required_for(node, check))
         if not missing:
             print(f"OK: managed HTTP fallback has {check_name} evidence in {path}")
             return
