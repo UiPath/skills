@@ -259,7 +259,7 @@ That second read happens only when a Personal Workspace could be the target: a p
 
 Resolve it with the **server-side `--name` filter** — do **not** fetch the full list and match client-side. The plain list is **paginated at 50 per page**, so a folder beyond the first page is silently missed. `--name` (contains match), `--path` (prefix), and `--type` all **require `--all`**.
 
-> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, run `uip tools install @uipath/orchestrator-tool` (a `Message` that mentions a pin falls under Critical Rule 23 instead).
+> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`): show them the message and ask before running `uip tools install @uipath/orchestrator-tool` (a `Message` that mentions a pin falls under Critical Rule 23 instead).
 
 ```bash
 # 1. Filter by name server-side (--name is a CONTAINS match, and requires --all)
