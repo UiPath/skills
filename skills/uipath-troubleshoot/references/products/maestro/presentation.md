@@ -9,4 +9,4 @@
 
 ## BPMN instance diagnosis
 
-- **Fix owner** — in the Immediate fix `Who:`, name the owner with one of these labels: `BPMN source` (the `.bpmn.ts`), `Generated package metadata` (the files `refresh` writes), `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas), `Cloud configuration` (folder, process, release, connection state on the tenant). List all four, marking the ones not implicated.
+- **Fix owner** — in the Immediate fix `Who:`, name the owner with one of these labels: `BPMN source` (the `.bpmn.ts`), `Generated package metadata` (the files `refresh` writes), `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas), `Cloud configuration` (folder, process, release, connection state on the tenant). Add one line `Fix owners:` after the Immediate fix naming all four labels, each marked implicated or not implicated.
