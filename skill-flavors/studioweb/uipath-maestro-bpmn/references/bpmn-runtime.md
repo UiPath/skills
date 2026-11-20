@@ -19,7 +19,7 @@
 <!--skill-flavor:sdk-palette-elements:end-->
 
 <!--skill-flavor:sdk-no-message:start-->
-  Studio Web ships its own SDK: when a decompiled source carries `message: ''` instead of `message: NO_MESSAGE`, this Studio Web build compiles it to one nameless `Message_1` that `validate` rejects; tell the user that this Studio Web build cannot round-trip a message event with no message chosen yet.
+  Studio Web ships its own SDK: when a decompiled source carries `message: ''` instead of `message: NO_MESSAGE`, this Studio Web build compiles it to one nameless `Message_1` that `validate` rejects; tell the user that this Studio Web build cannot round-trip a message event with no message chosen yet. Do not invent a message name or drop `message` to get past it: either changes what the event waits for.
 <!--skill-flavor:sdk-no-message:end-->
 
 <!--skill-flavor:sdk-script-result:start-->
