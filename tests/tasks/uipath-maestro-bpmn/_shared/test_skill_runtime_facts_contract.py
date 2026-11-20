@@ -150,6 +150,7 @@ REQUIRED = [
     ("SKILL.md", "A process returns only what its end event maps"),
     ("references/operate.md", "not by `Globals`"),
     ("references/patterns/high-volume-batch-guide.md", "1-based"),
+    ("references/patterns/high-volume-batch-guide.md", "the response is a bare array of records, `[]` when none"),
     ("references/connectors.md", "A connection is a sender's identity"),
 ]
 
