@@ -120,12 +120,12 @@ sdk.context_grounding.delete_index(index=index)
 
 ```python
 extraction = sdk.documents.extract(project_name="InvoiceExtraction", tag="invoice", file_path="/path/to/invoice.pdf")
-validation = sdk.documents.create_validation_action(
-    action_title="Validate Invoice", action_priority="Normal", action_catalog="InvoiceValidation",
+validation = sdk.documents.create_validate_extraction_action(
+    action_title="Validate Invoice", action_priority="Medium", action_catalog="InvoiceValidation",
     action_folder="Invoices", storage_bucket_name="doc-storage",
     storage_bucket_directory_path="validations/", extraction_response=extraction
 )
-result = sdk.documents.get_validation_result(validation_action=validation)
+result = sdk.documents.get_validate_extraction_result(validation_action=validation)
 ```
 
 ## Entities
@@ -222,7 +222,7 @@ server = sdk.mcp.retrieve(slug="my-mcp-server", folder_path="MyFolder")
 ## Resource Catalog
 
 ```python
-resources = sdk.resource_catalog.search(query="invoice processing")
+resources = sdk.resource_catalog.search(name="invoice")
 resources = sdk.resource_catalog.list(folder_path="Finance")
 ```
 
