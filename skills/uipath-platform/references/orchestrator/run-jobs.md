@@ -227,6 +227,10 @@ uip or jobs logs <job-key> --level Error --output json    # Error logs only
 uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV file
 ```
 
+`--level` takes the server's level names: `Trace`, `Debug`, `Info`, `Warn`, `Error`, `Fatal`. Each row's `Level` uses the same names, so warnings come back as `Warn`. `--level Warning` is accepted for `Warn`. An older `uip` refuses `Warn` and `Debug` and answers `--level Warning` with HTTP 400 "Invalid OData query options". With one of those, read without `--level`, with `--limit 1000` (the default is 50), and keep the rows whose `Level` is `Warn`; step `--offset` by 1000 if the job logged more.
+
+Logs come back newest first. Automation Cloud Orchestrator returns at most 1000 entries per request, so the CLI reads a larger `--limit` 1000 at a time. There, an older `uip` answers `--limit` above 1000 with HTTP 400 "Invalid OData query options"; standalone Orchestrator leaves this cap off by default (`Pagination.Limits.Enabled`), so an older `uip` reads any `--limit` there in one request. On Automation Cloud with an older `uip`, keep `--limit 1000` and step `--offset` by 1000. On Automation Cloud, `--offset` plus `--limit` cannot pass 10000 (HTTP 400 "Depth of pagination is limited in Elasticsearch"), so `jobs logs` reaches only the newest 10000 matching entries.
+
 `--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required; `--folder-path` / `--folder-key` are optional and, as on `jobs get`, require the job to be in that folder.
 
 > **`--export` spends a daily quota.** It calls the RobotLogs Export endpoint, which is limited to 100 requests per day per tenant and shared with everyone on the tenant. To read or diagnose logs, use `--output json` (optionally `--level Error`). Export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).

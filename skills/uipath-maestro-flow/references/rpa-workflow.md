@@ -4,7 +4,7 @@
 
 Run a published robotic process and wait for its output arguments.
 
-Signature: `rpaWorkflow({ key?, name, folderPath?, location?, projectId?, inputs?, returns? })`.
+Signature: `rpaWorkflow({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns? })`.
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 For a published process, leave `key` out: `check` prints the `registry prepare --kind Process` command that records it, and `compile` fills it in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 Keep `returns` for every output you read: Orchestrator usually leaves an RPA process's `ArgumentsV2` blank, so `prepare` prints `Arguments not recorded` and `compile` does not fill `returns`. Without it a read of the output is `RPA_READ_WITHOUT_RETURNS`.
@@ -70,6 +70,10 @@ The release key, name, and folder must identify the same deployed process.
 Inputs and returns are that process's own argument names and exact casing; the
 offline SDK cannot discover their truth. Inspect the registry/process listing
 and the deployed contract rather than copying values from a different folder.
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Where the job runs
 

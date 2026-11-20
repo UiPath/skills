@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
 """Seed path cases for the escalation-orchestrator outcome eval.
 
-Each case pins the flow inputs that steer one branch and the outputs the grader
-asserts. `expect_slack: true` means the run must have actually posted a Slack
-message (escalation alert on the escalation path, triage notice on the triage
-paths) — a non-empty slackMessageId proves it.
+The prompt names no variables, so each case's inputs are keyed by MEANING
+(the grader maps them onto whatever inputs the agent declared) and its
+expected results are values the grader looks for among the declared outputs.
+`match` is the state the prompt describes ("one", "none" or "several"); the
+grader turns it into the value the agent's flow compares against.
 
-Every expected value below was verified by running the reference orchestrator
-through `uip maestro flow debug --inputs` on codereval/alpha. The checker
-iterates this list generically, so new paths (e.g. multiple-match, missing-domain,
-Sev2-with-attachments) drop in here with no checker change.
+The prompt's rules, in its order:
+
+- path: no sender domain -> "missing_domain"; no matching customer ->
+  "unknown_customer"; several matching customers -> "multiple_matches"; a
+  duplicate -> "duplicate"; otherwise "escalation".
+- escalation severity ignores the tier: Sev1 when production is down with no
+  workaround, Sev2 when it is down with a workaround, Sev3 when it is not
+  down. Engineering is needed for Sev1 and Sev2, and the response is drafted.
+- anything that is not an escalation is "informational", with no
+  engineering and response mode "None".
+
+Each triage case also meets every LATER condition in that order, so a flow
+that checks them in another order takes the wrong path. The missing-domain
+sender has no domain in the email address either, so a flow that derives the
+domain from the address still sees none. The Sev1 case is Standard tier and
+the Sev3 case Enterprise, so a classifier that reads the tier fails.
+
+Sev3's response mode is not pinned: "we'll draft a response" follows the
+Sev1/Sev2 engineering sentence, so "None" for Sev3 is a fair reading too.
 """
 
 from __future__ import annotations
@@ -21,85 +37,73 @@ from uuid import uuid4
 _COMMON = {
     "senderEmail": "jane.doe@acmecorp.com",
     "senderDomain": "acmecorp.com",
-    "hasAttachments": False,
+    "subject": "Help with our account",
+    "body": "We have a question about our service.",
+    "tier": "Standard",
+    "productionDown": False,
+    "workaround": False,
+    "attachments": False,
+    "match": "one",
+    "duplicate": False,
 }
+_TRIAGE = {"severity": "informational", "engineering": False, "responseMode": "None"}
 
 
-def _case(name, run_id, suffix, overrides, expected, expect_slack):
-    corr = f"ORCH-{run_id}-{suffix}"
-    inputs = {
-        **_COMMON,
-        "subject": "",
-        "body": "",
-        "customerTier": "Standard",
-        "productionDown": False,
-        "workaroundAvailable": False,
-        "customerMatchStatus": "single",
-        "isDuplicate": False,
-        "correlationId": corr,
-        **overrides,
-    }
+def _case(name, run_id, suffix, overrides, expected):
     return {
         "name": name,
-        "expect_slack": expect_slack,
-        "inputs": inputs,
-        "expected": {**expected, "caseKey": corr},
+        "inputs": {**_COMMON, **overrides, "caseRef": f"ORCH-{run_id}-{suffix}"},
+        "expected": expected,
     }
 
 
 def build_seed() -> dict:
     r = uuid4().hex[:12]
     cases = [
-        # ── Escalation paths (Slack escalation alert) ──────────────────────
+        # ── Escalations (the alert) ─────────────────────────────────────────
         _case(
-            # Deliberately STANDARD tier: the orchestrator's Sev1 is tier-independent
-            # (productionDown AND NOT workaroundAvailable). A classifier that wrongly
-            # gates Sev1 on Enterprise (e.g. copied from the slack_alert task) would
-            # misclassify this Standard outage and fail.
-            "sev1-standard-production-down", r, "SEV1",
-            {"subject": "Production down: checkout 500s", "body": "Critical urgent outage, all users blocked",
-             "customerTier": "Standard", "productionDown": True, "workaroundAvailable": False},
-            {"escalationPath": "escalation", "severity": "Sev1", "engineeringNeeded": True, "responseMode": "Draft"},
-            True,
+            "sev1-standard-down-no-workaround", r, "SEV1",
+            {"subject": "Production down: checkout 500s", "body": "All users are blocked.",
+             "productionDown": True, "workaround": False},
+            {"path": "escalation", "severity": "Sev1", "engineering": True, "responseMode": "Draft"},
         ),
         _case(
-            "sev2-degraded-with-workaround", r, "SEV2",
-            {"subject": "Degraded checkout", "body": "Slow but a workaround exists",
-             "productionDown": True, "workaroundAvailable": True},
-            {"escalationPath": "escalation", "severity": "Sev2", "engineeringNeeded": True, "responseMode": "Draft"},
-            True,
+            "sev2-down-with-workaround", r, "SEV2",
+            {"subject": "Checkout degraded", "body": "Slow, but retrying works for now.",
+             "productionDown": True, "workaround": True, "attachments": True},
+            {"path": "escalation", "severity": "Sev2", "engineering": True, "responseMode": "Draft"},
         ),
         _case(
-            "sev3-no-production-impact", r, "SEV3",
-            {"subject": "Report formatting off", "body": "The export looks wrong"},
-            {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "Draft"},
-            True,
+            "sev3-enterprise-not-down", r, "SEV3",
+            {"subject": "Report formatting off", "body": "The monthly export looks wrong.",
+             "tier": "Enterprise"},
+            {"path": "escalation", "severity": "Sev3", "engineering": False,
+             "responseMode": ["Draft", "None"]},
         ),
-        # ── Triage paths (Slack triage notice) ─────────────────────────────
+        # ── Triage (the notice), each also meeting every later condition ────
         _case(
-            "duplicate-escalation", r, "DUP",
-            {"subject": "Prod down", "body": "urgent", "customerTier": "Enterprise",
-             "productionDown": True, "workaroundAvailable": False, "isDuplicate": True},
-            {"escalationPath": "duplicate", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
-        ),
-        _case(
-            "unknown-customer", r, "UNK",
-            {"subject": "Help", "body": "an issue", "customerMatchStatus": "none"},
-            {"escalationPath": "unknown_customer", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
+            "duplicate-of-an-outage", r, "DUP",
+            {"subject": "Prod down", "body": "Still down, see my earlier email.", "tier": "Enterprise",
+             "productionDown": True, "workaround": False, "duplicate": True},
+            {"path": "duplicate", **_TRIAGE},
         ),
         _case(
-            "missing-domain", r, "MD",
-            {"subject": "Help", "body": "an issue", "senderDomain": ""},
-            {"escalationPath": "missing_domain", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
+            "multiple-matches-and-duplicate", r, "MULTI",
+            {"subject": "Prod down", "body": "urgent", "productionDown": True,
+             "match": "several", "duplicate": True},
+            {"path": "multiple_matches", **_TRIAGE},
         ),
         _case(
-            "multiple-matches", r, "MULTI",
-            {"subject": "Help", "body": "an issue", "customerMatchStatus": "multiple"},
-            {"escalationPath": "multiple_matches", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
+            "unknown-customer-and-duplicate", r, "UNK",
+            {"subject": "Prod down", "body": "urgent", "productionDown": True,
+             "match": "none", "duplicate": True},
+            {"path": "unknown_customer", **_TRIAGE},
+        ),
+        _case(
+            "missing-domain-no-match-duplicate", r, "MD",
+            {"senderEmail": "jane.doe", "senderDomain": "", "productionDown": True,
+             "match": "none", "duplicate": True},
+            {"path": "missing_domain", **_TRIAGE},
         ),
     ]
     return {"run_id": r, "cases": cases}

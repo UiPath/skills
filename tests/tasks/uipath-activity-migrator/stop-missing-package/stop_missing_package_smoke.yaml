@@ -10,7 +10,7 @@ description: >
   SARIF mode and was summarized, upgrade never ran, no output folder exists,
   missing dependencies were never ignored, nothing was built or run, and the
   source is untouched outside the tool's .upgrade and .local folders. Windows
-  only (the migrator is a .NET 8 desktop tool); no build, so no Helm.
+  only (the migrator is a .NET desktop tool); no build, so no Helm.
 tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:discover, windows]
 
 run_limits:
