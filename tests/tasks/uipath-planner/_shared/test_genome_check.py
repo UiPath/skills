@@ -250,6 +250,14 @@ def test_checker_reads_rules_not_lookalikes(tmp_path):
     assert run(tmp_path, pointer, profile="strict") == 0                    # a pointer to the process genome's question
     login = text.replace("## Workflow\n", "## Workflow\n\nSigns in on the login_page form.\n", 1)
     assert run(tmp_path, login, profile="strict") == 0                      # 'in_' counts only at a word start
+    field = text.replace("## Workflow\n", "## Workflow\n\nStores the message id in the reply's `in_reply_to` field.\n", 1)
+    assert run(tmp_path, field, profile="strict") == 0                      # and before a capital, as UiPath names arguments
+
+
+def test_unfilled_cross_part_reference_fails_strict_only(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Workflow\n", "## Workflow\n\nThe totals come from component 2, step {{ref:totals.sum_lines}}.\n", 1)
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
 
 
 def test_test_cases_are_the_depth_of_a_test_component(tmp_path, capsys):

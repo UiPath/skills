@@ -156,6 +156,26 @@ section again from it, with every open question. See open-questions-guide.md for
 
 **Justification:** <2-3 sentences explaining the fit>
 
+### Agent Steps
+
+<!-- Every step the agent runs, in run order: a coded agent's graph nodes, a low-code agent's steps as its instructions order them. A step with substeps, branches or a model call gets a Step block below the table holding them all. -->
+
+| # | Step | What it does | Tools and model calls | Next (condition) | Rules |
+|---|---|---|---|---|---|
+| <STEP_NUMBER> | <STEP_NAME> | <WHAT_IT_DOES> | <TOOLS_AND_MODEL_CALLS> | <NEXT_STEP_AND_CONDITION> | <BR_IDS> |
+
+#### Step <STEP_NUMBER> — <STEP_TITLE>
+
+<SUBSTEPS_BRANCHES_AND_MODEL_CALL>
+
+### Business Rules
+
+<!-- Every rule the agent applies, numbered BR-01, BR-02, …: the conditions, thresholds, mappings and limits its code applies, and the rules its instructions state. Classification and homes: [Business Rules Guide](../../references/design/business-rules-guide.md). -->
+
+| ID | Rule Name | Applied by (code / instructions) | Description | Affected Steps |
+|---|---|---|---|---|
+| BR-01 | <RULE_NAME> | <CODE_OR_INSTRUCTIONS> | <CONDITION_AND_OUTCOME> | <STEP_NUMBERS> |
+
 ---
 
 ## 3. Tools
