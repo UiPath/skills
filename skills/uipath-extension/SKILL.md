@@ -25,7 +25,7 @@ Do NOT use this skill for:
 ## Critical Rules
 
 1. **Create the project with `uip function new` first.** The tool has no `init` or scaffold command. `submit` adopts the project it runs in.
-2. **Run `submit` before `upload`.** On a project with no `maestro-extensions.json`, or whose `package.json` name is not `maestro-extensions.<PUBLISHER>.<NAME>`, `upload` fails before any other call and says `run uip extension submit <publisher>.<name> --yes first`.
+2. **Run `submit` before `upload`.** `upload` fails before any other call when the project has no `maestro-extensions.json`, when its `package.json` name is not `maestro-extensions.<PUBLISHER>.<NAME>`, or when the template has any problem. It adds `run uip extension submit <publisher>.<name> --yes first` to every one of these. Read the problem line above that hint. If it names a template field, such as a `TODO`, fix the field and run `validate`. Do not run `submit --yes` on an adopted project, because it skips the adopt step and takes the pull request path.
 3. **A node is one job function.** The gates fail a package whose `operate.json` `targetRuntime` is not `javascript`, one with more than one entry point, and one whose `bindings_v2.json` holds an `HttpTrigger` resource.
 4. **Pass the identity as `<PUBLISHER>.<NAME>`.** It holds no slash and exactly one dot. On a terminal `submit` asks for it. Off a terminal, pass it as the argument, or the run fails with `pass <publisher>.<name>`.
 5. **Show the adopt diff before you write it.** The first `submit` run prints the files it would write and stops. Show them to the user. Run `submit --yes` only after the user agrees.
@@ -62,6 +62,8 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
    uip extension submit <PUBLISHER>.<NAME> --output json
    ```
 
+   Adopt reads the template schema from the index repository through `gh`. Sign `gh` in with access to that repository before the first adopt, whatever the destination.
+
    After the user agrees, write them. The command exits 1 with `AdoptWritten`, which is the expected stop.
 
    ```bash
@@ -94,8 +96,8 @@ A success prints an envelope with the code `ExtensionValidate`, `ExtensionUpload
 |---|---|---|
 | `GatesFailed` | A gate failed. `Data` holds the report. | Fix each finding, then run `validate` again. After 3 failing runs, show the user the report and ask how to proceed. |
 | `ConfirmationRequired` | The command needs `--yes`. | Show the user what it will do, then repeat with `--yes`. |
-| `InputRequired` | An input is missing or two inputs conflict. | Read `Instructions` and pass the missing input. |
-| `AdoptWritten` | `submit` wrote the adopt files. | Review them, fill the `TODO` fields, run `validate`, then run `submit` again. |
+| `InputRequired` | An input is missing or two inputs conflict. | Read `Instructions` and pass the missing input. For `submit`, keep `--dry-run` until the user approves the pull request. |
+| `AdoptWritten` | `submit` wrote the adopt files. | Review them, fill the `TODO` fields, run `validate`, then run `submit --dry-run` and show the result. |
 | `Failed` | The project or a tool it needs has a problem. | Read `Message` and `Instructions`. A missing `gh` says how to install it. |
 
 ## What NOT to Do

@@ -68,8 +68,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent never uploaded the node and never opened a pull request"
-    command_pattern: 'uip\s+extension\s+upload\b|gh\s+pr\s+create\b'
+    description: "Agent never uploaded the node and never opened a pull request, with gh or with uip extension submit and a security contact and no --dry-run"
+    command_pattern: 'uip\s+extension\s+upload\b|gh\s+pr\s+create\b|uip\s+extension\s+submit\b(?![^|;&\n]*--dry-run)[^|;&\n]*--security-contact\b'
     weight: 2.0
     pass_threshold: 1.0
 
