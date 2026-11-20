@@ -38,7 +38,7 @@ What to look for:
 
 ## Resolution
 
-- **If connection expired:** re-authenticate; re-publish is a later decision
+- **If connection expired:** re-authenticate; re-publish, if needed, is a later decision
 - **If connector deleted/renamed:** re-create the activity against the current connector; re-publish is a later decision
 - **If IS not enabled on the tenant:** enable via **Admin > Tenant > Services**
 - **If webhook config stale:** regenerate the webhook URL and update the external system
