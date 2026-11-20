@@ -120,6 +120,7 @@ Skip `bpmndi:` diagram elements.
 | `package.json` deps `@uipath/coded-action-app`, `@uipath/uipath-typescript` | root | App flavour |
 | `sdk.processes.*`, `sdk.queues.*`, `sdk.entities.*`, `sdk.tasks.*`, `sdk.assets.*`, `sdk.buckets.*`, `sdk.maestro.*`, `sdk.conversations.*` | `src/**/*.ts(x)` | Platform data read and written → Platform Dependencies, handoffs |
 | Route and page components, forms, tables | `src/**` | Workflow steps as user actions ("reviewer opens…, edits…, submits…") |
+| A write's completion handler — `onSuccess` or `onSettled` invalidating queries, a refetch | `src/**` | What the screens show after the write: the reads fetched again, in the step the write belongs to |
 | An in-memory or stub module standing in for a platform service; a sign-in or backend the code marks as still to come | `src/**` | The behaviour the app shows as shipped: each read and write the module serves, what each write changes, and the checks and messages it applies. The service it stands in for, and the sign-in or backend to come, are an Open Decision whose `Builds now:` is the shipped behaviour, never a Platform Dependency, Interface entry or Configuration Question |
 | Widget imports (Validation Station, PDF viewer, DataTable, chat) | `src/**` | Capabilities to name in Overview |
 | `.uipath/app.config.json` `appType`, `appName` | root | Deployed identity |

@@ -47,7 +47,9 @@ Runs when the extraction guide's sizing (its Step 2b) plans parts. Extraction's 
    9. transactional signals: per-item constructs with object and line, for the Transactional Shape;
    10. deviations from the brief, and every object left unread;
    11. the code search of the extraction guide's Step 6b, run by the part over its own objects before it returns, since it holds them: per object, how many texts, field names, comparisons and computations the search found, and that each is in the file written.
-9. **Checking a return** (§ Running in Parts item 5). Before reconciling, the lead agent checks each part mechanically: the file exists with the counts returned, every defect has its Source Map row with lines, every assigned object appears in a Source Map row or in the unread list, and the code search, run again over the part's object with the most texts, finds each in the file.
+9. **Checking a return** (§ Running in Parts item 5). Before reconciling, the lead agent checks each part on disk:
+   1. **The files:** the file exists with the counts returned, every defect has its Source Map row with lines, and every assigned object appears in a Source Map row or in the unread list.
+   2. **The code search, run by the lead agent itself.** The part's code-search counts are a claim, and the strict check reads only the genome. The lead agent takes the part's object with the most texts, lists every text, field name and compared value in its code with one search into a file, and looks each up in the part's file with a fixed-string search. A miss shows the part's search was incomplete: the misses go back to the part, which runs its code search again over all its objects, and its new return passes this check before it is reconciled.
 
 ## Reconciliation
 
