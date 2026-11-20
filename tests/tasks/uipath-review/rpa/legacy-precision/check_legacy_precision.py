@@ -40,23 +40,79 @@ BENIGN_RE = re.compile(
     r"not\s+(?:be\s+)?(?:treated|classified|flagged|considered|marked|raised|"
     r"reported|listed|categori[sz]ed|rated|deemed)\s+(?:as\s+)?(?:a\s+)?critical"
 )
+# Negation that directly governs "critical": "never a Critical finding",
+# "neither a Critical issue nor ...", "not inherently a Critical issue", "not
+# itself a Critical finding". Only filler words may sit between the negator and
+# "critical", so "not recommended ... Critical" still fails. Observed false
+# FAILs on correct reviews: runs 2026-11-17_04-23-38, 2026-11-18_04-18-55,
+# 2026-11-18_04-25-00, 2026-11-19_04-22-41, 2026-11-20_04-22-52.
+NEGATED_CRITICAL_RE = re.compile(
+    r"\b(?:not|never|neither|nor|isn't|aren't)\b"
+    r"(?:\s+(?:a|an|the|be|as|is|are|in|by|of|on|its|own|itself|themselves|inherently|"
+    r"necessarily|automatically|per|se|being|treated|classified|flagged|considered|marked|"
+    r"raised|reported|listed|categori[sz]ed|rated|deemed))*\s+critical"
+)
+# "Neither <the Legacy framework> nor <X> is classified as a Critical ..." —
+# the subject list sits between the negator and "critical"; sentence-scoped.
+NEITHER_NOR_RE = re.compile(r"\bnor\b[^.\n]{0,120}\bcritical")
 TRADEOFFS = (
     "unified target", "object repository", "coded test", "coded workflow",
     "healing agent", "autopilot", "screenplay", "modern .net", "modern dotnet",
     "cross-platform", "cross platform", "data manager", "maestro", "agent",
     ".net 6", ".net 8", "modern project",
 )
+# The fixture's own trade-off: the SOAP client needs System.ServiceModel / WCF,
+# which only the .NET Framework (Legacy) runtime provides. Tying the migration
+# advice to that dependency is the most tailored guidance there is. These terms
+# also appear in any description of the project, so they count only in a
+# sentence that is about migrating. Observed false FAILs on reviews that did
+# exactly that: runs adhoc-2026-11-09_06-21-12, adhoc-2026-11-14_04-16-48.
+DEPENDENCY_TERMS = ("servicemodel", "wcf", "soap")
+MIGRATION_WORDS = ("migrat", "upgrad", "convert", "moderni", "recreate", "port ")
+
+
+_EMPTY_SECTION_RE = re.compile(r"(?:none\b|no\s+critical|n/a\b|nothing\b)")
+
+
+def _is_empty_section_heading(lower: str, pos: int) -> bool:
+    """True if `pos` sits in a Markdown heading whose section body opens with
+    "None" (prose, or the first data cell of a table). An empty "### Critical
+    Findings" section flags nothing, whatever the sentence after "None" says
+    (run 2026-11-18_04-25-00: "None identified. Neither the Windows-Legacy
+    target framework nor ... is classified as a Critical deployment blocker")."""
+    line_start = lower.rfind("\n", 0, pos) + 1
+    if not lower[line_start:pos].lstrip().startswith("#"):
+        return False
+    line_end = lower.find("\n", pos)
+    if line_end == -1:
+        return False
+    for line in lower[line_end:].split("\n"):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        cells = [c for c in cells if c and not re.fullmatch(r"[-:—–\s]+", c)]
+        if not cells:
+            continue  # blank line, table separator, or a row of dash placeholders
+        if line.lstrip().startswith("#"):
+            return False  # next heading: section had no body at all
+        if all(re.fullmatch(r"[a-z /&]+", c) for c in cells) and "|" in line and not \
+                _EMPTY_SECTION_RE.match(cells[0]):
+            continue  # table header row (ID | Rule | Recommendation)
+        return bool(_EMPTY_SECTION_RE.match(cells[0]))
+    return False
 
 
 def flags_legacy_as_critical(text: str) -> bool:
     """True if a Critical claim is made ABOUT the legacy framework."""
     lower = text.lower()
     for m in re.finditer(r"critical", lower):
+        if _is_empty_section_heading(lower, m.start()):
+            continue
         start = max(0, m.start() - 90)
         end = min(len(lower), m.end() + 90)
         window = lower[start:end]
         if any(t in window for t in LEGACY_TERMS):
-            if not any(n in window for n in BENIGN) and not BENIGN_RE.search(window):
+            if (not any(n in window for n in BENIGN) and not BENIGN_RE.search(window)
+                    and not NEGATED_CRITICAL_RE.search(window)
+                    and not NEITHER_NOR_RE.search(window)):
                 return True
     return False
 
@@ -107,7 +163,13 @@ def has_migration_guidance(text: str) -> bool:
 
 def names_tradeoff(text: str) -> bool:
     lower = text.lower()
-    return any(t in lower for t in TRADEOFFS)
+    if any(t in lower for t in TRADEOFFS):
+        return True
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n", lower):
+        if (any(d in sentence for d in DEPENDENCY_TERMS)
+                and any(m in sentence for m in MIGRATION_WORDS)):
+            return True
+    return False
 
 
 def _fixture_intact() -> bool:

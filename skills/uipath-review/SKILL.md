@@ -61,7 +61,7 @@ Internal labels such as “Path A”, “Path B”, and “Step 3a” must not a
 
 **Solution/multi-project scope:** a root `.uipx`, or at least two executable project markers in different subdirectories. Executable markers are `project.json` with `outputType` Process/Tests/unspecified, low-code `agent.json`, coded-agent Python (`pyproject.toml` plus framework or `uipath.json` configuration), `.flow`, or `project.uiproj` with `ProjectType` Flow/ProcessOrchestration/Api. Libraries (`outputType: Library`) do not trigger this scope. Windows-Legacy executables do not trigger `.uipx` scope; do not flag missing `.uipx`, and recommend Modern migration only when solution bundling is desired.
 
-For solution scope, read `.uipx`; find orphan executables; classify all projects; check `config.json`, versions, dependencies, circular dependencies, and cross-project relationships; build a project map; cross-reference the PDD; read [references/solution-review-guide.md](references/solution-review-guide.md); then review each project.
+For solution scope, read `.uipx`; find orphan executables; classify all projects; check `resources/solution_folder/` against `.uipx`, any deploy config file, versions, dependencies, circular dependencies, and cross-project relationships; build a project map; cross-reference the PDD; read [references/solution-review-guide.md](references/solution-review-guide.md); then review each project.
 
 **Single-project scope:** one root project marker, no `.uipx`, and no executable siblings. Classify it, cross-reference the PDD, skip solution checks, and proceed. If given a file, walk upward to its enclosing project and review the full project.
 
@@ -122,7 +122,9 @@ If unavailable, use Analyzer results included by `uip rpa validate`. Report ever
 | Maestro BPMN | `uip maestro bpmn validate "<FILE>.bpmn" --output json` |
 | API Workflow | `uip api-workflow validate "<WORKFLOW_JSON>" --output json` |
 | Coded App | `uip codedapp pack dist --dry-run --output json` |
-| Solution | `uip solution pack "<SOLUTION_DIR>" "<OUTPUT_DIR>" --output json` |
+| Solution | `uip solution pack "<SOLUTION_DIR>" --dry-run --output json` |
+
+**Solution pack is `--dry-run` only.** Without `--dry-run`, `uip solution pack` writes into the solution under review (`resources/solution_folder/`, `.local/`) even when it fails — a Critical Rule 1 violation. `--dry-run` runs the full pack pipeline in a temporary directory. If the CLI rejects `--dry-run`, do not pack: list the pack check under Rules Skipped.
 
 Report all severities. API workflow validation is offline; never run `uip api-workflow run`. If older CLI versions lack BPMN or API validation, record unavailable rules under Rules Skipped and use the relevant checklist.
 
@@ -190,7 +192,7 @@ When available, compare business process, inputs/outputs, exceptions/retries, ap
 
 #### 3c. Technical Review
 
-Load the applicable checklist. For solutions also read [solution-review-guide.md](references/solution-review-guide.md) for `.uipx`, `config.json`, orphan, dependency, consistency, and architecture checks. Skip `.uipx` checks for Windows-Legacy executables and recommend migration instead.
+Load the applicable checklist. For solutions also read [solution-review-guide.md](references/solution-review-guide.md) for `.uipx`, `resources/solution_folder/`, deploy config, orphan, dependency, consistency, and architecture checks. Skip `.uipx` checks for Windows-Legacy executables and recommend migration instead.
 
 Consult as applicable: [rpa-advanced-checklist.md](references/rpa/rpa-advanced-checklist.md); [long-running-workflow-issues.md](references/rpa/long-running-workflow-issues.md) for persistence activities or Orchestration Process; [modern-studio-issues.md](references/rpa/modern-studio-issues.md) for Studio 2024.10+; [du-review-checklist.md](references/document-understanding/du-review-checklist.md) when DU packages are present; [rpa-common-issues.md](references/rpa/rpa-common-issues.md); and [flow-common-issues.md](references/flows/flow-common-issues.md).
 

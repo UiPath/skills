@@ -1,0 +1,70 @@
+task_id: skill-review-solution-missing-project-dir
+description: >
+  Solution structure review. LoanSolution.uipx registers three projects, but
+  the LoanNotify project directory does not exist on disk, so the solution
+  cannot be packed. The report must name LoanNotify as missing.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath solution exists at `LoanSolution` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `LoanSolution/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `LoanSolution/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside LoanSolution/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*LoanSolution/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside LoanSolution/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*LoanSolution/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the LoanNotify project referenced by the .uipx as missing on disk"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "LoanSolution/LoanSolution.uipx::LoanNotify/project.json"
+      --marker-absent "LoanSolution/LoanNotify"
+      --subject "LoanNotify"
+      --flag-absence "missing|does not exist|doesn't exist|not found|not present|no such|absent|cannot be found|not on disk|nonexistent|non-existent|no longer exists|unresolved|broken reference|dangling"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

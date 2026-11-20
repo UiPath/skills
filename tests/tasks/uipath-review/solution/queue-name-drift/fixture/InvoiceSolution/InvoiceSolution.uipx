@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "fc9d9db8-8649-4ff1-b2da-40609bd184fc",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "InvoiceDispatcher/project.json",
+      "Id": "ce840e32-4fd8-40bd-9328-2d2c259e4085"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "InvoicePerformer/project.json",
+      "Id": "edb8a28d-216b-44ae-a2bf-8dc38add5eb5"
+    }
+  ]
+}

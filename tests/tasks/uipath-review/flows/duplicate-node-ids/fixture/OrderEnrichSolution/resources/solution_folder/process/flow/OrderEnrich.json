@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrderEnrich",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e11683a8-a522-4131-be35-42705adcb851",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OrderEnrich"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "OrderEnrich",
+      "package": {
+        "key": "6fa3ec62-baa5-4131-97c9-62840ed1d578"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "69760ba8-9f85-4fba-95ec-df3fe268ad47",
+    "files": []
+  }
+}

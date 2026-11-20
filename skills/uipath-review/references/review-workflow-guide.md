@@ -208,7 +208,7 @@ uip codedapp pack dist --dry-run
 ### Solution Validation
 
 ```bash
-uip solution pack <SOLUTION_DIR> <OUTPUT_DIR> --output json
+uip solution pack "<SOLUTION_DIR>" --dry-run --output json
 ```
 
 ## Quality Dimensions
@@ -226,7 +226,7 @@ Are all required files present, correctly formatted, and schema-compliant?
 | Agent (Coded) | `main.py`, framework config, `pyproject.toml` | Import check + eval |
 | Flow | `.flow`, `project.uiproj` | `uip maestro flow validate` |
 | Coded App | `package.json`, `.uipath/`, build output | `uip codedapp pack --dry-run` |
-| Solution | `.uipx`, project subdirectories | `uip solution pack` |
+| Solution | `.uipx`, project subdirectories | `uip solution pack --dry-run` |
 
 ### 2. Best Practices Adherence
 

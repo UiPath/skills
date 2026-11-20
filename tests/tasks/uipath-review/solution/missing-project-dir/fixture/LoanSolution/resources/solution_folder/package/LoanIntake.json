@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoanIntake",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "80855055-0c9e-4840-ad73-842cd295f90e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LoanIntake"
+    },
+    "locks": [],
+    "key": "ceded760-c298-4bce-a539-0d98aaafd844",
+    "files": []
+  }
+}

@@ -1,0 +1,69 @@
+task_id: skill-review-bpmn-invalid-timer-duration
+description: >
+  BPMN timer review. The intermediate timer event's duration is the free text
+  `2 hours`; the engine needs an ISO 8601 duration (`PT2H`). The report must
+  flag the invalid timer duration.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath Maestro BPMN project exists at `QuoteFollowUp` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `QuoteFollowUp/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `QuoteFollowUp/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside QuoteFollowUp/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*QuoteFollowUp/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside QuoteFollowUp/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*QuoteFollowUp/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the non-ISO-8601 timer duration"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "QuoteFollowUp/QuoteFollowUp.bpmn::2 hours"
+      --mention "timer|duration"
+      --flag-absence "iso 8601|iso-8601|iso8601|pt2h|invalid|not a valid|not valid|malformed|free text|free-text|unparseable|cannot be parsed|incorrect format|wrong format"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

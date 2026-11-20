@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "9b9de3cd-c083-4912-9e09-092053d388b7",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "ClaimsIntake/project.json",
+      "Id": "97aa3619-9dd1-4e2b-8926-8d48aa966591"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "ClaimsPayout/project.json",
+      "Id": "c8665f98-aad7-4b5c-8508-638cc10bea94"
+    }
+  ]
+}

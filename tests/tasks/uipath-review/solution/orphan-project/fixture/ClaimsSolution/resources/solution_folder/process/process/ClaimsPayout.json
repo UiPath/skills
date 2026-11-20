@@ -1,0 +1,43 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ClaimsPayout",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c8665f98-aad7-4b5c-8508-638cc10bea94",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ClaimsPayout"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Process",
+      "name": "ClaimsPayout",
+      "package": {
+        "key": "94a8f2ae-e795-4577-a93b-4a16d27829e3"
+      },
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "targetFrameworkValue": "Portable",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "bf34a3f3-27d1-46c7-96b3-8f5adf196a4a",
+    "files": []
+  }
+}

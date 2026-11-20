@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceDispatcher",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ce840e32-4fd8-40bd-9328-2d2c259e4085",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceDispatcher"
+    },
+    "locks": [],
+    "key": "a4b15ea5-1b8e-42f2-9271-75a223a361db",
+    "files": []
+  }
+}

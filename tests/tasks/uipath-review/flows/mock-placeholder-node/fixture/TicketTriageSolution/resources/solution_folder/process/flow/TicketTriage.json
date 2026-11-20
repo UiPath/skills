@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TicketTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "be0cdc8d-697a-48d5-95b8-e3ab7edd2e30",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TicketTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "TicketTriage",
+      "package": {
+        "key": "9cd9f4e0-467a-44e7-b662-2fe97c218c8b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "4a0437d6-6496-4cba-af93-12675c63d2fe",
+    "files": []
+  }
+}

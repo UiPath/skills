@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ClaimsIntake",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "97aa3619-9dd1-4e2b-8926-8d48aa966591",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ClaimsIntake"
+    },
+    "locks": [],
+    "key": "4d22e307-b2fd-4e77-be82-1c72d5b224f4",
+    "files": []
+  }
+}

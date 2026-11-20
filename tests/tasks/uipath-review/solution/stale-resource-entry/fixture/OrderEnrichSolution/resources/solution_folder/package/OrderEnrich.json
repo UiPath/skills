@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OrderEnrich",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e11683a8-a522-4131-be35-42705adcb851",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OrderEnrich"
+    },
+    "locks": [],
+    "key": "6fa3ec62-baa5-4131-97c9-62840ed1d578",
+    "files": []
+  }
+}

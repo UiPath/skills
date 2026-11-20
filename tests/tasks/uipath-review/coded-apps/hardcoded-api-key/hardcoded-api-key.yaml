@@ -1,0 +1,77 @@
+task_id: skill-review-coded-app-hardcoded-api-key
+description: >
+  Coded app security review. `src/api/client.ts` hardcodes a third-party API
+  key and the app authenticates the vendor call itself, so the key ships to
+  every browser. The report must flag the hardcoded key as Critical.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+pre_run:
+  - command: "python3 _setup/seed_build_output.py && rm -rf _setup"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A UiPath Coded App project exists at `DepotMap` in the current directory.
+  Review it and produce a structured review report with Critical / Warning /
+  Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `DepotMap/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `DepotMap/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside DepotMap/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*DepotMap/'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside DepotMap/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*DepotMap/'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report flags the API key hardcoded in src/api/client.ts as Critical"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/check_planted_defect.py
+      --marker "DepotMap/src/api/client.ts::mk_live_FAKE_7d3e91b2c4a8f605"
+      --flag "hardcod|hard-cod|hard cod|plaintext|plain text|plain-text|cleartext|clear text|in clear|embedded|inline|literal|exposed|committed|checked in|baked in|ships in|shipped"
+      --mention "api key|apikey|api_key|token|secret|credential"
+      --mention "critical"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
