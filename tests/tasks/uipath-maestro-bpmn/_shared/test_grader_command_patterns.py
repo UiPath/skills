@@ -103,9 +103,10 @@ TIMER_PARSES = [
     "uip maestro bpmn validate --output json ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     "uip maestro bpmn validate /solution/ScheduledReportBpmn/Process.bpmn",
     "cd ScheduledReportBpmn && uip maestro bpmn validate Process.bpmn",
+    "cd ScheduledReportBpmn && uip maestro bpmn validate ./Process.bpmn --output json",
+    "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('./Process.bpmn')\"",
     # Studio Web: the main file is Process.bpmn, and there is no python3.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/ScheduledReportBpmn/Process.bpmn')\"",
-
 ]
 
 TIMER_NOT_PARSES = [
@@ -114,6 +115,7 @@ TIMER_NOT_PARSES = [
     "uip maestro bpmn validate OtherProject --output json",
     # validate takes the file: a project folder is rejected before any XML is read.
     "uip maestro bpmn validate ScheduledReportBpmn --output json",
+    "uip maestro bpmn validate ScheduledReportBpmn --output json\nls ScheduledReportBpmn/Process.bpmn",
     "uip maestro bpmn validate /solution/OtherProject/Process.bpmn",
     "uip maestro bpmn validate ScheduledReportBpmnOld/Process.bpmn",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/Other/Process.bpmn')\"",
@@ -133,7 +135,6 @@ TIMER_NOT_PARSES = [
     "node -e \"console.log(require('fs').readFileSync('Process.bpmn','utf8').length)\"",
     "node -e \"/<bpmn:process/.test(require('fs').readFileSync('Process.bpmn','utf8'))\"",
     "grep -c 'bpmn:process' ScheduledReportBpmn/Process.bpmn",
-
 ]
 
 
@@ -156,6 +157,7 @@ AUTHOR_PARSES = [
     "uip maestro bpmn validate --output json InvoiceApproval/InvoiceApproval.bpmn",
     "uip maestro bpmn validate /solution/InvoiceApproval/Process.bpmn",
     "cd InvoiceApproval && uip maestro bpmn validate Process.bpmn",
+    "cd InvoiceApproval && uip maestro bpmn validate ./Process.bpmn --output json",
     "python3 -c \"import xml.etree.ElementTree as ET, pathlib; "
     "ET.parse(next(pathlib.Path('.').rglob('InvoiceApproval/*.bpmn')))\"",
     # The name comes before ET.parse.
@@ -163,14 +165,15 @@ AUTHOR_PARSES = [
     "fs=list(pathlib.Path('.').rglob('InvoiceApproval.bpmn')); ET.parse(fs[0])\"",
     "python3 -c \"import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])\" InvoiceApproval/InvoiceApproval.bpmn",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/InvoiceApproval/Process.bpmn')\"",
-
 ]
 
 AUTHOR_NOT_PARSES = [
     "uip maestro bpmn check InvoiceApproval/InvoiceApproval.bpmn",
     "uip maestro bpmn validate InvoiceApproval --output json",
     "uip maestro bpmn validate /solution/OtherProject/Process.bpmn",
-    "uip maestro bpmn validate ProcessFoo",
+    "uip maestro bpmn validate ProcessFoo.bpmn",
+    "uip maestro bpmn validate InvoiceApprovalOld/Process.bpmn",
+    "uip maestro bpmn validate InvoiceApproval --output json\ncat InvoiceApproval/Process.bpmn | head",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/Other/Process.bpmn')\"",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; ls InvoiceApproval/InvoiceApproval.bpmn",
     "node -e \"console.log(require('fs').readFileSync('InvoiceApproval/Process.bpmn','utf8').length)\"",
@@ -210,6 +213,7 @@ def test_xml_regex_time_bound() -> None:
         "rx = re.compile(sys.argv[1], re.DOTALL)\n"
         "assert not rx.search('python3 -c \"' + '\\\\' * 200 + 'x')\n"
         "assert not rx.search('python3 -c \"' + '\\\\\\\"' * 200 + 'x')\n"
+        "assert not rx.search('uip maestro bpmn validate ' + '--a b ' * 330)\n"
     )
     subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
 
