@@ -13,7 +13,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 **Servers — `uip agenthub mcp`, plus `uip agenthub platform-services` / `platform-tools` to look up `platform` names:**
 
 - Create, update, delete, list or get an MCP server of any type ([Server Types](#server-types) says when to use each), and refresh its tools.
-- Check whether a server works: its Integration Service connection and its tools ([Checking a Server](#checking-a-server)).
+- Check whether a server works without changing it (`mcp check`), or its Integration Service connection and its tools ([Checking a Server](#checking-a-server)).
 - Get the `McpUrl` an MCP client connects to.
 - List, set or delete a user's own Integration Service connection on a `remote` server ([Per-User Connections](#per-user-connections)).
 - Find the UiPath services and tool names a `platform` server can expose.
@@ -137,6 +137,12 @@ Agent Gateway on Automation Suite 26.10 has `uipath`, `remote` and `platform` se
 Payload fields per type, the `uipath` tools list, masked values and moving a server to another host: [references/updating-servers-guide.md](references/updating-servers-guide.md).
 
 ## Checking a Server
+
+On a `remote` or `swagger` server, start with `uip agenthub mcp check <SLUG> --folder-path <FOLDER_PATH> --output json`. It reaches the server the way a tool call does (its connection, headers and Relay; for swagger, the spec URL and the API base URL) and changes nothing.
+
+- **Healthy** (exit 0): the server works. `Data.Connection.Source` says whose connection the check used: `UserServer` is the caller's own per-user connection, not the server's.
+- **Any other status** fails with `ErrorCode: execution_failed`, the status in `Data.Status` and the next step in `Instructions`: `Unreachable` (no answer: the URL, a public host or Relay), `Unauthorized` (the server refused the headers or the connection), `ConnectionFailed` (no token from the connection, so nothing reached the server: ping it, below), `Failed` (an answer that is not a working MCP server; for swagger, `Data.Spec` and `Data.Api` show which probe failed). Follow `Instructions` and say what you found.
+- **`not_supported`** (`MCP server check isn't supported on the connected environment.`): this environment has no check yet (Rule 11). **`The check covers Remote and Swagger servers, …`**: another type. Either way, use the steps below.
 
 Agent Gateway's **Check connection** tests a server's Integration Service connection; **Refresh tools** tests the server itself.
 

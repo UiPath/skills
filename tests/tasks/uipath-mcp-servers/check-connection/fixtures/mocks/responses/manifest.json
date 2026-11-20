@@ -36,6 +36,11 @@
       "file": "agenthub_mcp_tools_list.json"
     },
     {
+      "match": "agenthub mcp check mock-connected-mcp",
+      "file": "mcp_check_connection_failed.json",
+      "exit_code": 1
+    },
+    {
       "match": "agenthub mcp get mock-connected-mcp",
       "file": "mcp_get.json"
     }

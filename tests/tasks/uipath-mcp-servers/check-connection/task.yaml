@@ -27,8 +27,8 @@ success_criteria:
   command_pattern: 'uip\s+is\s+connections\s+ping\s+6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01\b'
   min_count: 1
   weight: 3.0
-- {type: command_executed, description: Agent read the server to find its connection (mcp get / mcp list), tool_name: Bash,
-  command_pattern: 'uip\s+agenthub\s+mcp\s+(get|list)\b', min_count: 1}
+- {type: command_executed, description: Agent read or checked the server to find its connection (mcp get / mcp list / mcp check), tool_name: Bash,
+  command_pattern: 'uip\s+agenthub\s+mcp\s+(get|list|check)\b', min_count: 1}
 - type: command_not_executed
   description: Agent did NOT change the server (mcp update / delete / create)
   tool_name: Bash
