@@ -37,8 +37,6 @@ initial_prompt: |
     the document characteristics above, so decide from those; do not try to
     download or view the files. Run each command once and move on. Do NOT retry
     or attempt to login.
-  - A command that fails for any other reason (a bad flag, a missing file)
-    is yours to fix: fix it and run it again.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
