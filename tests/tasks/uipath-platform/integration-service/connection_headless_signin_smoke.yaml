@@ -3,6 +3,7 @@ description: >
   Smoke test: agent signs in an API key connection with no browser, takes the
   secret from an env reference, and never writes a literal secret.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections]
+skip: true  # until a released uip CLI has --field (cli #6155): with an older CLI the skill sends the agent to the browser flow, so the sign-in criterion cannot pass
 
 run_limits:
   expected_turns: 8
