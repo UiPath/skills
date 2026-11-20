@@ -196,16 +196,19 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
-`path` is the operation's route under the connector, copied from `Operation.Path` of `uip is resources describe` (`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
+On this `.activity()`, `path` is the operation's route under the connector, copied from `Operation.Path` of `uip is resources describe <key> <object> --operation <Verb> --output json` (`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
 Never the provider's own REST route: the runtime prefixes the connector's base itself, so `/rest/api/2/issue` goes out as `/rest/api/2/rest/api/2/issue`; `validate` accepts it and the debug run faults with incident `102001 Integration Services resource not found`.
+An `.http()` `url` is the other way round: the vendor's own endpoint ([HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work)).
 Copy the `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, `activityConfigurationVersion: 'v2'` included.
 Without `--input-details` the command returns only the extension type's V1 template (`activityConfigurationVersion` defaults to `v1` there), whose context a V2 task does not carry.
 `--input-details` takes the node's values as JSON, `'{}'` when you have none yet; `Data.V2.MissingRequired` lists the required inputs still unset.
 A `{param}` in the path goes in `inputs: { pathParameters: { <param>: … } }` and a query parameter in `inputs: { queryParameters: { … } }`, the element's two json rows; a bare `inputs: { <param> }` lands in the body (see [the parameter rows](bpmn-runtime.md#connectors-and-bindings)).
 For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id> --output json`, `method` is the catalog's **Integration Service method** for that verb (`GETBYID` for a single record (Retrieve), `GET` for a list, `POST` to create, `PATCH`/`PUT` to update, `DELETE`), not the HTTP verb (both retrieval and listing travel as HTTP GET; the platform matches on `GETBYID` vs `GET`), and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
 
-Some tenants (Automation Suite 2026.10) refuse the connection-scoped reads: `describe --connection-id` answers `400 A provided parameter was of an invalid type`, `resources list --connection-id` answers `404`, and `registry get --connection-id` reports `IS enrichment returned no data`.
-That is a tenant gap, not a missing object. The connector-level reads still answer there: run `uip is resources list <key> --output json` and `uip is resources describe <key> <object> --operation <Verb> --output json` without `--connection-id`, and take `objectName`, `method` and `path` from them.
+Some tenants refuse the connection-scoped reads: `describe --connection-id` answers `400 A provided parameter was of an invalid type`, `resources list --connection-id` answers `404`, and `registry get --connection-id` with `--operation` named reports `IS enrichment returned no data`.
+That is a tenant gap, not a missing object, and `prepare` fails with it, since it describes through the connection.
+It is the one case where the tenant still answers, so authoring does not wait: hand-fill the `.activity()` from the connector-level reads.
+`objectName` and `method` still come from `uip is activities list <key> --output json` (a generic record verb's object from `uip is resources list <key> --output json`); take only `path` from `uip is resources describe <key> <object> --operation <Verb> --output json`, both without `--connection-id`.
 A field only the connection discovers has no such fallback: stop on one you cannot resolve; never invent it.
 
 ## 5. Data Fabric is not this
