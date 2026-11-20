@@ -28,3 +28,7 @@ so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:inso-app-sdk-upgrade:start-->
   so tell the user: Studio Web owns the SDK copy.
 <!--skill-flavor:inso-app-sdk-upgrade:end-->
+
+<!--skill-flavor:hitl-live-debug:start-->
+Debug suspends at the task until a person completes it, so the reply ends in `TimedOut` with no instance id. Do not re-run or search with `uip tasks list`; tell the user the run waits for the task in Action Center.
+<!--skill-flavor:hitl-live-debug:end-->

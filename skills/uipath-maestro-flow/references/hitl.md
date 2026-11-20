@@ -120,6 +120,19 @@ A coded Action App in the SAME solution is not yet deployed to a folder. Use `lo
   No `uip` build checked so far preserves the app folder when packing this task (1.204.0 and 1.205.0-preview.269 both drop it), causing runtime `170004 Invalid input for the HITL task`. Tell the user an in-solution app task needs a `uip` release carrying the fix; do not retry the run.
 <!--skill-flavor:inso-app-uip-floor:end-->
 
+## Live debug of a flow with a human task
+
+<!--skill-flavor:hitl-live-debug:start-->
+Debug suspends at the task until a person completes it; a long `--timeout` only waits.
+
+1. `uip maestro flow debug <project-dir> --timeout 90 --output json` returns the `instanceId` while suspended.
+2. `uip maestro flow debug-instance status <instanceId> --output json`: the HITL element's `ExternalLink` ends in the task id; `FolderKey` is the folder.
+3. `uip tasks complete <task-id> --type QuickFormTask --folder-key <FolderKey> --action <outcome> --data '<output fields as JSON>'` (`AppTask` for an action app).
+4. Poll `debug-instance status` until `Completed`, then read `debug-instance variables <instanceId>`.
+
+Never hunt the task with `uip tasks list`: it is empty or shows other runs' tasks.
+<!--skill-flavor:hitl-live-debug:end-->
+
 ## Evidence boundary
 
 Offline execution scripts the selected action and output fields; it proves wiring and downstream routing, not that a real task appeared or a person participated. Live evidence should preserve the Action Center task identity, human-selected outcome, supplied answers, and resumed path.
