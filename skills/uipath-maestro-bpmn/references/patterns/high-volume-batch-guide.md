@@ -12,7 +12,7 @@ Change one and you are building something else.
   The marker runs the body once per item, each with its own `iterator`; it does **not** by itself stop one item's failure ending the run.
   An unhandled failure propagates outward, so containing it needs a `failure-escalation` net placed inside the iteration.
   Isolation is the loop plus that net, never the loop alone.
-- **Every item leaves a result, and aggregation reads them once, after the block completes.** Both exits of the body, the normal end and the net, append the item's outcome to `itemResults`.
+- **Every item leaves a result, and aggregation reads them once, after the block completes.** Both exits of the body, the normal end and the net, append the item's outcome to `itemResults` (Parallel: write it to the store).
   The multi-instance sub-process does not exit until every instance has, which is what makes a single aggregation step correct rather than a race.
 - **The policy decision is separate from the aggregation.** Aggregating counts results; the gate decides whether those counts constitute success.
   Best-effort, all-or-nothing, and quorum are then one condition apart.
@@ -105,7 +105,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | Variant | Question it answers | Delta |
 | --- | --- | --- |
 | Sequential | — | The shape above |
-| Parallel | Must items run several at a time? | Drop `sequential`, and record each result outside the process |
+| Parallel | Must items run several at a time? | With a named store: drop `sequential`, record each result outside the process. No store named: stay sequential |
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
 When the request names no store, do not invent an entity or connection, and do not stop to ask: keep `sequential: true`, which collects results correctly, and put on the final report's `Assumed:` line that items run one at a time because no store was named.
@@ -115,7 +115,7 @@ After the sub-process, read the batch back with a `.dataService()` `query`, ``wh
 Keep `aggregate` a `.scriptTask()` that totals the records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
 A `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` at its `false` default.
 On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).
-A record count below `vars.batchItems.length` is an item that left no result: count it as a failure.
+The total is `vars.batchItems.length`, not the record count: a record count below it is an item that left no result, so count it as a failure (`met` needs `ok === vars.batchItems.length`).
 This variant is not verified end to end.
 
 ## What to bind
