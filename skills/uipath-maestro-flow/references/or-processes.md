@@ -112,8 +112,8 @@ inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
     does not allow it (`flow validate` reports the same value as `TYPE_MISMATCH`);
   - `PROCESS_INPUT_SCHEMA_INVALID`: an `inputSchema` that is not a plain object
     (compile refuses it too).
-- Needs a builder SDK release that includes UiPath/builder-sdk#2198. An older SDK
-  refuses the option as `FLOW_UNKNOWN_OPTION`.
+- Needs `@uipath/maestro-builder-sdk` 6.122.6 or later. An older SDK refuses the
+  option as `FLOW_UNKNOWN_OPTION`.
 
 ## Notes
 
