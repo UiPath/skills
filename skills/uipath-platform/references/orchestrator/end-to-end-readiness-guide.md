@@ -19,7 +19,7 @@ Check what the tenant can do **before** offering to take an automation from a bu
 
 | Stage | Needs | How to check |
 |---|---|---|
-| Publish | Signed in; a feed that accepts the package type; permission to upload to it | `uip login status --output json`; `uip or folders list --output json` (pick the destination folder) |
+| Publish | Signed in; a feed that accepts the package type; permission to upload to it | `uip or folders list --output json` (fails when not signed in; pick the destination folder) |
 | Process in a folder | The package published; the folder exists | `uip or processes list --folder-path "<folder>" --output json` |
 | Trigger creation | The process exists in the folder | Same as above. A trigger does **not** need a robot to be created. |
 | Execution (trigger firing or `jobs start`) | A runtime of the type the job will use, assigned to the folder and connected | `uip or folders runtimes "<folder>" --output json`; `uip or sessions unattended list --folder-path "<folder>" --output json` |
