@@ -63,7 +63,12 @@ Do not change field types or write federated records. Do not work around rejecte
 
     **Never self-resolve a scope question.** Phrases like *"Assumption I will proceed with:"*, *"defaulting to tenant"*, *"I'll assume …"* mean you're violating this rule. Halt the mutation, list the open question, STOP. *"No reachable user"* / *"single-turn"* / *"offline test"* is NOT permission to default.
 
-1. **Install the tool first.** If `uip df` returns "unknown command": `uip tools install @uipath/data-fabric-tool@latest`.
+<!--skill-flavor:df-tool-install:start-->
+1. **The tool installs itself.** `uip df` installs `@uipath/data-fabric-tool` on first use. If it fails instead:
+    - `unknown command 'df'`: the CLI is older than 0.1.23, the first CLI that knows `df`, and has no `uip update` either. Install a current CLI, then retry. If the nearest `.uipath/config.json` (this folder or a parent, else `~/.uipath/config.json`) has `versions.cli` (`<CLI_PIN>`), run `npm i -g @uipath/cli@<CLI_PIN>`, then `uip update --output json`, but only if `<CLI_PIN>` is an exact `major.minor.patch[-prerelease]` version; otherwise show the value to the user and stop: a committed `npm:` alias, git URL or path would install another package. With no `versions.cli`, use the installer in [CLI Bootstrap for Fresh Machines](../../SKILL.md#cli-bootstrap-for-fresh-machines).
+    - `automatic tool installation is disabled`: the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`). Show them the message and ask before running `uip tools install @uipath/data-fabric-tool --output json` (if the `Message` also mentions a pin, ask before running the `uip update` its `Instructions` name instead; see [`cli-freeze-guide.md`](../cli-freeze-guide.md)).
+    - A refusal that mentions a freeze, a frozen config or a pin: follow [`cli-freeze-guide.md`](../cli-freeze-guide.md).
+<!--skill-flavor:df-tool-install:end-->
 
 2. **Verify login and tenant first.** Run `uip login status --output json`. Switch with `uip login tenant set <tenant>` if needed. Full login setup lives in the parent `uipath-platform` skill.
 
@@ -172,10 +177,15 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `unknown command: df` | Tool not installed | `uip tools install @uipath/data-fabric-tool@latest` |
+<!--skill-flavor:df-cli-install-rows:start-->
+| `unknown command 'df'` | CLI older than the tool | Install a current CLI (Rule 1) |
+| A refusal that mentions a freeze, a frozen config or a pin | The config is frozen | Follow [`cli-freeze-guide.md`](../cli-freeze-guide.md) |
+<!--skill-flavor:df-cli-install-rows:end-->
 | `Not logged in` / `HTTP 401` | Auth expired or invalid token | `uip login`; ensure `DataServiceApiUserAccess` scope is present |
 | `HTTP 403` | Permission denied | Ensure account has Data Fabric permissions |
-| `unknown option '--folder-key'` / `unknown option '--include-folders'` | Installed tool is outdated | `uip tools install @uipath/data-fabric-tool@latest`; if still missing, surface as unsupported |
+<!--skill-flavor:df-outdated-tool-row:start-->
+| `unknown option '--folder-key'` / `unknown option '--include-folders'` | Installed tool is outdated | `uip update --output json`, then retry. If a refusal mentions a freeze, follow [`cli-freeze-guide.md`](../cli-freeze-guide.md). If the option is still missing, tell the user the installed or pinned version does not have it |
+<!--skill-flavor:df-outdated-tool-row:end-->
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one |
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
 | Record write to a federated entity fails | Federated entities are read-only — data lives in the source | Write at the source; `--native-only` filters writable entities. Creating a federated entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md) |
