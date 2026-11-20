@@ -1,0 +1,211 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_MailFolder" Type="InArgument(x:String)" />
+    <x:Property Name="in_VendorsFile" Type="InArgument(x:String)" />
+    <x:Property Name="in_OutputFolder" Type="InArgument(x:String)" />
+    <x:Property Name="out_Queued" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_Rejected" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_MissingAttachment" Type="OutArgument(x:Int32)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="32">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="32">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="queue" />
+    </Sequence.Variables>
+    <ui:CreateDirectory sap2010:WorkflowViewState.IdRef="posting" Path="[Path.Combine(in_OutputFolder, &quot;Posting&quot;)]" />
+    <ui:CreateDirectory sap2010:WorkflowViewState.IdRef="approvedDir" Path="[Path.Combine(in_OutputFolder, &quot;Approved&quot;)]" />
+    <ui:CreateDirectory sap2010:WorkflowViewState.IdRef="failedDir" Path="[Path.Combine(in_OutputFolder, &quot;Failed&quot;)]" />
+    <ui:CreateDirectory sap2010:WorkflowViewState.IdRef="outboxDir" Path="[Path.Combine(in_OutputFolder, &quot;Outbox&quot;)]" />
+    <Assign sap2010:WorkflowViewState.IdRef="where">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[queue]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[Path.Combine(in_OutputFolder, "Posting", "ERP_Queue.csv")]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:WriteTextFile FileName="[queue]" sap2010:WorkflowViewState.IdRef="header" Text="InvoiceNumber,Vendor,Total,MessageId" />
+    <ui:ForEach x:TypeArguments="x:String" sap2010:WorkflowViewState.IdRef="messages" Values="[Directory.GetDirectories(in_MailFolder).OrderBy(Function(d) Path.GetFileName(d), StringComparer.Ordinal).ToArray()]">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="x:String">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
+          </ActivityAction.Argument>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_6">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="x:String" Name="messageId" />
+              <Variable x:TypeArguments="x:String" Name="messageText" />
+              <Variable x:TypeArguments="s:String[]" Name="pdfs" />
+            </Sequence.Variables>
+            <Assign sap2010:WorkflowViewState.IdRef="id">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[messageId]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[Path.GetFileName(folder)]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <Assign sap2010:WorkflowViewState.IdRef="read">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[messageText]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[File.ReadAllText(Path.Combine(folder, "message.txt"))]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <If Condition="[System.Text.RegularExpressions.Regex.IsMatch(messageText, &quot;(?m)^Status: Unread\r?$&quot;)]" sap2010:WorkflowViewState.IdRef="unread">
+              <If.Then>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
+                  <Assign sap2010:WorkflowViewState.IdRef="pdfs">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="s:String[]">[pdfs]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="s:String[]">[Directory.GetFiles(folder).Where(Function(f) Path.GetExtension(f).ToLowerInvariant() = ".pdf").OrderBy(Function(f) Path.GetFileName(f), StringComparer.Ordinal).ToArray()]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <If Condition="[pdfs.Length = 0]" sap2010:WorkflowViewState.IdRef="none">
+                    <If.Then>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+                        <ui:WriteTextFile FileName="[Path.Combine(in_OutputFolder, &quot;Outbox&quot;, &quot;missing-&quot; &amp; messageId &amp; &quot;.txt&quot;)]" sap2010:WorkflowViewState.IdRef="askSender" Text="[&quot;To: &quot; &amp; messageText.Split({vbLf}, StringSplitOptions.None).First(Function(l) l.StartsWith(&quot;From: &quot;)).Substring(6).Trim() &amp; vbCrLf &amp; &quot;Subject: Missing attachment: &quot; &amp; messageText.Split({vbLf}, StringSplitOptions.None).First(Function(l) l.StartsWith(&quot;Subject: &quot;)).Substring(9).Trim() &amp; vbCrLf &amp; vbCrLf &amp; &quot;We could not find an invoice attached to your message. Please send it as a PDF.&quot;]" />
+                        <Assign sap2010:WorkflowViewState.IdRef="missing">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">[out_MissingAttachment]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">[out_MissingAttachment + 1]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </If.Then>
+                    <If.Else>
+                      <ui:ForEach x:TypeArguments="x:String" sap2010:WorkflowViewState.IdRef="invoices" Values="[pdfs]">
+                        <ui:ForEach.Body>
+                          <ActivityAction x:TypeArguments="x:String">
+                            <ActivityAction.Argument>
+                              <DelegateInArgument x:TypeArguments="x:String" Name="pdf" />
+                            </ActivityAction.Argument>
+                            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
+                              <Sequence.Variables>
+                                <Variable x:TypeArguments="x:String" Name="vendor" />
+                                <Variable x:TypeArguments="x:String" Name="invoiceNumber" />
+                                <Variable x:TypeArguments="x:Decimal" Name="total" />
+                                <Variable x:TypeArguments="x:Boolean" Name="hasTotal" />
+                                <Variable x:TypeArguments="x:String" Name="reason" />
+                                <Variable x:TypeArguments="x:String" Name="vendorName" />
+                              </Sequence.Variables>
+                              <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="extract" WorkflowFileName="Workflows\ExtractInvoiceFields.xaml">
+                                <ui:InvokeWorkflowFile.Arguments>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_PdfPath">[pdf]</InArgument>
+                                  <OutArgument x:TypeArguments="x:String" x:Key="out_Vendor">[vendor]</OutArgument>
+                                  <OutArgument x:TypeArguments="x:String" x:Key="out_InvoiceNumber">[invoiceNumber]</OutArgument>
+                                  <OutArgument x:TypeArguments="x:Decimal" x:Key="out_Total">[total]</OutArgument>
+                                  <OutArgument x:TypeArguments="x:Boolean" x:Key="out_HasTotal">[hasTotal]</OutArgument>
+                                </ui:InvokeWorkflowFile.Arguments>
+                              </ui:InvokeWorkflowFile>
+                              <ui:InvokeWorkflowFile ArgumentsVariable="{x:Null}" sap2010:WorkflowViewState.IdRef="validate" WorkflowFileName="Workflows\ValidateInvoice.xaml">
+                                <ui:InvokeWorkflowFile.Arguments>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_Vendor">[vendor]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_InvoiceNumber">[invoiceNumber]</InArgument>
+                                  <InArgument x:TypeArguments="x:Decimal" x:Key="in_Total">[total]</InArgument>
+                                  <InArgument x:TypeArguments="x:Boolean" x:Key="in_HasTotal">[hasTotal]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_VendorsFile">[in_VendorsFile]</InArgument>
+                                  <OutArgument x:TypeArguments="x:String" x:Key="out_Reason">[reason]</OutArgument>
+                                  <OutArgument x:TypeArguments="x:String" x:Key="out_VendorName">[vendorName]</OutArgument>
+                                </ui:InvokeWorkflowFile.Arguments>
+                              </ui:InvokeWorkflowFile>
+                              <If Condition="[reason = &quot;&quot;]" sap2010:WorkflowViewState.IdRef="approved">
+                                <If.Then>
+                                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+                                    <ui:AppendLine FileName="[queue]" sap2010:WorkflowViewState.IdRef="enqueue" Text="[invoiceNumber &amp; &quot;,&quot; &amp; vendorName &amp; &quot;,&quot; &amp; total.ToString(&quot;0.00&quot;, System.Globalization.CultureInfo.InvariantCulture) &amp; &quot;,&quot; &amp; messageId]" />
+                                    <ui:CopyFile Destination="[Path.Combine(in_OutputFolder, &quot;Approved&quot;, invoiceNumber &amp; &quot;.pdf&quot;)]" sap2010:WorkflowViewState.IdRef="keep" Overwrite="True" Path="[pdf]" />
+                                    <Assign sap2010:WorkflowViewState.IdRef="queued">
+                                      <Assign.To>
+                                        <OutArgument x:TypeArguments="x:Int32">[out_Queued]</OutArgument>
+                                      </Assign.To>
+                                      <Assign.Value>
+                                        <InArgument x:TypeArguments="x:Int32">[out_Queued + 1]</InArgument>
+                                      </Assign.Value>
+                                    </Assign>
+                                  </Sequence>
+                                </If.Then>
+                                <If.Else>
+                                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+                                    <ui:CopyFile Destination="[Path.Combine(in_OutputFolder, &quot;Failed&quot;, messageId &amp; &quot;-&quot; &amp; Path.GetFileName(pdf))]" sap2010:WorkflowViewState.IdRef="fail" Overwrite="True" Path="[pdf]" />
+                                    <ui:LogMessage sap2010:WorkflowViewState.IdRef="warn" Level="Warn" Message="[&quot;Rejected invoice &quot; &amp; Path.GetFileName(pdf) &amp; &quot; in &quot; &amp; messageId &amp; &quot;: &quot; &amp; reason]" />
+                                    <ui:WriteTextFile FileName="[Path.Combine(in_OutputFolder, &quot;Outbox&quot;, &quot;rejected-&quot; &amp; messageId &amp; &quot;-&quot; &amp; Path.GetFileNameWithoutExtension(pdf) &amp; &quot;.txt&quot;)]" sap2010:WorkflowViewState.IdRef="tellLead" Text="[&quot;To: ap.lead@acme.example&quot; &amp; vbCrLf &amp; &quot;Subject: Rejected invoice &quot; &amp; Path.GetFileName(pdf) &amp; vbCrLf &amp; vbCrLf &amp; reason]" />
+                                    <Assign sap2010:WorkflowViewState.IdRef="rejected">
+                                      <Assign.To>
+                                        <OutArgument x:TypeArguments="x:Int32">[out_Rejected]</OutArgument>
+                                      </Assign.To>
+                                      <Assign.Value>
+                                        <InArgument x:TypeArguments="x:Int32">[out_Rejected + 1]</InArgument>
+                                      </Assign.Value>
+                                    </Assign>
+                                  </Sequence>
+                                </If.Else>
+                              </If>
+                            </Sequence>
+                          </ActivityAction>
+                        </ui:ForEach.Body>
+                      </ui:ForEach>
+                    </If.Else>
+                  </If>
+                  <ui:WriteTextFile FileName="[Path.Combine(folder, &quot;message.txt&quot;)]" sap2010:WorkflowViewState.IdRef="markRead" Text="[New System.Text.RegularExpressions.Regex(&quot;(?m)^Status: Unread&quot;).Replace(messageText, &quot;Status: Read&quot;, 1)]" />
+                </Sequence>
+              </If.Then>
+            </If>
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
+    <ui:LogMessage sap2010:WorkflowViewState.IdRef="done" Level="Info" Message="[out_Queued.ToString() &amp; &quot; queued, &quot; &amp; out_Rejected.ToString() &amp; &quot; rejected, &quot; &amp; out_MissingAttachment.ToString() &amp; &quot; without an invoice&quot;]" />
+  </Sequence>
+</Activity>

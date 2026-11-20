@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""A `uip` for the RPA suite with Studio Web Autopilot's constraints.
+
+Studio Web ships no `uip rpa` tool: its host serves `uip rpa init` and `uip rpa run` itself, and every other
+verb (validate, build, activities, templates, ...) does not exist. This stand-in gives the agent the same:
+
+- `uip rpa run` runs a workflow headlessly on the image's CoreWF runner (/opt/xaml-runner), the same one the
+  verifier grades with, and answers as Studio's headless engine does: log lines, then a {Result, Code, Data}
+  envelope. It takes the documented flags: --file-path, --project-dir, repeatable --input-arguments
+  (`key=value` for a string, `key:=json` for a typed value, `@file.json`), --input-arguments-file,
+  and ignores --skip-build, --output and --log-level.
+- `uip rpa init` reports that the project already exists here.
+- Anything else fails with Code NotAvailable.
+"""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+RUNNER = os.environ.get("XAML_RUNNER", "/opt/xaml-runner/XamlRunner.dll")
+LEVELS = {"Trace": "Trace", "Info": "Information", "Warn": "Warning", "Error": "Error", "Fatal": "Critical"}
+
+
+def envelope(result, code, data, status):
+    print(json.dumps({"Result": result, "Code": code, "Data": data}, indent=2))
+    return status
+
+
+def unavailable(verb):
+    return envelope("Failure", "NotAvailable", {
+        "message": f"`uip {verb}` is not available in Studio Web. Its host serves only `uip rpa init` and `uip rpa run`.",
+    }, 1)
+
+
+def flags(argv):
+    """`--name value` pairs, repeatable; a bare `--flag` is True."""
+    out, i = {}, 0
+    while i < len(argv):
+        a = argv[i]
+        if not a.startswith("--"):
+            raise SystemExit(f"unexpected argument {a!r}")
+        name = a[2:]
+        if "=" in name:
+            name, value = name.split("=", 1)
+            i += 1
+        elif i + 1 < len(argv) and not argv[i + 1].startswith("--"):
+            value = argv[i + 1]
+            i += 2
+        else:
+            value = True
+            i += 1
+        out.setdefault(name, []).append(value)
+    return out
+
+
+def read_json(path):
+    with open(path, encoding="utf-8-sig") as f:
+        return json.load(f)
+
+
+def inputs(opts):
+    args = {}
+    for raw in opts.get("input-arguments", []):
+        if raw.startswith("@"):
+            args.update(read_json(raw[1:]))
+        elif raw.lstrip().startswith("{"):
+            args.update(json.loads(raw))
+        elif "=" in raw:
+            key, value = raw.split("=", 1)
+            if key.endswith(":"):
+                args[key[:-1]] = json.loads(value)
+            else:
+                args[key] = read_json(value[1:]) if value.startswith("@") else value
+        else:
+            raise SystemExit(f"--input-arguments takes key=value, key:=json or @file.json, not {raw!r}")
+    for path in opts.get("input-arguments-file", []):
+        args.update(read_json(path))
+    return args
+
+
+def run(argv):
+    opts = flags(argv)
+    project = os.path.abspath((opts.get("project-dir") or ["."])[-1])
+    file = (opts.get("file-path") or ["Main.xaml"])[-1]
+    xaml = file if os.path.isabs(file) else os.path.join(project, file.replace("\\", "/"))
+    if not os.path.isfile(xaml):
+        return envelope("Failure", "ToolResult", {"output": "{}", "hasErrors": True, "errorMessage": f"{xaml} does not exist",
+                                                   "debugState": None}, 1)
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(inputs(opts), f)
+    try:
+        proc = subprocess.run(["dotnet", RUNNER, "run", xaml, "--input-file", f.name, "--cwd", os.getcwd(), "--timeout", "120"],
+                              capture_output=True, text=True, timeout=300)
+    finally:
+        os.unlink(f.name)
+    try:
+        result = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return envelope("Failure", "ToolResult", {"output": "{}", "hasErrors": True, "errorMessage": (proc.stderr or proc.stdout).strip()[-2000:],
+                                                   "debugState": None}, 1)
+    name = os.path.splitext(os.path.basename(xaml))[0]
+    print("[Information] Starting execution...")
+    print(f"[Information] {name} execution started")
+    for entry in result.get("logs") or []:
+        print(f"[{LEVELS.get(entry['level'], entry['level'])}] {entry['message']}")
+    state = result.get("state")
+    if state == "Closed":
+        print(f"[Information] {name} execution ended")
+        return envelope("Success", "ToolResult", {"output": json.dumps(result.get("outputs") or {}), "hasErrors": False,
+                                                  "errorMessage": None, "debugState": None}, 0)
+    fault = result.get("fault") or {}
+    errors = "; ".join(e.get("message", "") for e in result.get("errors") or [])
+    message = f"{fault.get('type', state)}: {fault.get('message', '')}".strip(": ") if fault else f"{state}: {errors}"
+    if fault.get("activity"):
+        message += f" (in {fault['activity']})"
+    return envelope("Failure", "ToolResult", {"output": "{}", "hasErrors": True, "errorMessage": message, "debugState": None}, 1)
+
+
+def main(argv):
+    if argv[:2] == ["rpa", "run"]:
+        return run(argv[2:])
+    if argv[:2] == ["rpa", "init"]:
+        return envelope("Failure", "ProjectExists", {
+            "message": "This workspace already holds the project (project.json); `uip rpa init` creates one only in an empty folder.",
+        }, 1)
+    if argv[:1] in (["--version"], ["-v"]):
+        print("uip (Studio Web stand-in)")
+        return 0
+    return unavailable(" ".join(argv[:2]) or "")
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

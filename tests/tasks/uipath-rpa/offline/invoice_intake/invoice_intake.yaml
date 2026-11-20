@@ -1,0 +1,99 @@
+task_id: skill-rpa-invoice-intake
+description: >
+  A real-world XAML process rather than one capability: accounts-payable invoice intake from an exported
+  mailbox (unread mail, OCR'd PDF invoices, field extraction, a vendor and credit check, an ERP posting
+  queue, a failed folder and notifications), across several workflows; the grader runs it headlessly
+  under CoreWF in four scenarios. Shaped after the InvoiceIntake genome fixture; ported from
+  UiPath/builder-sdk typescript/tasks/rpa; see ../README.md.
+tags: [uipath-rpa, e2e, outcome-graded, mode:build, lifecycle:generate, feature:file-processing]
+
+# Studio Web Autopilot's constraints: its host serves only `uip rpa init` and `uip rpa run`, so pre_run
+# puts ../_offline_xaml/_uip/uip (the same two verbs, `run` on the CoreWF runner the grader uses) ahead
+# of skills-image's full `uip` on the agent's PATH. Without them, the skill's validate-and-build loop against a cold Studio Helm took every
+# trial past a 30-minute turn. The whole agent run is one turn.
+run_limits:
+  expected_turns: 40
+  max_turns: 100
+  task_timeout: 1500
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: "../_offline_xaml/_project"
+    - type: template_dir
+      path: "../_offline_xaml/_notes"
+    - type: template_dir
+      path: "../_offline_xaml/_uip"
+      mount_point: ".studio-web/bin"
+    - type: template_dir
+      path: "../_offline_xaml/_runner"
+      mount_point: ".studio-web/runner"
+
+pre_run:
+  # Install the Studio Web `uip` and build the runner it serves `run` with (also what grade.sh grades
+  # with), then remove both sources from the workspace before the agent starts. Only inside the docker
+  # sandbox (skills-image): on a tempdir sandbox it would replace the host's own `uip`.
+  - command: "set -e; [ \"${CODER_EVAL_IN_CONTAINER:-}\" = 1 ] || { echo 'this task needs the docker sandbox (skills-image): run it with experiments/nightly.yaml'; exit 1; }; install -m 755 .studio-web/bin/uip /usr/local/bin/uip; dotnet publish .studio-web/runner/XamlRunner.csproj -c Release -o /opt/xaml-runner --nologo -v quiet; rm -rf .studio-web"
+    timeout: 300
+
+initial_prompt: |
+  Accounts payable wants invoice intake automated. Our AP mailbox is exported to a folder, and the
+  robot should work from that. Can you build it in this project? Put the pieces in their own
+  workflows the way you would in Studio, invoked from `Main.xaml` with Invoke Workflow File: at least
+  extracting an invoice's fields and validating them.
+
+  `Main.xaml` takes `in_MailFolder`, `in_VendorsFile` and `in_OutputFolder` (all String), and returns
+  `out_Queued`, `out_Rejected` and `out_MissingAttachment` (Int32).
+
+  Each message is a folder in `in_MailFolder`; take them in name order. Its `message.txt` starts with
+  header lines, `From: `, `Subject: `, `Date: ` and `Status: `, then a blank line and the body. Only
+  messages whose status is `Unread` are new. Every other file in the folder is an attachment; the
+  `.pdf` ones (any case) are invoices, and the export has already OCR'd them, so each one is text.
+
+  Read an invoice like this: the vendor is its first non-blank line, trimmed; the invoice number is
+  what follows `Invoice No` (with or without a colon or full stop) on its line; and the total is the
+  amount after `Total` (with or without a colon) at the start of a line, such as `Total: 1,250.50 EUR`.
+  `in_VendorsFile` is CSV, `Vendor,CreditLimit`, the approved vendors; match a vendor ignoring case
+  and surrounding spaces.
+
+  Go through a new message's invoices in name order.
+  - An invoice with both fields, from an approved vendor, whose total is within its credit limit, is
+    approved: add a line to `Posting/ERP_Queue.csv` under `in_OutputFolder` (header
+    `InvoiceNumber,Vendor,Total,MessageId`; the vendor as the approved list names it, the total with
+    two decimals and no thousands separator, the message's folder name), and copy the file to
+    `Approved/<invoice number>.pdf`.
+  - Any other is rejected, with the reason `Missing invoice number or total`, `Unknown vendor` or
+    `Over credit limit`, checked in that order: copy it to `Failed/<message>-<file name>`, log a
+    warning that names the file, and write a note to the AP lead as
+    `Outbox/rejected-<message>-<file name without .pdf>.txt`: the lines `To: ap.lead@acme.example`
+    and `Subject: Rejected invoice <file name>`, a blank line, and the reason.
+  - A new message with no PDF gets a note back to its sender, `Outbox/missing-<message>.txt`, with
+    `To: <its From>` and `Subject: Missing attachment: <its Subject>`, a blank line, and a sentence
+    asking for the invoice.
+  When a new message is done, set its `Status:` header to `Read`, changing nothing else in the file.
+  Write `ERP_Queue.csv` with its header even when nothing is queued, and create any folder you need.
+  The counts are the invoices approved, the invoices rejected, and the messages with no PDF.
+
+  `UIPATH_XAML.md` has notes on this setup. It's all offline, so there's nothing to publish, and
+  I won't be around for questions: just leave the finished project here.
+
+reference:
+  directory: ".."
+
+success_criteria:
+  - type: run_command
+    description: "Every workflow loads and compiles, Main.xaml matches the argument contract, and it uses an Invoke"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh invoice_intake static"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Runs headlessly under CoreWF and behaves as specified in every scenario"
+    command: "bash $REFERENCE_DIR/_offline_xaml/grade.sh invoice_intake runtime"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
