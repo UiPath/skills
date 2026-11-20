@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered the LLM-as-judge models via the CLI"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+llm-as-judge-models'
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+guardrails\s+llm-as-judge-models'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
