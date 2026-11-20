@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Extension
 
-A Maestro community node is a JavaScript job function that Maestro Flow can call as a node. You build it with `uip function` and add the Maestro Extensions parts at submit time. The `uip extension` tool has three commands, `validate`, `upload` and `submit`. It carries the gate library, so no other command or package is needed.
+A Maestro community node is a JavaScript job function that Maestro Flow can call as a node. You build it with `uip function` and add the Maestro Extensions parts at submit time. The `uip extension` tool has three commands, `validate`, `upload` and `submit`.
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
@@ -27,10 +27,10 @@ Do NOT use this skill for:
 1. **Create the project with `uip function new` first.** The tool has no `init` or scaffold command. `submit` adopts the project it runs in.
 2. **Run `submit` before `upload`.** `upload` fails before any other call when the project has no `maestro-extensions.json`, when its `package.json` name is not `maestro-extensions.<PUBLISHER>.<NAME>`, or when the template has any problem. It adds `run uip extension submit <publisher>.<name> --yes first` to every one of these. Read the problem line above that hint. If it names a template field, such as a `TODO`, fix the field and run `validate`. Do not run `submit --yes` on an adopted project, because it skips the adopt step and takes the pull request path.
 3. **A node is one job function.** The gates fail a package whose `operate.json` `targetRuntime` is not `javascript`, one with more than one entry point, and one whose `bindings_v2.json` holds an `HttpTrigger` resource.
-4. **Pass the identity as `<PUBLISHER>.<NAME>`.** It holds no slash and exactly one dot. On a terminal `submit` asks for it. Off a terminal, pass it as the argument, or the run fails with `pass <publisher>.<name>`.
+4. **Pass the identity as `<PUBLISHER>.<NAME>`.** Each part uses lowercase letters, digits and single hyphens, for example `acme.word-count`. The full package name, `maestro-extensions.<PUBLISHER>.<NAME>`, is at most 100 characters. On a terminal `submit` asks for it. Off a terminal, pass it as the argument, or the run fails with `pass <publisher>.<name>`.
 5. **Show the adopt diff before you write it.** The first `submit` run prints the files it would write and stops. Show them to the user. Run `submit --yes` only after the user agrees.
-6. **Replace every `TODO` in `maestro-extensions.json`.** The gates fail a field that still holds the placeholder. The template lists `license`, `display.label`, `display.description`, the first tag, the first `egress` entry and `maestro.min`.
-7. **Never open the index pull request without the user's go-ahead.** Run `submit --dry-run` first, show the result, then run `submit` without it. The first registration of a node needs `--security-contact <SECURITY_CONTACT>`.
+6. **Replace every `TODO` in `maestro-extensions.json`.** The gates fail a field that still holds the placeholder.
+7. **Never open the index pull request without the user's go-ahead.** Run `submit --dry-run` first, show the result, then run `submit` without it. The first registration of a node needs `--security-contact <SECURITY_CONTACT_EMAIL>`, an email address.
 8. **`upload` needs a login.** Run `uip login` first. No `uip extension` command takes `--tenant`, because they read the tenant from that session.
 9. **A release upload names one folder.** `upload --release` needs `--yes` and exactly one of `--folder-path` or `--folder-key`. It runs the gates first and never takes `--feed-id`.
 10. **Read the outcome code, not only the exit code.** An expected stop such as `AdoptWritten` or `ConfirmationRequired` exits 1.
@@ -43,7 +43,7 @@ Ask the user where the node goes with `AskUserQuestion`, then follow that row.
 |---|---|---|
 | Personal workspace, for a quick try | `uip extension upload --run --input '<INPUT_JSON>' --output json` | Uploads `<PACKAGE_VERSION>-dev.<TIMESTAMP>` to your personal workspace feed and runs a job. No gates run. |
 | A tenant folder | `uip extension upload --release --folder-path "<FOLDER_PATH>" --yes --output json` | Runs the gates, then uploads the package version. |
-| The community index | `uip extension submit --security-contact "<SECURITY_CONTACT>" --output json` | Needs `gh` signed in with push access to the index repository. |
+| The community index | `uip extension submit --security-contact "<SECURITY_CONTACT_EMAIL>" --dry-run --output json` | Needs `gh` signed in with push access to the index repository. Drop `--dry-run` only after the user approves the pull request. |
 
 Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
 
@@ -56,10 +56,10 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
    cd <PROJECT_NAME>
    ```
 
-2. Adopt it. This run prints the files and stops.
+2. Adopt it. This run prints the files and stops. `--dry-run` has no effect on the adopt step. It stops a project that is already adopted from opening the index pull request.
 
    ```bash
-   uip extension submit <PUBLISHER>.<NAME> --output json
+   uip extension submit <PUBLISHER>.<NAME> --dry-run --output json
    ```
 
    Adopt reads the template schema from the index repository through `gh`. Sign `gh` in with access to that repository before the first adopt, whatever the destination.
@@ -67,10 +67,10 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
    After the user agrees, write them. The command exits 1 with `AdoptWritten`, which is the expected stop.
 
    ```bash
-   uip extension submit <PUBLISHER>.<NAME> --yes --output json
+   uip extension submit <PUBLISHER>.<NAME> --yes --dry-run --output json
    ```
 
-   Adopt writes `maestro-extensions.json`, renames the package to `maestro-extensions.<PUBLISHER>.<NAME>`, and adds `maestro/connection.ts` when the function reads connection inputs. It reports a missing icon file in the project's assets folder and entry point inputs that have no description, and it never deletes a file.
+   Adopt writes `maestro-extensions.json`, renames the package to `maestro-extensions.<PUBLISHER>.<NAME>`, and adds `maestro/connection.ts` when the function reads connection inputs. In that case adopt also adds `@types/node` to `devDependencies`, so run `npm install` before `validate`. It reports a missing icon file in the project's assets folder and entry point inputs that have no description, and it never deletes a file.
 
 3. Fill the `TODO` fields, then check the project.
 
@@ -83,7 +83,7 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
 4. Run the command from the destination table. For the index, check first.
 
    ```bash
-   uip extension submit --security-contact "<SECURITY_CONTACT>" --dry-run --output json
+   uip extension submit --security-contact "<SECURITY_CONTACT_EMAIL>" --dry-run --output json
    ```
 
    Run it again without `--dry-run` after the user approves the pull request.
