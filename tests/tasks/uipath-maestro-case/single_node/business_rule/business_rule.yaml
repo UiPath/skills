@@ -1,16 +1,19 @@
 task_id: skill-case-single-business-rule
 description: >
-  Build a Case Management project from an sdd.md whose only task is a
-  business-rule, inside a staged solution that already holds the rule as an
-  in-solution sibling: the CreditRisk rules project (decision RiskDecision,
-  creditScore >= 700 -> LOW_RISK, else HIGH_RISK). No rule is deployed on the
-  tenant, so the tenant index has no match; the skill must find the sibling
-  with `registry search --local` before the empty-lookup gate (#3863) and bind
-  it with resourceKey solution_folder.CreditRisk and an empty folderPath.
-  Validates the case, then runs `uip maestro case debug` on the solution and
-  requires the case and the rule task's own execution to complete. Case debug
-  reports element executions, not variable values, so the band is not graded.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry, path-to-ga]
+  Add a single-task Case to a staged solution that already holds the CreditRisk
+  business rule as an in-solution sibling (decision RiskDecision,
+  creditScore >= 700 -> LOW_RISK, else HIGH_RISK), asked the way a Studio Web
+  user would ask it. No rule is deployed on the tenant, so the agent must find
+  and bind the sibling. The grader runs the case once under
+  `uip maestro case debug` and reads the debug instance back
+  (`uip maestro case instance variables-all`): a business-rule task bound to
+  CreditRisk completed with the default creditScore 742 as its input, and the
+  case variable the prompt names, riskBand, is LOW_RISK. A riskBand in the
+  task's own run outputs must be LOW_RISK; when the run shows none, the plan
+  must set riskBand from the rule's result, not a literal or a default. That the agent ran its own test run is
+  advisory. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry, path-to-ga, outcome-graded]
 max_iterations: 1
 sandbox:
   template_sources:
@@ -20,30 +23,47 @@ sandbox:
       path: ../../_setup
       mount_point: _setup
 run_limits:
-  task_timeout: 1500
+  task_timeout: 5700  # turn 1500 + criteria 4050 + margin
   max_turns: 120
   turn_timeout: 1500
+
+# Marks the task start for the post_run debug-instance cancel.
+pre_run:
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
 
 reference:
   directory: ../..
 
 initial_prompt: |
-  The solution in ./BusinessRuleSingleCase already contains the business rule
-  project CreditRisk. Add a UiPath Case Management project named
-  "BusinessRuleSingleCase" to that same solution, built from the approved
-  `sdd.md` in this folder. Do not create a second solution, and do not change
-  the CreditRisk rule.
+  You are a coding agent in a project that already contains the business rule
+  CreditRisk, in the solution ./BusinessRuleSingleCase. No user is present,
+  and nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Treat all build gates as pre-approved — do NOT block on the
-  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
-  debug` yourself — the test harness runs it. Do NOT ask for approval,
-  confirmation, or feedback. Build end-to-end in a single pass and finish
-  with `uip maestro case validate` passing on the resulting case plan.
+  Add a case called "BusinessRuleSingleCase" to that solution that scores a
+  credit application with the CreditRisk rule.
+
+  - Someone starts the case by hand with the applicant's credit score,
+    creditScore. Use 742 when no score is given.
+  - The case runs CreditRisk on that score and keeps the risk band the rule
+    returns in a case variable called riskBand.
+
+  <!-- helper:start -->
+  CreditRisk is a business rule project in this solution and is not deployed on
+  the tenant. Its decision RiskDecision takes creditScore (a number) and returns
+  riskBand, either LOW_RISK or HIGH_RISK.
+  <!-- helper:end -->
+
+  Build and do a test run of the automation.
 success_criteria:
+  # The plan is found wherever the agent put it (any project name).
   - type: run_command
-    description: "uip maestro case validate passes on the generated case plan"
-    command: "p=$(ls BusinessRuleSingleCase/BusinessRuleSingleCase/caseplan.case BusinessRuleSingleCase/BusinessRuleSingleCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
-    timeout: 60
+    description: "uip maestro case validate passes on the case plan the agent built"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import find_caseplan; print(find_caseplan())' \"$REFERENCE_DIR\") && uip maestro case validate \"$p\" --output json"
+    timeout: 90
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -56,10 +76,24 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 840 s), plus refresh (2 x 120 s),
+  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
+  # (2 x 180 s).
   - type: run_command
-    description: "The business-rule task binds the in-solution CreditRisk rule, wires creditScore in and RiskDecision.riskBand out, and debug completes with the rule task executed"
-    command: "python3 $REFERENCE_DIR/_shared/check_business_rule_case.py"
-    timeout: 720
+    description: "Effects: one debug run in which a business-rule task bound to CreditRisk completed with creditScore 742, riskBand comes from its result, and riskBand is LOW_RISK"
+    command: "python3 $REFERENCE_DIR/single_node/business_rule/check_business_rule_run.py"
+    timeout: 4050
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
@@ -72,5 +106,7 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -5,8 +5,8 @@
 Run a coded API workflow, deployed or a sibling in the same solution, as a
 serverless Orchestrator job.
 
-Signature: `apiWorkflow({ key?, name, folderPath, inputs?, returns? })`, or
-`apiWorkflow({ key, name, location: 'in-solution', projectId, inputs?, returns? })`
+Signature: `apiWorkflow({ key?, name, folderPath, inputs?, inputSchema?, returns? })`, or
+`apiWorkflow({ key, name, location: 'in-solution', projectId, inputs?, inputSchema?, returns? })`
 for an API workflow in the same solution (see [In the same solution](#in-the-same-solution)).
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 Orchestrator often leaves an API workflow's contract blank, so `prepare` prints `Outputs (not recorded …)`; then keep `returns`, as below.
@@ -35,6 +35,10 @@ shared, pagination-safe resource-discovery procedure.
 
 `.onError(...)` is supported on API workflow steps. Choose a handler only when
 the scenario wants recovery; otherwise a faulted job may need to fault the Flow.
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## In the same solution
 

@@ -11,11 +11,16 @@ description: >
   only the newest name, so an edit in a new caseplan.json is silently ignored),
   never a lowered version, never a dropped layout or entryPointId (dropping the
   entryPointId makes the Designer re-mint the entry point, MST-16422). Local
-  only; the prompt states the copy is current, so no pull. Needs a CLI that
-  reads 32.0.4 (UiPath/cli#5001, in @dev since 1.205.0-dev.9162). Passes on the
-  skill as it stands (2026-10-09, one run each with and without #3817's
-  brownfield commit): the guard is against regressions in edits to Designer
-  plans, not a test of that commit.
+  only; the prompt states the copy is current, so no pull. Asked the way a
+  Studio Web user would ask it. Not run under debug: the edited stage is
+  entered only by a user's choice after a human approval and a webhook, which
+  a debug run never reaches, so the graded outcome is the plan file Studio Web
+  will load. Needs a CLI that reads schema 32.0.4. The guard is against
+  regressions in edits to Designer plans. The fixture stays in the workspace: the
+  Studio Web harness opens its .uipx as the session's solution (projects under
+  /solution/, where the in-page SDK compiles) and exports edits back, so the
+  graders read the workspace copy; moving it to /solution/ in pre_run leaves
+  Studio Web on an empty solution.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
@@ -38,20 +43,20 @@ pre_run:
     timeout: 300
 
 initial_prompt: |
-  The case solution in ./ExpenseDesignerSaved was just pulled from Studio Web,
-  so the local copy is current: edit it locally and don't pull it again. It is
-  the expense-reporting case, project CMGoldenExpense.
+  You are a coding agent in a project that already contains the expense-
+  reporting case (solution ExpenseDesignerSaved, case project
+  CMGoldenExpense). No user is present, and nobody will answer a question or
+  grant approval, so do not ask, do not pause, and do not wait for input. Do
+  not delete or overwrite anything this run did not create, except what the
+  task asks you to change, and do not publish to a shared destination unless
+  the task asks for it.
 
-  Add one optional built-in wait-for-timer task named "Final cool-off" to the
-  stage "Stage 7 - user select". It waits 10 minutes, starts when the stage is
-  entered, and the stage must not wait on it to complete. Leave everything else
-  in the case as it is.
+  I just pulled the solution from Studio Web, so the copy here is current.
 
-  Do NOT run `uip maestro case debug`, and do not upload or publish. Do NOT ask
-  for approval, confirmation, or feedback. Finish with `uip maestro case
-  validate` passing on the case.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
+  In the stage "Stage 7 - user select", add an optional timer task called
+  "Final cool-off" that waits 10 minutes. It starts as soon as the stage is
+  entered, and the stage doesn't wait for it to finish. Leave everything else
+  in the case as it is. I will test it myself.
 
 success_criteria:
   - type: skill_triggered
@@ -78,13 +83,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, nothing else was added or removed"
+    description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, which waits PT10M and starts on current-stage-entered; nothing else was added or removed"
     path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
     assertions:
       - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && type=='wait-for-timer'])"
         operator: equals
         expected: 1
       - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && isRequired==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && data.timeDuration=='PT10M'])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && contains(not_null(entryConditions[].rules[][].rule, `[]`), 'current-stage-entered')])"
         operator: equals
         expected: 1
       - expression: "length(nodes[].data.tasks[][])"
