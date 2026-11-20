@@ -48,11 +48,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Advisory: depends on the CLI build in the sandbox.
+  # Advisory: depends on the CLI build in the sandbox. The project is found by
+  # its project.uiproj, so a different folder layout does not fail the check.
   - type: run_command
     description: "uip agent validate reports the agent project Valid (advisory)"
     command: |-
-      uip agent validate RatesSol/RatesAgent --output json | python3 -c "import json, sys; t = sys.stdin.read(); d = json.loads(t[t.index('{'):]); sys.exit(0 if d.get('Result') == 'Success' and d.get('Data', {}).get('Status') == 'Valid' else 1)"
+      python3 -c "import glob, json, os, subprocess, sys; dirs = [os.path.dirname(f) for f in glob.glob('**/project.uiproj', recursive=True) if json.load(open(f)).get('ProjectType') == 'Agent']; t = subprocess.run(['uip', 'agent', 'validate', dirs[0], '--output', 'json'], capture_output=True, text=True).stdout if dirs else '{}'; d = json.loads(t[t.index('{'):]); sys.exit(0 if d.get('Result') == 'Success' and d.get('Data', {}).get('Status') == 'Valid' else 1)"
     timeout: 120
     expected_exit_code: 0
     weight: 1.0
