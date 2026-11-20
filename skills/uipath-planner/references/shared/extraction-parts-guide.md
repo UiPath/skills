@@ -46,10 +46,10 @@ Runs when the extraction guide's sizing (its Step 2b) plans parts. Extraction's 
    8. cross-component calls: calling step, callee component and step, data passed, failure behaviour;
    9. transactional signals: per-item constructs with object and line, for the Transactional Shape;
    10. deviations from the brief, and every object left unread;
-   11. its values list, written before its file ([extract-guide.md](../extract/extract-guide.md) Step 3), and its `values` check ([extract-guide.md](../extract/extract-guide.md) Step 6d check 1) with its missed file empty: per kind of source value, how many lines the list holds.
+   11. its values list, written before its file ([extract-guide.md](../extract/extract-guide.md) Step 3), and its `values` check ([extract-guide.md](../extract/extract-guide.md) Step 6d check 1) with its missed file empty: how many lines the search gave and, per kind of source value, how many reading added.
 9. **Checking a return** (§ Running in Parts item 5). Before reconciling, the lead agent checks each part on disk:
    1. **The files:** the file exists with the counts returned, every defect has its Source Map row with lines, and every assigned object appears in a Source Map row or in the unread list.
-   2. **The check row**, once the part returns: the lead agent runs the extraction guide's Step 6d `texts` check itself and starts its `logic` check as a part, counted in the cap on parts running at once. The row is done when the component's values list and its five check files are in the working folder. A miss goes back to the part with the evidence (§ Running in Parts item 6). The part fixes it, makes its list again over every object and repeats its `values` check when the `texts` check found the list incomplete, and its new return passes this item before it is reconciled.
+   2. **The check row**, once the part returns: the lead agent starts the extraction guide's Step 6d `logic` check as a part, counted in the cap on parts running at once. The row is done when the component's values list and its three check files are in the working folder. A miss goes back to the part with the evidence (§ Running in Parts item 6); the part fixes it, and its new return passes this item before it is reconciled.
 
 ## Reconciliation
 
