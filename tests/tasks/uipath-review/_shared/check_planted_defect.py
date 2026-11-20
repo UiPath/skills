@@ -28,12 +28,13 @@ Arguments
                           "missing"), where a negation is the finding itself.
   --mention T1|T2         Plain case-insensitive mention anywhere in the report
                           (no problem framing). Repeatable.
-  --severity WORD         The finding must be rated WORD (e.g. critical). A
-                          line that names the subject (or, with no subject, a
-                          flag term) must carry WORD, carry a finding id with
-                          its initial ("C-001"), or sit under a heading that
-                          contains WORD. "Critical: none" elsewhere, or the
-                          finding filed under Warnings, does not count.
+  --severity WORD         The finding must be rated WORD (e.g. critical). The
+                          finding line — one that names the subject AND a flag
+                          term — must carry WORD, carry a finding id with its
+                          initial ("C-001"), or sit under a heading that
+                          contains WORD. "Critical: none" elsewhere, the finding
+                          filed under Warnings, or a different Critical finding
+                          that merely names the subject does not count.
   --near N                Characters kept on each side of a subject mention
                           (default 500).
   --min-bytes N           Minimum report size (default 500).
@@ -87,10 +88,11 @@ def _without_denials(text: str, terms: list) -> str:
     return text
 
 
-def _rated(text: str, word: str, anchors: list) -> bool:
-    """True if a line naming one of `anchors` is rated `word`: the word or a
-    finding id with its initial is on the line, or the nearest heading above
-    contains the word."""
+def _rated(text: str, word: str, anchors: list, defect_terms: list) -> bool:
+    """True if the finding line is rated `word`. The finding line names one of
+    `anchors` and one of `defect_terms`; it is rated when the word or a finding
+    id with its initial is on the line, or the nearest heading above contains
+    the word."""
     word = word.lower()
     finding_id = re.compile(rf"(?<![a-z0-9]){re.escape(word[0])}-(?:[a-z]-)?\d+", re.IGNORECASE)
     heading = ""
@@ -100,6 +102,8 @@ def _rated(text: str, word: str, anchors: list) -> bool:
             heading = low
             continue
         if not any(a.lower() in low for a in anchors):
+            continue
+        if defect_terms and not any(t.lower() in low for t in defect_terms):
             continue
         if word in heading or re.search(rf"\b{re.escape(word)}\b", low) or finding_id.search(line):
             return True
@@ -157,8 +161,9 @@ def main() -> None:
             sys.exit(f"FAIL: report does not mention any of {_terms(group)}.")
 
     if a.severity:
-        anchors = subjects or [t for g in a.flag + a.flag_absence for t in _terms(g)]
-        if not _rated(text, a.severity, anchors):
+        defect_terms = [t for g in a.flag + a.flag_absence for t in _terms(g)]
+        anchors = subjects or defect_terms
+        if not _rated(text, a.severity, anchors, defect_terms):
             sys.exit(f"FAIL: the finding is not rated {a.severity.title()} — no line naming "
                      f"{anchors[:6]} carries that severity or sits under a {a.severity.title()} heading.")
 

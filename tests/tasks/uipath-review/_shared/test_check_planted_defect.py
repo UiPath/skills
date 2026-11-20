@@ -144,3 +144,14 @@ def test_severity_filed_under_warnings_fails(tmp_path):
 def test_severity_word_elsewhere_does_not_count(tmp_path):
     report = "Critical: none.\n\n### Warnings\n\n" + SECRET_ROW.format(id="W-001")
     assert _severity(tmp_path, report).returncode != 0
+
+
+def test_severity_on_a_different_finding_naming_the_subject_fails(tmp_path):
+    """PR #5046 review: a Critical row about another issue that merely names the
+    subject must not lend its severity to the defect filed under Warnings."""
+    report = ("### Critical Findings\n\n"
+              "| C-001 | — | `Workflow.json`: the Authorization call has no retry policy. |\n\n"
+              "### Warnings\n\n" + SECRET_ROW.format(id="W-001"))
+    r = _severity(tmp_path, report)
+    assert r.returncode != 0
+    assert "not rated Critical" in r.stderr

@@ -11,11 +11,12 @@ PASS requires:
     defect, AND
   * no sentence calls FinanceUtils an orphan.
 
-Matching is per clause: sentences and table rows are split again at contrast
-words (but, however, although, ...), so a negation only excuses the clause it
-sits in. "No .uipx is needed", "not an orphan" and "does not need a solution"
-never count; "FinanceUtils is not an orphan, but create a solution wrapper"
-does. A neutral statement of fact ("Review Scope: single project, no .uipx")
+A negation excuses a claim only when it governs that claim: it sits directly in
+front of it ("do not create a .uipx", "no need to add a solution wrapper",
+"not an orphan") or directly behind it (".uipx is not needed"). A negation
+elsewhere in the sentence does not: "FinanceUtils is not an orphan, but create
+a solution wrapper" and "the project is not stable, so create a solution
+wrapper" both fail. A neutral statement of fact ("Review Scope: single project, no .uipx")
 is not a recommendation and does not fail. Exit 0 on PASS.
 """
 import os
@@ -35,11 +36,20 @@ RECOMMENDS = re.compile(
     rf"|\b(?:missing|lacks?|lacking|absent|without)\s+(?:an?\s+|the\s+)?{_SOLUTION}"
     rf"|{_SOLUTION}\s+(?:is|was)\s+(?:missing|absent|required|needed|recommended)"
 )
-# The sentence rejects the idea instead of proposing it.
-REJECTS = re.compile(
-    r"\b(?:not|no|never|n't|unnecessary|needless|neither|nor)\b"
-    r"|\b(?:by design|as expected|is expected|is correct|is normal|is fine|is appropriate)\b"
-)
+# A negator directly in front of the claim: only plain words may sit between
+# (no comma), so "not stable, so create ..." does not qualify.
+_NEG_FRONT = re.compile(
+    r"(?:\bnot|n't|\bnever|\bno|\bwithout|\bneither|\bnor|\bunnecessary\s+to|\bneedless\s+to)"
+    r"\s+(?:[\w`'.]+\s+){0,3}$")
+# ... or directly behind it: ".uipx is not needed", "a solution wrapper is unnecessary".
+_NEG_BEHIND = re.compile(
+    r"^[`'\s]*(?:(?:file|wrapper|manifest|here|for\s+\w+)\s+)?(?:is|are|was|would\s+be|isn't|aren't)?\s*"
+    r"(?:not|n't|unnecessary|needless|by design|expected|correct|normal|fine|appropriate)\b")
+
+
+def governed_by_negation(clause: str, start: int, end: int) -> bool:
+    """True if the claim at clause[start:end] is itself negated or dismissed."""
+    return bool(_NEG_FRONT.search(clause[:start]) or _NEG_BEHIND.match(clause[end:]))
 ORPHAN = re.compile(r"\borphan")
 
 
@@ -82,11 +92,15 @@ def main() -> None:
     print("OK: FinanceUtils classified as a library")
 
     for s in sentences(text):
-        if RECOMMENDS.search(s) and not REJECTS.search(s):
+        rec = next((m for m in RECOMMENDS.finditer(s)
+                    if not governed_by_negation(s, m.start(), m.end())), None)
+        if rec:
             sys.exit("FAIL: report recommends a solution wrapper / reports a missing .uipx for a "
                      "single process with a co-located library — not a finding "
                      f"(solution-review-guide.md). Offending text: {s.strip()[:200]!r}")
-        if LIB in s and ORPHAN.search(s) and not REJECTS.search(s):
+        orphan = next((m for m in ORPHAN.finditer(s)
+                       if not governed_by_negation(s, m.start(), m.end())), None)
+        if LIB in s and orphan:
             sys.exit("FAIL: report calls the FinanceUtils library an orphan — libraries are "
                      f"published to a feed, not bundled. Offending text: {s.strip()[:200]!r}")
     print("OK: no solution-wrapper recommendation and no orphan claim")
