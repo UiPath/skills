@@ -10,12 +10,14 @@ name: Sprint Release Cut
 #
 #   1. cuts release/v<M.N> from main at the version ALREADY in main (M.N.0) —
 #      the release branch matches main's current version, it is NOT bumped
-#   2. dispatches publish.yml twice and waits for both runs: channel=dev sends
-#      default to GitHub Packages and Studio Web when enabled; channel=preview
-#      sends default to npmjs and Studio Web to GitHub Packages when enabled. The bot's own branch push
-#      can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
-#      dispatches are explicit. Stable (`latest`) is NOT published here —
-#      promote a line to stable MANUALLY (see docs/RELEASE.md)
+#   2. dispatches publish.yml with channel=preview and waits for it: default
+#      to npmjs and Studio Web to GitHub Packages when enabled. The bot's own
+#      branch push can't trigger publish.yml (GITHUB_TOKEN recursion guard), so
+#      the dispatch is explicit. No dev build: main already published dev for
+#      this commit, and `dev` tracks main only (a dev build from the release
+#      branch would move the tag back once main is bumped). Stable (`latest`)
+#      is NOT published here — promote a line to stable MANUALLY (see
+#      docs/RELEASE.md)
 #   3. opens a PR bumping main to the NEXT line (M.(N+1).0). The PR is opened
 #      even if step 2's publish failed — with a :warning: in the PR body — so
 #      main can still advance; a maintainer reviews the warning before merging.
@@ -76,17 +78,27 @@ jobs:
         env:
           MINOR_OVERRIDE: ${{ github.event.inputs.minor_override }}
         run: |
+          set -euo pipefail
           # The line to cut is the version ALREADY in main (see header). main is
           # advanced to the next line by the bump PR in the last step.
           CURRENT_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
           echo "current_line=$CURRENT_LINE" >> "$GITHUB_OUTPUT"
 
           if [ -n "$MINOR_OVERRIDE" ]; then
-            if ! echo "$MINOR_OVERRIDE" | grep -Eq '^[0-9]+\.[0-9]+$'; then
-              echo "::error::minor_override '$MINOR_OVERRIDE' is not MAJOR.MINOR."
+            # Bash =~ matches the whole string. grep matches line by line, so it
+            # passed a multi-line value whose first line was MAJOR.MINOR, and the
+            # extra lines forged step outputs.
+            if [[ ! "$MINOR_OVERRIDE" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::minor_override is not MAJOR.MINOR."
               exit 1
             fi
             CUT_LINE="$MINOR_OVERRIDE"
+            # The branch is cut from main, and sync-version.mjs never lowers the
+            # manifests, so a line below main's fails mid-cut. Refuse it up front.
+            if [ "$(printf '%s\n%s\n' "$CUT_LINE" "$CURRENT_LINE" | sort -V | head -1)" != "$CURRENT_LINE" ]; then
+              echo "::error::minor_override $CUT_LINE is below main's line $CURRENT_LINE. Cut an older line by hand from its own history."
+              exit 1
+            fi
             echo "Manual override -> cut $CUT_LINE (cadence gate skipped)."
           else
             # Biweekly cadence gate: act only on release Sundays (every 14 days
@@ -123,21 +135,28 @@ jobs:
 
       - name: Dry run — print plan
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run == 'true'
+        # Step outputs reach the shell through env, never through ${{ }} in the script.
+        env:
+          CURRENT_LINE: ${{ steps.target.outputs.current_line }}
+          CUT_LINE: ${{ steps.target.outputs.cut_line }}
+          NEXT_LINE: ${{ steps.target.outputs.next_line }}
         run: |
           {
             echo "## Dry run — planned sprint cut"
             echo ""
-            echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
-            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
-            echo "- would publish (and wait): DEV default to GitHub Packages; PREVIEW default to npmjs; Studio Web DEV/PREVIEW to GitHub Packages when custom publishing is enabled (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
-            echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` after the branch cut; a failed publish is carried as a warning for maintainer review"
+            echo "- current line (main): \`$CURRENT_LINE\`"
+            echo "- cut line: \`$CUT_LINE\` — branch \`release/v$CUT_LINE\` @ \`$(git rev-parse --short HEAD)\` at version \`$CUT_LINE.0\`"
+            echo "- would publish (and wait): PREVIEW default to npmjs; Studio Web PREVIEW to GitHub Packages when custom publishing is enabled (dispatch publish.yml channel=preview) — stable stays MANUAL"
+            echo "- would open a bump PR: \`main\` -> \`$NEXT_LINE.0\` after the branch cut; a failed publish is carried as a warning for maintainer review"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cut release branch
         id: cutbranch
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        env:
+          LINE: ${{ steps.target.outputs.cut_line }}
         run: |
-          LINE="${{ steps.target.outputs.cut_line }}"
+          set -euo pipefail
           BRANCH="release/v$LINE"
 
           git config user.name "github-actions[bot]"
@@ -146,16 +165,17 @@ jobs:
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
             # Branch already exists — a prior run cut it, or main's bump didn't
             # land so a later cadence run re-targets the same line. It must
-            # already carry this line's version (package.json == $LINE.0) —
-            # resume idempotently. A different version is a genuine conflict.
+            # already carry this line (package.json == $LINE.P; a hotfix may
+            # have moved it past $LINE.0) — resume idempotently. Another line
+            # is a genuine conflict.
             git fetch origin "$BRANCH"
             git checkout --detach FETCH_HEAD
             EXISTING_VERSION=$(node -p "require('./package.json').version")
-            if [ "$EXISTING_VERSION" != "$LINE.0" ]; then
-              echo "::error::$BRANCH already exists at version $EXISTING_VERSION (expected $LINE.0) — resolve manually."
+            if [ "${EXISTING_VERSION%.*}" != "$LINE" ]; then
+              echo "::error::$BRANCH already exists at version $EXISTING_VERSION (expected $LINE.x) — resolve manually."
               exit 1
             fi
-            echo "$BRANCH already cut at $LINE.0 — resuming."
+            echo "$BRANCH already cut, at $EXISTING_VERSION — resuming."
           else
             git checkout -b "$BRANCH"
             # main already carries $LINE.0 on the scheduled path, so this is
@@ -186,63 +206,56 @@ jobs:
 
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Publish dev + preview from the release branch (wait for success)
+      - name: Publish preview from the release branch (wait for success)
         id: publish
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINE: ${{ steps.target.outputs.cut_line }}
+          VERSION: ${{ steps.cutbranch.outputs.version }}
+          REQUEST_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          LINE="${{ steps.target.outputs.cut_line }}"
           BRANCH="release/v$LINE"
 
           # The bot pushed $BRANCH with GITHUB_TOKEN, which GitHub's recursion
           # guard stops from triggering publish.yml automatically — so dispatch
-          # each channel explicitly and BLOCK on its result. `gh workflow run`
-          # doesn't return the run id, so record the newest workflow_dispatch
-          # run for this branch, dispatch, then poll for the new run id and
-          # `gh run watch --exit-status` it (non-zero if the run failed). If a
-          # publish fails, this step fails; the bump PR is still opened (with a
-          # warning) and the notification reports the failure — see those steps.
-          #   - channel=dev     -> default on GitHub Packages + Studio Web when enabled
-          #   - channel=preview -> default on npmjs (--provenance) + Studio Web
-          #                        on GitHub Packages when enabled
-          # Stable (`latest`) is intentionally NOT published — promote a line
-          # to stable manually when it is ready (see docs/RELEASE.md).
-          RESULT_RUN_ID=""
-          dispatch_and_wait() {
-            channel="$1"
-            before=$(gh run list --workflow publish.yml --branch "$BRANCH" \
-              --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')
-            echo "Dispatching publish.yml channel=$channel on $BRANCH..."
-            gh workflow run publish.yml --ref "$BRANCH" -f channel="$channel"
-            run_id=""
-            for _ in $(seq 1 40); do
-              sleep 6
-              latest=$(gh run list --workflow publish.yml --branch "$BRANCH" \
-                --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // 0')
-              if [ "$latest" != "$before" ] && [ "$latest" != "0" ]; then
-                run_id="$latest"; break
-              fi
-            done
-            if [ -z "$run_id" ]; then
-              echo "::error::Timed out finding the dispatched publish.yml run for channel=$channel."
-              return 1
-            fi
-            RESULT_RUN_ID="$run_id"
-            echo "Watching publish.yml run $run_id (channel=$channel)..."
-            gh run watch "$run_id" --exit-status --interval 15
-          }
-
-          dispatch_and_wait dev
-          dispatch_and_wait preview
-          # publish.yml stamps the preview as $LINE.0-preview.<run_number>; the
+          # channel=preview explicitly and BLOCK on its result:
+          #   default on npmjs (--provenance) + Studio Web on GitHub Packages
+          #   when enabled.
+          # No channel=dev: main already published dev for this commit, and a
+          # dev build from the release branch would move `dev` back to this
+          # line once main is bumped. Stable (`latest`) is intentionally NOT
+          # published — promote a line to stable manually (see docs/RELEASE.md).
+          #
+          # `gh workflow run` doesn't return the run id. publish.yml ends its run
+          # name with the request_id input, so find the run by that. "The newest
+          # dispatch on the branch" could be a maintainer's manual run, and the
+          # cut would then watch, and report the version of, the wrong one.
+          echo "Dispatching publish.yml channel=preview on $BRANCH (request $REQUEST_ID)..."
+          gh workflow run publish.yml --ref "$BRANCH" -f channel=preview -f request_id="$REQUEST_ID"
+          run_id=""
+          for _ in $(seq 1 40); do
+            sleep 6
+            run_id=$(gh run list --workflow publish.yml --branch "$BRANCH" --event workflow_dispatch \
+              --limit 20 --json databaseId,displayTitle \
+              --jq "map(select(.displayTitle == \"Publish preview from $BRANCH $REQUEST_ID\")) | .[0].databaseId // empty")
+            [ -n "$run_id" ] && break
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::Timed out finding the dispatched publish.yml run (request $REQUEST_ID)."
+            exit 1
+          fi
+          echo "Watching publish.yml run $run_id..."
+          gh run watch "$run_id" --exit-status --interval 15
+          # publish.yml stamps the preview as <version>-preview.<run_number>; the
           # notification links the exact npmjs version, so surface it here.
-          PREVIEW_RUN_NUMBER=$(gh run view "$RESULT_RUN_ID" --json number --jq '.number')
-          PREVIEW_VERSION="$LINE.0-preview.$PREVIEW_RUN_NUMBER"
+          RUN_NUMBER=$(gh run view "$run_id" --json number --jq '.number')
+          PREVIEW_VERSION="$VERSION-preview.$RUN_NUMBER"
           echo "preview_version=$PREVIEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Both default publish runs succeeded ($LINE.0-dev / $PREVIEW_VERSION); Studio Web counterparts succeeded when custom publishing was enabled."
+          echo "Default preview publish succeeded ($PREVIEW_VERSION); Studio Web preview succeeded when custom publishing was enabled."
 
       - name: Open version-bump PR against main
         id: mainbump
@@ -256,10 +269,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          CUT_LINE: ${{ steps.target.outputs.cut_line }}
+          NEXT_LINE: ${{ steps.target.outputs.next_line }}
         run: |
           set -euo pipefail
-          CUT_LINE="${{ steps.target.outputs.cut_line }}"
-          NEXT_LINE="${{ steps.target.outputs.next_line }}"
           PR_BRANCH="auto/sprint-bump-$NEXT_LINE"
 
           git config user.name "github-actions[bot]"
@@ -302,13 +315,15 @@ jobs:
           fi
           BODY="Automated sprint cut: \`release/v$CUT_LINE\` was cut. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md."
           if [ "${PUBLISH_OUTCOME:-}" = "success" ]; then
-            BODY="$BODY"$'\n\n'":white_check_mark: default dev + preview builds published from \`release/v$CUT_LINE\`; Studio Web counterparts were published when custom publishing was enabled."
+            BODY="$BODY"$'\n\n'":white_check_mark: default preview build published from \`release/v$CUT_LINE\`; the Studio Web preview was published when custom publishing was enabled."
           else
-            BODY="$BODY"$'\n\n'":warning: The dev/preview publish did **not** succeed (outcome: \`${PUBLISH_OUTCOME:-unknown}\`). This bump PR was opened anyway — verify the publish from the run logs before merging."
+            BODY="$BODY"$'\n\n'":warning: The preview publish did **not** succeed (outcome: \`${PUBLISH_OUTCOME:-unknown}\`). This bump PR was opened anyway — verify the publish from the run logs before merging."
           fi
 
           git commit -m "chore(release): bump main to $NEXT_LINE.0 after cutting $CUT_LINE"
-          git push origin "HEAD:$PR_BRANCH"
+          # No open PR uses this branch (checked above). A copy left by a closed,
+          # unmerged bump PR would reject a plain push, so replace it.
+          git push --force origin "HEAD:refs/heads/$PR_BRANCH"
           URL=$(gh pr create --head "$PR_BRANCH" --base main \
             --title "chore(release): bump main to $NEXT_LINE.0 (sprint cut)" \
             --body "$BODY")
@@ -317,14 +332,20 @@ jobs:
 
       - name: Summary
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        env:
+          CUT_LINE: ${{ steps.target.outputs.cut_line }}
+          NEXT_LINE: ${{ steps.target.outputs.next_line }}
+          SHORT_SHA: ${{ steps.cutbranch.outputs.short_sha }}
+          PREVIEW_VERSION: ${{ steps.publish.outputs.preview_version }}
+          BUMP_URL: ${{ steps.mainbump.outputs.url }}
         run: |
           {
             echo "## Sprint cut complete"
             echo ""
-            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
-            echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
-            echo "- published (waited for success): default DEV (GitHub Packages) + PREVIEW (npmjs), plus Studio Web DEV + PREVIEW (GitHub Packages) when custom publishing was enabled, for line \`${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
-            echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
+            echo "- cut line: \`$CUT_LINE\` (main was on this line)"
+            echo "- \`release/v$CUT_LINE\` @ \`$SHORT_SHA\`"
+            echo "- published (waited for success): default PREVIEW (npmjs) \`$PREVIEW_VERSION\`, plus Studio Web PREVIEW (GitHub Packages) when custom publishing was enabled (stable stays manual)"
+            echo "- bump PR opened (-> \`$NEXT_LINE.0\`): $BUMP_URL — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Announce the cut on Slack (#team-coding-agents)

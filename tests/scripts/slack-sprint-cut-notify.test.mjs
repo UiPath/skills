@@ -107,7 +107,7 @@ test("a failed cut warns, skips publishing and says main stays on the cut versio
     branch,
     ":warning: Release branch `release/v1.199` cut from `main` FAILED (<https://github.com/UiPath/skills/actions/runs/555|see logs>)",
   );
-  assert.equal(preview, ":warning: Dev/preview package publishing skipped");
+  assert.equal(preview, ":warning: Preview package publishing skipped");
   assert.equal(bump, ":warning: Version-bump PR not opened — `main` stays on `1.199.0`");
 });
 
@@ -117,7 +117,7 @@ test("cut ok but publish failed: warns with the run link; a bump PR is flagged f
   assert.ok(head.startsWith(":warning:"));
   assert.match(
     preview,
-    /^:warning: A dev\/preview publish FAILED .*<https:\/\/github\.com\/UiPath\/skills\/actions\/runs\/555\|see logs>/,
+    /^:warning: The preview publish FAILED .*<https:\/\/github\.com\/UiPath\/skills\/actions\/runs\/555\|see logs>/,
   );
   assert.match(
     bump,

@@ -113,7 +113,16 @@ function compareBaseVersion(a, b) {
   return 0;
 }
 
+// M.N.P with an optional pre-release stamp. compareBaseVersion on anything else
+// compares NaN or undefined, which reads as "not lower" and lets a bad version
+// past the downgrade guard.
+const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+
 const version = readJson(PATHS.pkg).version;
+if (typeof version !== "string" || !VERSION.test(version)) {
+  console.error(`✗ package.json version ${JSON.stringify(version)} is not M.N.P.`);
+  process.exit(1);
+}
 const targetCli = cliLine(version);
 
 const drift = [];
@@ -134,6 +143,13 @@ if (manifest.skillsVersion !== version || manifest.targetCli !== targetCli) {
 // base version exactly (pre-release suffix stripped).
 const plugin = readJson(PATHS.plugin);
 const pluginVersion = baseVersion(version);
+if (typeof plugin.version !== "string" || !VERSION.test(plugin.version)) {
+  console.error(
+    `✗ .claude-plugin/plugin.json version ${JSON.stringify(plugin.version)} is not M.N.P. ` +
+      "Fix it by hand; it cannot be compared against package.json.",
+  );
+  process.exit(1);
+}
 if (compareBaseVersion(pluginVersion, plugin.version) < 0) {
   // Never downgrade. Plugin auto-update doesn't go backwards, so writing a
   // lower version (a bad manual edit / revert in package.json) would freeze
