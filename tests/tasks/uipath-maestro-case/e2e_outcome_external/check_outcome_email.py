@@ -19,6 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "_setup"))
 from outcome_probe import (  # noqa: E402
+    email_miss_reason,
     ensure_debug_ran,
     require_attributable,
     fail,
@@ -39,8 +40,10 @@ def main() -> int:
         print(f"    email: {hit['subject']!r} sent={hit['received']}")
 
     if not hits:
+        why = email_miss_reason()
         fail(f"no email carrying reference {token} reached the approver's mailbox — "
-             "the approver was never notified (a saved draft does not count)")
+             + (f"found {why}" if why else "no message carries it at all")
+             + " (a saved draft does not count)")
     if len(hits) > 1:
         # The objective is "the approver was notified", so extra copies still meet it.
         # Duplicates are reported but not failed: the agent disobeying the "harness runs

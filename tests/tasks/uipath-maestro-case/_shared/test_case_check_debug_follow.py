@@ -27,7 +27,7 @@ INSTANCE = "62c2f4e5-0000-4000-8000-000000000001"
 TIMEOUT_ENVELOPE = json.dumps({
     "Result": "Failure",
     "Message": f"Debug polling timed out after 600s — instance {INSTANCE} was still Running",
-    "Code": "timeout",
+    "ErrorCode": "timeout",
     "Data": {"instanceId": INSTANCE},
 })
 ROWS = [{"elementId": "t1", "elementType": "ServiceTask", "status": "Completed"}]
@@ -108,3 +108,21 @@ def test_path_failures_skip_incidents_for_a_parked_run(monkeypatch) -> None:
             "required_ids": set()}
 
     case_run_path.path_failures(path, {"status": "Suspended", "instance_id": INSTANCE, "executions": []})
+
+
+def test_poll_timeout_is_recognised_from_either_code_key() -> None:
+    for key in ("Code", "ErrorCode"):
+        envelope = json.dumps({"Message": "x", key: "timed out", "Data": {"instanceId": INSTANCE}})
+        assert case_check._debug_poll_timeout(envelope) == INSTANCE
+
+
+def test_suspended_instance_stops_the_follow_with_its_incidents(debug, monkeypatch) -> None:
+    _statuses(monkeypatch, ["Running", "Suspended"])
+    incidents = [{"errorCode": "E1", "errorMessage": "boom", "elementId": "t1"}]
+    monkeypatch.setattr(case_run, "instance_incidents", lambda i: incidents)
+
+    with pytest.raises(SystemExit) as raised:
+        case_check.run_debug(timeout=900)
+
+    assert "incident [E1] boom (element t1)" in str(raised.value)
+    assert "still Running" not in str(raised.value)

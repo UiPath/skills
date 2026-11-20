@@ -26,7 +26,7 @@ sandbox:
 run_limits:
   max_turns: 120
   turn_timeout: 2400
-  task_timeout: 6600  # turn 2400 + criteria 4085 + margin
+  task_timeout: 6600  # turn 2400 + criteria 4025 + margin
 reference:
   directory: ../..
 

@@ -283,6 +283,10 @@ def test_assert_rule_encoded_accepts_a_script_that_names_every_severity() -> Non
     bpmn_live.assert_rule_encoded(_rule_process(script=CLASSIFYING_SCRIPT))
 
 
+def test_assert_rule_encoded_matches_severities_case_insensitively() -> None:
+    bpmn_live.assert_rule_encoded(_rule_process(script='return vars.a ? "sev1" : vars.b ? "SEV2" : "sev3";'))
+
+
 def test_assert_rule_encoded_accepts_severities_in_uipath_values() -> None:
     text = f"""<bpmn:definitions xmlns:bpmn="{bpmn_live.BPMN_NS}" xmlns:uipath="{bpmn_live.UIPATH_NS}">
   <bpmn:process id="Process_1">

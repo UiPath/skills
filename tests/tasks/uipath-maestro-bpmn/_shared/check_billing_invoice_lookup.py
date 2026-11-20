@@ -194,9 +194,6 @@ def structured_filter_leaves(parsed_json) -> list:
     return leaves
 
 
-# ── mode: lookup (F: check_billing_invoice_lookup.py) ────────────────────────
-
-
 def _variable_children(root: ET.Element, tag: str) -> list[ET.Element]:
     variables = root.find(".//uipath:variables", NS)
     if variables is None:

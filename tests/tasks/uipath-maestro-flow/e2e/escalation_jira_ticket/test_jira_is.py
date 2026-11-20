@@ -100,3 +100,66 @@ def test_issue_absent_reads_any_issue_type(monkeypatch: pytest.MonkeyPatch, load
     assert jira_is.issue_absent("conn", "CE-9") is False
     (cmd,) = seen
     assert "curated_get_issue" in cmd and "issuetype" not in " ".join(cmd)
+
+
+def _run_teardown(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, patches: dict) -> str:
+    import contextlib
+    import io
+    import sys
+
+    monkeypatch.syspath_prepend(str(HERE / "_setup"))
+    monkeypatch.delitem(sys.modules, "jira_is", raising=False)
+    import jira_is
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".created_keys").write_text("CE-1 CE-2 CE-3 CE-4 CE-5 CE-6")
+    for name, value in patches.items():
+        monkeypatch.setattr(jira_is, name, value)
+    spec = importlib.util.spec_from_file_location("teardown_jira_run", HERE / "_setup" / "teardown_jira.py")
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.suppress(SystemExit):
+        spec.loader.exec_module(module)
+    monkeypatch.delitem(sys.modules, "jira_is", raising=False)
+    return out.getvalue()
+
+
+def test_teardown_stops_at_the_deadline_and_stays_under_post_run(monkeypatch, tmp_path) -> None:
+    now = [0.0]
+    started: list[float] = []
+
+    def slow_delete(_conn, _key):
+        started.append(now[0])
+        now[0] += 60
+        return True
+
+    out = _run_teardown(monkeypatch, tmp_path, {
+        "_now": lambda: now[0],
+        "connection_id": lambda: "conn",
+        "delete_issue": slow_delete,
+    })
+    assert "skipped CE-3" in out
+    assert len(started) == 2
+    assert now[0] <= 120
+
+
+def test_every_call_timeout_is_capped_at_the_remaining_time(monkeypatch) -> None:
+    jira_is = _load_module()
+    now = [0.0]
+    seen: list[float] = []
+    monkeypatch.setattr(jira_is, "_now", lambda: now[0])
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs["timeout"])
+        return Result({"Result": "Success", "Data": {}})
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    jira_is.set_deadline(30)
+    jira_is._run("is", "connections", "list")
+    now[0] = 25
+    jira_is._run("is", "connections", "list")
+    now[0] = 31
+    with pytest.raises(TimeoutError):
+        jira_is._run("is", "connections", "list")
+    assert seen == [30, 5]

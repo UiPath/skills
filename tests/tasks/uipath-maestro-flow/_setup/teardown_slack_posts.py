@@ -80,7 +80,10 @@ def connection_id() -> str | None:
 def is_gone(done: subprocess.CompletedProcess | None) -> bool:
     if done is None:
         return False
-    if done.returncode == 0 and parse(done).get("Result") == RESULT_SUCCESS:
+    envelope = parse(done)
+    data = envelope.get("Data")
+    slack_refused = isinstance(data, dict) and data.get("ok") is False
+    if done.returncode == 0 and envelope.get("Result") == RESULT_SUCCESS and not slack_refused:
         return True
     text = f"{done.stdout}\n{done.stderr}".lower()
     return any(marker in text for marker in ABSENT_MARKERS)

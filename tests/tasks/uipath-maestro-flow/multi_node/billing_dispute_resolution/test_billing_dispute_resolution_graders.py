@@ -281,6 +281,20 @@ def test_overcharge_fails_when_posting_did_not_run(effects, flow):
     assert "FinancialPostingFunction" in str(exc.value)
 
 
+def test_overcharge_fails_when_the_ixp_extraction_did_not_complete(effects, flow):
+    executed = [n for n in ALL_NODES if n != "invoiceExtraction"]
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(executed, {**POSTED, **APPROVED}))
+    assert "IxP extraction did not complete" in str(exc.value)
+
+
+def test_overcharge_fails_when_the_writer_after_posting_did_not_complete(effects, flow):
+    executed = [n for n in ALL_NODES if n != "autonomousAgent3"]
+    with pytest.raises(SystemExit) as exc:
+        effects.check_overcharge(flow, _payload(executed, {**POSTED, **APPROVED}))
+    assert "writer agent after posting did not complete" in str(exc.value)
+
+
 @pytest.mark.parametrize("skipped,entity", [
     ("queryEntityRecords1", "BillingDisputeCRM"),
     ("queryEntityRecords2", "BillingDisputeERP"),

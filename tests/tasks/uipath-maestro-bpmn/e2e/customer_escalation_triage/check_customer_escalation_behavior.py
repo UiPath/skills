@@ -36,7 +36,7 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -113,6 +113,7 @@ class Contract:
     output_ids: dict[str, str]
     jira_create_ids: tuple[str, ...]
     slack_send_ids: tuple[str, ...]
+    output_owners: dict[str, str] = field(default_factory=dict)
 
 
 def resolve_contract(path: Path) -> Contract:
@@ -129,6 +130,7 @@ def resolve_contract(path: Path) -> Contract:
     if variables is None:
         raise CheckFailure("root process is missing uipath:variables")
     output_ids: dict[str, str] = {}
+    output_owners: dict[str, str] = {}
     for variable in variables:
         name = variable.attrib.get("name")
         identifier = variable.attrib.get("id")
@@ -145,6 +147,8 @@ def resolve_contract(path: Path) -> Contract:
                 "runtime value cannot be addressed"
             )
         output_ids[name] = identifier
+        if variable.attrib.get("elementId"):
+            output_owners[name] = variable.attrib["elementId"]
     missing = sorted(set(OUTPUT_TYPES) - set(output_ids))
     if missing:
         raise CheckFailure(f"public outputs not declared: {missing}")
@@ -183,7 +187,27 @@ def resolve_contract(path: Path) -> Contract:
         output_ids=output_ids,
         jira_create_ids=ids_for(escalation_is.JIRA_CONNECTOR),
         slack_send_ids=ids_for(escalation_is.SLACK_CONNECTOR),
+        output_owners=output_owners,
     )
+
+
+def public_output(
+    contract: Contract, variables_data: object, globals_map: dict, name: str
+) -> object:
+    """The output's Globals value, else the owning element's Outputs (root
+    outputs can read null while the end event still carries the value)."""
+    try:
+        value = resolve_runtime_key(globals_map, contract.output_ids[name], name)
+    except CheckFailure:
+        value = None
+    owner = contract.output_owners.get(name)
+    if value is not None or not owner:
+        return value
+    for record in element_output_records(variables_data, owner):
+        found = get_ci(record, name)
+        if found is not None:
+            return found
+    return None
 
 
 def _step_values(
@@ -373,8 +397,8 @@ def assert_outcome(
     if not isinstance(globals_map, dict):
         raise CheckFailure(f"root scope Globals is not a map: {globals_map!r}")
     actual = {
-        name: resolve_runtime_key(globals_map, identifier, name)
-        for name, identifier in contract.output_ids.items()
+        name: public_output(contract, variables_data, globals_map, name)
+        for name in contract.output_ids
     }
     for name, declared_type in OUTPUT_TYPES.items():
         if not exact_type(actual[name], declared_type):

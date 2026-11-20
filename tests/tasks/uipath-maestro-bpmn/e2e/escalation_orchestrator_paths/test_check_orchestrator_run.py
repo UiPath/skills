@@ -140,7 +140,9 @@ def test_wrong_severity_fails():
     "value",
     ["draft", "Draft response", True, "Needs draft", "Draft for engineering", "drafted", "true", "Yes", "YES",
      "Response required", "Response", "response needed", "DraftRequired", "DraftResponse", "draftRequired",
-     "Auto-reply", "AI-generated reply", "Draft", "maybe", "pending"],
+     "Auto-reply", "AI-generated reply", "Draft", "maybe", "pending", "Draft (not sent)",
+     "Draft: no workaround is available yet", "Draft reply: there is no workaround for this outage",
+     "Draft (none sent yet)"],
 )
 def test_a_draft_response_mode_is_read_by_meaning(value):
     case = SEED["cases"][0]
@@ -157,7 +159,7 @@ def test_sev3_needs_no_draft_response():
 @pytest.mark.parametrize(
     "value",
     ["No draft", "NoDraft", "no_draft", "no-draft", "Draft not needed", "Not applicable", "N/A",
-     "No response needed", "none", "Draft: none", "none (draft not required)", "Do not draft",
+     "No response needed", "none", "Draft: none", "none (draft not required)", "Draft (not required)", "Draft (not needed)", "Do not draft",
      "Don't draft", "Without a draft", "Draft: false", False, "not drafted", "not_drafted", "undrafted",
      "draft_response_not_needed", "Response not required", "none required", "skipped", "false", "No response",
      "Not required", "Not needed", "no", "No.", None, "", "   ", "-", "nothing", "nil", "empty", "Nil", "Empty",

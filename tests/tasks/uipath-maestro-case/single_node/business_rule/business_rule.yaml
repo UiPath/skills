@@ -23,7 +23,7 @@ sandbox:
       path: ../../_setup
       mount_point: _setup
 run_limits:
-  task_timeout: 4600  # turn 1500 + criteria 2950 + margin
+  task_timeout: 5700  # turn 1500 + criteria 4050 + margin
   max_turns: 120
   turn_timeout: 1500
 
@@ -87,13 +87,13 @@ success_criteria:
     pass_threshold: 0.0
 
   # run_debug's worst case: two debug starts (the retry after a Cancelled run),
-  # each with one transient-fault retry (4 x 540 s), plus refresh (2 x 120 s),
+  # each with one transient-fault retry (4 x 840 s), plus refresh (2 x 120 s),
   # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
   # (2 x 180 s).
   - type: run_command
     description: "Effects: one debug run in which a business-rule task bound to CreditRisk completed with creditScore 742, riskBand comes from its result, and riskBand is LOW_RISK"
     command: "python3 $REFERENCE_DIR/single_node/business_rule/check_business_rule_run.py"
-    timeout: 2850
+    timeout: 4050
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

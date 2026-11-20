@@ -351,7 +351,8 @@ def assert_rule_encoded(bpmn_text: str) -> None:
         raise CheckFailure(f"the BPMN is not well-formed XML: {error}") from error
 
     encoded = _encoded_text(root)
-    missing = [s for s in SEVERITIES if s not in encoded]
+    folded = encoded.casefold()
+    missing = [s for s in SEVERITIES if s.casefold() not in folded]
     if missing:
         raise CheckFailure(
             f"the process never names {missing}: it returns the seeded case's answer "

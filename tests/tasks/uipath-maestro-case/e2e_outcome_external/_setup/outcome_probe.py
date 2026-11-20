@@ -500,14 +500,31 @@ def probe_email(token: str) -> list:
         if any(s in blob for s in ("Unauthorized", "invalid_grant", "401", "403")):
             precondition_failed(f"cannot read the sandbox mailbox: {blob[:400]}")
         return []
+    matching = [m for m in _items(payload) if token in (m.get("subject") or "")]
+    drafts = [m for m in matching if m.get("isDraft")]
+    sent = [m for m in matching if not m.get("isDraft")]
+    elsewhere = [m for m in sent if APPROVER not in _recipients(m)]
     hits = [
         {"subject": m.get("subject"), "received": m.get("sentDateTime") or m.get("receivedDateTime")}
-        for m in _items(payload)
-        if token in (m.get("subject") or "")
-        and not m.get("isDraft")
-        and APPROVER in _recipients(m)
+        for m in sent
+        if APPROVER in _recipients(m)
     ]
-    return _only_after(hits, "received", "email")
+    kept = _only_after(hits, "received", "email")
+    counts = (
+        (len(drafts), "token-matching message(s) left as drafts"),
+        (len(elsewhere), f"sent message(s) not addressed to {APPROVER}"),
+        (len(hits) - len(kept), "message(s) predating the case run"),
+    )
+    EMAIL_MISSES[:] = [f"{count} {what}" for count, what in counts if count]
+    return kept
+
+
+EMAIL_MISSES: list[str] = []
+
+
+def email_miss_reason() -> str:
+    """Why the last ``probe_email`` found no qualifying message, else empty."""
+    return "; ".join(EMAIL_MISSES)
 
 
 def probe_issue(token: str) -> list:

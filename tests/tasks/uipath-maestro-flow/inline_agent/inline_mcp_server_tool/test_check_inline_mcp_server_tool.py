@@ -50,7 +50,7 @@ def _flow(edge_port="tool"):
     }
 
 
-def _project(root: Path, *, flow=None, resource=True):
+def _project(root: Path, *, flow=None, resource=True, enabled=True):
     project = root / "DevToolsFlow" / "DevToolsFlow"
     project.mkdir(parents=True)
     (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
@@ -61,7 +61,7 @@ def _project(root: Path, *, flow=None, resource=True):
     if resource:
         (agent / "resources" / "7c1e" / "resource.json").write_text(json.dumps({
             "$resourceType": "mcp", "name": "GitHubMcp", "description": "GitHub tools",
-            "isEnabled": True, "id": "2d9f6a1e-1111-4222-8333-944455556666", "tools": [],
+            "isEnabled": enabled, "id": "2d9f6a1e-1111-4222-8333-944455556666", "tools": [],
         }))
 
 
@@ -104,6 +104,13 @@ def test_wiring_without_the_resource_file_fails(sandbox, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         _main(monkeypatch, "wiring")
     assert "GitHubMcp MCP server" in str(exc.value)
+
+
+def test_wiring_with_a_disabled_resource_fails(sandbox, monkeypatch):
+    _project(sandbox, enabled=False)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "wiring")
+    assert "is not enabled" in str(exc.value)
 
 
 def test_mcp_node_on_the_wrong_handle_fails(sandbox, monkeypatch):

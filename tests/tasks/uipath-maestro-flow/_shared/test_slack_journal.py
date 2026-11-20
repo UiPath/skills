@@ -132,8 +132,10 @@ def test_the_grader_and_teardown_share_the_journal_file():
 
 
 class FakeUip:
-    def __init__(self, rows=None, fail=(), absent=()):
+    def __init__(self, rows=None, fail=(), absent=(), not_ok=(), bare=()):
         self.rows, self.fail, self.absent = rows if rows is not None else [self.row()], set(fail), set(absent)
+        self.not_ok = set(not_ok)
+        self.bare = set(bare)
         self.deleted = []
 
     @staticmethod
@@ -153,7 +155,12 @@ class FakeUip:
             return subprocess.CompletedProcess(args, 1, json.dumps({"Result": "Failure", "Message": "message_not_found"}), "")
         if ts in self.fail:
             return subprocess.CompletedProcess(args, 1, json.dumps({"Result": "Failure", "Message": "500"}), "")
-        return subprocess.CompletedProcess(args, 0, json.dumps({"Result": "Success"}), "")
+        if ts in self.not_ok:
+            return subprocess.CompletedProcess(
+                args, 0, json.dumps({"Result": "Success", "Data": {"ok": False, "error": "cant_delete_message"}}), "")
+        if ts in self.bare:
+            return subprocess.CompletedProcess(args, 0, json.dumps({"Result": "Success", "Data": {}}), "")
+        return subprocess.CompletedProcess(args, 0, json.dumps({"Result": "Success", "Data": {"ok": True}}), "")
 
 
 def _seed(sandbox, *posts):
@@ -185,6 +192,21 @@ def test_teardown_retries_once_then_keeps_the_journal_and_continues(sandbox, mon
     assert [d[1] for d in fake.deleted] == [TS, TS, OTHER_TS]
     assert "could not confirm deletion" in capsys.readouterr().out
     assert (sandbox / ".slack-posts.jsonl").exists()
+
+
+def test_teardown_does_not_count_a_slack_ok_false_as_deleted(sandbox, monkeypatch, capsys):
+    _seed(sandbox, [CHANNEL, TS])
+    monkeypatch.setattr(teardown, "run_uip", FakeUip(not_ok={TS}))
+    teardown.main()
+    assert "could not confirm deletion" in capsys.readouterr().out
+    assert (sandbox / ".slack-posts.jsonl").exists()
+
+
+def test_teardown_counts_a_success_without_slack_ok_as_deleted(sandbox, monkeypatch):
+    _seed(sandbox, [CHANNEL, TS])
+    monkeypatch.setattr(teardown, "run_uip", FakeUip(bare={TS}))
+    teardown.main()
+    assert not (sandbox / ".slack-posts.jsonl").exists()
 
 
 def test_teardown_tolerates_a_dead_cli_and_bad_lines(sandbox, monkeypatch):

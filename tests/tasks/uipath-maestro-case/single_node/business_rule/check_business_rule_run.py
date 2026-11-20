@@ -180,7 +180,7 @@ def check_run(plan: dict, payload: dict, evidence: RunEvidence) -> list[str]:
 def main() -> None:
     plan = read_caseplan()
     since = since_iso()
-    payload = run_debug(timeout=540)
+    payload = run_debug(timeout=840)
     evidence = read_run(payload, since)
     names = check_run(plan, payload, evidence)
     print(

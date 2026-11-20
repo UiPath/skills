@@ -454,6 +454,8 @@ GRADED_VALUES = {
     "billing_discrepancy_detector": ("1610", detector.INVOICE, detector.TIER),
     "billing_invoice_lookup": tuple(expected for _raw, expected, _count, _label in invoice.FOUND),
     "billing_resolution_writer": (writer.INVOICE, writer.CREDIT_TEXT),
+    "e2e_01_invoice_approval_greenfield": (invoice_run.VENDOR, str(invoice_run.AMOUNT), invoice_run.CURRENCY),
+    "e2e_07_apptask_brownfield": (expense_run.EMPLOYEE, str(expense_run.AMOUNT), expense_run.DESCRIPTION),
 }
 
 

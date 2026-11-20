@@ -56,3 +56,23 @@ def test_drafts_other_recipients_and_other_tokens_do_not_count(monkeypatch):
 def test_a_message_sent_before_the_harness_run_does_not_count(monkeypatch):
     hits, _ = _probe(monkeypatch, [_message(sentDateTime="2026-11-19T22:55:00Z")])
     assert hits == []
+
+
+def test_a_miss_names_why_each_candidate_was_dropped(monkeypatch):
+    messages = [
+        _message(isDraft=True),
+        _message(toRecipients=[{"emailAddress": {"address": "someone@example.com"}}]),
+        _message(sentDateTime="2026-11-19T22:55:00Z"),
+    ]
+    hits, _ = _probe(monkeypatch, messages)
+
+    reason = outcome_probe.email_miss_reason()
+    assert hits == []
+    assert "1 token-matching message(s) left as drafts" in reason
+    assert "not addressed to" in reason
+    assert "predating the case run" in reason
+
+
+def test_no_candidates_leaves_no_reason(monkeypatch):
+    _probe(monkeypatch, [_message(subject="unrelated")])
+    assert outcome_probe.email_miss_reason() == ""

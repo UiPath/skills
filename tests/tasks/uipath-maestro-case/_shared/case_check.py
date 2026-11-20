@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 import time
+from enum import Enum
 from typing import Any, Iterable, NoReturn, Sequence
 
 
@@ -667,12 +668,20 @@ _DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
 _DEBUG_SUSPENDED = re.compile(r'"finalStatus"\s*:\s*"Suspended"', re.IGNORECASE)
 _DEBUG_NO_INCIDENT = "No incident details returned by PIMS"
 _DEBUG_RETRY_SLEEP_S = 15
+_SUSPENDED_REASON = "the debug session suspended with no incident details"
 
 
-def retry_after_cancelled() -> None:
+class SuspendedRun(Enum):
+    """How a Suspended debug run with no incident is read."""
+
+    PARKED = "parked"  # the case waits on a timer by design
+    TRANSIENT = "transient"  # a completing case; Suspended is the tenant's fault
+
+
+def retry_after_cancelled(reason: str = "the debug instance was cancelled mid-run") -> None:
     print(
-        "NOTE: retrying `uip maestro case debug` once — the debug instance "
-        "was cancelled mid-run, which is the tenant's fault and not the plan's.",
+        f"NOTE: retrying `uip maestro case debug` once — {reason}, "
+        "which is the tenant's fault and not the plan's.",
         flush=True,
     )
     time.sleep(_DEBUG_RETRY_SLEEP_S)
@@ -685,7 +694,9 @@ def _suspended_without_incident(payload: dict | None) -> bool:
     return status == "Suspended" and not _get_ci(payload, "incidents", "Incidents")
 
 
-def debug_fault_is_transient(output: str) -> str | None:
+def debug_fault_is_transient(
+    output: str, suspended: SuspendedRun = SuspendedRun.TRANSIENT
+) -> str | None:
     """Name the tenant-side fault in a failed ``case debug`` output, else None.
 
     Matches only the two observed shapes: an HTTP status from the debug
@@ -698,8 +709,12 @@ def debug_fault_is_transient(output: str) -> str | None:
         return f"HTTP {match.group(1)} from the debug service"
     if _DEBUG_CANCELLED.search(output):
         return "the debug instance was cancelled mid-run"
-    if _DEBUG_SUSPENDED.search(output) and _DEBUG_NO_INCIDENT in output:
-        return "the debug session suspended with no incident details"
+    if (
+        suspended is SuspendedRun.TRANSIENT
+        and _DEBUG_SUSPENDED.search(output)
+        and _DEBUG_NO_INCIDENT in output
+    ):
+        return _SUSPENDED_REASON
     return None
 
 
@@ -977,17 +992,21 @@ def run_debug(
         project_glob=project_glob,
         solution_glob=solution_glob,
         refresh_timeout=refresh_timeout,
+        suspended=SuspendedRun.TRANSIENT,
     )
     status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status == "Cancelled" or _suspended_without_incident(payload):
         # Same tenant-side fault as the non-zero-exit path, reported through a
         # clean exit. One retry, announced, then it counts.
-        retry_after_cancelled()
+        retry_after_cancelled(
+            "the debug instance was cancelled mid-run" if status == "Cancelled" else _SUSPENDED_REASON
+        )
         payload = start_debug(
             timeout=timeout,
             project_glob=project_glob,
             solution_glob=solution_glob,
             refresh_timeout=refresh_timeout,
+            suspended=SuspendedRun.TRANSIENT,
         )
         status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
@@ -1005,6 +1024,7 @@ def start_debug(
     project_glob: str = "**/project.uiproj",
     solution_glob: str = "**/*.uipx",
     refresh_timeout: int = 120,
+    suspended: SuspendedRun = SuspendedRun.PARKED,
 ) -> dict:
     """Like ``run_debug`` but does NOT require ``finalStatus == Completed``.
 
@@ -1061,7 +1081,7 @@ def start_debug(
             payload = _follow_instance(timed_out, started + timeout, timeout)
             _record_debug_instance(payload)
             return payload
-        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
+        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}", suspended)
         if fault is None or attempt == 2:
             retried = " (after one retry)" if attempt == 2 else ""
             # The reason first: the raw dump below is mostly --log-level debug noise.
@@ -1097,10 +1117,19 @@ def _debug_poll_timeout(stdout: str) -> str | None:
     instance_id = _get_ci(data, "instanceId", "InstanceId") if isinstance(data, dict) else None
     if not instance_id:
         return None
-    text = f"{_get_ci(envelope, 'Message') or ''} {_get_ci(envelope, 'Code') or ''}"
+    code = _get_ci(envelope, "ErrorCode", "Code")
+    text = f"{_get_ci(envelope, 'Message') or ''} {code or ''}"
     if not _DEBUG_POLL_TIMEOUT.search(text):
         return None
     return str(instance_id)
+
+
+_SUSPENDED = "suspended"
+
+
+def _follow_done(status: str, case_run: Any) -> bool:
+    """Suspended is parked, not terminal, but waiting on it never ends in a reason."""
+    return status.lower() in case_run.TERMINAL or status.lower() == _SUSPENDED
 
 
 def _follow_instance(instance_id: str, deadline: float, budget_s: int) -> dict:
@@ -1118,10 +1147,10 @@ def _follow_instance(instance_id: str, deadline: float, budget_s: int) -> dict:
         flush=True,
     )
     status = case_run.instance_status(instance_id)
-    while status.lower() not in case_run.TERMINAL and time.monotonic() < deadline:
+    while not _follow_done(status, case_run) and time.monotonic() < deadline:
         time.sleep(_FOLLOW_EVERY_S)
         status = case_run.instance_status(instance_id)
-    if status.lower() not in case_run.TERMINAL:
+    if not _follow_done(status, case_run):
         _fail(
             f"case debug instance {instance_id} still {status or 'Running'} "
             f"after {budget_s}s"
@@ -1131,7 +1160,7 @@ def _follow_instance(instance_id: str, deadline: float, budget_s: int) -> dict:
         "finalStatus": status,
         "elementExecutions": case_run.instance_executions(instance_id),
     }
-    if status.lower() in case_run.FAILED:
+    if status.lower() in case_run.FAILED or status.lower() == _SUSPENDED:
         payload["incidents"] = case_run.instance_incidents(instance_id)
     return payload
 

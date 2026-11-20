@@ -69,6 +69,15 @@ _NEGATIONS = frozenset({
     "no", "not", "none", "without", "skip", "skipped", "na", "nil", "null", "never",
     "omitted", "undrafted", "non", "noreply", "false", "nothing", "empty", "dont",
 })
+_DRAFT = "draft"
+_DRAFT_FILLER = frozenset({"response", "reply", "is", "are", "was", "as"})
+_STATUS_WORDS = frozenset({
+    "needed", "required", "generated", "sent", "applicable", "necessary", "drafted",
+    "produced", "created", "written", "provided", "a", "an", "the", "draft", "response", "reply",
+})
+_PARENTHETICAL = re.compile(r"\([^)]*\)")
+# "Draft (not sent)" still has a draft; "Draft (not required)" has none.
+_NOT_NEEDED = frozenset({"needed", "required", "necessary", "applicable"})
 _EITHER_OR = re.compile(r"\bor\b|[/|]", re.IGNORECASE)
 _NOT_APPLICABLE = re.compile(r"\bn[\s./\\_-]+a\b", re.IGNORECASE)
 _NA_TOKEN = "na"
@@ -101,8 +110,28 @@ def _is_negation(word: str) -> bool:
     return word in _NEGATIONS or _RUN_TOGETHER_NEGATION.match(word) is not None
 
 
+def _leading_draft_mode(words: list[str]) -> str:
+    rest = [word for word in words[1:] if word not in _DRAFT_FILLER]
+    if not rest or not _is_negation(rest[0]):
+        return "draft"
+    if all(_is_negation(word) or word in _STATUS_WORDS for word in rest[1:]):
+        return "none"
+    return "draft"
+
+
+def _says_not_needed(words: list[str]) -> bool:
+    return any(_is_negation(word) and nxt in _NOT_NEEDED for word, nxt in zip(words, words[1:]))
+
+
 def _part_mode(part: str) -> str:
-    return "none" if any(_is_negation(word) for word in _words(part)) else "draft"
+    words = _words(part)
+    if words and _is_negation(words[0]):
+        return "none"
+    if words and words[0] == _DRAFT:
+        if any(_says_not_needed(_words(aside)) for aside in _PARENTHETICAL.findall(part)):
+            return "none"
+        return _leading_draft_mode(_words(_PARENTHETICAL.sub(" ", part)))
+    return "none" if any(_is_negation(word) for word in words) else "draft"
 
 
 def names_path(text: str, path: str) -> bool:

@@ -315,6 +315,17 @@ def test_main_opens_a_ticket_for_the_duplicate_too(grader, tmp_path, monkeypatch
     assert [(f["customerTier"], f["isDuplicate"]) for f in fed] == [("Enterprise", False), ("Standard", True)]
 
 
+def test_main_fails_when_no_one_output_holds_the_result_in_every_case(grader, tmp_path, monkeypatch):
+    dup = {**CASE, "name": "dup", "inputs": {**CASE["inputs"], "caseRef": "ESC-JIRA-1e90fee1-2"}}
+    (tmp_path / "seed.json").write_text(json.dumps({"project_key": "CE", "cases": [CASE, dup]}))
+    names = iter(["constantA", "constantB"])
+    monkeypatch.setattr(grader, "run_debug", lambda **kw: _payload())
+    monkeypatch.setattr(grader, "check_case", lambda *a, **kw: {"severity": [next(names)]})
+    with pytest.raises(SystemExit) as exc:
+        grader.main()
+    assert "no single output holds the severity in every case" in str(exc.value)
+
+
 def test_tickets_from_every_debug_attempt_are_recorded(grader, tmp_path, monkeypatch):
     (tmp_path / "seed.json").write_text(json.dumps({"project_key": "CE", "cases": [CASE]}))
     grader.issues["CE-9001"] = {"summary": _summary(CASE, "Sev1"), "description": _adf(BODY), "issuetype": TASK}

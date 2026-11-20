@@ -81,7 +81,7 @@ FAKE_UIP = textwrap.dedent(
                 "Type": S.get("task_type", "AppTask"), "Title": S.get("title", "Review"),
                 "FolderId": TASK_FOLDER, "IsCompleted": bool(st.get("action")),
                 "CreatorJobKey": JOB if S.get("job_link", True) else "00000000-0000-0000-0000-000000000000",
-                "WaitJobKey": None, "AssignedToUserKey": None}
+                "WaitJobKey": None, "AssignedToUserKey": S.get("assigned_to")}
     if args[:2] == ["tasks", "list"]:
         path = args[args.index("--folder-path") + 1] if "--folder-path" in args else None
         fid = args[args.index("--folder-id") + 1] if "--folder-id" in args else None
@@ -305,6 +305,27 @@ def test_invoice_approval_passes_when_the_task_shows_the_invoice_and_approve_pos
     assert rejected["action"] == "Reject"
     assert rejected["data"]["Comments"] == "Rejected by the eval grader"
     assert rejected["inputs"]["invoiceNumber"] != approved["inputs"]["invoiceNumber"]
+
+
+def test_invoice_approval_fails_when_the_task_was_already_assigned(tmp_path):
+    scenario = dict(GOOD_INVOICE, assigned_to="b1b2c3d4-0000-0000-0000-000000000001")
+    r = run_check(tmp_path, "check_hitl_invoice_approval_run.py", invoice_flow(), scenario)
+    assert r.returncode != 0
+    assert "already assigned" in r.stdout + r.stderr
+
+
+def test_outcome_plan_does_not_read_disapprove_as_approve():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("inv_run", os.path.join(HERE, "check_hitl_invoice_approval_run.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    hitl = {"inputs": {"schema": {"outcomes": [
+        {"id": "disapprove", "name": "Disapprove"}, {"id": "approve", "name": "Approve"}, {"id": "reject", "name": "Reject"}]}}}
+    approve, reject, approve_ports, reject_ports = mod.outcome_plan(hitl)
+    assert approve_ports == {"outcome-approve"}
+    assert "Disapprove" not in approve
+    assert reject_ports == {"outcome-reject"}
 
 
 def test_invoice_approval_fails_when_the_task_hides_the_vendor(tmp_path):

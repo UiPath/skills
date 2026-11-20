@@ -137,6 +137,18 @@ def test_not_found_with_the_text_outputs_never_set_fails(sandbox, monkeypatch):
     assert "empty outputs []" in str(exc.value)
 
 
+def test_not_found_with_one_zero_and_two_empties_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run("unknown-line", {**NOT_FOUND, "discrepancies": None}, monkeypatch)
+    assert "expected 0" in str(exc.value)
+
+
+def test_not_found_with_two_zeros_and_one_empty_fails(sandbox, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run("unknown-line", {**NOT_FOUND, "tier": None}, monkeypatch)
+    assert "expected 0" in str(exc.value)
+
+
 def test_a_flow_missing_an_input_reports_the_role_it_could_not_map(sandbox, monkeypatch):
     flow_path = sandbox / "new.flow"
     flow = json.loads(flow_path.read_text())

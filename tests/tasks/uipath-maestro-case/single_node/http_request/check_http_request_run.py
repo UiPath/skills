@@ -125,7 +125,7 @@ def main() -> None:
     plan = read_caseplan()
     check_no_credential_headers(plan)
     since = since_iso()
-    payload = run_debug(timeout=540)
+    payload = run_debug(timeout=840)
     evidence = read_run(payload, since)
     callers = check_run(plan, payload, evidence)
     print(

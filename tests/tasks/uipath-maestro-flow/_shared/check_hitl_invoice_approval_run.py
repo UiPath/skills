@@ -29,6 +29,7 @@ cancelled.
 from __future__ import annotations
 
 import os
+import re
 import sys
 import uuid
 from enum import Enum
@@ -47,6 +48,7 @@ VENDOR = "Northwind Office Supplies"
 AMOUNT = 4870.25
 CURRENCY = "EUR"
 SAP_MARKER = "SAP-"
+APPROVE_WORD = re.compile(r"\bapprov")
 
 
 class Decision(Enum):
@@ -61,7 +63,7 @@ def outcome_plan(hitl: dict) -> tuple[list[str], list[str], set[str], set[str]]:
     for o in outcomes:
         name, oid = str(o.get("name") or ""), str(o.get("id") or "")
         label = f"{name} {oid}".lower()
-        if "approv" in label:
+        if APPROVE_WORD.search(label):
             approve += [name, oid]
             approve_ports.add(f"outcome-{oid}")
         elif "reject" in label:
@@ -91,6 +93,12 @@ def completion_data(hitl: dict, existing: object, text_answer: str, decision: De
 
 
 def check_task_data(task: live.FoundTask, invoice: str) -> None:
+    assignee = _get_ci(task.row, "AssignedToUserKey")
+    if assignee:
+        live.fail(
+            f"task {task.task_id} was created already assigned to {assignee}; "
+            "nobody is set up to process these tasks, so it should be unassigned"
+        )
     bundle = {"title": _get_ci(task.row, "Title"), "data": task.data}
     missing = []
     if not live.has_text(bundle, invoice):

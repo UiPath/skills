@@ -350,6 +350,20 @@ def test_main_passes_every_seeded_case_on_either_layout(tmp_path, monkeypatch, n
                                                        "multiple", "none", "none"]
 
 
+def test_main_fails_when_no_one_output_holds_the_result_in_every_case(tmp_path, monkeypatch):
+    _write_project(tmp_path, _flow(TWO_BRANCH))
+    monkeypatch.chdir(tmp_path)
+    cases = _seed_cases()
+    (tmp_path / "seed.json").write_text(json.dumps({"cases": cases}))
+    grader = _grader()
+    names = iter(f"constant{n}" for n in range(len(cases)))
+    monkeypatch.setattr(grader, "run_debug", lambda **kw: {})
+    monkeypatch.setattr(grader, "check_case", lambda flow, payload, case: {"severity": [next(names)]})
+    with pytest.raises(SystemExit) as exc:
+        grader.main()
+    assert "no single output holds the severity in every case" in str(exc.value)
+
+
 @pytest.fixture
 def two_branch(tmp_path, monkeypatch):
     flow = _flow(TWO_BRANCH)

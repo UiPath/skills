@@ -13,6 +13,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import io
+import dataclasses
 import json
 import os
 import subprocess
@@ -267,6 +268,26 @@ class OutcomeAssertionTests(unittest.TestCase):
             CONTRACT, SEED, good_debug_data(), good_variables_data(), []
         )
         self.assertEqual(key, "CE-101")
+
+    def test_outputs_fall_back_to_the_end_event_outputs_when_globals_are_null(self):
+        variables = good_variables_data()
+        variables["Variables"][0]["Globals"] = {
+            "var_severity": None, "var_caseKey": None, "var_jiraKey": None,
+        }
+        variables["Variables"][0]["Elements"].append({
+            "ElementId": "done",
+            "Outputs": {
+                "severity": "Sev1", "caseKey": "ESC-BPMN-test", "jiraIssueKey": "CE-101",
+            },
+        })
+        contract = dataclasses.replace(
+            CONTRACT,
+            output_owners={"severity": "done", "caseKey": "done", "jiraIssueKey": "done"},
+        )
+        key = checker.assert_outcome(contract, SEED, good_debug_data(), variables, [])
+        self.assertEqual(key, "CE-101")
+        with self.assertRaisesRegex(checker.CheckFailure, "exact type"):
+            checker.assert_outcome(CONTRACT, SEED, good_debug_data(), variables, [])
 
     def test_incident_fails(self):
         self.assert_fails(

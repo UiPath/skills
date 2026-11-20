@@ -266,6 +266,17 @@ def test_main_runs_every_seeded_case_with_the_agents_input_names(v3, tmp_path, m
         ("Enterprise", True, False), ("Standard", True, False), ("Standard", True, True)]
 
 
+def test_main_fails_when_no_one_output_holds_the_result_in_every_case(v3, tmp_path, monkeypatch):
+    cases = _seed_cases()
+    (tmp_path / "seed.json").write_text(json.dumps({"cases": cases}))
+    names = iter(f"constant{n}" for n in range(len(cases)))
+    monkeypatch.setattr(v3, "run_debug", lambda **kw: {})
+    monkeypatch.setattr(v3, "check_case", lambda flow, payload, case: {"severity": [next(names)]})
+    with pytest.raises(SystemExit) as exc:
+        v3.main()
+    assert "no single output holds the severity in every case" in str(exc.value)
+
+
 def test_seed_expects_v3_severities():
     expected = {c["name"]: (c["expected"]["severity"], c["expected"]["engineering"]) for c in _seed_cases()}
     assert expected == {"enterprise-down-no-workaround-sev1": ("Sev1", True),

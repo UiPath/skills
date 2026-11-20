@@ -151,7 +151,7 @@ def test_suspended_without_incident_retries_once_and_succeeds(
 ) -> None:
     rec = _Recorder((1, SUSPENDED), (0, OK_PAYLOAD))
     monkeypatch.setattr(subprocess, "run", rec)
-    assert case_check.start_debug()["finalStatus"] == "Completed"
+    assert case_check.start_debug(suspended=case_check.SuspendedRun.TRANSIENT)["finalStatus"] == "Completed"
     assert rec.debug_calls == 2
     assert "retrying" in capsys.readouterr().out
 
@@ -162,7 +162,7 @@ def test_suspended_without_incident_twice_fails_after_one_retry(
     rec = _Recorder((1, SUSPENDED), (1, SUSPENDED))
     monkeypatch.setattr(subprocess, "run", rec)
     with pytest.raises(SystemExit) as exc:
-        case_check.start_debug()
+        case_check.start_debug(suspended=case_check.SuspendedRun.TRANSIENT)
     assert rec.debug_calls == 2
     assert "after one retry" in str(exc.value)
 
@@ -185,3 +185,24 @@ def test_clean_exit_suspended_without_incident_is_retried_by_run_debug(
     monkeypatch.setattr(subprocess, "run", rec)
     assert case_check.run_debug()["finalStatus"] == "Completed"
     assert rec.debug_calls == 2
+
+
+def test_parked_suspended_run_is_not_retried_by_plain_callers(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None
+) -> None:
+    rec = _Recorder((1, SUSPENDED), (0, OK_PAYLOAD))
+    monkeypatch.setattr(subprocess, "run", rec)
+    with pytest.raises(SystemExit) as exc:
+        case_check.start_debug()
+    assert rec.debug_calls == 1
+    assert "after one retry" not in str(exc.value)
+
+
+def test_suspended_retry_note_does_not_say_cancelled(
+    monkeypatch: pytest.MonkeyPatch, _stub_paths: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    suspended = (0, json.dumps({"Result": "Success", "Data": {"finalStatus": "Suspended"}}))
+    monkeypatch.setattr(subprocess, "run", _Recorder(suspended, (0, OK_PAYLOAD)))
+    case_check.run_debug()
+    out = capsys.readouterr().out
+    assert "suspended" in out and "cancelled" not in out

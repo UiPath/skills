@@ -8,7 +8,7 @@ name, resource key or system name, not an inline quick form.
 
 `run` (default) debugs the flow twice, each with a fresh expense id:
 1. The run created an Action Center app task whose data shows that expense id,
-   the employee and the amount.
+   the employee, the amount and the description.
 2. Approve run: the grader completes it with the app's `approve` outcome; the
    run then completed, the review and the fixture's SAP posting step
    completed, and the named outputs are status = "posted",

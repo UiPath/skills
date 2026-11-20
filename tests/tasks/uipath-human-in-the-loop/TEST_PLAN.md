@@ -12,7 +12,7 @@
 
 Agent-facing test scenarios for the `uipath-human-in-the-loop` skill — detects HITL signals in natural language, designs HITL node schemas, and authors/wires nodes into UiPath Flow JSON files via `uip` CLI.
 
-**Out of scope**: UiPath Orchestrator task execution (runtime), Form Task designer, Maestro non-HITL nodes.
+**Out of scope**: Orchestrator task management (reassign, monitor), Form Task designer, Maestro non-HITL nodes. Runtime task execution is in scope only through e2e_01 and e2e_07, where the grader completes the run's task.
 
 ---
 
@@ -120,7 +120,7 @@ The `variable` property creates a separate workflow-global variable (`$vars.appr
 
 | Status | File | Task ID | What it tests | Type |
 |---|---|---|---|---|
-| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | Invoice approval → HITL → SAP stand-in; graded on two live runs: the grader approves one task (status `posted`, `SAP-` number) and rejects another (status `rejected`, empty number) | 🟤 Brown |
+| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | Invoice approval → HITL → SAP stand-in; graded on two live runs: the grader approves one task (status `posted`, `SAP-` number) and rejects another (status `rejected`, empty number) | 🟢 Green |
 | ✅ Present | [e2e_02_ai_escalation_brownfield.yaml](e2e_02_ai_escalation_brownfield.yaml) | `skill-hitl-e2e-ai-escalation-brownfield` | Inserts HITL escalation node into existing `ComplaintTriage` flow on low-confidence path; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_03_gdpr_compliance_greenfield.yaml](e2e_03_gdpr_compliance_greenfield.yaml) | `skill-hitl-e2e-gdpr-compliance-greenfield` | GDPR deletion flow from scratch; P7D timeout duration (ISO 8601); wires both outcome ports | 🟢 Green |
 | ✅ Present | [e2e_04_multi_hitl_brownfield.yaml](e2e_04_multi_hitl_brownfield.yaml) | `skill-hitl-e2e-multi-hitl-brownfield` | Inserts **two** HITL nodes into `HROnboarding` flow (doc review + IT access); every outcome port on both wired | 🟤 Brown |
