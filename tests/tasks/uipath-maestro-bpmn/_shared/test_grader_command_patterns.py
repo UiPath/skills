@@ -885,6 +885,8 @@ _ADVISORY = [
             "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
             "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name SomethingElse",
             "uip maestro bpmn check .flow-sdk/Process.bpmn.ts --source",
+            "uip maestro bpmn compile --help",
+            "uip maestro bpmn compile -o b.bpmn /tmp/X/Process.baseline.bpmn.ts",
         ],
     ),
     (
@@ -895,6 +897,7 @@ _ADVISORY = [
             "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/edited/Process.bpmn",
         ],
         [
+            "uip maestro bpmn compile --help",
             "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
             "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name CreateEntityRecordCurated",
         ],
@@ -903,7 +906,7 @@ _ADVISORY = [
         "evaluate/local_crud.yaml",
         "created a solution",
         ["uip solution init Foo", "uip maestro bpmn init SmokeEval"],
-        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn check Process.bpmn"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn init && ls", "uip maestro bpmn check Process.bpmn"],
     ),
     (
         "evaluate/evaluator_type_choice.yaml",
@@ -920,10 +923,10 @@ _ADVISORY = [
 ]
 
 
+# `_counts` ignores tool_name/require_success and shell-normalizes every call.
 @pytest.mark.parametrize(
     ("task", "part", "counts", "refused"), _ADVISORY, ids=[f"{t.split('/')[-1]}:{p}" for t, p, _, _ in _ADVISORY]
 )
-# `_counts` ignores tool_name/require_success and shell-normalizes every call.
 def test_advisory_pattern_accepts_the_correct_route_and_refuses_the_rest(
     task: str, part: str, counts: list[str], refused: list[str]
 ) -> None:
