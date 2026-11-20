@@ -1,0 +1,37 @@
+                       uip agenthub guardrail-models list                       
+List the judge models this tenant may use for an llm-as-judge guardrail; pass a row's name as --model.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agenthub guardrail-models list [options]                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --limit <number>               Page size, up to 10000.                       │
+│ --offset <number>              Row offset into the result set.               │
+│ --login-validity <minutes>     Override the interactive-login token lifetime │
+│                                for this call.                                │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ List the models an llm-as-judge guardrail can use                            │
+│                                                                              │
+│   $ uip agenthub guardrail-models list                                       │
+│                                                                              │
+│   items:                                                                     │
+│     name               displayName  provider  isRecommended  isPreview       │
+│     ─────────────────  ───────────  ────────  ─────────────  ─────────       │
+│     gpt-4o-2024-11-20  GPT-4o       OpenAi    true           false           │
+│   total  1                                                                   │
+│   count  1                                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘

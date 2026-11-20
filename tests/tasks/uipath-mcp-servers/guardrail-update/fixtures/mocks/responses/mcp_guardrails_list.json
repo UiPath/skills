@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpGuardrailsList",
+  "Data": {
+    "Items": [
+      {
+        "Validator": "pii-detection",
+        "Action": "block",
+        "Enabled": true,
+        "Scope": "server",
+        "Settings": {
+          "Action": "block",
+          "Reason": "Personal data is not allowed",
+          "Entities": [
+            "Email"
+          ],
+          "EntityThresholds": {
+            "Email": 0.7
+          }
+        },
+        "Id": "5c1f0e2a-7b3d-4c8e-9f60-2a4b6c8d0e1f",
+        "Name": "PII Detection",
+        "CreatedAt": "2026-11-02T09:00:00.000Z",
+        "Managed": true,
+        "Current": true
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}

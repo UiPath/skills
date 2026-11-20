@@ -28,6 +28,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | HTTP 404 with ``Run `uip agenthub mcp list <FOLDER_FLAG>` to see the server slugs.`` | Wrong folder, or not the slug: find the server with `mcp list --all-folders`. |
 | Slug rejected (400, `Errors.Slug`) | Pass `--slug` matching `^[a-z0-9-]+$`, 3-50 characters. |
 | `Confirmation required: this will delete … and cannot be undone.` | Ask the user, then add `--yes`. |
+| `Forbidden (403). …` on `mcp get`, or before `mcp update`, `refresh-tools`, `mcp-tools` or `mcp-user-connections`, with `Instructions` starting `Reading '<SLUG>' needs McpServers.View in the folder.` | The read of the server was refused: the caller lacks McpServers.View in that folder, or the folder is not one of the logged-in tenant's (`uip login status` shows the tenant). Not the Jobs.Create 403 of `refresh-tools`, which comes after the read. |
 
 ## Updates
 
@@ -91,6 +92,28 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `Looking a user up by email needs permission to read the organization's users. …` (Instructions of a 403) | Ask for the user's id and pass `--user-id`. |
 | `--me needs a user's login, …` | The login is an external application's: pass `--user-email` or `--user-id`. |
 | `'<SLUG>' has no per-user connection for user <USER>.` | Nothing to delete: `mcp-user-connections list` shows the users that have one. |
+
+## Guardrails
+
+| Text | Fix |
+|------|-----|
+| `MCP guardrail management isn't supported on the connected environment.` (`ErrorCode: not_supported`) | Agent Gateway there has no guardrails: tell the user (SKILL.md Rule 11). |
+| `'<SLUG>' already has a <VALIDATOR> guardrail.` | One rule per validator: change it with the `NextCommand` (`update`) and the settings to change. |
+| `'<SLUG>' has no <VALIDATOR> guardrail.` | Nothing to get, change or remove: `create` it with the `NextCommand`, after asking the user log or block (SKILL.md Rule 12), or `list` the server's rules. |
+| `<VALIDATOR> has no entity '<NAME>'.` | Pick from the names `Instructions` lists ([entities](guardrails-guide.md#entities)). |
+| `<ENTITY> has a threshold but is not a selected entity.` | Add the entity with `--entity`, or drop its `--entity-threshold`. |
+| `<FLAG> does not apply to <VALIDATOR>.` | Use the flags `Instructions` lists for that validator ([settings](guardrails-guide.md#settings)). |
+| `<VALIDATOR> needs --reason with --action block.` | Ask the user for the message callers get, and pass it as `--reason`. |
+| `A reason applies only to --action block.` | Drop `--reason`, or use `--action block` if the user wants calls stopped. |
+| `This tenant offers no judge model '<NAME>'.` | Use a `Name` from `uip agenthub guardrail-models list --output json`. |
+| `Pass at least one setting to change.` | `update` with only `--validator` changes nothing: pass the settings the user wants changed. |
+| `Pick at least one entity for <VALIDATOR>.` | Pass `--entity` with at least one name ([entities](guardrails-guide.md#entities)). |
+| `llm-as-judge needs --instructions.` / `llm-as-judge needs --model.` | Pass the rule in the user's words as `--instructions`, and a `Name` from `guardrail-models list` as `--model`. |
+| `… must be between 0 and 1.` / `… must be one of 0, 2, 4, 6.` | A threshold outside the validator's range: use one inside it ([settings](guardrails-guide.md#settings)). |
+| `Pass at most 3 positive examples.` / `Pass at most 3 negative examples.` | Keep three of each: ask the user which. |
+| `Both rules apply until the old one is gone. …` (after an `update`) | The new rule was written and an old one was not deleted: run the same `update` again. |
+| `Reading an MCP server's guardrails needs McpServers.View in its folder.` | The caller lacks McpServers.View in the server's folder. |
+| `Adding a guardrail needs McpServers.Edit in the server's folder.` (or `Changing` / `Removing`) | The caller lacks McpServers.Edit in the server's folder. |
 
 ## Network
 

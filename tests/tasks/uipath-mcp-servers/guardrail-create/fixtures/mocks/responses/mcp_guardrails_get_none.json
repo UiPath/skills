@@ -1,0 +1,9 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubMcpGuardrailsGet",
+  "ErrorCode": "not_found",
+  "Message": "'vendor-mcp' has no pii-detection guardrail.",
+  "Instructions": "Create one with `uip agenthub mcp-guardrails create --validator pii-detection --mcp vendor-mcp --folder-path Shared --action <log|block>`, or run `uip agenthub mcp-guardrails list --mcp vendor-mcp --folder-path Shared` to see the server's rules.",
+  "Retry": "RetryWillNotFix",
+  "NextCommand": "uip agenthub mcp-guardrails create --validator pii-detection --mcp vendor-mcp --folder-path Shared --action <log|block>"
+}

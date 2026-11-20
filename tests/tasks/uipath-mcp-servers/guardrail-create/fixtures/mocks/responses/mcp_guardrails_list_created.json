@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpGuardrailsList",
+  "Data": {
+    "Items": [
+      {
+        "Validator": "pii-detection",
+        "Action": "block",
+        "Enabled": true,
+        "Scope": "server",
+        "Settings": {
+          "Action": "block",
+          "Reason": "Personal data is not allowed",
+          "Entities": [
+            "USSocialSecurityNumber",
+            "InternationalBankingAccountNumber"
+          ],
+          "EntityThresholds": {
+            "USSocialSecurityNumber": 0.7,
+            "InternationalBankingAccountNumber": 0.7
+          }
+        },
+        "Id": "3f6c1d2e-8a4b-4c7d-9e1f-0a2b3c4d5e6f",
+        "Name": "PII Detection",
+        "CreatedAt": "2026-11-18T10:00:00.000Z",
+        "Managed": true,
+        "Current": true
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}
