@@ -46,7 +46,7 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
 A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
-The `http()` fallback calls the vendor's own method for the user's ask, such as Slack's `emoji.list` for "list the custom emoji". A resource name or `Path` from `uip is resources list` or `describe` is not that method, and an `admin.*` method is a different API.
+The `http()` fallback calls the vendor's own method for the user's ask, such as Slack's `emoji.list` for "list the custom emoji". A resource name or `Path` from `uip is resources list` or `describe` is not that method (it is what `.connector()` and `.activity()` take), and an `admin.*` method is a different API.
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
 A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
