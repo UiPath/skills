@@ -113,3 +113,13 @@ def test_fails_when_a_tier_3_step_is_invented(tmp_path, monkeypatch) -> None:
     with pytest.raises(SystemExit) as exc:
         _grade(tmp_path, monkeypatch, _xml(nodes, flows))
     assert "exactly the SDD's five" in str(exc.value)
+
+
+def test_names_a_duplicated_activity(tmp_path, monkeypatch) -> None:
+    nodes = NODES + [("scriptTask", "P2", "Schedule payment")]
+    flows = [f for f in FLOWS if f[0] != "f11"] + [("f11", "P", "P2", ""), ("f12", "P2", "EP", "")]
+    with pytest.raises(SystemExit) as exc:
+        _grade(tmp_path, monkeypatch, _xml(nodes, flows))
+    message = str(exc.value)
+    assert "duplicated ['schedule payment']" in message
+    assert "missing []" in message and "extra []" in message
