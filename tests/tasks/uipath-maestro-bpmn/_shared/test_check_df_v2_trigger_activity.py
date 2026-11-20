@@ -36,7 +36,7 @@ def _context(object_name: str, operation: str = "", version: str = "v2") -> str:
     )
 
 
-def _bpmn(object_name: str, marker: bool = True, version: str = "v2") -> str:
+def _bpmn(object_name: str, marker: bool = True, version: str = "v2", trigger_name: str = "=bindings.bEntity") -> str:
     """Trimmed from the CI run 2026-10-22 artifact."""
     return (
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
@@ -51,7 +51,7 @@ def _bpmn(object_name: str, marker: bool = True, version: str = "v2") -> str:
         '<uipath:event version="v1"><uipath:type value="Intsvc.EventTrigger" version="v1" />'
         f'{_context("EntityTriggers_V3", "UPDATED_V3", version)}'
         '<uipath:input name="body" type="json" target="body">'
-        '<![CDATA[{"parameters":{"folderEntityName":"=bindings.bEntity"}}]]></uipath:input>'
+        f'<![CDATA[{{"parameters":{{"folderEntityName":"{trigger_name}"}}}}]]></uipath:input>'
         "</uipath:event></bpmn:extensionElements></bpmn:startEvent>"
         '<bpmn:sendTask id="Activity_Create"><bpmn:extensionElements><uipath:activity version="v1">'
         '<uipath:type value="Intsvc.ActivityExecution" version="v1" />'
@@ -104,3 +104,11 @@ def test_v1_nodes_fail_even_with_the_marker(tmp_path: Path) -> None:
     rc, out = _run(tmp_path, "CreateEntityRecord_V3", version="v1")
     assert rc != 0
     assert "activityConfigurationVersion is 'v1'" in out
+
+
+@pytest.mark.parametrize("name", ["SkillPickerEvalEntity", ""])
+def test_trigger_entity_must_be_a_picker_binding_read(tmp_path: Path, name: str) -> None:
+    """A literal `folderEntityName` (or none) watches the entity but writes no picker."""
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name=name)
+    assert rc != 0
+    assert "the trigger" in out

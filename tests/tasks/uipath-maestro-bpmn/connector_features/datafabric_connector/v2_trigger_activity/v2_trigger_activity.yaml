@@ -3,10 +3,10 @@ description: >
   A BPMN process that starts on a Data Fabric "Record Updated" trigger for a
   folder entity and creates a record in the same entity. With a live
   connection the skill authors both connector nodes as the V2 elements Studio
-  Web saves (the SDK's `.eventTrigger()` and `.dataService()`, or `registry
-  get --input-details`), with the entity resolved as a solution-resource
-  picker, and `refresh` packages the trigger as an entry point with its
-  EventTrigger and entity resources.
+  Web saves, with the entity resolved as a solution-resource picker (the
+  trigger from the SDK's `.eventTrigger()` or `registry get --input-details`,
+  the activity from `registry get --input-details`), and `refresh` packages
+  the trigger as an entry point with its EventTrigger and entity resources.
 tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, connector, connector-trigger, uipath-uipath-dataservice, "feature:entities", data-fabric]
 
 sandbox:
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent produced the trigger via the SDK (compile) or a V2 registry element (registry get --input-details)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+bpmn\s+(?:compile\b|registry\s+get\s+Intsvc\.EventTrigger(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity)'
+    command_pattern: 'uip\s+maestro\s+bpmn\s+(?:compile\s+(?!--help)\S|registry\s+get\s+Intsvc\.EventTrigger(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
