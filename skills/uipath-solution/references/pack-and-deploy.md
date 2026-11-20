@@ -457,13 +457,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm install -g @uipath/cli
+      - run: |   # install the CLI the repo's freeze pins; fails the job when the file is missing or versions.cli is not an exact version
+          CLI_PIN=$(node -p "let v; try { v = JSON.parse(require('fs').readFileSync('.uipath/config.json', 'utf8').replace(/^\uFEFF/, '')).versions?.cli; } catch {} if (typeof v !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?$/.test(v)) { console.error('versions.cli in .uipath/config.json is missing or not an exact version'); process.exit(1); } v") || exit 1
+          npm install -g "@uipath/cli@$CLI_PIN"
+      - run: uip --version 2>&1 | grep "frozen at"   # fails when the pinned CLI is too old to read the freeze
+      - run: uip update   # puts each pinned tool on its pin; exits 1 when the CLI or a pinned tool stays off its pin
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
       - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
       - run: uip solution publish ./output/MySolution_*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json
 ```
+
+This job expects the repo to commit a frozen `.uipath/config.json`, so every run uses the same CLI and tools. Make the freeze once on a dev machine, inside the repo: `npm install -g @uipath/cli@<CLI_VERSION>`; if the repo has no `.uipath/config.json` yet, create an empty one (`mkdir -p .uipath && touch .uipath/config.json`) so the freeze goes to the repo and not to your home config; then install only the tools the job needs with `UIPATH_CLI_DISABLE_VERSION_SYNC=1 uip tools install <TOOL>` (here `solution`, plus the tool of each project type in the solution) and run `uip config freeze`; then commit `.uipath/config.json`. `uip config freeze --all` also works, but it pins every tool, and `uip update` then installs all of them on every run. Read the file before you commit it: everything in it goes into the repo. In a frozen repo, do **not** install the newest CLI (`npm install -g @uipath/cli` or `@latest`; `npm`'s `latest` tag for `@uipath/cli` can be a dev build): it is off the CLI pin, and every command except `uip update`, `uip config`, `uip tools list`, help and `uip --version` is refused until the CLI is back on its pin. Do not run `uip update --force` to get past a refusal: it updates past the freeze and rewrites the pins in `.uipath/config.json`. `uip update` installs no skills on a runner that has none, and this job needs none. One runner holds one freeze at a time: on a self-hosted runner, two jobs with other pins move the same global install. For details, run `uip config freeze --help` and `uip update --help`.
+
+With no freeze in the repo, replace the three steps after checkout with one step: `npm install -g @uipath/cli@<CLI_VERSION>`, an exact version you chose.
 
 ---
 
