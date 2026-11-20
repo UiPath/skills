@@ -74,6 +74,7 @@ Inputs, outputs, and vars take one of the six types the Flow CLI and Workbench o
 - `float`, `double`, `date`, `datetime`, and `jsonSchema` are Case-only. The Flow builder rejects them with a TypeScript error and `DECLARATION_TYPE_NOT_FLOW` at build. Use `types.string` for dates, `types.number` for decimals, and `types.object` or `types.array` for `jsonSchema`, with shape in `{ schema }`, e.g. `{ type: types.object, schema: { type: 'object', properties: { id: { type: 'string' } } } }`. For an existing decompiled `.flow`, see [brownfield](brownfield.md#a-case-only-variable-type).
 - `types.integer` builds and packs as integer but is unavailable in Workbench; prefer `types.number`.
 - `types.any` is untyped; use only when no fixed type exists.
+- A `types.file` value is a file reference `{ ID, FullName, MimeType, Metadata }`. Its file name is `.FullName`, not `.name`: `$vars.start.output.inputDoc.FullName`.
 
 ## Anti-patterns
 
