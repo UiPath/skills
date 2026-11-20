@@ -34,9 +34,15 @@ def main() -> None:
         body = {n for n in g.nodes if g.inside(n, loop)}
         agents = [a for a in g.agents() if a in body]
         people = [p for p in g.hitl() if p in body]
+        # The gate reads the agent's output, or a step between the agent and
+        # the gate that reads it and passes it on (a script that checks the fields).
         gated = [
-            (a, n) for a in agents for n in g.ids(DECISION, SWITCH)
-            if n in body and g.thresholds(n, a) and g.routes_low(n, people, a)
+            (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
+            for s in [a] + [
+                s for s in g.reachable(a)
+                if s in body and s not in people and g.reaches(s, n, blocked=people) and g.reads(s, a)
+            ]
+            if g.thresholds(n, s) and g.routes_low(n, people, s)
         ]
         if not (gated and people):
             continue
