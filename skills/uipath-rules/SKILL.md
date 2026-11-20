@@ -24,7 +24,7 @@ A Business Rules project holds one `.dmn` rule of one or more decision tables. D
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `days and time duration`, `years and months duration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
 6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
-7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
+7. **A rule is done when `validate` passes and `debug` returns what the reviewed design expects, from every decision and not only the last.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not available on tenant '<TENANT>'` or `Business Rules is a preview feature and is not enabled for your organization.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
 9. **Name every rule.** Declare one `<annotation name="Annotation" />` after the table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column.
@@ -44,7 +44,7 @@ Run `init` from the solution folder when one exists; outside a solution it creat
 
 ### 2. Design and review
 
-Show the table as Markdown before authoring and after each change. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
+Show the table as Markdown before authoring and after each change — one table per decision when the rule is a graph, upstream first, each naming the decision it belongs to. Ask only what the request leaves open, in one question; ask nothing when told not to pause.
 
 ```markdown
 **Hit policy:** FIRST
@@ -77,7 +77,7 @@ Run `format` whenever the edit added or removed an input or a decision; it write
 uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 ```
 
-`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values. The run failed when `debug` exits 1 (`Result: Failure`); the decision and input errors are in `Data.result`, the summary code in `Data.error`. On a mismatch, read the trace:
+`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values, for every decision the rule holds. The run failed when `debug` exits 1 (`Result: Failure`); the decision and input errors are in `Data.result`, the summary code in `Data.error`. On a mismatch, read the trace:
 
 ```bash
 uip traces spans get <TRACE_ID> --output json
