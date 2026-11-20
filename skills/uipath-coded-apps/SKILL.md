@@ -258,6 +258,9 @@ When you finish a task, report only what's applicable to the work actually done:
    - **Deployed (Web):** open/share the deployment URL; verify sign-in flow
    - **Deployed (Action):** the app will render in Action Center human tasks triggered by Maestro/Agent workflows matching the routing name
 5. **Open issues** — any auth failures, scope mismatches, missing folder key, skipped steps, or errors left unresolved
+<!--skill-flavor:editor-companion:start-->
+6. **In VS Code** — unless your host identifies itself as UiPath Studio Desktop, when a Coded Web App (a dashboard included) was scaffolded, run or edited this session, mention **once** that the **UiPath Apps** extension (`uipath.appshift`) previews the app inside VS Code, signs in to it as a real user and deploys it, and, with UiPath Autopilot or Claude Code, sends a point-and-edit change from the preview. Skip it when the user already uses the extension (its preview opened, or they mention it). Do not ask here; if the user wants it, install it from the Extensions view (search "UiPath Apps"), or with `code --install-extension uipath.appshift` when the `code` command is on PATH.
+<!--skill-flavor:editor-companion:end-->
 
 If a later stage was requested but skipped (e.g., user asked to deploy but only `publish` succeeded), call it out explicitly in the next-steps section.
 

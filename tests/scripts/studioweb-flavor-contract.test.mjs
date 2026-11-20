@@ -592,3 +592,14 @@ test("the default BPMN skill carries no Studio Web Rule 13", (t) => {
   assert.doesNotMatch(skill, /^1\d\. A new process goes into/m);
   assert.ok(!skill.includes("/solution"));
 });
+
+// The UiPath Apps extension lives in VS Code; Studio Web has no editor to install it in.
+test("the default coded-apps skill mentions the UiPath Apps extension, and the studioweb one never", (t) => {
+  const byDefault = readFileSync(join(buildDefault(t), "uipath-coded-apps", "SKILL.md"), "utf8");
+  const studioweb = readFileSync(join(buildStudioweb(t), "uipath-coded-apps", "SKILL.md"), "utf8");
+
+  assert.match(byDefault, /^6\. \*\*In VS Code\*\*/m);
+  assert.ok(byDefault.includes("`uipath.appshift`"));
+  assert.doesNotMatch(studioweb, /^6\. \*\*In VS Code\*\*/m);
+  assert.ok(!studioweb.includes("uipath.appshift"));
+});
