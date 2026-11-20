@@ -77,6 +77,10 @@ These five keys are all the engine sets. `check` warns `UNKNOWN_METADATA_KEY` fo
 The metadata parameter requires `@uipath/maestro-builder-sdk` 6.72.0 or later. Check that the SDK copy's `dist/api-index.md` lists `FlowMetadata`. An older SDK refuses two parameters and any function reading `$metadata`. Upgrade as above, or read `$metadata` from `script({ code })`.
 <!--skill-flavor:script-function-metadata-sdk-version:end-->
 
+## Dotted keys in values
+
+The runtime splits an object key containing `.` into nested objects when a later script or `=js:` expression (End outputs included) reads `$vars`: `$vars.s.output['5.3.0']` is `undefined` with the run still `Completed`. Do not return objects keyed by dotted strings. Return `[{ key, value }]` pairs, or `JSON.stringify` the object and `JSON.parse` it where read.
+
 ## The JavaScript runtime
 
 A script has modern syntax (`?.`, `??`, arrow functions), built-in objects, `console`, and exactly four provided extras: `btoa`, `atob` (UTF-8, unlike Node/browser Latin-1), `randomUUID()`, and `crypto.randomUUID()`. Nothing else is provided: `require`, `fetch`, Luxon's `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`, `Buffer`, and `structuredClone` are `undefined` at runtime, and `crypto` has no other member. Rewrite Node or low-code code-step code accordingly.
