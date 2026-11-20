@@ -35,7 +35,7 @@ Add a descriptive node, wire its file, write taxonomy, bind the result, and vali
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant:** run `uip maestro flow extraction check --output json`. Any settled answer other than `Available` stops the loop; an unsettled check is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the input if absent:** run `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is `<trigger>` in `$vars.<trigger>.output.invoice`.
-3. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position` on the canvas grid ([operate.md](operate.md#lay-out-from-source-instead-layout-at-dim), rule 1).
+3. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position` on the canvas grid ([operate.md](operate.md#lay-out-from-source-instead-layout-at-dim), rule 1). Same model as an existing Extract document node: `--input` also carries that node's `processorKey` and `"processorReadOnly":true`, and step 5 is skipped ([Making it actually extract](#making-it-actually-extract)).
 4. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
@@ -179,7 +179,7 @@ uip maestro flow nodes provision <file> --output json
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 
-A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; supply both inputs at creation, since nothing adds them later:
+A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; never a new processor synced to the same taxonomy and model. Supply both inputs at creation, since nothing adds them later:
 
 ```bash
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --position <x>,<y> --output json
