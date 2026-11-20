@@ -52,14 +52,15 @@ What can cause it:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{spanType: spanType, error: attributes.error, name: name}"
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | select($a.error != null) | {spanType: .SpanType, error: $a.error, name: .Name}]'
    ```
 
 3. Read the `guardrailEvaluation` or `toolGuardrailEvaluation` child span for `guardrailName`, `action`, `validationResult`, `payload`, and `reason`:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?spanType == 'guardrailEvaluation' || spanType == 'toolGuardrailEvaluation'].{spanType: spanType, guardrailName: attributes.guardrailName, action: attributes.action, validationResult: attributes.validationResult, payload: attributes.payload, reason: attributes.reason}"
+     --output-filter "[?SpanType == 'guardrailEvaluation' || SpanType == 'toolGuardrailEvaluation']" \
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | {spanType: .SpanType, guardrailName: $a.guardrailName, action: $a.action, validationResult: $a.validationResult, payload: $a.payload, reason: $a.reason}]'
    ```
 
 4. Inspect the triggering rule:
@@ -96,7 +97,8 @@ What can cause it:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?spanType == 'guardrailEscalation' || spanType == 'toolGuardrailEscalation'].{spanType: spanType, reviewOutcome: attributes.reviewOutcome, reviewStatus: attributes.reviewStatus, reviewedBy: attributes.reviewedBy}"
+     --output-filter "[?SpanType == 'guardrailEscalation' || SpanType == 'toolGuardrailEscalation']" \
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | {spanType: .SpanType, reviewOutcome: $a.reviewOutcome, reviewStatus: $a.reviewStatus, reviewedBy: $a.reviewedBy}]'
    ```
 
    `reviewOutcome: "Rejected"` means reviewer rejected → faults the job. Absent or pending span means the Action Center task is still open.

@@ -36,15 +36,14 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
+     | jq '[.Data[] | (.Attributes | fromjson? // {}) as $a | select($a.error != null) | {name: .Name, spanType: .SpanType, error: $a.error}]'
    ```
 
 3. Parse the `error` field — it is a JSON string. Extract the `detail` value:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].attributes.error" \
-     | jq -r '.[] | fromjson | .detail'
+     | jq -r '.Data[] | (.Attributes | fromjson? // {}) | .error // empty | fromjson? | .detail'
    ```
 
    The detail names the missing information (e.g., `"The request does not specify which releases or their scope"`).
