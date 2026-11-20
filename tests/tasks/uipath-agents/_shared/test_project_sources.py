@@ -8,7 +8,8 @@ projects were correct:
     `main.py` and reported no tool.
   * langgraph-classifier: the schemas named the fields `ticket` /
     `category`. The checker searched the JSON for the substring `text`,
-    which the prompt never asks for.
+    which the prompt never asks for. It now compares the schema with
+    the code's models instead of guessing names.
 """
 
 from __future__ import annotations
@@ -148,27 +149,25 @@ def test_datafabric_unimported_script_does_not_count(tmp_path: Path) -> None:
 
 # ── check_langgraph_classifier ─────────────────────────────────────
 
-CLASSIFIER_MAIN = """\
-from typing import Literal
-from langgraph.graph import StateGraph
-from pydantic import BaseModel
+
+def classifier_main(inp: dict[str, str], out: dict[str, str], extra: str = "") -> str:
+    def model(name: str, fields: dict[str, str]) -> str:
+        body = "\n".join(f"    {k}: {v}" for k, v in fields.items()) or "    pass"
+        return f"class {name}(BaseModel):\n{body}\n"
+
+    return (
+        "from typing import Literal\n"
+        "from langgraph.graph import StateGraph\n"
+        "from pydantic import BaseModel, Field\n\n"
+        + extra
+        + model("GraphInput", inp) + "\n"
+        + model("GraphOutput", out) + "\n"
+        + "builder = StateGraph(GraphInput, input=GraphInput, output=GraphOutput)\n"
+        + "graph = builder.compile()\n"
+    )
 
 
-class GraphInput(BaseModel):
-    ticket: str
-
-
-class GraphOutput(BaseModel):
-    category: Literal["billing", "technical", "general"]
-    ticket: str
-
-
-builder = StateGraph(GraphInput, input=GraphInput, output=GraphOutput)
-graph = builder.compile()
-"""
-
-
-def classifier_project(root: Path, input_schema: dict, output_schema: dict) -> None:
+def classifier_project(root: Path, main_py: str, input_schema: dict, output_schema: dict) -> None:
     write(root, {
         "pyproject.toml": (
             "[project]\nname = 'support-classifier'\n"
@@ -176,7 +175,7 @@ def classifier_project(root: Path, input_schema: dict, output_schema: dict) -> N
         ),
         "langgraph.json": json.dumps({"graphs": {"agent": "./main.py:graph"}}),
         "bindings.json": BINDINGS,
-        "main.py": CLASSIFIER_MAIN,
+        "main.py": main_py,
         "entry-points.json": json.dumps({
             "entryPoints": [{"input": input_schema, "output": output_schema}]
         }),
@@ -187,50 +186,59 @@ def obj(props: dict, **extra) -> dict:
     return {"type": "object", "properties": props, **extra}
 
 
-TICKET_IN = obj({"ticket": {"type": "string"}})
+STR = {"type": "string"}
 ENUM = {"type": "string", "enum": ["billing", "technical", "general"]}
+BUCKETS_LITERAL = 'Literal["billing", "technical", "general"]'
 
 
-def test_classifier_accepts_ticket_and_category_names(tmp_path: Path) -> None:
-    classifier_project(tmp_path, TICKET_IN, obj({"category": ENUM, "ticket": {"type": "string"}}))
+def test_classifier_accepts_any_field_names_in_sync(tmp_path: Path) -> None:
+    main_py = classifier_main({"ticket_text": "str"}, {"bucket": BUCKETS_LITERAL, "ticket_text": "str"})
+    classifier_project(tmp_path, main_py, obj({"ticket_text": STR}), obj({"bucket": ENUM, "ticket_text": STR}))
     proc = run_checker("check_langgraph_classifier.py", tmp_path)
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
-def test_classifier_accepts_enum_behind_ref(tmp_path: Path) -> None:
+def test_classifier_accepts_enum_behind_ref_and_plain_str(tmp_path: Path) -> None:
+    main_py = classifier_main({"ticket": "str"}, {"category": "Category", "ticket": "str", "reason": "str"})
     out = obj(
-        {"bucket": {"$ref": "#/$defs/Bucket"}, "original_text": {"type": "string"}},
-        **{"$defs": {"Bucket": ENUM}},
+        {"category": {"$ref": "#/$defs/Category"}, "ticket": STR, "reason": STR},
+        **{"$defs": {"Category": ENUM}},
     )
-    classifier_project(tmp_path, obj({"text": {"type": "string"}}), out)
+    classifier_project(tmp_path, main_py, obj({"ticket": STR}), out)
     proc = run_checker("check_langgraph_classifier.py", tmp_path)
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
-def test_classifier_accepts_plain_string_category(tmp_path: Path) -> None:
-    out = obj({"category": {"type": "string"}, "ticket": {"type": "string"}})
-    classifier_project(tmp_path, TICKET_IN, out)
+def test_classifier_uses_field_alias_and_inherited_fields(tmp_path: Path) -> None:
+    extra = "class Base(BaseModel):\n    ticket: str\n\n"
+    main_py = classifier_main(
+        {"body": 'str = Field(alias="ticketBody")'}, {"category": "str", "ticket": "str"}, extra
+    ).replace("class GraphOutput(BaseModel):\n    category: str\n    ticket: str", "class GraphOutput(Base):\n    category: str")
+    classifier_project(tmp_path, main_py, obj({"ticketBody": STR}), obj({"category": STR, "ticket": STR}))
     proc = run_checker("check_langgraph_classifier.py", tmp_path)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-
-
-def test_classifier_rejects_enum_missing_a_bucket(tmp_path: Path) -> None:
-    bad = {"type": "string", "enum": ["billing", "technical", "other"]}
-    classifier_project(tmp_path, TICKET_IN, obj({"category": bad, "ticket": {"type": "string"}}))
-    proc = run_checker("check_langgraph_classifier.py", tmp_path)
-    assert proc.returncode != 0
-    assert "missing bucket(s) ['general']" in proc.stderr
-
-
-def test_classifier_rejects_output_without_ticket_text(tmp_path: Path) -> None:
-    classifier_project(tmp_path, TICKET_IN, obj({"category": ENUM}))
-    proc = run_checker("check_langgraph_classifier.py", tmp_path)
-    assert proc.returncode != 0
-    assert "original ticket text" in proc.stderr
 
 
 def test_classifier_rejects_stale_schema(tmp_path: Path) -> None:
-    classifier_project(tmp_path, obj({}), obj({}))
+    main_py = classifier_main({"ticket": "str"}, {"category": BUCKETS_LITERAL, "ticket": "str"})
+    classifier_project(tmp_path, main_py, obj({"ticket": STR}), obj({"result": STR}))
     proc = run_checker("check_langgraph_classifier.py", tmp_path)
     assert proc.returncode != 0
-    assert "no string property" in proc.stderr
+    assert "do not match `GraphOutput` fields ['category', 'ticket']" in proc.stderr
+
+
+def test_classifier_rejects_output_without_ticket_text(tmp_path: Path) -> None:
+    main_py = classifier_main({"ticket": "str"}, {"category": BUCKETS_LITERAL})
+    classifier_project(tmp_path, main_py, obj({"ticket": STR}), obj({"category": ENUM}))
+    proc = run_checker("check_langgraph_classifier.py", tmp_path)
+    assert proc.returncode != 0
+    assert "AND the original ticket text" in proc.stderr
+
+
+def test_classifier_rejects_enum_missing_a_bucket(tmp_path: Path) -> None:
+    main_py = classifier_main({"ticket": "str"}, {"category": 'Literal["billing", "technical", "other"]', "ticket": "str"})
+    bad = {"type": "string", "enum": ["billing", "technical", "other"]}
+    classifier_project(tmp_path, main_py, obj({"ticket": STR}), obj({"category": bad, "ticket": STR}))
+    proc = run_checker("check_langgraph_classifier.py", tmp_path)
+    assert proc.returncode != 0
+    assert "missing bucket(s) ['general']" in proc.stderr
