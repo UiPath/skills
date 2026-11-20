@@ -15,7 +15,7 @@ CLI — do not hand-roll the REST API.**
 | `apps` | `list`, `create`, `delete`, `publish` | The app itself + its lifecycle ([`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)). |
 | `apps data-mapping` | `get`, `update` | The **input mapping** (source table/column → target field) ([`pre-flight.md`](pre-flight.md)). |
 | `apps model` | `get`, `update`, `fields list\|set\|remove` | The **semantic** model — fields with their data kinds, calculated fields, metrics, dashboards ([`model-editing.md`](model-editing.md)). |
-| `apps data-model` | `get`, `add-table` | The **structural** model — the table graph (PK/FK, roles) that `add-table` edits ([`data-model.md`](data-model.md)). |
+| `apps data-model` | `get`, `add-table`, `set-miner`, `add-process`, `remove-process` | The **structural** model — the table graph (PK/FK, roles) that `add-table` edits, and the app's processes and their miners ([`data-model.md`](data-model.md), [processes](data-model.md#processes--change-the-miner-add-or-remove-a-process)). |
 | `files` | `upload` | Load a data file to an input table. |
 | `ingestions` | `create`, `logs` | Parse + load the raw data (the LT of ELT). |
 | `transformations` | `list`, `get`, `create`, `update`, `apply`, `run`, `status`, `logs` | The dbt dev loop ([`transformations.md`](transformations.md)). |
@@ -57,7 +57,7 @@ splits the commands into two groups — get this wrong and the command won't run
 | | Commands | ETag |
 |---|---|---|
 | **You edited the file locally** | `apps data-mapping update`, `apps model update`, `transformations update` | **`--etag` REQUIRED** — the one the matching `get` returned |
-| **The command reads and merges in one go** | `apps data-model add-table`, `apps model fields set\|remove` | **No `--etag`** — it guards with the ETag of the read it just did |
+| **The command reads and merges in one go** | `apps data-model add-table\|set-miner\|add-process\|remove-process`, `apps model fields set\|remove` | **No `--etag`** — it guards with the ETag of the read it just did |
 
 ```bash
 uip pm apps model get <app> --destination model.json      # prints Data.ETag
@@ -97,10 +97,11 @@ Every data / transform / query command takes `--stage`, default **`dev`**. Write
 
 ## `IngestionNeeded` — the deferred-effect signal
 
-Mapping and data-model edits change how raw data is *parsed / structured*, so they take
+Mapping and data-model edits (including a changed miner or process list — the process
+graph is mined while ingesting) change how raw data is *parsed / structured / mined*, so they take
 effect only on the **next `ingestions create`**, not on `transformations apply` (which
 only re-runs SQL over already-parsed data). Those commands return `IngestionNeeded:
-true` as the reminder. A SQL-only change is the opposite — `apply`, don't re-ingest
+true` as the reminder (`set-miner` returns `false` when the miner was already set). A SQL-only change is the opposite — `apply`, don't re-ingest
 ([`transformations.md`](transformations.md)).
 
 ## Field ids come from `query info`

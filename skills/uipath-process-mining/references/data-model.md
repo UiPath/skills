@@ -9,7 +9,7 @@ to `Cases` is treated as disconnected and rejected at query time
 
 | Model | Endpoint | Shape | Role |
 |-------|----------|-------|------|
-| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`apps data-model add-table` edits this; `apps data-model get` reads it.** |
+| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link, and the app's processes (miner, case + event tables). **`apps data-model add-table` / `set-miner` / `add-process` / `remove-process` edit this; `apps data-model get` reads it.** |
 | **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). `applyCurrentDatamodel` **reconciles** structural changes into it, preserving your semantic edits (calculated fields, metrics, data-kind overrides) — so add-table won't wipe them; just don't hand-author its per-column fields, edit the structural model. |
 
 Edit the structural data model; `applyCurrentDatamodel` regenerates the semantic
@@ -121,6 +121,58 @@ you edited locally and therefore require it. A concurrent edit surfaces as `412`
 re-run** — `add-table` re-reads and re-applies on top of the other write. (A data model
 returned without an ETag fails the command rather than writing unguarded.) It returns
 `IngestionNeeded: true` — the entity is not queryable until the re-ingest completes.
+
+## Processes — change the miner, add or remove a process
+
+The structural data model also holds the app's **processes**: `processes[]`, each with
+an `id`, a `display` name, a `miner`, the case (`object`) table and the `events`
+table(s) it mines. `uipath.custom` starts with one, `Process`, on `Cases` +
+`Event_log`, mined with whatever `apps create --miner` picked (default
+`directly-follows`). All three commands below edit it in place: no app rebuild, no
+`--etag` (they read, change and write `If-Match`-guarded in one go — on a `412`, re-run),
+and dev only.
+
+| Goal | Command |
+|------|---------|
+| Switch a process's miner | `uip pm apps data-model set-miner <app> --miner directly-follows\|inductive\|bpmn [--process-id <id>]` |
+| Add a process | `uip pm apps data-model add-process <app> --display-name "<name>" --object <case-table> --events <event-table>... [--process-id <id>] [--miner …]` |
+| Remove a process | `uip pm apps data-model remove-process <app> --process-id <id> --yes` |
+
+**All three take effect on the next ingestion.** The process graph is mined while
+ingesting, so follow each with `uip pm ingestions create <app> --wait` — not
+`transformations apply`. Until then `query info` still shows the old processes and
+miners (`InternalFields.Processes[].ProcessId` / `.Miner`). `apps publish` pushes the
+change to dashboards afterwards.
+
+- **`set-miner`.** Pick a model-based miner (`inductive`, `bpmn`) when the user wants
+  conformance checking: `uip pm conformance` needs the reference model those produce.
+  For `bpmn`, upload the model with `uip pm conformance upload-model <app> <file.bpmn>
+  --process-id <id>` **before** re-ingesting — it is read at ingestion. `--process-id`
+  is needed only when the app has several processes (`apps data-model get` lists
+  them). Setting the miner a process already has writes nothing and returns
+  `IngestionNeeded: false` — no re-ingest needed then.
+- **`add-process`.** Several processes can share tables — a second process on
+  `Cases` + `Event_log` with another miner is valid. `--object` must be an `Object`
+  table with a primary key, each `--events` table an `Event` table (read both from
+  `apps data-model get`). Without `--process-id` the id is derived from the display
+  name, as the web UI does. Refused before any write: a duplicate id or display name,
+  a 21st process, and a legacy single-process data model (older apps; no
+  `object`/`events` on the process).
+  - **A second process needs the multi-process licence.** Without it the call fails
+    with `402 UserError_MultiProcessAppNotAllowed` and `Instructions` naming
+    `ProcessMining.CanUseMultiProcess`. Tell the user — it is a licence entitlement,
+    not something to work around with a second app.
+  - With `--miner bpmn`, the success `Instructions` put the `conformance upload-model`
+    step before the re-ingest; follow them in that order.
+- **`remove-process`.** A removal: name the app and process id and get the user's
+  confirmation before running it (Rule 11); `--yes` is required, the CLI never
+  prompts. The last process cannot be removed. Nothing else is cleaned up: dashboards
+  that use the process's fields stop working, and its BPMN model and accepted
+  deviations stay in storage (re-adding the same id picks them up again).
+
+If `uip` reports an unknown command for any of these, the CLI is older than them:
+update it (`npm install -g @uipath/cli@latest`) rather than editing the data model
+through the REST API.
 
 ## Publish vs re-ingest
 
