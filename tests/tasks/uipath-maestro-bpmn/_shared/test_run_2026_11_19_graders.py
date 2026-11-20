@@ -1,6 +1,6 @@
 """Graders that failed correct Studio Web output in run 2026-11-19_09-23-02.
 
-Fixtures under ``fixtures/run_2026_11_19`` are the agents' real artifacts from that
+Fixtures under ``tests/fixtures/uipath-maestro-bpmn/run_2026_11_19`` are the agents' real artifacts from that
 run, byte for byte. Each positive test names the construct the canvas accepts and the
 grader used to reject; each negative test changes that construct to something the
 canvas does not read the same way and must still fail.
@@ -21,7 +21,9 @@ sys.path.insert(0, str(HERE))
 
 import bpmn_check  # noqa: E402
 
-FIXTURES = HERE / "fixtures" / "run_2026_11_19"
+# Kept outside `_shared/`: the sandbox copies `_shared/`, and a fixture `.bpmn` there
+# becomes a second candidate for the graders under test.
+FIXTURES = HERE.parents[2] / "fixtures" / "uipath-maestro-bpmn" / "run_2026_11_19"
 SIMPLE_APPROVAL = HERE / "check_simple_approval_bpmn.py"
 SCRIPT_JINT = HERE / "check_script_jint_guidance.py"
 TESTMANAGER = HERE / "check_testmanager_generic_records.py"
