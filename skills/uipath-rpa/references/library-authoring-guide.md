@@ -79,7 +79,7 @@ Each public workflow can ship as a rich activity: custom display name, tooltip, 
   "OriginalIconFileName": "SendInvoiceNotification.xaml.svg",
   "Arguments": [
     {
-      "Name": "RecipientEmail",
+      "Name": "in_RecipientEmail",
       "DisplayName": "Recipient email",
       "Category": "Input",
       "Tooltip": "Email address that receives the notification",
@@ -90,7 +90,7 @@ Each public workflow can ship as a rich activity: custom display name, tooltip, 
       "ArgumentType": 0
     },
     {
-      "Name": "UrgentDelivery",
+      "Name": "in_UrgentDelivery",
       "DisplayName": "Urgent delivery",
       "Category": "Options",
       "Tooltip": "Send with high priority",
@@ -193,7 +193,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 ```xml
 <Activity ... xmlns:lib="clr-namespace:<SANITIZED_NAMESPACE>;assembly=<LIBRARY_NAME>">
-  <lib:SendInvoiceNotification RecipientEmail="..." InvoiceId="..." />
+  <lib:SendInvoiceNotification in_RecipientEmail="..." in_InvoiceId="..." />
 ```
 
 `<SANITIZED_NAMESPACE>` is the underscore form from [§ Activity identity](#activity-identity). Bind non-literal properties per the project's expression language rules ([xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md)).
