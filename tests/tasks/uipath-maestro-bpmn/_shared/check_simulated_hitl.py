@@ -166,6 +166,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _shared.bpmn_assertions import has_source  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     declared_variable_elements,
     NS,
@@ -220,11 +221,7 @@ def activity_outputs(task: ET.Element) -> list[ET.Element]:
 def filled_outputs(task: ET.Element) -> list[ET.Element]:
     """Outputs the runtime writes: a `var` plus a `source` or a CDATA body.
     The engine drops a row with neither when it parses the file."""
-    return [
-        o
-        for o in activity_outputs(task)
-        if o.attrib.get("var") and (o.attrib.get("source") or (o.text or "").strip())
-    ]
+    return [o for o in activity_outputs(task) if o.attrib.get("var") and has_source(o)]
 
 
 def declared_var_types(root: ET.Element) -> dict[str, str]:
