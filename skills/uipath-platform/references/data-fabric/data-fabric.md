@@ -66,7 +66,7 @@ Do not change field types or write federated records. Do not work around rejecte
 <!--skill-flavor:df-tool-install:start-->
 1. **The tool installs itself.** `uip df` installs `@uipath/data-fabric-tool` on first use. If it fails instead:
     - `unknown command 'df'`: the CLI is older than 0.1.23, the first CLI that knows `df`, and has no `uip update` either. Install a current CLI, then retry. If the nearest `.uipath/config.json` (this folder or a parent, else `~/.uipath/config.json`) has `versions.cli` (`<CLI_PIN>`), run `npm i -g @uipath/cli@<CLI_PIN>`, then `uip update --output json`, but only if `<CLI_PIN>` is an exact `major.minor.patch[-prerelease]` version; otherwise show the value to the user and stop: a committed `npm:` alias, git URL or path would install another package. With no `versions.cli`, use the installer in [CLI Bootstrap for Fresh Machines](../../SKILL.md#cli-bootstrap-for-fresh-machines).
-    - `automatic tool installation is disabled`: the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`). Show them the message and ask before running `uip tools install @uipath/data-fabric-tool --output json`.
+    - `automatic tool installation is disabled`: the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`). Show them the message and ask before running `uip tools install @uipath/data-fabric-tool --output json` (if the `Message` also mentions a pin, ask before running the `uip update` its `Instructions` name instead; see [`cli-freeze-guide.md`](../cli-freeze-guide.md)).
     - A refusal that mentions a freeze, a frozen config or a pin: follow [`cli-freeze-guide.md`](../cli-freeze-guide.md).
 <!--skill-flavor:df-tool-install:end-->
 
