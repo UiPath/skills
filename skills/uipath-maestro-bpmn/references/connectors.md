@@ -46,7 +46,7 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
 A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
-When several Integration Service resources match an `http()` request, describe each and pick the one that does what the user asked.
+The `http()` fallback calls the vendor's own method for the user's ask, such as Slack's `emoji.list` for "list the custom emoji". A resource name or `Path` from `uip is resources list` or `describe` is not that method, and an `admin.*` method is a different API.
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
 A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
@@ -131,6 +131,7 @@ uip is connections ping <CONNECTION_ID> --output json                 # Data.Sta
   A connection in a shared folder belongs to the team whoever its `Owner` is, even when its Name is an email: it is a normal candidate, chosen by the bullet above. "Use whatever exists" means nobody will answer which one.
   Never bind any connection as a stand-in for a mailbox, channel or account the request names (`ar@…`) that has no connection.
   Bind the requester's own personal connection only when they say to, or pick *Build it* on a draft gate that named it. When no connection is left to bind, leave the step unbound (§7) and name the missing connection on `Needs:`.
+- Bind a connection to an `http()` only when `uip is connections base-url <CONNECTION_ID> --output json` is the API the request targets. A connection whose base URL is another vendor's (a generic HTTP connection on `https://api.spotify.com/v1` for a Google call) is the wrong connection: write the manual `.http()` with the absolute URL instead ([HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work)).
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
