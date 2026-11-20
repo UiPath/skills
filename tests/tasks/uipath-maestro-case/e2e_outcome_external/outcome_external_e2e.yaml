@@ -5,8 +5,8 @@ description: >
   both carrying a per-run request reference that pre_run writes into
   `request.md` (with the two connection IDs). The harness runs the case once
   under debug, then reads Microsoft Graph and Atlassian (through the tenant's
-  own Integration Service connections) to confirm the email arrived in the
-  mailbox and the issue exists, each created after the harness started the
+  own Integration Service connections) to confirm the email was sent to the approver and
+  the issue exists, each created after the harness started the
   run. Caseplan shape is not graded; validate passing is advisory, and
   reaching finalStatus=Completed weighs less than the effects, because a case
   can complete while notifying nobody (the Outlook send action saves a draft
@@ -106,7 +106,7 @@ success_criteria:
 
   # THE OUTCOMES — measured in the third-party systems.
   - type: run_command
-    description: "OUTCOME — the approver was notified: an email carrying this run's reference is present in the sandbox mailbox, as measured via Microsoft Graph"
+    description: "OUTCOME — the approver was notified: a sent, non-draft email to the approver carrying this run's reference is in the connection's Sent Items, as measured via Microsoft Graph"
     command: "python3 $REFERENCE_DIR/e2e_outcome_external/check_outcome_email.py"
     timeout: 1800
     expected_exit_code: 0

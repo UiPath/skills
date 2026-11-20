@@ -43,6 +43,10 @@ OUTLOOK_CONN = _live_id("dd657127-91f5-4568-a3a3-c024bc03fb0f")
 JIRA_CONN = _live_id("f5273a4d-d492-4bcd-a106-5a20bf89a3ef")
 JIRA_PROJECT = "SJP"
 MAILBOX_FOLDER = "Inbox"
+# The connection's mailbox is not the approver's: a sent message never lands in
+# its Inbox, so the send is read from Sent Items.
+SENT_FOLDER = "SentItems"
+APPROVER = "is-sandboxes-test@uipathsandboxes.onmicrosoft.com"
 
 DEBUG_RESULT = "debug_result.json"
 DEBUG_LOCK = "debug_result.lock"
@@ -471,8 +475,15 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     return kept
 
 
+def _recipients(message: dict) -> set[str]:
+    return {
+        str(((r or {}).get("emailAddress") or {}).get("address") or "").lower()
+        for r in message.get("toRecipients") or []
+    }
+
+
 def probe_email(token: str) -> list:
-    """Messages in the shared sandbox mailbox whose subject carries the token.
+    """Sent, non-draft messages to the approver whose subject carries the token.
 
     Pages recent messages and matches CLIENT-SIDE. A server-side
     ``contains(subject,…)`` filter is available but is backed by an index that
@@ -482,7 +493,7 @@ def probe_email(token: str) -> list:
         "is", "resources", "run", "list",
         "uipath-microsoft-outlook365", "ListEmails",
         "--connection-id", OUTLOOK_CONN,
-        "--query", f"parentFolderId={MAILBOX_FOLDER}&limit=100",
+        "--query", f"parentFolderId={SENT_FOLDER}&limit=100",
     ])
     if payload.get("Result") != "Success":
         blob = json.dumps(payload)
@@ -490,9 +501,11 @@ def probe_email(token: str) -> list:
             precondition_failed(f"cannot read the sandbox mailbox: {blob[:400]}")
         return []
     hits = [
-        {"subject": m.get("subject"), "received": m.get("receivedDateTime")}
+        {"subject": m.get("subject"), "received": m.get("sentDateTime") or m.get("receivedDateTime")}
         for m in _items(payload)
         if token in (m.get("subject") or "")
+        and not m.get("isDraft")
+        and APPROVER in _recipients(m)
     ]
     return _only_after(hits, "received", "email")
 
