@@ -48,7 +48,7 @@ def test_skill_step_9_rules() -> None:
 
 def test_studio_web_flavor_rules() -> None:
     sw = ROOT / "skill-flavors" / "studioweb" / "uipath-maestro-bpmn"
-    assert "The baseline is step 1's compile of the unedited source" in (sw / "SKILL.md").read_text()
+    assert "The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`" in (sw / "SKILL.md").read_text()
     assert "the block's `cd` and `mkdir` lines" in (sw / "references" / "draft-skeleton.md").read_text()
     assert "rebuild the baseline as the [Validation loop]" in (sw / "references" / "gate-reply-template.md").read_text()
 
