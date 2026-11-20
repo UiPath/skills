@@ -57,3 +57,80 @@ When testing hypotheses for Integration Service issues, gather and verify these 
 4. **Folder permissions** — verify the caller has access to the folder where the connection resides. For Maestro triggers, the robot account needs "Triggers" permission, not just "Connections.View".
 5. **OAuth token state** — if the connection uses OAuth, check whether the token may have expired or been revoked. A ping failure after a period of working correctly suggests token expiry.
 6. **External service availability** — if the connection pings successfully but operations fail, the issue may be on the external service side (API changes, rate limits, outages)
+
+## Trigger Trace Evidence
+
+A trigger trace is one execution of an Integration Service event trigger — one poll
+cycle, or one webhook delivery. Reading traces answers "did the trigger run, and what
+did it see" with observed data, so it comes **before** configuration checks, not after.
+Three playbooks share this procedure: [trigger-not-firing.md](./playbooks/trigger-not-firing.md),
+[start-trigger-not-firing.md](../maestro/playbooks/start-trigger-not-firing.md) and
+[wait-for-event-stuck.md](../maestro/playbooks/wait-for-event-stuck.md).
+
+### Applicability gate — run this first
+
+**These commands apply to Integration Service event triggers only.** Time, queue, HTTP
+and API triggers, manual runs and parent-process starts record no traces, and an empty
+result against one of them is meaningless, not evidence. Confirm the trigger type before
+reading anything:
+
+| Starting point | Confirms an event trigger when | Not an event trigger → |
+|---|---|---|
+| Orchestrator trigger | `ApiTriggerType` is `IntegrationTrigger` | time / queue / HTTP trigger — use `uip or triggers history <key>`; this guide does not apply |
+| Maestro process or instance | instance `Source` is `IntegrationTrigger`, or the start element's `ElementExtensionType` is `Intsvc.EventTrigger` | `Manual`, an API call, a time trigger or a parent process — route to the Maestro deployment or job playbooks |
+| A waiting Maestro element | the element's `ElementExtensionType` is `Intsvc.WaitForEvent` **and** its span carries `intSvcTriggerId` | a timer, Action Center task or child job — see [bpmn-job-stuck.md](../maestro/playbooks/bpmn-job-stuck.md) |
+
+If the gate fails, say so and route. Do not fall back to reading traces anyway.
+
+### Step 1 — did the trigger run in the window?
+
+```bash
+# Orchestrator event trigger, or a Maestro start trigger (add --source maestro)
+uip is trigger-traces list --trigger-key <trigger-key> --folder-path "<folder>" --from 24h --output json
+
+# A Maestro instance's mid-process Wait-For-Event
+uip is trigger-traces list --instance-id <instance-id> --from 24h --output json
+```
+
+`--from` takes `30m`, `6h`, `7d` or ISO 8601, and matches the user's reported window.
+Traces are retained 30 days; a longer `--from` comes back with a `Warning` naming the
+window actually searched — quote it rather than reporting the narrowed result as complete.
+
+**Zero rows is itself a finding:** the trigger never polled. Only then do the
+configuration checks (connection ping, enabled state, folder permission,
+`uip or triggers history`) earn their place.
+
+### Step 2 — read the row before gathering anything else
+
+Column names match the Traces tab in Orchestrator and Maestro, so they can be compared
+with what the user sees.
+
+| Reading | What it means | Next |
+|---|---|---|
+| **zero rows** | trigger never ran | configuration checks; `uip or triggers history <key>` |
+| **`Outcome: Faulted`** | the poll or delivery itself failed | Step 3 — the error is in the spans |
+| **`EventsFetched: 0`** | the connector saw no events; the cause is upstream of UiPath | Step 3 — check the query window actually sent |
+| **`EventsFetched > 0`, `EventsMatched: 0`** | events arrived and **the trigger's filter rejected them** | Step 3 — compare filter against payload |
+| **`EventsMatched > 0`, `Notified: false`** | matched but dispatch failed | `uip or jobs list` in the trigger's folder |
+| **`EventsMatched > 0`, `Notified: true`** | the trigger did its job — the fault is downstream | Orchestrator job state, or the Maestro instance |
+
+### Step 3 — spans carry the filter and the payload
+
+```bash
+uip traces spans get <trace-id> --output json
+```
+
+Every trace carries two spans, named `Data - <n>` / `UserFilters - <n>` for a polling
+trigger and `Webhook Data` / `Webhook User Filters` for a webhook one. The second is
+usually the answer:
+
+- **`DataFilters.input.filter`** — the filter expression the trigger actually evaluated
+- **`DataFilters.output.matched`** — the records that survived it
+
+A Wait-For-Event filter correlates to one specific record, e.g.
+`(Id == 'F9BAC415-…' && Name == 'TriggersReliability_Updated')`. An instance waits for
+**that** record and no other, so an update to a different record of the same type
+produces a trace that fetched data and matched nothing. Quote the expression and the id
+back to the user — it is the fastest way to end a "but I did update it" disagreement.
+
+Span `Attributes` arrive as a JSON string; parse before reading fields.
