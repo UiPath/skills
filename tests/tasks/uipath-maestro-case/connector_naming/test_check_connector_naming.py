@@ -222,6 +222,20 @@ def test_each_input_key_in_its_declared_container_passes():
     assert chk.FAILURES == []
 
 
+def test_a_name_two_sections_declare_passes_in_either():
+    both = {"Inputs": {"QueryParameters": [{"Name": "channel"}], "BodyFields": [{"Name": "channel"}]}}
+    for container in ("queryParameters", "body"):
+        chk.check_input_containers(
+            "T", block(inputs=[{"name": container, "body": {"channel": "C1"}}]), both,
+        )
+    assert chk.FAILURES == []
+    # ...and still not in a container neither section maps to.
+    chk.check_input_containers(
+        "T", block(inputs=[{"name": "pathParameters", "body": {"channel": "C1"}}]), both,
+    )
+    assert "'channel' is in pathParameters, but the connector contract declares it under body / queryParameters" in only()
+
+
 def test_a_key_no_section_declares_is_left_to_check_inputs():
     chk.check_input_containers(
         "T", block(inputs=[{"name": "body", "body": {"nope": 1}}]), SLACK_INPUTS
@@ -607,6 +621,39 @@ def test_a_run_where_every_name_matches_exits_zero(tmp_path, monkeypatch, capsys
     )
     assert chk.main() == 0
     assert "PASS: connector field names match" in capsys.readouterr().out
+
+
+MISPLACED = "'send_as' is in body, but the connector contract declares it under queryParameters"
+
+
+def run_with_misplaced_key(tmp_path, monkeypatch, capsys, service_type: str | None) -> str:
+    """Two nodes that write `send_as` into `body`, against a contract that declares it a
+    query parameter. `service_type` turns both into triggers."""
+    nodes = [graded_node("A", "aaaaaaaa-0000-0000-0000-000000000001"),
+             graded_node("B", "bbbbbbbb-0000-0000-0000-000000000002")]
+    for node in nodes:
+        node["data"]["inputs"] = [{"name": "body", "body": {"send_as": "bot"}}]
+        if service_type:
+            node["data"]["serviceType"] = service_type
+    monkeypatch.setattr(sys, "argv", ["check", plan_file(tmp_path, nodes)])
+    monkeypatch.setattr(
+        chk.subprocess, "run",
+        run_returning(json.dumps({"Result": "Success", "Data": {"Identity": {}, **SLACK_INPUTS}})),
+    )
+    chk.main()
+    return capsys.readouterr().out
+
+
+def test_an_activity_with_a_misplaced_key_is_reported_by_main(tmp_path, monkeypatch, capsys):
+    assert MISPLACED in run_with_misplaced_key(tmp_path, monkeypatch, capsys, None)
+
+
+def test_a_trigger_is_not_graded_on_containers(tmp_path, monkeypatch, capsys):
+    # A trigger keeps every bucket inside one `body` envelope, so the same plan is not a
+    # container defect there.
+    out = run_with_misplaced_key(tmp_path, monkeypatch, capsys, "Intsvc.WaitForEvent")
+    assert MISPLACED not in out
+    assert "is in body, but the connector contract declares it" not in out
 
 
 def test_the_default_path_also_finds_a_plan_saved_as_caseplan_case(tmp_path, monkeypatch, capsys):
