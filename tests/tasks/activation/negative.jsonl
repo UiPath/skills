@@ -75,3 +75,5 @@
 {"id": "negative-076", "prompt": "Write a SKILL.md for a new Claude Code skill that formats SQL in this repo", "expected_skill": ""}
 {"id": "negative-077", "prompt": "Bundle my JavaScript with esbuild and tag the release v2.1.0 in git", "expected_skill": ""}
 {"id": "negative-078", "prompt": "Install the anthropic skills plugin into my Claude Code setup", "expected_skill": ""}
+{"id": "negative-079", "prompt": "Write an Azure DevOps YAML pipeline that builds our .NET 8 solution and runs the unit tests on every PR", "expected_skill": ""}
+{"id": "negative-080", "prompt": "Add a step to our GitHub Actions workflow that caches npm dependencies between runs", "expected_skill": ""}
