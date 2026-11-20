@@ -14,6 +14,7 @@ import re
 import shutil
 import stat
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -41,7 +42,9 @@ class Sandbox:
         stub.write_text('#!/bin/sh\necho "$*" >> "$(dirname "$0")/real.log"\necho real-uip\n')
         stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
         self.real_log = real / "real.log"
-        self.env = dict(os.environ, PATH=f"{self.mocks}:{real}:/usr/bin:/bin")
+        # No host login leaks in: the shim reads $UIPATH_TENANT_ID and ~/.uipath/.auth.
+        self.env = dict(os.environ, PATH=f"{self.mocks}:{real}:/usr/bin:/bin", HOME=str(root / "home"))
+        self.env.pop("UIPATH_TENANT_ID", None)
 
     def scenario(self, name: str) -> None:
         (self.mocks / "scenario").write_text(name)
@@ -175,6 +178,43 @@ def test_ids_the_login_cannot_see_404_as_tenants(sb, target):
     assert body["Message"].startswith("HTTP 404")
     assert sb.state().get("enabled", []) == []
     code, _, _ = sb.uip("gov", "aops-policy", "deployment", "tenant", "get", target)
+    assert code == 1
+
+
+@pytest.mark.parametrize("in_env, in_auth", [(True, False), (False, True), (True, True)])
+def test_sandbox_login_tenant_is_the_recorded_tenant(sb, tmp_path, in_env, in_auth):
+    # A sandbox with its own login hands the agent that tenant id (env and/or
+    # ~/.uipath/.auth); the shim treats it as the recorded login's tenant.
+    env_id, auth_id = "0a1b2c3d-0000-4000-8000-0000000000aa", "0a1b2c3d-0000-4000-8000-0000000000bb"
+    invented, home = "deadbeef-0000-4000-8000-000000000000", tmp_path / "home"
+    (home / ".uipath").mkdir(parents=True)
+    (home / ".uipath" / ".auth").write_text(f"UIPATH_TENANT_ID={auth_id}\n" if in_auth else "")
+    sb.env["HOME"] = str(home)
+    sb.env.pop("UIPATH_TENANT_ID", None)
+    if in_env:
+        sb.env["UIPATH_TENANT_ID"] = env_id
+    ids = [t for t, on in ((env_id, in_env), (auth_id, in_auth)) if on]
+    login = sb.ok("login", "status")
+    assert login["TenantId"] == ids[0] and login["ExpirationDate"] > time.strftime("%Y-%m-%dT%H:%M:%S")
+    assert ids[0] in tenant_ids(sb) and TENANT not in tenant_ids(sb)
+    for tid in ids:
+        sb.ok("gov", "compliance-packs", "state", "coverage", "tenant", tid, PACK)
+        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", tid, PACK)
+        assert sb.ok("gov", "aops-policy", "deployment", "tenant", "get", tid)["Identifier"] == tid
+    assert set(sb.state()["enabled"]) == {TENANT}
+    for target in ("", ORG, invented, ids[0].upper()):
+        code, _, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", target, PACK)
+        assert code == 1
+    assert subprocess.run(["python3", "mocks/check_state.py", "enabled"], cwd=sb.root).returncode == 0
+
+
+def test_sandbox_login_never_aliases_the_org_or_a_visible_tenant(sb):
+    sb.env["UIPATH_TENANT_ID"] = ORG
+    assert sb.ok("login", "status")["TenantId"] == TENANT
+    sb.env["UIPATH_TENANT_ID"] = TENANT_2
+    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT_2, PACK)
+    assert sb.state()["enabled"] == [TENANT_2]
+    code, _, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", ORG, PACK)
     assert code == 1
 
 
