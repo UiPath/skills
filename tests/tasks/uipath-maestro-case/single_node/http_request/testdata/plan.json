@@ -1,0 +1,376 @@
+{
+ "id": "case-UDDonFRw7x",
+ "name": "HttpRequestSingleCase",
+ "description": "Single-node case that posts an invoice number to an echo service and keeps the echoed body.",
+ "version": "32.0.3",
+ "bindings": [
+  {
+   "id": "bHttpImplicit",
+   "name": "uipath-uipath-http connection",
+   "type": "string",
+   "resource": "Connection",
+   "resourceKey": "ImplicitConnection",
+   "default": "ImplicitConnection",
+   "propertyAttribute": "ConnectionId"
+  }
+ ],
+ "variables": {
+  "inputOutputs": [
+   {
+    "id": "echoResponse",
+    "name": "echoResponse",
+    "type": "object",
+    "default": "{}",
+    "elementId": "root"
+   }
+  ]
+ },
+ "metadata": {
+  "caseIdentifier": "HRC",
+  "caseAppEnabled": false,
+  "caseIdentifierType": "constant",
+  "publishVersion": 2,
+  "caseExitRules": [
+   {
+    "id": "Condition_XhGs8y",
+    "displayName": "Case complete",
+    "rules": [
+     [
+      {
+       "rule": "required-stages-completed",
+       "id": "Rule_d8Ivvu"
+      }
+     ]
+    ],
+    "marksCaseComplete": true
+   }
+  ],
+  "slaRules": [
+   {
+    "id": "sla_hjPpXkZQ",
+    "displayName": "Default SLA",
+    "expression": "=js:true",
+    "count": 1,
+    "unit": "d"
+   }
+  ],
+  "intsvcActivityConfig": "v2"
+ },
+ "nodes": [
+  {
+   "id": "trigger_1",
+   "type": "uipath.case.trigger",
+   "data": {
+    "typeVersion": "1.0.0",
+    "display": {
+     "label": "Trigger 1"
+    },
+    "inputs": {
+     "serviceType": "None",
+     "entryPointId": "f460a557-6a91-4a43-9d47-03e917e98478"
+    }
+   }
+  },
+  {
+   "id": "Stage_AdHeCq",
+   "type": "case-management:Stage",
+   "data": {
+    "label": "Notify",
+    "parentElement": {
+     "id": "root",
+     "type": "case-management:root"
+    },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": [
+     [
+      {
+       "id": "trBBgDSNV",
+       "displayName": "Post Invoice",
+       "type": "http-request",
+       "data": {
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "inputs": [
+         {
+          "name": "pathParameters",
+          "type": "json",
+          "target": "pathParameters",
+          "id": "vpathParameters",
+          "var": "vpathParameters",
+          "elementId": "Stage_AdHeCq-trBBgDSNV"
+         },
+         {
+          "name": "queryParameters",
+          "type": "json",
+          "target": "queryParameters",
+          "id": "vqueryParameters",
+          "var": "vqueryParameters",
+          "elementId": "Stage_AdHeCq-trBBgDSNV"
+         },
+         {
+          "name": "body",
+          "type": "json",
+          "target": "body",
+          "id": "vbody",
+          "var": "vbody",
+          "elementId": "Stage_AdHeCq-trBBgDSNV",
+          "body": {
+           "authentication": "manual",
+           "method": "POST",
+           "url": "https://postman-echo.com/post",
+           "headers": {
+            "Accept": "application/json"
+           },
+           "query": {
+            "source": "skills-case-eval"
+           },
+           "requestBodyType": "raw",
+           "body": "=js:( {\"invoiceNumber\":\"INV-1042\",\"probe\":\"skills-case-http-7f3a\"})"
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "name": "code",
+          "displayName": "Response status code",
+          "type": "number",
+          "source": "=response.code",
+          "id": "code",
+          "var": "code",
+          "value": "code",
+          "elementId": "Stage_AdHeCq-trBBgDSNV"
+         },
+         {
+          "name": "headers",
+          "displayName": "Response headers",
+          "type": "object",
+          "source": "=response.headers",
+          "id": "headers",
+          "var": "headers",
+          "value": "headers",
+          "elementId": "Stage_AdHeCq-trBBgDSNV"
+         },
+         {
+          "name": "body",
+          "displayName": "Response body",
+          "type": "object",
+          "source": "=response.body",
+          "id": "body",
+          "var": "echoResponse",
+          "value": "echoResponse",
+          "elementId": "Stage_AdHeCq-trBBgDSNV",
+          "target": "=body",
+          "originalVar": "body"
+         },
+         {
+          "name": "Error",
+          "displayName": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "_jsonSchema": {
+           "type": "object",
+           "properties": {
+            "code": {
+             "type": "string"
+            },
+            "message": {
+             "type": "string"
+            },
+            "detail": {
+             "type": "string"
+            },
+            "category": {
+             "type": "string"
+            },
+            "status": {
+             "type": "number"
+            },
+            "element": {
+             "type": "string"
+            }
+           }
+          },
+          "id": "error",
+          "var": "error",
+          "value": "error",
+          "elementId": "Stage_AdHeCq-trBBgDSNV",
+          "body": {
+           "type": "object",
+           "properties": {
+            "code": {
+             "type": "string"
+            },
+            "message": {
+             "type": "string"
+            },
+            "detail": {
+             "type": "string"
+            },
+            "category": {
+             "type": "string"
+            },
+            "status": {
+             "type": "number"
+            },
+            "element": {
+             "type": "string"
+            }
+           }
+          }
+         }
+        ],
+        "context": [
+         {
+          "name": "connectorKey",
+          "value": "uipath-uipath-http",
+          "type": "string"
+         },
+         {
+          "name": "connection",
+          "value": "=bindings.bHttpImplicit",
+          "type": "string"
+         },
+         {
+          "name": "resourceKey",
+          "value": null,
+          "type": "string"
+         },
+         {
+          "name": "folderKey",
+          "value": null,
+          "type": "string"
+         },
+         {
+          "name": "method",
+          "value": "POST",
+          "type": "string"
+         },
+         {
+          "name": "path",
+          "value": "/http-request",
+          "type": "string"
+         },
+         {
+          "name": "objectName",
+          "value": "http-request",
+          "type": "string"
+         },
+         {
+          "name": "metadata",
+          "type": "json",
+          "body": {
+           "activityPropertyConfiguration": {
+            "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.5.3\",\"scriptRef\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"method\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"},\"optionalConfiguration\":{\"_textBlocks\":[{\"name\":\"contentTypeNotice\",\"text\":\"The content-type header must be application/json.\",\"position\":\"above\"}],\"objectActions\":[],\"connectorName\":\"HTTP\",\"agentIdentity\":null,\"maxPageSize\":100,\"jobArguments\":null,\"isAutopilotInvalidConfig\":false,\"additionalHeaders\":null,\"cachedLookupValues\":[],\"cachedBrowserItems\":[],\"cachedPropertyMappings\":[],\"primaryKeys\":[],\"objectDisplayName\":\"HTTP Request\",\"eventMode\":null,\"eventOperation\":null,\"hasBreakingChanges\":false,\"fieldsContainer\":{\"outputTypeDefinition\":\"{\\\"body\\\":object;\\\"code\\\":number;\\\"method\\\":string;\\\"rawStringBody\\\":string;\\\"request\\\":{\\\"headers\\\":object;\\\"methodType\\\":string;\\\"query\\\":object;\\\"type\\\":string;\\\"url\\\":string}}\",\"outputJsonSchema\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"method\":{\"title\":\"Method\",\"type\":\"string\",\"description\":\"Specifies the HTTP method to be used for the request.\"},\"body\":{\"title\":\"Body\",\"$ref\":\"#/definitions/body\"},\"code\":{\"title\":\"Code\",\"type\":\"integer\",\"description\":\"The Code\"},\"rawStringBody\":{\"title\":\"Raw body\",\"type\":\"string\",\"description\":\"The Raw string body\"},\"request\":{\"title\":\"Request\",\"$ref\":\"#/definitions/request\"}},\"definitions\":{\"body\":{\"type\":\"object\",\"properties\":{}},\"request\":{\"type\":\"object\",\"properties\":{\"type\":{\"title\":\"Request type\",\"type\":\"string\",\"description\":\"The Request type\"},\"url\":{\"title\":\"Request url\",\"type\":\"string\",\"description\":\"The Request url\"},\"methodType\":{\"title\":\"Method\",\"type\":\"string\",\"description\":\"The Request method type\"}}}}},\"hasFileOutput\":false,\"populateOutputFields\":true,\"inputFields\":[{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"authentication\",\"name\":\"authentication\",\"displayName\":\"Authentication\",\"description\":\"Authentication\",\"type\":\"string\",\"sortOrder\":1,\"defaultValue\":\"manual\",\"primaryKey\":false,\"enum\":[{\"name\":\"Manual authentication\",\"value\":\"manual\",\"description\":\"Provide authentication details directly in the request\"},{\"name\":\"Connector based authentication\",\"value\":\"connector\",\"description\":\"Use authentication details from a configured connector\"}],\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"showMessages\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false}],\"messages\":[\"contentTypeNotice\"]},{\"actionType\":\"clearMessages\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false}],\"messages\":[\"contentTypeNotice\"]}],\"textBlocks\":[{\"name\":\"contentTypeNotice\",\"text\":\"The content-type header must be application/json.\",\"position\":\"above\"}],\"validation\":false},\"fieldActions\":[{\"actionType\":\"showMessages\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false}],\"messages\":[\"contentTypeNotice\"]},{\"actionType\":\"clearMessages\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false}],\"messages\":[\"contentTypeNotice\"]}],\"searchable\":false,\"searchableJoins\":null,\"required\":true,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":true,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"targetConnector\",\"name\":\"targetConnector\",\"displayName\":\"Connector\",\"description\":\"Select a connector\",\"type\":\"string\",\"sortOrder\":2,\"primaryKey\":false,\"lookup\":{\"objectName\":\"connectors\",\"lookupNames\":[\"name\"],\"lookupValue\":\"key\",\"path\":\"/Connectors?hasHttpRequest=true\",\"orderBy\":\"NONE\",\"defaultLookupValues\":[{\"name\":\"HTTP\",\"key\":\"uipath-uipath-http\",\"priority\":1,\"isDefault\":true,\"description\":\"UiPath HTTP connector for general API requests\"}]},\"design\":{\"component\":\"Connectors\",\"loadByDefault\":true,\"isMultiSelect\":false,\"enableUserOverride\":false,\"displayPattern\":\"{name}\",\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"isCleared\":true,\"isVariable\":false}]}],\"position\":\"primary\",\"solutionResourceKind\":\"connector\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"isCleared\":true,\"isVariable\":false}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":true,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":true,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"connection\",\"name\":\"connection\",\"displayName\":\"Connection\",\"description\":\"Connections\",\"type\":\"string\",\"sortOrder\":3,\"primaryKey\":false,\"design\":{\"component\":\"Connections\",\"loadByDefault\":true,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false},{\"type\":\"field\",\"refFieldName\":\"targetConnector\",\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false},{\"type\":\"field\",\"refFieldName\":\"targetConnector\",\"refFieldValues\":[\"*\"],\"isCleared\":true,\"isVariable\":false}]}],\"position\":\"primary\",\"solutionResourceKind\":\"connection\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false},{\"type\":\"field\",\"refFieldName\":\"targetConnector\",\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false},{\"type\":\"field\",\"refFieldName\":\"targetConnector\",\"refFieldValues\":[\"*\"],\"isCleared\":true,\"isVariable\":false}]},{\"rules\":[{\"refFieldName\":\"targetConnector\",\"refFieldValues\":[\"*\"],\"isCleared\":false,\"isConstantValue\":false,\"isWorkflowExpression\":false}],\"actionType\":\"grabValue\",\"groupNames\":[],\"messages\":null}],\"searchable\":false,\"searchableJoins\":null,\"required\":true,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"method\",\"name\":\"method\",\"displayName\":\"Method\",\"description\":\"Specifies the HTTP method to be used for the request.\",\"type\":\"string\",\"sortOrder\":4,\"defaultValue\":\"GET\",\"primaryKey\":false,\"enum\":[{\"name\":\"GET\",\"value\":\"GET\"},{\"name\":\"POST\",\"value\":\"POST\"},{\"name\":\"PUT\",\"value\":\"PUT\"},{\"name\":\"PATCH\",\"value\":\"PATCH\"},{\"name\":\"DELETE\",\"value\":\"DELETE\"},{\"name\":\"OPTIONS\",\"value\":\"OPTIONS\"},{\"name\":\"HEAD\",\"value\":\"HEAD\"}],\"design\":{\"loadByDefault\":true,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"position\":\"primary\",\"validation\":false},\"fieldActions\":null,\"searchable\":false,\"searchableJoins\":null,\"required\":true,\"request\":true,\"response\":true,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":true,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"url\",\"name\":\"url\",\"displayName\":\"URL\",\"description\":\"The web address where the HTTP request is sent.\",\"type\":\"string\",\"sortOrder\":5,\"primaryKey\":false,\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]}],\"position\":\"primary\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":true,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"path\",\"name\":\"path\",\"displayName\":\"Path\",\"description\":\"The endpoint path for the REST API request.\",\"type\":\"string\",\"sortOrder\":5,\"primaryKey\":false,\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]}],\"position\":\"primary\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":true,\"isVariable\":false}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"headers\",\"name\":\"headers\",\"displayName\":\"Headers\",\"description\":\"Headers\",\"type\":\"object\",\"sortOrder\":6,\"primaryKey\":false,\"design\":{\"component\":\"Dictionary\",\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"position\":\"primary\",\"dictionaryWidget\":{\"windowTitle\":\"\",\"windowDescription\":\"\",\"columnKeyTitle\":\"\",\"columnKeyDescription\":\"\",\"columnKeyHint\":\"\",\"columnValueTitle\":\"\",\"columnValueDescription\":\"\",\"columnValueHint\":\"\"},\"validation\":false},\"fieldActions\":null,\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":true,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"query\",\"name\":\"query\",\"displayName\":\"Query parameters\",\"description\":\"Query parameters\",\"type\":\"object\",\"sortOrder\":7,\"primaryKey\":false,\"design\":{\"component\":\"Dictionary\",\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"position\":\"primary\",\"dictionaryWidget\":{\"windowTitle\":\"\",\"windowDescription\":\"\",\"columnKeyTitle\":\"\",\"columnKeyDescription\":\"\",\"columnKeyHint\":\"\",\"columnValueTitle\":\"\",\"columnValueDescription\":\"\",\"columnValueHint\":\"\"},\"validation\":false},\"fieldActions\":null,\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":true,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"requestBodyType\",\"name\":\"requestBodyType\",\"displayName\":\"Request body type\",\"description\":\"Determines how the request body is encoded. Available for manual authentication only; connector-based requests remain JSON.\",\"type\":\"string\",\"sortOrder\":8,\"defaultValue\":\"raw\",\"primaryKey\":false,\"enum\":[{\"name\":\"Raw\",\"value\":\"raw\",\"description\":\"Send the body as-is using the Content-Type header (e.g. JSON, XML, plain text).\"},{\"name\":\"Multipart form data\",\"value\":\"multipartFormData\",\"description\":\"Send one or more form-data parts encoded as multipart/form-data.\"}],\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"POST\",\"PATCH\",\"PUT\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"GET\",\"HEAD\",\"OPTIONS\",\"DELETE\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]}],\"position\":\"primary\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"POST\",\"PATCH\",\"PUT\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"GET\",\"HEAD\",\"OPTIONS\",\"DELETE\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":true,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"body\",\"name\":\"body\",\"displayName\":\"Body\",\"description\":\"Contains the data to be sent with the HTTP request.\",\"type\":\"object\",\"sortOrder\":9,\"primaryKey\":false,\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"GET\",\"HEAD\",\"OPTIONS\",\"DELETE\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"multipartFormData\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"raw\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"POST\",\"PATCH\",\"PUT\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]}],\"position\":\"primary\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"GET\",\"HEAD\",\"OPTIONS\",\"DELETE\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"multipartFormData\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"raw\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"method\",\"refFieldValues\":[\"POST\",\"PATCH\",\"PUT\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":true,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"multipartFormData\",\"name\":\"multipartFormData\",\"displayName\":\"Form data parts\",\"description\":\"Multipart form-data parts. Provide a list of parts; each part is an object with 'name' (required), 'value' (required), and optional 'filename', 'contentType' and 'encoding'. A value that is an attachment reference is sent as a file; set encoding to 'base64' to send a base64 string as bytes; objects are sent as JSON.\",\"type\":\"object\",\"sortOrder\":10,\"primaryKey\":false,\"design\":{\"loadByDefault\":false,\"isMultiSelect\":false,\"enableUserOverride\":false,\"isHidden\":false,\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"multipartFormData\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"raw\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]}],\"position\":\"primary\",\"validation\":false},\"fieldActions\":[{\"actionType\":\"show\",\"priorityOrder\":1,\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"manual\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true},{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"multipartFormData\"],\"isCleared\":false,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"requestBodyType\",\"refFieldValues\":[\"raw\"],\"isCleared\":true,\"isVariable\":false,\"isWorkflowExpression\":true}]},{\"actionType\":\"hide\",\"rules\":[{\"type\":\"field\",\"refFieldName\":\"authentication\",\"refFieldValues\":[\"connector\"],\"isCleared\":true,\"isVariable\":false}]}],\"searchable\":false,\"searchableJoins\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"body\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null}],\"outputFields\":[{\"typeScriptDefinition\":null,\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"http-request\",\"name\":\"http-request\",\"displayName\":\"HTTP Request\",\"description\":\"\",\"type\":\"Generatedhttp-request\",\"sortOrder\":null,\"format\":null,\"mask\":null,\"defaultValue\":null,\"primaryKey\":false,\"lookup\":null,\"enum\":null,\"design\":null,\"fieldActions\":null,\"searchable\":false,\"searchableOperators\":null,\"searchableNames\":null,\"searchableJoins\":null,\"required\":false,\"request\":false,\"response\":true,\"responseCurated\":false,\"fieldLocation\":\"output\",\"onCanvas\":null,\"isJitField\":true,\"isFieldActionParent\":false,\"isMainResponseField\":true,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null}],\"jitTypeNeedsRefresh\":false,\"jitInputField\":{\"typeScriptDefinition\":\"{\\\"authentication\\\":string;\\\"body\\\":object;\\\"connection\\\":string;\\\"headers\\\":object;\\\"method\\\":string;\\\"multipartFormData\\\":object;\\\"path\\\":string;\\\"query\\\":object;\\\"requestBodyType\\\":string;\\\"targetConnector\\\":string;\\\"url\\\":string}\",\"useUrlInput\":false,\"resolvedUrl\":null,\"id\":\"in_http-request\",\"name\":\"http-request\",\"displayName\":\"HTTP Request\",\"description\":\"HTTP Request input object\",\"type\":\"Generatedhttp-request\",\"sortOrder\":null,\"format\":null,\"mask\":null,\"defaultValue\":\"{\\n  \\\"authentication\\\": null,\\n  \\\"body\\\": null,\\n  \\\"connection\\\": null,\\n  \\\"headers\\\": null,\\n  \\\"method\\\": null,\\n  \\\"multipartFormData\\\": null,\\n  \\\"path\\\": null,\\n  \\\"query\\\": null,\\n  \\\"requestBodyType\\\": null,\\n  \\\"targetConnector\\\": null,\\n  \\\"url\\\": null\\n}\",\"primaryKey\":false,\"lookup\":null,\"enum\":null,\"design\":null,\"fieldActions\":null,\"searchable\":false,\"searchableOperators\":null,\"searchableNames\":null,\"searchableJoins\":null,\"required\":true,\"request\":false,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"jitObjectInput\",\"onCanvas\":null,\"isJitField\":true,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":false,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Object\",\"assemblyQualifiedName\":\"Object\",\"isValueType\":false},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},\"inputMode\":null,\"searchableFields\":[],\"hasUnifiedTypes\":true,\"jitTypeHash\":null}}}",
+            "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+            "errorState": {
+             "issues": []
+            }
+           },
+           "activityMetadata": {
+            "activity": {
+             "isAppActivity": false,
+             "packageId": 196648,
+             "svgIconUrl": "icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg",
+             "displayName": "HTTP Request",
+             "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.34.0.0, Culture=neutral, PublicKeyToken=null",
+             "description": "Use HTTP requests to interact with APIs via the selected connector and connection configuration.",
+             "category": "",
+             "activityColor": "#E56D5C",
+             "configuration": "{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"method\"}",
+             "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+             "isExperimental": false,
+             "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request",
+             "isEnabled": true,
+             "targetPlatform": "CrossPlatform",
+             "isAdvanced": false,
+             "isRestricted": false,
+             "hasWpfOnlyDesigner": false,
+             "tags": [
+              ""
+             ]
+            },
+            "meta": {
+             "packageName": "UiPath.IntegrationService.Activities",
+             "packageVersion": "1.34.0-alpha.20261013.3",
+             "activityColor": "#E56D5C",
+             "packageCategoryDisplayName": "HTTP"
+            }
+           },
+           "inputMetadata": {},
+           "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+           },
+           "bindings": []
+          }
+         },
+         {
+          "name": "activityConfigurationVersion",
+          "value": "v2",
+          "type": "string"
+         }
+        ],
+        "bindings": []
+       },
+       "elementId": "Stage_AdHeCq-trBBgDSNV",
+       "shouldRunOnlyOnce": false,
+       "isRequired": true,
+       "description": "POST the invoice number to the echo service and keep the response body.",
+       "entryConditions": [
+        {
+         "id": "Condition_wN8mLP",
+         "displayName": "Post Invoice entry",
+         "rules": [
+          [
+           {
+            "rule": "current-stage-entered",
+            "id": "Rule_SycFwE"
+           }
+          ]
+         ]
+        }
+       ]
+      }
+     ]
+    ],
+    "description": "Post the invoice number to the echo service.",
+    "isRequired": true,
+    "entryConditions": [
+     {
+      "id": "Condition_INa1Wu",
+      "displayName": "Notify entry",
+      "rules": [
+       [
+        {
+         "rule": "case-entered",
+         "id": "Rule_GA20aK"
+        }
+       ]
+      ]
+     }
+    ],
+    "exitConditions": [
+     {
+      "id": "Condition_W8Khyv",
+      "displayName": "Notify complete",
+      "rules": [
+       [
+        {
+         "rule": "required-tasks-completed",
+         "id": "Rule_eaBOf1"
+        }
+       ]
+      ],
+      "marksStageComplete": true,
+      "type": "exit-only"
+     }
+    ]
+   }
+  }
+ ],
+ "edges": []
+}

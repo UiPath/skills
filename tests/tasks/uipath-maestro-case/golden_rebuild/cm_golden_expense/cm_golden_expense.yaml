@@ -1,24 +1,28 @@
 task_id: skill-case-golden-rebuild-cm-expense
 description: >
-  GOLDEN REBUILD (live tenant) - rebuild the CM-Golden expense-reporting
-  reference case from a reverse-engineered sdd.md whose resource references
-  are REAL: the staged fixture pins the deployed solution folder, resource
-  IDs, connection IDs, and connector activity type IDs of the CM-Golden
-  golden solution on the coder-eval tenant. Unlike the phase_0_build_* tasks
-  (offline, skeleton bindings allowed), this exercises live resolution and
-  grades the resulting bindings, structure, semantics, and direct-JSON
-  authoring contract. Every task must be RESOLVED (no skeletons or unresolved
-  connector rules), with structural fidelity to the golden design
-  (8 stages incl. a secondary rework lane with return-to-origin, 15 tasks
-  across all 9 task types, wait-for-user / user-selected-stage handoff,
-  ad-hoc + run-once timers, SLA escalation). Stops at validate - NOT debug.
+  GOLDEN REBUILD (live tenant), asked the way a Studio Web user would ask it:
+  rebuild the CM-Golden expense-reporting reference case from the team's design
+  document (fixtures/sdd.md), whose resource references are REAL: it pins the
+  deployed solution folder, resource IDs, connection IDs and connector activity
+  type IDs of the CM-Golden solution on the coder-eval tenant. Graded by
+  validate (plain and --strict --sdd against the same document), the golden
+  topology (8 stages incl. a secondary rework lane, 15 tasks across all 9 task
+  types, run-once timer, SLA escalation), resolved bindings, the dataflow and
+  gate semantics, the Task 1.1 seed object, and one harness-run
+  `uip maestro case debug`: the case-entered stage is entered, its required
+  automated tasks (the agent, process orchestration and RPA job on the deployed
+  CM-Golden resources) complete, the case moves on to the stage after it (the
+  manager approval), and no required element fails. That run parks at the
+  approval, so the grader cancels the instance; post_run cancels any other
+  debug instance this task started. The agent's own test run is advisory.
 
   TENANT PRECONDITION: the CM-Golden golden solution must be deployed on the
-  eval tenant at the folder/IDs pinned in fixtures/sdd.md. A golden solution
-  reinstall re-mints every ID and renames the folder - re-sweep
-  fixtures/sdd.md (the ONE source both the agent and the bindings grader
-  read; the grader parses its expectations from that file at grade time).
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation, path-to-ga]
+  eval tenant at the folder/IDs pinned in fixtures/sdd.md, and its Stage 1
+  agent, process and RPA must be runnable there. A golden solution reinstall
+  re-mints every ID and renames the folder - re-sweep fixtures/sdd.md (the ONE
+  source both the agent and the bindings grader read; the grader parses its
+  expectations from that file at grade time).
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, resource, feature:approval-gate, feature:escalation, path-to-ga, outcome-graded]
 
 # Sized from measured runs: a healthy full build finishes in ~60 min, but a
 # mid-stream API-limit death (32k output-token cap, context overflow) makes
@@ -27,7 +31,7 @@ tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-nod
 # so a caseplan-sized extended-thinking response is not fatal (both failure
 # modes observed 2026-07-10).
 run_limits:
-  task_timeout: 14400
+  task_timeout: 15000
   max_turns: 600
   turn_timeout: 9000
 
@@ -56,55 +60,46 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  I have an approved SDD for our CM-Golden expense-reporting case-management
-  solution - it's staged as `sdd.md` in this folder. Build a UiPath Case
-  Management solution named "CMGoldenExpense" containing a project also named
-  "CMGoldenExpense" from this SDD.
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
-  do not re-interview me, and do not redesign the process. The tenant is LIVE
-  and already hosts every referenced resource: the solution folder, resource
-  IDs, connection IDs, and connector activity type IDs in the SDD are real.
-  Resolve every task and connector rule against them - skeleton or
-  placeholder bindings are NOT acceptable.
+  Build our expense reporting case as a solution and case project both called
+  "CMGoldenExpense", following our design document `sdd.md` in this folder.
+  Keep the stages, tasks, rules, timers, SLA, and sample request exactly as
+  the document specifies.
 
-  Important:
-  - The `uip` CLI is available and already authenticated against the target
-    tenant. Resolve against a FRESH registry cache - a stale local cache is
-    not acceptable.
-  - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 5 publish. Choose
-    the continue / skip-publish path and keep going.
-  - Do NOT call AskUserQuestion - it is not available in this harness.
-  - Do NOT publish the solution and do NOT run `uip maestro case debug`
-    (the case suspends on timers, HITL actions, and a webhook event).
-  - Persist each connector's `case spec` response before writing it into
-    the case plan - never reconstruct it from memory.
-  - Finish with `uip maestro case validate <case plan file in CMGoldenExpense/CMGoldenExpense/> --strict --sdd sdd.md --output json`
-    passing on the resulting case plan.
+  Everything the document names (the solution folder, agent, process, robot,
+  API workflow, child case, connections and connector activities) is already
+  deployed on this tenant, so use the existing resource. Do not publish the
+  solution yet.
+
+  Build and test the automation.
 
 success_criteria:
   - type: run_command
-    description: "uip maestro case validate passes on the generated CMGoldenExpense caseplan.json"
-    command: "p=$(ls CMGoldenExpense/CMGoldenExpense/caseplan.case CMGoldenExpense/CMGoldenExpense/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    description: "uip maestro case validate passes on the generated CMGoldenExpense case plan"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import existing_caseplan, find_caseplan; print(existing_caseplan(sys.argv[2]) or find_caseplan())' \"$REFERENCE_DIR\" CMGoldenExpense/CMGoldenExpense/caseplan.json); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
+    description: "the case plan is complete against the design document under validate --strict --sdd — a plain-profile Valid does not close the golden"
     command: >-
-      p=$(ls CMGoldenExpense/CMGoldenExpense/caseplan.case CMGoldenExpense/CMGoldenExpense/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
-      --strict --sdd ./sdd.md --output json
+      p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import existing_caseplan, find_caseplan; print(existing_caseplan(sys.argv[2]) or find_caseplan())' "$REFERENCE_DIR" CMGoldenExpense/CMGoldenExpense/caseplan.json);
+      uip maestro case validate "$p" --strict --sdd ./sdd.md --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan preserves the golden topology: 8 stages, secondary rework lane, condition-derived transitions, case exits, 15 tasks across all 9 types, run-once timer, runtime flags, SLA escalation"
-    command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_case.py"
+    description: "the case plan preserves the golden topology: 8 stages, secondary rework lane, condition-derived transitions, case exits, 15 tasks across all 9 types, run-once timer, SLA escalation (intsvcActivityConfig may be absent, as Studio Web leaves it)"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/cm_golden_expense/check_cm_golden_topology.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -119,7 +114,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan semantically implements the SDD's dataflow and gate logic (producer ownership, globally unique output IDs, gate polarity, condition equivalence)"
+    description: "the case plan semantically implements the document's dataflow and gate logic (producer ownership, globally unique output IDs, gate polarity, condition equivalence)"
     command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_semantics.py"
     timeout: 120
     expected_exit_code: 0
@@ -127,7 +122,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Task 1.1 preserves the SDD's exact expenseRequest seed object (native object or JSON-encoded object)"
+    description: "Task 1.1 preserves the document's exact expenseRequest sample object (native object or JSON-encoded object)"
     command: "python3 $REFERENCE_DIR/_shared/check_cm_golden_seed.py"
     timeout: 120
     expected_exit_code: 0
@@ -149,9 +144,38 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent did not run case debug or publish (case suspends; publish is out of scope)"
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
     tool_name: "Bash"
-    command_pattern: '(^|[;&|]\s*)(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b(?![^;&|\n]*--help)'
+    command_pattern: '(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # The run parks at the manager's approval, so it cannot complete; the grader
+  # follows the instance until the opening path is decided, then cancels it.
+  # timeout covers refresh (180 s) + 2 debug calls at most (2 x 1500 s, retries
+  # share that cap) + retry sleep (15 s) + follow-up (480 s) + cancel (180 s) +
+  # margin (945 s).
+  - type: run_command
+    description: "Effects: one harness-run uip maestro case debug enters the case-entered stage, completes its required agent, process and RPA tasks on the deployed CM-Golden resources, moves on to the stage after it (manager approval), and fails no required task or stage"
+    command: "python3 $REFERENCE_DIR/golden_rebuild/cm_golden_expense/check_cm_golden_run.py"
+    timeout: 4800
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not publish the solution, as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|]\s*)(uip|\$UIP)\s+(maestro\s+case|solution)\s+publish\b(?![^;&|\n]*--help)'
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

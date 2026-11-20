@@ -7,15 +7,14 @@
 - `--output-filter <expr>` — JMESPath filter for JSON output
 - `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
-- `--verbose` — enable debug logging
+- `--log-level debug` — enable debug logging (`--log-file <path>` writes it to a file instead of stderr)
 
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
 - `--all-fields` — return raw DTO instead of the curated PascalCase
-  projection. Native Orchestrator commands curate by default; the migrated
-  resource commands (assets, queues, buckets, etc.) return the full DTO by
-  default and do not expose this flag.
+  projection. Orchestrator list and get commands curate by default, including
+  `or assets`, `or queues`, `or queue-items`, `or buckets` and `or bucket-files`.
 
 ---
 

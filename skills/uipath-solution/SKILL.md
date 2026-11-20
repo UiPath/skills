@@ -154,7 +154,7 @@ When the download answers `not_found`, the solution is not in Studio Web, and th
 | [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
 | [Git Studio Web Layout](references/git-studioweb-guide.md) | `.git-studioweb` folder vs `.git` file vs `.git` folder: detect state, link with `git-link` (`--check`, `--force`), per-shell fallbacks, verify, packaging excludes |
-| [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
+| [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions, solutions that carry an ontology |
 
 ## Anti-patterns
 
