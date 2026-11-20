@@ -20,7 +20,6 @@ UiPath Flow uses `@uipath/maestro-builder-sdk` to build type-safe graphs compile
 6. Never re-run `flow debug` to inspect a failed run.
 7. Simulate every side-effecting component before an eval set; never `solution upload` in an eval workflow without asking.
 8. Run the final pass with the workspace's selected [Lifecycle](#lifecycle) loop after the last edit.
-9. Edit the flow the request names where it is, headless too: changing it is the asked-for edit, not an overwrite. Never put the change in a copy or new folder; the original stays unchanged.
 
 ## Project layout
 
