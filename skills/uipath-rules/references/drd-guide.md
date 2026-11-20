@@ -105,12 +105,13 @@ A decision whose table has several outputs answers with a structure, so a reader
 
 Every name a table reads needs a requirement edge to the element that declares it.
 
-| The table reads | Edge on the reading decision |
+| The logic reads | Edge on the reading element |
 |---|---|
 | An input argument | `<informationRequirement><requiredInput href="#<inputDataId>" /></informationRequirement>` |
 | Another decision | `<informationRequirement><requiredDecision href="#<decisionId>" /></informationRequirement>` |
+| A knowledge model it calls | `<knowledgeRequirement><requiredKnowledge href="#<bkmId>" /></knowledgeRequirement>` |
 
-One `informationRequirement` element per edge, each with its own `id`. A name read without an edge is `DMN_MISSING_REQUIREMENT`; an edge to an element that is not there is `DMN_DANGLING_REQUIREMENT`.
+One element per edge, each with its own `id`. A name read without an edge is `DMN_MISSING_REQUIREMENT`; an edge to an element that is not there is `DMN_DANGLING_REQUIREMENT`. A knowledge model that calls another one carries a `knowledgeRequirement` of its own.
 
 The graph must be acyclic. Two decisions that each require the other cannot be evaluated, and neither can a longer loop.
 
@@ -132,13 +133,89 @@ Give `name` a plain identifier — no spaces, no leading digit. Put the readable
 
 It matters because a graph that holds one decision is byte-identical to a plain decision table; without the marker that file opens as a bare table. Write it on any file authored as a graph, whatever its decision count.
 
-Each decision carries `<uipath:authoring editor="decision-table" />`. Attributes only — the marshaller drops the text body of an extension element it does not model.
+Each decision carries `<uipath:authoring editor="…" />` naming the editor its logic opens in: `decision-table` or `literal-expression`. Attributes only — the marshaller drops the text body of an extension element it does not model.
 
 ## The diagram
 
 Leave `dmndi:DMNDI` out of a new `.dmn`. Run `uip rules format <PROJECT_DIR>` after adding or removing an input or a decision: it draws a shape for each new element, leaves placed shapes where the user left them, and drops the shapes of deleted ones.
 
 Never place shapes by hand. `validate` does not look at the diagram and no diagnostic covers layout, so hand-written coordinates are reported by nothing and land on top of one another in the designer.
+
+## Literal expressions
+
+A decision answers with one value from one FEEL expression instead of a table. Use it when there are no cases to enumerate — a calculation, a formula, a single conditional.
+
+```xml
+<decision id="decision_fee" name="fee" label="Processing fee">
+  <extensionElements><uipath:authoring editor="literal-expression" /></extensionElements>
+  <variable id="variable_fee" name="fee" typeRef="number" />
+  <informationRequirement id="informationRequirement_fee_loanAmount">
+    <requiredInput href="#inputData_loanAmount" />
+  </informationRequirement>
+  <literalExpression id="literalExpression_fee" typeRef="number">
+    <text>loanAmount * 0.015</text>
+  </literalExpression>
+</decision>
+```
+
+- **Always set `typeRef`** on the `literalExpression`, and give the decision's `variable` the same type. Without it, `validate` reports `DMN_LITERAL_EXPRESSION_TYPE_MISSING`.
+- The expression reads the names the decision requires, by the same rules a table's input expression follows: an input argument by its name, an upstream decision by that decision's `variable` name.
+- It answers with one value, so a reader addresses the decision itself — `fee`, never `fee.something`.
+- An empty `<text>` is `DMN_LITERAL_EXPRESSION_EMPTY`.
+- It has no rules, so it carries no `<annotation>` column and no `<annotationEntry>`.
+
+Prefer a decision table whenever the logic is a set of cases. A table shows its cases to a reviewer; a nested `if` in one cell does not.
+
+## Knowledge models
+
+A `businessKnowledgeModel` is a named FEEL function that decisions call. Use it when the same calculation is needed by more than one decision, or when a formula is worth naming.
+
+```xml
+<businessKnowledgeModel id="bkm_score" name="scoreModel" label="Score model">
+  <variable id="variable_bkm_score" name="scoreModel" />
+  <encapsulatedLogic id="encapsulatedLogic_score" kind="FEEL">
+    <formalParameter id="formalParameter_score_base" name="base" typeRef="number" />
+    <literalExpression id="literalExpression_score" typeRef="number">
+      <text>base * 1.1</text>
+    </literalExpression>
+  </encapsulatedLogic>
+</businessKnowledgeModel>
+```
+
+And the decision that calls it:
+
+```xml
+<decision id="decision_score" name="score" label="Score">
+  <variable id="variable_score" name="score" typeRef="number" />
+  <knowledgeRequirement id="knowledgeRequirement_score">
+    <requiredKnowledge href="#bkm_score" />
+  </knowledgeRequirement>
+  <literalExpression id="literalExpression_decision_score" typeRef="number">
+    <text>scoreModel(creditScore)</text>
+  </literalExpression>
+</decision>
+```
+
+- **Always write the `<variable>`.** The engine rejects a knowledge model without one, and nothing in `validate` catches it — the rule fails at run time instead. Give it the model's own name and no `typeRef`: the function's return type is unstated.
+- The caller calls it by that name, and carries a `knowledgeRequirement` to it. A call with no edge is `DMN_MISSING_REQUIREMENT`.
+- One `formalParameter` per argument, each typed. Arguments are matched by position.
+- The body is `encapsulatedLogic` holding one `literalExpression` or one `decisionTable`. `kind="FEEL"` — Java and PMML are not supported.
+- A model may call another model, with its own `knowledgeRequirement`. The calls must not form a cycle.
+
+## Text annotations
+
+A note on the diagram, tied to the element it is about. It holds no logic, gets no entry point, and changes nothing the engine evaluates.
+
+```xml
+<textAnnotation id="textAnnotation_1">
+  <text>Thresholds reviewed quarterly by Credit Risk.</text>
+</textAnnotation>
+<association id="association_1" sourceRef="#decision_risk" targetRef="#textAnnotation_1" />
+```
+
+Use one for context a reviewer needs and the table cannot carry — where a threshold came from, when it is next reviewed. Per-row reasoning belongs in the annotation column instead, and a description of one element belongs in its `<description>`.
+
+An annotation may be tied to any element except another annotation. It is drawn 224 by 64, narrower and shorter than a decision card, so `uip rules format` places it like anything else.
 
 ## Verifying
 
@@ -162,12 +239,13 @@ uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 
 ## Outside the profile
 
-A graph holds decisions whose logic is a decision table, and nothing else. Say authoring is not supported yet, then offer to express the logic as decision tables:
+A graph holds decisions, input data, knowledge models and text annotations. Say authoring is not supported yet, then offer to express the logic as decision tables:
 
-- `businessKnowledgeModel` and `knowledgeSource`
+- `knowledgeSource`, and the `authorityRequirement` that cites one
 - `decisionService` and `group`
 - `import` — one `.dmn` per project, never a reference to another file
-- `literalExpression`, and every other expression kind: context, invocation, relation, list, conditional
+- Every expression kind other than a decision table and a literal expression: context, invocation, relation, list, conditional
+- A knowledge model body that is Java or PMML rather than FEEL
 
 Never write the unsupported element.
 
@@ -178,3 +256,5 @@ Never write the unsupported element.
 - Changing a decision's `id` to tidy it up, after consumers have bound to it
 - Splitting one answer across two decisions so each table is shorter
 - Reading only the last decision in the `debug` result
+- A knowledge model with no `<variable>`: `validate` passes and the engine rejects it at run time
+- A nested `if` in a literal expression where the logic is a set of cases a decision table would show

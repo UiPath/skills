@@ -199,12 +199,48 @@ class TestProject:
         with pytest.raises(SystemExit):
             rc.load_rule(project)
 
-    def test_rejects_a_business_knowledge_model(self, project):
+    def test_accepts_a_business_knowledge_model(self, project):
+        # Supported since the profile widened; a model is graded by check_knowledge_models.
         path = dmn_of(project)
         text = path.read_text(encoding="utf-8")
         path.write_text(text.replace("</definitions>", '<businessKnowledgeModel id="b" name="b"/></definitions>'), encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_knowledge_source(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        path.write_text(text.replace("</definitions>", '<knowledgeSource id="k" name="k"/></definitions>'), encoding="utf-8")
         with pytest.raises(SystemExit):
             rc.load_rule(project)
+
+    def test_accepts_a_decision_whose_logic_is_a_literal_expression(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        table_start = text.index("<decisionTable")
+        table_end = text.index("</decisionTable>") + len("</decisionTable>")
+        literal = '<literalExpression id="le" typeRef="number"><text>1</text></literalExpression>'
+        path.write_text(text[:table_start] + literal + text[table_end:], encoding="utf-8")
+        rc.load_rule(project)
+
+    def test_rejects_a_decision_with_no_logic_at_all(self, project):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        table_start = text.index("<decisionTable")
+        table_end = text.index("</decisionTable>") + len("</decisionTable>")
+        path.write_text(text[:table_start] + text[table_end:], encoding="utf-8")
+        with pytest.raises(SystemExit):
+            rc.load_rule(project)
+
+    def test_a_call_in_an_output_cell_is_not_read_as_a_string(self):
+        # Returning the raw source would grade a correct rule wrong; the engine grades calls.
+        with pytest.raises(SystemExit):
+            rc.literal("scoreModel(1)")
+        with pytest.raises(SystemExit):
+            rc.literal("base * 1.1")
+        assert rc.literal('"High"') == "High"
+        assert rc.literal("12.5") == 12.5
+        assert rc.literal("-3") == -3.0
+        assert rc.literal("true") is True
 
     def test_renamed_decision_id_breaks_the_contract(self, project):
         dmn_file, root = rc.load_rule(project)
