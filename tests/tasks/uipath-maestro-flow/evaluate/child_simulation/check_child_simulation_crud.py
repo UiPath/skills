@@ -7,7 +7,7 @@ right shell command), confirm that:
   1. An eval-set JSON exists under ChildSimEval/ with name == "Agent Tools"
      carrying a data point named "search-test" in `evaluations[]`.
   2. That data point has a `simulations` array with a parent entry whose
-     componentId is "agent-1" (auto-created by --parent).
+     componentId is "agent_1" (auto-created by --parent).
   3. The parent has a `childSimulations` array.
   4. The Static child simulation "Web_Search" is present (add worked).
   5. The Llm child simulation "Send_Email" is gone (remove worked).
@@ -26,7 +26,7 @@ from pathlib import Path
 PROJECT = Path("ChildSimEval")
 KEPT_CHILD = "Web_Search"
 REMOVED_CHILD = "Send_Email"
-PARENT_ID = "agent-1"
+PARENT_ID = "agent_1"
 
 
 def _load_jsons(root: Path) -> list[tuple[Path, dict]]:
@@ -88,7 +88,7 @@ def main() -> None:
             f'named "search-test". Got: {[c.get("name") for c in cases if isinstance(c, dict)]}'
         )
 
-    # 3. Find parent simulation "agent-1"
+    # 3. Find parent simulation "agent_1"
     sims = dp.get("simulations")
     if not isinstance(sims, list) or not sims:
         sys.exit(
