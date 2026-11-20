@@ -95,7 +95,7 @@ Write a comparator script once, outside the project (never under `evals/`), and 
 
 Inside Studio Web, ask the user to press **Run** in Evaluations, whose verdicts are authoritative. With explicit consent (SKILL.md rule 21), invoke `RunProject` once per row with that row's `inputs`; treat its host result as raw output. Derive `expectedOutput` from it or `output.schema` with exact casing.
 
-`--no-auth` is acceptable for control-flow-only workflows and `Http` activities using `connectionId: "ImplicitConnection"`. IntSvc/vendor connector activities need auth and may cause real side effects; never run them autonomously or with auth without an explicit “yes” (SKILL.md rules 20–21).
+`--no-auth` is acceptable for control-flow-only workflows and `Http` activities using `connectionId: "ImplicitConnection"` — still only after consent: it executes the workflow's JavaScript and expressions locally and its HTTP activities make real calls. IntSvc/vendor connector activities need auth and may cause real side effects; never run them autonomously or with auth without an explicit “yes” (SKILL.md rules 20–21).
 
 ## 3. Test-until-green protocol (SKILL.md rule 22)
 
@@ -112,7 +112,7 @@ Apply this protocol only when `<PROJECT>/evals/` exists. Its absence means the f
    1. Declare `input.schema` and `output.schema` in `Workflow.json`, including exact property casing.
    2. Write or update the eval set from those schemas.
    3. Author the workflow so `Response` emits exactly `output.schema`.
-   4. In loop mode, run and score every row with the comparator you wrote (§2), one command per iteration. Loop mode consents to repeated `--no-auth` runs; authenticated or side-effecting connector runs still require their own “yes”.
+   4. In loop mode, run and score every row with the comparator you wrote (§2), one command per iteration. Loop mode consents to repeated `--no-auth` runs of the workflow the user reviewed; authenticated, side-effecting connector or HTTP runs still require their own “yes”, and a change that adds a JavaScript activity, an expression that reads files or environment variables, or a new external URL needs a new one.
    5. Use evaluator verdicts, not visual judgment. On `FAIL` or `ERROR`, first inspect keys, casing, types, and shape (`sum` vs `Sum`, missing wrapper, string vs number); fix the workflow when it violates `output.schema`, and fix a row when it contradicts requested behavior. Otherwise triage Structure > Expression > Activity Config > Logic (SKILL.md Core Principle 4), fix the workflow, and rerun.
    6. Report each iteration, for example: `iteration 2: 3/4 rows pass; fixing row 'unpaid invoice' (expected status 'unpaid', got 'paid')`.
    7. Stop when all rows pass, the user interjects, or there is no progress after a few iterations; cap the loop per Infinite Loop Prevention in SKILL.md. Always provide a per-row final summary with `PASS`/`FAIL`/`ERROR`, inputs, actual output, expected output, and error details where applicable.
@@ -121,7 +121,7 @@ Apply this protocol only when `<PROJECT>/evals/` exists. Its absence means the f
 
 ## 4. Notes and gotchas
 
-- “Yes, loop until green” authorizes repeated `--no-auth` runs only. Authenticated or side-effecting IntSvc/vendor and HTTP runs require explicit consent; every iteration can repeat side effects.
+- “Yes, loop until green” authorizes repeated `--no-auth` runs only. `--no-auth` is not side-effect-free: HTTP activities still call their URLs. Authenticated or side-effecting IntSvc/vendor and HTTP runs require explicit consent; every iteration can repeat side effects.
 - Keep datasets synchronized with both schema and behavior. Input/output additions, removals, or renames can invalidate row shapes. Logic changes with an unchanged schema—thresholds, rounding, branch order, or defaults—can invalidate `expectedOutput`. Re-derive expectations after behavior edits; never alter the workflow merely to satisfy a stale test, and never silently rewrite user tests. Decide per row whether the workflow or expectation is authoritative and report changes.
 - The project's evaluator is authoritative: read `evals/<SCOPE>/evaluators/*.json` and use its `evaluatorTypeId`.
 - “The agent said it passed” is not panel evidence. PascalCased CLI `Data`, casing, and shape differences commonly hide failures; when judgments disagree, the evaluator wins.
