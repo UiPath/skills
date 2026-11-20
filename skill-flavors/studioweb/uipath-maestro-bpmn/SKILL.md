@@ -4,7 +4,11 @@
     2. When its main file already holds a process (it is not empty, and after `decompile`, `check --graph` lists any node besides one start event and one end event, which is all an `init` template has), never build over it unasked. If the request named this project, ask the user whether to replace its process or use a new project. On *replace*, build into its main file through the [Validation loop](#validation-loop). On *new project*, go to step 3. When the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking.
     3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn`, else a short name for the process, never a folder `/solution` already holds. Never pass `--force`.
 
+<<<<<<< HEAD
     A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
+=======
+    A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this, however firmly it says "main file": never add a `.bpmn` of that name or repoint `entry-points.json` at one, so the project keeps one `.bpmn`. The same holds for a nested path (`A/B`, `A/B/B.bpmn`): `/solution` projects are flat, so `uip maestro bpmn init A/B` fails. Never `mkdir`/`cp` the nested layout by hand: a `.bpmn` you add in a folder under `/solution/B` is not its main file, so the template `Process.bpmn` stays the entry point and fails `validate` (`MISSING_DI_SHAPE`). When `init B` answers `already exists`, that project exists: apply step 2 to it, never copy it. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
+>>>>>>> 69fd5b541 (fix(uipath-maestro-bpmn): studioweb never hand-builds a nested project when the request names A/B (#5079))
 <!--skill-flavor:critical-rules-extra:end-->
 
 <!--skill-flavor:host-setup:start-->
