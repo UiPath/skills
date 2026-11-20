@@ -86,6 +86,35 @@ Keep your `inputs`, and declare `returns` for the fields you read; to see the co
 
 A record more than 24 hours old still compiles; `check` warns `PROCESS_RECORD_STALE` and prints the `prepare` that refreshes it.
 
+### Argument types (`inputSchema`)
+
+Compile declares each passed input with a type taken from its value: a number,
+boolean, array or object literal by its shape, and anything else (an expression,
+`input()`, `out()`) as `string`. When the process types an argument differently
+(an object filled from an expression, or an argument the step does not pass),
+write the argument JSON Schema as `inputSchema` on the step. Compile writes it
+verbatim as the definition's `inputDefinition`:
+
+```ts
+inputs: { payload: input('request') },
+inputSchema: { type: 'object', properties: { payload: { type: 'object' } } },
+```
+
+- A decompiled step carries `inputSchema` when its saved definition holds more
+  than compile would infer (titles, enums, an argument the step does not pass);
+  keep it.
+- A `prepare` record does not change what compile writes: the record drives the
+  `PROCESS_INPUT_*` checks above, and `inputSchema` (or the inference) is the
+  `inputDefinition`. Declaring an argument in `inputSchema` does not satisfy
+  `PROCESS_INPUT_MISSING`; pass the argument in `inputs`.
+- `check` reports:
+  - `PROCESS_INPUT_SCHEMA_TYPE`: an object or array literal whose declared type
+    does not allow it (`flow validate` reports the same value as `TYPE_MISMATCH`);
+  - `PROCESS_INPUT_SCHEMA_INVALID`: an `inputSchema` that is not a plain object
+    (compile refuses it too).
+- Needs `@uipath/maestro-builder-sdk` 6.122.6 or later. An older SDK refuses the
+  option as `FLOW_UNKNOWN_OPTION`.
+
 ## Notes
 
 Sometimes you need to search across multiple process types.

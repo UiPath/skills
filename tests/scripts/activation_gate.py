@@ -96,6 +96,9 @@ BASELINES_PCT: dict[str, int] = {
     # redirect in place. Its rows include 25 SDD/PDD/design-document prompts the planner also claims, so this gate is
     # what keeps them reaching it.
     "uipath-ontology": 100,
+    # Measured 2026-11-19 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two runs:
+    # actions/runs/44524900995 and 44524919210. Each run missed a different row (020, then 031).
+    "uipath-vertical-solutions": 95,  # 31/32 (96.9%) both runs, nearest 5% below
 }
 
 DROP_PP = 10

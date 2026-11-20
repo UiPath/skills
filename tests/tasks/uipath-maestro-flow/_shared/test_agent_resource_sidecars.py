@@ -229,3 +229,35 @@ def test_every_deployed_tool_kind_is_gated(tmp_path: Path, kind: str) -> None:
     project = _project(tmp_path / kind, _flow(node_type))
     _write_resource(project, _resource_json(resource_type="tool"))
     assert _run(tmp_path / kind).returncode == 0
+
+
+def _no_ctx_flow() -> dict:
+    flow = _flow()
+    flow["nodes"] = [n for n in flow["nodes"] if n["id"] != "ctx"]
+    flow["edges"] = [e for e in flow["edges"] if e["targetNodeId"] != "ctx"]
+    return flow
+
+
+def test_require_fails_an_agent_only_flow(tmp_path: Path) -> None:
+    _project(tmp_path, _no_ctx_flow())
+    result = subprocess.run(
+        [sys.executable, str(CHECKER), "--require", "context.index"],
+        cwd=tmp_path, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 1, _output(result)
+    assert "context.index" in _output(result)
+
+
+def test_require_passes_when_the_resource_is_joined(tmp_path: Path) -> None:
+    project = _project(tmp_path, _flow())
+    _write_resource(project, _resource_json())
+    result = subprocess.run(
+        [sys.executable, str(CHECKER), "Proj.flow", "--require", "context.index"],
+        cwd=tmp_path, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, _output(result)
+
+
+def test_without_require_an_agent_only_flow_still_passes(tmp_path: Path) -> None:
+    _project(tmp_path, _no_ctx_flow())
+    assert _run(tmp_path).returncode == 0
