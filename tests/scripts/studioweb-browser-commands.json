@@ -908,6 +908,11 @@
         "file": "references/extraction/one-shot-guide.md",
         "command": "login",
         "reason": "Quick draft is not offered in Studio Web (the studioweb start-guide override lists only the two review levels), so this guide is never reached there; its `! uip login` note is for the Node host."
+      },
+      {
+        "file": "references/extraction/one-shot-guide.md",
+        "command": "login status",
+        "reason": "Quick draft is not offered in Studio Web (the studioweb start-guide override lists only the two review levels), so this guide is never reached there; its `uip login status` check is for the Node host."
       }
     ],
     "ceiling": {
