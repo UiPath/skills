@@ -11,9 +11,11 @@ PASS requires:
     defect, AND
   * no sentence calls FinanceUtils an orphan.
 
-Matching is per sentence / table row, and a sentence that negates the idea
-("no .uipx is needed", "not an orphan", "does not need a solution") never
-counts. A neutral statement of fact ("Review Scope: single project, no .uipx")
+Matching is per clause: sentences and table rows are split again at contrast
+words (but, however, although, ...), so a negation only excuses the clause it
+sits in. "No .uipx is needed", "not an orphan" and "does not need a solution"
+never count; "FinanceUtils is not an orphan, but create a solution wrapper"
+does. A neutral statement of fact ("Review Scope: single project, no .uipx")
 is not a recommendation and does not fail. Exit 0 on PASS.
 """
 import os
@@ -41,10 +43,16 @@ REJECTS = re.compile(
 ORPHAN = re.compile(r"\borphan")
 
 
+_CLAUSE_SPLIT = re.compile(
+    r"(?<=[.;!?])\s+|;|\s+[—–-]\s+"
+    r"|\b(?:but|however|although|though|yet|whereas|nevertheless|still,|instead,)\b")
+
+
 def sentences(text: str):
+    """Clauses of the report: lines, split at sentence ends and contrast words."""
     for line in text.lower().split("\n"):
-        for s in re.split(r"(?<=[.;!?])\s+", line):
-            if s.strip():
+        for s in _CLAUSE_SPLIT.split(line):
+            if s and s.strip():
                 yield s
 
 
