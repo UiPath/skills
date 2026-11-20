@@ -33,6 +33,9 @@ Example:
 - `value` is a JSON **string** (`"18"`, `"true"`, ISO-8601 dates), except `null` for empty checks.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
+- On native entities, text comparisons ignore letter case, whatever the operator: `"wi"` and `"WI"` match the same records. A federated entity's data lives in its source, whose case rules may differ, so assume neither behaviour there. When case must matter:
+  1. Send a looser filter that keeps every wanted record. Keep `=` `in` `contains` `startswith` `endswith` text clauses as written. Drop `!=` `not in` `not contains` text clauses: the server would also remove values that differ only in case, and the client cannot get them back. A dropped clause matches every record, so an `OR` group holding one, or an `AND` group left empty, matches every record too: drop that group from its parent the same way, and send no filter when the top group drops. Keep `null` empty checks and non-text clauses.
+  2. Read every page, then apply the full case-sensitive filter client-side. `TotalCount` and `aggregates` cover the looser filter, not the result: count and aggregate client-side. When step 1 leaves no filter, tell the user the server ignores case and ask before reading every record.
 - Response data: `Data: { Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items`. Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
 
 ## Operator support by field type
