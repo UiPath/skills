@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import io
+import dataclasses
 import json
 import os
 import subprocess
@@ -20,10 +22,12 @@ import tempfile
 import unittest
 
 import yaml
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
+SHARED_SETUP = HERE.parent.parent / "_setup"
 
 
 def _load(name: str, filename: str):
@@ -39,6 +43,7 @@ checker = _load("escalation_behavior", "check_customer_escalation_behavior.py")
 packager = _load("escalation_package", "check_customer_escalation_package.py")
 escalation_is = sys.modules["escalation_is"]
 import _shared.bpmn_live as live  # noqa: E402
+from _shared import bpmn_check  # noqa: E402
 
 SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -53,7 +58,7 @@ SAMPLE_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">
-      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>
+      <bpmn:script><![CDATA[return vars.customerTier === "Enterprise" ? "Sev1" : (vars.serviceState === "Degraded" ? "Sev2" : "Sev3");]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:serviceTask id="JiraCreate1">
       <bpmn:extensionElements>
@@ -102,7 +107,6 @@ CONTRACT = checker.Contract(
     },
     jira_create_ids=("JiraCreate1",),
     slack_send_ids=("SlackSend1",),
-    classifier_ids=("Classify1",),
 )
 
 
@@ -196,60 +200,62 @@ class ContractResolutionTests(unittest.TestCase):
     def test_missing_connector_fails(self):
         no_slack = SAMPLE_BPMN.replace("uipath-salesforce-slack", "uipath-else")
         with self.assertRaisesRegex(
-            checker.CheckFailure, "send_message_to_channel"
+            checker.CheckFailure, "has no uipath-salesforce-slack step"
         ):
             self._resolve(no_slack)
 
-    def test_every_curated_create_issue_object_resolves(self):
-        # All three create the same issue on the live tenant, and describe
-        # cannot rank them, so all three must resolve.
-        for object_name in (
-            "curated_create_issue",
-            "curated-issue-create",
-            "curated_issue",
+    def test_any_jira_create_operation_resolves(self):
+        # Several Jira objects create the same ticket, and the Studio Web
+        # builder emits the generic `issue` object (run
+        # adhoc-2026-11-14_08-01-54); the request names no operation, and the
+        # tenant reread proves the ticket whichever one made it.
+        for path in (
+            "/curated_create_issue",
+            "/curated-issue-create",
+            "/curated_issue",
+            "/create_issue",
+            "/issue",
+            "/rest/api/3/issue",
         ):
-            with self.subTest(object_name=object_name):
-                variant = SAMPLE_BPMN.replace(
-                    "/curated_create_issue", f"/{object_name}"
-                )
+            with self.subTest(path=path):
+                variant = SAMPLE_BPMN.replace("/curated_create_issue", path)
                 self.assertEqual(
                     self._resolve(variant).jira_create_ids, ("JiraCreate1",)
                 )
 
-    def test_object_name_identifies_the_activity_when_the_path_does_not(self):
-        templated = SAMPLE_BPMN.replace(
-            '<uipath:input name="path" value="/curated_create_issue"/>',
-            '<uipath:input name="path" value="/{objectName}"/>'
-            '<uipath:input name="objectName" value="curated_issue"/>',
+    def test_a_process_that_never_names_the_other_severities_fails(self):
+        hardcoded = SAMPLE_BPMN.replace(
+            'return vars.customerTier === "Enterprise" ? "Sev1" : (vars.serviceState === "Degraded" ? "Sev2" : "Sev3");',
+            'return "Sev1";',
         )
-        self.assertEqual(
-            self._resolve(templated).jira_create_ids, ("JiraCreate1",)
-        )
+        with self.assertRaisesRegex(checker.CheckFailure, "never names"):
+            self._resolve(hardcoded)
 
-    def test_non_curated_create_issue_object_is_rejected(self):
-        # `create_issue` creates the same ticket but carries no curated
-        # marker, so it is the generic operation the prompt rules out.
-        generic = SAMPLE_BPMN.replace("/curated_create_issue", "/create_issue")
-        with self.assertRaisesRegex(checker.CheckFailure, "no uipath-atlassian-jira"):
-            self._resolve(generic)
 
-    def test_generic_rest_path_is_rejected(self):
-        raw = SAMPLE_BPMN.replace(
-            "/curated_create_issue", "/rest/api/3/issue"
-        )
-        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
-            self._resolve(raw)
+class StudioWebLayoutTests(unittest.TestCase):
+    """adhoc-2026-11-14_08-01-54: the Studio Web agent's correct project sat at
+    CustomerEscalationTriage/CustomerEscalationTriage/Process.bpmn, and the old
+    graders, pinned to CustomerEscalationTriageSolution/.../CustomerEscalationTriage.bpmn,
+    failed it as missing before running it."""
 
-    def test_curated_object_name_does_not_rescue_a_raw_rest_path(self):
-        # The node calls the provider's API directly whatever its objectName
-        # claims, so the accepted-object match must not read the name here.
-        conflicting = SAMPLE_BPMN.replace(
-            '<uipath:input name="path" value="/curated_create_issue"/>',
-            '<uipath:input name="path" value="/rest/api/3/issue"/>'
-            '<uipath:input name="objectName" value="curated_issue"/>',
-        )
-        with self.assertRaisesRegex(checker.CheckFailure, "raw REST API"):
-            self._resolve(conflicting)
+    def test_the_studio_web_project_is_found_and_resolves(self):
+        sw = (HERE / "fixtures" / "sw_Process.bpmn").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "CustomerEscalationTriage" / "CustomerEscalationTriage"
+            project.mkdir(parents=True)
+            (project / "project.uiproj").write_text('{"Name": "CustomerEscalationTriage"}')
+            (project / "Process.bpmn").write_text(sw, encoding="utf-8")
+            cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                self.assertFalse(Path("CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn").is_file())
+                found = bpmn_check.locate_bpmn(f"{checker.NAME}.bpmn", [checker.LIVE_RUN_DIR])
+                self.assertEqual(found.name, "Process.bpmn")
+                self.assertEqual((packager.NAME, packager.LIVE_RUN_DIR), (checker.NAME, checker.LIVE_RUN_DIR))
+                contract = checker.resolve_contract(found)
+            finally:
+                os.chdir(cwd)
+        self.assertTrue(contract.jira_create_ids and contract.slack_send_ids)
 
 
 class OutcomeAssertionTests(unittest.TestCase):
@@ -262,6 +268,26 @@ class OutcomeAssertionTests(unittest.TestCase):
             CONTRACT, SEED, good_debug_data(), good_variables_data(), []
         )
         self.assertEqual(key, "CE-101")
+
+    def test_outputs_fall_back_to_the_end_event_outputs_when_globals_are_null(self):
+        variables = good_variables_data()
+        variables["Variables"][0]["Globals"] = {
+            "var_severity": None, "var_caseKey": None, "var_jiraKey": None,
+        }
+        variables["Variables"][0]["Elements"].append({
+            "ElementId": "done",
+            "Outputs": {
+                "severity": "Sev1", "caseKey": "ESC-BPMN-test", "jiraIssueKey": "CE-101",
+            },
+        })
+        contract = dataclasses.replace(
+            CONTRACT,
+            output_owners={"severity": "done", "caseKey": "done", "jiraIssueKey": "done"},
+        )
+        key = checker.assert_outcome(contract, SEED, good_debug_data(), variables, [])
+        self.assertEqual(key, "CE-101")
+        with self.assertRaisesRegex(checker.CheckFailure, "exact type"):
+            checker.assert_outcome(CONTRACT, SEED, good_debug_data(), variables, [])
 
     def test_incident_fails(self):
         self.assert_fails(
@@ -313,6 +339,127 @@ class OutcomeAssertionTests(unittest.TestCase):
         self.assert_fails(good_debug_data(), variables, [], "text")
 
 
+def with_lookup_steps(debug: dict, variables: dict) -> tuple:
+    """The good run plus a Jira search before the create, a Jira comment after
+    it and a Slack channel lookup: same connectors, none returns an issue key
+    or a message ts (Jira /search/jql, /issue/{id}/comment, Slack
+    conversations.info response shapes)."""
+    contract = checker.Contract(
+        output_ids=CONTRACT.output_ids,
+        jira_create_ids=("JiraComment1", "JiraCreate1", "JiraSearch1"),
+        slack_send_ids=("SlackInfo1", "SlackSend1"),
+    )
+    debug["ElementExecutions"][1:1] = [{"ElementId": "JiraSearch1"}, {"ElementId": "SlackInfo1"}]
+    debug["ElementExecutions"].append({"ElementId": "JiraComment1"})
+    variables["Variables"][0]["Elements"] += [
+        {"ElementId": "JiraSearch1", "Outputs": {"response": {"issues": [], "isLast": True}}},
+        {
+            "ElementId": "JiraComment1",
+            "Outputs": {
+                "response": {
+                    "self": "https://x/rest/api/3/issue/10001/comment/10050",
+                    "id": "10050",
+                    "created": "2026-11-19T10:00:00.000+0000",
+                }
+            },
+        },
+        {
+            "ElementId": "SlackInfo1",
+            "Outputs": {"response": {"ok": True, "channel": {"id": "C0B2FDZD1M3", "name": "coding-agent-testing"}}},
+        },
+    ]
+    return contract, debug, variables
+
+
+class OtherStepsOnTheSameConnectorTests(unittest.TestCase):
+    def test_a_search_comment_and_lookup_do_not_count_as_the_create_or_the_post(self):
+        contract, debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_a_comment_id_is_not_journalled_as_an_issue_to_delete(self):
+        contract, _debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        effects = checker.harvest_side_effects(contract, variables)
+        self.assertEqual(effects["jira_issues"], ["10001"])
+        self.assertEqual(effects["jira_keys"], ["CE-101"])
+
+    def test_the_create_running_twice_still_fails(self):
+        contract, debug, variables = with_lookup_steps(good_debug_data(), good_variables_data())
+        debug["ElementExecutions"].append({"ElementId": "JiraCreate1"})
+        with self.assertRaisesRegex(checker.CheckFailure, "Jira create"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
+
+
+def with_step(contract_field: str, step: str, response: dict, debug: dict, variables: dict) -> tuple:
+    ids = getattr(CONTRACT, contract_field) + (step,)
+    contract = checker.Contract(
+        output_ids=CONTRACT.output_ids,
+        jira_create_ids=ids if contract_field == "jira_create_ids" else CONTRACT.jira_create_ids,
+        slack_send_ids=ids if contract_field == "slack_send_ids" else CONTRACT.slack_send_ids,
+    )
+    debug["ElementExecutions"].append({"ElementId": step})
+    variables["Variables"][0]["Elements"].append({"ElementId": step, "Outputs": {"response": response}})
+    return contract, debug, variables
+
+
+class OneIssueOneMessageTests(unittest.TestCase):
+    def test_a_get_issue_of_the_created_key_is_one_issue(self):
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001", "fields": {}},
+            good_debug_data(), good_variables_data(),
+        )
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_a_get_issue_is_not_journalled_twice(self):
+        contract, _debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001", "fields": {}},
+            good_debug_data(), good_variables_data(),
+        )
+        effects = checker.harvest_side_effects(contract, variables)
+        self.assertEqual(effects["jira_keys"], ["CE-101"])
+        self.assertEqual(effects["jira_issues"], ["10001"])
+
+    def test_a_get_issue_alone_still_reaches_the_tenant_reread(self):
+        debug, variables = good_debug_data(), good_variables_data()
+        debug["ElementExecutions"] = [
+            e for e in debug["ElementExecutions"] if e["ElementId"] != "JiraCreate1"
+        ]
+        variables["Variables"][0]["Elements"] = [
+            e for e in variables["Variables"][0]["Elements"] if e["ElementId"] != "JiraCreate1"
+        ]
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraGet1", {"key": "CE-101", "id": "10001"}, debug, variables
+        )
+        contract = checker.Contract(CONTRACT.output_ids, ("JiraGet1",), CONTRACT.slack_send_ids)
+        self.assertEqual(checker.assert_outcome(contract, SEED, debug, variables, []), "CE-101")
+
+    def test_two_creates_with_different_keys_fail(self):
+        contract, debug, variables = with_step(
+            "jira_create_ids", "JiraCreate2", {"key": "CE-102", "id": "10002"},
+            good_debug_data(), good_variables_data(),
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "Jira create"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
+
+    def test_two_posts_with_different_timestamps_fail(self):
+        contract, debug, variables = with_step(
+            "slack_send_ids", "SlackSend2",
+            {"ts": "333.444", "channel": "C0B2FDZD1M3", "message": {"text": "[Sev1] ESC-BPMN-test", "ts": "333.444"}},
+            good_debug_data(), good_variables_data(),
+        )
+        with self.assertRaisesRegex(checker.CheckFailure, "Slack send"):
+            checker.assert_outcome(contract, SEED, debug, variables, [])
+
+
+class RuleEncodingTests(unittest.TestCase):
+    def test_the_severity_check_is_the_shared_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.bpmn"
+            path.write_text(SAMPLE_BPMN, encoding="utf-8")
+            with patch.object(checker, "assert_rule_encoded", side_effect=checker.CheckFailure("shared")):
+                with self.assertRaisesRegex(checker.CheckFailure, "shared"):
+                    checker.resolve_contract(path)
+
+
 class SideEffectHarvestTests(unittest.TestCase):
     def test_prefers_numeric_id_for_deletion_and_keeps_key(self):
         effects = checker.harvest_side_effects(CONTRACT, good_variables_data())
@@ -325,6 +472,51 @@ class SideEffectHarvestTests(unittest.TestCase):
         del variables["Variables"][0]["Elements"][0]["Outputs"]["response"]["id"]
         effects = checker.harvest_side_effects(CONTRACT, variables)
         self.assertEqual(effects["jira_issues"], ["CE-101"])
+
+
+class OwnedJiraTargetTests(unittest.TestCase):
+    CORRELATION = SEED["correlationId"]
+
+    def _owned(self, effects, summaries):
+        def read(_connection, key):
+            summary = summaries[key]
+            if isinstance(summary, Exception):
+                raise summary
+            return {"summary": summary}
+
+        with patch.object(escalation_is, "get_issue_fields", side_effect=read):
+            return checker.owned_jira_targets(effects, "conn", self.CORRELATION)
+
+    def test_only_issues_whose_summary_carries_the_correlation_id_are_owned(self):
+        effects = {"jira_targets": {"CE-101": "10001", "CE-7": "7"}}
+        owned = self._owned(
+            effects, {"CE-101": f"[Sev1] {self.CORRELATION} escalation", "CE-7": "an existing ticket"}
+        )
+        self.assertEqual(owned, ["10001"])
+
+    def test_an_unreadable_issue_is_not_owned(self):
+        effects = {"jira_targets": {"CE-101": "10001"}}
+        self.assertEqual(self._owned(effects, {"CE-101": checker.CheckFailure("boom")}), [])
+
+    def test_reads_are_capped_and_the_rest_reported(self):
+        keys = {f"CE-{n}": str(n) for n in range(1, 6)}
+        reads = []
+
+        def read(_connection, key):
+            reads.append(key)
+            return {"summary": self.CORRELATION}
+
+        out = io.StringIO()
+        with patch.object(escalation_is, "get_issue_fields", side_effect=read), redirect_stdout(out):
+            owned = checker.owned_jira_targets({"jira_targets": keys}, "conn", self.CORRELATION)
+        self.assertEqual(len(reads), checker.MAX_OWNED_KEY_READS)
+        self.assertEqual(owned, ["1", "2"])
+        self.assertIn("NOTE", out.getvalue())
+        self.assertIn("CE-5", out.getvalue())
+
+    def test_harvest_maps_each_key_to_its_deletion_target(self):
+        effects = checker.harvest_side_effects(CONTRACT, good_variables_data())
+        self.assertEqual(effects["jira_targets"], {"CE-101": "10001"})
 
 
 class JournalTests(unittest.TestCase):
@@ -348,6 +540,154 @@ class JournalTests(unittest.TestCase):
         )
 
 
+class SlackLogScanTests(unittest.TestCase):
+    def test_a_deeply_nested_string_does_not_stop_the_scan(self):
+        post = '{"channel": "C0B2FDZD1M3", "ts": "1763405123.456789", "message": {}}'
+        text = '{"a":' + "[" * 100000 + "\n" + post
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / "debug.log"
+            log.write_text(text, encoding="utf-8")
+            with patch.object(escalation_is, "JOURNAL", root / "ids.jsonl"):
+                escalation_is.journal_slack_posts_in_log(log)
+                records = escalation_is.read_journal(root / "ids.jsonl")
+        self.assertEqual(records["slack_message"], [["C0B2FDZD1M3", "1763405123.456789"]])
+
+
+class OtherChannelJournalTests(unittest.TestCase):
+    OTHER = {"channel": "C0OTHER0000", "ts": "1763405123.456789", "message": {}}
+
+    def test_other_channel_post_is_not_journalled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / "debug.log"
+            log.write_text(json.dumps(self.OTHER), encoding="utf-8")
+            with patch.object(escalation_is, "JOURNAL", root / "ids.jsonl"):
+                escalation_is.journal_slack_posts_in_log(log)
+                escalation_is.journal_slack_posts_in_log(root / "none.log", self.OTHER)
+                with patch.object(
+                    escalation_is, "element_output_records",
+                    return_value=[{"response": self.OTHER}],
+                ):
+                    escalation_is.journal_slack_posts({}, {"SlackSend1"})
+                records = escalation_is.read_journal(root / "ids.jsonl")
+        self.assertNotIn("slack_message", records)
+
+    def test_teardown_does_not_delete_a_planted_other_channel_pair(self):
+        deleted = []
+        planted = [["C0OTHER0000", "1763405123.456789"]]
+        mine = [escalation_is.SLACK_CHANNEL, "1763405124.456789"]
+        records = {"jira_issue": [], "slack_message": planted + [mine]}
+        with tempfile.TemporaryDirectory() as tmp:
+            patches = {
+                "JOURNAL": Path(tmp) / "ids.jsonl",
+                "read_journal": lambda: records,
+                "connection_ids": lambda **_k: {
+                    escalation_is.JIRA_CONNECTOR: "j",
+                    escalation_is.SLACK_CONNECTOR: "s",
+                },
+                "delete_slack_message": lambda _c, ch, ts, **_k: deleted.append((ch, ts)) or True,
+            }
+            with patch.multiple(escalation_is, **patches):
+                spec = importlib.util.spec_from_file_location(
+                    "teardown_planted", SHARED_SETUP / "teardown_escalation.py"
+                )
+                module = importlib.util.module_from_spec(spec)
+                with redirect_stdout(io.StringIO()):
+                    try:
+                        spec.loader.exec_module(module)
+                    except SystemExit:
+                        pass
+        self.assertEqual(deleted, [tuple(mine)])
+
+
+class PartialRunJournalTests(unittest.TestCase):
+    PARTIAL_LOG = (
+        'created CE-7 and then CE-8 in the project\n'
+        '{"channel": "C0B2FDZD1M3", "ts": "1763405123.456789"}\n'
+    )
+
+    def _run(self, *, debug_error=None, variables_error=None, debug_data=None, log=None):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            live = root / "live"
+            live.mkdir()
+            (live / "debug.log").write_text(self.PARTIAL_LOG if log is None else log, encoding="utf-8")
+            journal = root / "ids.jsonl"
+            summaries = {"CE-7": "[Sev1] ESC-BPMN-test escalation", "CE-8": "someone else's"}
+
+            def debug(*args, **kwargs):
+                if debug_error:
+                    raise debug_error
+                return (debug_data or good_debug_data()), "instance-1"
+
+            def cli(*args, **kwargs):
+                if variables_error:
+                    raise variables_error
+                return object()
+
+            with patch.object(checker, "LIVE_RUN_DIR", live), patch.object(
+                escalation_is, "JOURNAL", journal
+            ), patch.object(checker, "run_debug", debug), patch.object(
+                checker, "run_cli", cli
+            ), patch.object(
+                checker, "payload_data", lambda *a: (None, good_variables_data())
+            ), patch.object(
+                escalation_is,
+                "get_issue_fields",
+                lambda conn, key: {"summary": summaries[key]},
+            ):
+                try:
+                    checker.run_and_read(SEED, live, "jira-conn")
+                except (checker.CheckFailure, subprocess.TimeoutExpired) as error:
+                    return escalation_is.read_journal(journal), error
+                return escalation_is.read_journal(journal), None
+
+    def test_a_debug_failure_journals_only_this_runs_records(self):
+        records, error = self._run(debug_error=checker.CheckFailure("timed out"))
+        self.assertIsInstance(error, checker.CheckFailure)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+        self.assertNotIn("slack_message", records)
+
+    def test_a_variables_read_failure_journals_from_the_log(self):
+        records, error = self._run(variables_error=subprocess.TimeoutExpired("uip", 120))
+        self.assertIsInstance(error, subprocess.TimeoutExpired)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+
+    def test_a_variables_read_failure_journals_keys_from_the_debug_response(self):
+        debug_data = {**good_debug_data(), "Output": "created CE-7 and CE-8"}
+        records, error = self._run(
+            variables_error=subprocess.TimeoutExpired("uip", 120), debug_data=debug_data, log=""
+        )
+        self.assertIsInstance(error, subprocess.TimeoutExpired)
+        self.assertEqual(records["jira_issue"], ["CE-7"])
+        self.assertNotIn("slack_message", records)
+
+    def test_partial_log_reads_are_capped_and_the_rest_reported(self):
+        reads = []
+
+        def read(_conn, key):
+            reads.append(key)
+            return {"summary": SEED["correlationId"]}
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "debug.log"
+            path.write_text("created CE-7 CE-8 CE-9 CE-10", encoding="utf-8")
+            out = io.StringIO()
+            with patch.object(escalation_is, "JOURNAL", Path(directory) / "ids.jsonl"), patch.object(
+                escalation_is, "get_issue_fields", side_effect=read
+            ), redirect_stdout(out):
+                checker.journal_partial_log(SEED, path, "jira-conn")
+        self.assertEqual(reads, ["CE-7", "CE-8"])
+        self.assertIn("NOTE", out.getvalue())
+        self.assertIn("CE-10", out.getvalue())
+
+    def test_a_clean_read_journals_nothing_here(self):
+        records, error = self._run()
+        self.assertIsNone(error)
+        self.assertEqual(records, {})
+
+
 class SeedTests(unittest.TestCase):
     def test_seed_writes_consistent_case(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -357,7 +697,7 @@ class SeedTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 # The issue-type id is read from the tenant; this test runs offline.
-                env={**os.environ, "ESCALATION_JIRA_ISSUETYPE_ID": "10009"},
+                env={**os.environ, "ESCALATION_JIRA_ISSUETYPE_ID": "10009", "PYTHONPATH": str(SHARED_SETUP)},
             )
             seed = json.loads((Path(directory) / "seed.json").read_text())
         self.assertEqual(set(seed["inputs"]), set(SEED["inputs"]))
@@ -376,13 +716,24 @@ class SeedTests(unittest.TestCase):
         for name in SEED["inputs"]:
             self.assertIn(name, task_text, f"prompt never names input {name}")
 
+    def test_prompt_helper_names_each_connection_and_the_folder(self):
+        task_text = (HERE / "customer_escalation_triage.yaml").read_text(
+            encoding="utf-8"
+        )
+        helper = task_text.split("<!-- helper:start -->")[1].split(
+            "<!-- helper:end -->"
+        )[0]
+        for name in escalation_is.CONNECTION_NAMES.values():
+            self.assertIn(name, helper)
+        self.assertIn(escalation_is.FOLDER_PATH, helper)
+
     def test_yaml_timeout_covers_every_step_budget(self):
         """The criterion must outlast the sum of the live CLI calls it makes.
 
         A substring match on the whole YAML would also match `turn_timeout`,
         and comparing against DEBUG_TIMEOUT_SECONDS alone ignores the other
         nine calls -- both pass by construction. Parse the criterion's own
-        timeout and compare it against the real sum, so raising any one step
+        timeout and compare it against the whole worst-case path, so raising any one step
         budget past the ceiling fails here rather than as a SIGKILL that
         strands created Jira and Slack ids for post_run to sweep.
         """
@@ -398,12 +749,17 @@ class SeedTests(unittest.TestCase):
         self.assertEqual(len(behavior), 1, "expected one behavior criterion")
         criterion_timeout = behavior[0]["timeout"]
 
-        budget = sum(checker.STEP_TIMEOUTS)
+        budget = checker.WORST_CASE_PATH_TIMEOUT
+        self.assertEqual(
+            budget,
+            sum(checker.STEP_TIMEOUTS)
+            + checker.MAX_OWNED_KEY_READS * escalation_is.JIRA_READ_TIMEOUT,
+        )
         self.assertLessEqual(
             budget,
             criterion_timeout,
-            f"step budgets sum to {budget}s but the behavior criterion allows "
-            f"{criterion_timeout}s -- raise the criterion or lower a step",
+            f"the worst-case path sums to {budget}s but the behavior criterion "
+            f"allows {criterion_timeout}s -- raise the criterion or lower a step",
         )
 
     def test_task_timeout_covers_the_turn_plus_all_grading(self):
@@ -663,13 +1019,98 @@ class TeardownRetryTests(unittest.TestCase):
             journal = Path(tmp) / ".created-ids.jsonl"
             with patch.multiple(escalation_is, JOURNAL=journal, **defaults):
                 spec = importlib.util.spec_from_file_location(
-                    "teardown_run", HERE / "_setup" / "teardown_escalation.py"
+                    "teardown_run", SHARED_SETUP / "teardown_escalation.py"
                 )
                 module = importlib.util.module_from_spec(spec)
+                out = io.StringIO()
                 try:
-                    spec.loader.exec_module(module)
+                    with redirect_stdout(out):
+                        spec.loader.exec_module(module)
                 except SystemExit:
                     pass
+        return out.getvalue()
+
+    def test_slack_only_journal_does_not_need_the_jira_connection(self):
+        deleted = []
+        asked = []
+
+        def resolve(*, connectors=None, **_kwargs):
+            asked.append(connectors)
+            if escalation_is.JIRA_CONNECTOR in (connectors or escalation_is.CONNECTION_NAMES):
+                raise escalation_is.CheckFailure("no Jira connection")
+            return {escalation_is.SLACK_CONNECTOR: "slack-conn"}
+
+        records = {"jira_issue": [], "slack_message": [[escalation_is.SLACK_CHANNEL, "1700000000.000001"]]}
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            connection_ids=resolve,
+            delete_slack_message=lambda _c, ch, ts, **_k: deleted.append((ch, ts)) or True,
+        )
+        self.assertEqual(deleted, [(escalation_is.SLACK_CHANNEL, "1700000000.000001")], output)
+        self.assertEqual(asked, [(escalation_is.SLACK_CONNECTOR,)])
+
+    def test_sweep_stops_at_the_deadline_and_names_what_it_skipped(self):
+        now = [0.0]
+        started = []
+
+        def slow_slack(_conn, _channel, ts, **_kwargs):
+            started.append(now[0])
+            now[0] += escalation_is.TEARDOWN_DELETE_TIMEOUT
+            return True
+
+        records = {
+            "jira_issue": [],
+            "slack_message": [[escalation_is.SLACK_CHANNEL, f"1700000000.{n:06d}"] for n in range(11)],
+        }
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            delete_slack_message=slow_slack,
+            _now=lambda: now[0],
+        )
+        skipped = [line for line in output.splitlines() if line.startswith("WARN: skipped Slack")]
+        self.assertTrue(skipped, "nothing was skipped past the deadline")
+        self.assertEqual(len(started) + len(skipped), 11)
+        for ts in ("1700000000.%06d" % n for n in range(11 - len(skipped), 11)):
+            self.assertTrue(any(ts in line for line in skipped), ts)
+        self.assertLessEqual(
+            max(started) + escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            escalation_is.POST_RUN_TIMEOUT_CAP,
+        )
+
+    def test_slow_connection_lookup_spends_the_same_budget(self):
+        now = [0.0]
+        lookup_timeouts = []
+        started = []
+
+        def slow_lookup(**kwargs):
+            lookup_timeouts.append(kwargs["timeout"])
+            now[0] += kwargs["timeout"]
+            return {
+                escalation_is.JIRA_CONNECTOR: "jira-conn",
+                escalation_is.SLACK_CONNECTOR: "slack-conn",
+            }
+
+        def slow_slack(_conn, _channel, ts, **_kwargs):
+            started.append(now[0])
+            now[0] += escalation_is.TEARDOWN_DELETE_TIMEOUT
+            return True
+
+        records = {
+            "jira_issue": [],
+            "slack_message": [[escalation_is.SLACK_CHANNEL, f"1700000000.{n:06d}"] for n in range(11)],
+        }
+        output = self._run_teardown(
+            read_journal=lambda: records,
+            connection_ids=slow_lookup,
+            delete_slack_message=slow_slack,
+            _now=lambda: now[0],
+        )
+        self.assertTrue([l for l in output.splitlines() if l.startswith("WARN: skipped Slack")])
+        self.assertLessEqual(
+            max(started) + escalation_is.TEARDOWN_DELETE_TIMEOUT,
+            escalation_is.POST_RUN_TIMEOUT_CAP,
+        )
+        self.assertLessEqual(lookup_timeouts[0], escalation_is.TEARDOWN_CONNECTIONS_TIMEOUT)
 
     def test_transient_first_failure_is_retried(self):
         attempts = []
@@ -730,51 +1171,6 @@ class DeleteConfirmationTests(unittest.TestCase):
                 self._completed(observed), "slack message", "1788913576.470749"
             )
         )
-
-
-class ComputedSeverityTests(unittest.TestCase):
-    """Severity must come from a node that ran, not from a literal.
-
-    The seed declares the one expected severity, so a process that computes
-    nothing and returns "Sev1" would satisfy every other criterion. The flow
-    suite binds severity to the executed Script whose own output carries it.
-    """
-
-    def test_literal_severity_with_no_classifier_output_fails(self):
-        variables = good_variables_data()
-        elements = variables["Variables"][0]["Elements"]
-        variables["Variables"][0]["Elements"] = [
-            e for e in elements if e["ElementId"] != "Classify1"
-        ]
-        with self.assertRaisesRegex(checker.CheckFailure, "severity was not computed"):
-            checker.assert_outcome(
-                CONTRACT, SEED, good_debug_data(), variables, []
-            )
-
-    def test_classifier_output_disagreeing_with_the_exposed_value_fails(self):
-        variables = good_variables_data()
-        for element in variables["Variables"][0]["Elements"]:
-            if element["ElementId"] == "Classify1":
-                element["Outputs"]["response"] = "Sev3"
-        with self.assertRaisesRegex(checker.CheckFailure, "not in any executed"):
-            checker.assert_outcome(
-                CONTRACT, SEED, good_debug_data(), variables, []
-            )
-
-    def test_bpmn_without_a_scripttask_is_refused_at_contract_time(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "NoClassifier.bpmn"
-            path.write_text(
-                SAMPLE_BPMN.replace(
-                    '<bpmn:scriptTask id="Classify1" scriptFormat="JavaScript">\n'
-                    '      <bpmn:script><![CDATA[return "Sev1";]]></bpmn:script>\n'
-                    "    </bpmn:scriptTask>\n    ",
-                    "",
-                ),
-                encoding="utf-8",
-            )
-            with self.assertRaisesRegex(checker.CheckFailure, "no bpmn:scriptTask"):
-                checker.resolve_contract(path)
 
 
 V1_SEND_AS = '<uipath:input target="query" name="send_as" value="user"/>'
