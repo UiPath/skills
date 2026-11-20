@@ -54,6 +54,47 @@ def test_entity_read_shapes_match_the_structural_gates() -> None:
     assert any(hint in connector_type for hint in hints), (hints, connector_type)
 
 
+def test_preview_query_node_reads_the_tenant_entity() -> None:
+    """Round-11 shape: the preview op ends in `-preview-` and names its entity in
+    `queryParameters.tenantEntityName`, with no `pathParameters`."""
+    sys.path.insert(0, str(SHARED))
+    import advisory_flow_utils as utils
+
+    prefix = utils.CONNECTOR_READ_PREFIX
+    erp = {
+        "id": "erpLookup",
+        "type": prefix + "query-entity-records",
+        "inputs": {"detail": {
+            "endpoint": "/v2/{entityName}/qer",
+            "pathParameters": {"entityName": "BillingDisputeERP"},
+            "queryParameters": {"limit": 1},
+        }},
+    }
+    crm = {
+        "id": "crmLookup",
+        "type": prefix + "query-entity-records-preview-",
+        "inputs": {"detail": {
+            "endpoint": "/v3/QueryEntityRecords/query",
+            "bodyParameters": {},
+            "queryParameters": {
+                "entityScope": "tenant",
+                "tenantEntityName": "BillingDisputeCRM",
+                "limit": 1,
+            },
+        }},
+    }
+    write = {"id": "w", "type": prefix + "create-entity-record", "inputs": {}}
+
+    shape, reads = utils.entity_reads([erp, crm, write])
+
+    assert shape == utils.CONNECTOR_READ
+    assert [node["id"] for node in reads] == ["erpLookup", "crmLookup"]
+    assert [utils.entity_name(node, shape) for node in reads] == [
+        "BillingDisputeERP",
+        "BillingDisputeCRM",
+    ]
+
+
 def test_bindings_checker_accepts_a_valid_connection_pair(tmp_path: Path) -> None:
     flow = json.loads((FLOW_TASKS / INVOICE_LOOKUP_REFERENCE).read_text())
     cwd = _project(tmp_path, flow, CONNECTION_BINDINGS, "BillingInvoiceLookup")

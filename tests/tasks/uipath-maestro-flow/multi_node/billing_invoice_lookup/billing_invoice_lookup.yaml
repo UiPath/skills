@@ -26,7 +26,7 @@ sandbox:
 run_limits:
   max_turns: 120
   turn_timeout: 2400
-  task_timeout: 5100  # turn 2400 + criteria 2625 + margin
+  task_timeout: 6600  # turn 2400 + criteria 4085 + margin
 reference:
   directory: ../..
 
@@ -79,14 +79,14 @@ success_criteria:
   - type: run_command
     description: 'Effects, found: three debug runs on messy input ("2026-04872", "mcs-2026-04903", "  mcs-2026-05128 "); in each an entity read completes and the declared outputs carry the number exactly as the records hold it and its live line count (8, 4 and 5)'
     command: python3 $REFERENCE_DIR/multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py found
-    timeout: 1200  # 3 x debug_budget(180) + margin
+    timeout: 1900  # 3 x debug_budget(300) + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Effects, not found ("mcs-2026-99999"): the run completes, an entity read completes, and the declared outputs carry empty text and 0'
     command: python3 $REFERENCE_DIR/multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py not-found
-    timeout: 1200  # priced on the worst arm of the script (found)
+    timeout: 1900  # priced on the worst arm of the script (found)
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

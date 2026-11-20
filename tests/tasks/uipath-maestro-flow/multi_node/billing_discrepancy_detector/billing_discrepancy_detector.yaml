@@ -97,21 +97,21 @@ success_criteria:
   - type: run_command
     description: 'Effects, overcharge (MCS-2026-04872 line 5 for ACCT-98201-NE, billed 300 x 14 against a contracted 2,590): the ERP and CRM reads each complete, and the declared outputs carry 1610, 1, "MCS-2026-04872" and "Enterprise"'
     command: python3 $REFERENCE_DIR/multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py overcharge
-    timeout: 600
+    timeout: 800
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Effects, unknown line (line 99 of MCS-2026-04872, which has 8): the run completes and returns 0, 0 and empty text for the invoice number and the tier'
     command: python3 $REFERENCE_DIR/multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py unknown-line
-    timeout: 600
+    timeout: 800
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: 'Effects, unknown customer (account ACCT-00000-ZZ, which has no CRM row): the run completes and returns 0, 0 and empty text for the invoice number and the tier'
     command: python3 $REFERENCE_DIR/multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py unknown-customer
-    timeout: 600
+    timeout: 800
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

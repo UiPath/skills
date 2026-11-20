@@ -26,6 +26,7 @@ from case_run import (  # noqa: E402
     cancel_instance,
     element_of,
     instance_executions,
+    instance_incidents,
     record_debug_instance,
     status_of,
 )
@@ -286,7 +287,17 @@ def path_failures(path: dict, run: dict) -> list[str]:
               if element in path["required_ids"] and any(s.lower() in FAILED for s in states)]
     if failed:
         problems.append(f"required elements failed: {failed}")
-    return problems
+    return problems + _incident_lines(run)
+
+
+def _incident_lines(run: dict) -> list[str]:
+    if str(run.get("status", "")).lower() not in FAILED:
+        return []
+    from _shared.case_check import debug_failure_lines  # noqa: PLC0415
+
+    incidents = instance_incidents(run["instance_id"])
+    lines = debug_failure_lines({"finalStatus": run["status"], "incidents": incidents})
+    return [line for line in lines if line.startswith("incident ")]
 
 
 def run_opening_path(plan: dict, *, timeout: int = 1500, budget: int = 480) -> tuple[dict, dict]:

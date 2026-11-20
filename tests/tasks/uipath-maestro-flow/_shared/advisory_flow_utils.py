@@ -95,8 +95,15 @@ NATIVE_READ_TYPE = "core.datafabric.read"
 # Service family, writes included, and each native op has its own tenant flag
 # (planning.md — Node types), so `read-entity` on with `create-entity` off is a
 # real configuration: a native read beside a connector write. Only a connector
-# READ alongside a native one is a flow with two sets of the same reads.
+# READ alongside a native one is a flow with two sets of the same reads. Matched
+# as a prefix: `query-entity-records-preview-` is the same read, and names its
+# entity in `queryParameters.tenantEntityName` instead of `pathParameters`.
 CONNECTOR_READ_OPS = (".query-entity-records", ".get-entity-record-by-id")
+
+
+def _is_read_op(node_type: str) -> bool:
+    operation = node_type[len(CONNECTOR_READ_PREFIX):]
+    return f".{operation}".startswith(CONNECTOR_READ_OPS)
 
 
 def entity_config(node: dict[str, Any]) -> dict[str, Any]:
@@ -117,7 +124,7 @@ def entity_reads(nodes: Iterable[dict[str, Any]]) -> tuple[str, list[dict[str, A
     connector = [
         node for node in nodes
         if str(node.get("type") or "").startswith(CONNECTOR_READ_PREFIX)
-        and str(node.get("type") or "").endswith(CONNECTOR_READ_OPS)
+        and _is_read_op(str(node.get("type") or ""))
     ]
     native = [node for node in nodes if str(node.get("type") or "") == NATIVE_READ_TYPE]
     if connector and native:
@@ -144,8 +151,10 @@ def entity_name(node: dict[str, Any], shape: str) -> str:
 
     detail = read_detail(node)
     path = {key: unwrap(value) for key, value in (detail.get("pathParameters") or {}).items()}
+    query = {key: unwrap(value) for key, value in (detail.get("queryParameters") or {}).items()}
+    if "entityName" not in path and str(query.get("tenantEntityName") or "").strip():
+        return str(query["tenantEntityName"]).strip()
     if "entityName" not in path:
-        query = {key: unwrap(value) for key, value in (detail.get("queryParameters") or {}).items()}
         fail(
             f"query node {node.get('id')!r} has pathParameters {sorted(path)}; `entityName` "
             f"belongs in the PATH slot — it is the {{entityName}} of /v2/{{entityName}}/qer. "

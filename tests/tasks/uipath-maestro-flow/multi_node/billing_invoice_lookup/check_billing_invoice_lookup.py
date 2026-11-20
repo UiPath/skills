@@ -62,7 +62,7 @@ def map_invoice(flow, raw):
 def lookup(flow, raw, label):
     inputs = map_invoice(flow, raw)
     print(f"[{label}] debug inputs: {inputs}")
-    payload = run_debug(inputs=inputs, timeout=180)
+    payload = run_debug(inputs=inputs, timeout=300)
     queried = set()
     for hint in ENTITY_QUERY_HINTS:
         queried |= completed_node_ids_of_type(payload, hint)

@@ -128,7 +128,7 @@ def main():
     if problem := io.unmapped_error(flow, unmapped, inputs):
         _fail(problem)
     print(f"debug inputs: {inputs}")
-    payload = run_debug(inputs=inputs, timeout=240)
+    payload = run_debug(inputs=inputs, timeout=360)
     outs = io.out_values(flow, payload)
     print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
 

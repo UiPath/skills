@@ -124,6 +124,29 @@ def instance_executions(instance_id: str) -> list[dict]:
     return [row for row in _rows(payload, "ElementExecutions") if isinstance(row, dict)]
 
 
+def instance_status(instance_id: str) -> str:
+    """Run status of an instance, read from the instance itself."""
+    args = ["maestro", "case", "instance", "get", instance_id]
+    payload = _uip(args)
+    if _ci(payload, "Result") != "Success":
+        folder_key = instance_folder_key(instance_id)
+        if folder_key:
+            payload = _uip([*args, "--folder-key", str(folder_key)])
+    data = _ci(payload, "Data")
+    return str(_ci(data, "status", "latestRunStatus") or "")
+
+
+def instance_incidents(instance_id: str) -> list[dict]:
+    """Incidents of an instance, read from the instance itself."""
+    args = ["maestro", "case", "instance", "incidents", instance_id]
+    payload = _uip(args)
+    if _ci(payload, "Result") != "Success":
+        folder_key = instance_folder_key(instance_id)
+        if folder_key:
+            payload = _uip([*args, "--folder-key", str(folder_key)])
+    return [row for row in _rows(payload, "Incidents") if isinstance(row, dict)]
+
+
 def cancel_instance(instance_id: str) -> None:
     """Best-effort: stop a parked debug instance so its human tasks and SLA timers go away."""
     args = ["maestro", "case", "instance", "cancel", instance_id, "--comment", "eval cleanup"]

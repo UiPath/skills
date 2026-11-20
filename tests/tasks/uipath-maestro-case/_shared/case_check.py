@@ -1051,10 +1051,16 @@ def start_debug(
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
+    started = time.monotonic()
     for attempt in (1, 2):
         r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
         if r.returncode == 0:
             break
+        timed_out = _debug_poll_timeout(r.stdout)
+        if timed_out:
+            payload = _follow_instance(timed_out, started + timeout, timeout)
+            _record_debug_instance(payload)
+            return payload
         fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
         if fault is None or attempt == 2:
             retried = " (after one retry)" if attempt == 2 else ""
@@ -1077,6 +1083,56 @@ def start_debug(
     if not isinstance(payload, dict):
         _fail(f"case debug payload is not a JSON object: {type(payload).__name__}\n{r.stdout[:1000]}")
     _record_debug_instance(payload)
+    return payload
+
+
+_DEBUG_POLL_TIMEOUT = re.compile(r"timed out", re.IGNORECASE)
+_FOLLOW_EVERY_S = 20
+
+
+def _debug_poll_timeout(stdout: str) -> str | None:
+    """Instance id from the CLI's debug poll-timeout envelope, else None."""
+    envelope = _parse_json(stdout) or {}
+    data = _get_ci(envelope, "Data")
+    instance_id = _get_ci(data, "instanceId", "InstanceId") if isinstance(data, dict) else None
+    if not instance_id:
+        return None
+    text = f"{_get_ci(envelope, 'Message') or ''} {_get_ci(envelope, 'Code') or ''}"
+    if not _DEBUG_POLL_TIMEOUT.search(text):
+        return None
+    return str(instance_id)
+
+
+def _follow_instance(instance_id: str, deadline: float, budget_s: int) -> dict:
+    """Follow a debug instance past the CLI's poll timeout; return a debug-shaped payload.
+
+    Fails when the budget is spent with the instance still not terminal.
+    """
+    setup = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_setup")
+    if setup not in sys.path:
+        sys.path.insert(0, setup)
+    import case_run  # noqa: PLC0415
+
+    print(
+        f"NOTE: `uip maestro case debug` stopped polling; following instance {instance_id}.",
+        flush=True,
+    )
+    status = case_run.instance_status(instance_id)
+    while status.lower() not in case_run.TERMINAL and time.monotonic() < deadline:
+        time.sleep(_FOLLOW_EVERY_S)
+        status = case_run.instance_status(instance_id)
+    if status.lower() not in case_run.TERMINAL:
+        _fail(
+            f"case debug instance {instance_id} still {status or 'Running'} "
+            f"after {budget_s}s"
+        )
+    payload = {
+        "instanceId": instance_id,
+        "finalStatus": status,
+        "elementExecutions": case_run.instance_executions(instance_id),
+    }
+    if status.lower() in case_run.FAILED:
+        payload["incidents"] = case_run.instance_incidents(instance_id)
     return payload
 
 
