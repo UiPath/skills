@@ -28,6 +28,24 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
+_VARS_EXPRESSION = re.compile(r"=(?:js:)?vars\.([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", re.ASCII)
+
+
+def vars_ref(value: str | None, *, fields: bool = False) -> str | None:
+    """The variable a mapping value reads, for ``=vars.<id>`` or ``=js:vars.<id>``.
+
+    The canvas treats the two spellings as the same read of one variable, and the
+    skill writes the ``=js:`` form. ``None`` for anything else, including a larger
+    script (``=js:vars.a + 1``) or a field read (``=vars.a.b``) unless ``fields``
+    is set, in which case the dotted path after ``vars.`` is returned.
+    """
+    match = _VARS_EXPRESSION.fullmatch((value or "").strip())
+    if match is None:
+        return None
+    path = match.group(1)
+    return path if fields or "." not in path else None
+
+
 def _project_files(paths: Iterable[_PathLike]) -> list[_PathLike]:
     """The subset of ``paths`` that sit beside a ``project.uiproj``.
 
@@ -161,8 +179,12 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
-            hinted = _project_files(matches)
-            return _entry_point_beside(hinted[0] if len(hinted) == 1 else matches[0])
+            pool = _project_files(matches) or matches
+            # Several candidates: the shallowest is the file the agent edited in
+            # place. A same-named copy in a work folder (`Foo-work/Foo.bpmn`) is
+            # deeper, and plain alphabetical order would put it first (`-` sorts
+            # before `.`).
+            return _entry_point_beside(min(pool, key=lambda p: (len(Path(p).parts), p)))
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
@@ -205,15 +227,20 @@ def resolve_bpmn_file(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Pat
     """
     excluded = [Path(d).resolve() for d in exclude_under]
     cwd = Path.cwd()
-    named = list(cwd.rglob(bpmn_name)) or [
-        p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)
+    named = [
+        *cwd.rglob(bpmn_name),
+        *(p for p in cwd.rglob(STUDIO_WEB_MAIN_FILE) if bpmn_file_is_named(p, bpmn_name)),
     ]
-    candidates = [
-        p
-        for p in _project_files(named)
-        if not any(p.resolve().is_relative_to(d) for d in excluded)
-        and not is_scratch_bpmn(p.relative_to(cwd))
-    ]
+    # Filter, map each file to the entry point that runs beside it (Studio Web's
+    # `Process.bpmn` for a `<Name>.bpmn` written next to it), dedupe, then require one.
+    candidates = sorted(
+        {
+            Path(_entry_point_beside(str(p)))
+            for p in _project_files(named)
+            if not any(p.resolve().is_relative_to(d) for d in excluded)
+            and not is_scratch_bpmn(p.relative_to(cwd))
+        }
+    )
     if len(candidates) != 1:
         fail(
             f"expected exactly one {bpmn_name} with project.uiproj beside it, "
@@ -682,6 +709,39 @@ def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[s
     )
 
 
+def _json_or_object(raw):
+    """``raw`` as a mapping: the canvas stores some configurations as an object, others as a JSON string."""
+    return raw if isinstance(raw, dict) else json.loads(raw)
+
+
+def _catalog_verb(task: ET.Element) -> str:
+    """The catalog verb (``getbyid``) the activity was picked by, or ``""``.
+
+    Read from the context ``metadata`` input, where the canvas serializes the picked
+    operation: ``activityMetadata.activity.configuration.httpMethod`` first, else
+    ``activityPropertyConfiguration.configuration`` (``=jsonString:`` + JSON, or an
+    object) at ``essentialConfiguration.instanceParameters.httpMethod``. Either
+    configuration may be an object or a JSON string.
+    """
+    try:
+        metadata = json.loads(context_value(task, "metadata"))
+    except (TypeError, ValueError):
+        return ""
+    try:
+        activity = _json_or_object(metadata["activityMetadata"]["activity"]["configuration"])
+        return str(activity["httpMethod"]).strip().lower()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        pass
+    try:
+        raw = metadata["activityPropertyConfiguration"]["configuration"]
+        if isinstance(raw, str):
+            raw = raw.removeprefix("=jsonString:")
+        essential = _json_or_object(raw)["essentialConfiguration"]
+        return str(essential["instanceParameters"]["httpMethod"]).strip().lower()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return ""
+
+
 def _operation_matches(
     task: ET.Element,
     method: str,
@@ -700,6 +760,19 @@ def _operation_matches(
         recorded = context_value(task, "operation").strip().lower()
         if operation.operation and recorded:
             return recorded == operation.operation.lower()
+        # `method` in the context is the HTTP method (`GET`); the catalog verb the
+        # operation was picked by (`GETBYID`) is only in the node's metadata
+        # (`activityMetadata.activity.configuration.httpMethod`, else
+        # `activityPropertyConfiguration` ... `instanceParameters.httpMethod`). That
+        # verb decides when the node has it; a bare `GET` with no metadata verb
+        # stays a list read, not a get-by-id.
+        verb = _catalog_verb(task)
+        if verb:
+            # A catalog verb in the context `method` itself (`GETBYID`, what the
+            # canvas's quick-add copies) still counts.
+            return verb in _methods(operation) or (
+                method in _CATALOG_ONLY_METHODS and method in _methods(operation)
+            )
         return method in _methods(operation)
 
     if method not in _http_methods(operation):
