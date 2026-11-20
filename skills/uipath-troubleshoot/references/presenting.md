@@ -102,6 +102,8 @@ When a root cause is confirmed, the resolution ends with, in this order:
 2. **Re-check (not run)** — one line naming one read-only command that shows the run's current state before the later decision (e.g. `uip or jobs get <JOB_KEY> --no-download --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), entity ID filled in. Copy it in its documented form from the investigation guide or the matched playbook. Name it; do NOT run it.
 3. **Later decision** — re-publish and re-deploy always, and any retry or re-run the playbook does not prescribe as the fix, on its own line as the user's call after the re-check. Never fold it into a repair step; split bundled playbook text out here.
 
+The closing message and any written diagnosis file carry all three lines. In the closing message, the Later decision stays its own line after the Re-check, never a numbered step under "what to do next".
+
 **Reduced-confidence terminal** (checklist gap survived the re-fetch): present the same structure, name the gap explicitly next to the cause statement, and lead the Immediate fix with the playbook's diagnostic recommendation (e.g., a byte-compare snippet) instead of a guessed branch. In Next action, the Repair is that diagnostic; give no Later decision. Recommending the discriminating diagnostic IS the deliverable when evidence cannot separate sibling causes — never silently pick one.
 
 **No root cause found** (exempt from Next action): present what was investigated and ruled out (from notes.md), and recommend providing more data or opening a UiPath support ticket.
