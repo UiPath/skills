@@ -11,7 +11,11 @@ PATH-prepends this script so `uip` resolves here instead of the real CLI.
 
 It records each invocation and fails like an unauthenticated CLI WITHOUT any
 network call, matching each task's "commands will fail with auth errors —
-expected" prompt framing.
+expected" prompt framing. A missing, empty or non-JSON `--updates-file` /
+`--fields-file` / `--choices-file` fails with the real CLI's local error
+instead, because the real CLI reads those before it authenticates — an agent
+that broke its own payload must see that, not an auth error it was told to
+ignore.
 
 Two sinks, deliberately (see ../README.md § Call log for the record schema):
 
@@ -44,6 +48,33 @@ JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
 
 STDERR_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
 EXIT_CODE = 1
+
+# JSON options the real CLI reads and parses BEFORE it authenticates
+# (@uipath/common readJsonOption). A broken file fails there, so an agent
+# sees a local error it can fix, never the auth error.
+JSON_FILE_FLAGS = ("--updates-file", "--fields-file", "--choices-file")
+
+
+def local_json_error(args):
+    """The real CLI's pre-auth error for an unusable JSON option file, else None.
+    Messages match readJsonOption: missing, empty, then unparseable."""
+    for flag, value in zip(args, args[1:]):
+        if flag not in JSON_FILE_FLAGS:
+            continue
+        try:
+            with open(value, "rb") as f:
+                raw = f.read()
+        except OSError:
+            return "File not found: {}".format(os.path.abspath(value))
+        utf16le = raw[:2] == b"\xff\xfe"
+        text = raw.decode("utf-16" if utf16le else "utf-8-sig", errors="replace").strip()
+        if not text:
+            return "Expected JSON in {} but the file is empty.".format(value)
+        try:
+            json.loads(text)
+        except ValueError as err:
+            return "{} {} is not valid JSON: {}.".format(flag, value, err)
+    return None
 
 
 def read_file_flags(args):
@@ -107,7 +138,8 @@ def record(tool, args, exit_code):
 
 def main(argv):
     record("uip", argv[1:], EXIT_CODE)
-    sys.stderr.write(STDERR_MESSAGE)
+    error = local_json_error(argv[1:])
+    sys.stderr.write("uip (mock): {}\n".format(error) if error else STDERR_MESSAGE)
     return EXIT_CODE
 
 

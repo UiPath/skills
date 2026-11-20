@@ -27,6 +27,8 @@ initial_prompt: |
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
     this environment. Commands will fail with auth errors — that is expected.
     Run each command once and move on. Do NOT retry or attempt to login.
+  - A command that fails for any other reason (a bad flag, a missing file)
+    is yours to fix: fix it and run it again.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

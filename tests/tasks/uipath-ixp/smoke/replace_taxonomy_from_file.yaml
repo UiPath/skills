@@ -71,6 +71,8 @@ initial_prompt: |
   - The `uip` CLI in this environment is not connected to a live tenant;
     some commands fail. Run each command once and move on. Do NOT retry or
     attempt to login.
+  - A command that fails for any other reason (a bad flag, a missing file)
+    is yours to fix: fix it and run it again.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

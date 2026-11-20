@@ -14,7 +14,12 @@ sandbox:
 ```
 
 `mocks/uip` PATH-shadows the real CLI and fails offline with no network call, so
-grading sees the invocation while no real request is made. `mocks/curl` does the
+grading sees the invocation while no real request is made. The one exception to
+the auth error: a missing, empty or non-JSON `--updates-file` / `--fields-file` /
+`--choices-file` fails with the real CLI's local message (`File not found:
+<abs-path>` etc.), because the real CLI reads and parses those before it
+authenticates. An agent whose payload write failed must get the error a user
+would see, not the auth error its prompt says to ignore. `mocks/curl` does the
 same for raw `curl`, so a disobedient agent cannot reach the cloud with the
 harness-injected token.
 

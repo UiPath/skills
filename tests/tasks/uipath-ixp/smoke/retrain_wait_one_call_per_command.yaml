@@ -62,6 +62,8 @@ initial_prompt: |
   - The `uip` CLI here is NOT connected to a live IXP tenant. `get-metrics`
     answers; every other command fails with an auth error — that is expected,
     so do not retry those and do not attempt to login.
+  - A command that fails for any other reason (a bad flag, a missing file)
+    is yours to fix: fix it and run it again.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
