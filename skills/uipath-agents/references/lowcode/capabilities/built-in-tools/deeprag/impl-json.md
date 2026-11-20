@@ -109,7 +109,7 @@ deep-rag's own empty schemas never declare where documents come from — the age
 | Agent project shape (agent.json, resources, bindings) | `uip agent validate --output json` (canonical; run `uip agent refresh` first to regenerate `entry-points.json` and `bindings_v2.json`) |
 | Smoke run | `uip solution upload . --output json`, invoke from Studio Web with a test PDF/TXT attachment |
 
-The repo's coder-eval suite uses a shared static checker at `tests/tasks/uipath-agents/builtin_tool/check_builtin_tool.py` covering all four `toolType` values (`analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`). It is shared test tooling, not a runtime requirement for this skill.
+The repo's coder-eval suite uses a shared static checker for built-in tool resources at `tests/tasks/uipath-agents/lowcode/builtin_tool/check_builtin_tool.py`. It is shared test tooling, not a runtime requirement for this skill.
 
 ## Pack and Publish
 

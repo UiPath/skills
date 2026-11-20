@@ -19,7 +19,7 @@ When the documents are long, numerous, or the answers must cite where they came 
 2. **`properties.toolType` is the discriminator** — fixed per built-in, kebab-lowercase. Copy from the per-tool walkthrough; do not invent.
 3. **No solution-level files.** Built-in tools need no `uip solution resources refresh`. Validate the agent and bundle.
 4. **Input/output schemas are canonical.** Copy them from the tool's walkthrough and change only what that walkthrough allows.
-5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire the tool's flow node (`uipath.agent.resource.tool.builtin.<name>`, exact type in [§ Tool Registry](#tool-registry) — the suffix is not the `toolType`) to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill ([Critical Rule 15](../../critical-rules/critical-rules.md)). Without the flow node the tool is never reachable at runtime. **Builder-SDK Flow project (`.flow.ts`):** do not author the `resource.json`. Hand the tool to the `uipath-maestro-flow` skill — it declares the tool on the `inlineAgent` step, and `compile` writes the resource and deletes a hand-written one. A tool the Flow SDK cannot declare is not available to that inline agent — stop and tell the user. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire the tool's flow node (`uipath.agent.resource.tool.builtin.<name>`, exact type in [§ Tool Registry](#tool-registry) — the suffix is not the `toolType`) to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill ([Critical Rule 15](../../critical-rules/critical-rules.md)). Without the flow node the tool is never reachable at runtime. HTTP Request in a Builder-SDK Flow project (`.flow.ts`) is declared in the flow source, not authored here — [http-request.md § Authoring](http-request.md#authoring). See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ## Resource Shape
 
@@ -47,7 +47,6 @@ When the documents are long, numerous, or the answers must cite where they came 
 |---|---|
 | `type` | Always `"internal"` for built-in tools |
 | `properties.toolType` | Fixed discriminator (e.g. `"analyze-attachments"`) |
-| `properties.settings` | Tool-specific configuration, only on the tools whose walkthrough shows it (Deep RAG, Batch Transform). Top-level `settings` stays `{}` |
 | `inputSchema` / `outputSchema` | Canonical per tool — copy from walkthrough |
 | `argumentProperties` | `{}` unless an argument is pinned — [§ Argument Sources](#argument-sources-argumentproperties) |
 | `referenceKey` | Always `null` (no Orchestrator binding) |
@@ -67,7 +66,6 @@ The model fills every tool argument unless `argumentProperties` pins it. Keys ar
 1. **`isSensitive` is required** on `static` and `argument` entries. `uip agent validate` does not check it; an entry without it stops the agent from loading at run time.
 2. **`isSensitive: true` only hides a pinned value from the model.** The value is still plain text in `resource.json` — never pin a secret.
 3. **`uip agent validate` does not check keys or paths.** A misspelled key pins nothing; an `argument` entry whose agent input is absent at run time leaves the argument to the model.
-4. **Leave other variants alone.** `textBuilder` and `objectBuilder` entries are written by Agent Builder and the Flow canvas; keep them as found when editing an existing resource.
 
 Worked example: [http-request.md § Pin Arguments](http-request.md#pin-arguments).
 
@@ -87,8 +85,6 @@ Worked example: [http-request.md § Pin Arguments](http-request.md#pin-arguments
 | Deep RAG | `deep-rag` | `uipath.agent.resource.tool.builtin.summarize` | [deeprag/impl-json.md](deeprag/impl-json.md) |
 | Batch Transform | `batch-transform` | `uipath.agent.resource.tool.builtin.batchtransform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
 | HTTP Request — inline agents only | `http-request` | `uipath.agent.resource.tool.builtin.httprequest` | [http-request.md](http-request.md) |
-
-Not every tool is available to every agent: HTTP Request is for inline agents in a Flow only. Each walkthrough states where its tool works — read it before adding the tool.
 
 ## Gotchas
 

@@ -296,7 +296,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Agent-as-tool | `uipath.agent.resource.tool.agent.<release-key>` |
 | API workflow | `uipath.agent.resource.tool.api.<release-key>` |
 | Process Orchestration | `uipath.agent.resource.tool.processorchestration.<release-key>` |
-| Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` — `<tool-name>` is not the `toolType`: `analyzefiles`, `createfile`, `summarize` (Deep RAG), `batchtransform`, `httprequest`. See [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) § Tool Registry |
+| Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` — `<tool-name>` is not the `toolType`; exact node per tool in [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) § Tool Registry |
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index.<index-name>.<index-id>` |
 | Escalation | `uipath.agent.resource.escalation.<variant>` (e.g. `.coded-action-app`; discover with `uip maestro flow registry search "escalation"`) |
@@ -375,7 +375,7 @@ uipath.agent.resource.tool.agent.<release-key>                 ← Tool: agent
 uipath.agent.resource.tool.api.<release-key>                   ← Tool: API workflow
 uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process orchestration
 uipath.agent.resource.tool.connector                           ← Tool: IS connector
-uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in (analyzefiles, createfile, summarize, batchtransform, httprequest)
+uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in
 uipath.agent.resource.context.index.<index-name>.<index-id>    ← Context: semantic index
 uipath.agent.resource.escalation.<variant>                     ← Escalation: HITL (e.g. .coded-action-app)
 uipath.agent.resource.memory.*                                 ← Memory space canvas node; feature file lives under features/
