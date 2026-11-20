@@ -182,6 +182,17 @@
 /tests/tasks/uipath-rules/ @UiPath/maestro-cli-team
 /tests/tasks/activation/uipath-rules.jsonl @UiPath/maestro-cli-team
 
+# Rules extraction skill
+/skills/uipath-rules/references/extraction/ @tejaduggaraju
+/skills/uipath-rules/scripts/extraction/ @tejaduggaraju
+/skill-flavors/studioweb/uipath-rules/references/extraction/ @tejaduggaraju
+/tests/tasks/uipath-rules/_setup/ @tejaduggaraju
+/tests/tasks/uipath-rules/smoke/amendment_precedence/ @tejaduggaraju
+/tests/tasks/uipath-rules/integration/citations_resolve/ @tejaduggaraju
+/tests/tasks/uipath-rules/integration/outcome_and_traps/ @tejaduggaraju
+/tests/tasks/uipath-rules/e2e/multi_doc_full/ @tejaduggaraju
+/tests/tasks/uipath-rules/e2e/one_shot_pipeline/ @tejaduggaraju
+
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie

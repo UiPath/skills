@@ -22,9 +22,37 @@
 {"id": "uipath-rules-022", "prompt": "Create a decision table for insurance premium tiers by age band and smoker status", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-023", "prompt": "Get the details of the PaymentTerms business rule in the Procurement folder", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-024", "prompt": "Fix the FEEL range syntax in my decision table, [100..500[ is not accepted", "expected_skill": "uipath-rules"}
-{"id": "uipath-rules-025", "prompt": "Make a UiPath Business Rules project from this eligibility policy document", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-025", "prompt": "Make a UiPath Business Rules project for this eligibility policy: applicants under 18 are declined, everyone else is approved", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-026", "prompt": "Add a string input region to my rule and route EU orders to the Dublin warehouse", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-027", "prompt": "My DMN output cell is empty and the debug result comes back null, help", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-028", "prompt": "Edit the thresholds in my fraud score decision table: high starts at 0.85 now", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-029", "prompt": "Describe the argument contract of the deployed EscalationMatrix rule so I can bind it", "expected_skill": "uipath-rules"}
 {"id": "uipath-rules-030", "prompt": "Validate my business rule and run it against these three test cases", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-031", "prompt": "Turn this policy PDF into a UiPath business rule and cite the page for every row", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-032", "prompt": "Extract the decision rules from this prior authorization policy document into a .dmn", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-033", "prompt": "I have a scanned underwriting guideline; build a Business Rules project from it with source references", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-034", "prompt": "Generate a decision table from our travel expense policy and the amendment that changed the hotel cap", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-035", "prompt": "Read this eligibility policy PDF and create the rules, asking me about anything ambiguous", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-036", "prompt": "Build rules from the base policy plus Amendment 2 effective next January", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-037", "prompt": "Convert this reimbursement policy into DMN with a quote and page number behind each rule", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-038", "prompt": "Here is a 40 page coverage policy: create a UiPath business rule from sections 3 and 4 only", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-039", "prompt": "Extract rules from this claims handling guideline and flag the clauses that are unclear", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-040", "prompt": "Create a decision table from the policy document, but the FAQ says something different from the policy, which wins?", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-041", "prompt": "Update my existing business rule from this new amendment document", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-042", "prompt": "Use the digitizer output document.md and dom.json to build the rules with uipdm source refs", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-043", "prompt": "Turn this loan underwriting manual into business rules; the policy may be amended mid-year", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-044", "prompt": "From this HR leave policy PDF, produce a DMN decision table section by section and let me review each section", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-045", "prompt": "Take this medical necessity guideline and generate the rule, citing the quote it came from", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-046", "prompt": "Make rules out of this procurement policy document; the SOP is only supporting material", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-047", "prompt": "Extract a rule from this insurance policy wording where the exceptions use notwithstanding clauses", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-048", "prompt": "I want to generate a business rule from a policy document, which skill do I use and what will it ask me?", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-049", "prompt": "Build a rules project from this scanned policy and tell me what you assumed", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-050", "prompt": "Read the amendment and the base policy and give me the in-force rules as of 2026-06-30", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-051", "prompt": "Generate .dmn rules from a compliance policy PDF; highlight where each row was read in the document", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-052", "prompt": "Convert the eligibility criteria in this clinical policy into a decision table and mark the ambiguous terms", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-053", "prompt": "We have a policy document and a rate schedule; build the business rule from both", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-054", "prompt": "Create a business rule from this policy document and ask me only the questions that block", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-055", "prompt": "I have our travel expense policy as a text file plus two amendments and an FAQ; build a UiPath business rule from them as of today", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-056", "prompt": "Build a UiPath Business Rules project from this reimbursement policy document, and apply the amendment that was issued after it", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-057", "prompt": "Turn our policy document and its supporting FAQ into a .dmn decision table, checking with me as you go", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-058", "prompt": "Update our existing business rule so it reflects this new amendment to the policy, with citations to the amendment", "expected_skill": "uipath-rules"}
