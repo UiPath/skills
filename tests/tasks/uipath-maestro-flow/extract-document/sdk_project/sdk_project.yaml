@@ -1,16 +1,17 @@
 task_id: skill-flow-extract-document-sdk-project
 description: >
   Integration: the user's flow is built from TypeScript source (`.flow-sdk/`)
-  and they ask for an Extract document step. A compile would overwrite CLI
-  edits and `dynamicExtract()` is not the route, so the agent builds the
-  Extract document flow in a separate project without source and leaves the
-  SDK project as it was. The node, its wiring and its taxonomy are graded by
-  `explicit_node` and the taxonomy tasks.
+  and they ask for an Extract document step. The agent adds it to the source
+  with `dynamicExtract()` (no model) and compiles: compile gives the node its
+  IDP processor key and writes the processor's resource file into the
+  solution, so the flow validates with no CLI step afterwards. The rest of the
+  flow is kept, apart from the edge the new step splits and the `end` node,
+  which may gain the flow output that returns the extraction (step 6 of the
+  skill's Extract document loop).
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
-  until the flow is saved once in Studio Web.
+  No `flow debug`: extraction needs the IDP service.
 
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document, studio-web-unsupported, studio-web-unsupported:sdk-source-project]
 
 sandbox:
   template_sources:
@@ -38,20 +39,28 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: run_command
-    description: "A Flow project other than PermitDesk, with no .flow-sdk/, holds an Extract document node and validates"
-    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings "$(python3 $REFERENCE_DIR/extract-document/sdk_project/sdk_project_helper.py)"
-    timeout: 180
+    description: "The source calls dynamicExtract() with no model; the compiled node reads the permit input, extracts permit number, holder name and expiry date, and has a processorKey whose idpProcessor resource file is in the solution"
+    command: python3 $REFERENCE_DIR/extract-document/sdk_project/sdk_project_helper.py
+    timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The SDK project is as it was: PermitDesk.flow keeps every node and gains no uipath.ixp.* node, and its .flow.ts source is byte for byte the same"
+    description: "The rest of PermitDesk is kept: every original node, variable and binding survives, only the one edge the new step splits may go, and only the end node may change (the flow output that returns the extraction)"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk --project PermitDesk/PermitDesk &&
-      ! grep -q '"uipath[.]ixp[.]' PermitDesk/PermitDesk/PermitDesk.flow &&
-      cmp -s PermitDesk/PermitDesk/.flow-sdk/PermitDesk.flow.ts $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk/.flow-sdk/PermitDesk.flow.ts
+      for edge in 'start:output>logReceipt:input' 'logReceipt:success>end:input'; do
+      python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk --project PermitDesk/PermitDesk --removed-edge "$edge" --changed-node end && exit 0;
+      done; exit 1
     timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PermitDesk.flow validates with no warnings"
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings PermitDesk/PermitDesk/PermitDesk.flow
+    timeout: 180
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

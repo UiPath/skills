@@ -71,10 +71,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
-    description: "Agent ran uip solution resources list to look up the escalation app"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list'
+    description: "Agent ran uip solution resources list (or ManageSolutionResources) to look up the escalation app"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -96,9 +99,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the app's action schema via uip solution resources get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    description: "Agent validated the app's action schema via uip solution resources get (or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

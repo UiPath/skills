@@ -59,7 +59,7 @@ Libraries are tenant-scoped -- no folder context needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`, `--all-fields`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns curated rows: `Key`, `Title`, `Version`, `Authors`, `Published`, `IsLatestVersion`, `IsPrerelease`, `ProjectType`. Note: `Published` is often empty on list rows (the bare collection endpoint doesn't populate it server-side); `get`/`versions` return it. |
+| `uip or libraries list` | List libraries in the tenant feed. Options: `-s, --search <term>` (server-side name contains-match, one term), `--feed-id <id>`, `--limit <N>` (default 50, at most 1000), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`, `--all-fields`. For several keywords or `Authors` matching, filter client-side via global `--output-filter "<JMESPath>"`. Returns curated rows: `Key`, `Title`, `Version`, `Authors`, `Published`, `IsLatestVersion`, `IsPrerelease`, `ProjectType`. Note: `Published` is often empty on list rows (the bare collection endpoint doesn't populate it server-side); `get`/`versions` return it. |
 | `uip or libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns a curated detail view (adds `Description`, `PackageSize`, `Created`, `LastUpdated`, etc.); `--all-fields` for the raw DTO. Dates the feed doesn't track are returned as empty strings (the API serializes 0001-01-01 sentinels; the CLI strips them). |
 | `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). Curated rows like `list`; `--all-fields` for raw. Fails with `Library not found` when the package ID doesn't exist (instead of an empty success). |
 | `uip or libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. The file must exist (checked client-side). The default shared feed is read-only on many tenants — if upload fails with a read-only/feed-not-found error, enable Tenant Libraries in tenant settings or target a writable feed with `--feed-id` (`uip or feeds list`). |
@@ -67,18 +67,21 @@ Libraries are tenant-scoped -- no folder context needed.
 | `uip or libraries delete <key>` | Delete a specific library version. Key format is `PackageId:Version` (validated client-side). |
 
 ```bash
-# List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
-uip or libraries list --limit 500 --output json
+# List libraries (first 1000, the most one call returns). Default --limit is 50; bump it for tenants with many libraries.
+uip or libraries list --limit 1000 --output json
 
 # Filter by name client-side. Title can be null — guard with `Title != null` or contains() will error.
-uip or libraries list --limit 500 \
+uip or libraries list --limit 1000 \
   --output-filter "[?Title != null && contains(Title, 'Excel')]" \
   --output json
 
 # Multi-keyword OR filter
-uip or libraries list --limit 500 \
+uip or libraries list --limit 1000 \
   --output-filter "[?Title != null && (contains(Title, 'Common') || contains(Title, 'Shared'))]" \
   --output json
+
+# A filter sees only the rows this call fetched: while Pagination.HasMore is true,
+# repeat the same call with --offset 1000, --offset 2000, ... and merge the matches.
 
 # Upload a library
 uip or libraries upload --file ./MyLibrary.1.0.0.nupkg --output json

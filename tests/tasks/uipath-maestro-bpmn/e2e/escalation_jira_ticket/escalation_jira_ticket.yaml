@@ -1,35 +1,30 @@
 task_id: skill-bpmn-e2e-escalation-jira-ticket
 description: >
-  E2E live Jira coverage for the escalation BPMN process — the agent builds a
-  manual-start escalation-triage UiPath Maestro BPMN process that classifies
-  severity and creates a real Jira ticket for the escalation. The grader seeds
-  a Sev1 case (unique correlationId), imports the exact submitted project into
-  an ephemeral solution, runs `uip maestro bpmn debug --inputs`, and verifies
-  the OUTCOME by re-reading the created key from Jira: the issue exists and
-  its summary carries the seeded correlationId — proof the process created
-  THIS run's ticket, not a fabricated key. The created issue is cleaned up in
-  post_run. A manual start is used because the Outlook email-received trigger
-  is not reliably debug-testable (see outlook_trigger_inbox / customer_escalation_triage).
+  E2E live Jira coverage for the escalation BPMN process, asked the way a
+  Studio Web user would ask it: a manual-start process classifies an
+  escalation's severity and opens a Jira ticket for it. The grader seeds a
+  Sev1 case (unique correlationId), imports the exact submitted project into
+  its own ephemeral solution, runs it once under `uip maestro bpmn debug
+  --inputs`, and asserts what the run did: it completed with no incidents, a
+  Jira step completed and returned an issue key, re-reading that key from
+  Jira finds a Task in project CE whose summary carries the seeded
+  correlationId (this run's ticket, not a fabricated key), and the named outputs read back
+  severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>. The Jira
+  step is found by connector key alone, so any Create Issue operation counts.
+  The created issue is deleted in post_run. Whether the agent ran its own
+  test is advisory. A manual start is used because the Outlook email-received
+  trigger is not reliably debug-testable.
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project (issue
   type Task). Targets live in the task's `_setup/jira_is.py`.
-
-  Ported from Flow `uipath-maestro-flow/e2e/escalation_jira_ticket/escalation_jira_ticket.yaml`;
-  same scenario and grading, translated to the BPMN CLI surface (ephemeral
-  solution import, sha256-pinned, plus `debug-instance variables-all`/`incidents`
-  in place of Flow's inline debug payload) following
-  `e2e/customer_escalation_triage/`'s live pattern, adapted to grade only
-  Flow's Jira assertions (no Slack step — Flow's task has none either).
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
-
 run_limits:
   expected_turns: 55
   max_turns: 120
   # turn_timeout kept at Flow's verbatim 1200s. Grading sum: command_executed
   # (no timeout: field -> priced at the suite's 30s default) + the validate
-  # loop (180s) + the behavior criterion (1600s, see check_escalation_jira_ticket.py
-  # for why Flow's own 1600s already covers the added BPMN plumbing) = 1810s.
+  # loop (180s) + the behavior criterion (1600s, check_jira_ticket_run.py) = 1810s.
   # task_timeout must cover turn_timeout + grading (1200 + 1810 = 3010s); raised
   # to 3100s for headroom. This is the one sanctioned run_limits deviation
   # (LIVE-ADDENDUM: "run_limits.task_timeout must cover the agent's turn budget
@@ -62,67 +57,48 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Create a UiPath Maestro BPMN process named "EscalationJiraTicket" with a
-  MANUAL start inside a solution of the same name.
-  It triages a customer escalation and creates a Jira ticket for it.
+  You are a coding agent in an empty Agentic Process (Maestro BPMN) project.
+  No user is present, and nobody will answer a question or grant approval, so
+  do not ask, do not pause, and do not wait for input. Do not delete or
+  overwrite anything this run did not create, except what the task asks you
+  to change, and do not publish to a shared destination unless the task asks
+  for it.
 
-  Read `seed.json` in the current directory. Declare process inputs matching
-  the keys under its `inputs`: senderEmail, senderDomain, subject, body,
-  customerTier, productionDown (boolean), workaroundAvailable (boolean),
-  hasAttachments (boolean), customerMatchStatus, isDuplicate (boolean),
-  correlationId.
+  Automate my process called "EscalationJiraTicket" that triages a customer
+  escalation and opens a Jira ticket for it. We have an intake form that
+  collects senderEmail, senderDomain, subject, body, customerTier,
+  productionDown, workaroundAvailable, hasAttachments, customerMatchStatus,
+  isDuplicate and correlationId. I will bring these in when I start the
+  process.
 
-  Steps:
-  1. Classify severity from the inputs into a declared `severity` variable
-     (Sev1 = Enterprise tier AND productionDown AND NOT workaroundAvailable;
-     Sev2 = productionDown AND workaroundAvailable; Sev3 otherwise) plus
-     `engineeringNeeded`. Use the classification node the skill documents as
-     executing at runtime.
-  2. Create a Jira issue using the Atlassian Jira "Create Issue" connector
-     activity, authored from its registry template and Integration Service
-     definition. Use the `project_key`, `issuetype_id`, and `reporter_id`
-     from `seed.json` (`reporter_id` is the issue's reporter field). The
-     issue summary MUST include the `correlationId` verbatim (e.g.
-     "[<severity>] <correlationId> <subject>"). Use the Atlassian Jira
-     connection in the `Shared/uipath-maestro-flow` folder. If the Atlassian
-     Jira connector isn't in your registry, STOP rather than falling back to
-     a generic HTTP request.
-  3. End the process, exposing these public outputs: severity, caseKey (=
-     the incoming correlationId), and jiraIssueKey (the created issue's
-     key).
+  How to rate the severity:
+  - Sev1: customerTier is "Enterprise", production is down, and there is no
+    workaround.
+  - Sev2: production is down but there is a workaround.
+  - Sev3: everything else.
 
-  Validate the BPMN. Do NOT run or debug the process — the grader executes
-  it with the seeded inputs. Before starting, load the uipath-maestro-bpmn
-  skill and follow its workflow.
+  Open the ticket as a Task in our Jira project CE ("Coder Eval"). The ticket
+  summary must also include the correlationId, for example "[Sev1]
+  <correlationId> <subject>".
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  Outputs: severity, caseKey (the correlationId we were given) and
+  jiraIssueKey (the key of the ticket that was created).
+
+  <!-- helper:start -->
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), correlationId (string).
+  Outputs: severity (string), caseKey (string), jiraIssueKey (string).
+  severity is "Sev1", "Sev2" or "Sev3".
+  The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380", in
+  the Shared/uipath-maestro-flow folder. Create the issue in project CE as issue
+  type Task. The summary includes the correlationId.
+  <!-- helper:end -->
+
+  Build the process and do a test run.
 success_criteria:
-  - type: command_executed
-    description: "Agent validated the generated BPMN"
-    tool_name: "Bash"
-    # `bpmn` exists only under `maestro` -- `uip bpmn validate` is an unknown
-    # command, so the `maestro` segment must not be optional.
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  # Discover the BPMN file — the prompt names only the PROCESS, never the
-  # enclosing solution, so a hardcoded `<Name>Solution/<Name>/<Name>.bpmn`
-  # would grade the solution directory's name (an unstated requirement) and
-  # score 0.0 on a valid process built at e.g.
-  # `EscalationJiraTicket/EscalationJiraTicket.bpmn` (no wrapper solution
-  # folder). Mirrors Flow's discovery rationale (validate_flow.py).
+  # Discovered, not hardcoded: Studio Web names the file Process.bpmn.
   - type: run_command
     description: "Generated EscalationJiraTicket BPMN validates without errors"
     command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
@@ -131,9 +107,22 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Advisory: Studio Web's host may refuse the agent's own `bpmn debug`
+  # (UnavailableInHost) and its testbench stubs RunProject.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro bpmn debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug(?!-instances?)(?!\s+--help)\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # 480 (debug) + 90 (solution init) + 180 (solution import)
+  # + 120 (variables-all) + 120 (incidents) + Jira connection lookup and
+  # issue reread (~360, three 120s CLI calls) + 60 margin = 1410.
   - type: run_command
-    description: "Seeded Sev1 debug run creates a real Jira ticket whose summary carries the seeded correlationId (verified by re-reading the tenant)"
-    command: "python3 $REFERENCE_DIR/_shared/check_escalation_jira_ticket.py"
+    description: "Effects: one seeded Sev1 debug run completes with no incidents; a Jira step completes and returns an issue key; re-reading it from Jira finds a Task in project CE whose summary carries the seeded correlationId; outputs severity=Sev1, caseKey=<correlationId>, jiraIssueKey=<that key>"
+    command: "python3 $REFERENCE_DIR/e2e/escalation_jira_ticket/check_jira_ticket_run.py"
     timeout: 1600
     expected_exit_code: 0
     weight: 5.0

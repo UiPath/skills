@@ -19,6 +19,9 @@ shares this one script:
       exist into `seed.json`, and mint this run's uuid8. A refusal scenario uses
       it so the post_run sweep can tell a rule the agent created from one that
       was already configured. `EXCL_SEED_KEY` / `EXCL_RULE_BASE` are not needed.
+      A peer run's test rule (reserved prefix, another uuid8) is left out: its
+      owner deletes or renames it mid-run, and counting it made a delete
+      scenario report collateral damage the agent never did.
 
 Env:
   EXCL_SEED_KEY      seed.json key to record under, e.g. `rule` (required)
@@ -30,6 +33,11 @@ Env:
   EXCL_RENAME_BASE   when set, also publish `rename_to` — a second run-scoped
                      name a replacement scenario must rename the rule to
   EXCL_INACTIVE      `1` — create the rule with --inactive (optional)
+  EXCL_TYPE_SLOT     0-based index into the ranked candidates that this task
+                     tries first; default 0 (optional). Every task that plans
+                     or seeds a rule takes its own slot, so tasks running at
+                     the same time against one organization never race for the
+                     same event type. The other candidates follow in rank order.
 
 Selector discovery: event-type ids are read from `uip admin audit org sources`,
 never hardcoded, because the catalog differs per organization. Candidates are
@@ -42,6 +50,13 @@ Sources, targets, and types whose names look like audit configuration or
 platform monitoring are skipped up front: those are exactly the values the
 service refuses, so trying them first would waste the seed's attempts.
 
+Types that a live rule already excludes are skipped as well, whether that rule
+is active or staged. In seeded mode the service would refuse them anyway. In
+plan-only mode the skip matters more: a planned type that another rule already
+covers would make the agent's own `create` fail with `OverlappingRuleExists`,
+or push the agent to take over a rule it doesn't own. If every candidate is
+covered, the full list is used and the service decides.
+
 Names carry this run's uuid8, so a same-named leftover cannot exist and a peer
 run's in-flight rule is never touched.
 
@@ -53,10 +68,15 @@ import logging
 import os
 import sys
 
-from admin_helpers import run_cli, scoped, update_seed
+from admin_helpers import peer_test_object, run_cli, scoped, update_seed
 
 logging.basicConfig(level=logging.INFO, format="setup_exclusion_rule: %(message)s")
 logger = logging.getLogger(__name__)
+
+# Every rule these tests create is named from a `ce-audit-excl*` base. Keep this
+# in step with cleanup_exclusion_marker.py and verify_audit_exclusions.py;
+# test_audit_exclusion_concurrency.py checks that all three agree.
+RESERVED_PREFIX = "ce-audit-excl"
 
 # Substrings that mark a catalog entry the service will not let a rule exclude.
 PROTECTED_HINTS = ("audit", "monitor", "health", "telemetry", "diagnostic")
@@ -154,20 +174,89 @@ def candidate_types():
     return sorted(out, key=lambda row: (rank(row[1]), row[1], row[0]))
 
 
-def snapshot_existing():
-    """Record the ids of the rules already configured, and mint this run's uuid8."""
+def list_rules():
+    """The live rule records, or None when the listing failed."""
     data = run_cli(["admin", "audit", "org", "exclusions", "list"], timeout=60)
     if not data or field(data, "Result") != "Success":
+        return None
+    rules = field(data, "Data") or []
+    return rules if isinstance(rules, list) else []
+
+
+def snapshot_existing():
+    """Record the ids of the rules already configured, and mint this run's uuid8.
+
+    A peer run's test rule is left out. Its owner deletes or renames it on its own
+    schedule, so it says nothing about what this run's agent did.
+    """
+    update_seed()  # mint the uuid8 first, so owned_by_this_run() can answer
+    rules = list_rules()
+    if rules is None:
         logger.warning("Could not list exclusion rules — no snapshot recorded")
         return
-    rules = field(data, "Data") or []
-    ids = [
-        str(field(rule, "PolicyId"))
-        for rule in (rules if isinstance(rules, list) else [])
-        if field(rule, "PolicyId")
-    ]
+    ids, peers = [], 0
+    for rule in rules:
+        policy_id = field(rule, "PolicyId")
+        if not policy_id:
+            continue
+        if peer_test_object(field(rule, "Name"), RESERVED_PREFIX):
+            peers += 1
+            continue
+        ids.append(str(policy_id))
     update_seed(excl_snapshot=ids)
-    logger.info("Snapshotted %d pre-existing exclusion rule(s)", len(ids))
+    logger.info(
+        "Snapshotted %d pre-existing exclusion rule(s); left out %d peer test rule(s)",
+        len(ids), peers,
+    )
+
+
+def covered_type_ids():
+    """Lowercased EventType ids that some live rule, active or staged, excludes."""
+    rules = list_rules()
+    if rules is None:
+        logger.warning(
+            "Could not list the existing rules, so no covered event type is skipped; "
+            "the seed may collide with an existing rule (HTTP 409)"
+        )
+        return set()
+    covered = set()
+    for rule in rules:
+        for selector in field(rule, "Selectors") or []:
+            if str(field(selector, "Type") or "").strip().lower() != "eventtype":
+                continue
+            covered.update(
+                str(v).strip().lower() for v in field(selector, "Values") or [] if v
+            )
+    return covered
+
+
+def type_slot():
+    raw = (os.environ.get("EXCL_TYPE_SLOT") or "").strip()
+    try:
+        return max(int(raw), 0) if raw else 0
+    except ValueError:
+        logger.warning("EXCL_TYPE_SLOT=%r is not an integer — using slot 0", raw)
+        return 0
+
+
+def ordered_for_this_task(candidates):
+    """This task's slot first, then the rest in rank order, minus covered types.
+
+    The slot keeps tasks that seed at the same moment off each other's types.
+    Skipping covered types handles what the slot can't see: a peer run, or a
+    rule left behind by an earlier one.
+    """
+    slot = type_slot()
+    if slot < len(candidates):
+        candidates = [candidates[slot]] + candidates[:slot] + candidates[slot + 1:]
+    covered = covered_type_ids()
+    free = [row for row in candidates if row[0].strip().lower() not in covered]
+    if len(free) < len(candidates):
+        logger.info(
+            "Skipping %d event type(s) an existing rule already excludes",
+            len(candidates) - len(free),
+        )
+    return free or candidates
 
 
 def main():
@@ -192,6 +281,8 @@ def main():
         entry["rename_to"] = scoped(rename_base)
 
     candidates = candidate_types()
+    if candidates:
+        candidates = ordered_for_this_task(candidates)
     if not candidates:
         logger.warning("No usable event type in the catalog — recording the name only")
         update_seed(**{seed_key: entry})

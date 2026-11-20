@@ -25,7 +25,6 @@ from __future__ import annotations
 import glob
 import json
 import os
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -53,6 +52,7 @@ from handoff_tenant import (  # noqa: E402  (path set above)
     read_snapshot,
     run_uip,
     run_uip_json,
+    sanitize_registry_segment,
 )
 
 # Node-type prefix for an IxP extraction node in a .flow — matches
@@ -190,16 +190,6 @@ def candidate_names() -> tuple[list[str], list[str]]:
         )
         return [], []
     return names, deployment_names
-
-
-def sanitize_registry_segment(name: str) -> str:
-    """The registry's tail-segment sanitization: lowercase, non-alnum runs → '-'.
-
-    NodeTypes embed the deployment name in this form (`falconry_licences-x` →
-    `falconry-licences-x`), so a raw name never substring-matches its own
-    NodeType when it carries an underscore.
-    """
-    return re.sub(r"[^a-z0-9]+", "-", name.lower())
 
 
 def name_matches(name: str, haystack: str) -> bool:

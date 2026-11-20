@@ -1,5 +1,5 @@
 <!--skill-flavor:script-function-returns-check:start-->
-- `returns` is what the `.flow` declares. Match its fields to what the function returns. In Studio Web no type checker runs, and `compile` does not check types, so a wrong `returns` field shows no error. Without `returns`, the body's type is inferred as for a string body.
+- `returns` is what the `.flow` declares. Match its fields to what the function returns. In Studio Web nothing checks `returns` against the function, and `compile` does not check types, so a wrong `returns` field shows no error. Without `returns`, the body's type is inferred as for a string body.
 <!--skill-flavor:script-function-returns-check:end-->
 
 <!--skill-flavor:script-function-sdk-version:start-->

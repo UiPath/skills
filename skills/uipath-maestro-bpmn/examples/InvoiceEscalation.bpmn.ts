@@ -57,10 +57,14 @@ export default bpmn('invoice-escalation')
   .name('InvoiceEscalation')
   .flowMode('sequence')
   .input('invoiceId', 'string', { name: 'Invoice ID' })
+  .var('invoiceIdIn', 'string', { elementId: 'start' })
   .var('decision', 'string', { default: 'Pending' })
   .var('outcome', 'string', { default: 'RUNNING' })
   .var('reminders', 'number', { default: 0 })
-  .startEvent('start', { name: 'Invoice received' })
+  // An input belongs to the start event: map it into a variable scoped there, and read that downstream.
+  .startEvent('start', { name: 'Invoice received', payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'Invoice ID', type: 'string', source: '=vars.invoiceId', var: 'invoiceIdIn' },
+  ] } })
   // Two lookups at once. `fork` opens a parallel gateway, runs each arm, and joins
   // them through `enrich_join` before `approve` — the join is derived from the id
   // the author wrote, so an explicit `.sequenceFlow('enrich_join', …)` could still
@@ -71,13 +75,13 @@ export default bpmn('invoice-escalation')
       b.http('vendorLookup', {
         name: 'Vendor lookup',
         method: 'GET',
-        url: '=js:"https://erp.example.com/vendors/by-invoice/" + vars.invoiceId',
+        url: '=js:"https://erp.example.com/vendors/by-invoice/" + vars.invoiceIdIn',
       }),
     (b) =>
       b.http('poLookup', {
         name: 'Purchase order lookup',
         method: 'GET',
-        url: '=js:"https://erp.example.com/purchase-orders/by-invoice/" + vars.invoiceId',
+        url: '=js:"https://erp.example.com/purchase-orders/by-invoice/" + vars.invoiceIdIn',
       }),
   ])
   // The approval, with its boundary events declared ON it. Nothing names `approve`
@@ -89,10 +93,10 @@ export default bpmn('invoice-escalation')
     'approve',
     {
       name: 'Approve invoice',
-      title: '=js:"Invoice " + vars.invoiceId',
+      title: '=js:"Invoice " + vars.invoiceIdIn',
       form: {
         fields: [
-          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceId' },
+          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceIdIn' },
           { id: 'vendor', label: 'Vendor', type: 'object', direction: 'input', value: '=vars.vendorLookup_response' },
           { id: 'purchaseOrder', label: 'Purchase order', type: 'object', direction: 'input', value: '=vars.poLookup_response' },
         ],
@@ -119,12 +123,12 @@ export default bpmn('invoice-escalation')
   // back to the approver; `rejected` ends the process; `approved` continues.
   .choose('route', [
     {
-      when: '=vars.decision == "Approve"',
+      when: '=js:vars.decision == "Approve"',
       label: 'Approved',
       body: (b) => b.task('markApproved', { name: 'Mark approved', set: { outcome: 'APPROVED' } }),
     },
     {
-      when: '=vars.decision == "Needs info"',
+      when: '=js:vars.decision == "Needs info"',
       label: 'Needs info',
       body: (b) => b.task('requestInfo', { name: 'Ask the vendor', set: { outcome: 'AWAITING_VENDOR' } }).goto('approve'),
     },
@@ -139,7 +143,7 @@ export default bpmn('invoice-escalation')
   // It returns its value; the runtime wraps it as `result.response`.
   .scriptTask('post', {
     name: 'Post to ledger',
-    script: 'return { posted: true, invoiceId: vars.invoiceId };',
+    script: 'return { posted: true, invoiceId: vars.invoiceIdIn };',
   })
   .endEvent('done', { name: 'Posted' })
   // The safety net. An event sub-process has no incoming flow; it starts when an error

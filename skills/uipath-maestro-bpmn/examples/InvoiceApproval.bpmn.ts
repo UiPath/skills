@@ -7,6 +7,10 @@
  * produces from a process someone actually runs: 71 elements, wide gateway routing,
  * and six node types in one graph.
  *
+ * Its plain `=` expressions are the import's legacy C#: copy none of them, and write
+ * every new expression as `=js:` (`'=js:vars.total * 0.9'`), except a human-task
+ * form field's `value`, which stays `=vars.<id>`.
+ *
  * | it demonstrates | as |
  * | --- | --- |
  * | an Integration Service **event trigger** | `.activity(…, 'Intsvc.EventTrigger')` on a start event |

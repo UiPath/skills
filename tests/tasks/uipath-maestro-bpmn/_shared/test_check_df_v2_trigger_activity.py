@@ -20,13 +20,13 @@ METADATA = json.dumps(
 )
 
 
-def _context(object_name: str, operation: str = "") -> str:
+def _context(object_name: str, operation: str = "", version: str = "v2") -> str:
     inputs = [
         ("connectorKey", "uipath-uipath-dataservice"),
         ("connection", "=bindings.bConn"),
         ("objectName", object_name),
         ("operation", operation),
-        ("activityConfigurationVersion", "v2"),
+        ("activityConfigurationVersion", version),
     ]
     values = "".join(f'<uipath:input name="{n}" type="string" value="{v}" />' for n, v in inputs if v)
     return (
@@ -36,7 +36,7 @@ def _context(object_name: str, operation: str = "") -> str:
     )
 
 
-def _bpmn(object_name: str) -> str:
+def _bpmn(object_name: str, marker: bool = True, version: str = "v2") -> str:
     """Trimmed from the CI run 2026-10-22 artifact."""
     return (
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
@@ -44,16 +44,18 @@ def _bpmn(object_name: str) -> str:
         '<uipath:bindings version="v1">'
         '<uipath:binding id="bConn" default="c" resource="Connection" resourceKey="c" />'
         f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" />'
-        '</uipath:bindings><uipath:intsvcActivityConfig version="v2" /></bpmn:extensionElements>'
+        "</uipath:bindings>"
+        + ('<uipath:intsvcActivityConfig version="v2" />' if marker else "")
+        + "</bpmn:extensionElements>"
         f'<bpmn:startEvent id="Event_start"><bpmn:extensionElements><uipath:entryPointId value="{ENTRY_POINT}" />'
         '<uipath:event version="v1"><uipath:type value="Intsvc.EventTrigger" version="v1" />'
-        f'{_context("EntityTriggers_V3", "UPDATED_V3")}'
+        f'{_context("EntityTriggers_V3", "UPDATED_V3", version)}'
         '<uipath:input name="body" type="json" target="body">'
         '<![CDATA[{"parameters":{"folderEntityName":"=bindings.bEntity"}}]]></uipath:input>'
         "</uipath:event></bpmn:extensionElements></bpmn:startEvent>"
         '<bpmn:sendTask id="Activity_Create"><bpmn:extensionElements><uipath:activity version="v1">'
         '<uipath:type value="Intsvc.ActivityExecution" version="v1" />'
-        f"{_context(object_name)}"
+        f"{_context(object_name, version=version)}"
         '<uipath:input name="queryParameters" type="json" target="queryParameters">'
         '<![CDATA[{"folderEntityName":"=bindings.bEntity"}]]></uipath:input>'
         '<uipath:input name="body" type="json" target="body"><![CDATA[{"title":"V2Test"}]]></uipath:input>'
@@ -62,14 +64,14 @@ def _bpmn(object_name: str) -> str:
     )
 
 
-def _run(tmp_path: Path, object_name: str) -> tuple[int, str]:
+def _run(tmp_path: Path, object_name: str, **bpmn: object) -> tuple[int, str]:
     (tmp_path / "_setup").mkdir()
     (tmp_path / "_setup" / "picker_entity.json").write_text(
         json.dumps({"name": "SkillPickerEvalEntity", "key": ENTITY_KEY})
     )
     project = tmp_path / "P"
     project.mkdir()
-    (project / "P.bpmn").write_text(_bpmn(object_name), encoding="utf-8")
+    (project / "P.bpmn").write_text(_bpmn(object_name, **bpmn), encoding="utf-8")
     resources = [
         {"resource": "EventTrigger", "value": {"EntryPointUniqueId": {"defaultValue": ENTRY_POINT}}},
         {"resource": "entity", "key": ENTITY_KEY},
@@ -90,3 +92,15 @@ def test_other_create_objects_fail(tmp_path: Path, object_name: str) -> None:
     rc, out = _run(tmp_path, object_name)
     assert rc != 0
     assert f"the activity is {object_name!r}, not CreateEntityRecord_V3" in out
+
+
+def test_no_process_marker_passes(tmp_path: Path) -> None:
+    """The builder SDK writes no process-level marker; each node's own version is what Studio Web reads."""
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", marker=False)
+    assert rc == 0, out
+
+
+def test_v1_nodes_fail_even_with_the_marker(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", version="v1")
+    assert rc != 0
+    assert "activityConfigurationVersion is 'v1'" in out

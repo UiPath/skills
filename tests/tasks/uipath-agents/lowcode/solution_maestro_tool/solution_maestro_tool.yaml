@@ -61,12 +61,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   # Informational discovery criteria: the agent may use file reads instead of
   # CLI discovery. pass_threshold:0 means these never block the run.
   - type: command_executed
-    description: "Agent discovered the existing EmployeeOnboarding via solution resources list (informational)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    description: "Agent discovered the existing EmployeeOnboarding via solution resources list or ManageSolutionResources (informational)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+list\b.*--source\s+local|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"source":\s*"local)'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -76,9 +79,8 @@ success_criteria:
   # discovery above is the enforced signal; `get` is an acceptable-but-optional
   # follow-up.
   - type: command_executed
-    description: "Agent fetched the EmployeeOnboarding configuration with uip solution resources get (informational)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    description: "Agent fetched the EmployeeOnboarding configuration with uip solution resources get or ManageSolutionResources (informational)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0

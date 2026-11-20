@@ -9,7 +9,9 @@ description: >
   connection resource. Verifies design-time artifacts only (no
   runtime connector invocation). Cloud auth required — depends on
   the staging tenant having the `uipath-uipath-airdk` (GenAI
-  Activities) connector available.
+  Activities) connector available. The prompt names the connector and its
+  Web Search activity: "a GenAI tool" alone let agents pick the built-in
+  DeepRAG tool instead, which grades nothing about IS.
 tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
@@ -21,8 +23,9 @@ reference:
 
 initial_prompt: |
   Create a UiPath low-code agent "ResearchAgent" that can look things up.
-  Give it a GenAI tool so it can research questions on demand. The solution
-  should be named "ResearchSol".
+  Give it the Web Search activity from the UiPath GenAI Activities Integration
+  Service connector as a tool, so it can research questions on demand. The
+  solution should be named "ResearchSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -67,10 +70,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Studio Web cannot run `uip solution resources refresh` (no .uipx on disk), so the
+  # studioweb skill declares each resource with `resources add` instead; either counts.
   - type: command_executed
-    description: "Agent refreshed solution resources"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    description: "Agent declared the connection in the solution: uip solution resources refresh, or resources add --kind Connection (CLI or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+(?:refresh\b|add\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Connection\b)|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"add")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Connection")'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -51,8 +51,9 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 
 <!--skill-flavor:debug-handle:start-->
 For a **debug** run, the `instanceId` the debug command returned is the handle,
-and the `debug-instance` commands read it (see below). Keep deployed-instance
-reads and debug-session reads separate.
+and the `debug-instances` commands read it (see below;
+[`uip` version note](operate.md#debug--a-controlled-studio-web-run)). Keep
+deployed-instance reads and debug-session reads separate.
 <!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents
@@ -144,9 +145,9 @@ element's status, never a variable's value.
 
 <!--skill-flavor:debug-reads:start-->
 ```bash
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 <!--skill-flavor:debug-reads:end-->
 
@@ -268,9 +269,9 @@ uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLD
 
 <!--skill-flavor:debug-reference:start-->
 ```bash
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 <!--skill-flavor:debug-reference:end-->
 

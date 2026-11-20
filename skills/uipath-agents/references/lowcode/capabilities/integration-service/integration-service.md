@@ -201,7 +201,9 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 1. Run `uip agent refresh` — regenerates `entry-points.json` and `bindings_v2.json` in the agent project directory.
 2. Run `uip agent validate` — read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
+<!--skill-flavor:is-solution-files-refresh:start-->
 3. Run `uip solution resources refresh` from the solution root — auto-generates `resources/solution_folder/connection/{connectorKey}/` files and `debug_overwrites.json`.
+<!--skill-flavor:is-solution-files-refresh:end-->
 
 **`location` and `folderPath`:**
 
@@ -216,7 +218,9 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 Provisions an Integration Service connection as part of the solution. Required when an agent has an integration tool (`type: "integration"`). One per connector — all tools using the same connector share this connection resource.
 
+<!--skill-flavor:is-connection-definition-refresh:start-->
 **Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent refresh` (regenerates `entry-points.json` and `bindings_v2.json`), then `uip agent validate` (read-only check), then `uip solution resources refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
+<!--skill-flavor:is-connection-definition-refresh:end-->
 
 **Cross-reference:** The connection resource `key` matches the `solutionProperties.resourceKey` in integration tool resources that use this connector.
 
@@ -266,7 +270,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 **Always pass `--all-folders`.** Without it the CLI searches only the default scope (usually the personal workspace) and reports "No connections found" for connections that live in shared folders. `--all-folders` is mutually exclusive with `--folder` / `--folder-key`.
 
 <!--skill-flavor:headless-sign-in-1:start-->
-Present connections to the user. Recommend the default enabled one but let the user confirm. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), the connection must be able to see it; Step 6, "Fields that load after a selection", says how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
 <!--skill-flavor:headless-sign-in-1:end-->
 
 This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resources refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resources list --kind Connection`, because refresh reads from the cache this command writes.
@@ -278,6 +282,8 @@ uip is typecache activities "<connector-key>" --output json
 ```
 
 `uip is typecache activities` calls the same Agent Builder typecache endpoints the frontend uses. It returns exactly the activities the UI shows for low-code agents — the curated subset from the Studio NuGet package for the connector. It defaults to `--project-type Agent`. Activities with an empty `objectName` (deprecated stubs) are filtered out. File operation and HTTP activities appear in the UI with a "Preview" chip but are fully selectable — they are included in the output. Connectors not in the typecache are absent from the UI and return empty here. Present the activities to the user and note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
+
+Build the tool on that activity's `ObjectName` (Jira's Create Issue is `curated_create_issue`). Do not switch to another object that `uip is resources list` shows for the same entity (such as the raw `issue`), even when its metadata lists more fields: the Agent Builder offers only the catalog activity. If the activity's metadata lacks fields the task needs, see Step 6, "Fields that load after a selection".
 
 ### Step 5 — Get connector details (for iconUrl)
 
@@ -302,6 +308,14 @@ The response includes a `metadataFile` path. Read that cached JSON file to get:
 - `method` → `properties.method`
 - `description` → tool description
 
+**Fields that load after a selection.** Some activities show request fields only after the reference fields they depend on have values. For example, Jira's Create Issue lists `summary`, `description` and the other issue fields only once `fields.project.key` and `fields.issuetype.id` are set. When the first describe lacks fields the task needs:
+
+1. Pick each such reference field's value from the field's own `Reference.Path`, with the values chosen so far filled in. List the options with `uip is resources run list "<connector-key>" "<path without the leading slash>" --connection-id "<connection-id>" --output json`. For example, use `project/AB/issuetypes` for the issue types of project `AB`. Do not use the tenant-wide `issuetype` list: its types may not belong to that project, and then no further fields load.
+2. Describe again, passing each chosen value with `-f <field>=<value>` (repeatable), for example `-f fields.project.key=AB -f fields.issuetype.id=10048`.
+3. In the tool, set those reference fields as `static` parameters with the chosen values, and build the remaining fields from this second describe.
+
+If the listing for a value the user named returns not found (a Jira project key, for example), the chosen connection cannot see it: its site lacks it, or its account has no access. Run the same listing on the other enabled connections for the connector, and tell the user which connections can see the value so they can pick one. If no one can answer, use the one that can see it and say so in your reply. Use the chosen connection everywhere: the tool's `connection`, `solutionProperties.resourceKey`, and the connection added to the solution. If no connection can see the value, tell the user and stop.
+
 If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned. To verify a connection's health beforehand, run `uip is connections ping "<connection-id>" --output json`.
 
 ### Step 7 — Build and write the tool resource.json
@@ -310,6 +324,7 @@ If no `--connection-id` is available (e.g., the connector auto-provisions connec
 
 Build the `resource.json` from the metadata. See § Agent-Level Resource Shape above for the full template and field mapping.
 
+<!--skill-flavor:is-step8-refresh:start-->
 ### Step 8 — Refresh, validate, and refresh solution resources
 
 ```bash
@@ -329,6 +344,7 @@ At this point, the solution can be uploaded to Studio Web and tested:
 ```bash
 uip solution upload . --output json
 ```
+<!--skill-flavor:is-step8-refresh:end-->
 
 ## Gotchas
 

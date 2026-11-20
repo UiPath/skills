@@ -147,18 +147,20 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  # Studio Web runs from the project folder, so its tasks/ sits inside the project.
+  - type: run_command
     description: "logging plugin dumped the shared issue log to tasks/build-issues.md (written even on a clean build)"
-    path: "tasks/build-issues.md"
+    command: "ls tasks/build-issues.md TimerLogCase/TimerLogCase/tasks/build-issues.md 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "build-issues.md carries the issue-log header naming this case (per logging/impl-json.md dump template)"
-    path: "tasks/build-issues.md"
-    includes:
-      - "Build"
-      - "TimerLogCase"
+    command: "for p in tasks/build-issues.md TimerLogCase/TimerLogCase/tasks/build-issues.md; do grep -q Build \"$p\" 2>/dev/null && grep -q TimerLogCase \"$p\" && exit 0; done; exit 1"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

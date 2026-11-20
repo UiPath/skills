@@ -2,8 +2,7 @@ task_id: skill-planner-smoke-sdd-build-routing
 description: >
   Verb-choice coverage: an SDD carrying the `## Planner Handoff` marker and no `Genome` row, with a
   request to implement it, routes to the `author` verb — the planner writes the SDD's genome as the
-  build's input instead of a task list. The fixture's handoff still carries a legacy `Tasks file`
-  row, which is ignored: no `*-tasks.md` is written. The run stops before the build, so the
+  build's input instead of a task list: no `*-tasks.md` is written. The run stops before the build, so the
   `uipath-genome` hand-off itself is not graded.
 tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
@@ -60,7 +59,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No task list derived from the SDD — the legacy Tasks file row is ignored (no *-tasks.md)"
+    description: "No task list derived from the SDD (no *-tasks.md) — the genome is the build's input"
     command: "! find . -name '*-tasks.md' -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0

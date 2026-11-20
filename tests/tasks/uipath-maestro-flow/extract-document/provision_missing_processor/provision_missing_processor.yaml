@@ -48,7 +48,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Extract Invoice has a processor: a processorKey, and the idpProcessor resource with that key in the solution"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader processor
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader/InvoiceReader/InvoiceReader.flow processor
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: run_command
     description: "The taxonomy equals the seeded one: prompt, config, group, every field's type, instructions and id, $defs"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader unchanged
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow InvoiceReader/InvoiceReader/InvoiceReader.flow unchanged
       $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
     expected_exit_code: 0
     weight: 2.0
@@ -85,7 +85,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes with no warnings"
-    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings InvoiceReader/InvoiceReader/InvoiceReader.flow
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

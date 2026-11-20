@@ -30,7 +30,7 @@ const resultSchema = {
 export default casePlan('credit-decision')
   .name('CreditDecision')
   .identifier('CD')
-  .var('creditScore', 'number')
+  .var('creditScore', 'integer')
   .var('riskBand', 'string')
   .stage('Review', (s) =>
     s

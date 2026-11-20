@@ -24,7 +24,11 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map — a Python entrypoint (e.g. `"functions": {"main": "main.py:main"}`, sibling `pyproject.toml`) or a JS/TS one (e.g. `"functions": {"invoice": "functions/invoice.ts:default"}`, sibling `package.json`) — the project is a **Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/pack/publish/run`; `init` is Python-only).
+1. **First — confirm this is an agent, not a Coded Function.** It is a **Coded Function** when either holds:
+   - **The request is deterministic logic with no LLM reasoning** — exact computation, validation, data transforms, API calls with fixed logic, file upload/download — where every input has one correct output and no model decides anything. This applies even when the user calls it an "agent" or "coded agent", and even in an empty directory.
+   - **`uipath.json` declares a `functions` map** — a Python entrypoint (e.g. `"functions": {"main": "main.py:main"}`, sibling `pyproject.toml`) or a JS/TS one (e.g. `"functions": {"invoice": "functions/invoice.ts:default"}`, sibling `package.json`).
+
+   Then stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead — do NOT run `uip codedagent new` / `uip codedagent init`, even after loading it. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip function new/pack/publish/run`; `init` is Python-only). If an LLM chooses, classifies, generates, or decides anything, it is an agent — continue below.
 2. **Check for existing agent project files** in the working directory:
    - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
@@ -57,7 +61,7 @@ Determine the agent mode before proceeding:
 | Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
 | Add a client-side tool (conversational only — executes on the client surface, not the server) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/client-side-tools/client-side-tools.md` |
 | Add an MCP (Model Context Protocol) server tool to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/mcp/mcp.md` |
-| Accept files as agent input / call the Analyze Files built-in tool | Low-code | [lowcode/capabilities/built-in-tools/built-in-tools.md](references/lowcode/capabilities/built-in-tools/built-in-tools.md) | `lowcode/capabilities/built-in-tools/analyze-attachments.md`, `lowcode/agent-definition.md` § File Attachments |
+| Accept files as agent input / read them with a built-in tool (Analyze Files; Deep RAG for long or multiple documents with citations) | Low-code | [lowcode/capabilities/built-in-tools/built-in-tools.md](references/lowcode/capabilities/built-in-tools/built-in-tools.md) | `lowcode/capabilities/built-in-tools/analyze-attachments.md`, `lowcode/capabilities/built-in-tools/deeprag/planning.md`, `lowcode/agent-definition.md` § File Attachments |
 | Work with file attachments (input, output, or created mid-run) | Coded | [coded/capabilities/file-attachments.md](references/coded/capabilities/file-attachments.md) | |
 | Build a conversational (chat-style) agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |

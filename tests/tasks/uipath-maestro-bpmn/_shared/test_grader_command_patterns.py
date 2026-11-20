@@ -126,6 +126,21 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
 
 
+def test_xml_regex_time_bound() -> None:
+    # Both branches of the quoted-program loop used to match a backslash, so a long
+    # run of them with no ET.parse after it backtracked exponentially and hung the
+    # grader (skills#4712). A subprocess bounds the check, since a stuck
+    # regex cannot be interrupted in-process.
+    pattern = _pattern(_TIMER, "well-formed-XML").pattern
+    probe = (
+        "import re, sys\n"
+        "rx = re.compile(sys.argv[1], re.DOTALL)\n"
+        "assert not rx.search('python3 -c \"' + '\\\\' * 200 + 'x')\n"
+        "assert not rx.search('python3 -c \"' + '\\\\\\\"' * 200 + 'x')\n"
+    )
+    subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
+
+
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:
     task = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))
     prompt = task["initial_prompt"]
@@ -747,6 +762,7 @@ NEXT_ACTION_MUTATIONS = [
 NEXT_ACTION_READS = [
     f"{_R} get inst-triage-001 -f folder-public --output json",
     f"{_R} variables inst-triage-001 -f folder-public --output json",
+    "uip maestro bpmn debug-instances variables dbg-1 --output json",
     "uip maestro bpmn debug-instance variables dbg-1 --output json",
     "uip maestro bpmn debug --help",
     f"{_R} retry --help",
@@ -795,3 +811,44 @@ def test_recheck_accepts_a_named_read(text: str) -> None:
 )
 def test_recheck_rejects_anything_else(text: str) -> None:
     assert not _recheck().search(text), text
+
+
+# --- draft_build_after_gate: an upload, or Studio Web's write to the open target ---
+
+_AFTER_GATE = "interactive/draft_build_after_gate/draft_build_after_gate.yaml"
+
+SHOWN_ON_STUDIO_WEB = [
+    "uip solution upload ShippingQuoteSolution --output json",
+    # Studio Web, verbatim shapes from run 2026-11-16_09-25-49: merge into, or
+    # compile over, the open target `Process.bpmn`.
+    "uip maestro bpmn merge /tmp/bpmn-draft/ShippingQuote/edited/Process.bpmn --original "
+    ".flow-sdk/original/Process.bpmn --baseline /tmp/bpmn-draft/ShippingQuote/baseline/Process.bpmn "
+    "-o Process.bpmn",
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o Process.bpmn && uip maestro bpmn format Process.bpmn",
+    "uip maestro bpmn merge /tmp/d/edited/Process.bpmn \\\n  --original .flow-sdk/original/Process.bpmn \\\n"
+    "  --baseline /tmp/d/baseline/Process.bpmn \\\n  -o Process.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts --output-file /solution/ShippingQuote/Process.bpmn",
+    "uip maestro bpmn compile x.bpmn.ts -o ./Process.bpmn",
+    "uip maestro bpmn compile x.bpmn.ts --output-file=Process.bpmn",
+]
+
+NOT_SHOWN = [
+    # A scratch compile leaves the canvas target unchanged (the 11-16 timer run).
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/bpmn-draft/ShippingQuote/edited/Process.bpmn",
+    "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/bpmn-draft/ShippingQuote/baseline/Process.bpmn",
+    # The CLI's target is `<Name>.bpmn`: a CLI arm still needs real uploads.
+    "uip maestro bpmn compile ShippingQuote.bpmn.ts -o ShippingQuoteSolution/ShippingQuote/ShippingQuote.bpmn",
+    "uip maestro bpmn compile s.bpmn.ts -o Process.bpmn.bak",
+    "uip maestro bpmn validate Process.bpmn --output json",
+    "uip maestro bpmn merge e.bpmn --original Process.bpmn --baseline b.bpmn -o /tmp/merged.bpmn",
+]
+
+
+@pytest.mark.parametrize("command", SHOWN_ON_STUDIO_WEB)
+def test_after_gate_counts_an_upload_or_a_studio_web_target_write(command: str) -> None:
+    assert _hits(_pattern(_AFTER_GATE, "At least two uploads"), command), command
+
+
+@pytest.mark.parametrize("command", NOT_SHOWN)
+def test_after_gate_ignores_scratch_and_cli_target_writes(command: str) -> None:
+    assert not _hits(_pattern(_AFTER_GATE, "At least two uploads"), command), command

@@ -3,11 +3,11 @@
 Author a skeleton of blank boxes, real control flow and labels, compile and validate it, show it to the user, and stop for their approval.
 It makes no registry calls.
 
-**When.** The user wants to see the shape before it is built: *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
+**When.** The user asks for a draft or wants to see the shape before it is built: *create a draft*, *outline it*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
 A request to build the process outright skips the draft and authors real nodes directly.
 A brownfield edit (the shape already exists) and a [discovery-only](bpmn-runtime.md#registry-extension-types) question (nothing is authored) skip it too.
-Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks to see the shape first.
-Judge the intent, not the word: a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) is a build, not the draft gate.
+Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks for a draft or to see the shape first.
+A request for a draft, an outline or a sketch is the gate even when it describes the whole process, and a request whose wording leans toward a draft without saying it (*a rough version*, *a first pass*, *a quick mock-up*) gets the draft, unless it also says outright to build or deploy the whole process. That exception is for leaning wording only: a request for a draft, an outline or a sketch always gates. Like the brownfield and discovery-only cases above, a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) skips the gate: it is a build.
 A connector step it cannot resolve then follows [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector).
 Plan mode is the host's state: never enter it yourself to satisfy "show me first".
 
@@ -52,14 +52,17 @@ A skeleton is not a working process and must never be reported as one.
    When several kinds could fit, pick the one a Studio Web user would most likely choose; the user changes it at the gate if they disagree.
 6. **Label each decision arm** with the outcome it carries (`label: 'Approved'`), so the routing reads off the picture.
    `fork` branches take no label: every branch runs.
-7. **Declare the variables the decisions read, for real**, with `.var()`.
+7. **Declare the variables the decisions read, for real**, with `.var()`, or `.input()` for a value the process is given at start.
    The basis a gateway routes on is part of what the user approves: three arms out of a diamond with no stated basis could mean anything.
    A skeleton reads a variable but cannot assign it, because the assignment lives in the payload of the node that produces it.
    Name the producer in the box upstream instead: `Classify ticket [Agent] → category`.
+   What the process is given when it starts (an order's weight, a flag) is a process input, declared with `.input(<id>, '<type>')`; the start event receives it, so never draw a box whose only job is to receive, read or capture it.
+   A decision or a per-item box's collection that reads an input reads the variable the start event maps it into ([Process contract](bpmn-runtime.md#variables-and-the-process-contract)); write that mapping, the one payload a skeleton writes, with the `.var()` scoped to `Event_start`.
+   Data a person supplies after the process has started is a real step: draw its box (`[Action app]`).
 8. **Mark a step that runs once per item on its own box.**
-   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')`.
+   When the request says a step runs for each item ("for every line item", "notify each supplier"), pass `loop: { collection, itemVar }` on that `.task()`, and declare the collection with `.var(<id>, 'array')` (`.input(<id>, 'array')` when the process is given it at start, read through the start event's mapping).
    Add `sequential: true` when the items go one after another, and leave it out when they run all at once or the request does not say.
-   When the step stops early ("stop at the first failed document"), add `completion: '=vars.<flag>'` and declare that boolean flag too.
+   When the step stops early ("stop at the first failed document"), add `completion: '=js:vars.<flag>'` and declare that boolean flag too.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel gateway, the fork as well as the join, fires only when every incoming flow has delivered a token.
@@ -115,7 +118,7 @@ export default bpmn('Process_1')
   .startEvent('Event_start', { name: 'Every Monday at 7:00', timer: { cycle: 'R/2026-01-05T07:00:00Z/P7D' } })
   .task('countStock', { name: 'Count warehouse stock [RPA workflow] → itemsBelowReorder' })
   .choose('needsReorder', [
-    { when: '=vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
+    { when: '=js:vars.itemsBelowReorder > 0', label: 'Below reorder point', body: (b) => b.task('raiseOrders', { name: 'Raise purchase orders [API workflow]' }) },
     { otherwise: true, label: 'Stock is fine', body: (b) => b.task('logCount', { name: 'Log the stock count [Execute script]' }) },
   ])
   .endEvent('done', { name: 'Stock checked' })
@@ -136,7 +139,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
   .startEvent('Event_start', { name: 'New hire submitted' })
   .task('verifyDoc', {
     name: 'Verify document [Action app] → documentFailed',
-    loop: { collection: '=vars.documents', itemVar: 'document', sequential: true, completion: '=vars.documentFailed' },
+    loop: { collection: '=js:vars.documents', itemVar: 'document', sequential: true, completion: '=js:vars.documentFailed' },
   })
   .fork('setup', [
     (b) => b
@@ -148,7 +151,7 @@ It compiles to three bare `bpmn:task` boxes, a timer start, an exclusive gateway
         .onError((h) => h.task('alertHr', { name: 'Alert HR [Connector]' }).endEvent('stopped', { name: 'Onboarding stopped', terminate: true }))
         .onTimer('PT1H', { interrupting: false }, (h) => h.task('chasePayroll', { name: 'Chase payroll [Connector]' }).endEvent('chased', { name: 'Payroll chased' }))),
   ])
-  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=vars.teams', itemVar: 'team' } })
+  .task('welcome', { name: 'Welcome the hire [Connector]', loop: { collection: '=js:vars.teams', itemVar: 'team' } })
   .endEvent('done', { name: 'Onboarded' })
   .build();
 ```
@@ -207,10 +210,10 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
 
 ### Expected findings — do not chase them
 
-A skeleton validates as **Valid** with one warning per declared variable it reads — each variable a decision reads, and each collection or stop flag a multi-instance box reads: `Variable "vars.<id>" is read but never assigned; it will be empty at run time`.
+A skeleton may validate as **Valid** with `Variable "vars.<id>" is read but never assigned; it will be empty at run time` warnings.
 That is correct for a skeleton, whose producers are blank boxes.
 When an error path merges onto a box (rule 9), `check` also warns `[FAKE_JOIN] "<box>" has <n> incoming flows; the platform accepts this, but joining with a gateway is clearer`; that is the intended merge.
-Act only on errors, and do not report these warnings: they are expected on a skeleton, so they get no line in the reply.
+Act only on errors and on a `VARIABLE_NOT_SET` warning, which means a decision reads an input without the start event's mapping (rule 7); do not report the expected warnings above: they get no line in the reply.
 
 ## Find the resources
 
@@ -220,7 +223,7 @@ When this run already found no `uip login` (the upload failed for it), skip the 
 Otherwise run every lookup in **one** Bash call.
 <!--skill-flavor:lookup-no-login:end-->
 The lookups only read the tenant, so a request that forbids uploading or running anything does not forbid them.
-It is the turn's last tool call: read [gate-reply-template.md](gate-reply-template.md) and send any progress note before it, and when it returns, send the gate reply as your next and final message, starting with its first line.
+It is the turn's last tool call: before it, read [gate-reply-template.md](gate-reply-template.md), search the target for each box's `id="<id>"` as its [End the turn](gate-reply-template.md#end-the-turn) says, and send any progress note; when it returns, send the gate reply as your next and final message, starting with its first line.
 
 - **Processes and queues:** `uip solution resources list --kind <Process|Queue> --search "<term>" --output json`.
   It lists what the solution already holds (`Source: Local`) and what the tenant has (`Source: Remote`).
@@ -240,7 +243,8 @@ It is the turn's last tool call: read [gate-reply-template.md](gate-reply-templa
   Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
-- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[?contains(Name,'<KEYWORD>') || contains(Name,'<keyword>')].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+  A tenant holds hundreds of entities, so never list them unfiltered. `contains` is case-sensitive: test each keyword from the box's label as written, capitalized and lowercase, and a plural by its stem (`Compan` for `companies`, matching `Company` and `Companies`), all joined with `||`.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
@@ -286,16 +290,20 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
   In a sequence scope, deleting a `.task()` line removes the box and rewires its neighbours; read `check --graph` after the edit.
 - **Build it**: replace each `.task()` with the typed method its label names, keeping its id, and author the real payloads as the rest of this skill describes — registry calls, bindings and connections included.
   Bind each box that needs a resource to the resource the gate named, by its name and folder (a connector box through its connection binding, as [Connectors and bindings](bpmn-runtime.md#connectors-and-bindings) says), and ask nothing more about structure or resources.
+  A value the request leaves open, such as a rate, a threshold or a formula, is not a question either: *Build it* hands it to you, so pick a plausible one, build with it, and name it under `Assumed`; an identifier or URL part is never invented.
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
-  A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
+  A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function, or a Maestro BPMN, Case or Flow process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is its `ProcessType` from [RULE `bpmn.orchestrator.process-type`](bpmn-runtime.md#http-and-orchestrator-work) (`Process`, `Agent`, `Api`, `Function`), and the folder binding carries no value.
+  Every other `none yet` box (a connector, Data Fabric, Business rule or queue box) stays a bare `.task()`, because `refresh` refuses a connection binding that is not a connection id: a connector or Data Fabric box is named as the second bullet of [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) says, and a Business rule or queue box keeps its gate label.
+  The final report lists them under `Needs:` and reads `built, not runnable yet`.
+  A connection the gate named is the user's choice once they pick *Build it*, their own personal one included, unless it is another person's or not `State: Enabled` ([connection rules](connectors.md#3-the-loop-author--check--prepare--check--compile)): treat that box as `none yet`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.
-  End the turn with the [final report](final-report-template.md); its first line says `(draft mode)`, because this run stopped at a gate.
+  End the turn with the [final report](final-report-template.md), read as [SKILL.md](../SKILL.md#workflow) step 9 says; its first line says `(draft mode)`, because this run stopped at a gate.
 - **Keep it**: stop, and report the file as an outline, not a working process.
 
 Only *Build it* authorizes the build.

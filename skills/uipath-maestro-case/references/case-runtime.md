@@ -35,6 +35,68 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+<!-- RULE:case.action.names-app -->
+- An action task opens an Action App, and `.action({ ... })` with no `app`
+  names none. In a plan that binds any other resource, `case check`
+  (SDK 6.121.1+) warns `STRICT_BINDINGS_TASK_ABSENT` on it and
+  `case validate --strict` fails: the task cannot run. Name the app:
+
+  ```ts
+  .action({ title: 'Approve', recipient: 'approver@corp.com', app: { name: 'ApprovalApp', folder: 'Shared' } })
+  ```
+
+  If the app is not published yet, write `t.unresolved('action')` instead and
+  fill the task in once it is; do not invent an app name. Brownfield: a
+  decompiled quick form (an inline form, no app) is fine as is. `case check`
+  does not warn on it, but `case validate --strict` still reports
+  `STRICT_BINDINGS_TASK_ABSENT` there (a CLI false positive): keep the quick
+  form and do not add an app to silence it.
+
+## Action recipients and the go-live trap
+
+<!-- RULE:case.recipient.externalize -->
+- A literal `recipient: '<email>'` compiles to `{ Type: 2, Value: <email> }`
+  and bakes the address into the plan: going live means editing every action
+  and publishing a new version. When the request names a test, placeholder or
+  not-yet-known assignee, wire it through a case input instead:
+
+  ```ts
+  .input({ approver: { type: 'string', default: '<TEST_EMAIL>' } }, { from: manual })
+  // ...
+  .action({ ..., recipient: { type: 3, value: '=vars.approver' } })
+  ```
+
+  Going live then means changing the input default, or passing the real
+  address when the case starts; the actions stay unchanged.
+  Recipient types are `0` user id, `1` group name, `2` email, `3` expression.
+  Type `3` evaluates `value` and assigns the result as a user when it is an
+  email, and as a group name otherwise. An expression needs type `3`: a bare
+  string `'=vars.approver'` is type `2` and is looked up as a literal email.
+  `case check` warns `STRICT_RECIPIENT_EXPRESSION_TYPE` on that, and
+  `case validate --strict` fails. The SDK's `RecipientType` doc comment still
+  calls `0`/`1`/`3` reserved; that comment is stale, and type `3` is the
+  expression type the CLI and `case check` accept.
+  Brownfield: keep a decompiled `{ type, value }` recipient as is.
+
+<!-- RULE:case.recipient.no-silent-default -->
+- Before `uip solution upload` or `uip solution publish`, tell the user the
+  list below, and repeat that list in the final summary of every build or
+  edit. List each assignee the user did not name as the production assignee: an input default, a literal
+  `recipient`, or an SLA escalation target (`toUser`, `toGroup`). These include
+  a test mailbox, the user's own email, and `<UNRESOLVED: ...>`. For each one,
+  give the address or group, the actions or escalations it routes, and what
+  going live changes: the input default, or each literal in the source plus a
+  new published version.
+
+  `uip maestro case debug` and `uip maestro case process run` start a case
+  instance and create real tasks for these assignees. `upload`, `publish`,
+  `check`, `compile` and `validate` start none. Before `debug` or
+  `process run`:
+  1. An assignee still `<UNRESOLVED: ...>`: do not run it.
+  2. An address or group the user did not confirm: ask. A request or
+     pre-approval that names that step is the user's answer. When no user can
+     answer and nothing names that step, do not run it.
+
 ## Script tasks
 
 <!-- RULE:case.script.positional-rename -->
@@ -85,6 +147,40 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
   `.outputs({ v: '=response.body' })` maps one to a case variable.
 
+## Document extraction
+
+<!-- RULE:case.docextraction.discovery -->
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
+  After discovery, add the deployment to the solution:
+  `uip solution resources add --source remote --kind IxpDeployment
+  --name "<DeploymentTitle>" --folder-key "<FOLDER_KEY>" --output json`
+<!--skill-flavor:docextraction-refresh:start-->
+  Then refresh:
+  `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`
+<!--skill-flavor:docextraction-refresh:end-->
+
+<!-- RULE:case.docextraction.check -->
+- Compile refuses a missing `deploymentKey`; `check` reports blank model,
+  deployment, folder, folderKey, and file individually.
+
+<!-- RULE:case.docextraction.legacy -->
+- Decompile emits `.savedDocumentExtraction()` for the older flat format.
+  It is read-only: no `.outputs()`, no deployment edit. `check` warns
+  `DOCUMENT_EXTRACTION_OLDER_SHAPE`.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+  On an older `uip`, report the floor requirement and stop. Do not rewrite
+  bindings or strip the extraction task to silence the error.
+
 ## Connections and external work
 
 <!-- RULE:case.connector.bindings -->
@@ -133,8 +229,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 - An `sla-status-change` breach response uses only `{ sla }`; an at-risk response
   also names `{ escalation }`. Put an enter-stage response on an
-  `exceptionStage(...)` and call `.required(false)` so the secondary stage does
-  not gate `required-stages-completed`.
+  `exceptionStage(...)` with `.required(false)` ([Completion and
+  optionality](#completion-and-optionality)).
 
 <!-- RULE:case.sla.escalation-absent -->
 - An ABSENT `escalation` is the persisted representation of Breached — not a
@@ -142,8 +238,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `escalationId: "any"` wildcard, makes the rule at-risk; one to an
   `sla-breached` escalation is Breached. The wildcard is valid and fires on
   every at-risk escalation of that SLA (in SDK source,
-  `escalation: ANY_ESCALATION`). Do not author it; name the escalation the
-  requirement means. Repair an existing rule by the requirement's status, never
+  `escalation: ANY_ESCALATION`). In `caseplan.json` do not write `"any"` by
+  hand; in `.case.ts` use `ANY_ESCALATION` only when the requirement means
+  every at-risk escalation. When the SDD names one escalation, name it.
+  Repair an existing rule by the requirement's status, never
   by what the plan already carries: a breach response drops the reference and
   leaves a plain breach rule on the SLA; repointing it at an at-risk escalation
   keeps it at-risk, which fires at a different time. Only an at-risk response
@@ -183,14 +281,17 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:case.optionality.explicit -->
-- Declare optionality when something consumes it. `.required(false)` and
-  omitting `.required()` are different statements in the emitted plan — the
-  builder writes `isRequired` only when you call it — and a
-  `required-stages-completed` exit reads that flag to decide which stages gate
-  completion. When a stage or task is deliberately optional, say so explicitly
-  rather than relying on a default the schema leaves unstated. Secondary lanes
-  are the common case: an `exceptionStage(...)` that gates normal completion is
-  almost never what was meant.
+- A task or stage the request (or SDD `Required` / `Required for Case
+  Completion: No`) calls optional gets `.required(false)`; one that must gate
+  gets `.required()`. Omitting it writes no `isRequired`, which the plan
+  compiler reads as not required: `required-tasks-completed` waits only on
+  tasks, and `required-stages-completed` only on primary stages, marked
+  `isRequired: true`.
+  The Designer writes the flag explicitly, so write it either way.
+- SDD `Stage Kind: secondary` is `.exceptionStage(label, fn)`, never
+  `.stage()`: only `exceptionStage` writes `stageType: secondary`. Add
+  `.required(false)`: the Designer forces it false on a secondary stage it
+  edits, and `check` warns `EXCEPTION_STAGE_REQUIRED` without it.
 
 ## Activation modes
 
@@ -243,9 +344,33 @@ make from syntax alone. Exact signatures remain in the generated API.
      the SDD declares a sub-property dereference, extract it from the
      producing task's own output root: `=response.<field>` on a connector
      or wait-for-connector task, `=<OutputName>.<field>` on other types.
+     An output argument that is an object named `response` is therefore
+     read `=response.<field>` on any type: `uip maestro case tasks describe
+     --type <TASK_TYPE> --id <ENTITY_KEY> --output json` lists it in
+     `Data.Outputs[]` as `name: "response"`, `type: "jsonSchema"`,
+     `_jsonSchema.type: "object"`. Keep that source through `check`'s
+     `REFERENCE_OUTPUT_SOURCE`, which compile does not run.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
+
+## Metadata fidelity
+
+<!-- RULE:case.metadata.intsvc-activity-config -->
+- A new case carries `metadata.intsvcActivityConfig: "v2"`. `case init` writes
+  it on a new case; `decompile` → `compile` preserves whatever the plan's
+  metadata carried. Never add `"v2"` to a decompiled plan that lacks
+  it — a V1 plan must stay V1. Tasks that call Integration Service use V2 I/O
+  negotiation when the marker is present.
+
+<!-- RULE:case.variable.closed-types -->
+- Case variable `type` values are a closed set: `string`, `integer`, `float`,
+  `double`, `boolean`, `datetime`, `date`, `time`, `object`, `file`, `array`,
+  `jsonSchema`. These apply to `variables.inputs`, `variables.outputs`, and
+  `variables.inputOutputs`. Do not use `number` (that is a Flow SDK type, not
+  a Case type); use `integer` for whole numbers, `float` or `double` for
+  decimals. `case validate` warns `number` (`CASE_MGMT_VARIABLE_TYPE_ALIAS`);
+  write `double`.
 
 ## Brownfield editing
 

@@ -31,13 +31,23 @@ Each queue item on the intake queue starts one instance of this process. The ins
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| AP_InvoiceIntake | Queue | Trigger; one item per instance |
-| Invoice Extraction and Matching | Deployed process (component 2) | Invoked at steps 2 and 6 with different entry points |
-| Exception Triage Agent | Deployed agent (component 3) | Invoked at step 4 |
-| AP Invoice Review | Action Center app | Human review task at step 5 |
-| AP_Invoices | Storage bucket | PDF link shown to the clerk |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| AP_InvoiceIntake | one invoice, one process instance each | as in the process genome's Handoffs row 1 | *[Inferred: process D1]* | *[Inferred: process D2]* | component 2 | steps 1–8 |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| AP_Invoices | the invoice PDFs | component 2 | step 5, the PDF link shown to the clerk |
+
+### Action Center
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+| AP Invoice Review | step 5 | the clerk's review task |
 
 ## Interface
 
@@ -51,6 +61,10 @@ Each queue item on the intake queue starts one instance of this process. The ins
 2. After how long is a stuck instance terminated as stale? (constant; default: 5 business days)
 3. How many ERP rejections before the invoice is rejected outright? (constant; default: 2)
 4. Which app renders the human review task? (constant; default: AP Invoice Review)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 

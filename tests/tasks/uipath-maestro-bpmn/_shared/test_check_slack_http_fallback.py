@@ -48,3 +48,26 @@ def test_manual_unified_http_fails() -> None:
     body = {**CONNECTOR_BODY, "authentication": "manual"}
     node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
     assert not grader.is_slack_connector_node(node)
+
+
+def test_emoji_list_with_query_passes() -> None:
+    body = {**CONNECTOR_BODY, "url": "emoji.list?include_categories=true"}
+    node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+    assert grader.references_emoji_endpoint(node)
+
+
+def test_other_endpoints_fail() -> None:
+    # Integration Service resource paths (`/admin_emoji_list`, `/emoji_list`) reach Slack as
+    # written and get its 404. `/admin.emoji.list` is a real Enterprise Grid method, but it
+    # is not the team emoji list the task asks for.
+    for url in ("/admin_emoji_list", "/emoji_list", "/admin.emoji.list", "https://evil.example/emoji.list", "https://slack.com/api/emoji.list"):
+        body = {**CONNECTOR_BODY, "url": url, "path": url}
+        node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+        assert not grader.references_emoji_endpoint(node), url
+
+
+def test_path_without_url_fails() -> None:
+    # Compiled bodies carry `url` and `path` with the same value; the skill teaches `url`, so only `url` counts.
+    body = {k: v for k, v in CONNECTOR_BODY.items() if k != "url"} | {"path": "/emoji.list"}
+    node = _node("Intsvc.UnifiedHttpRequest", grader.HTTP_CONNECTOR_KEY, body)
+    assert not grader.references_emoji_endpoint(node)

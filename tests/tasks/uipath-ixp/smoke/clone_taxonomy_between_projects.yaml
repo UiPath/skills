@@ -63,14 +63,33 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # The filename in `positional` ties the payload graded below to the one
-  # actually imported. Compared literally, hence the bare name in the prompt.
   - type: cli_called
-    description: "Imported `taxonomy-payload.json` into the blank target with `projects import-taxonomy`"
+    description: "Imported into the blank target with `projects import-taxonomy`"
     verb: "ixp projects import-taxonomy"
     tool: "uip"
-    positional: ["vendor_bills-7c2e10b4-ixp", "taxonomy-payload.json"]
-    weight: 3.0
+    positional: ["vendor_bills-7c2e10b4-ixp"]
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Ties the payload graded below to the one imported: the same file by any
+  # path, or a byte-identical copy.
+  - type: run_command
+    description: "The file imported into the target is `taxonomy-payload.json` (same file or byte-identical copy)"
+    command: |
+      python3 - <<'PY'
+      import json, os, sys
+      want = open("taxonomy-payload.json", "rb").read()
+      for line in open("cli_mocks/calls.jsonl"):
+          rec = json.loads(line)
+          argv = rec.get("argv", [])
+          if rec.get("tool") == "uip" and "import-taxonomy" in argv and "vendor_bills-7c2e10b4-ixp" in argv:
+              if any(os.path.isfile(a) and open(a, "rb").read() == want for a in argv):
+                  sys.exit(0)
+      sys.exit("no import-taxonomy on the target sent taxonomy-payload.json")
+      PY
+    expected_exit_code: 0
+    read_only: true
+    weight: 1.5
     pass_threshold: 1.0
 
   # `type()`, not `length()`: it answers "null" for a missing key instead of raising.

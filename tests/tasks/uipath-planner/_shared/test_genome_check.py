@@ -195,7 +195,7 @@ def test_format_variants_pass_core_fail_strict(tmp_path):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
     text = re.sub(r"^### Flow \d+.*$", "", text, flags=re.M)               # flow without its heading
     cq_start = text.index("## Configuration Questions")
-    cq_end = text.index("## Workflow")
+    cq_end = text.index("## Open Decisions")
     table = "## Configuration Questions\n\n| # | Question | Default |\n|---|---|---|\n| 1 | Which queue? | PR_Requisitions |\n\n"
     text = text[:cq_start] + table + text[cq_end:]                          # questions as a table
     assert run(tmp_path, text, profile="core", extra=["--shape", "transactional", "--unit", "requisition"]) == 0

@@ -1,17 +1,35 @@
 #!/usr/bin/env python3
-"""Run each seeded path case and verify its business outcome.
+"""Run each seeded path case and check what the run did.
 
-Outcome-based: for every case the grader runs `flow debug --inputs` and asserts
-the expected `out` variables. For cases flagged `expect_slack`, it additionally
-asserts a non-empty `slackMessageId` — the escalation path must have actually
-posted a Slack alert (Slack only returns a message id when a message is really
-delivered), not merely reached the node.
+The prompt names no variables, so the seeded values are mapped onto the
+inputs the agent declared by meaning (`_shared/flow_io_roles.py`), and the
+results are found among the declared outputs by value. The customer-match
+input is fed in the vocabulary the flow itself compares against ("none",
+"multiple", ...), or as a count when the agent declared a number.
+
+For every case in seed.json the grader runs `flow debug --inputs` once and
+asserts:
+
+- declared outputs hold the path, the severity, whether engineering is
+  needed, the response mode and the case reference unchanged;
+- the Slack effect: exactly one Slack message was posted (the escalation
+  alert or the triage notice, never both, and no send run twice), and a
+  returned Slack ts is the one that send got back, in #coding-agent-testing, with the case reference and the
+  path in the message.
+
+After all cases, the same output must hold each result in every case, so a
+constant that happens to match some cases does not count.
+
+Any layout passes: one Script or several, a Decision or a Switch, one Slack
+node or two, one End or two. "If Slack fails, the automation should still
+finish" is not exercised: failing the shared Slack connection is not safe.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -23,86 +41,196 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
     _directory = os.path.dirname(_directory)
 sys.path.insert(0, _directory)
 
+from _shared import flow_io_roles as io  # noqa: E402
+from _shared.escalation_inputs import (  # noqa: E402
+    SLACK_CHANNEL,
+    SLACK_KEY,
+    SLACK_SEND,
+    check_same_outputs,
+    feed_roles,
+    input_types,
+    is_match_input,
+    is_slack_ts,
+    load_flow,
+)
 from _shared.flow_check import (  # noqa: E402
-    assert_connector_error_handlers,
-    assert_connector_send_identity,
-    assert_decision_branches_reach,
-    assert_distinct_branch_ends,
+    _fail_with_capture,
+    _get_ci,
     assert_flow_uses_connector_target,
-    assert_named_equals,
-    assert_node_type_executed,
     assert_slack_message_posted,
     completed_connector_node_ids,
-    completed_node_ids_of_type,
-    find_node_output_value,
-    normalized,
+    node_output_leaves,
     run_debug,
 )
-
-SLACK_KEY = "uipath-salesforce-slack"
-SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
-CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
-# The four fields the prompt's single `classify` Script must return (caseKey is an
-# input echo, not a classification, so it's excluded).
-CLASSIFICATION_FIELDS = ("escalationPath", "severity", "engineeringNeeded", "responseMode")
+from _shared.slack_journal import journal_slack_posts  # noqa: E402
 
 
-def verify_case(case: dict) -> tuple:
-    # retries=1: seven cases run serially, so a bounded per-case budget keeps the
-    # total within the criterion timeout; a genuine transient failure fails cleanly.
-    payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
-    for name, expected in case["expected"].items():
-        assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
-    if case.get("expect_slack"):
-        # Real ts tied to the executed Slack SEND node's response, posted to the
-        # right channel, whose message carries this case's correlationId (exact)
-        # AND its escalationPath (prompt line 65 requires escalationPath +
-        # correlationId in every message). escalationPath is matched
-        # separator/case-insensitively so the enum "unknown_customer" also matches
-        # a rendered "unknown customer". The severity taxonomy (e.g.
-        # "informational") is an internal label the prompt does NOT require in the
-        # text, so it stays a named-out assertion, not message content.
-        assert_slack_message_posted(
-            payload,
-            "slackMessageId",
-            expected_channel=SLACK_CHANNEL,
-            must_contain=case["inputs"]["correlationId"],
-            must_contain_loose=[case["expected"]["escalationPath"]],
+# The roles the path and severity depend on. The others are fed when declared;
+# the domain may be derived from the address instead (see REQUIRED_ANY).
+REQUIRED = ("productionDown", "workaround", "match", "duplicate", "caseRef")
+REQUIRED_ANY = (("senderDomain", "senderEmail"),)
+
+# Words a flow may spell each match state with, checked in this order, since
+# "no_match" holds "match" too. A literal's words are compared, so
+# "NO_CUSTOMER_FOUND", "exactly_one" and "MORE_THAN_ONE" are understood.
+STATE_WORDS = (
+    ("none", ["none", "no", "not", "zero", "unknown", "unmatched", "nomatch", "nomatches", "notfound",
+              "nocustomer", "nomatchfound", "missing", "0"]),
+    ("several", ["multiple", "several", "many", "ambiguous", "multi", "multiplematches", "morethanone",
+                 "2"]),
+    ("one", ["single", "one", "matched", "match", "unique", "exact", "exactmatch", "found",
+             "singlematch", "onematch", "exactlyone", "1"]),
+)
+# The prompt's own words, when the flow's code names no word for a state.
+DEFAULT_WORD = {"one": "one", "none": "none", "several": "several"}
+COUNT = {"one": 1, "none": 0, "several": 2}
+_Q = "[\"'`]"
+_LIT = rf"{_Q}([^\"'`\n]{{1,40}}){_Q}"
+
+
+def _match_vars(flow: dict) -> list[dict]:
+    return [v for v in io.declared(flow, "in") if is_match_input(v["id"])]
+
+
+def state_of(literal: str) -> str | None:
+    """The match state a literal means, by its words."""
+    # Whole words only: "phone" or "notification" must not read as one or none.
+    return next((state for state, words in STATE_WORDS
+                 if io.means([literal.strip()], words, substring=False)), None)
+
+
+def _block(code: str, start: int) -> str:
+    """The text from `start` to the brace that closes the block it opens."""
+    depth = 1
+    for i in range(start, len(code)):
+        depth += {"{": 1, "}": -1}.get(code[i], 0)
+        if depth == 0:
+            return code[start:i]
+    return code[start:]
+
+
+def match_words(flow: dict) -> dict[str, str]:
+    """The literal the flow compares the match input with, per state.
+
+    The words a text input expects exist only in the flow's code, so they are
+    read from it: comparisons of the input that means the match (by
+    `flow_io_roles`), an object field or a local copied from it, or its
+    membership in a list, and `case` labels of a switch on it, first, then
+    the input's description. Each literal is classed by what its words mean
+    (`state_of`). A state no literal names gets the prompt's own word."""
+    code = "\n".join(io.texts(flow.get("nodes") or []))
+    idents = {v["id"] for v in _match_vars(flow)}
+    # Identifiers that hold the match status; `.match(` is a string method, not one.
+    idents |= {
+        t for t in re.findall(r"(?<![\w$])([A-Za-z_$][\w$]*)(?![\w$])(?!\s*\()", code)
+        if "match" in t.lower()
+    }
+    for alias, rhs in re.findall(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\n]*)", code):
+        if any(re.search(rf"(?<![\w$]){re.escape(i)}(?![\w$])", rhs) for i in idents):
+            idents.add(alias)
+    compared = []
+    # Sorted: a set's order changes with the hash seed, and so would the pick.
+    for ident in sorted(idents):
+        e = rf"(?<![\w$]){re.escape(ident)}(?![\w$])"
+        compared += re.findall(rf"{e}(?:\s*\.\s*\w+\(\s*\))*\s*[!=]==?\s*{_LIT}", code)
+        compared += re.findall(rf"{_LIT}\s*[!=]==?\s*{e}", code)
+        # Membership: `["several", "multiple"].indexOf(match)` or `.includes(match)`.
+        for listed in re.findall(rf"\[([^\[\]]{{1,300}})\]\s*\.\s*(?:indexOf|includes)\(\s*{e}", code):
+            compared += re.findall(_LIT, listed)
+        for sw in re.finditer(rf"switch\s*\(\s*{e}(?:\s*\.\s*\w+\(\s*\))*\s*\)\s*\{{", code):
+            compared += re.findall(rf"\bcase\s+{_LIT}\s*:", _block(code, sw.end()))
+    described = [w for v in _match_vars(flow) for w in re.findall(r"[\w-]+", str(v.get("description") or ""))]
+    words: dict[str, str] = {}
+    for literal in [*compared, *described]:
+        state = state_of(literal)
+        if state and state not in words:
+            words[state] = literal.strip()
+    return {state: words.get(state, DEFAULT_WORD[state]) for state in DEFAULT_WORD}
+
+
+def _boolean_match(var_id: str, state: str) -> bool:
+    name = io.normalize(var_id)
+    if re.search("multiple|several|many|ambiguous", name):
+        return state == "several"
+    if re.search("none|nomatch|unknown|notfound|unmatched", name):
+        return state == "none"
+    return state != "none"
+
+
+def feed(flow: dict, case: dict, words: dict[str, str]) -> dict:
+    """The `--inputs` for one case, keyed by the inputs the agent declared."""
+    values = {**case["inputs"], "match": words[case["inputs"]["match"]]}
+    inputs = feed_roles(flow, case, values, REQUIRED, REQUIRED_ANY)
+    types = input_types(flow)
+    state = case["inputs"]["match"]
+    for var in _match_vars(flow):
+        if var["id"] not in inputs:
+            continue
+        if types[var["id"]] in ("number", "integer", "int"):
+            inputs[var["id"]] = COUNT[state]
+        elif types[var["id"]] in ("boolean", "bool"):
+            inputs[var["id"]] = _boolean_match(var["id"], state)
+    return inputs
+
+
+def slack_messages(payload: dict, sends: set[str]) -> int:
+    """How many Slack messages the completed sends posted: their completed
+    executions (a send in a loop runs more than once) or the distinct ts
+    values in their responses, whichever is more."""
+    runs = [e for e in _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+            if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in sends
+            and str(_get_ci(e, "status", "Status")).lower() == "completed"]
+    ts = {str(x).strip() for x in node_output_leaves(payload, sends) if is_slack_ts(x)}
+    return max(len(runs), len(ts))
+
+
+def _any_text(options: list[str]):
+    return lambda v: any(io.equals_text(o)(v) for o in options)
+
+
+def check_case(flow: dict, payload: dict, case: dict) -> dict[str, list[str]]:
+    """Assert one case's results and its single Slack message. Returns, per
+    result, the declared outputs that hold it."""
+    want = case["expected"]
+    ref = case["inputs"]["caseRef"]
+    modes = [want["responseMode"]] if isinstance(want["responseMode"], str) else want["responseMode"]
+    outs = io.out_values(flow, payload)
+    expected = {
+        "path": (io.equals_text(want["path"]), repr(want["path"])),
+        "severity": (io.equals_text(want["severity"]), repr(want["severity"])),
+        "engineering needed": (io.equals_bool(want["engineering"]), str(want["engineering"]).lower()),
+        "response mode": (_any_text(modes), " or ".join(map(repr, modes))),
+        "case reference": (io.equals_exact(ref), repr(ref)),
+        "Slack message id": (is_slack_ts, "a Slack message ts"),
+    }
+    holders = {}
+    for result, (predicate, shown) in expected.items():
+        holders[result] = io.find_out(outs, predicate)
+        if not holders[result]:
+            values = {k: v for k, (_t, v) in outs.items()}
+            _fail_with_capture(f"{case['name']}: no declared output is {shown} ({result}); outputs: {values}")
+    fired = completed_connector_node_ids(payload, SLACK_KEY, native_op_hint=SLACK_SEND)
+    if (posted := slack_messages(payload, fired)) > 1:
+        _fail_with_capture(
+            f"{case['name']}: {posted} Slack messages posted by {sorted(fired)}; "
+            "a case gets one message, the escalation alert or the triage notice"
         )
-    # The prompt requires ALL routing logic in ONE Script that returns all four
-    # fields. Bind EVERY classification field (escalationPath, severity,
-    # engineeringNeeded, responseMode) to a single EXECUTED Script node: a flow that
-    # computes any of them in Decision/End expressions, or splits them across nodes,
-    # has no single Script carrying all four and fails here. (caseKey is an echo of
-    # the input correlationId, not a classification, so it is excluded.)
-    script_nodes = completed_node_ids_of_type(payload, "script")
-
-    def is_classifier(nid: str) -> bool:
-        return all(
-            normalized(find_node_output_value(payload, f, node_ids={nid})) == normalized(case["expected"][f])
-            for f in CLASSIFICATION_FIELDS
-        )
-
-    classifier_candidates = {nid for nid in script_nodes if nid and is_classifier(nid)}
-    if not classifier_candidates:
-        raise SystemExit(
-            f"FAIL: {case['name']}: no single executed Script computed all of "
-            f"{CLASSIFICATION_FIELDS} together — the prompt requires one classifier Script "
-            "that returns every field (not split across nodes or derived in End/Decision)"
-        )
-    # The task is tagged node:decision: routing must go through a Decision that
-    # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
-    assert_node_type_executed(payload, "core.logic.decision")
-    fired = completed_connector_node_ids(payload, SLACK_KEY)
-    executed_decisions = completed_node_ids_of_type(payload, "core.logic.decision")
-    completed_ends = completed_node_ids_of_type(payload, "core.control.end")
-    print(f"OK: {case['name']} produced the expected outcome"
-          + (" + Slack message posted" if case.get("expect_slack") else ""))
-    return fired, executed_decisions, classifier_candidates, completed_ends
+    # The case reference is opaque and must appear verbatim. The path is matched
+    # ignoring case and separators, so "Unknown customer" counts.
+    assert_slack_message_posted(
+        payload,
+        holders["Slack message id"][0],
+        expected_channel=SLACK_CHANNEL,
+        must_contain=ref,
+        must_contain_loose=[want["path"]],
+        send_op=SLACK_SEND,
+    )
+    return holders
 
 
 def main() -> None:
-    # The escalation alert must go through the real Slack connector.
+    # Slack must be reached through the real connector (or a connector-auth
+    # HTTP proxy), not a hand-rolled unauthenticated call.
     assert_flow_uses_connector_target(SLACK_KEY)
 
     seed_path = Path("seed.json")
@@ -112,87 +240,20 @@ def main() -> None:
     if not isinstance(cases, list) or not cases:
         raise SystemExit("FAIL: seed.json must contain at least one case")
 
-    escalation_nodes: set = set()
-    triage_nodes: set = set()
-    escalation_ends: set = set()
-    triage_ends: set = set()
-    per_case_decisions: list = []
-    per_case_classifiers: list = []
+    flow = load_flow()
+    words = match_words(flow)
+    print(f"OK: the flow spells the customer-match states as {words}")
+    per_case = []
     for case in cases:
-        fired, decisions, classifiers, ends = verify_case(case)
-        is_escalation = case["expected"]["escalationPath"] == "escalation"
-        (escalation_nodes if is_escalation else triage_nodes).update(fired)
-        (escalation_ends if is_escalation else triage_ends).update(ends)
-        per_case_decisions.append(decisions)
-        per_case_classifiers.append(classifiers)
-
-    # ONE classifier Script must classify EVERY case (prompt: ALL routing logic in
-    # one Script). Intersect the per-case candidates: a flow with path-specific
-    # Script nodes (a different classifier per case) has an empty intersection and fails.
-    common_classifier = set.intersection(*per_case_classifiers) if per_case_classifiers else set()
-    if not common_classifier:
-        raise SystemExit(
-            "FAIL: no single Script node classified every case — the prompt requires ALL "
-            "routing logic in ONE Script, but the cases were classified by different "
-            f"(path-specific) Scripts (per-case candidates: {[sorted(c) for c in per_case_classifiers]})"
-        )
-    print(f"OK: one classifier Script handled all cases: {sorted(common_classifier)}")
-
-    # Prompt requires each Slack node's error port wired to a handler for graceful
-    # degradation, and every send to go out as `user` — assert both structurally so
-    # a flow omitting them can't get full credit.
-    assert_connector_error_handlers(SLACK_KEY, native_op_hint="send-message-to-channel")
-    assert_connector_send_identity(SLACK_KEY, expected="user", native_op_hint="send-message-to-channel")
-
-    # The Decision must genuinely branch: escalation and triage paths post via
-    # DIFFERENT Slack nodes. A single dynamic Slack node behind a cosmetic
-    # always-true Decision would make these sets overlap.
-    if not escalation_nodes or not triage_nodes:
-        raise SystemExit(
-            "FAIL: expected both escalation and triage cases to fire a Slack node "
-            f"(escalation={escalation_nodes}, triage={triage_nodes})"
-        )
-    overlap = escalation_nodes & triage_nodes
-    if overlap:
-        raise SystemExit(
-            f"FAIL: escalation and triage cases fired the SAME Slack node(s) {overlap} — "
-            "the Decision does not route to two distinct branches"
-        )
-    # And prove those two nodes are the Decision's OWN outgoing branches — routed by
-    # ONE Decision that executed in EVERY case. The escalation-vs-triage split runs
-    # on every email, so the routing Decision is in the intersection of the
-    # completed-Decision sets across ALL cases. Intersecting across every case (not
-    # a per-group union) blocks the flow that routes two cases through the real
-    # Decision and the remaining five through other constructs.
-    routing_decisions = set.intersection(*per_case_decisions) if per_case_decisions else set()
-    assert_decision_branches_reach(
-        escalation_nodes, triage_nodes, executed_decision_ids=routing_decisions
-    )
-
-    # The prompt requires TWO End nodes — one per branch. Two checks together close
-    # the "unused private End + shared merged End" gaming: (a) structurally, each
-    # Slack branch must reach an End the other doesn't; (b) at RUNTIME, the End that
-    # actually COMPLETED on escalation cases must be disjoint from the one completed
-    # on triage cases — so a flow where both real paths merge into one shared End
-    # (with cosmetic unused private Ends downstream) fails even though the static
-    # reachability differs.
-    assert_distinct_branch_ends(escalation_nodes, triage_nodes)
-    if not escalation_ends or not triage_ends:
-        raise SystemExit(
-            "FAIL: expected both escalation and triage cases to complete an End node "
-            f"(escalation_ends={sorted(escalation_ends)}, triage_ends={sorted(triage_ends)})"
-        )
-    shared = escalation_ends & triage_ends
-    if shared:
-        raise SystemExit(
-            f"FAIL: escalation and triage cases completed the SAME End node(s) {sorted(shared)} — "
-            "both branches merge into one shared End; the prompt requires a distinct End per branch"
-        )
-    print(f"OK: branches complete distinct Ends (escalation={sorted(escalation_ends)}, triage={sorted(triage_ends)})")
-    print(
-        f"OK: a Decision routes escalation vs triage through separate branches "
-        f"(escalation={sorted(escalation_nodes)}, triage={sorted(triage_nodes)})"
-    )
+        # retries=1: every case posts to a shared channel, so a whole-flow retry
+        # would post a duplicate; seven serial cases also need a bounded budget.
+        with journal_slack_posts():
+            payload = run_debug(inputs=feed(flow, case, words), timeout=300, retries=1)
+        per_case.append(check_case(flow, payload, case))
+        print(f"OK: {case['name']}: path={case['expected']['path']}, "
+              f"severity={case['expected']['severity']}, one Slack message posted")
+    check_same_outputs(per_case)
+    print(f"OK: the same outputs hold the results in all {len(cases)} cases")
 
 
 if __name__ == "__main__":

@@ -562,7 +562,7 @@ current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs
 
 `No new skill-lint errors` lints every same-repo PR with the internal [skill-linter](https://github.com/UiPath/skill-linter). It compares the PR with the commit it branched from and reports only what the PR adds: as annotations on the changed lines, and as one PR comment that is updated on every push. Findings already on `main` are never reported. Fork PRs are not linted, because they get no secrets.
 
-- **Phase 1 (now):** the check stays green; new errors and warnings are only reported. Later, new errors will fail it, and new warnings never will.
+- **New errors and warnings fail the check.** Info and report-only findings never do, and neither do findings already on `main`, even in a file the PR edits. To keep a finding on purpose, silence it with a reason (below); reviewers see it in the PR comment.
 - **Rule severities** live in [`.skill-lint.yaml`](.skill-lint.yaml). The check always reads it from `main`, so an edit applies once merged; the PR that edits it only checks that it loads.
 - **Silencing a finding:** add an HTML comment with a reason. Silenced findings are still listed in the PR comment for reviewers.
 

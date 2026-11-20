@@ -49,7 +49,7 @@ export default bpmn('invoice-batch')
           h.task('recordItemFailure', { name: 'Record failed invoice', set: { itemResults: '=js:vars.itemResults.concat([{ item: iterator[0].item, ok: false }])' } })
             .endEvent('itemFailed', { name: 'Invoice failed' })),
     // Sequential, so each iteration appends to the list the one before left.
-    { name: 'Process each invoice', loop: { collection: '=vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
+    { name: 'Process each invoice', loop: { collection: '=js:vars.batchItems', itemVar: 'iterator[0]', sequential: true } },
   )
   .scriptTask('aggregate', {
     name: 'Total the results',
@@ -59,7 +59,7 @@ export default bpmn('invoice-batch')
   // The report runs BEFORE the verdict, so finance gets it on both outcomes.
   .plainTask('sendReport', { name: 'Send summary to finance', element: 'bpmn:sendTask' })
   .choose('policyGate', [
-    { when: '=vars.policySatisfied == false', label: 'Policy missed', body: (b) => b.endEvent('endFailed', { name: 'Batch failed' }) },
+    { when: '=js:vars.policySatisfied == false', label: 'Policy missed', body: (b) => b.endEvent('endFailed', { name: 'Batch failed' }) },
     { otherwise: true, label: 'Policy met', body: (b) => b.endEvent('endCompleted', { name: 'Batch completed' }) },
   ])
   .build();
@@ -73,7 +73,7 @@ A looped task outside any looped sub-process carries no `inputElement` on the ca
 Any other `itemVar` (`'invoice'`) is the outer key, and the inner key stays `item`: `iterator["invoice"]["item"]`, while `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
 A script does not see `iterator`: its scope holds only the `args` envelope, and the engine builds a script's `iterator` only from `iterator[N]` keys in it.
 To read the item in a script, pass it in with `inputs: { 'iterator[0]': '=iterator[0]' }`, which is what the designer writes, and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive once the key is there.
-A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading the per-item results with `debug-instance variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
+A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading the per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
 The body is its own sequence scope: give it its own `.flowMode('sequence')`, start event and end event.
 
 | Node | Builder | Role |
