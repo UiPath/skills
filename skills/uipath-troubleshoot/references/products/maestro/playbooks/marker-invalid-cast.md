@@ -34,7 +34,7 @@ What to look for:
 ## Resolution
 
 - Switch the marker's "Items" expression from JavaScript to a C# expression that returns a typed list/array
-- After the fix, a re-publish and re-run should iterate all items in the parallel marker; offer that as a later decision, not part of the fix
+- Re-publish and re-run then iterate all items in the parallel marker — a later decision, not part of the fix
 - If switching to C# is not feasible, work around by materializing the JS array into a typed collection variable in a preceding Script task
 
 ## References

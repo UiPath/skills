@@ -91,18 +91,18 @@ Next action:
 
 - Repair: {the Immediate fix steps above, by owner}
 - Re-check (not run): `{one read-only command, documented form, IDs filled in}`
-- Later decision: {re-publish / re-deploy / retry / re-run, if any, on this line}
+- Later decision: {re-publish / re-deploy / retry / re-run, only if deferred; omit otherwise}
 ```
 
 ### Next action
 
 When a root cause is confirmed, the resolution ends with, in this order:
 
-1. **Repair, by owner** — the Immediate fix steps above, each with its `Who:`. A repair changes the faulty artifact or setting. When the matched playbook's `## Resolution` prescribes a retry, rerun or restart as the fix for the confirmed cause (transient failure, stale dispatch, restart to load a changed setting), that IS the repair — keep it as a step. Otherwise retry, re-run, resume, restart, migrate, re-publish and re-deploy are not repair steps.
+1. **Repair, by owner** — the Immediate fix steps above, each with its `Who:`. A repair changes the faulty artifact or setting. When the matched playbook's `## Resolution` prescribes a retry, re-run or restart as the fix for the confirmed cause (transient failure, stale dispatch, restart to load a changed setting), that IS the repair — keep it as a step. Otherwise retry, re-run, resume, restart, migrate, re-publish and re-deploy are not repair steps.
 2. **Re-check (not run)** — one line naming one read-only command that shows the run's current state before the later decision (e.g. `uip or jobs get <JOB_KEY> --no-download --output json`, `uip maestro <type> instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`), entity ID filled in. Copy it in its documented form from the investigation guide or the matched playbook. Name it; do NOT run it.
-3. **Later decision** — re-publish and re-deploy always, and any retry or re-run the playbook does not prescribe as the fix, on its own line as the user's call after the re-check. Never fold it into a repair step; split bundled playbook text out here.
+3. **Later decision** — any re-publish or re-deploy (never a repair), and any retry or re-run the playbook does not prescribe as the fix, on its own line as the user's call after the re-check. Nothing deferred → omit this line. Never fold it into a repair step; split bundled playbook text out here.
 
-The closing message and any written diagnosis file carry all three lines. In the closing message, the Later decision stays its own line after the Re-check, never a numbered step under "what to do next".
+The closing message and any written diagnosis file carry every Next action line that applies. In the closing message, the Later decision stays its own line after the Re-check, never an item in a numbered next-steps list.
 
 **Reduced-confidence terminal** (checklist gap survived the re-fetch): present the same structure, name the gap explicitly next to the cause statement, and lead the Immediate fix with the playbook's diagnostic recommendation (e.g., a byte-compare snippet) instead of a guessed branch. In Next action, the Repair is that diagnostic; give no Later decision. Recommending the discriminating diagnostic IS the deliverable when evidence cannot separate sibling causes — never silently pick one.
 
