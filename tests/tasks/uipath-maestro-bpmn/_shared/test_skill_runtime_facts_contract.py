@@ -12,6 +12,8 @@ A later edit that brings the old wording back fails here.
   current directory, so it runs where `prepare` ran.
 * Only an Enabled connection may be bound.
 * Outlook `saveAsDraft` must be set explicitly.
+* Every authored expression is `=js:`: the designer opens a plain `=` in its
+  C# editor (PO.Frontend `JAVASCRIPT_PATH_PREFIX`).
 * Retry is activity configuration, never a drawn loop, and an `errorMapping`
   row names a declared error's id, never a bare status code: `code: '429'`
   validates and retries nothing.
@@ -97,6 +99,34 @@ def test_error_mapping_names_a_declared_error(path: Path) -> None:
     )
 
 
+# A quoted plain expression: a variable or metadata read, or a literal, without `=js:`.
+PLAIN_EXPR = re.compile(r"[\"'`]=(vars\.|metadata\.|true\b|false\b|null\b|\d|\")")
+# A real canvas import keeps the canvas's own (C#) expressions; the rule quotes
+# the wrong form once, to warn against it; the canvas writes a start-event row
+# that maps a process input, and a human-task form field's value, plain.
+CANVAS_IMPORT = "InvoiceApproval.bpmn.ts"
+FORM_VALUE = re.compile(r"value: '=vars\.[\w.\[\]<>]+'|source: '=vars\.\w+',\s*var:")
+# Plain forms the skill names on purpose: the wrong form it warns against, the
+# hint `check` prints, and the start-event row and human-task form value the canvas writes plain.
+QUOTED_PLAIN = ('`=vars.d.toLowerCase() == "approve"`', "`value` (`=vars.<id>`:", "(`=vars.<inputId>`)")
+
+
+def _strip(line: str, phrases: tuple[str, ...]) -> str:
+    for phrase in phrases:
+        line = line.replace(phrase, "")
+    return line
+
+
+@pytest.mark.parametrize("path", [p for p in DOCS if p.name != CANVAS_IMPORT], ids=_id)
+def test_authored_exprs_are_js(path: Path) -> None:
+    hits = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if PLAIN_EXPR.search(re.sub(FORM_VALUE, "", _strip(line, QUOTED_PLAIN)))
+    ]
+    assert not hits, f"{_id(path)} writes a plain `=` expression (opens in the C# editor): {hits}"
+
+
 REQUIRED = [
     ("references/bpmn-runtime.md", "JSON **string**"),
     ("references/bpmn-runtime.md", "not the entry point's `DisplayName`"),
@@ -112,7 +142,8 @@ REQUIRED = [
     ("references/bpmn-runtime.md", "RULE:bpmn.variables.output-end-mapping"),
     ("references/bpmn-runtime.md", "A process returns only what its end event maps"),
     ("references/bpmn-runtime.md", "RULE:bpmn.orchestrator.in-solution-process"),
-    ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-for-methods"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.expression.js-everywhere"),
+    ("references/bpmn-runtime.md", "Write every expression you author as `=js:` JavaScript, in any field"),
     ("references/bpmn-runtime.md", "RULE:bpmn.hitl.no-completer-identity"),
     ("references/patterns/high-volume-batch-guide.md", "Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`"),
     ("references/patterns/high-volume-batch-guide.md", "the inner key stays `item`"),
@@ -120,6 +151,9 @@ REQUIRED = [
     ("references/operate.md", "not by `Globals`"),
     ("references/patterns/high-volume-batch-guide.md", "1-based"),
     ("references/connectors.md", "A connection is a sender's identity"),
+    ("references/connectors.md", "belongs to the team whoever its `Owner` is, even when its Name is an email"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.script.ts-string-escapes"),
+    ("references/bpmn-runtime.md", "Double every backslash the script needs"),
 ]
 
 

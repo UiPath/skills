@@ -7,7 +7,7 @@ When the built process validates, the canvas shows it, so there is nothing to up
 <!--skill-flavor:final-first-line:end-->
 
 <!--skill-flavor:final-path-line:start-->
-<the target path, such as /solution/<Project>/<Name>.bpmn, as plain text, never a link>
+<the target path, such as /solution/<Project>/<Name>.bpmn, as plain text, never a link or in backticks>
 <!--skill-flavor:final-path-line:end-->
 
 <!--skill-flavor:final-status-rule:start-->
@@ -15,6 +15,6 @@ Write `, run` only when this turn ran the process with the user's consent.
 <!--skill-flavor:final-status-rule:end-->
 
 <!--skill-flavor:final-path-rule:start-->
-The path line belongs to this final message: write the target path here even if you named it earlier in the turn.
+The path line belongs to this final message: write the target path here even if you named it earlier in the turn, bare: no link, no backticks.
 
 <!--skill-flavor:final-path-rule:end-->

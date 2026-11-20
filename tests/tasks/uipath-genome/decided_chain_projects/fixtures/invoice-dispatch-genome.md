@@ -31,13 +31,20 @@ It runs unattended on Orchestrator triggers and needs no application with a user
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| Invoice_Items | Queue | Hand-off 1, InvoiceDispatcher → InvoicePerformer: one item per invoice of the export |
-| Invoice_Register | Queue | Hand-off 2, InvoicePerformer → InvoiceReporter: one item per invoice filed or rejected |
-| Invoice_InputFolder | Text asset | Folder the daily export arrives in |
-| Invoice_OutputFolder | Text asset | Folder the approval files are written to |
-| Invoice_RegisterPath | Text asset | Path of the invoice register workbook |
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|---|---|---|---|---|---|---|
+| Invoice_Items | Hand-off 1, InvoiceDispatcher → InvoicePerformer: one invoice of the export | InvoiceNumber: text, Supplier: text, Amount: number, Currency: text, DueDate: text | the invoice number | Configuration Question 5 | step 2 | steps 3–6 |
+| Invoice_Register | Hand-off 2, InvoicePerformer → InvoiceReporter: one invoice filed or rejected | InvoiceNumber: text, Outcome: text, Reason: text | the invoice number | Configuration Question 5 | step 6 | step 7 |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|---|---|---|---|---|
+| Invoice_InputFolder | Text | Configuration Question 1 | step 1 | Folder the daily export arrives in |
+| Invoice_OutputFolder | Text | Configuration Question 2 | step 5 | Folder the approval files are written to |
+| Invoice_RegisterPath | Text | Configuration Question 3 | step 7 | Path of the invoice register workbook |
 
 ## Interface
 
@@ -51,6 +58,10 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 4. Above which amount does an invoice need a second approver? (constant; default: 5000.00)
 5. How many times is a failed invoice retried? (constant; default: 2)
 6. After how many consecutive failures does a run stop? (constant; default: 3)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 
@@ -89,6 +100,7 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 ### Flow 1 — one invoice: steps 1–2 → steps 3–6 → step 7
 
 **Unit of work:** one invoice; reference the invoice number, unique per invoice; fields InvoiceNumber, Supplier, Amount, Currency, DueDate; about 400 a day, queued once every weekday morning.
+**Alternative units of work:** none — the export holds one row per invoice and nothing groups them.
 
 **As-is** — how the work is described:
 
@@ -107,11 +119,13 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 | Business exception | Step 4 rules: empty Supplier, non-positive Amount, unreadable DueDate | no retry; item recorded with the reason; register row Rejected; run continues |
 | System exception | every other failure — Step 5 and Step 7 handlers | item retried 2× (Configuration Question 5), then recorded as failed with the reason; run stops after 3 consecutive (Configuration Question 6) |
 
-**Split options** — the decided option:
+**Split options** — for the unit of work, each option by its letter; none asserted beyond the `Decided:` line:
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
-| one invoice | B | a time trigger for the dispatcher and queue triggers for the performer and the reporter | three processes to publish and operate instead of one; each invoice is retried and visible on its own queue item |
+| one invoice | A | one runner works the export end to end in one job, the register written by the same job | no queue: an invoice's status shows only in the register and the job log, and a failed invoice is retried only by the next run |
+| one invoice | B | a time trigger for the dispatcher and queue triggers for the performer and the reporter | three processes to publish and operate; each invoice is retried and visible on its own queue item |
+| one invoice | C | one process with one time trigger; the invoice number the queue refuses twice as its once-guard | one process to publish and operate; the queues kept between its roles, each invoice retried and visible on its own queue item |
 
 **Evidence:** about 400 invoices a day; each invoice is checked and filed independently; finance needs per-invoice status; the register is one workbook written by one process at a time.
 **Decided:** B, one invoice — the SDD §10: InvoiceDispatcher → InvoicePerformer → InvoiceReporter

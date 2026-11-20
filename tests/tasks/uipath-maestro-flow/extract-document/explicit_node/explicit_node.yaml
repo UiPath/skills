@@ -3,14 +3,13 @@ description: >
   Smoke: the user asks for the Extract document node by name. Tests that the
   agent adds `uipath.ixp.extract-document-builder` rather than a published IXP
   model node, points its `fileRef` at a declared file input, wires an edge into
-  it, and leaves a flow that validates in a project without builder-SDK source,
-  without starting an IXP project. The node comes with its processor key;
-  inside a solution its resource file is written too, and outside one pack
-  writes it later.
+  it, and leaves a flow that validates, without starting an IXP project. Either
+  route counts: CLI commands, or `dynamicExtract()` in `.flow-sdk/` source and
+  compile. The node comes with its processor key; inside a solution its
+  resource file is written too, and outside one pack writes it later.
 
-  Graded on the final `.flow`, so a node that a compile from `.flow-sdk/`
-  source drops counts as missing; a `.flow-sdk/` left beside the flow fails
-  too, since its next compile overwrites what the CLI wrote. `flow validate`
+  Graded on the final `.flow`, so a node that a later compile from
+  `.flow-sdk/` source drops counts as missing. `flow validate`
   passes a `fileRef` to an input that was never declared, so the file input is
   graded on its own. The taxonomy is graded by the taxonomy tasks.
 
@@ -74,13 +73,6 @@ success_criteria:
   - type: run_command
     description: "An edge enters the Extract document node"
     command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader edge in input
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "The project was initialised without --sdk-source (no .flow-sdk/ beside the flow)"
-    command: "! find . -type d -name .flow-sdk -not -path '*/node_modules/*' | grep -q ."
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

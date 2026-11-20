@@ -69,16 +69,28 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 
 <!--
 EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
-Skip entirely when no review items are open.
-See sdd-writing-guide.md Step 2 item 4 for the format spec.
+Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
+section again from it, with every open question. See open-questions-guide.md for the item form.
 -->
 ## Action Required — SME Review Items
 
-| # | Section | Item | Question | Default applied | Blocking |
-|---|---|---|---|---|---|
-| 1 | <SECTION> | <ITEM> | <QUESTION> | <DEFAULT> | <yes/no> |
+<COUNT> questions are open: <COUNT_NEEDED> needed before the genome is written, the rest with a default applied in its section.
 
-> These items are marked `[SME REVIEW]` in the document. Default-carried items (Blocking = no) do not block task derivation — the automation is built on the recorded defaults, which must be verified before production sign-off. Any Blocking = yes item keeps the handoff at `Status: draft`.
+**D1. <QUESTION>**
+- **Context:** <WHAT_IS_UNKNOWN>
+- **See:** <SECTION>
+- **Options:**
+  - a. <DEFAULT_APPLIED> (built now)
+  - b. <ANOTHER_OPTION>
+- **Answer (by <ROLE>):**
+
+**D2. <QUESTION_WITH_NO_DEFENSIBLE_DEFAULT>**
+- **Context:** <WHAT_IS_UNKNOWN>
+- **See:** <SECTION>
+- **Until answered:** the SDD stays `draft` and no genome is written
+- **Answer (by <ROLE>):**
+
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 

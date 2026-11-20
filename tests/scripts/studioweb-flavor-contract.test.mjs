@@ -338,6 +338,22 @@ test("the studioweb BPMN skill says evals are not available, in the routing tabl
   assert.ok(evaluate.includes("**Not available in Studio Web.**"));
 });
 
+// The in-page SDK verbs and `node` reach only /solution and /tmp (coder_eval
+// studio-web run 2026-11-16_09-25-49: `decompile: ENOENT /sandbox/…`, `Node
+// sandbox path is outside /solution and /tmp`). Agents that scaffolded a
+// project for a loose target left a stray template that fails validate, and
+// deleting a seeded `entryPointId: false` stamped an id on an untouched start
+// event (add-node in a project, move-node in /tmp).
+test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, never via init", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.ok(skill.includes("**An existing `.bpmn` outside a `/solution` project**"));
+  assert.ok(skill.includes("Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`"));
+  assert.ok(skill.includes("Never run `init` to give an existing file outside `/solution` a project."));
+  assert.ok(skill.includes("**The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`, never a copy of the target or a compile of the edited `.flow-sdk/<Name>.bpmn.ts`.**"));
+  assert.ok(skill.includes("and the target is in a project, delete that key"));
+});
+
 // `debug-instance` is a terminal-CLI alias of `debug-instances`. The browser
 // snapshot (assets/uip-browser-commands-snapshot.json) lists only the plural,
 // and the studioweb operate page and SKILL.md teach it, so diagnose must too.
@@ -553,4 +569,26 @@ test("the studioweb Case skill names no terminal-only command", (t) => {
 test("the default Case skill keeps its terminal commands (the guard is not vacuous)", () => {
   const hits = caseLinesNaming(join(REPO_ROOT, "skills", "uipath-maestro-case"));
   assert.deepEqual([...new Set(hits.map((hit) => hit.split(": ").pop()))].sort(), [...CASE_TERMINAL_ONLY].sort());
+});
+
+// Studio Web runs a project from its main file (PO.Frontend PackagingUtil.ts
+// `project.mainFileId`), so a new process written as a second `<Name>.bpmn`,
+// a nested project or under the eval harness's `/sandbox` never runs (coder_eval
+// studio-web runs 2026-11-16, PR #4808). Rule 13 states the precondition up
+// front; the default flavor, where `init` writes `<Name>.bpmn`, must not carry it.
+test("the studioweb BPMN skill finds the project before writing and never builds over an existing process", (t) => {
+  const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.match(skill, /^13\. A new process goes into a project's main file in `\/solution`/m);
+  assert.match(skill, /never build over it/);
+  assert.match(skill, /ask the user whether to replace its process or use a new project/);
+  assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
+  assert.match(skill, /Never pass `--force`/);
+});
+
+test("the default BPMN skill carries no Studio Web Rule 13", (t) => {
+  const skill = readFileSync(join(buildDefault(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
+
+  assert.doesNotMatch(skill, /^1\d\. A new process goes into/m);
+  assert.ok(!skill.includes("/solution"));
 });

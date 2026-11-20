@@ -23,7 +23,7 @@ description: >
   floor, Invoke Code in both workflows and no dictionary activity left, the 12
   and 11 rewrite results per workflow in the upgrade SARIF), an untouched
   source, no uip rpa build or validate against the Legacy source, and a build
-  the harness runs itself. Windows only: the migrator is a .NET 8 desktop tool and the build
+  the harness runs itself. Windows only: the migrator is a .NET desktop tool and the build
   needs Helm. The runtime check is declined in the prompt. Nightly only: the
   windows tag routes it to daily-windows.ps1, and the PR gate filters on smoke.
 tags: [uipath-activity-migrator, integration, mode:build, lifecycle:generate, windows]

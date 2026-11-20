@@ -20,16 +20,18 @@ Paths are relative to the skill folder.
 
 | Subject | Home |
 |---|---|
-| Genome format: levels, section rules, stubs, population matrix, `*[Inferred]*`, write-then-offer-edits, provenance, Design Links | `references/shared/genome-format-guide.md` |
+| Genome format: levels, section rules, stubs, population matrix, Open Decisions, `*[Inferred]*`, write-then-offer-edits, provenance, Design Links (the `Preferences:` line, the SDD written from the genome) | `references/shared/genome-format-guide.md` |
 | Source Map, source values, source defects | `references/shared/extracted-genome-guide.md` |
 | Transactional Shape, the `Decided:` line and its project chain | `references/shared/transactional-shape-guide.md` |
 | Extraction pipeline, its questions (the refactor questions Retire, Fold and Target: § Step 6c), sizing, reading plan | `references/extract/extract-guide.md`; UiPath source facts: `references/extract/uipath-source-guide.md` with `uipath-rpa-signals-guide.md` and `uipath-non-rpa-signals-guide.md`; framework pack resolution: `references/extract/source-frameworks-guide.md`; extraction in parts: `references/shared/extraction-parts-guide.md` |
 | Defect verification | `references/shared/defect-verification-guide.md` |
+| The open questions an SDD puts to people (its Action Required): the item form, the groups, where the answers go | `references/shared/open-questions-guide.md`; the SDD written from a genome: `references/shared/sdd-from-genome-guide.md`; applying the answers: `references/edit/edit-guide.md` (§ Applying the Answers) |
 | `author`: genome from an idea, PDD, TO-BE or SDD; scenario proposals | `references/author/author-guide.md`; from an agreed SDD: `references/author/genome-from-sdd-guide.md`; scenarios: `references/author/scenario-proposal-guide.md` |
 | `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
+| Interview: the offer, the gap list and its coverage, asking order, where answers go (inside `design`, `author`, `extract`, and the `interview` verb) | `references/interview/interview-guide.md` |
 | Skill mapping: Build With names, Decision Tree, target choice (a refactor's targets included), operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
 | `design`: SDD phases, products, packages, solution composition, caller requests | `references/design/design-guide.md`; Phase 3: `references/design/sdd-writing-guide.md`; the rest of `references/design/` per subject |
-| SDD fingerprint | `scripts/sdd-fingerprint.mjs` |
+| SDD and genome fingerprints | `scripts/sdd-fingerprint.mjs` |
 | `check` and the strict check after `author`, `extract` and `edit`; genome checker: what it checks | `SKILL.md`; checker: `scripts/check-genome.mjs` header comment |
 | `decompose`: dated plan and tasks | `references/decompose/decompose-guide.md`; format: `references/shared/plan-and-tasks-format.md` |
 | Verb choice, chaining, Critical Rules | `SKILL.md`; each verb's reads: its guide's § Read Plan |
@@ -40,6 +42,7 @@ Paths are relative to the skill folder.
 |---|---|
 | Verb choice | `SKILL.md` |
 | `build` start, verb rules, read plan | `references/build-guide.md` (§ Start, § Verb Rules, § Read Plan) |
+| `prepare`: the build's questions, asked as far as the user answers them, and the readiness file with the answers, the rest, the build's tasks and the decisions still open | `references/prepare-guide.md` |
 | What each genome section means at build | `references/genome-reading-guide.md` |
 | Execution: phases, target project resolution, skill groups, owning-skill contract, acceptance verdicts | `references/execution-guide.md` |
 | Configuration and scaffolding questions, autonomous runs | `references/configuration-questions-guide.md` |
@@ -47,7 +50,7 @@ Paths are relative to the skill folder.
 | Transactional shape at build: split questions, the projects a `Decided:` chain names, REFramework surfaces | `references/transactional-execution-guide.md` |
 | Migration: preflight, catalogs, credentials, source steps | `references/source-migration-guide.md`; source and pack resolution: `references/source-frameworks-guide.md` |
 | UI target migration: three phases, target spec, Object Repository, verification labels | `references/ui-target-migration-guide.md`; composite interaction patterns: `references/composite-interactions-guide.md` |
-| UiPath selector facts: tag chains, tiers, rules 1–16 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
+| UiPath selector facts: tag chains, tiers, rules 1–17 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
 | Live application: exploration, live healing pass | `references/live-application-guide.md` |
 | Where a UI check goes, in every build | `references/ui-verification-guide.md` |
 | Test components at build | `references/test-execution-guide.md` |
@@ -72,7 +75,7 @@ Framework facts (detection, inventory, locators, per-field translation, pitfalls
 9. **The framework migration pack cites rules by subject**, in the skill's words (a heading or bold rule head), never by file name or number. Renaming a subject the pack quotes updates the pack in a paired PR.
 10. **Every reference file has its row in its verb's § Read Plan**, keyed by a condition decidable at that phase, written in the same change as the file.
 11. **Temporary guides are deleted on their conditions:**
-    - `offline-definition-workarounds-guide.md`: once the UIA CLI creates a first definition offline and registers a number attribute bound to a selector variable.
+    - `offline-definition-workarounds-guide.md`: once the UIA CLI creates a first definition offline.
     - `package-doc-errata-guide.md`: a package's section once that package's shipped docs carry the corrected text; a tool's row once the tool behaves as its docs say; the file once no section is left.
 12. **Keep the external contracts** unchanged unless the change is the point: each skill's frontmatter `description`, the verbs and entry points other skills and hosts call, the pack resolution steps and the pack's README § Frameworks table shape, the Source Map contract rows, the planner's script names and flags.
 13. **A file's boundary is its audience: verb × condition.** A rule sits in the file every session that needs it reads, and in no file a session reads without needing it. A file every session of a verb reads holds no conditional block above about 5 KB; a block under about 5 KB whose condition is common stays where it is.
@@ -84,7 +87,7 @@ Each row is one fact written in both skills. A change to either side changes the
 
 | Subject | uipath-planner | uipath-genome |
 |---|---|---|
-| Options A, B and C, the item store, per-item state a queue cannot hold, a source's coordination stores and owned database | `references/shared/transactional-shape-guide.md` § Rules rule 3 | `references/transactional-execution-guide.md` § Shape Rules rule 2 |
+| Options A, B and C, the item store, per-item state a queue cannot hold, an item a stopped job held, a source's coordination stores and owned database | `references/shared/transactional-shape-guide.md` § Rules rule 3 | `references/transactional-execution-guide.md` § Shape Rules rule 2 |
 | The REFramework and the behaviour owed whatever the split | `references/shared/transactional-shape-guide.md` opening paragraph | `references/transactional-execution-guide.md` § Shape Rules opening paragraph |
 | `Decided:` line form and its project chain | `references/shared/transactional-shape-guide.md` § Rules rule 8 | `references/transactional-execution-guide.md` § Shape Rules rule 4 |
 | Split-option signals table, different-component producer and consumer | `references/shared/transactional-shape-guide.md` § Rules rule 8 derivation table | `references/transactional-execution-guide.md` § Shape Rules rule 5 |
@@ -94,7 +97,11 @@ Each row is one fact written in both skills. A change to either side changes the
 | Source Map contract and its example | `references/shared/extracted-genome-guide.md` § Source Map | `references/genome-reading-guide.md` § Source Map |
 | Source values: the kinds of value read from the source, and "not shown, never not set" | `references/shared/extracted-genome-guide.md` § Source values: the full rule, how extraction reads and writes each kind | `references/genome-reading-guide.md` § Source values: the kinds by name, the readings that decide what is built, the source followed on disagreement, the group report's deviation |
 | Secrets and attached applications across component boundaries | `references/shared/genome-format-guide.md` § Platform Dependencies, § Interface (component) | `references/genome-reading-guide.md` § Platform Dependencies, § Interface |
+| Open Decisions: the entry forms (open, decided, withdrawn) and their numbers, the tiers, a marked line naming its entry (`*[Inferred: D3]*`, `process D3`, `CQ2`), a withdrawn Configuration Question | `references/shared/genome-format-guide.md` § Open Decisions, § Ambiguity Marker and § Configuration Questions | `references/genome-reading-guide.md` § Open Decisions, § Ambiguity Marker and § Configuration Questions |
+| The `Preferences:` line: the preferences file the genome was written to, read by the build as standing answers | `references/shared/genome-format-guide.md` § Design Links | `references/genome-reading-guide.md` § Design Links; `references/configuration-questions-guide.md` rule 4 |
 | Genome file name slug | `references/shared/genome-format-guide.md` § File Naming and Location | `references/genome-reading-guide.md` § File Naming and Location |
+| The SDD and the readiness file as answers: their names beside the genome (`<slug>-sdd.md`, a process genome's `<slug>-solution-sdd.md`, `<slug>-readiness.md`), a process genome's read for its components; the item form (the id and question in bold; labelled lines, each label in bold, in short sentences; at most one `Context:` line; a `See:` line pointing into the genome; a choice's options lettered under `Options:`, marked `(recommended)` and `(built now)`; a value's `Default:`, or `Until answered:` for an item with neither; the answer line, `Answer (by <role>):` in the SDD and `Answer:` in the readiness file; backticks only for a name a person types or searches for) and what an answer is (an option's letter, a value, `default`, or the person's own words); the answers that are genome edits (Business decisions, Material to supply, Preferences, the readiness file's Genome edits), which the build offers to apply before it asks anything, and those that are the build's (configuration values, Architecture decisions, Build setup) | `references/shared/open-questions-guide.md` § Writing Rules and § Where Answers Go; `references/edit/edit-guide.md` § Applying the Answers | `references/configuration-questions-guide.md` rules 4a and 4b; `references/prepare-guide.md` step 6 and § The readiness file |
+| A source-defect ruling's recommended option: the evident intent when it changes only how a run counts, retries, recovers, stops, logs or reports, a failure notice included; none when it changes a business outcome — the owner rules, and what the genome builds now stands until then | `references/shared/genome-format-guide.md` § Open Decisions, the tiers | `references/refactor-guide.md` § Refactor questions, the Rulings row |
 | An attach before acting is no step; an attach that falls back to a launch is one open step; an attach whose result the process uses is a check | `references/shared/genome-format-guide.md` § Workflow, "An attach before acting is no step" | `references/composite-interactions-guide.md` § Actions without a control, "Attach, or open when not open" and "Attach before acting" |
 | Framework migration pack resolution | `references/extract/source-frameworks-guide.md` § Other frameworks — the framework migration pack | `references/source-frameworks-guide.md` § Other frameworks — the framework migration pack |
 | Running in parts: lead agent, brief and rulings, ledgers and resuming, read plans, return check, ownership, the two-at-once cap, cached waits | `references/shared/extraction-parts-guide.md` § Running in Parts items 1–8: the core, with the lead agent's model as the default | `references/execution-parts-guide.md` § Running in Parts items 1–8: the core, with the smaller model, the no-subagents option and its review, and the status script |
@@ -119,6 +126,8 @@ One change, every file in its row, same PR.
 | New genome section or content rule | planner `genome-format-guide.md` (+ both templates); Transactional Shape rule: `transactional-shape-guide.md`; Source Map, source-value or source-defect rule: `extracted-genome-guide.md`. Its build consequence: builder `genome-reading-guide.md` |
 | New edit request or edit rule | planner `edit-guide.md` |
 | Rule for verifying suspected source defects | planner `defect-verification-guide.md` |
+| New open question an SDD puts to people | planner `open-questions-guide.md`; its genome form: `genome-format-guide.md` § Open Decisions |
+| New readiness task (a system or build-environment task); a new build question goes where the build's questions are, and `prepare` asks it from there | builder `prepare-guide.md` |
 | Rule for extraction in parts | planner `extraction-parts-guide.md` |
 | Fact about reading a UiPath source or its deployed state | planner `uipath-source-guide.md` (or its RPA / non-RPA signals guide); what the build re-reads of the source: builder `source-migration-guide.md` |
 | New scaffolding question | builder `configuration-questions-guide.md` |

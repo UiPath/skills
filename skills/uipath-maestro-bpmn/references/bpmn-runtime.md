@@ -24,7 +24,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   .var('scoreValue', 'number')
   // … tasks write scoreValue …
   .endEvent('done', { payload: { type: 'BPMN.Variables', outputRows: [
-    { name: 'score', type: 'number', source: '=vars.scoreValue', var: 'score' },
+    { name: 'score', type: 'number', source: '=js:vars.scoreValue', var: 'score' },
   ] } })
   ```
   Never read an `.output()` before its end event; read the `.var()` instead.
@@ -43,21 +43,43 @@ make from syntax alone. Exact signatures remain in the generated API.
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
   `this`. `check` does not report it. A public `.output()` may be named `result`.
 
-<!-- RULE:bpmn.variables.read-inputs-directly -->
-- A script or expression reads a public input as `vars.<id>` directly; the runtime
-  seeds every declaration by id. The start-event mapping that bridges each input into
-  an internal variable is the canvas's spelling, not a requirement.
+<!-- RULE:bpmn.variables.inputs-through-start -->
+- A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
+  "A variable is unresolved" on the canvas, and `validate` passes with at most a
+  `VARIABLE_NOT_SET` warning: fix it, never wave it off. On the start event, map each input the
+  steps read into a variable scoped to that event, as the canvas does, and read that variable
+  downstream. When the start event already maps the input (a
+  canvas-made process), read that row's `var`; add no second row.
+  ```ts
+  .input('amount', 'number')
+  .var('amountIn', 'number', { elementId: 'start' })
+  .var('total', 'number')
+  .startEvent('start', { payload: { type: 'BPMN.Variables', outputRows: [
+    { name: 'amount', type: 'number', source: '=vars.amount', var: 'amountIn' },
+  ] } })
+  .task('double', { set: { total: '=js:vars.amountIn * 2' } })
+  ```
+  Unlike a task's output row, a start-event row does not declare its variable: without the
+  `.var()`, `check` fails `EXPR_UNDECLARED_REF`.
 
-<!-- RULE:bpmn.expression.js-for-methods -->
-- A plain `=` expression is evaluated C#-style, not as JavaScript: comparisons, arithmetic and
-  `vars.x` reads work, a JS method call does not. `=vars.d.toLowerCase() == "approve"` passes
-  validate, then faults the run (incident `400302`); in a gateway `when` it evaluates `false` and the
-  run takes the wrong branch. Prefix any expression that calls a JavaScript
-  method (`toLowerCase`, `includes`, `concat`, `map`, `JSON.parse`) with `=js:`; .NET methods
-  (`Contains`, `Split`, `String.IsNullOrEmpty`) work in plain `=`, as decompiled canvas expressions show.
-  Local `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
-- A `.task()`'s `set` values are strings: an `=`-expression or a literal. `set: { done: true }`
-  fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=true'`.
+<!-- RULE:bpmn.expression.js-everywhere -->
+- Write every expression you author as `=js:` JavaScript, in any field: `set`, a `when`, a row
+  `source`, a connector input, a loop `collection` or `completion`, a timer `date`
+  (`'=js:vars.total * 0.9'`, `'=js:vars.tier == "gold"'`). A plain `=` passes `check`, `compile` and
+  `validate`, but it is C#: the designer opens any plain expression beyond a bare variable read in its
+  C# editor, and a JavaScript method in it (`=vars.d.toLowerCase() == "approve"`) faults the run
+  (incident `400302`), or in a gateway `when` evaluates `false` and takes the wrong branch. Local
+  `flow-debug` does not show this ([offline checks](operate.md#debug--a-controlled-studio-web-run)).
+  Leave plain only what the canvas writes plain: a row `source` reading the node's own result
+  (`=result…`, `=response…`, `=Error`, a form field such as `=Action`, an agent output such as
+  `=Decision`), `=bindings.<id>`, `=iterator[0]`, the start-event row that maps a process input
+  (`=vars.<inputId>`), and a human-task form field's `value` (`=vars.<id>`: its runtime evaluates
+  UiPath expressions, not JavaScript). An imported file's existing plain `=` expressions are C#
+  (`examples/InvoiceApproval.bpmn.ts`): leave them as they are, and copy none of them.
+  In a plain `=` you keep or edit, `.length` reads back `null` with no incident: use `.Count`.
+  `.length` works only inside `=js:`.
+- A `.task()`'s `set` values are strings: an `=js:` expression or a literal. `set: { done: true }`
+  fails `check` (`TS2322`) and `compile` (`value.startsWith is not a function`); write `'=js:true'`.
 
 <!-- RULE:bpmn.variables.input-name -->
 - Input values are matched to declarations by display `name` when a run starts, so an
@@ -67,11 +89,12 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.variables.node-output-declares-itself -->
 - **Do not declare a variable for a node's own output.** An output row declares the
   variable it fills: the compiler derives a declaration from the row, attributed to that
-  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the same
-  id states the same thing twice and makes it the author's declaration instead of the
-  node's. Where the variable carries a JSON Schema, put it on the ROW as `varSchema` —
-  the platform writes the shape on the declaration and not on the row, so `varSchema` is
-  what reaches it:
+  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the
+  same id states the same thing twice and makes it the author's declaration instead of
+  the node's. A start-event row is the exception: it does not declare its variable, so
+  its `.var()` stays (see `bpmn.variables.inputs-through-start` above). Where the
+  variable carries a JSON Schema, put it on the ROW as `varSchema` — the platform writes
+  the shape on the declaration and not on the row, so `varSchema` is what reaches it:
 
   ```ts
   outputRows: [{ name: 'response', type: 'jsonSchema', var: 'act_response',
@@ -83,11 +106,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   the author's with `custom="true"`.
 
 <!-- RULE:bpmn.variables.element-id-is-placement -->
-- `elementId` is placement, not scope. The runtime seeds every declaration into one flat
-  namespace and resolves `vars.<id>` there whatever it says, and an id is unique across
-  the whole document — so two elements cannot each own a `response`. What it decides is
-  which element the declaration BELONGS to, which is what the canvas and
-  `uip maestro bpmn validate` read (1.203 requires one).
+- `elementId` is placement to the runtime and scope to the canvas. The runtime seeds
+  every declaration into one flat namespace and resolves `vars.<id>` there whatever it
+  says, and an id is unique across the whole document — so two elements cannot each own
+  a `response`. What it decides is which element the declaration BELONGS to, which is
+  what the canvas and `uip maestro bpmn validate` read (1.203 requires one). For a
+  process input, see `bpmn.variables.inputs-through-start`.
 
 <!-- RULE:bpmn.variables.array-forms -->
 - `.vars([…])`, `.bindings([…])` and `.schemas([…])` take the whole block at once, with
@@ -132,6 +156,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!--skill-flavor:sdk-script-type:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.8 or later; an older SDK writes whatever `type` says, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:sdk-script-type:end-->
+
+<!-- RULE:bpmn.script.ts-string-escapes -->
+- A `script` (and any `=js:` value) is a TypeScript string, so TypeScript reads its escapes before the runtime does, whatever the quotes: `\n` inside a quoted (`'…'`/`"…"`) string in the script becomes a real newline and the run faults `300501` "Invalid or unexpected token" though `check` and `validate` pass; `\d` in a regex silently becomes `d`.
+  Double every backslash the script needs (`\\n`, `\\d`); inside backticks also escape `\${` and `` \` ``.
 
 <!-- RULE:bpmn.script.error-row -->
 - "Typed error handling" on a script task means the task-scoped `Error` output row: `source: '=Error'`, type `jsonSchema`, writing a variable whose schema is the platform error envelope.
@@ -233,7 +261,7 @@ make from syntax alone. Exact signatures remain in the generated API.
     propertyAttribute: 'folderPath', resourceKey: 'CreditAssessment', resourceSubType: 'ProcessOrchestration' })
   // …
   .startAgenticProcess('assess', { process: '=bindings.childName', folder: '=bindings.childFolder',
-    input: { annualIncome: '=vars.annualIncome' }, outputs: { score: '=result.score' } })
+    input: { annualIncome: '=js:vars.annualIncome' }, outputs: { score: '=result.score' } })
   ```
   The called process must map its outputs at its end event ([output end mapping](#variables-and-the-process-contract)),
   or `result.score` is `null`.
@@ -289,7 +317,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.http.connector -->
 - An endpoint the connector catalog has no activity for, called through an existing connection, is
   `.http(id, { method, url, connection, folder, connectorKey })`.
-  - `url` is relative to the connection's base URL (`uip is connections base-url <CONNECTION_ID> --output json`); an absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
+  - `url` is the vendor API's own endpoint, relative to the connection's base URL (`uip is connections base-url <CONNECTION_ID> --output json`), such as Slack's `/team.info` under `https://slack.com/api`. Never use an Integration Service resource `Path` from `uip is resources list` or `describe`, which belongs to `.connector()`: the request reaches the vendor as written, so an Integration Service path that differs from the vendor's returns the vendor's 404 (`[102021] Received failure from vendor system`). An absolute URL to another host gets 400 "Invalid request URL" (`check`: `MANAGED_HTTP_ABSOLUTE_URL`).
   - `connectorKey` is the connection's connector key from `uip is connections list --all-folders --output json`; omit it only for a `uipath-uipath-http` connection. A wrong or missing one passes `check` and fails `validate` with `MISSING_BINDING`.
   - `connection` and `folder` name `.binding()`s holding the connection's `Id` and its `FolderKey` (or what `prepare` wrote); `folder` is required (`EMPTY_REQUIRED_FIELD folderKey`).
   - `outputVar` (`<id>_response`) is the body; `<id>_code`, `<id>_headers` and `<id>_Error` hold the rest.
@@ -301,7 +329,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:bpmn.http.url-placeholders -->
-- Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=`-expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
+- Fill every `{name}` or `<NAME>` in an HTTP `url` before compiling, with a discovered or given value or an `=js:` expression; never invent one. Nothing checks this: `check`, `compile` and `validate` all pass `/repos/{owner}/{repo}`, and the request goes out literally.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
@@ -405,9 +433,9 @@ binding half, which is the same for every connector-backed node.
   way the platform's own tools do and needs no connector library or `prepare`
   step. The response lands in `<id>_response` and the error payload in
   `<id>_Error`, both declared for you — read the created record's id as
-  `=vars.<id>_response.Id`. Map results onto process outputs on the end event
+  `=js:vars.<id>_response.Id`. Map results onto process outputs on the end event
   (`payload: { type: 'BPMN.Variables', outputRows: [{ name, type, var, source:
-  '=vars.<id>_response' }] }`). Do not hand-fill
+  '=js:vars.<id>_response' }] }`). Do not hand-fill
   `.activity('Intsvc.ActivityExecution', …)` for these operations: the library
   ships one Data Service operation, so `.connector()` cannot author the rest, and a
   hand-filled node gets `objectName`, the parameter targets and the folder binding
@@ -425,20 +453,29 @@ binding half, which is the same for every connector-backed node.
   With no `folder`, `prepare` searches every folder: it records a single match and names the folder to pin, and lists several without picking one.
 - `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION.
   They are often the same folder and are still two options.
-- The record operations (`create`, `update`, `get`, `query`, `delete`) then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …) as a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, plus the entity's two `Entity` bindings.
-  Only `_V3` takes a folder, and Studio Web's V2 catalog does not list it, so this task stays V1.
+- The record operations then write the connector's `_V3` operation (`CreateEntityRecord_V3`, …), the only one that takes a folder.
+  `create`, `update`, `get` and `query` are the V2 task Studio Web's connector panel saves: `folderEntityName` is a solution-resource picker on the entity's two `resource="entity"` bindings, which the task reads, so a deploy can re-point the entity.
+  `delete` is a V1 task with `entityScope=folder`, `folderEntityName` and `folderEntityName_folderKey` query rows, the two bindings beside it; its V2 form cannot be built yet.
+<!--skill-flavor:sdk-df-folder-v2:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.0 or later; an older SDK writes every record operation on a folder entity as a V1 task, which still validates and runs, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again when a V2 task is asked for; do not hand-convert its rows.
+<!--skill-flavor:sdk-df-folder-v2:end-->
   A tenant entity's record operations are V2 tasks on the curated operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`), with the entity in the `pathParameters` row.
 <!--skill-flavor:folder-entity-resources:start-->
   Run `uip maestro bpmn refresh <project>` after `compile`, then, when the project has a solution, `uip solution resources refresh --solution-folder <SolutionDir>` (the folder holding the `.uipx`, `<Name>Solution/` in the default scaffold): the first turns the two bindings into the entity's row in `bindings_v2.json`, and the second declares the entity in the solution.
 <!--skill-flavor:folder-entity-resources:end-->
   Do not hand-fill the task through `.activity()`, and do not pass a folder entity's name as a plain `entity` string: that writes the tenant-scope operation, which validates but does not address the folder entity.
 - `entity: { name, folderKey }` is for a folder key already in hand.
-  It writes no `Entity` bindings, so `bpmn refresh` does not declare the entity in the solution; prefer `{ name, folder }` even with a key in hand.
-  A decompiled process shows a `{ name, folder }` task as an `.activity()` with its query rows and its two `Entity` bindings; it compiles back as it is.
+  It resolves the same way: `check` prints `uip maestro registry prepare --entity <name> --folder-key <key>`, which records the entity's own key; run it, then `check` again.
+<!--skill-flavor:sdk-folder-key:start-->
+  If `uip` answers `unknown option '--folder-key'`, the `uip` in use predates the flag: run the same command as `npx flow-sdk registry prepare --entity <name> --folder-key <key>`.
+  If `uip` says `--folder-key` needs a builder SDK release that supports it, or `npx flow-sdk` answers `unknown option '--folder-key'`, the SDK predates the flag: name the folder by path with `{ name, folder }` instead, which needs no `--folder-key`.
+<!--skill-flavor:sdk-folder-key:end-->
+  A folder key written as an `=`-expression cannot be recorded, so it writes the V1 task and declares nothing in the solution; prefer `{ name, folder }`.
+  A decompiled process shows a folder-entity task as an `.activity()` with its rows and the entity's two bindings, with or without the connector library: a `.connector()` call would drop the picker, so decompile keeps the task as it is, and it compiles back unchanged.
 - The file operations (`downloadFile`, `uploadFile`, `deleteFile`) refuse a folder-scoped entity; there is no SDK form for them yet.
   Tell the user the file operation is not supported on a folder-scoped entity; do not fall back to a plain entity name, which addresses a tenant-level entity instead, or hand-fill `.activity()`.
-- The entity and its folder are literals in the compiled task: the two `Entity` bindings declare the entity in the solution, and the task does not read them.
-  Do not add bindings by hand or promise per-environment re-pointing; tell the user the entity is fixed at compile time.
+- Do not add entity bindings by hand: compile writes the pair.
+  A V2 task reads it, so its entity can be re-pointed per environment at deploy; a `delete` task's entity is fixed at compile time.
 
 <!-- RULE:bpmn.connector.parameter-rows -->
 - `.connector()`, `.dataService()`, `.eventTrigger()` and `.waitForEvent()` write a V2 task (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds.
@@ -446,7 +483,7 @@ binding half, which is the same for every connector-backed node.
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; an older SDK writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert its rows.
 <!--skill-flavor:sdk-v2-connector:end-->
   Its path parameters are one json row, `pathParameters` (`target="pathParameters"`), and its query parameters another, `queryParameters` (`target="queryParameters"`), each keyed by the library's own parameter names (`send_as`, not `sendAs`); the request body is the one json `target="body"` row, and a multipart file part is its own `target="file"` row.
-  `.dataService()` has two exceptions, which it still writes as V1 tasks: the file operations (`downloadFile`, `uploadFile`, `deleteFile`), whose `_V3` operations have no field-name parameter, and every record operation on a folder-scoped entity (see the folder-entity rule above).
+  `.dataService()` still writes V1 tasks for the file operations (`downloadFile`, `uploadFile`, `deleteFile`), and on a folder-scoped entity for `delete` and for a folder key written as an `=`-expression (see the folder-entity rule above).
 - An imported process can also carry V1 tasks, with one `target="path"` / `target="query"` row per parameter and an `operation` context row.
   Leave them as they are: a task you add beside them is V2, and a file may mix the two.
   Leave the process-level `uipath:intsvcActivityConfig` marker as you found it, as `registry get --input-details` instructs: a new workflow from `bpmn init` has it, and an existing workflow without it needs none.
@@ -546,7 +583,7 @@ binding half, which is the same for every connector-backed node.
   On `MERGE_OPTION_CONFLICT`, drop the decompile option given to `merge`; the stamp already records it.
   Needs `@uipath/maestro-builder-sdk` 6.95.0 or later; on an older SDK `merge` stops with a ConfigError asking for an upgrade, so run the install command the ConfigError prints and merge again.
 <!--skill-flavor:brownfield-merge-form:end-->
-  Then `refresh` and `validate` the target as in the validation loop; do not `format` it unless `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE` (see `bpmn.brownfield.format`).
+  Then `refresh` and `validate` the target as in the validation loop; do not `format` it unless `refresh` or `validate` reports `BPMN_PARSE_ERROR` with `No diagrams found`, `MISSING_DI_SHAPE` or `MISSING_DI_EDGE`, or the target was a template or a process the user chose to replace (see `bpmn.brownfield.format`).
 
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.
@@ -599,18 +636,25 @@ binding half, which is the same for every connector-backed node.
   `Orchestrator.Start*Process` type with a process binding.
 
 <!-- RULE:bpmn.brownfield.format -->
-- Do not `format` a merged process. `merge` keeps every shape and edge of the
+- Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
   no room for a new shape and shifts the shapes below it, and reroutes an existing edge
   whose flow the edit rewired), and draws the shapes of the elements the
-  edit added. `format` lays out the whole diagram again, so it drops the user's
+  edit added. `format --relayout` lays out the whole diagram again: it keeps pools, lanes
+  and colors but moves every shape the user placed. Plain `format` on a CLI whose
+  `format --help` lists no `--relayout` lays it out again too, and drops the user's
   pools, lanes, colors and placement.
-  Run `format` only when `refresh` or `validate` reports
+  Run `format` without `--relayout` only when `refresh` or `validate` reports
   `BPMN_PARSE_ERROR` with `No diagrams found` (the original had no diagram, so there is no
   layout to lose), `MISSING_DI_SHAPE` or `MISSING_DI_EDGE` (an older SDK's `merge`
   draws no shapes for new elements), run
-  `refresh` and `validate` again, and, when the original had a diagram (`MISSING_DI_SHAPE` /
-  `MISSING_DI_EDGE`), tell the user that the canvas layout was reset.
+  `refresh` and `validate` again, and, on a CLI without `--relayout`, when the original
+  had a diagram (`MISSING_DI_SHAPE` / `MISSING_DI_EDGE`), tell the user that the canvas
+  layout was reset.
+  A merge into a template that holds only one start event and at most one end event (as
+  Studio Web or `init` writes), or into a process the user chose to replace, builds a
+  new process: run `format --relayout` (plain `format` where the CLI lacks the flag),
+  then `refresh` and `validate` again.
 
 ## Contract metadata
 
@@ -678,7 +722,8 @@ binding half, which is the same for every connector-backed node.
 <!-- RULE:bpmn.layout.separate -->
 - Compile emits semantic XML with no diagram, and `validate` refuses a file without
   one: `format` every newly compiled process; a merged one only when `refresh` or `validate`
-  reports a missing diagram or shape (`bpmn.brownfield.format`).
+  reports a missing diagram or shape, or it merged into a template or a process the user
+  chose to replace (`bpmn.brownfield.format`).
 
 ## Product boundary
 

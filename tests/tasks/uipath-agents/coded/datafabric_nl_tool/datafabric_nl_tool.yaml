@@ -35,7 +35,7 @@ initial_prompt: |
   I can't predict what users will ask ahead of time. The agent's
   instructions should apply consistently everywhere.
 
-  Scaffold and init only — don't run or deploy.
+  Implement it and initialize the project, but don't run or deploy it.
 post_run:
   - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedProductCatalog --include-folders"
     timeout: 60

@@ -14,10 +14,9 @@ copy.
 <!--skill-flavor:local-gates:start-->
 Studio Web does not use these gates. Its loop is
 [SKILL.md — Lifecycle](../SKILL.md#lifecycle). An edit runs
-`check --source --baseline` against the canvas copy, each `prepare` it names,
-`compile` into `/tmp/flow-draft/<Project>/<Name>/edited/`, `merge` into the
-target `.flow`, then `validate`. A new flow runs `check --source`, each
-`prepare` it names, `compile` into its `.flow` (compile lays it out), then `validate`. There is no compiled-artifact `check`; `validate` is that rung.
+`check --source --baseline` against the target `.flow`, each `prepare` it names,
+`merge` of the stamped source into the target `.flow`, then `validate`. A new flow runs `check --source`, each
+`prepare` it names, `compile` into its `.flow` (compile lays it out), then `validate`. There is no compiled-artifact `check`; `validate` is that rung. `validate` judges connector and other tenant nodes against the node cache `registry pull` wrote for your login (CLI 1.206 and earlier judge built-in nodes against that cache too); after a stale-handle error, run `uip maestro flow registry pull --force` once and validate again.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.

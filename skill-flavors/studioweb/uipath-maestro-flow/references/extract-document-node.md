@@ -3,11 +3,11 @@
 <!--skill-flavor:extract-find-flow:end-->
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**A flow that holds this node skips the decompile round trip.** The baseline compile of the [Lifecycle](../SKILL.md#lifecycle) fails on this node, so for such a flow do not decompile at all: make every change with the direct commands on the target `.flow` — `nodes`, `edges`, `variables`, `nodes schema` — and finish with `validate`.
+**A flow that holds this node takes the decompile round trip** of the [Lifecycle](../SKILL.md#lifecycle): the node decompiles to `dynamicExtract()`, its `processorKey` with it. When merge's in-memory baseline compile fails on this node (an SDK copy before 6.118.0), do not decompile such a flow at all: make every change with the direct commands on the target `.flow` — `nodes`, `edges`, `variables`, `nodes schema` — and finish with `validate`.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. Here the CLI can only give the node its key. Writing the resource file needs the solution the project belongs to, which the CLI finds through a `.uipx` manifest, and this host has none — so `nodes create` and `nodes schema set` report `ResourcePending` instead of a `ResourceFile`, and write nothing under `resources/`. Report what the command reported: the node has its processor, and its resource file is still to be created. The designer is what creates and maintains that file, provisioning the processor as a node is added and regenerating it from the node as the user edits.
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `nodes create` and `nodes schema set` add the processor to the open solution instead of writing a file under `resources/`. Nothing else creates it: the designer provisions only nodes without a key. So `ResourcePending` here means the node has no processor. When the message names a retry, run it once; otherwise, or if it reports `ResourcePending` again, report the message and stop.
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-after-save:start-->

@@ -30,7 +30,7 @@ Use this as a router: read only the capability reference you need, then let Type
 4. Import from `@uipath/maestro-builder-sdk/case`; default-export a chain ending in `.build()`.
 <!--skill-flavor:workflow-build:start-->
 5. Seed the source by decompiling the plan `case init` seeded (`caseplan.case`, or an older `caseplan.json`) instead of hand-writing the skeleton: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into that same `<plan>`, never a second plan beside it: pack and debug read only one. Compile with plain `-o <project>/<plan>` and no `--bindings <plan>`; it needs `@uipath/maestro-builder-sdk` 6.50.1 or later to keep a Designer-saved plan's binding map ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
-6. Run `uip maestro case check <Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`. Editing an existing plan, copy it aside once per editing session before your first compile (`mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/`), then add `--baseline .flow-sdk/original/<plan>` so defects the plan already had on stages and tasks you did not touch do not fail the check. Never pass `<project>/<plan>` itself: after the first compile it is your edit, and checking it against itself hides every error ([Brownfield](references/case-runtime.md#check-only-what-you-changed-check---baseline)).
+6. Run `uip maestro case check <Name>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`. One exception: `REFERENCE_OUTPUT_SOURCE` on `=response.<field>` when the task's own output argument is an object named `response`; keep that source and compile (the `outputs` row). Editing an existing plan, copy it aside once per editing session before your first compile (`mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/`), then add `--baseline .flow-sdk/original/<plan>` so defects the plan already had on stages and tasks you did not touch do not fail the check. Never pass `<project>/<plan>` itself: after the first compile it is your edit, and checking it against itself hides every error ([Brownfield](references/case-runtime.md#check-only-what-you-changed-check---baseline)).
 7. Compile into the scaffolded Case project, then validate. Compile syncs existing sidecars; refresh added bindings and remove orphaned resources before refreshing.
 8. Run live debug only when requested and tenant resources are available.
 <!--skill-flavor:workflow-build:end-->
@@ -50,15 +50,16 @@ three entry points; each file's header spells the paths its rows resolve against
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Case, stages, and completion | `casePlan`, `stage`, `completeWhen` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
-| Variables and arguments | `var`, `input`, `output`, `jsonSchema` | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts` |
+| Case, stages, and completion | `casePlan`, `stage`, `completeWhen`; SDD `Stage Kind: secondary` is `exceptionStage`, an optional task or stage (SDD `Required` / `Required for Case Completion: No`) gets `.required(false)`, and a gating one `.required()` ([optionality](references/case-runtime.md#completion-and-optionality)) | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Variables and arguments | `var`, `input`, `output`, `jsonSchema`. A numeric case variable is `'integer'`, `'float'` or `'double'`, never `'number'` ([closed types](references/case-runtime.md#metadata-fidelity)) | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts`, `examples/CreditDecision.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
-| A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: the source is the result field as the Designer saves it, `=<Field>` on every task that runs published work (agent, process, RPA, API workflow, case management, flow process, function, business rule: `AgentExpenseRequest: '=AgentExpenseRequest'`) and `=response.<field>` only on a connector or wait-for-connector task; a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
+| A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: the source is the result field as the Designer saves it, `=<Field>` on every task that runs published work (agent, process, RPA, API workflow, case management, flow process, function, business rule: `AgentExpenseRequest: '=AgentExpenseRequest'`) and `=response.<field>` only on a connector or wait-for-connector task, or on a task whose own output argument is an object named `response` ([Design fidelity](references/case-runtime.md#design-fidelity)); a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
 | Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
+| Document extraction | `documentExtraction(model, { deployment, folderKey, folder, deploymentKey, file, pageRange? })` (SDK 6.82.0+, uip 1.206.0+) | [Document extraction](references/case-runtime.md#document-extraction) | `examples/DocumentExtractionCase.case.ts` |
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work and its Action App | `action`; `app: { name, folder }` (SDK 6.46.4+) names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
@@ -88,6 +89,7 @@ export default casePlan('loan-approval')
       .required()
       .entryWhen(rule('current-stage-entered')))
     .task('Manager Approval', t => t
+      // Literal recipient is baked into the plan; test or unknown assignee: references/case-runtime.md § Action recipients
       .action({ title: 'Approve loan', priority: 'High', recipient: 'manager@corp.com', app: { name: 'LoanApproval', folder: 'Shared' } })
       .entryWhen(rule('selected-tasks-completed', { tasks: ['Check Policy'] }))))
   .stage('Decision', s => s
@@ -97,6 +99,13 @@ export default casePlan('loan-approval')
     .task('Notify', t => t.process('notify').required().entryWhen(rule('current-stage-entered'))))
   .completeWhen(rule('required-stages-completed'), { displayName: 'Case resolved' })
   .build();
+```
+
+An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; every call is another OR condition. Write one call per SDD Entry/Exit Rule row, and an IF expression on a row is that rule's `expression`. `[rule('case-entered'), <rule on a later event>]` can never fire (`case-entered` holds only at case start), so the stage is never entered.
+
+```ts
+.entryWhen(rule('case-entered'))                       // Entry Rule 1
+.entryWhen(rule('selected-stage-exited', { stage: 'Manager Approval', expression: '=js:vars.managerDecision === "Return"' }))  // Entry Rule 2
 ```
 
 ## Validation loop

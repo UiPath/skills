@@ -60,6 +60,11 @@ code and subscriber number, 7–15 digits in all. `from` must be a number provis
 telephony provider; anything else is rejected when the call is placed, not when
 the flow is validated. `endCall` reads `out('<step>', 'ended')`.
 
+When the request asks for placeholder numbers or an offline build, pass a
+placeholder E.164 string literal for each: a `+`, then 7–15 digits. Otherwise
+bind `to` to the recipient's data, and set `from` to the provisioned caller
+number; ask for it when you do not know it.
+
 ## How the agent sounds
 
 `voice` takes a VOICE model (a live/realtime one — not the text models

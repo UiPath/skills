@@ -42,4 +42,5 @@ uip traces spans get --job-key <job-key> --output json
 
 - [Run Jobs](../orchestrator/run-jobs.md) — the job lifecycle these traces come from
 - [Trace Feedback](feedback.md) — annotate spans with sentiment; includes span selection guidance for nested jobs
+- [Trace Decisions](decisions.md) — write and query decisions recorded against a trace
 - `uip traces spans get --help` for full option details

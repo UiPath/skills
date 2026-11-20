@@ -23,10 +23,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
     description: "Agent discovered existing memory spaces (read-only) before attaching"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+MemorySpace'
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b(?:\\\n|[^;&|\n])*?--kind[\s=]+MemorySpace\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"MemorySpace)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

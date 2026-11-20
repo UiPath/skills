@@ -36,7 +36,7 @@ initial_prompt: |
   mean, fetch that customer's open orders (that query is always the
   same shape), and summarize the results conversationally.
 
-  Scaffold and init only — don't run or deploy.
+  Implement it and initialize the project, but don't run or deploy it.
 post_run:
   - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
     timeout: 60

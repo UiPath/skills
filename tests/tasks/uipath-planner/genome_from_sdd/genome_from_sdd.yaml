@@ -4,7 +4,7 @@ description: >
   sheet-to-web-client process worked by a pool of robots. The SDD's project list holds a dispatcher and a
   performer over one queue, the split it chose for one flow; the genome describes them as one component whose Transactional Shape holds one flow
   over a sheet row. Gates on the genome contract (core profile), on that Transactional Shape, on the
-  genome's `Designed in:` line naming the SDD, on the SDD's gaps reaching the genome as `*[Inferred]*`,
+  genome's `Designed in:` line naming the SDD, on the SDD's gaps reaching the genome as `*[Inferred: D<n>]*` marks,
   and on the SDD gaining its `Genome` handoff row while staying ready. The full format rules (strict
   profile) are graded as an advisory criterion.
 tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
@@ -63,7 +63,7 @@ success_criteria:
   - type: run_command
     description: "The SDD's open gaps reach the genome as inferred lines"
     command: >-
-      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --expect "*[Inferred]*"
+      node $REFERENCE_DIR/check-genome.mjs tokens "*-genome.md" --expect "*[Inferred:"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5

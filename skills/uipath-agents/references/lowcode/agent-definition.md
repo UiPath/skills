@@ -192,6 +192,16 @@ No other keys. Never plain-string prompts: [critical-rules/conversational-critic
 | `"array"` | Lists |
 | `$ref: "#/definitions/job-attachment"` | File attachments (input or output). See § File Attachments. |
 
+**Closed value sets are `enum`s.** When a field takes one of a fixed set of values (a category, a status, a priority scale such as P1–P4), list every value in an `enum` on that field, in input and output schemas alike. Use the `description` to explain what each value means. A range or summary in the description ("P1 to P4", "low to urgent") is not a contract the automation reading the output can rely on.
+
+```jsonc
+"priority": {
+  "type": "string",
+  "enum": ["P1", "P2", "P3", "P4"],
+  "description": "P1 = team-wide or production outage, P4 = minor or cosmetic"
+}
+```
+
 ### File Attachments (`job-attachment`)
 
 To accept or return a file, declare the field as `$ref: "#/definitions/job-attachment"` and add the canonical `job-attachment` block to `inputSchema.definitions` (or `outputSchema.definitions`). Schema is fixed — copy verbatim. `x-uipath-resource-kind: "JobAttachment"` is required.
@@ -497,7 +507,7 @@ For each resource type's full schema, see the relevant capability file:
 
 ### Add an Output Field
 
-1. Add to `agent.json` → `outputSchema.properties`
+1. Add to `agent.json` → `outputSchema.properties`; a field with a fixed set of values gets an `enum` (§ Schema Types)
 2. Mirror in `entry-points.json` → `entryPoints[0].output.properties`
 3. Refresh, then validate
 

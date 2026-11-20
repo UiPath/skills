@@ -14,7 +14,7 @@ Automate job execution with time, queue, and API triggers, and set up webhooks f
 ## Prerequisites
 
 - Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
-- Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
+- Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md)). A trigger can be created without them, but it cannot run a job; check with `uip or folders runtimes "<folder>" --output json` and tell the user before creating it ([end-to-end-readiness-guide.md](end-to-end-readiness-guide.md))
 - Process (release) created -- you need the release key from `uip or processes list`
 
 ---
@@ -37,7 +37,9 @@ The CLI uses `--type` to select the trigger kind. Defaults to `time` if omitted.
 | Weekdays 9 AM | `0 0 9 ? * MON-FRI` | `0 9 * * 1-5` |
 | Every 30 min | `0 0/30 * * * ?` | `*/30 * * * *` |
 
-**RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`, and `Flow`. `Flow` is the runtime `triggers get` reports for a trigger on a Maestro flow process, whichever one it was created with; `create` and `update` accept it for time and queue triggers, so the value `get` prints can be passed back. API triggers do not take it.
+**RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`, `Local` and `Flow`. `Local` works for time and queue triggers, not API triggers. `create` and `update` accept `Flow` for all three trigger types.
+
+For a trigger on a Maestro flow process, Orchestrator stores a flow runtime whatever `--runtime-type` you pass, so `triggers get` reports `ProcessOrchestration` (alpha) or `Flow`. The CLI does not accept `ProcessOrchestration`; pass `Flow` when you send that value back on `update`.
 
 ---
 
@@ -59,7 +61,7 @@ uip or triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key <process-key> \
   --cron "0 0 9 ? * MON-FRI" \
-  --time-zone "Europe/Bucharest" \
+  --time-zone "GTB Standard Time" \
   --runtime-type Unattended \
   --job-priority Normal --output json
 ```
@@ -68,7 +70,7 @@ uip or triggers create --type time \
 folder is derived from the release the trigger is bound to. Same for all
 three trigger types.
 
-`--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
+`--time-zone` takes a **Windows** time zone ID, not an IANA name: `UTC`, `GTB Standard Time` (Bucharest), `Pacific Standard Time` (Los Angeles). Orchestrator refuses an IANA name such as `Europe/Bucharest` with `HTTP 400: The process schedule's time zone is not a valid windows time zone id.`, although the CLI's `--help` says IANA. To find the ID for a city, run `uip or settings timezones --output json` and pass the `Value` of the row whose `Name` lists it (`(UTC+02:00) Athens, Bucharest` → `GTB Standard Time`).
 
 Additional options:
 - `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
@@ -265,7 +267,7 @@ uip or webhooks list --enabled --output json
 - **Cron is Quartz 6-field, NOT Unix 5-field.** If a trigger never fires, check for 6 fields and `?` in day-of-month or day-of-week.
 - **`--type` defaults to `time`.** Omitting it when you mean queue or API causes confusing errors.
 - **`--release-key` is the process key** from `uip or processes list` (a GUID), NOT the package ID from `uip or packages list`.
-- **Calendar keys come from `uip or calendars list`** -- an Orchestrator resource. Keep calendar and trigger timezones aligned.
+- **Calendar keys come from `uip or calendars list`** -- an Orchestrator resource. A calendar has no time zone of its own: its excluded dates are matched in the trigger's `--time-zone`.
 - **Trigger history is the debugging tool.** When a trigger doesn't fire, `triggers history` shows why (no machines, license exhausted, calendar exclusion, auto-disabled). Check history before changing config.
 - **Triggers are folder-scoped** -- every command needs `--folder-path` or `--folder-key`. **Webhooks are tenant-scoped** -- no folder flags.
 - **Webhook `--events` behavior:** omit to subscribe to ALL events; provide to subscribe to specific events only. On update, adding `--events` switches from all-events to specific.

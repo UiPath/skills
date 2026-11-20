@@ -41,7 +41,7 @@ success_criteria:
   - type: run_command
     description: "The node holds the user's seven fields and no others, each with the user's type and instructions; the over-long year-of-hatch field is kept under a shorter name, its instructions starting with the user's and free to carry the words cut from the name"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields --only
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader/LicenceReader/LicenceReader.flow fields --only
       '[{"name": "Licence Number", "type": "ft-exact-text", "instructions": "The licence number exactly as printed in the licence number box."},
       {"name": "Licence Expiry", "type": "ft-date", "instructions": "The date the licence expires, not the date it was issued."},
       {"name": "Falconer", "instructions": "The name of the licence holder."},
@@ -56,10 +56,10 @@ success_criteria:
   - type: run_command
     description: "The bird's fields sit in a group nested by name under the group that holds the licence fields (the parent renamed to Licence, or the child to Licence Details > ...)"
     command: >-
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader/LicenceReader/LicenceReader.flow fields
       '[{"name": "Licence Number", "group": "Licence"}, {"name": "Ring Number", "group_matches": "^Licence > "},
       {"name": "Species", "group_matches": "^Licence > "}, {"name_matches": "hatch", "group_matches": "^Licence > "}]' ||
-      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader fields
+      python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader/LicenceReader/LicenceReader.flow fields
       '[{"name": "Licence Number", "group": "Licence Details"}, {"name": "Ring Number", "group_matches": "^Licence Details > "},
       {"name": "Species", "group_matches": "^Licence Details > "}, {"name_matches": "hatch", "group_matches": "^Licence Details > "}]'
     expected_exit_code: 0
@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "The undefined type was replaced by a built-in one: $defs holds the six built-in field types and nothing else"
-    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name LicenceReader defs --only
+    command: python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow LicenceReader/LicenceReader/LicenceReader.flow defs --only
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -99,7 +99,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes with no warnings: the fixed taxonomy went through nodes schema set (a hand edit leaves the fields without ids)"
-    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
+    command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings LicenceReader/LicenceReader/LicenceReader.flow
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

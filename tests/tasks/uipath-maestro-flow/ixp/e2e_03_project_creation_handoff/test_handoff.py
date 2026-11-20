@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -35,6 +36,7 @@ from handoff_tenant import SNAPSHOT, project_digest  # noqa: E402
 # the real one observed on the CI tenant, and built from the sweep's own first
 # marker so rotating the fixture domain re-points these tests automatically.
 LEAKED_DOMAIN_PROJECT = f"{DOMAIN_MARKERS[0]}_licences-7607b890-ixp"
+LEAKED_DOMAIN_DEPLOYMENT = f"{DOMAIN_MARKERS[0]}_licences-08963f00-ixp"
 
 
 def iso_ago(seconds: float) -> str:
@@ -94,7 +96,10 @@ if argv[:3] == ["ixp", "projects", "list"]:
     if payload.get("list_exit"):
         print("boom: tenant unreachable", file=sys.stderr)
         sys.exit(payload["list_exit"])
-    names = [name for name in payload["projects"] if name not in deleted_projects()]
+    listed = payload["projects"]
+    if os.path.exists(os.path.join(here, "searched.txt")):
+        listed = payload.get("projects_after_search", listed)
+    names = [name for name in listed if name not in deleted_projects()]
     # The real record carries Name/Title/CreatedAt (verified on the CI tenant);
     # CreatedAt is what seed's residue sweep ages projects by. Default old, as
     # a pre-existing project is. project_created_at overrides per name; a None
@@ -119,6 +124,8 @@ elif argv[:4] == ["ixp", "deployments", "create", "--help"]:
         sys.exit(3)
     print("Usage: uip ixp deployments create <project-name> --version --folder-key")
 elif argv[:4] == ["maestro", "flow", "registry", "pull"]:
+    with open(os.path.join(here, "pulls.txt"), "a") as handle:
+        handle.write("x")
     print(json.dumps({"Data": {"NodesCount": 1}}))
 elif argv[:4] == ["maestro", "flow", "registry", "get"]:
     # Reached only from check's served-node probe. Deleting a deployment's
@@ -129,7 +136,12 @@ elif argv[:4] == ["maestro", "flow", "registry", "get"]:
         sys.exit(1)
     print(json.dumps({"Data": {"Node": {"type": argv[4]}}}))
 elif argv[:4] == ["maestro", "flow", "registry", "search"]:
-    print(json.dumps({"Data": payload.get("registry_nodes", [])}))
+    open(os.path.join(here, "searched.txt"), "w").close()
+    pulls = len(open(os.path.join(here, "pulls.txt")).read())
+    nodes = payload.get("registry_nodes", [])
+    if pulls > 1:
+        nodes = payload.get("registry_nodes_after_repull", nodes)
+    print(json.dumps({"Data": nodes}))
 elif argv[:3] == ["ixp", "deployments", "list"]:
     # Mirrors the real 404 once the project is gone, so the read-before-delete
     # ordering in delete_this_runs_projects is actually exercised. vanished_projects models
@@ -150,6 +162,13 @@ elif argv[:3] == ["or", "folders", "create"]:
     # Seed's run folder: returns the Key teardown will read back as "scope".
     key = payload.get("created_folder_key", "created-" + argv[3])
     print(json.dumps({"Data": {"Key": key, "Name": argv[3]}}))
+elif argv[:3] == ["or", "folders", "list"]:
+    # `--all` never lists a debug run's folder (verified live), so the fake
+    # serves them only from the plain listing.
+    rows = [] if "--all" in argv else [
+        dict(folder, Type="DebugSolution") for folder in payload.get("debug_folders", [])
+        if folder["Key"] not in deleted_folders()]
+    print(json.dumps({"Data": rows, "Pagination": {"HasMore": False}}))
 elif argv[:3] == ["or", "folders", "get"]:
     folder_ids = payload.get("folder_ids", {})
     if argv[3] not in folder_ids or argv[3] in deleted_folders():
@@ -188,6 +207,8 @@ elif argv[:3] == ["or", "folders", "delete"]:
         sys.exit(1)
     with open(deleted_folders_log, "a") as handle:
         handle.write(argv[3] + os.linesep)
+    with open(os.path.join(here, "order.txt"), "a") as handle:
+        handle.write("folder:" + argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
 elif argv[:3] == ["or", "packages", "list"]:
     # --search is a case-insensitive substring match, as the feed's is.
@@ -210,6 +231,8 @@ elif argv[:3] == ["or", "packages", "delete"]:
         sys.exit(1)
     with open(os.path.join(here, "deleted_packages.txt"), "a") as handle:
         handle.write(argv[3] + os.linesep)
+    with open(os.path.join(here, "order.txt"), "a") as handle:
+        handle.write("package:" + argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
 elif argv[:3] == ["or", "processes", "list"]:
     folder = argv[argv.index("--folder-key") + 1]
@@ -268,7 +291,8 @@ def deployment(
 
 def ixp_node_type(deployment_name: str, folder_key: str = FOLDER_KEY) -> str:
     """The real registry shape: uipath.ixp.{deploymentName}.{modelId}-{folderKey}."""
-    return f"uipath.ixp.{deployment_name}.{MODEL_ID}-{folder_key}"
+    segment = re.sub(r"[^a-z0-9]+", "-", deployment_name.lower())
+    return f"uipath.ixp.{segment}.{MODEL_ID}-{folder_key}"
 
 
 def write_flow(sandbox: pathlib.Path, nodes: list[dict[str, Any]]) -> None:
@@ -1266,14 +1290,19 @@ def test_seed_proceeds_while_a_published_extractor_covers_the_domain(
     """The RE-13543 fix, stated as a test.
 
     A resolvable published extractor for the fixture domain used to abort seed.
-    Seed no longer probes the registry at all, so a covering node cannot stop
-    it (`check` still probes, for its served-node fallback). Whether that is
+    A covering node with its project cannot stop seed (only one with no
+    project does). Whether that is
     right for the task consuming this grader is the task's business, not the
     grader's.
     """
-    siblings_node = ixp_node_type(LEAKED_DOMAIN_PROJECT, folder_key=CONCURRENT_FOLDER_KEY)
+    siblings_node = ixp_node_type(
+        LEAKED_DOMAIN_DEPLOYMENT, folder_key=CONCURRENT_FOLDER_KEY
+    )
     env = install_fake_uip(
         sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
         registry_nodes=[{"NodeType": siblings_node, "DisplayName": LEAKED_DOMAIN_PROJECT}],
     )
 
@@ -1437,3 +1466,240 @@ def test_teardown_deletes_the_domain_package_bound_in_the_run_folder(
     assert deleted_packages(sandbox) == [uploaded]
     assert f"NOT DELETED package '{foreign}'" in completed.stdout
     assert RUN_FOLDER_KEY in (sandbox.parent / "bin" / "deleted_folders.txt").read_text()
+
+
+# ── Debug_ folders: `uip maestro flow debug` leaves processes bound to packages ──
+# A debug run deploys the flow's packages into Debug_<project> under the
+# caller's Personal Workspace. The run folder's delete never reaches it, so its
+# processes keep the packages bound (HTTP 409 on delete) and its deployments
+# survive.
+
+DEBUG_FOLDER_KEY = "a1b2c3d4-0000-4000-8000-000000000001"
+FOREIGN_DEBUG_FOLDER_KEY = "a1b2c3d4-0000-4000-8000-000000000002"
+OWNED_DEBUG_NAME = "Debug_Proj"
+DEBUG_PACKAGE = "FalconryLicenceFlow.flow.Flow:1.0.4"
+
+
+def debug_tenant(sandbox: pathlib.Path, **overrides: Any) -> dict[str, str]:
+    payload: dict[str, Any] = {
+        "debug_folders": [{"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME}],
+        "folder_processes": {DEBUG_FOLDER_KEY: [DEBUG_PACKAGE]},
+        "folder_ids": {
+            RUN_FOLDER_KEY: 100010,
+            DEBUG_FOLDER_KEY: 100030,
+            FOREIGN_DEBUG_FOLDER_KEY: 100040,
+            "a1b2c3d4-0000-4000-8000-000000000003": 100050,
+            "a1b2c3d4-0000-4000-8000-000000000004": 100060,
+        },
+    }
+    payload.update(overrides)
+    return tenant(sandbox, **payload)
+
+
+def operation_order(sandbox: pathlib.Path) -> list[str]:
+    log = sandbox.parent / "bin" / "order.txt"
+    return log.read_text().split() if log.exists() else []
+
+
+def test_teardown_leaves_every_debug_folder_alone(sandbox: pathlib.Path) -> None:
+    """Runs share the Personal Workspace and one prompt: `Debug_Proj 1` can be a
+    sibling's, and a new `Debug_Proj` can hold someone else's process."""
+    sibling_key = "a1b2c3d4-0000-4000-8000-000000000004"
+    other_key = "a1b2c3d4-0000-4000-8000-000000000005"
+    sibling_package = "FalconryLicenceFlow.flow.Flow:1.0.5"
+    wired_flow(sandbox)
+    env = debug_tenant(
+        sandbox,
+        debug_folders=[
+            {"Key": DEBUG_FOLDER_KEY, "Name": OWNED_DEBUG_NAME},
+            {"Key": sibling_key, "Name": "Debug_Proj 1"},
+            {"Key": other_key, "Name": "Debug_Proj"},
+        ],
+        folder_processes={
+            DEBUG_FOLDER_KEY: [DEBUG_PACKAGE],
+            sibling_key: [sibling_package],
+            other_key: ["Calculator.flow.Flow:1.0.0"],
+        },
+        folder_ids={RUN_FOLDER_KEY: 100010, DEBUG_FOLDER_KEY: 1, sibling_key: 2, other_key: 3},
+    )
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert operation_order(sandbox) == [f"folder:{RUN_FOLDER_KEY}"]
+
+
+def test_seed_sweeps_a_stale_fixture_debug_folder_before_its_packages(
+    sandbox: pathlib.Path,
+) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(86400)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "swept leaked fixture folder 'Debug_Proj'" in completed.stdout
+    order = operation_order(sandbox)
+    assert order == [f"folder:{DEBUG_FOLDER_KEY}", f"package:{DEBUG_PACKAGE}"]
+
+
+def test_seed_keeps_a_young_fixture_debug_folder(sandbox: pathlib.Path) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(600)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "KEEPING fixture folder 'Debug_Proj'" in completed.stdout
+    assert operation_order(sandbox) == []
+
+
+def test_seed_keeps_a_stale_debug_folder_holding_a_foreign_process(
+    sandbox: pathlib.Path,
+) -> None:
+    unrelated = "InvoiceProcessing.flow.Flow:1.0.0"
+    env = debug_tenant(
+        sandbox,
+        folder_processes={DEBUG_FOLDER_KEY: [DEBUG_PACKAGE, unrelated]},
+        packages={DEBUG_PACKAGE: iso_ago(86400)},
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert operation_order(sandbox) == [f"package:{DEBUG_PACKAGE}"]
+    assert "KEEPING" not in completed.stdout
+
+
+# ── seed: ghost node guard ───────────────────────────────────────────────────
+
+GHOST_PROJECT = f"{DOMAIN_MARKERS[0]}-licences-9437bdae-ixp"
+
+
+def registry_node(project: str, title: str = "") -> dict[str, str]:
+    return {
+        "NodeType": f"uipath.ixp.{project}.524dbd64-0000-0000-0000-000000000000-{FOLDER_KEY}",
+        "DisplayName": title or project,
+        "Description": "(coder-eval-bot's workspace/Debug_LicenceExpiryLog)",
+    }
+
+
+def test_seed_errors_on_a_domain_node_with_no_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(sandbox, registry_nodes=[registry_node(GHOST_PROJECT)])
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert "tenant not ready" in completed.stderr
+    assert GHOST_PROJECT in completed.stderr
+    assert f"(folder {FOLDER_KEY})" in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_accepts_a_domain_node_that_has_its_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [GHOST_PROJECT],
+        project_created_at={GHOST_PROJECT: iso_ago(60)},
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_ignores_a_foreign_node_with_no_project(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(sandbox, registry_nodes=[registry_node("shared-other-1234abcd-ixp")])
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_accepts_a_live_projects_node_served_under_its_deployment_name(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[registry_node("falconry-licences-08963f00-ixp")],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_accepts_a_live_projects_node_served_under_its_sanitized_name(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        registry_nodes=[registry_node("falconry-licences-7607b890-ixp")],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_errors_on_a_ghost_node_beside_a_live_deployed_project(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(60)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[
+            registry_node("falconry-licences-08963f00-ixp"),
+            registry_node(GHOST_PROJECT),
+        ],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert GHOST_PROJECT in completed.stderr
+    assert "08963f00" not in completed.stderr
+
+
+def test_seed_relists_projects_before_calling_a_node_a_ghost(
+    sandbox: pathlib.Path,
+) -> None:
+    """A sibling that publishes between the project listing and the registry
+    search has a node but is not in the first listing."""
+    env = install_fake_uip(
+        sandbox,
+        projects=PRE_EXISTING,
+        projects_after_search=PRE_EXISTING + [LEAKED_DOMAIN_PROJECT],
+        project_created_at={LEAKED_DOMAIN_PROJECT: iso_ago(5)},
+        deployments={LEAKED_DOMAIN_PROJECT: [deployment(LEAKED_DOMAIN_DEPLOYMENT)]},
+        registry_nodes=[registry_node("falconry-licences-08963f00-ixp")],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_stops_the_debug_sweep_when_over_budget(sandbox: pathlib.Path) -> None:
+    env = debug_tenant(sandbox, packages={DEBUG_PACKAGE: iso_ago(86400)})
+    env["HANDOFF_SWEEP_BUDGET_SECONDS"] = "-1"
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Debug_ folder sweep stopped" in completed.stdout
+    assert f"folder:{DEBUG_FOLDER_KEY}" not in operation_order(sandbox)
+
+
+def test_seed_repulls_the_registry_before_calling_a_node_a_ghost(
+    sandbox: pathlib.Path,
+) -> None:
+    """A sibling's teardown deletes its project, then its run folder. A pull in
+    between serves a node whose project is gone; the next pull does not."""
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+        registry_nodes_after_repull=[],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_seed_still_errors_on_a_ghost_that_survives_the_repull(
+    sandbox: pathlib.Path,
+) -> None:
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[registry_node(GHOST_PROJECT)],
+        registry_nodes_after_repull=[registry_node(GHOST_PROJECT)],
+    )
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode != 0
+    assert GHOST_PROJECT in completed.stderr

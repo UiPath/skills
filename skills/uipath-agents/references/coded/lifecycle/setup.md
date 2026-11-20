@@ -12,6 +12,8 @@ Windows PowerShell fresh-machine setup: `irm https://download.uipath.com/uipath-
 
 ## Framework Selection
 
+> **Not an agent? Stop.** Deterministic logic with no LLM reasoning is a **Coded Function**, even when the user calls it an agent — apply [SKILL.md](../../../SKILL.md) § Project Type Detection step 1, use [`uipath-functions`](/uipath:uipath-functions), and do not run `uip codedagent new`.
+
 Pick the framework before starting: the package installed in the active venv selects the agent template. Install `<FRAMEWORK_PACKAGE>` before `new`, not after — with none installed, `new` fails with an error naming what to install.
 
 With several installed, name the one to scaffold with: `uip codedagent new <PROJECT_NAME> --agent-framework <FRAMEWORK_PACKAGE>`. Without it, `new` fails and lists them.

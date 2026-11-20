@@ -40,7 +40,7 @@ export default bpmn('smart-triage')
   // The confident arm is empty: it falls straight through to `route`.
   // The fallback arm sets the category, then falls through to the same `route`.
   .choose('confGate', [
-    { when: '=vars.aiConfidence >= 0.85', label: 'Above floor', body: (b) => b },
+    { when: '=js:vars.aiConfidence >= 0.85', label: 'Above floor', body: (b) => b },
     {
       otherwise: true,
       label: 'Below floor',
@@ -53,8 +53,8 @@ export default bpmn('smart-triage')
     },
   ])
   .choose('route', [
-    { when: '=vars.routeCategory == "Billing"', label: 'Billing', body: (b) => b.task('handleBilling').endEvent('routedBilling', { name: 'Billing routed' }) },
-    { when: '=vars.routeCategory == "Technical"', label: 'Technical', body: (b) => b.task('handleTechnical').endEvent('routedTechnical', { name: 'Technical routed' }) },
+    { when: '=js:vars.routeCategory == "Billing"', label: 'Billing', body: (b) => b.task('handleBilling').endEvent('routedBilling', { name: 'Billing routed' }) },
+    { when: '=js:vars.routeCategory == "Technical"', label: 'Technical', body: (b) => b.task('handleTechnical').endEvent('routedTechnical', { name: 'Technical routed' }) },
     { otherwise: true, label: 'Spam', body: (b) => b.task('handleSpam').endEvent('routedSpam', { name: 'Spam discarded' }) },
   ])
   .build();
@@ -97,7 +97,7 @@ Set it from how costly a misroute is against how much manual triage you can abso
 | Rule-based | Are the categories decided by stable, auditable rules? | A business rule and a match gate replace the classifier and the confidence gate |
 | Hybrid | Can rules handle the clear cases cheaply? | Rules first; the classifier catches the rest |
 
-**Rule-based.** Replace `classify` with `.businessRule('applyRules', …)` and `confGate` with a `ruleGate` choose: `when: '=vars.ruleMatched == true'` falls through, `otherwise` holds `manualTriage`.
+**Rule-based.** Replace `classify` with `.businessRule('applyRules', …)` and `confGate` with a `ruleGate` choose: `when: '=js:vars.ruleMatched == true'` falls through, `otherwise` holds `manualTriage`.
 `route` still follows the gate.
 
 **Hybrid.** Keep both.

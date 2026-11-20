@@ -1,18 +1,23 @@
 task_id: skill-flow-e2e-escalation-jira-ticket
 description: >
-  E2E live Jira coverage for the escalation flow — the agent builds a
-  manual-trigger escalation-triage Flow that classifies severity and creates a
-  real Jira ticket for the escalation. The grader seeds a Sev1 case (unique
-  correlationId), runs `uip maestro flow debug --inputs`, and verifies the
-  OUTCOME by re-reading the created key from Jira: the issue exists and its
-  summary carries the seeded correlationId — proof the flow created THIS run's
-  ticket, not a fabricated key. The created issue is cleaned up in post_run.
-  A manual trigger is used because the Outlook email-received trigger is not
-  reliably debug-testable (see outlook_trigger_inbox / customer_escalation).
+  E2E live Jira coverage for the escalation flow, asked the way a Studio Web
+  user would ask it (a business prompt with the eval tenant's CE
+  project and a Task instead of a Bug). The prompt names no variables, so the
+  grader maps two seeded cases onto the inputs the agent declared, by
+  meaning: an Enterprise outage with no workaround (Sev1) and a duplicate
+  Standard-tier outage with no workaround (Sev3, and duplicates still get a
+  ticket). It runs each under `uip maestro flow debug --inputs` and checks
+  what the run did: a Jira Create Issue step completed and returned a CE key;
+  a declared output holds that key, and others hold the severity, whether
+  engineering is needed and the case reference unchanged, the same outputs in
+  both cases; and reading the key back from Jira returns an issue titled
+  "[TEST]" then the severity, the case reference and the email subject, with
+  the email body as its description. The created issues are deleted in
+  post_run.
 
   Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
   `Shared/uipath-maestro-flow` reaching the `CE` / "Coder Eval" project (issue
-  type Task). Targets live in the task's `jira_is.py`.
+  type Task). pre_run resolves both and ends the run as ERROR when it cannot.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
 sandbox:
   template_sources:
@@ -25,7 +30,7 @@ sandbox:
 run_limits:
   expected_turns: 55
   max_turns: 120
-  task_timeout: 2400
+  task_timeout: 2600  # turn 1200 + criteria 1280 + margin
   turn_timeout: 1200
 
 pre_run:
@@ -42,51 +47,68 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Create a UiPath Maestro Flow named "EscalationJiraTicket" with a MANUAL trigger
-  inside a solution of the same name.
-  It triages a customer escalation and creates a Jira ticket for it.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Read `seed.json` in the current directory. Declare flow inputs matching the keys
-  under its `inputs`: senderEmail, senderDomain, subject, body, customerTier,
-  productionDown (boolean), workaroundAvailable (boolean), hasAttachments (boolean),
-  customerMatchStatus, isDuplicate (boolean), correlationId.
+  Build an automation called "EscalationJiraTicket" that triages a customer
+  escalation and opens a Jira ticket for it.
 
-  Steps:
-  1. A Script node classifies severity from the inputs (Sev1 = Enterprise tier AND
-     productionDown AND NOT workaroundAvailable; Sev2 = productionDown AND
-     workaroundAvailable; Sev3 otherwise) plus engineeringNeeded.
-  2. Create a Jira issue using the Atlassian Jira "Create Issue" connector activity.
-     Use the `project_key` and `issuetype_id` from `seed.json`. The issue summary
-     MUST include the `correlationId` verbatim (e.g. "[<severity>] <correlationId>
-     <subject>"). Use the Atlassian Jira connection in the `Shared/uipath-maestro-flow`
-     folder. If the Atlassian Jira connector isn't in your registry, STOP rather than
-     falling back to a generic HTTP request.
-  3. End the flow, exposing these `out` variables: severity, caseKey (= the incoming
-     correlationId), and jiraIssueKey (the created issue's key).
+  For each escalation it receives:
+  - the sender's email address and domain
+  - the subject and body
+  - the customer's tier
+  - whether production is down, and whether there's a workaround
+  - whether there are attachments
+  - how the sender matched our customers
+  - whether it's a duplicate
+  - a case reference
 
-  Validate the flow. Do NOT run or debug the flow — the grader executes it with the
-  seeded inputs. Before starting, load the uipath-maestro-flow skill and follow its
-  workflow.
+  Classify the severity:
+  - Sev1: an Enterprise customer's production is down with no workaround.
+  - Sev2: production is down but there is a workaround.
+  - Sev3: everything else, including non-Enterprise customers who are down
+    without a workaround.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  Engineering is needed for Sev1 and Sev2. Open a ticket for every escalation,
+  duplicates included.
+
+  Open a Task in the "Coder Eval" (CE) Jira project. The ticket title starts
+  with "[TEST]", followed by the severity, the case reference and the email
+  subject, for example "[TEST] [Sev1] CASE-123 Production down". The
+  description is the email body.
+
+  When it finishes, return:
+  - the severity, as "Sev1", "Sev2" or "Sev3"
+  - whether engineering is needed: yes/no
+  - the case reference
+  - the key of the ticket that was created, for example "CE-12345"
+
+  <!-- helper:start -->
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), caseReference (string).
+  Outputs: severity (string), engineeringNeeded (boolean), caseKey (string),
+  jiraIssueKey (string). severity is "Sev1", "Sev2" or "Sev3".
+  The Jira connection is "is-sandboxes-test@uipath.com-uipath-sandbox-380", in
+  the Shared/uipath-maestro-flow folder. Create one issue per run in project CE
+  as issue type Task. The title is "[TEST] [<severity>] <caseReference>
+  <subject>" and the description is the email body.
+  <!-- helper:end -->
+
+  Build and test the automation.
 success_criteria:
+  # ── Advisory: the agent validated the flow (CLI commands are not graded) ─
   - type: command_executed
-    description: "Agent validated the generated Flow"
+    description: "Advisory: the agent validated the generated Flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   # Discover the flow file — the prompt names only the FLOW, never the enclosing
   # solution, so a hardcoded `<Name>/<Name>/<Name>.flow` would grade the solution
@@ -100,10 +122,20 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
   - type: run_command
-    description: "Seeded Sev1 debug run creates a real Jira ticket whose summary carries the seeded correlationId (verified by re-reading the tenant)"
-    command: "python3 $REFERENCE_DIR/_shared/check_escalation_jira_ticket.py"
-    timeout: 1600
+    description: "Effects: for two seeded cases (Enterprise down without a workaround = Sev1; a duplicate Standard-tier outage without a workaround = Sev3), fed to the agent's inputs by meaning, a Jira Create Issue step completed and returned a CE key that a declared output holds; declared outputs hold the severity, whether engineering is needed and the case reference unchanged, the same outputs in both cases; and reading the key back from Jira returns an issue titled \"[TEST]\" then the severity, the case reference and the email subject, with the email body as its description"
+    command: "python3 $REFERENCE_DIR/e2e/escalation_jira_ticket/check_escalation_jira_ticket.py"
+    timeout: 1100  # budget-guard: manual x2. 2 x debug_budget(480, retries=1) = 960 + margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

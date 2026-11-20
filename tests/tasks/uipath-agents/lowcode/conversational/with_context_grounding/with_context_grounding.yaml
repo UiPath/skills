@@ -56,10 +56,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
-    description: "Agent discovered the index identity with uip solution resources list --kind Index"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Index'
+    description: "Agent discovered the index identity with uip solution resources list --kind Index (or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Index\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Index)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -75,10 +78,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Studio Web cannot run `uip solution resources refresh` (no .uipx on disk), so the
+  # studioweb skill declares each resource with `resources add` instead; either counts.
   - type: command_executed
-    description: "Agent refreshed solution resources with uip solution resources refresh"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    description: "Agent declared the index in the solution: uip solution resources refresh, or resources add --kind Index (CLI or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+(?:refresh\b|add\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Index\b)|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"add")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Index")'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

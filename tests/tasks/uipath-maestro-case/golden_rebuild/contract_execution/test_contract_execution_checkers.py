@@ -380,6 +380,24 @@ class TopologyCheckerTests(unittest.TestCase):
         result = run_checker(TOPOLOGY_CHECKER, expected_caseplan(), "caseplan.case")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_accepts_a_studio_web_plan_without_activity_config(self) -> None:
+        """Studio Web's case scaffold has no intsvcActivityConfig key."""
+        plan = expected_caseplan()
+        plan["metadata"].pop("intsvcActivityConfig")
+
+        result = self._run(plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_rejects_another_activity_config(self) -> None:
+        plan = expected_caseplan()
+        plan["metadata"]["intsvcActivityConfig"] = "v1"
+
+        result = self._run(plan)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("intsvcActivityConfig must be 'v2'", result.stdout + result.stderr)
+
     def test_rejects_missing_stage(self) -> None:
         plan = expected_caseplan()
         plan["nodes"] = [
@@ -550,6 +568,19 @@ class SemanticsHelperTests(unittest.TestCase):
         cls.mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.mod)
 
+    def test_action_labels_compare_as_a_label_list(self) -> None:
+        """Studio Web wrote `contract,intake` for the SDD's `contract, intake`."""
+        envelope = {"priority": "High", "taskTitle": "Check the contract request",
+                    "labels": "contract, intake"}
+        task = {"data": {"priority": "High", "taskTitle": "Check the contract request",
+                         "labels": "contract,intake"}}
+        self.mod._assert_envelope(("Checking the request", "Validate Request Details"),
+                                  task, envelope)
+        task["data"]["labels"] = "contract"
+        with self.assertRaises(SystemExit):
+            self.mod._assert_envelope(("Checking the request", "Validate Request Details"),
+                                      task, envelope)
+
     def test_reference_accepts_both_guard_forms(self) -> None:
         for value in (
             "=js:vars.analysisResult?.unusualClauses",
@@ -688,6 +719,20 @@ class FieldNameCheckerTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("the SDD declares 'riskFlags'", result.stdout + result.stderr)
+
+    def test_accepts_an_extra_output_the_sdd_does_not_declare(self) -> None:
+        """The agent task's own `analysisResult` output
+        is extra, not a re-cased SDD field."""
+        plan = fieldname_caseplan()
+        decision = plan["nodes"][0]["data"]["tasks"][1][0]
+        decision["data"]["outputs"].append(
+            {"name": "analysisResult", "id": "analysisResult", "var": "analysisResult",
+             "source": "=response.analysisResult"}
+        )
+
+        result = self._run(plan)
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_rejects_pascal_cased_event_schema_keys(self) -> None:
         plan = fieldname_caseplan()
