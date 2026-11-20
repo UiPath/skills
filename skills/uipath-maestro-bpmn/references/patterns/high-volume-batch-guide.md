@@ -111,6 +111,7 @@ Write each item's outcome to a store outside the process instead, such as a Data
 After the sub-process, read the batch's records back with a `.dataService()` `query`, then keep `aggregate` a `.scriptTask()` that totals them from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
 Aggregation and the policy value stay in that script: a bare `.task()` compiles to a no-op `bpmn:task`, does no work, and leaves `policySatisfied` at its `false` default.
 Check the query response's record path in the node's `_response` before reading it in the script.
+When the request names no store, do not invent an entity or connection: keep `sequential: true`, which collects results correctly, and tell the user that running several at a time needs a store.
 This variant is not verified end to end.
 
 ## What to bind
