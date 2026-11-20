@@ -584,6 +584,8 @@ test("the studioweb BPMN skill finds the project before writing and never builds
   assert.match(skill, /ask the user whether to replace its process or use a new project/);
   assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
   assert.match(skill, /Never pass `--force`/);
+  assert.match(skill, /Never recreate the nested layout/);
+  assert.match(skill, /`\/solution` projects are flat/);
 });
 
 test("the default BPMN skill carries no Studio Web Rule 13", (t) => {
