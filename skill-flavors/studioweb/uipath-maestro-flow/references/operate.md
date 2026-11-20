@@ -67,6 +67,7 @@ letting a passing `validate` stand as the result. The reply is plain text:
 <!--skill-flavor:operate-debug:end-->
 
 <!--skill-flavor:operate-debug-wait:start-->
+- **A flow with a human task suspends at it, so `TimedOut` is expected.** See [hitl.md](hitl.md#live-debug-of-a-flow-with-a-human-task).
 - **The reply waits up to 120 s.** Pass `--timeout <seconds>` to change it,
   from 10 to 150.
 - **`TimedOut after <N>s` is not a failure.** The run continues in the host,
