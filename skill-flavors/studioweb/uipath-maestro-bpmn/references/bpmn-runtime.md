@@ -10,6 +10,10 @@
   Needs `@uipath/maestro-builder-sdk` 6.122.0 or later. Studio Web ships its own SDK: when it writes `create`, `update`, `get` or `query` on a folder entity with a literal folder key as a V1 task (one `target="query"` row per parameter), the task still runs. Tell the user that this Studio Web build writes V1 Data Fabric tasks for folder entities; do not hand-convert its rows. A `delete`, or a folder key written as an `=`-expression, is a V1 task on every SDK: say nothing about it.
 <!--skill-flavor:sdk-df-folder-v2:end-->
 
+<!--skill-flavor:sdk-folder-key:start-->
+  Studio Web ships its own `uip` and SDK: when `prepare` answers `unknown option '--folder-key'`, or says `--folder-key` needs a builder SDK release that supports it, name the folder by path with `{ name, folder }` instead, which needs no `--folder-key`.
+<!--skill-flavor:sdk-folder-key:end-->
+
 <!--skill-flavor:sdk-v2-connector:start-->
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later. Studio Web ships its own SDK: when it writes a new `.connector()` task with one `target="path"` / `target="query"` row per parameter and an `operation` context row, the task is V1 and still runs. Tell the user that this Studio Web build writes V1 connector tasks; do not hand-convert its rows.
 <!--skill-flavor:sdk-v2-connector:end-->
