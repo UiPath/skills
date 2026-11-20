@@ -298,7 +298,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
   The same `outputs` option reads an RPA process's (`.startProcess()`), an agent's (`.startAgent()`) and a waited-for agentic or case process's (`.startAgenticProcess()`, `.startCaseProcess()` without `async`) output arguments.
-  `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
+  `outputVar` (default `<id>_processResponse`) holds the whole `result`, every output argument in one object; use it to pass them on together, and `outputs` for an argument a later node reads.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
 
 <!-- RULE:bpmn.http.manual -->
