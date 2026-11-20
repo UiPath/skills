@@ -30,7 +30,7 @@ initial_prompt: |
   outcomes "Approve" (positive), "Deny" (negative), and "Refer" (neutral; it also covers missing
   information), as of today. Run it in the logged-in user's Personal Orchestrator folder.
 
-  Nobody is available to answer questions: at every checkpoint accept your own proposed answer. Do not run
+  Nobody is available to answer questions: at every question accept your own proposed answer. Do not run
   `uip rules debug`.
 
 success_criteria:

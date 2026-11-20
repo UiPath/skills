@@ -45,7 +45,7 @@ initial_prompt: |
   Keep each named input as its own column of the table so a reviewer can read it;
   do not build a column from an expression that combines inputs.
 
-  Nobody is available to answer questions: at every checkpoint accept your own
+  Nobody is available to answer questions: at every question accept your own
   proposed answer, and note each assumption in the rule. There is no tenant, so
   do not run `uip rules debug`.
 

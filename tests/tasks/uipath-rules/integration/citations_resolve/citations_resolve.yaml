@@ -29,7 +29,7 @@ initial_prompt: |
     `hasDirectorPreApproval` (boolean), `hasMedicalAccommodation` (boolean).
   - Output: `outcome` (string), one of "Approve", "Deny", "Refer".
 
-  Nobody is available to answer questions: at every checkpoint accept your own
+  Nobody is available to answer questions: at every question accept your own
   proposed answer. There is no tenant, so do not run `uip rules debug`.
 
 success_criteria:
