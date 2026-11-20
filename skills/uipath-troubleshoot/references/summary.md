@@ -1,10 +1,10 @@
 # Domain Catalog
 
-Domain descriptions, namespaces, and CLI entry points. Runtime routing greps the playbook corpus directly (SKILL.md §4) — use this catalog to cross-check a (system, entity) classification, map exception namespaces to owning packages, browse a domain's playbook index during escalation, and route silent failures via the no-signature table below.
+Domain descriptions, namespaces, and CLI entry points. Runtime routing greps the playbook corpus directly (SKILL.md §4). Use this catalog to cross-check a (system, entity) classification, map exception namespaces to owning packages, browse a domain's playbook index during escalation, and route silent failures via the no-signature table.
 
 ## Orchestrator
 
-Manages automation resources, robots, processes, and execution. Handles job scheduling, queue management, asset storage, triggers, storage buckets, and folder-based access control. Issues here involve failed jobs, stuck jobs, queue item failures, trigger problems, robot connectivity, permissions, and platform availability.
+Manages automation resources, robots, processes, execution, scheduling, queues, assets, triggers, storage buckets, and folder access. Covers failed/stuck jobs, queue-item and trigger failures, robot connectivity, permissions, and platform availability.
 
 CLI: `uip or --help`
 
@@ -13,7 +13,7 @@ CLI: `uip or --help`
 
 ## Studio
 
-UiPath Studio (Desktop and Web) — the authoring IDE. This domain covers Studio-level *platform* failures that are not workflow-code or activity faults: license acquisition (License Provider = Orchestrator), profile entitlement (Studio vs StudioX), and in-IDE AI features (Autopilot for developers). Issues here involve Studio running unlicensed ("No license exist for this installation"), Autopilot greyed out / "disabled by your organization", and tenant-service enablement gaps. For `.xaml` / `.cs` authoring and activity faults use UI Automation / System Activities / Runtime Exceptions; for agent/product LLM routing use LLM Gateway.
+UiPath Studio Desktop/Web authoring IDE. Covers platform failures, not workflow-code or activity faults: license acquisition (License Provider = Orchestrator), Studio/StudioX entitlement, and Autopilot for developers, including "No license exist for this installation", Autopilot greyed out/"disabled by your organization", and tenant-service gaps. For `.xaml`/`.cs` authoring and activity faults use UI Automation / System Activities / Runtime Exceptions; for agent/product LLM routing use LLM Gateway.
 
 CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services enable`, `uip platform users licenses get`
 
@@ -22,7 +22,7 @@ CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services en
 
 ## Runtime Exceptions
 
-General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null/invalid/out-of-range arguments, invalid operations (LINQ, nullable, enumeration), `If` condition compiler/type errors (design-time Studio validation, e.g. `Compiler error(s) encountered processing expression` / `Option Strict On disallows implicit conversions`), silent wrong-branch `If` faults, `Assign` type mismatches (design-time Studio validation, e.g. `Cannot assign from type 'System.Object' to 'System.String'`), LINQ `CopyToDataTable` "source contains no data rows", missing files/directories, out-of-bounds indexing, and missing dictionary keys in workflow logic, variable handling, and data processing.
+General .NET runtime exceptions from user workflow code, not activity packages or platform internals: null references; null/invalid/out-of-range arguments; invalid operations (LINQ, nullable, enumeration); `If` compiler/type errors including `Compiler error(s) encountered processing expression` and `Option Strict On disallows implicit conversions`; silent wrong-branch `If` faults; `Assign` design-time mismatches including `Cannot assign from type 'System.Object' to 'System.String'`; LINQ `CopyToDataTable` "source contains no data rows"; missing files/directories; out-of-bounds indexes; and missing dictionary keys in workflow logic, variables, and data processing.
 
 - [runtime-exceptions/overview.md](./runtime-exceptions/overview.md) — Scope boundary, investigation sources (local logs and Orchestrator jobs)
 - [runtime-exceptions/summary.md](./runtime-exceptions/summary.md) — All playbooks for runtime exception issues
@@ -31,14 +31,14 @@ General .NET runtime exceptions originating from the user's own workflow code �
 
 CLI: `uip maestro --help`
 
-Agentic orchestration platform built on Orchestrator. BPMN-based process design with human-in-the-loop tasks, AI agent tasks, and service tasks. Processes are designed in Studio Web, deployed as solutions, and managed through Maestro Instance Management. Issues here involve deployment failures, debug-vs-deploy mismatches, expression/variable errors, file handling, boundary events, parallel markers, stuck instances, and service availability.
+Agentic orchestration on Orchestrator: BPMN processes designed in Studio Web, deployed as solutions, and managed through Maestro Instance Management; supports human-in-the-loop, AI-agent, and service tasks. Covers deployment failures, debug/deploy mismatches, expression/variable errors, file handling, boundary events, parallel markers, stuck instances, and service availability.
 
 - [products/maestro/overview.md](./products/maestro/overview.md) — Product overview, dependencies, key concepts, and features
 - [products/maestro/summary.md](./products/maestro/summary.md) — All playbooks for Maestro issues
 
 ## Integration Service
 
-Connector platform for third-party integrations (Salesforce, Outlook, SAP, Slack, etc.). Manages OAuth connections, exposes activities for automations and BPMN processes, and provides event-based triggers. Issues here involve connection failures, expired authentication, triggers not firing, and operation errors. Connection errors from Integration Service often surface through Maestro or Orchestrator as the calling product. Also covers the runtime exceptions thrown by the connector activities (`ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`): `GeneralException`/`RuntimeException` with `DAP-GE-*`/`DAP-RT-*` codes, and `UiPath.Ipc`/`UiPath.CoreIpc` `RemoteException` — plus the `CNS…` error codes returned by the Connection Service HTTP API (connections/connectors/triggers CRUD, permissions, event callbacks, Solutions installs).
+Third-party connector platform (Salesforce, Outlook, SAP, Slack, etc.) managing OAuth connections, automation/BPMN activities, and event triggers. Covers connection/authentication, expired credentials, trigger, and operation failures, including connector activity exceptions: `ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`; `GeneralException`/`RuntimeException` with `DAP-GE-*`/`DAP-RT-*`; `UiPath.Ipc`/`UiPath.CoreIpc` `RemoteException`; and Connection Service HTTP API `CNS…` codes for connections/connectors/triggers CRUD, permissions, event callbacks, and Solutions installs. Errors may surface through Maestro or Orchestrator.
 
 Namespaces: `UiPath.IntegrationService.Activities`, `UiPath.IntegrationService.Activities.Runtime.Exceptions`
 
@@ -51,7 +51,7 @@ CLI: `uip is --help`
 
 ## API Workflows
 
-Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Three more kinds of failure leave no trace in the workflow file, and neither `validate` nor a local `run` will show them: the workflow never ran at all (no job record — the trigger is off, points at an old release, its event connection is dead, or nothing called it), a platform limit cut the run off (a Script's 10-second budget, a loop stopping quietly at its `limit`, the 15-minute serverless job limit), and an outbound call blocked because the target allows the IP range of the other route. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+Studio Web JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and publish to Orchestrator as API processes/jobs; they have no UI automation, robot, or agent runtime. Covers expression/undefined-output/loop/logic faults, connector 401/403, designer-roundtrip corruption, and pack/publish/deploy failures. Cloud 401 means wrong activity kind or stale connection binding; 403 means broken/disabled/under-scoped Integration Service connection. Also diagnose absent job records (trigger off/old release/dead event connection/no caller), limits (Script 10-second budget, loop `limit`, 15-minute serverless job limit), and outbound IP-route blocking. Connection faults belong to Integration Service; job/trigger mechanics to Orchestrator.
 
 CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip or triggers list`/`history`, `uip traces spans get --job-key`
 
@@ -60,15 +60,15 @@ CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is conn
 
 ## Agents
 
-Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
+Low-code agents built with `uip agent`; covers LLM failures, context-grounding index misconfiguration, and input-schema validation. Primary evidence: `uip traces spans get <traceId> --output json`, whose spans contain full error text, codes, and field detail.
 
-CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip agent debug` (only with explicit user approval because it uploads and executes the agent)
+CLI: `uip traces spans get`, `uip context-grounding`, `uip agent refresh`, `uip agent validate`, `uip agent debug` (run only with explicit user approval because it uploads and executes the agent)
 
 - [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
 
 ## LLM Gateway
 
-Service that routes agent / product LLM calls to a model — platform default or tenant-owned (BYO) provider key. Issues here involve BYO LLM product configurations failing at runtime, server-side validation probes failing on `create` / `update`, and routing being bypassed (call hits the platform default despite an active BYO record). LLM Gateway failures often surface through the consuming agent / product (agents, agenthub, jarvis, IXP) or as auth-shaped errors referencing the vendor directly (OpenAI, Azure OpenAI, Bedrock, Vertex, Anthropic). The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace-evidence only.
+Routes agent/product LLM calls to platform-default or tenant-owned (BYO) providers. Covers BYO runtime failures, server-side `create`/`update` validation-probe failures, and bypassed routing to the platform default. Failures may surface through agents, agenthub, jarvis, IXP, or vendor-shaped auth errors (OpenAI, Azure OpenAI, Bedrock, Vertex, Anthropic). The gateway exposes no per-request invocation logs via CLI; use current state plus trace evidence.
 
 CLI: `uip llm-configuration --help`, `uip traces spans get`, `uip gov aops-policy deployed-policy resolve`
 
@@ -77,7 +77,7 @@ CLI: `uip llm-configuration --help`, `uip traces spans get`, `uip gov aops-polic
 
 ## Coded Apps
 
-Custom TypeScript/React web front-ends (coded web apps) and Action Center form apps (coded action apps) that call UiPath APIs through the `@uipath/uipath-typescript` SDK, built and shipped with `uip codedapp`. A coded app runs in the user's browser, so failures surface as OAuth redirect errors (`redirect_uri_mismatch`, `invalid_scope`), failed HTTP calls (401/403/404), CORS blocks, or a broken deployed URL — not as a faulted job with a trace. Config lives in `uipath.json` (what the app requests); the External Application backing it (`uip admin external-apps`) governs what redirect URIs and scopes are allowed. There is no runtime job/trace/log CLI — diagnosis is current-state (`uipath.json`, `uip admin external-apps get`, `.uipath/app.config.json`, `vite.config.ts`) plus the error signature the user reports.
+Custom TypeScript/React web fronts and Action Center form apps using `@uipath/uipath-typescript`, built/shipped with `uip codedapp`. Browser-runtime failures are OAuth (`redirect_uri_mismatch`, `invalid_scope`), HTTP 401/403/404, CORS, or broken deployed URLs—not faulted jobs/traces. `uipath.json` requests permissions; `uip admin external-apps` controls backing External Application redirect URIs/scopes. Diagnose from `uipath.json`, `uip admin external-apps get <client-id>`, `.uipath/app.config.json`, `vite.config.ts`, and reported signatures; no runtime job/trace/log CLI.
 
 CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
 
@@ -86,14 +86,16 @@ CLI: `uip codedapp --help`, `uip admin external-apps get <client-id>`
 
 ## Assistant (Desktop)
 
-The UiPath Assistant Windows desktop app (Electron host + native .NET Robot service) that end users run to sign in, connect to Orchestrator, and start processes. Diagnosis is from an exported **diagnostic archive** (`ExportDiagnoseArchive` folder), reading two log files: `combined.log` (Electron/main-process — IPC routes, UI state) and `Robot.log` (native Robot service — the actual sign-in/connect/package work, machine-local time with an offset). Issues here involve sign-in failures, Orchestrator connection failures, processes missing or not starting, and crashes. There is **no `uip` CLI job/trace/log surface** — evidence is the on-disk log files plus the reported symptom (like Coded Apps). Cross-references: Orchestrator (`401`/`403`, assignment, license), Identity/cloud (OAuth on `/identity_`/`/discovery_`), NuGet feeds (`NU1101`). Exception namespaces: `UiPath.Service.*`, `UiPath.RobotJS.*`.
+UiPath Assistant Windows desktop app (Electron host plus native .NET Robot service) handles sign-in, Orchestrator connection, and process starts. Diagnose exported `ExportDiagnoseArchive` using `combined.log` (Electron/main-process IPC/UI state) and `Robot.log` (native sign-in/connect/package work, machine-local time with offset). Covers sign-in, Orchestrator connection, missing/nonstarting processes, and crashes. No `uip` job/trace/log surface. Cross-reference Orchestrator (`401`/`403`, assignment, license), Identity/cloud (OAuth on `/identity_`/`/discovery_`), and NuGet feeds (`NU1101`).
+
+Exception namespaces: `UiPath.Service.*`, `UiPath.RobotJS.*`
 
 - [products/assistant/overview.md](./products/assistant/overview.md) — Two-log architecture, evidence model, dependencies, and flow attribution
 - [products/assistant/summary.md](./products/assistant/summary.md) — All playbooks for UiPath Assistant desktop issues
 
 ## UI Automation
 
-Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors) to find and interact with UI elements. Issues here involve selector failures, element not found exceptions, timeout issues, Healing Agent problems, and data validation errors during UI interactions.
+Desktop/web UI activities using XML selectors. Covers selector failures, missing elements, timeouts, Healing Agent, and interaction data validation.
 
 Namespaces: `UiPath.UIAutomationNext.Activities`, `UiPath.UIAutomation.Activities`, `UiPath.Core.Activities`
 
@@ -102,7 +104,7 @@ Namespaces: `UiPath.UIAutomationNext.Activities`, `UiPath.UIAutomation.Activitie
 
 ## Computer Vision (CV) Activities
 
-Activities that target UI elements by visual analysis of a screenshot instead of selectors — for virtualized/Citrix/RDP, image-based, and remote desktops. Every CV activity runs inside a CV Screen Scope (`CVScope`) that screenshots the target window; a CV server (cloud or local) plus an OCR engine detects elements, the descriptor (target + anchors) is matched, and the action fires at the matched coordinates. Issues here involve element-not-found / descriptor-match failures, invalid descriptors, table cell-targeting errors, scroll-search failures, CV server auth/throttling/network errors, scope setup failures, post-find action failures, and silent/false results (`ContinueOnError` / `InRegion` suppression).
+Screenshot/visual-analysis activities for virtualized/Citrix/RDP, image-based, and remote desktops. Every CV activity runs in `CVScope`, which screenshots the target; cloud/local CV server plus OCR detects elements; descriptor target/anchors match; action fires at coordinates. Covers element-not-found/descriptor-match, invalid descriptors, table-cell targeting, scroll-search, server auth/throttling/network, scope setup, post-find action, and silent/false results from `ContinueOnError`/`InRegion`.
 
 Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
 
@@ -111,7 +113,7 @@ Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
 
 ## OCR Activities
 
-Low-level OCR engine activities from `UiPath.OCR.Activities` — UiPath Screen OCR and UiPath Document OCR (cloud or local server), plus CJK / Extended Languages OCR via Document Understanding. These are the foundational text-recognition engines consumed by Document Understanding `Digitize` and Computer Vision screen scopes. Issues here involve missing local-server / CoreIPC packages, incompatible companion-package versions, invalid API key / endpoint / CJK configuration, service timeouts and invalid responses, invalid or missing image input, unsupported rotation, wrong scrape usage, and empty/silent results. For the DU document pipeline (`Digitize` / classify / extract) see Document Understanding; for CV screen-targeting see Computer Vision.
+Low-level `UiPath.OCR.Activities` engines (Screen OCR, Document OCR cloud/local, CJK/Extended Languages OCR via Document Understanding), consumed by DU `Digitize` and CV scopes. Covers missing local-server/CoreIPC packages, companion-version incompatibility, invalid API key/endpoint/CJK configuration, timeouts/invalid responses, invalid or missing images, unsupported rotation, wrong scrape use, and empty/silent results. DU pipeline belongs to Document Understanding; CV targeting to Computer Vision.
 
 Namespaces: `UiPath.OCR.Activities` (exceptions: `OCRException` with `OCRResultCode`)
 
@@ -120,7 +122,7 @@ Namespaces: `UiPath.OCR.Activities` (exceptions: `OCRException` with `OCRResultC
 
 ## System Activities
 
-Core workflow activities from `UiPath.System.Activities`. Two families: Orchestrator-resource activities (asset retrieval, credential lookup, queue operations, storage buckets — asset-not-found, permission denied, folder scope mismatches, external vault failures, package version bugs); and local runtime activities (compression `Compress/Extract Files` → `CompressionException`; modern StudioX file/folder `Copy/Move/Rename/Delete` → `FileSystemException`; `Download File from URL` / `Wait for Download`). For the classic `Rename/Move File`, `Kill Process`, `Invoke Code/Workflow File`, and `Add Queue Item` activities, see **Classic Activities**.
+Core `UiPath.System.Activities` families: Orchestrator resources (assets, credentials, queues, storage buckets: missing assets, permissions, folder scope, vault failures, package bugs) and local runtime (`Compress/Extract Files` → `CompressionException`; modern StudioX `Copy/Move/Rename/Delete` → `FileSystemException`; `Download File from URL` / `Wait for Download`). Classic `Rename/Move File`, `Kill Process`, `Invoke Code/Workflow File`, and `Add Queue Item` belong to Classic Activities.
 
 Namespaces: `UiPath.Core.Activities`, `UiPath.System.Activities`
 
@@ -129,7 +131,7 @@ Namespaces: `UiPath.Core.Activities`, `UiPath.System.Activities`
 
 ## Classic Activities
 
-The classic (non-"modern"/non-"Next") activities under `UiPath.Core.Activities`. Two groups: classic UI Automation — `Click`, `Type Into`, `Send Hotkey`, `Open Browser`, `Close Tab`, `Open Application`, `Attach Browser`/`Window`, `Take Screenshot`, `Wait Image Vanish`, `Wait UI Element Appear` (selector/image based, `SelectorNotFoundException` / `ActivityTimeoutException` / `ElementOperationException` / `BrowserOperationException`); and System/Core — `Invoke Workflow File`, `Invoke Code`, `Add Queue Item`, `Rename File`, `Move File`, `Append Line`, `Log Message`, `Kill Process`, `Start Triggers`, `For Each Row` (file/process/code/queue/workflow failures). Use this package when the faulted activity is one of the classic types above. For the modern UI "Next" activities (`NClick`, `Use Application/Browser`, Healing Agent) use **UI Automation**; for `Get Asset`/`Get Credential`/`Get Robot Asset` use **System Activities**.
+Classic non-modern/non-Next `UiPath.Core.Activities`: UI (`Click`, `Type Into`, `Send Hotkey`, `Open Browser`, `Close Tab`, `Open Application`, `Attach Browser`/`Window`, `Take Screenshot`, `Wait Image Vanish`, `Wait UI Element Appear`) with selector/image failures `SelectorNotFoundException` / `ActivityTimeoutException` / `ElementOperationException` / `BrowserOperationException`; and System/Core (`Invoke Workflow File`, `Invoke Code`, `Add Queue Item`, `Rename File`, `Move File`, `Append Line`, `Log Message`, `Kill Process`, `Start Triggers`, `For Each Row`) with file/process/code/queue/workflow failures. Use this package for those faulted activities. Modern Next activities (`NClick`, `Use Application/Browser`, Healing Agent) use UI Automation; `Get Asset`/`Get Credential`/`Get Robot Asset` use System Activities.
 
 Namespaces: `UiPath.Core.Activities`, `UiPath.UIAutomation.Activities`, `UiPath.System.Activities`
 
@@ -138,7 +140,7 @@ Namespaces: `UiPath.Core.Activities`, `UiPath.UIAutomation.Activities`, `UiPath.
 
 ## Google Workspace Activities
 
-Activities for interacting with Google Workspace including Google Calendar, Google Drive, Google Sheets, Gmail, Google Docs, Google Tasks, and Google Forms. Issues here involve files not found, sheet name conflicts, multiple items name conflicts, emails not found, sheet cell limit exceeded, sheets invalid ranges, upload storage quota exceeded.
+Google Calendar, Drive, Sheets, Gmail, Docs, Tasks, and Forms activities. Covers files not found, sheet-name conflicts, multiple-item name conflicts, emails not found, sheet cell limits, invalid ranges, and upload storage quota.
 
 Namespaces: `UiPath.GSuite.Activities`
 
@@ -147,16 +149,16 @@ Namespaces: `UiPath.GSuite.Activities`
 
 ## Microsoft Office 365 Activities
 
-Activities for interacting with Microsoft Office 365 through Graph API. Issues here involve multiple items name conflicts, drive items not found, mail folders not found, emails not matching the filters, already existing item names.
+Graph API activities covering multiple-item name conflicts, missing drive items/mail folders, nonmatching email filters, and existing item names.
 
 Namespaces: `UiPath.MicrosoftOffice365.Activities`
 
 - [activity-packages/o365-activities/overview.md](./activity-packages/o365-activities/overview.md) — Package overview, activity types, and common failure patterns
-- [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 Activities issues
+- [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 issues
 
 ## Mail Activities (classic)
 
-Activities from the classic mail packages that talk to a mail system directly from the Robot: Outlook desktop COM (`UiPath.Mail.Outlook.Activities` — `Send Outlook Mail Message`, `Get Outlook Mail Messages`, `Move Outlook Mail Message`, `Reply To Outlook Mail Message` driving a local OUTLOOK.EXE via COM interop under the Robot's Windows user) and protocol-level SMTP / IMAP / POP3 / Exchange. Distinct from the modern Graph/OAuth Microsoft Office 365 Activities and the Gmail activities in Google Workspace Activities. Issues here involve COM cast / library-not-registered failures (`REGDB_E_CLASSNOTREG`, `TYPE_E_LIBNOTREGISTERED` — Outlook missing/unregistered, bitness mismatch, orphaned OUTLOOK.EXE), timeouts and hangs (hidden security prompt, Work Offline mode, slow profile first-launch — fragile on unattended Robots with no interactive desktop to dismiss prompts), and uninitialized inputs (`Object reference not set to an instance of an object` from a null To/Subject/Body or attachment path).
+Classic direct-to-mail Robot packages: Outlook desktop COM (`UiPath.Mail.Outlook.Activities`: `Send Outlook Mail Message`, `Get Outlook Mail Messages`, `Move Outlook Mail Message`, `Reply To Outlook Mail Message`) and SMTP/IMAP/POP3/Exchange. Distinct from Graph/OAuth Office 365 and Google Workspace. Covers COM cast/library registration (`REGDB_E_CLASSNOTREG`, `TYPE_E_LIBNOTREGISTERED`), missing/unregistered Outlook, bitness, orphaned `OUTLOOK.EXE`; hangs/timeouts from hidden prompts, Work Offline, slow first launch (fragile on unattended Robots); and null To/Subject/Body/attachment paths causing `Object reference not set to an instance of an object`.
 
 Namespaces: `UiPath.Mail.Outlook.Activities`, `UiPath.Mail.SMTP.Activities`, `UiPath.Mail.IMAP.Activities`, `UiPath.Mail.POP3.Activities`, `UiPath.Mail.EWS.Activities`
 
@@ -165,7 +167,7 @@ Namespaces: `UiPath.Mail.Outlook.Activities`, `UiPath.Mail.SMTP.Activities`, `Ui
 
 ## Excel Activities
 
-Desktop Excel activities from `UiPath.Excel.Activities` — read, write, delete, and manipulate `.xlsx` / `.xls` workbooks, run VBA macros (`Invoke VBA`, `Execute Macro`), and look up ranges on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, provider-specific parsing errors on heavily formatted or sensitivity-labeled files, Trust Center macro blocks, entry-method / parameter marshaling errors, COM-interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope / Use Excel File container failures. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
+Desktop `UiPath.Excel.Activities` reads/writes/deletes/manipulates `.xlsx`/`.xls`, invokes VBA (`Invoke VBA`, `Execute Macro`), and looks up ranges through Excel COM (Excel installed) or OpenXML (not required). Covers locks, missing sheets, range parsing, provider parsing on heavily formatted/sensitivity-labeled files, Trust Center macro blocks, entry-method/parameter marshaling, COM instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope/Use Excel File failures. Cloud Graph Excel belongs to Microsoft Office 365 Activities.
 
 Namespaces: `UiPath.Excel.Activities`
 
@@ -174,7 +176,7 @@ Namespaces: `UiPath.Excel.Activities`
 
 ## Word Activities
 
-Activities for automating Microsoft Word documents on Windows. Operations run inside a `Use Word File` (`WordProcessScope`) or classic `Word Application Scope` container and drive a real WINWORD.EXE through Office Interop (COM), requiring desktop Word on the execution host. Issues span package-wide COM / host failures common to all Word activities (type library / class not registered `0x8002801D` / `0x80040154` / `REGDB_E_CLASSNOTREG`, bitness mismatch, Word busy/blocked `0x8001010A`, `WINWORD.EXE` crashing mid-operation with `RPC_E_WRONG_THREAD` `0x8001010E`); `Word Application Scope` failures (corrupted-file errors, indefinite hangs on background modal dialogs, "cannot create unknown type" load errors, document-path resolution); and `Add Picture` (`WordAddImage`)-specific failures (activity placed outside a Word scope, insertion target text/bookmark not found, invalid image path / unusable image input).
+Windows Word activities run in `Use Word File` (`WordProcessScope`) or classic `Word Application Scope` through `WINWORD.EXE` COM, requiring desktop Word. Covers type-library/class registration `0x8002801D` / `0x80040154` / `REGDB_E_CLASSNOTREG`, bitness, Word busy `0x8001010A`, crashes with `RPC_E_WRONG_THREAD`/`0x8001010E`; scope corrupted files, modal-dialog hangs, "cannot create unknown type", path resolution; and `Add Picture`/`WordAddImage` outside scope, missing target text/bookmark, or invalid image input.
 
 Namespaces: `UiPath.Word.Activities`
 
@@ -183,7 +185,7 @@ Namespaces: `UiPath.Word.Activities`
 
 ## Python Activities
 
-Activities for invoking Python from a workflow. `UiPath.Python.Activities` does not run Python in-process — `Python Scope` launches a separate Python host process and marshals objects over an IPC pipe; `Load Python Script` / `Run Python Script` / `Invoke Python Method` / `Get Python Object` call into that host. Issues here involve `Pipe is broken` / `Error invoking Python method` (the out-of-process host died — a pip module missing from the scope's interpreter, an unhandled exception, a hard `sys.exit`, or stdout flooding), `The specified Python path is not valid` (`Path` points at `python.exe` instead of the install folder, or the `WindowsApps\python` Store alias), `One or more errors occurred` / engine-init failures (`Target` bitness, `Version`, or `Library path` mismatch, or a missing .NET Desktop Runtime), and scripts that run but read/write the wrong files (relative paths resolving against the robot's per-package `WorkingFolder`).
+`UiPath.Python.Activities` uses an out-of-process Python host and IPC pipe: `Python Scope` launches it; `Load Python Script` / `Run Python Script` / `Invoke Python Method` / `Get Python Object` call it. Covers `Pipe is broken` / `Error invoking Python method` from host death (missing pip module, unhandled exception, hard `sys.exit`, stdout flooding); `The specified Python path is not valid` (`Path` points at `python.exe` instead of the install folder, or at the `WindowsApps\python` Store alias); `One or more errors occurred`/engine-init from `Target`, `Version`, `Library path`, or missing .NET Desktop Runtime; and wrong files from relative paths resolving under robot per-package `WorkingFolder`.
 
 Namespaces: `UiPath.Python.Activities`
 
@@ -192,7 +194,7 @@ Namespaces: `UiPath.Python.Activities`
 
 ## Database Activities
 
-Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
+ADO.NET relational database activities (SQL Server, Oracle, MySQL, ODBC, OLE DB). `DatabaseConnection` from `Connect to Database` / `Start Transaction` feeds `Execute Query`, `Execute Non Query`, `Run Command`, and bulk/insert activities. Covers null/out-of-scope connections, provider/driver mismatch after Windows-Legacy → Windows migration, SQL syntax/unsafe concatenation, query text in the connection-string field, timeouts, `0xE0434352` CLR crashes, and wrong activity for statement type.
 
 Namespaces: `UiPath.Database.Activities`
 
@@ -201,7 +203,7 @@ Namespaces: `UiPath.Database.Activities`
 
 ## Web Activities
 
-Activities for outbound HTTP calls and payload deserialization. `HttpClient` (legacy, RestSharp) and `NetHttpRequest` (modern, `System.Net.Http`) issue HTTP requests; `DeserializeJson`, `DeserializeJsonArray`, and `DeserializeXml` parse a string into a typed object / `JArray` / `XDocument`. Issues here involve HTTP request failures (`System.Net.WebException` — status / DNS / connection / SSL), request timeouts (`System.TimeoutException`), null request inputs (`System.NullReferenceException`), modern-activity faults wrapped in `System.AggregateException`, malformed JSON/XML payloads (`Newtonsoft.Json.JsonReaderException` / `System.Xml.XmlException`), JSON type mismatches (`Newtonsoft.Json.JsonSerializationException`), and null/empty payloads (`System.ArgumentNullException`). These activities propagate raw framework exceptions — the faulted activity class + exception class is the discriminator. A malformed/null deserialize fault is frequently a symptom of an upstream HTTP call.
+`HttpClient` (legacy, RestSharp) and `NetHttpRequest` (modern, `System.Net.Http`) make HTTP calls; `DeserializeJson`, `DeserializeJsonArray`, and `DeserializeXml` parse string to typed object/`JArray`/`XDocument`. Covers `System.Net.WebException` status/DNS/connection/SSL failures, `System.TimeoutException`, `System.NullReferenceException`, modern `System.AggregateException`, malformed JSON/XML (`Newtonsoft.Json.JsonReaderException` / `System.Xml.XmlException`), JSON type mismatch (`Newtonsoft.Json.JsonSerializationException`), and null/empty payload (`System.ArgumentNullException`). Raw framework exceptions propagate; faulted activity class plus exception class discriminates. Deserialize failure may reflect upstream HTTP failure.
 
 Namespaces: `UiPath.Web.Activities`
 
@@ -210,7 +212,7 @@ Namespaces: `UiPath.Web.Activities`
 
 ## Jira Activities
 
-Activities from the classic `UiPath.Jira.Activities` package for automating Atlassian Jira. Every operation runs inside a **Jira Scope** (`JiraApplicationScope`) that authenticates once against a Jira instance (the classic pack targets Jira **Cloud** and uses RestSharp under the hood); child activities — Get Issue, Search Issues, Create Issue, Add Comment — run REST calls on that session. Issues here involve `Authentication information is invalid` at scope open (`Api Token` bound as a plain `String` instead of `SecureString`, `Username` set to a Jira `accountId` instead of the account email, leftover `Client Id`/`Client Secret` conflicting with `Authentication Type = Api Token`, or basic password auth on an MFA/SSO-enforced org), `Response was not recognized as JSON` / HTTP `500` on a child activity (`Server URL` carrying an appended `/secure/Dashboard.jspa` or project path, or an on-premises Server / Data Center instance the Cloud-targeted pack does not support), and `This activity is either missing or could not be loaded properly` (a transitive **RestSharp** version conflict with another package — resolve the pin or migrate to the Integration Service Jira connector).
+Classic `UiPath.Jira.Activities` targets Jira Cloud through RestSharp. Every operation runs in `JiraApplicationScope` and child Get Issue/Search Issues/Create Issue/Add Comment calls its session. Covers invalid authentication from `Api Token` as `String` not `SecureString`, `Username` as accountId not email, conflicting `Client Id`/`Client Secret` with `Authentication Type = Api Token`, or basic password under MFA/SSO; child `Response was not recognized as JSON`/HTTP `500` from appended `/secure/Dashboard.jspa` or project path, or unsupported Server/Data Center; and missing/unloadable activity from transitive RestSharp conflict (resolve pin or migrate to Integration Service Jira connector).
 
 Namespaces: `UiPath.Jira.Activities`
 
@@ -219,7 +221,7 @@ Namespaces: `UiPath.Jira.Activities`
 
 ## App Events (Workflow Events) Activities
 
-Internal activities that connect a **UiPath App** (or a Studio Web app preview) to the robot running the App's workflows. They are `[Internal]` — a user never places them — so failures surface as **a job invoked by an App faulting**, with the activity name (`HandleAppRequest`, `AppRequestTrigger`, `InitializeHubConnection`) appearing in the job error / trace spans rather than the user's project. The App↔robot channel runs in one of two modes: RobotJS (legacy local pipe) or SignalR (modern hub). These activities propagate raw .NET framework exceptions (no package-specific wrapper), so the faulted activity class + exception class is the discriminator: `HandleAppRequest` `NullReferenceException` (a null deref inside the App-invoked workflow), `AppRequestTrigger` `TimeoutException`/`IOException`/`InvalidOperationException` (App↔robot channel/transport lost), and `InitializeHubConnection` `AggregateException` (SignalR hub bootstrap failed — unwrap the inner).
+Internal `[Internal]` activities connect a UiPath App/Studio Web preview to its robot workflow; users do not place them. App-invoked jobs expose `HandleAppRequest`, `AppRequestTrigger`, or `InitializeHubConnection` in errors/traces. RobotJS uses a legacy local pipe; SignalR uses a modern hub. Raw .NET exceptions discriminate: `HandleAppRequest` `NullReferenceException` (workflow null dereference), `AppRequestTrigger` `TimeoutException`/`IOException`/`InvalidOperationException` (channel/transport loss), and `InitializeHubConnection` `AggregateException` (unwrap inner SignalR failure).
 
 Namespaces: `UiPath.WorkflowEvents.Activities`
 
@@ -228,7 +230,7 @@ Namespaces: `UiPath.WorkflowEvents.Activities`
 
 ## CSV Activities
 
-The CSV file activities — `Read CSV`, `Write CSV`, `Append To CSV` (namespace `UiPath.Core.Activities`, shipped in `UiPath.System.Activities`) — read/write delimited files to and from a `DataTable` against a local path, using the bundled `CsvHelper` library. Issues here involve `CsvHelper` version conflicts (`Method not found: 'CsvHelper...'` from a `UiPath.System.Activities` ↔ `UiPath.Excel.Activities` version split — both bundle `CsvHelper`), file-access failures (`The process cannot access the file because it is being used by another process` when the CSV is open in Excel; `The filename, directory name, or volume label syntax is incorrect` from an invalid or raw `https://` cloud path — these activities are local-file only), and `DataTable` shape problems (uninitialized table, or a column count/header mismatch vs the existing file).
+`Read CSV`, `Write CSV`, `Append To CSV` (`UiPath.Core.Activities`, shipped in `UiPath.System.Activities`) exchange local delimited files and `DataTable` using bundled `CsvHelper`. Covers `CsvHelper` version conflict (`Method not found: 'CsvHelper...'`) between `UiPath.System.Activities` and `UiPath.Excel.Activities`, file locks/open Excel, invalid/raw `https://` paths (local-file only), and uninitialized or header/column-mismatched `DataTable`.
 
 Namespaces: `UiPath.Core.Activities`
 
@@ -237,7 +239,7 @@ Namespaces: `UiPath.Core.Activities`
 
 ## File Operations Activities
 
-Modern **System > File** activities under the `UiPath.Activities.System.FileOperations` namespace (shipped in `UiPath.System.Activities`). Currently covers **Download File from URL** (`DownloadFileFromUrl`) — a native HTTP(S) download to the robot's local file system (it carries no browser session/cookies). Issues here involve `This instance has already started one or more requests` (the internal HTTP client reused across a `For Each` loop), HTTP `401`/`403` (authenticated/portal-gated URLs the native download can't reach, or a blocked `User-Agent`), the downloaded file left stuck as a `.tmp` (download/finalize race), and `Don't know about such a host` (DNS / firewall / SSL-inspection blocking the automated outbound connection).
+Modern `UiPath.Activities.System.FileOperations` (`UiPath.System.Activities`) currently covers `Download File from URL` (`DownloadFileFromUrl`), native HTTP(S) to local filesystem without browser cookies/session. Covers `This instance has already started one or more requests` from reusing the internal client in `For Each`, HTTP `401`/`403` for authenticated/portal URLs or blocked `User-Agent`, stuck `.tmp` files from download/finalize race, and `Don't know about such a host` from DNS/firewall/SSL inspection.
 
 Namespaces: `UiPath.Activities.System.FileOperations`
 
@@ -246,7 +248,7 @@ Namespaces: `UiPath.Activities.System.FileOperations`
 
 ## Slack Activities (Integration Service)
 
-Activities for automating Slack through an Integration Service connection — Send Message, Get User by Email, and related BAF connector activities. Each activity resolves the Slack connection (OAuth token) and then calls the Slack Web API. Issues here split by phase: connection-resolution failures (`System.AggregateException` wrapping a `ConnectionException` — connection deleted / no longer valid / transient 503) and Slack API rejections (`UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException` carrying a Slack `error` code such as `invalid_arguments`/missing `channel`, `channel_not_found`, `not_in_channel`, `invalid_auth`). For the legacy `UiPath.Slack.Activities` (`SlackScope`) package, this is a different code path.
+Slack Integration Service activities (Send Message, Get User by Email, related BAF connector activities) resolve OAuth connection then call Slack Web API. Connection phase: `System.AggregateException` wrapping `ConnectionException` (deleted/invalid connection or transient 503). API phase: `UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException` with Slack errors `invalid_arguments`/missing `channel`, `channel_not_found`, `not_in_channel`, `invalid_auth`. Legacy `UiPath.Slack.Activities`/`SlackScope` is a different path.
 
 Namespaces: `UiPath.Slack.IntegrationService.Activities`
 
@@ -255,7 +257,7 @@ Namespaces: `UiPath.Slack.IntegrationService.Activities`
 
 ## Terminal Activities
 
-Activities for automating terminal/mainframe emulators (IBM 3270/5250 via EHLLAPI, VT, and other providers). Work runs inside a `Terminal Session` (`TerminalSession`) scope that opens a connection (new connection string or reused existing connection), runs child screen-interaction activities, then closes it. Issues here are overwhelmingly connection-time: unreachable host / wrong port / provider, provider runtime not installed on the robot, connect/wait timeout, or a stale reused connection — surfacing as a `TerminalConnectionException` (`System.Exception`) with `... | ResultCode=<code> | ConnectionStatus=<status>`, its async-wrapped `System.AggregateException` form, or a `System.NullReferenceException` that masks a failed open.
+Terminal/mainframe emulators (IBM 3270/5250 via EHLLAPI, VT, others) run in `TerminalSession`, which opens a new/reused connection, executes child screen interactions, and closes. Covers unreachable host/wrong port/provider, missing provider runtime, connect/wait timeout, stale reuse, `TerminalConnectionException` (`System.Exception`) with `... | ResultCode=<code> | ConnectionStatus=<status>`, async `System.AggregateException`, and masking `System.NullReferenceException`.
 
 Namespaces: `UiPath.Terminal.Activities`
 
@@ -264,7 +266,7 @@ Namespaces: `UiPath.Terminal.Activities`
 
 ## PDF Activities
 
-Activities for reading and manipulating PDF files on the robot's local filesystem — `Read PDF Text`, `Read PDF With OCR`, `Extract PDF Page Range`, `Extract Images/Attachments From PDF`, `Export PDF Page As Image`, `Merge PDF Files` / `Join PDFs`, `Create PDF From Images`, `Manage PDF Password`. These are local file operations (no Orchestrator/network call except `Read PDF With OCR`, which calls an OCR engine). Issues here are almost always the input file (missing, not a PDF, encrypted, corrupt) or the arguments (page range, password fields, image list): activity-level validation throws `System.ArgumentException`/`ArgumentNullException` with a fixed resource string; reader-level failures surface as `UiPath.PDF.PdfException` (wrong/missing password, `Invalid input stream`) or `UiPath.PDF.ImageToPdfException` (image input).
+Local PDF activities: `Read PDF Text`, `Read PDF With OCR`, `Extract PDF Page Range`, `Extract Images/Attachments From PDF`, `Export PDF Page As Image`, `Merge PDF Files` / `Join PDFs`, `Create PDF From Images`, `Manage PDF Password`. No network/Orchestrator call except OCR engine for `Read PDF With OCR`. Covers missing/non-PDF/encrypted/corrupt inputs and invalid page/password/image arguments; validation `System.ArgumentException`/`ArgumentNullException` with fixed resource string; reader `UiPath.PDF.PdfException` (wrong/missing password, `Invalid input stream`) or `UiPath.PDF.ImageToPdfException`.
 
 Namespaces: `UiPath.PDF.Activities` (exceptions: `UiPath.PDF`)
 
@@ -273,7 +275,7 @@ Namespaces: `UiPath.PDF.Activities` (exceptions: `UiPath.PDF`)
 
 ## SAP BAPI Activities
 
-Activities for calling SAP BAPIs / RFC function modules directly over the SAP .NET Connector (RFC protocol, no SAP GUI) — `SAP Application Scope`, `Invoke BAPI`, `Open`/`Close SAP Connection`. Work opens an RFC connection from connection parameters, looks up the BAPI's interface, then invokes it. Issues here are connection/logon failures (`Connection could not be created.`, `Cannot create sap connection, connection info params are not set`, `Missing mandatory field: <field> for connection`, `Advanced Parameters has invalid parameter <param>...`, `System.TimeoutException`), BAPI lookup/naming (`Function: <name> could not be created`, `BAPI name is null or empty`), and the activity's capability limit (`Unsupported BAPI. Contains nested complex types.`). Cannot be reproduced without a live SAP system.
+Direct SAP BAPI/RFC calls over SAP .NET Connector (RFC, no SAP GUI): `SAP Application Scope`, `Invoke BAPI`, `Open`/`Close SAP Connection`. Opens RFC from parameters, resolves interface, invokes BAPI. Covers `Connection could not be created.`, `Cannot create sap connection, connection info params are not set`, `Missing mandatory field: <field> for connection`, `Advanced Parameters has invalid parameter <param>...`, `System.TimeoutException`; lookup/naming `Function: <name> could not be created`, `BAPI name is null or empty`; and `Unsupported BAPI. Contains nested complex types.` Cannot reproduce without live SAP.
 
 Namespaces: `UiPath.SAP.BAPI.Activities` (exceptions: `UiPath.SAP.BAPI.Utilities.SapActivityException`, `UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException`)
 
@@ -282,7 +284,7 @@ Namespaces: `UiPath.SAP.BAPI.Activities` (exceptions: `UiPath.SAP.BAPI.Utilities
 
 ## Intelligent OCR / Document Understanding (Classic) Activities
 
-The classic Document Understanding framework from `UiPath.IntelligentOCR.Activities` — `Digitize Document`, `Classify Document Scope`, `Data Extraction Scope`, `Present Validation Station`, `Export Extraction Results`, and the Train scopes. The digitize → classify → extract → validate → export pipeline combines local taxonomy/extractor config with calls to a DU server/endpoint (authenticated with an API key/license) and Orchestrator storage. Issues here are license/endpoint rejections (`DUApiException` with HTTP status — license, page units, request size, wrong endpoint), tenant not enabled (`Failed to fetch Document Understanding projects list...`, `Couldn't retrieve a tenant key.`), missing storage bucket/taxonomy/folder, and human document rejection at Validation Station (`DocumentRejectedByUserException`). For modern DU / IXP, see the IXP surface. Generally not reproducible without a licensed DU endpoint + OCR + trained models.
+Classic `UiPath.IntelligentOCR.Activities`: `Digitize Document`, `Classify Document Scope`, `Data Extraction Scope`, `Present Validation Station`, `Export Extraction Results`, and Train scopes. Digitize → classify → extract → validate → export combines local taxonomy/extractor settings with DU endpoint/API-key/license and Orchestrator storage. Covers `DUApiException` HTTP license/page-unit/request-size/wrong-endpoint rejection, tenant errors `Failed to fetch Document Understanding projects list...` and `Couldn't retrieve a tenant key.`, missing bucket/taxonomy/folder, and `DocumentRejectedByUserException`. Modern DU/IXP uses IXP; generally requires licensed endpoint, OCR, and trained models.
 
 Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException`, `UiPath.IntelligentOCR.Exceptions.DocumentRejectedByUserException`)
 
@@ -291,17 +293,16 @@ Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Ut
 
 ## IPC Activities
 
-Activities for **inter-process communication** between UiPath processes running at the same time on one host. `Broadcast Message` / `Send Message` publish a payload on a named **channel**; a **Message Receiver Trigger** in a parallel process listens on the same channel. The transport is a local **named pipe** — confined to the **same robot, same Windows user, same session, same machine**. Issues here involve `System.TimeoutException` (`Timeout of <N> ms has passed and no channel was found to send the message to.` — no live receiver on the channel before the timeout, a channel-name mismatch, or a too-low `Timeout`) and `System.UnauthorizedAccessException` (`Access to the path is denied.` — the pipe ACL rejects a peer in a different session / user / elevation level). The faulted activity + exception class is the discriminator (the `System.*` exception prefix alone does NOT route here). Not to be confused with the internal `UiPath.Ipc` / `UiPath.CoreIpc` transport behind Integration Service connectors (`RemoteException`, `DAP-*`) — that is under Integration Service.
+Same-host inter-process activities: `Broadcast Message` / `Send Message` publish on named **channel**; `Message Receiver Trigger` listens in a parallel process. Local named pipe is limited to the **same robot, same Windows user, same session, same machine**. `System.TimeoutException` (`Timeout of <N> ms has passed and no channel was found to send the message to.`) means no receiver before timeout, channel mismatch, or too-low `Timeout`; `System.UnauthorizedAccessException` (`Access to the path is denied.`) means pipe ACL rejection across session/user/elevation. Faulted activity plus exception class discriminates; `System.*` prefix alone does not route here. Internal `UiPath.Ipc`/`UiPath.CoreIpc` connector transport (`RemoteException`, `DAP-*`) belongs to Integration Service.
 
 Namespaces: `UiPath.IPC.Activities`
 
 - [activity-packages/ipc-activities/overview.md](./activity-packages/ipc-activities/overview.md) — Package overview, channel / named-pipe execution model, and common failure patterns
 - [activity-packages/ipc-activities/summary.md](./activity-packages/ipc-activities/summary.md) — All playbooks for IPC Activities issues
 
-
 ## Playbooks
 
-All playbooks use the same headers: `## Context`, `## Investigation` (optional), `## Resolution` (optional). They vary by confidence level:
+All playbooks use `## Context`, optional `## Investigation`, and optional `## Resolution`. Confidence levels:
 
 | Confidence | What you know | Investigation | Example |
 |---|---|---|---|
@@ -313,22 +314,22 @@ Template and full guide: [templates/playbook-template.md](./templates/playbook-t
 
 ## No-signature routing
 
-For problems with nothing greppable (no exception, no error code — silent failures, hangs, wrong results), map the symptom to a domain, then check that domain's `summary.md` for the matching silent playbook:
+For no-exception/no-code silent failures, hangs, or wrong results, map the symptom to a domain and check its `summary.md` silent playbook:
 
 | Symptom | Domain | Entry |
 |---|---|---|
-| Job/run Successful but the action had no effect or output is wrong | The acting activity's package (ui-automation, classic, word, excel, gsuite, o365, database, system) | Activity-level trace logs — look for zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify configurations, provider quirks |
-| Job stuck Pending | orchestrator | `PendingReasons` on the job record — its error codes ARE greppable signatures; re-grep after fetching |
-| Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; a Maestro instance with an Open incident is blocked until the incident is resolved |
+| Job/run Successful but action had no effect or output is wrong | Acting activity's package (ui-automation, classic, word, excel, gsuite, o365, database, system) | Activity trace logs: zero-count lines ("Replaced 0 occurrence"), Simulate/inert-verify settings, provider quirks |
+| Job stuck Pending | orchestrator | `PendingReasons` on job record—codes are greppable signatures; re-grep after fetching |
+| Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; Open Maestro incident blocks the instance until resolved |
 | Works in Debug, fails deployed | maestro | Debug-vs-deploy silent playbook |
-| Published API workflow "didn't run" — no job record exists | api-workflows | Something failed to start it, rather than the workflow being broken: check the trigger and `uip or triggers history`, or the caller one step upstream |
-| API workflow run stops with no error, or a loop returns short | api-workflows | A platform limit (Script 10 s budget; a loop stopping quietly at its `limit`, logging `reached iteration limit`; the 15-minute serverless limit) — `validate` cannot see any of them |
-| API workflow call to a firewalled host times out, connection pings healthy | api-workflows | Wrong outbound IP range allowed — serverless robots and Integration Service leave by different routes |
+| Published API workflow "didn't run"—no job record | api-workflows | Check trigger and `uip or triggers history`, or caller one step upstream |
+| API workflow stops without error, or loop returns short | api-workflows | Platform limit: Script 10 s budget, loop `limit` (logs `reached iteration limit`), or 15-minute serverless limit; `validate` cannot see them |
+| API workflow call to firewalled host times out, connection pings healthy | api-workflows | Wrong outbound IP range; serverless robots and Integration Service use different routes |
 | Duplicate task/element executions | maestro | Boundary-event silent playbook |
 | Traces/evidence missing or disappearing | maestro / orchestrator retention | Silent playbooks; retention windows |
-| Robot unresponsive, heartbeat gaps | orchestrator | Machine/session state via the orchestrator investigation guide |
-| Hang mid-activity, no fault, no timeout | The activity's package | Package overview "common failure patterns" (e.g., Word background modal dialogs, Python stdout flooding) |
-| Reads/writes the wrong files with no error | The activity's package | Relative-path resolution quirks (e.g., Python per-package WorkingFolder) |
-| Slowness / degradation without errors | Owning product | Product overview + `uip docsai ask` |
+| Robot unresponsive, heartbeat gaps | orchestrator | Machine/session state via orchestrator investigation guide |
+| Hang mid-activity, no fault, no timeout | Activity's package | Package overview common failure patterns (e.g., Word background modal dialogs, Python stdout flooding) |
+| Reads/writes wrong files with no error | Activity's package | Relative-path quirks (e.g., Python per-package `WorkingFolder`) |
+| Slowness/degradation without errors | Owning product | Product overview + `uip docsai ask` |
 
-Cross-domain rule: the symptom's *reporting* surface is not necessarily the owning domain — extract entity keys from the fetched records and follow them one hop before settling on a domain.
+Cross-domain rule: the reporting surface may differ from ownership. Extract entity keys from fetched records, follow them one hop, then settle on a domain.
