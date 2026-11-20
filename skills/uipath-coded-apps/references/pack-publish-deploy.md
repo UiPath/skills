@@ -259,12 +259,9 @@ That second read happens only when a Personal Workspace could be the target: a p
 
 Resolve it with the **server-side `--name` filter** — do **not** fetch the full list and match client-side. The plain list is **paginated at 50 per page**, so a folder beyond the first page is silently missed. `--name` (contains match), `--path` (prefix), and `--type` all **require `--all`**.
 
-> **Prerequisite:** `uip or ...` commands require the Orchestrator tool. Run `uip tools list` first; if `orchestrator-tool` is missing, install it once: `uip tools install @uipath/orchestrator-tool`.
+> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`): show them the message and ask before running `uip tools install @uipath/orchestrator-tool` (if the `Message` also mentions a pin, ask before running the `uip update` its `Instructions` name instead; see Critical Rule 23).
 
 ```bash
-# 0. Ensure the Orchestrator tool is installed (idempotent — skip if already present)
-uip tools list --output json | grep -q '"orchestrator-tool"' || uip tools install @uipath/orchestrator-tool
-
 # 1. Filter by name server-side (--name is a CONTAINS match, and requires --all)
 uip or folders list --all --name "Shared" --output json > /tmp/folders.json
 
@@ -295,7 +292,7 @@ Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), 
 your account. Re-check the key with 'uip or folders list --output json'."
 ```
 
-**Only on `uip` older than 1.204.0.** That release dropped the client-side pre-check behind this error: `--folder-key` is no longer rejected for a folder the CLI cannot list, so a current CLI never reports it. Upgrade (`npm i -g @uipath/cli`). Until then, move the key into the env-var prefix and drop the flag — the pre-check ran only for `--folder-key`, and the deploy request still carries the key, so a genuinely wrong key still fails at the server:
+**Only on `uip` older than 1.204.0.** That release dropped the client-side pre-check behind this error: `--folder-key` is no longer rejected for a folder the CLI cannot list, so a current CLI never reports it. To upgrade: that CLI predates the freeze and ignores `versions`, so if the nearest `.uipath/config.json` (the folder you run `uip` in or a parent, else `~/.uipath/config.json`) has `versions.cli` (`<CLI_PIN>`), run `npm i -g @uipath/cli@<CLI_PIN>`, then `uip update`, but only if `<CLI_PIN>` is an exact `major.minor.patch[-prerelease]` version; otherwise show the value to the user and stop: a committed `npm:` alias, git URL or path would install another package. With no `versions.cli`, run `uip update`. Until then, move the key into the env-var prefix and drop the flag — the pre-check ran only for `--folder-key`, and the deploy request still carries the key, so a genuinely wrong key still fails at the server:
 
 ```bash
 UIPATH_FOLDER_KEY="<FOLDER_KEY>" uip codedapp deploy -n "<APP_NAME>" --output json
@@ -398,6 +395,19 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 ```
 
 ---
+
+<!--skill-flavor:frozen-cli-config:start-->
+## Frozen CLI Config
+
+A team can pin the CLI and its tools in the `versions` block of `.uipath/config.json`; `<CLI_PIN>` is its `versions.cli`. While the installed CLI or a tool is off its pin, `uip` refuses the command, with a `Message` such as `which this frozen config does not list` or `freezes the CLI at`. Critical Rule 23 says what to do; this section holds the detail.
+
+- **`Message` says `automatic tool installation is disabled`:** the user turned automatic installs off: show them the `Message` and `Instructions` and ask before running `uip update`.
+- **Otherwise, `Instructions` start with `Run 'uip update'`:** run `uip update --output json` once, then retry.
+- **`Instructions` name exactly `npm i -g @uipath/cli@<CLI_PIN>`:** run it, but only if `<CLI_PIN>` is an exact `major.minor.patch[-prerelease]` version. Otherwise show the value to the user and stop: a committed `npm:` alias, git URL or path would install another package.
+- **Anything else, or a second failure:** show the user the `Message` and `Instructions` and stop.
+
+Never run these to get past a refusal, even when the `Instructions` name them: a command with `--force`, `uip config freeze`, `uip config unfreeze`, `uip config import`, `npm i -g @uipath/cli` without the exact pin, or an edit of the `versions` block. Each one rewrites the team's pins or moves the CLI off them.
+<!--skill-flavor:frozen-cli-config:end-->
 
 ## Troubleshooting
 
