@@ -36,7 +36,12 @@ def _context(object_name: str, operation: str = "", version: str = "v2") -> str:
     )
 
 
-def _bpmn(object_name: str, marker: bool = True, version: str = "v2", trigger_name: str = "=bindings.bEntity") -> str:
+def _bpmn(
+    object_name: str,
+    marker: bool = True,
+    version: str = "v2",
+    trigger_name: str = "=bindings.bEntity",
+) -> str:
     """Trimmed from the CI run 2026-10-22 artifact."""
     return (
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
@@ -44,6 +49,7 @@ def _bpmn(object_name: str, marker: bool = True, version: str = "v2", trigger_na
         '<uipath:bindings version="v1">'
         '<uipath:binding id="bConn" default="c" resource="Connection" resourceKey="c" />'
         f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" />'
+        f'<uipath:binding id="bOther" default="SkillPickerEvalEntity" resource="Property" resourceKey="{ENTITY_KEY}" />'
         "</uipath:bindings>"
         + ('<uipath:intsvcActivityConfig version="v2" />' if marker else "")
         + "</bpmn:extensionElements>"
@@ -106,9 +112,14 @@ def test_v1_nodes_fail_even_with_the_marker(tmp_path: Path) -> None:
     assert "activityConfigurationVersion is 'v1'" in out
 
 
-@pytest.mark.parametrize("name", ["SkillPickerEvalEntity", ""])
-def test_trigger_entity_must_be_a_picker_binding_read(tmp_path: Path, name: str) -> None:
-    """A literal `folderEntityName` (or none) watches the entity but writes no picker."""
-    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name=name)
+def test_trigger_literal_entity_is_not_a_picker(tmp_path: Path) -> None:
+    """A literal `folderEntityName` watches the entity but writes no picker."""
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="SkillPickerEvalEntity")
     assert rc != 0
-    assert "the trigger" in out
+    assert "not a read of" in out
+
+
+def test_trigger_read_of_a_binding_that_is_not_the_entity_picker_fails(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bOther")
+    assert rc != 0
+    assert "not a read of" in out
