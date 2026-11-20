@@ -9,6 +9,8 @@ For the built-in-tools capability overview, see [built-in-tools.md](built-in-too
 - Agent has a `job-attachment` input field (or receives attachments inside a tool call) and must read contents
 - Agent must summarize, classify, or extract from PDFs, images, documents passed at runtime
 
+Not for researching answers across long or multiple documents, or when the answers must cite their sources: use Deep RAG (`deep-rag`, [deeprag/planning.md](deeprag/planning.md)) instead.
+
 ## Pairing Pattern
 
 Typical low-code shape: one `job-attachment` input field on the agent + one `analyze-attachments` tool resource. The user message references the attachment metadata with `{{input.<field>}}`; the agent calls `analyze-attachments`, passing the same attachment in `attachments[]` along with an `analysisTask`.

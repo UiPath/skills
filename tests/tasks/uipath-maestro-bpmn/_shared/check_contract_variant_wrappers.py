@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -19,16 +21,48 @@ from _shared.bpmn_check import (  # noqa: E402
 
 TYPE_VERSIONS = {"Orchestrator.StartAgentJob": "v2"}
 
+# Representative coverage for public-safe model-authored or preserve-only XML
+# shells. This is intentionally not an exhaustive mirror of
+# supported-elements.md: CLI-owned Intsvc.* enrichment is covered by the
+# integration-service fixture, while this fixture keeps one wait shell to
+# assert the model/CLI boundary stays explicit.
+EXPECTED_MODEL_OR_PRESERVE_SHELLS = [
+    ("serviceTask", "activity", "Orchestrator.StartAgentJob"),
+    ("serviceTask", "activity", "A2A.AgentExecution"),
+    ("serviceTask", "activity", "Orchestrator.ExecuteApiWorkflowAsync"),
+    ("businessRuleTask", "activity", "Orchestrator.BusinessRules"),
+    ("sendTask", "activity", "Orchestrator.CreateQueueItem"),
+    ("serviceTask", "activity", "Orchestrator.CreateAndWaitForQueueItem"),
+    ("callActivity", "activity", "Orchestrator.StartAgenticProcess"),
+    ("callActivity", "activity", "Orchestrator.StartAgenticProcessAsync"),
+    ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcess"),
+    ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcessAsync"),
+    ("intermediateThrowEvent", "event", "Maestro.SendMessageEvent"),
+    ("serviceTask", "activity", "Maestro.CasePlanScheduler"),
+    ("serviceTask", "activity", "Maestro.CaseManagerGuardrails"),
+    # Studio Web's case converter writes it on a plain bpmn:Task (PO.Frontend
+    # CaseManagementCaseRulesEvaluationNodes.ts, taskType "bpmn:Task"); the
+    # builder SDK's registry-types.json writes bpmn:serviceTask. Either element
+    # still needs the typed activity shell.
+    (("task", "serviceTask"), "activity", "Maestro.CaseRulesEvaluator"),
+    ("receiveTask", "event", "Intsvc.WaitForEvent"),
+]
 
-def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_value: str) -> None:
+
+def require_wrapper(
+    root: ET.Element, wrapper: str | tuple[str, ...], extension_name: str, type_value: str
+) -> None:
+    wrappers = (wrapper,) if isinstance(wrapper, str) else wrapper
     version = TYPE_VERSIONS.get(type_value)
     matches = [
         elem
-        for elem in elements(root, wrapper)
+        for name in wrappers
+        for elem in elements(root, name)
         if has_typed_uipath_extension(elem, extension_name, type_value, version=version)
     ]
     if not matches:
-        fail(f"missing bpmn:{wrapper} with {type_value} uipath:{extension_name} shell")
+        shown = " or ".join(f"bpmn:{name}" for name in wrappers)
+        fail(f"missing {shown} with {type_value} uipath:{extension_name} shell")
 
 
 def require_uipath_element(root: ET.Element, local_name: str, description: str) -> None:
@@ -77,29 +111,7 @@ def require_process_migration_version(root: ET.Element) -> None:
 def main() -> None:
     path, root = parse_bpmn("Contract")
 
-    # Representative coverage for public-safe model-authored or preserve-only XML
-    # shells. This is intentionally not an exhaustive mirror of
-    # supported-elements.md: CLI-owned Intsvc.* enrichment is covered by the
-    # integration-service fixture, while this fixture keeps one wait shell to
-    # assert the model/CLI boundary stays explicit.
-    expected_model_or_preserve_shells = [
-        ("serviceTask", "activity", "Orchestrator.StartAgentJob"),
-        ("serviceTask", "activity", "A2A.AgentExecution"),
-        ("serviceTask", "activity", "Orchestrator.ExecuteApiWorkflowAsync"),
-        ("businessRuleTask", "activity", "Orchestrator.BusinessRules"),
-        ("sendTask", "activity", "Orchestrator.CreateQueueItem"),
-        ("serviceTask", "activity", "Orchestrator.CreateAndWaitForQueueItem"),
-        ("callActivity", "activity", "Orchestrator.StartAgenticProcess"),
-        ("callActivity", "activity", "Orchestrator.StartAgenticProcessAsync"),
-        ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcess"),
-        ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcessAsync"),
-        ("intermediateThrowEvent", "event", "Maestro.SendMessageEvent"),
-        ("serviceTask", "activity", "Maestro.CasePlanScheduler"),
-        ("serviceTask", "activity", "Maestro.CaseManagerGuardrails"),
-        ("serviceTask", "activity", "Maestro.CaseRulesEvaluator"),
-        ("receiveTask", "event", "Intsvc.WaitForEvent"),
-    ]
-    for wrapper, extension_name, type_value in expected_model_or_preserve_shells:
+    for wrapper, extension_name, type_value in EXPECTED_MODEL_OR_PRESERVE_SHELLS:
         require_wrapper(root, wrapper, extension_name, type_value)
 
     # `uipath:migrationVersion` is the PROCESS's schema version: one per process, on

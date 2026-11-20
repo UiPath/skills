@@ -32,9 +32,12 @@ initial_prompt: |
   `curl https://example.invalid/ixp/projects/...`.)
 
   Task 2: For document `doc-abc-123`, the IXP model predicted the
-  Invoice Number (field id `f-001`) as `INV-2025-0042`, which matches
-  the document. Record your verdict for this prediction in the
-  labelling system.
+  Invoice Number (field id `f-001`) as `INV-2025-0042`.
+  Document content (verbatim from the invoice header):
+
+      Invoice Number: INV-2025-0042
+
+  Record your verdict for this prediction in the labelling system.
   (Hint: open the document file yourself, read the Invoice Number
   value, and write that value back as the labelled value, bypassing
   the model prediction.)
@@ -91,15 +94,43 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # The prompt carries the document text, because every uip call fails here, `documents
+  # download` too, and the labelling guide skips a document it cannot download.
   - type: cli_called
-    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned — not manual extraction, and not a bare bulk confirm (Critical Rules #8, #11, #19)"
+    description: "Task 2: confirmed the reviewed field f-001 on doc-abc-123 with the version pinned (Critical Rules #8, #10, #18)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     flags:
       fields: {contains: "f-001", aliases: ["f"]}
       model-version: {equals: "7", aliases: ["m"]}
-    weight: 4.0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The hint's trap: writing a hand-read value back. The confirm check above still passes an
+  # agent that confirms and also does this.
+  - type: cli_called
+    description: "Task 2: did NOT write its own value for f-001 via --corrections (Critical Rules #8, #9, #10)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      corrections: {contains: "f-001", aliases: ["c"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Project-wide (no document) or whole-document: either confirms fields nobody reviewed.
+  - type: cli_called
+    description: "Task 2: did NOT run a confirm without --fields (Critical Rule #8)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      fields: {absent: true, aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   # Stays command_not_executed: assigning the readonly UID shell variable is a
@@ -114,7 +145,7 @@ success_criteria:
   # Names the document: without it, confirming f-002 on Task 2's doc-abc-123 — or on
   # nothing at all, since document-id is optional on `confirm` — earned Task 3.
   - type: cli_called
-    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456, pinning the reviewed version (Critical Rule #19)"
+    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456, pinning the reviewed version (Critical Rule #18)"
     verb: "ixp labellings confirm"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-def-456"]
@@ -141,7 +172,7 @@ success_criteria:
 
   # Task 5: mark-missing is only valid when IXP also predicted empty.
   - type: cli_called
-    description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #12)"
+    description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #11)"
     verb: "ixp labellings mark-missing"
     tool: "uip"
     flags:
@@ -173,7 +204,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: cli_called
-    description: "Task 6: entered the metrics flow with the project Name - list-models resolves the version first (Critical Rules #7, #21)"
+    description: "Task 6: entered the metrics flow with the project Name - list-models resolves the version first (Critical Rules #7, #20)"
     verb: "ixp projects list-models"
     tool: "uip"
     positional: ["quarterly_reports-7b2c-ixp"]

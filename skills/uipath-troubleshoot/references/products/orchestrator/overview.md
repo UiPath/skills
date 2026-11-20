@@ -58,7 +58,7 @@ Organization (cloud.uipath.com)
 ## CLI
 
 ```
-uip or folders list                                 — list all accessible folders (Personal, Solution, Standard). Add --all for every folder in the tenant.
+uip or folders list                                 — list all accessible folders (Personal, Solution, Standard; an external app without OR.Default gets every folder its scopes reach). Add --all for every folder in the tenant.
 uip or folders get <key-or-path>                    — get folder details
 uip or jobs list --folder-key <key>                 — list jobs in a folder. Filters: --state, --process-name, --created-after/before, --started-after/before
 uip or jobs get <key>                               — job details: state, arguments, timing, machine, errors
@@ -71,7 +71,7 @@ uip or licenses info                                — license allocation and u
 ```
 
 Key commands for troubleshooting:
-- `uip or folders list` — resolve folder key first; default output includes Personal, Solution, and Standard folders the current user can access. Use `--all` only when you need every folder in the tenant.
+- `uip or folders list` — resolve folder key first; default output includes Personal, Solution, and Standard folders the current user can access. Use `--all` only when you need every folder in the tenant. Signed in as an external application without `OR.Default`, the default list is every folder the app's scopes reach. On `uip` 1.207.x and older it held only the tenant service account's folders (often none), so there use `--all` or `uip or folders get <path>` rather than conclude a folder is missing.
 - `uip or jobs list --folder-key <key> --state Faulted` — find faulted jobs in a folder. Use `--process-name`, `--created-after/before` to narrow results
 - `uip or jobs get <key>` — starting point for any job investigation
 - `uip or jobs logs <key> --level Error` — quickly find error entries in execution logs

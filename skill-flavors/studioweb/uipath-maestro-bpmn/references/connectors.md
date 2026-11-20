@@ -1,9 +1,10 @@
 <!--skill-flavor:field-reference:start-->
-Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` rather than guessing input names.
+Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` (add `--object <OBJECT>` for a generic operation such as `get-record`) rather than guessing input names.
 <!--skill-flavor:field-reference:end-->
 
 <!--skill-flavor:library-pull:start-->
-In Studio Web the library of the session is always loaded: `uip maestro registry pull` has no effect.
+In Studio Web on cloud the library of the session is always loaded: `uip maestro registry pull` has no effect.
+With no session library (Automation Suite), `check` and `compile` fetch a missing operation through `uip` themselves, so re-run `check`.
 <!--skill-flavor:library-pull:end-->
 
 <!--skill-flavor:package-metadata-row:start-->

@@ -35,6 +35,51 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+## Action recipients and the go-live trap
+
+<!-- RULE:case.recipient.externalize -->
+- A literal `recipient: '<email>'` compiles to `{ Type: 2, Value: <email> }`
+  and bakes the address into the plan: going live means editing every action
+  and publishing a new version. When the request names a test, placeholder or
+  not-yet-known assignee, wire it through a case input instead:
+
+  ```ts
+  .input({ approver: { type: 'string', default: '<TEST_EMAIL>' } }, { from: manual })
+  // ...
+  .action({ ..., recipient: { type: 3, value: '=vars.approver' } })
+  ```
+
+  Going live then means changing the input default, or passing the real
+  address when the case starts; the actions stay unchanged.
+  Recipient types are `0` user id, `1` group name, `2` email, `3` expression.
+  Type `3` evaluates `value` and assigns the result as a user when it is an
+  email, and as a group name otherwise. An expression needs type `3`: a bare
+  string `'=vars.approver'` is type `2` and is looked up as a literal email.
+  `case check` warns `STRICT_RECIPIENT_EXPRESSION_TYPE` on that, and
+  `case validate --strict` fails. The SDK's `RecipientType` doc comment still
+  calls `0`/`1`/`3` reserved; that comment is stale, and type `3` is the
+  expression type the CLI and `case check` accept.
+  Brownfield: keep a decompiled `{ type, value }` recipient as is.
+
+<!-- RULE:case.recipient.no-silent-default -->
+- Before `uip solution upload` or `uip solution publish`, tell the user the
+  list below, and repeat that list in the final summary of every build or
+  edit. List each assignee the user did not name as the production assignee: an input default, a literal
+  `recipient`, or an SLA escalation target (`toUser`, `toGroup`). These include
+  a test mailbox, the user's own email, and `<UNRESOLVED: ...>`. For each one,
+  give the address or group, the actions or escalations it routes, and what
+  going live changes: the input default, or each literal in the source plus a
+  new published version.
+
+  `uip maestro case debug` and `uip maestro case process run` start a case
+  instance and create real tasks for these assignees. `upload`, `publish`,
+  `check`, `compile` and `validate` start none. Before `debug` or
+  `process run`:
+  1. An assignee still `<UNRESOLVED: ...>`: do not run it.
+  2. An address or group the user did not confirm: ask. A request or
+     pre-approval that names that step is the user's answer. When no user can
+     answer and nothing names that step, do not run it.
+
 ## Script tasks
 
 <!-- RULE:case.script.positional-rename -->
@@ -57,6 +102,67 @@ make from syntax alone. Exact signatures remain in the generated API.
   `=Error` (code `SCRIPT_OUTPUT`). To reach a single field, read
   `vars.scriptResult.<field>` downstream. The compiled output row is named
   `scriptResponse`.
+
+## HTTP requests
+
+<!-- RULE:case.http.modes -->
+- `.httpRequest({ method, url, ... })` sends one HTTP call. Without `connector`
+  the request goes to `url` unauthenticated. With
+  `connector: { key, connection, folder }` it reuses that connection's auth and
+  `path` replaces `url`. Compile refuses `url` through a connector or `path`
+  without one.
+
+<!-- RULE:case.http.body -->
+- An `=` value inside an object body compiles to the code it reads:
+  `body: { id: '=vars.id' }` sends the variable's value, and so does a
+  `'=js:<expr>'` leaf. Each `=js:` value must be exactly one expression
+  (acorn-parsed); a statement or unparseable text is refused at compile
+  (`HTTP_REQUEST_BODY_EXPRESSION`). Both work nested and in arrays. Other
+  `=` forms (`=vars.a + 1`) are also refused with the same code; write as
+  `'=js:vars.a + 1'`. A string body must be JSON or an `=` expression;
+  other text is refused at compile (`HTTP_REQUEST_BODY_FORM`).
+
+<!-- RULE:case.http.credentials -->
+- Compile writes literal credential headers and query parameters as authored.
+  Use `=vars.` references for secrets; `check` warns on literals.
+
+<!-- RULE:case.http.outputs -->
+- Outputs are the fixed four: `code`, `headers`, `body`, `Error`.
+  `.outputs({ v: '=response.body' })` maps one to a case variable.
+
+## Document extraction
+
+<!-- RULE:case.docextraction.discovery -->
+- Discovery: `uip ixp projects list --output json` first. Pass the project's
+  **`Name`** (not `Title`) to `uip ixp deployments list <Name> --output json`.
+  That listing gives model (`DeploymentName`), deployment (`DeploymentTitle`),
+  and `folderKey`. For `deploymentKey` and `folder`: run
+  `uip solution resources list --kind IxpDeployment --source remote
+  --output json` and take the row whose `Name` equals `DeploymentTitle` and
+  whose `FolderKey` matches — its `Key` is `deploymentKey`, its `Folder` is
+  `folder`. Ask the user if no match. `sdd resolve` does not resolve them.
+  After discovery, add the deployment to the solution:
+  `uip solution resources add --source remote --kind IxpDeployment
+  --name "<DeploymentTitle>" --folder-key "<FOLDER_KEY>" --output json`
+<!--skill-flavor:docextraction-refresh:start-->
+  Then refresh:
+  `uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json`
+<!--skill-flavor:docextraction-refresh:end-->
+
+<!-- RULE:case.docextraction.check -->
+- Compile refuses a missing `deploymentKey`; `check` reports blank model,
+  deployment, folder, folderKey, and file individually.
+
+<!-- RULE:case.docextraction.legacy -->
+- Decompile emits `.savedDocumentExtraction()` for the older flat format.
+  It is read-only: no `.outputs()`, no deployment edit. `check` warns
+  `DOCUMENT_EXTRACTION_OLDER_SHAPE`.
+
+<!-- RULE:case.docextraction.floor -->
+- `uip maestro case validate` needs uip 1.206.0+ for document-extraction
+  tasks. Older versions reject with `CASE_MGMT_BINDING_PAIR_INCOMPLETE`.
+  On an older `uip`, report the floor requirement and stop. Do not rewrite
+  bindings or strip the extraction task to silence the error.
 
 ## Connections and external work
 
@@ -115,8 +221,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   `escalationId: "any"` wildcard, makes the rule at-risk; one to an
   `sla-breached` escalation is Breached. The wildcard is valid and fires on
   every at-risk escalation of that SLA (in SDK source,
-  `escalation: ANY_ESCALATION`). Do not author it; name the escalation the
-  requirement means. Repair an existing rule by the requirement's status, never
+  `escalation: ANY_ESCALATION`). In `caseplan.json` do not write `"any"` by
+  hand; in `.case.ts` use `ANY_ESCALATION` only when the requirement means
+  every at-risk escalation. When the SDD names one escalation, name it.
+  Repair an existing rule by the requirement's status, never
   by what the plan already carries: a breach response drops the reference and
   leaves a plain breach rule on the SLA; repointing it at an at-risk escalation
   keeps it at-risk, which fires at a different time. Only an at-risk response
@@ -165,6 +273,29 @@ make from syntax alone. Exact signatures remain in the generated API.
   are the common case: an `exceptionStage(...)` that gates normal completion is
   almost never what was meant.
 
+## Activation modes
+
+<!-- RULE:case.activation.lane -->
+- For an SDD `Activation Mode` column, use `runs-sequentially` and `lane`.
+  `lane` is the third argument to `.task()`: `.task(name, fn, { lane: N })`.
+  It sets the set index in `data.tasks[][]` (`lane ?? 0` in the SDK).
+  Tasks that share a lane start together after the predecessor set completes.
+
+  | SDD Activation Mode | SDK entry rule | `lane` | Effect |
+  |---|---|---|---|
+  | `parallel` | `rule('current-stage-entered')` | omit | Task starts at stage entry, in its own set. |
+  | `parallel-after-predecessor` | `rule('runs-sequentially')` | shared | Siblings share a set; start together after the predecessor set. The predecessor also uses `runs-sequentially`. |
+  | `sequential` | `rule('runs-sequentially')` | unique per task | Strict chain: each task waits for the previous set. |
+
+  A task without `runs-sequentially` gets its own set regardless of `lane`.
+  See `examples/PermitIssuance.case.ts` for a three-set stage.
+
+<!-- RULE:case.activation.anti-pattern -->
+- Omitting `lane` on all `runs-sequentially` tasks defaults them to set 0 —
+  they start together, losing sequential structure. The same happens when every
+  task gets the same explicit `lane`. Every `runs-sequentially` task needs an
+  explicit `lane`.
+
 ## Design fidelity
 
 <!-- RULE:case.sdd.declared-shapes -->
@@ -193,9 +324,33 @@ make from syntax alone. Exact signatures remain in the generated API.
      the SDD declares a sub-property dereference, extract it from the
      producing task's own output root: `=response.<field>` on a connector
      or wait-for-connector task, `=<OutputName>.<field>` on other types.
+     An output argument that is an object named `response` is therefore
+     read `=response.<field>` on any type: `uip maestro case tasks describe
+     --type <TASK_TYPE> --id <ENTITY_KEY> --output json` lists it in
+     `Data.Outputs[]` as `name: "response"`, `type: "jsonSchema"`,
+     `_jsonSchema.type: "object"`. Keep that source through `check`'s
+     `REFERENCE_OUTPUT_SOURCE`, which compile does not run.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
+
+## Metadata fidelity
+
+<!-- RULE:case.metadata.intsvc-activity-config -->
+- A new case carries `metadata.intsvcActivityConfig: "v2"`. `case init` writes
+  it on a new case; `decompile` → `compile` preserves whatever the plan's
+  metadata carried. Never add `"v2"` to a decompiled plan that lacks
+  it — a V1 plan must stay V1. Tasks that call Integration Service use V2 I/O
+  negotiation when the marker is present.
+
+<!-- RULE:case.variable.closed-types -->
+- Case variable `type` values are a closed set: `string`, `integer`, `float`,
+  `double`, `boolean`, `datetime`, `date`, `time`, `object`, `file`, `array`,
+  `jsonSchema`. These apply to `variables.inputs`, `variables.outputs`, and
+  `variables.inputOutputs`. Do not use `number` (that is a Flow SDK type, not
+  a Case type); use `integer` for whole numbers, `float` or `double` for
+  decimals. `case validate` warns `number` (`CASE_MGMT_VARIABLE_TYPE_ALIAS`);
+  write `double`.
 
 ## Brownfield editing
 
@@ -231,6 +386,70 @@ make from syntax alone. Exact signatures remain in the generated API.
   checks that task and condition ids match their derived form, so `Valid` from
   either does not prove a hand-edit is complete. Round-tripping the whole plan
   re-derives all of them at once.
+
+### Check only what you changed: `check --baseline`
+
+`check` judges the whole case. In an existing plan it also reports defects the
+plan already had on stages and tasks you never touched, for example
+`TASK_NO_ENTRY` on a task the Designer saved with no entry rule. Those would
+fail every edit. Pass the original plan as `--baseline` and each finding says
+whether your edit caused it.
+
+The baseline must be the plan as it was before your first compile: compile
+writes back into the same plan, so after it the file on disk is your edit.
+Never pass that plan itself as `--baseline`: the edit compared with itself
+reports every finding as pre-existing, so `check` passes with errors in it.
+<!--skill-flavor:check-baseline-original:start-->
+At the start of each editing session, before its first compile, copy it aside
+and check against the copy. Overwrite any copy an earlier session left: an old
+copy would count that session's changes as yours.
+
+```bash
+mkdir -p .flow-sdk/original && cp <project>/<plan> .flow-sdk/original/
+uip maestro case check <Name>.case.ts --source --baseline .flow-sdk/original/<plan>
+```
+<!--skill-flavor:check-baseline-original:end-->
+
+```text
+✗ [TASK_NO_ENTRY] Task "Escalate" in stage "Intake" has no entry rule — ... (edited)
+⚠ [TASK_NO_ENTRY] Task "Archive" in stage "Intake" has no entry rule — ... (pre-existing, not counted)
+check: 1 error(s) in edited parts of the case, 0 pre-existing SDK defect(s), 1 pre-existing warning(s).
+```
+
+- **`(edited)`** (JSON `origin: "edited"`): fix it. The finding is on a stage,
+  task or trigger you added or changed (a renamed task counts as changed), or
+  it is new on one you did not touch, so your edit caused it. The exit code is
+  1 only while one is left.
+- **`(pre-existing, not counted)`**: the original reports the same code on the
+  same unchanged stage, task or trigger. Leave it unless the user asked you to
+  fix it. A finding that names no stage or task (a case-level rule) is
+  pre-existing only when the original reports the same code and message.
+- **`(pre-existing)` worded as a probable SDK defect** (JSON
+  `class: "lowering"`): `compile` refuses that task even though you did not
+  change it, so the compile stops on it. Do not edit the task to get around
+  it. Stop, name the task and the code, and tell the user it is a probable SDK
+  defect to report at <https://github.com/UiPath/builder-sdk/issues>.
+- **`CHECK_INCOMPLETE`**: check stopped before it judged the whole case. Fix
+  the error it names, even if the original has it too, then check again.
+- **`--baseline ... is not the plan this source was decompiled from`** (exit
+  2): the file you passed is not the original, most often the plan after a
+  compile wrote your edit into it. Pass the copy you made before the first
+  compile. If you no longer have it, decompile the current plan again and use
+  that plan as the baseline from now on.
+
+<!--skill-flavor:check-baseline-sdk-upgrade:start-->
+Needs two releases: `@uipath/maestro-builder-sdk` 6.97.0 or later, and the
+`uip` release that carries UiPath/cli#6081 (`uip` 1.205.0 does not).
+- `unknown option '--baseline'` means `uip` is too old, whatever the SDK
+  version. Upgrade `uip`. Upgrading the SDK alone gives the same error again.
+- `--baseline on case check needs a @uipath/maestro-builder-sdk release that
+  supports it` means `uip` is new enough and the SDK is not. Upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+Until both are upgraded, run `check --source` without `--baseline`. In this
+fallback only, fix only the errors on stages and tasks you changed, even
+though the exit code stays non-zero.
+<!--skill-flavor:check-baseline-sdk-upgrade:end-->
 
 ## Product boundary
 

@@ -11,7 +11,7 @@ import jira_is
 
 tag = secrets.token_hex(4)
 summary = f"coder-eval jira flow e2e {tag}"
-conn = jira_is.connection_id()
+conn = jira_is.require_connection()
 seed = {
     "tag": tag,
     "summary": summary,

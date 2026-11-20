@@ -84,17 +84,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added a step individually via flag mode (`steps add ... --description`)"
+    # The prompt asks for one step per call, not for a flag style: flag mode
+    # (`--description`) and a single JSON step object are both one-at-a-time adds
+    # (gpt-5.6-luna used the JSON form for each). `--step` is variadic
+    # (`--step '{a}' '{b}'`), so steps are counted by their JSON `description` key.
+    description: "Agent added a step individually (`steps add` with `--description`, or with one JSON step)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--description\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+add\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--output\s+json)(?:(?=[\s\S]*--description\s+\S)|(?=[\s\S]*--step\s+\S)(?![\s\S]*description["\x27\\]*\s*:[\s\S]*description["\x27\\]*\s*:))uip\s+tm\s+testcases?\s+steps\s+add\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent batch-added the remaining steps in one shot via the JSON form (`steps add --step '<json>'`)"
+    # Two JSON step objects in ONE `steps add` (repeated `--step` or variadic
+    # `--step '{a}' '{b}'`). A single-step add must not satisfy "in one shot" now
+    # that it counts as an individual add above, and neither may two single-step
+    # adds chained in one bash call.
+    description: "Agent batch-added the remaining steps in one shot via the JSON form (`steps add --step '<json>' '<json>'`)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--step\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+add\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--step\s+\S)(?=[\s\S]*description["\x27\\]*\s*:[\s\S]*description["\x27\\]*\s*:)(?![\s\S]*steps\s+add[\s\S]*steps\s+add)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+steps\s+add\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

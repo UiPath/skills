@@ -4,12 +4,13 @@
 
 Run a published robotic process and wait for its output arguments.
 
-Signature: `rpaWorkflow({ key, name, folderPath?, location?, projectId?, inputs?, returns? })`.
+Signature: `rpaWorkflow({ key?, name, folderPath?, location?, projectId?, inputs?, returns? })`.
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
+For a published process, leave `key` out: `check` prints the `registry prepare --kind Process` command that records it, and `compile` fills it in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
+Keep `returns` for every output you read: Orchestrator usually leaves an RPA process's `ArgumentsV2` blank, so `prepare` prints `Arguments not recorded` and `compile` does not fill `returns`. Without it a read of the output is `RPA_READ_WITHOUT_RETURNS`.
 
 ```ts
-.step('title', rpaWorkflow({ key: releaseKey,
-  name: 'RPA Workflow', folderPath: 'Shared',
+.step('title', rpaWorkflow({ name: 'RPA Workflow', folderPath: 'Shared',
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
@@ -33,6 +34,9 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `rpaWorkflow({ location: 'in-solution', project: '<RpaProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
 - **Where the two ids come from.**
 <!--skill-flavor:rpa-sibling-register:start-->
   Register the sibling and refresh resources
@@ -50,11 +54,15 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   sibling may list no arguments, so write the names and casing the RPA
   project's own arguments use.
 
-`check` refuses the wrong shapes: `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`),
+`check` warns on `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`; the call resolves by
+`key`, so a decompiled step without one is fine as is) and refuses
 `RPA_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the project GUID — often
 the key or the name pasted by mistake), `RPA_LOCAL_HAS_FOLDER` (`folderPath`
 set as well; drop it, or drop `location` to call the published copy).
-`RPA_NO_FOLDER` applies to published steps only.
+`RPA_NO_FOLDER` applies to published steps only. If `check` reports `RPA_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+add `projectId` from `resource.projectKey`.
+Still set `projectId` on a step you author: Studio Web's Run node reads it
+to deploy the sibling first.
 
 ## Tenant contract
 

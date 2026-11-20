@@ -40,7 +40,7 @@ initial_prompt: |
      "Delivered" — this is always the same operation.
 
   The agent's instructions should apply consistently everywhere.
-  Scaffold and init only — don't run or deploy.
+  Implement it and initialize the project, but don't run or deploy it.
 post_run:
   - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedOrderCombined --include-folders"
     timeout: 60

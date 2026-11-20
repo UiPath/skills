@@ -44,9 +44,12 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 `markdownPath` is that operation's field reference: read it rather than guessing input names.
 <!--skill-flavor:field-reference:end-->
 
-`"total": 0` is a real miss, and means either `http()` or a connector the library does not carry (see §4).
+`"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
+A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
+When several Integration Service resources match an `http()` request, describe each and pick the one that does what the user asked.
 <!--skill-flavor:library-pull:start-->
-A usage error saying no library is cached means `uip maestro registry pull` first.
+With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
+A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
 <!--skill-flavor:library-pull:end-->
 
 ## 2. Write the node
@@ -56,7 +59,7 @@ A usage error saying no library is cached means `uip maestro registry pull` firs
   {
     'fields.project.key': lookup('uipath-atlassian-jira', 'create-issue', 'fields.project.key').by('name', 'Coder Eval'),
     'fields.issuetype.id': '10001',
-    'fields.summary': '=vars.summary',
+    'fields.summary': '=js:vars.summary',
   },
   { connection: 'jira', folder: 'jiraFolder' })
 ```
@@ -64,8 +67,11 @@ A usage error saying no library is cached means `uip maestro registry pull` firs
 - Inputs are keyed by the operation's **declared field names**, flat (`fields.project.key`) or as the natural nested object (`fields: { project: { key } }`); both reach the same wire slot.
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
+  `lookup` imports from `@uipath/maestro-builder-sdk`, not `/bpmn` (`TS2305`). In the string form above write `.by('<Field>', value)`; `.byFullName()` exists only on a prepared module.
+- OneDrive and SharePoint file and folder fields (`referenceID`, `parentFolderId`) are picker lookups: `lookup('uipath-microsoft-onedrive', '<ACTION>', 'referenceID').by('FullName', '<ITEM_PATH>')`, then `uip maestro registry prepare uipath-microsoft-onedrive --action <ACTION> --resolve referenceID:FullName=<ITEM_PATH>`. Never paste an item id.
+- Outlook `send-email`: `message.toRecipients`, `ccRecipients` and `bccRecipients` are ONE comma-separated string, never an array (`CONNECTOR_INPUT … expected string, got object`). Always set `saveAsDraft`: `false` to send, `true` to draft. The definition's default (`true`) is not compiled into the task, and the response (`status: "success"`) does not say which happened.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
-- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
+- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.Count', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads. `.Count` counts an array, and on an object silently returns its field count: a list operation's runtime response is the bare array, even where `uip is resources run` prints `{ items, Pagination }`.
 
 Authoring never waits on discovery beyond §1.
 Write the node from the task's own words and let `check` tell you what is missing.
@@ -87,11 +93,13 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 | `OBJECT_UNPREPARED` | a generic operation's object has no local schema. |
 | `CUSTOM_FIELDS_UNPREPARED` | an input outside the tenant-agnostic snapshot, on a connector that discovers fields per connection. |
 | `BINDING_SELF_NAME` | a binding whose value is its own name. That packs into `bindings_v2.json` as a stub where a connection id belongs, and the deploy is what notices. |
-| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare. |
+| `BINDING_UNDECLARED` | a label a populated `bindings.json` does not declare (reported by `compile`, and by `check` given `--bindings`). |
 | `CONNECTION_BINDING_NOT_GUID` (warning) | a connection binding whose default is not a connection id. `check` and `compile` accept a symbolic label offline; `refresh` refuses it (`Connection binding "<id>" default must be a GUID.`). `prepare` writes the real id; never invent one. |
 
 When one of these comes from a missing schema, lookup value or binding, its message names the `uip maestro registry prepare` that closes it.
 An unknown key, a wrong value type (`CONNECTOR_INPUT`) or a runtime value in an id field (`LOOKUP_RUNTIME_VALUE`) is a mistake in your source: fix it there, since `prepare` doesn't touch the source.
+When a step reads a record by a key the process is given and the operation also needs lookups nobody supplies (Jira `get-issue`'s `project`, `issuetype`), never derive them from the key, and never pin one value while a generic Retrieve (`object:`) whose required inputs are all plain, none a lookup, can read the record instead.
+List the connector's Retrieves with `uip maestro registry search retrieve --connector <CONNECTOR_KEY> --limit 50 --output json` (re-run with `--limit <TOTAL>` when `Data.Total` is higher) and read each row's field reference. With none, each lookup is an open question: ask the user, or, when the request says nobody will answer, pick one of the values the lookup lists and name it on the final report's `Assumed:` line.
 
 ```bash
 uip maestro registry prepare uipath-atlassian-jira --action create-issue \
@@ -99,10 +107,34 @@ uip maestro registry prepare uipath-atlassian-jira --action create-issue \
 ```
 
 `--object`, `--resolve` and `-f NAME=VALUE` compose in a single invocation.
-It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./connectors-local/`.
+It discovers the connection itself (`--connection` or `--connection-folder` picks among several), writes `./.flow-sdk/bindings.json` under the names your source already uses, and writes the resolved schema and the recorded ids to `./.flow-sdk/connectors-local/` (its `--help` names `./bindings.json` and `./connectors-local/`, but it writes under `.flow-sdk/`).
 
-Then re-run `check` and compile.
-`compile` and `check` both auto-detect `./connectors-local/`; `--connectors-local <dir>` names another one.
+Then re-run `check` and compile from the directory you ran `prepare` in. `compile` reads `.flow-sdk/bindings.json` and both read `.flow-sdk/connectors-local/` under the current directory, not beside the source: from any other directory, `compile` writes a stand-in connection id, not the one `prepare` bound. When you must run from elsewhere, pass the paths explicitly:
+
+```bash
+uip maestro bpmn compile <SOURCE> -o <OUTPUT> --bindings <PREPARE_DIR>/.flow-sdk/bindings.json --connectors-local <PREPARE_DIR>/.flow-sdk/connectors-local
+```
+
+Add `--resources <PREPARE_DIR>/.flow-sdk/resources.json` only when that file exists: `prepare --entity` or `--kind … --name …` writes it, a connector `prepare` does not, and `compile` refuses a missing one (`RESOURCE_LEDGER_MISSING`).
+
+`check` reads `.flow-sdk/bindings.json` only when given `--bindings .flow-sdk/bindings.json`; without it, its `CONNECTION_BINDING_NOT_GUID` warning stays.
+
+**Bind only an Enabled connection.** List the candidates and check the one you pick:
+
+```bash
+uip is connections list <CONNECTOR_KEY> --all-folders --output json   # Id, Name, State, Owner, Folder, FolderKey
+uip is connections ping <CONNECTION_ID> --output json                 # Data.Status must be "Enabled"
+```
+
+- With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in, else the one with `IsDefault: Yes`, else the first one listed, skipping every connection the next bullet rules out (including the requester's own personal one), and name it on the final report's `Assumed:` line.
+- A connection is a sender's identity. Never bind, or offer on an outline, a connection that is another person's
+  (its folder is `<USER_NAME>'s workspace`, or its Name is someone else's email), and never bind one as a stand-in for a
+  mailbox, channel or account the request names (`ar@…`) that has no connection. Bind the requester's own personal connection
+  only when they say to. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
+- `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
+- `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
+- Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
+- `uip maestro bpmn validate` checks connection bindings against the tenant: outside Studio Web, pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
 
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs `uip login` and a connection on the tenant. Run it when `check` asks for it, not speculatively.
@@ -122,19 +154,22 @@ These codes are mistakes in your own source, and `prepare` does not close them; 
 
 ## 4. When the connector is not in the library
 
-The shipped library covers roughly 150 connectors.
-A tenant can serve more, and `compile` says so:
+With no library pulled, `check` and `compile` fetch an operation through `uip` themselves, from the Flow node catalog, so a connector the tenant serves there needs nothing more; with a pulled library they refuse one it lacks, and `uip maestro registry pull` refreshes it.
+What they cannot fetch they refuse, and the refusal's last sentence says why:
 
 ```
-connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set.
+connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set. … The tenant was asked through uip (`uip maestro flow registry get`) and does not serve it.
 ```
+
+Any other note gives `uip`'s own reason; fix what it names (log in again only when the session is the problem), then re-run `check`.
+"does not serve it" is either a misspelt action or a connector the Flow node catalog lacks, which `prepare` below covers.
 
 **`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
 This covers a connector the Flow node catalog does not carry at all (Test Manager is one): when `registry search <key>` answers nothing, `prepare` refreshes the local catalog copy once (`uip maestro flow registry pull --force`, since a stale copy answers nothing for any connector) and, if it still serves nothing, reads Integration Service itself, the activity catalog for the identity and `is resources describe` for the path, parameters and fields, and says so:
 
 ```
   source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog, refreshed with `uip maestro flow registry pull --force`, serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step or agent tool needs the registry's node definition).
-prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
+prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → .flow-sdk/connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
 prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
 ```
 
@@ -150,8 +185,8 @@ A draft that cannot wait for access takes the form in §7.
 The identity comes from the catalog, never from the connector's OpenAPI document:
 
 ```bash
-uip is connections list <connector-key> --all-folders --output json      # the connection id
-uip is activities list <connector-key> --output json                     # Name + ObjectName + MethodName + IsCurated
+uip is connections list <CONNECTOR_KEY> --all-folders --output json      # the connection id
+uip is activities list <CONNECTOR_KEY> --output json                     # Name + ObjectName + MethodName + IsCurated
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <ObjectName> --operation <Verb> \
     --input-details '{}' --output json                                     # the V2 element (Data.V2.ElementXml), with the describe
@@ -188,10 +223,11 @@ uip is triggers objects <connector> <EVENT> --connection-id <id> --output json  
 uip is triggers describe <connector> <EVENT> <object> --connection-id <id> --output json
 ```
 
-- The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=vars.<id>_result.subject` reads a payload field downstream.
+- The payload lands in `outputVar` (default `<id>_result`) and a failure in `<id>_Error`; the node declares both, so `=js:vars.<id>_result.subject` reads a payload field downstream.
   `outputs` maps payload fields onto variables of their own, and its sources read the payload under `response`: `outputs: { subject: '=response.subject' }`.
   A bare `'=subject'` reads nothing: the payload is not at the top level.
 - `folderPath` is deprecated and ignored: the task names its folder by the `folder` binding alone, so drop it.
+- Test Manager (`uipath-uipath-testmanager`) has no event a process can use: the library has none, and `uip is triggers` uppercases its operation names (`Created` → 404 "Event operation 'CREATED' was not found"). Do not author `.eventTrigger()` or `.waitForEvent()` for it; tell the user, and poll with an activity instead.
 
 ## 7. Draft with an unresolved connector
 
@@ -200,7 +236,7 @@ Write the step so that `check` passes and the CLI, not prose, says what is missi
 
 - **The operation's metadata is local**: §1 finds it in the library (a local cache, so this works offline), and `check` names no `uip maestro registry prepare` for it (`OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or a `CONNECTOR_INPUT` for a field only the connection discovers), since only a live `prepare` clears those.
   Write the `.connector()` call of §2 with symbolic `connection` and `folder` names and no `bindings.json`.
-  Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
+  Leave no `lookup()` in it, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); a lookup field takes a runtime `=js:vars.<id>` or a fixed-vocabulary literal (`send_as: 'bot'`), which `check` only warns about (`LOOKUP_RUNTIME_VALUE`, `LOOKUP_LITERAL_ID`).
   `check`, `compile` and `format` pass and emit a real `Intsvc.ActivityExecution` task reading `=bindings.<name>`.
   `refresh` then refuses (`Connection binding "<name>" default must be a GUID.`) and `validate` reports `MISSING_BINDING`: that is the draft's blocker, so stop there, and do not edit a binding or a package file to get past it.
 - **Otherwise, with no tenant for `prepare` to reach** (the operation is not in the library, or `check` asks for a `prepare`): write the step as a bare `.task(id, { name })` whose name says what it does and carries the connector key and the operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'`.
@@ -219,8 +255,8 @@ Then leave a notes file (`README.md` beside the source) that names each CLI-owne
 
 | Blocker | What it is | Resolved by |
 | --- | --- | --- |
-| connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `bindings.json` |
-| dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./connectors-local/` |
+| connection binding | the tenant connection, and its folder companion, that `=bindings.<name>` reads; the draft carries only the symbolic name | `uip maestro registry prepare <key> --action <action>` against a live connection writes `./.flow-sdk/bindings.json` |
+| dynamic schemas | the connection-specific input and output schemas, custom fields, objects and lookup ids | the same `prepare`, with `--resolve` / `--object`, which writes `./.flow-sdk/connectors-local/` |
 | connector operation metadata (bare `.task()` only) | `objectName`, `method`, path and the generated outputs (`<id>_response`, `<id>_Error`) | `prepare`, then replace the `.task()` with the `.connector()` call it prints |
 | `bindings_v2.json` | the packaged binding resources | `uip maestro bpmn refresh <project>` after `compile`, once the connection binding resolves |
 <!--skill-flavor:package-metadata-row:start-->

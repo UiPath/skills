@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReturnsLabels",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "236a3a83-b303-47e0-ac9f-a22c9d5f559c",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ReturnsLabels"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "ReturnsLabels",
+      "package": {
+        "key": "2c621f56-a8eb-45e8-a5a4-2fef8a75cb4d"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d96bca65-5f83-49c2-b64c-2a291ef799b9",
+    "files": []
+  }
+}

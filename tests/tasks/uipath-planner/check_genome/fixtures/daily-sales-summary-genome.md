@@ -31,12 +31,19 @@ It runs unattended on an Orchestrator time trigger, needs no application with a 
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| DailySales_InputFolder | Text asset | Folder the regional CSV exports are dropped into |
-| DailySales_OutputFolder | Text asset | Folder the Excel summary is written to |
-| DailySales_ArchiveFolder | Text asset | Folder the processed exports are moved to |
-| DailySales-Evening | Time trigger | Starts the process every weekday at 19:00 |
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|---|---|---|---|---|
+| DailySales_InputFolder | Text | Configuration Question 1 | steps 1–2 | Folder the regional CSV exports are dropped into |
+| DailySales_OutputFolder | Text | Configuration Question 2 | steps 1 and 5 | Folder the Excel summary is written to |
+| DailySales_ArchiveFolder | Text | Configuration Question 3 | steps 1 and 6 | Folder the processed exports are moved to |
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---|---|---|---|---|
+| DailySales-Evening | this process | Time | weekdays 19:00, the tenant's time zone | 1 |
 
 ## Interface
 
@@ -49,6 +56,10 @@ Runs unattended with no arguments; outputs are the side effects listed in Workfl
 3. Which folder do processed exports move to? (setting; default: the operations share's `Sales\Archive` folder)
 4. Below which amount is a sales line left out of the totals? (constant; default: 10.00)
 5. What is the summary sheet called? (constant; default: Summary)
+
+## Open Decisions
+
+No open decisions.
 
 ## Workflow
 

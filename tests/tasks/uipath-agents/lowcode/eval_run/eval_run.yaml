@@ -14,8 +14,10 @@ description: >
   `entry-points.json`) passes `uip agent validate` and only fails at run time in
   the cloud worker. Evaluator *creation path* is deliberately advisory: the skill
   sanctions hand-written evaluator JSON alongside `evaluator add`, so only the
-  resulting artifact is gated. Eval sets and test cases stay gated on the CLI —
-  there, hand-writing UUIDs is a documented anti-pattern.
+  resulting artifact is gated. Test cases stay gated on the CLI — there,
+  hand-writing UUIDs is a documented anti-pattern. The cases may live in the
+  scaffolded default set or in a new one: the prompt asks for neither, so
+  creating a set is advisory and the check script grades whichever holds them.
   Deliberately scoped to a SINGLE eval run. `uip agent eval run
   compare` needs a second run, and observed cloud-run duration varies ~4x
   (393s-1476s). Compare and `uip eval run-offline-evals` belong in their own
@@ -126,13 +128,18 @@ success_criteria:
     weight: 0.0
     pass_threshold: 0.0
 
+  # Advisory, NOT gating. The prompt never asks for a new set, so adding the
+  # test cases to the scaffolded default set is a valid outcome. The check
+  # script grades whichever set holds the cases, and requires it to reference
+  # the agent-authored evaluator. Weight 0.0 for the same reason as the
+  # evaluator criterion above.
   - type: command_executed
-    description: "Agent created its own evaluation set"
+    description: "Informational: agent created a new evaluation set rather than reusing the default one (both are accepted)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+eval\s+set\s+add\b'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0.0
+    pass_threshold: 0.0
 
   # min_count is 1, not 2: `command_executed` counts Bash *invocations*, and
   # agents routinely chain several `eval add` calls into one shell command, so a
@@ -173,7 +180,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Eval suite authoring shape: evaluator type/category valid, eval set resolves its evaluatorRefs, test cases carry a consistent evalSetId and inputs matching entry-points.json"
+    description: "Eval suite authoring shape: evaluator type/category valid, the eval set holding the cases (default or new) resolves its evaluatorRefs and references the agent-authored evaluator, test cases carry a consistent evalSetId and inputs matching entry-points.json"
     command: "python3 $REFERENCE_DIR/check_eval_run.py"
     timeout: 30
     expected_exit_code: 0

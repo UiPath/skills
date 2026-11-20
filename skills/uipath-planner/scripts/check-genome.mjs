@@ -25,12 +25,17 @@
 //           genome's Source Map: behavioural wording (no code-level tokens), configuration question kind
 //           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
 //           rows the transactional shape allows, split options named by letter with only their Requires and Changes cells,
-//           complete for every unit and alternative unit, a `Decided:` project chain on option B only and naming two
+//           complete for every unit and alternative unit, a decided flow's too, a `Decided:` project chain on option B only and naming two
 //           or more projects, retry and consecutive-failure stop; step table cells
-//           holding references only; no H2 heading twice; no component genome linked twice; the `Source framework`
+//           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
+//           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
+//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
+//           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
+//           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
-//           lists) and still has that fingerprint.
+//           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
+//           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -52,13 +57,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
-import { sddFingerprint } from "./sdd-fingerprint.mjs";
+import { genomeFingerprint, sddFingerprint } from "./sdd-fingerprint.mjs";
 
 export const VALID_SKILLS = new Set([
   "uipath-rpa", "uipath-maestro-flow", "uipath-maestro-bpmn", "uipath-maestro-case",
   "uipath-agents", "uipath-functions", "uipath-api-workflow", "uipath-coded-apps",
   "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
   "uipath-solution", "uipath-human-in-the-loop", "uipath-rules",
+  "uipath-ontology",
 ]);
 export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / Deployment, never in Build With or Components
   "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
@@ -73,15 +79,29 @@ const routesToBuilder = (s) => /\buipath-genome(?![\w-])/.test(s);
 
 export const COMPONENT_SECTIONS = [
   "Overview", "Target Applications", "Build With", "Platform Dependencies", "Interface",
-  "Configuration Questions", "Workflow", "Business Rules", "Error Handling",
+  "Configuration Questions", "Open Decisions", "Workflow", "Business Rules", "Error Handling",
   "Transactional Shape", "Acceptance Criteria", "Complexity", "Tags",
 ];
 export const PROCESS_SECTIONS = [
   "Overview", "Actors and Systems", "Components", "Process Map", "Handoffs",
-  "Platform Dependencies", "Configuration Questions", "Business Rules",
+  "Platform Dependencies", "Configuration Questions", "Open Decisions", "Business Rules",
   "Error Handling and Recovery", "Transactional Shape", "Acceptance Criteria", "Deployment",
   "Complexity", "Tags",
 ];
+// Platform Dependencies: one `###` table per kind, in this order, then any other service's
+export const DEPENDENCY_KINDS = ["Queues", "Assets", "Credentials", "Storage buckets", "Connections", "Data Fabric entities", "Triggers"];
+const NO_DEPENDENCIES = "No Orchestrator or Integration Service resources required";
+// a process genome's Deployment: what holds wherever it is deployed; the environments themselves are not the genome's
+export const DEPLOYMENT_LABELS = ["Packaging and route", "Entry points", "Runtime", "Kept out of the logs"];
+// an Open Decisions entry is open (its tier and who answers it), decided or withdrawn; it is never removed
+export const DECISION_TIERS = ["business outcome", "run behaviour", "reading", "material"];
+const OPEN_ENTRY = new RegExp(`\\((?:${DECISION_TIERS.join("|")}); answered by: `);
+const DECIDED_ENTRY = /\(decided \d{4}-\d{2}-\d{2}: /;
+const WITHDRAWN_ENTRY = /\(withdrawn: /;
+const NO_DECISIONS = "No open decisions";
+// `*[Inferred]*`, `*[Inferred: D3]*`, `*[Inferred: process D3]*`, `*[Inferred: CQ2]*`
+const INFERRED_MARK = /\*\[Inferred(?::\s*([^\]]*))?\]\*/g;
+const MARK_TARGET = /^(process\s+)?(D|CQ)(\d+)\b/;
 // Code-level tokens that must not appear in the genome body (Source Map excluded).
 const BANNED_BODY_TOKENS = [
   "InvokeWorkflowFile", "RetryScope", "TryCatch", "ReadRange", "AppendRange", "WriteRange",
@@ -90,7 +110,7 @@ const BANNED_BODY_TOKENS = [
   "uipath.core.", "activityType", "JsInvoke",
 ];
 export const OUTCOME_ROWS = new Set(["Success", "Business exception", "System exception", "Postponed"]);
-// the genome format's minimum Workflow steps and Acceptance Criteria per complexity.
+// the genome format's minimum Workflow steps and Acceptance Criteria per complexity, a component genome's.
 // core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
 const CORE_FLOOR = 3;
 const MIN_STEPS_BY_COMPLEXITY = { simple: 3, medium: 5, complex: 8 };
@@ -113,7 +133,7 @@ export const TEMPLATE_PLACEHOLDERS = [
   "{unit of work}",
   ": {producer}",
   "→ {consumer}",
-  "{producer | consumer | consumer of Flow {M}",
+  "{producer | consumer | producer and consumer | consumer of Flow {M}",
   "{one sentence}",
   "one {item}",
   "{identifying field(s)}",
@@ -342,7 +362,70 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
   }
   for (const [, num, question] of sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. (.*)$/gm)) {
     const pointer = !question.includes("?") && /Configuration Question \d+/.test(question); // a question the process genome asks
-    if (!pointer && !/\((setting|constant); default:/.test(question)) r.strict(`configuration question ${num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'`);
+    const withdrawn = /^Withdrawn: /.test(question); // kept so later questions keep their numbers
+    if (!pointer && !withdrawn && !/\((setting|constant); default:/.test(question)) r.strict(`configuration question ${num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'`);
+  }
+}
+
+/** Map of entry number → 'open' | 'decided' | 'withdrawn' | 'malformed' for a genome's Open Decisions. */
+export function openDecisions(text) {
+  const entries = new Map();
+  for (const [, num, entry] of sectionBody(text, "Open Decisions").matchAll(/^(\d+)\. (.*)$/gm)) {
+    const status = DECIDED_ENTRY.test(entry) ? "decided" : WITHDRAWN_ENTRY.test(entry) ? "withdrawn" : OPEN_ENTRY.test(entry) ? "open" : "malformed";
+    entries.set(Number(num), status);
+  }
+  return entries;
+}
+
+/** strict: Open Decisions entries in one of their forms, numbered without a gap, and every `*[Inferred]*` mark
+ * naming an open entry or a Configuration Question that exists. A `process D<n>` mark is checked only when the
+ * process genome's entries are known (the component is checked through its process genome). */
+/** The entry numbers a genome's text names outside its Open Decisions section: its own (`D3`), or with
+ * processScope the process genome's (`process D3`). */
+export function namedEntries(text, processScope = false) {
+  const rest = text.replace(sectionBody(text, "Open Decisions"), "");
+  if (processScope) return new Set([...rest.matchAll(/\bprocess\s+D(\d+)\b/g)].map((m) => Number(m[1])));
+  // the forms that name an entry: a mark (`*[Inferred: D3]*`), a defect's `(ruling open: D3)`, a row's `(D3)` or `(D1, D3)`
+  const named = new Set();
+  for (const m of rest.matchAll(/\*\[Inferred:\s*D(\d+)\]\*|\((?:ruling open:\s*)?(D\d+(?:\s*,\s*D\d+)*)\)/g)) {
+    for (const n of (m[1] ? `D${m[1]}` : m[2]).matchAll(/D(\d+)/g)) named.add(Number(n[1]));
+  }
+  return named;
+}
+
+function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new Set()) {
+  const section = sectionBody(text, "Open Decisions");
+  const entries = openDecisions(text);
+  if (section.trim() && !entries.size && !section.includes(NO_DECISIONS)) r.strict("Open Decisions: neither numbered entries nor the stub line");
+  const numbers = [...section.matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1]));
+  for (const num of new Set(numbers.filter((n, i) => numbers.indexOf(n) !== i))) r.strict(`Open Decisions: entry ${num} appears more than once`);
+  [...entries.keys()].forEach((num, i) => {
+    if (num !== i + 1) r.strict(`Open Decisions: entry ${num} follows entry ${i}; an entry stays when decided or withdrawn, so the numbers never skip`);
+  });
+  for (const [num, status] of entries) {
+    if (status === "malformed") r.strict(`Open Decisions entry ${num} is none of '({tier}; answered by: …', '(decided YYYY-MM-DD: …' or '(withdrawn: …' — tiers: ${DECISION_TIERS.join(", ")}`);
+  }
+  const questions = new Set([...sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1])));
+  const unnamed = [];
+  for (const [mark, target] of text.matchAll(INFERRED_MARK)) {
+    const m = (target ?? "").trim().match(MARK_TARGET);
+    if (!m) { unnamed.push(mark); continue; }
+    const [, processScope, kind, n] = m;
+    const num = Number(n);
+    if (kind === "CQ") {
+      if (!processScope && !questions.has(num)) r.strict(`${mark} names Configuration Question ${num}, which this genome does not have`);
+      continue;
+    }
+    const pool = processScope ? processEntries : entries;
+    if (!pool) continue;
+    const where = processScope ? "the process genome's Open Decisions" : "Open Decisions";
+    if (!pool.has(num)) r.strict(`${mark} names entry ${num}, which ${where} does not have`);
+    else if (pool.get(num) !== "open") r.strict(`${mark} names entry ${num} of ${where}, which is ${pool.get(num)}: a settled point keeps no marker`);
+  }
+  if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
+  const named = namedEntries(text);
+  for (const [num, status] of entries) {
+    if (status === "open" && !named.has(num) && !namedElsewhere.has(num)) r.strict(`Open Decisions entry ${num} is named nowhere in the genome: mark the line that states its point (*[Inferred: D${num}]*), or name it at its defect, row or step`);
   }
 }
 
@@ -350,9 +433,46 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
 function checkDesignedIn(path, text, r) {
   const m = text.match(DESIGNED_IN);
   if (!m || !m[2]) return;
+  const sdd = resolvePath(dirname(path), m[1]);
+  let matches;
+  // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
+  try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
+  if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+}
+
+const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;
+
+/** strict: the SDD written from this genome — `<slug>-sdd.md` beside it, a process genome's `<slug>-solution-sdd.md` —
+ * still carries the genome's fingerprint. A genome with a `Designed in:` line has its SDD as the source instead. */
+function checkWrittenSdd(path, text, level, r) {
+  if (DESIGNED_IN.test(text)) return;
+  const slug = baseName(path).replace(/-genome\.md$/i, "");
+  const sdd = join(dirname(path), `${slug}${level === "process" ? "-solution" : ""}-sdd.md`);
+  if (!existsSync(sdd)) return;
+  const row = read(sdd).match(GENOME_ROW);
+  if (!row) { r.strict(`${baseName(sdd)} beside the genome has no 'Genome' handoff row carrying its genome-sha256 fingerprint`); return; }
   let current;
-  try { current = sddFingerprint(resolvePath(dirname(path), m[1])); } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
-  if (current !== m[2]) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  try { current = genomeFingerprint(path); } catch { r.strict(`${baseName(sdd)}: a component genome the genome links cannot be read for its genome-sha256`); return; }
+  if (current !== row[1]) r.strict(`${baseName(sdd)}: genome-sha256 does not match the genome; the genome changed since the SDD was written from it`);
+}
+
+/** strict: Platform Dependencies holds the stub or a table per kind in the kinds' order, another service's after
+ * them; a process genome's Deployment holds its bullets. */
+function checkPlatformDependencies(text, level, r) {
+  const body = sectionBody(text, "Platform Dependencies");
+  const tables = [...body.matchAll(/^### (.+)$/gm)].map((m) => m[1].trim());
+  if (!tables.length && !body.includes(NO_DEPENDENCIES)) r.strict(`Platform Dependencies: neither a table per kind nor the stub line '${NO_DEPENDENCIES}.'`);
+  let last = -1, other = null;
+  for (const h of tables) {
+    const kind = DEPENDENCY_KINDS.indexOf(h);
+    if (kind === -1) { other ??= h; continue; }
+    if (other) r.strict(`Platform Dependencies: '### ${h}' after '### ${other}'; another service's table follows the kinds`);
+    else if (kind < last) r.strict(`Platform Dependencies: '### ${h}' out of the kinds' order ${repr(DEPENDENCY_KINDS)}`);
+    last = Math.max(last, kind);
+  }
+  if (level !== "process") return;
+  const missing = DEPLOYMENT_LABELS.filter((l) => !new RegExp(`^- \\*\\*${esc(l)}:\\*\\*`, "m").test(sectionBody(text, "Deployment")));
+  if (missing.length) r.strict(`Deployment: no bullet for ${repr(missing)}`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -412,7 +532,7 @@ function checkTransactional(text, level, r, partOf = false) {
       if (m) { if (!units.has(row[0])) units.set(row[0], new Set()); units.get(row[0]).add(m[1]); }
       if (row.length >= 2 && !SPLIT_OPTIONS.includes(row[1].trim())) r.strict(`Transactional Shape ${name}: option cell '${row[1]}' of '${row[0]}' holds more than its letter — the transactional shape guide defines A, B and C`);
     }
-    // a split the SDD, the request or the refactor answers already took (`**Decided:** B, ...`) lists that option alone, never reopened
+    // a split the SDD, the request or the refactor answers already took (`**Decided:** B, ...`) names one row of a table kept whole
     const decidedLine = lines(body).find((l) => l.startsWith("**Decided:**")) ?? "";
     const decided = decidedLine.match(/^\*\*Decided:\*\*\s*([ABC])\b(?:,\s*([^—–]+?))?\s*(?:[—–]\s*(.*)|$)/);
     if (decidedLine && !decided) r.strict(`Transactional Shape ${name}: the 'Decided:' line does not start with the option letter`);
@@ -430,14 +550,13 @@ function checkTransactional(text, level, r, partOf = false) {
       const unit = (decided[2] ?? "").trim();
       const pool = unit && units.has(unit) ? [units.get(unit)] : unit ? [] : [...units.values()];
       if (!pool.some((opts) => opts.has(decided[1]))) r.strict(`Transactional Shape ${name}: decided option ${decided[1]}${unit ? ` of '${unit}'` : ""} has no Split options row`);
-    } else {
-      for (const [unit, opts] of units) {
-        const missing = SPLIT_OPTIONS.filter((o) => !opts.has(o));
-        if (missing.length) r.strict(`Transactional Shape ${name}: unit '${unit}' lacks option(s) ${repr(missing)}`);
-      }
-      const alt = lines(body).find((l) => l.startsWith("**Alternative units of work:**")) ?? "";
-      if (alt && !/:\*\*\s*none\b/i.test(alt) && units.size < 2) r.strict(`Transactional Shape ${name}: alternative units of work named but split options cover only one unit`);
     }
+    for (const [unit, opts] of units) {
+      const missing = SPLIT_OPTIONS.filter((o) => !opts.has(o));
+      if (missing.length) r.strict(`Transactional Shape ${name}: unit '${unit}' lacks option(s) ${repr(missing)}`);
+    }
+    const alt = lines(body).find((l) => l.startsWith("**Alternative units of work:**")) ?? "";
+    if (alt && !/:\*\*\s*none\b/i.test(alt) && units.size < 2) r.strict(`Transactional Shape ${name}: alternative units of work named but split options cover only one unit`);
     const header = lines(body).find((l) => l.trim().startsWith("| Unit of work | Option |")) ?? "";
     const cols = cells(header).map((c) => c.toLowerCase());
     if (!cols.includes("requires") || !cols.includes("changes against as-is")) {
@@ -488,7 +607,7 @@ function checkStepsTable(text, r) {
     if (!sources.length) r.strict(`step table, step ${row[0]}: no source object`);
     const [data, dataProse] = references(row[2]);
     for (const part of [...prose, ...dataProse]) r.strict(`step table, step ${row[0]}: '${part.slice(0, 60)}' is not a reference — move it to Notes`);
-    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when the step reads no data set`);
+    if (!data.length && row[2].trim().toLowerCase() !== "none") r.strict(`step table, step ${row[0]}: Data sets is empty — write 'none' when no data set drives the step`);
     if (!/^\d+$/.test(row[3])) r.strict(`step table, step ${row[0]}: Captures '${row[3]}' is not a count`);
   }
 }
@@ -505,7 +624,7 @@ export function componentLinks(path, text) {
   return out;
 }
 
-function checkComponent(path, a, partOf, shape = true, library = false) {
+function checkComponent(path, a, partOf, shape = true, library = false, processEntries = null) {
   const text = read(path);
   // a library is named so in its process genome's Components table, or in its own Transactional Shape stub
   library = library || /^Not transactional:[^\n]*\blibrar(y|ies)\b/i.test(sectionBody(text, "Transactional Shape").trim());
@@ -528,13 +647,15 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
   const questions = cq.match(/^\d+\. /gm) ?? [];
   if (!cq.trim()) r.core("Configuration Questions section is empty");
   else if (!questions.length && !cq.includes("no configuration needed")) r.strict("Configuration Questions: neither a numbered list of questions nor the stub line");
+  checkOpenDecisions(text, r, processEntries);
+  checkPlatformDependencies(text, "component", r);
   if (a.sourceMap.length) {
     const sm = sectionBody(text, "Source Map");
     if (!sm.trim()) r.core("missing or empty '## Source Map' section");
     for (const tok of a.sourceMap) if (!sm.includes(tok)) r.core(`Source Map does not mention '${tok}'`);
   }
   checkStepsTable(text, r);
-  if (!partOf && !text.includes("Part of:")) checkSourceFramework(text, r);
+  if (!partOf && !text.includes("Part of:")) { checkSourceFramework(text, r); checkWrittenSdd(path, text, "component", r); }
   if (partOf && !text.includes("Part of:")) r.strict("component inside a process genome lacks the 'Part of:' line");
   checkTransactional(text, "component", r, partOf);
   if (a.shape && shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
@@ -545,7 +666,8 @@ function checkComponent(path, a, partOf, shape = true, library = false) {
 function checkProcess(path, a) {
   const text = read(path);
   const r = new Report(a.profile, a.shapeChecks === "gate");
-  checkCommon(path, text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY[complexityOf(text)] ?? a.minCriteria);
+  // the population matrix's criteria floors are a component genome's; a process genome holds only end-to-end criteria
+  checkCommon(path, text, "process", PROCESS_SECTIONS, r, CORE_FLOOR);
   const pos = h2Positions(text);
   const cp = sectionPos(pos, "Components"), pm = sectionPos(pos, "Process Map");
   if (cp !== null && pm !== null && cp > pm) r.core("Components must precede Process Map");
@@ -561,17 +683,27 @@ function checkProcess(path, a) {
   const first = (i) => targets.indexOf(targets[i]) === i;
   for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
   checkSourceFramework(text, r);
+  checkWrittenSdd(path, text, "process", r);
+  // the process genome's entries are named in its own text or in a component's (`process D3`)
+  const namedByComponents = new Set();
+  for (const [, target] of links) {
+    if (!existsSync(target)) continue;
+    try { for (const n of namedEntries(read(target), true)) namedByComponents.add(n); } catch (e) { if (!(e instanceof InputError)) throw e; }
+  }
+  checkOpenDecisions(text, r, null, namedByComponents);
+  checkPlatformDependencies(text, "process", r);
+  const processEntries = openDecisions(text);
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
     if (!existsSync(target)) r.core(`linked component genome missing on disk: ${link}`);
     else {
       // one unreadable component file is one finding; the process genome and its other components are still checked
-      try { componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary)); }
+      try { componentErrors.push(...checkComponent(target, { ...a, expect: [], sourceMap: [] }, true, false, isLibrary, processEntries)); }
       catch (e) { if (!(e instanceof InputError)) throw e; r.core(e.message); }
     }
   }
   const handoffs = lines(sectionBody(text, "Handoffs")).filter((l) => l.startsWith("|"));
-  if (handoffs.length < 4) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 2`); // header + separator + >= 2 rows
+  if (handoffs.length < 3) r.core(`Handoffs table: ${Math.max(0, handoffs.length - 2)} rows, expected >= 1`); // header + separator + >= 1 row: two components share at least one edge
   checkTransactional(text, "process", r);
   if (a.shape) checkShapeAssertion(text, a.shape, a.flows, a.unit, r);
   for (const tok of a.expect) if (!text.toLowerCase().includes(tok.toLowerCase())) r.core(`expected token '${tok}' not found`);

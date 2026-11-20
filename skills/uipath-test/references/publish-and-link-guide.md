@@ -103,13 +103,15 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> --execution-type automated --o
 
 Capture the returned `ExecutionId`.
 
-## Step 7 — Wait for terminal status
+## Step 7 — Wait for terminal status (only when asked)
+
+A request to trigger or start a run is done once `ExecutionId` is returned: report it and stop. Wait only when the user asked for the run's result, and keep `--timeout <SECONDS>` below your shell's command time limit so the call returns:
 
 ```bash
-uip tm wait --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --timeout 900 --output json
+uip tm wait --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --timeout <SECONDS> --output json
 ```
 
-`--timeout 0` means no timeout. The output `Status` is `Passed` / `Failed` / `Cancelled` when the call returns.
+An automated run stays `Pending` until a robot serving the folder picks it up, so `wait` can use its whole `--timeout`. Exit 2 (`Timed out after <N>s`) means report the run as not finished (SKILL.md Rule 10 (b)). `--timeout 0` means no timeout; never pass it from an agent shell. The output `Status` is `Passed` / `Failed` / `Cancelled` when the call returns.
 
 For result download, attachment download, and report generation: see [/uipath:uipath-test SKILL.md § Result, Attachment, Report Commands](../SKILL.md).
 

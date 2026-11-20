@@ -27,8 +27,11 @@ Land here from a grep on an error message? Pick the matching row.
 | I changed the resource **in the cloud** (new entity field, queue setting) and `refresh` reports it under `Skipped` | `uip solution resources edit <resource-key> --source remote --force` — see [develop-solution.md Step 11a](develop-solution.md#step-11a-pull-a-changed-cloud-definition---source-remote) |
 | `resources edit` silently ignored a property I passed | The SDK skips unknown / reference / read-only props by design — see [manual-edits](scenarios/manual-edits.md) for what's editable vs not |
 | My hand-edit got reverted on the next refresh | [manual-edits](scenarios/manual-edits.md) (the SDK re-derives bindings) |
-| `… will permanently delete <k> installed resource(s) replaced by links` at deploy / upgrade | [failure-modes](scenarios/failure-modes.md) — consent with `--acknowledge-permanent-deletion`, or unlink to keep the copies |
+| `… will permanently delete <k> resource(s) along with their data` at deploy / upgrade | [failure-modes](scenarios/failure-modes.md) — consent with `--acknowledge-permanent-deletion`, or keep the resources linked or shared (older servers: unlink to keep the copy) |
+| `… would permanently delete the installed copy … this server does not support keeping the installed copy` at deploy | [failure-modes](scenarios/failure-modes.md): `--delete-installed-copy` on the link and confirm, or unlink to keep the copy |
 | `deploy uninstall` fails with "uncompleted jobs", "permanently deletes these resources" or "cannot get past" | [failure-modes](scenarios/failure-modes.md) -- `--force` only with the user's consent, never for "cannot get past" |
+| Ontology name conflict at deploy (`allowedActions: [Replace, RenameInSolution]`), or `EntityConflict` / `InstallError` from an ontology solution | [ontology-solution](scenarios/ontology-solution.md) |
+| `[TypeIncompatible] … ReferenceEntity: existing=EntityAttachment, incoming=(none)` on an upgrade | [local-entity-file-field](scenarios/local-entity-file-field.md) |
 | Other deploy / refresh failures (folder collision, suffix amplification, missing bindings, version collision) | [failure-modes](scenarios/failure-modes.md) |
 
 ---
@@ -43,6 +46,8 @@ Land here from a grep on an error message? Pick the matching row.
 | [virtual-resource](scenarios/virtual-resource.md) | Brand-new asset/queue/bucket shipped with the solution — no cloud counterpart yet. Refresh creates a virtual stub; deploy needs a value or link. |
 | [manual-edits](scenarios/manual-edits.md) | The CLI doesn't cover the field you need to edit. What's safe to hand-edit on solution-level files and deploy configs, what isn't. |
 | [failure-modes](scenarios/failure-modes.md) | Cross-cutting symptom→cause→fix table for deploy and refresh failures that don't fit a single scenario. |
+| [ontology-solution](scenarios/ontology-solution.md) | A solution that carries an ontology: name conflicts (`Replace` / `RenameInSolution`), what a deployer can edit, the post-deploy check and install errors. |
+| [local-entity-file-field](scenarios/local-entity-file-field.md) | Every upgrade of a solution whose locally authored entity has a `FILE` field is rejected with `TypeIncompatible`: keep the entity with `UseExisting` and finish the draft. |
 
 ---
 

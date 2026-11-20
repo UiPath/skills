@@ -23,7 +23,7 @@ uip maestro bpmn eval --help --output json
 ## Before the first eval command
 
 The eval commands read the compiled project, not the source.
-Compile `<Name>.bpmn.ts` into `<Project>/<Name>.bpmn`, then `format`, `refresh` and `validate` it as in the [validation loop](../SKILL.md#validation-loop).
+Bring `<Project>/<Name>.bpmn` up to date with the [validation loop](../SKILL.md#validation-loop) (compile and `format` a new process, `merge` an existing one), so `refresh` and `validate` have run.
 `refresh` writes `entry-points.json`, which is where the eval commands look up the entry point and its declared inputs and outputs.
 A component a simulation targets must already be an element of that compiled `.bpmn`.
 
@@ -82,7 +82,7 @@ Create the others in Studio Web; this differs from Flow.
 
 A data point's input and output keys are validated against the entry point's declared schema in the project's **`entry-points.json`**, by the names a caller uses, not the ids in the `.bpmn`.
 An undeclared key fails with `Input "<name>" is not a declared input of the BPMN process. Declared inputs: …`.
-Declare the missing contract in the source with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), compile, `format`, run `uip maestro bpmn refresh <Project>`, then run `eval add` again.
+Declare the missing contract in the source with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), then run the [validation loop](../SKILL.md#validation-loop) again and run `eval add` again.
 Validation is best-effort: when the entry point declares no inputs or outputs it is skipped rather than rejecting keys.
 Build expected outputs from real records, not invented ones: an invented key matches no record and the eval scores a fault instead of an answer.
 

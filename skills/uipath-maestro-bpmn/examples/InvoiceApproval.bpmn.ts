@@ -7,6 +7,10 @@
  * produces from a process someone actually runs: 71 elements, wide gateway routing,
  * and six node types in one graph.
  *
+ * Its plain `=` expressions are the import's legacy C#: copy none of them, and write
+ * every new expression as `=js:` (`'=js:vars.total * 0.9'`), except a human-task
+ * form field's `value`, which stays `=vars.<id>`.
+ *
  * | it demonstrates | as |
  * | --- | --- |
  * | an Integration Service **event trigger** | `.activity(…, 'Intsvc.EventTrigger')` on a start event |
@@ -308,7 +312,7 @@ export default bpmn("Process_1")
           .goto("Activity_gLHys8"));
       })
       .goto("Activity_gLHys8") },
-    { when: "=vars.response19 != null && vars.distinctApproversCount !== 1 && vars.distinctApproversCount !== 0 && (vars.response19 || []).filter(function(a) { return a[\"Status\"] === \"ManagerAP\"; }).length > 0", label: "Yes", body: (b) => b
+    { when: "=js:vars.response19 != null && vars.distinctApproversCount !== 1 && vars.distinctApproversCount !== 0 && (vars.response19 || []).filter(function(a) { return a[\"Status\"] === \"ManagerAP\"; }).length > 0", label: "Yes", body: (b) => b
       .endEvent("Event_djMYiz", { name: "Stop Progressing to Final AP" }) },
   ], { name: "Manager Approvals Remaining?" })
   .activity("Activity_gLHys8", "Orchestrator.CreateAndWaitForQueueItem", { name: "Create and wait for Documents Queue Item", typeVersion: "v2", context: { name: "=bindings.btqBFn489", folderPath: "=bindings.byYoRz6To", _label: "SendDocumentsQueue" }, inputSchema: {"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"SpecificContent":{"type":"object"},"DueDate":{"type":"datetime"},"DeferDate":{"type":"datetime"},"Priority":{"type":"dropdown"},"Reference":{"type":"string"}},"required":[]}, inputs: { SpecificContent: {"InvoiceClaimNumber":"=vars.response11[0].InvoiceClaimId","InvoiceClaimEntityId":"=vars.response11[0].Id"}, DueDate: null, DeferDate: null, Priority: null, Reference: "=vars.newEmailEntityId" }, outputRows: [{ name: "response", type: "jsonSchema", var: "response14", source: "=result", varSchema: "responseSchema" }, { name: "Error", type: "jsonSchema", var: "error11", source: "=Error", varSchema: errorSchemaWithResponse }], contextVerbatim: true }, (t) => {

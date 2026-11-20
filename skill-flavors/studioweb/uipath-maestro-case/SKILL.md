@@ -34,9 +34,9 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro case check`, `compile`, `decompile` | Work, inside the page. |
 | `uip maestro case validate` | Works, with `--strict` and `--sdd`. |
 | `uip maestro case sdd convert` | **Do not use as a build path.** Output has flat connector inputs (`CASE_MGMT_CONNECTOR_INPUT_FLATTENED`), unresolved cross-task references, and no `registry prepare` — `validate` will reject it. If used as a seed, decompile its output, author the TypeScript source, then check → compile → validate. Never submit the convert output directly. |
-| `uip maestro case registry pull` | Works: the tenant resource indexes ([`references/registry-resolution.md`](references/registry-resolution.md)). |
+| `uip maestro case registry pull` | Works — **this is the one you need** for case resource discovery (action apps, processes, agents). Pulls tenant resource indexes to `/home/.uip/case-resources/`: the CLI's home here is `/home`, not the shell's `~` (`/solution`), so read `~/.uip/case-resources/` in the references as that path. Not the same as `uip maestro registry pull` below. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
-| `uip maestro registry pull` | Answered by the CLI, with no effect: the library of the session is always loaded. |
+| `uip maestro registry pull` | **No-op in Studio Web** (the connector library of the session is always loaded). Not the same as `uip maestro case registry pull` above — that one pulls case resources and works. |
 | `uip solution resources add`, `list` | Work. |
 | `uip solution resources refresh`, `remove` | Not available: no local `.uipx`. Add connections with `resources add` (the [Validation loop](#validation-loop)). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
@@ -62,7 +62,7 @@ When a reference tells you to run a command that is not available, use the Studi
 
 <!--skill-flavor:workflow-build:start-->
 5. Seed the source every turn by decompiling the target instead of hand-writing the skeleton: `uip maestro case decompile <Plan> -o .flow-sdk/<Project>.case.ts --no-pipeline`. A new project's plan is the one Studio Web or `case init` seeded: decompile it too. It carries the case id, `.name`, `.identifier` and `trigger_1` the product already assigned; `entry-points.json` references that trigger id. Compile back into the target, never a second plan beside it: Studio Web reads only one. Compile with plain `-o <Plan>` and no `--bindings <Plan>` ([Brownfield](references/case-runtime.md#brownfield-editing)). Author inside the chain; the trailing `preserveCaseJson(...)` is decompiler-owned wire data — never hand-edit it, and leave it in place. For shape, copy the closest staged `examples/*.case.ts`.
-6. Run `uip maestro case check .flow-sdk/<Project>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`.
+6. Run `uip maestro case check .flow-sdk/<Project>.case.ts --source` before every compile, gate edits included (`skipWhen`, a rule `expression`); fix every error (non-zero exit) first. For instance, `check` reports a `vars.<id>` read of an undeclared variable as `EXPR_UNDECLARED_REF`. One exception: `REFERENCE_OUTPUT_SOURCE` on `=response.<field>` when the task's own output argument is an object named `response`; keep that source and compile (the `outputs` row). Add `--baseline .flow-sdk/original/<Plan>` (the undo copy the seed writes; never `<Plan>` itself, which after a compile is your edit) so defects the plan already had on stages and tasks you did not touch do not fail the check ([Brownfield](references/case-runtime.md#check-only-what-you-changed-check---baseline)).
 7. Compile into the target, then validate, then make sure each connection is in the solution — the [Validation loop](#validation-loop). Never run `uip solution resources refresh` or `remove`: both fail here.
 8. Run live debug only when the user asks for it and tenant resources are available. A debug run is a REAL run: it sends emails, posts messages and calls APIs.
 
@@ -104,7 +104,7 @@ Steps 2 and 3, repeated until clean:
 ```bash
 cd /solution/<Project>
 # 2. Edit .flow-sdk/<Project>.case.ts narrowly, then check until clean
-uip maestro case check .flow-sdk/<Project>.case.ts --source
+uip maestro case check .flow-sdk/<Project>.case.ts --source --baseline .flow-sdk/original/<Plan>
 # 3. Compile back into the target, then the product's own check
 uip maestro case compile .flow-sdk/<Project>.case.ts -o <Plan>
 uip maestro case validate <Plan> --strict --sdd <sdd.md> --output json  # SDD supplied
@@ -130,6 +130,6 @@ uip maestro case validate <Plan> --strict --output json                 # no SDD
 <!--skill-flavor:validation-loop:end-->
 
 <!--skill-flavor:library-pull:start-->
-In Studio Web the connector library of the session is always loaded, so
-`check` reads it with no pull: `uip maestro registry pull` has no effect.
+In Studio Web on cloud the connector library of the session is always loaded, so `check` reads it with no pull: `uip maestro registry pull` has no effect.
+With no session library (Automation Suite), `check` and `compile` fetch a missing operation through `uip` themselves, so re-run `check`.
 <!--skill-flavor:library-pull:end-->

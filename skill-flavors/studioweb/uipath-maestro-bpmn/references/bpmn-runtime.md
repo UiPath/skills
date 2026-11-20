@@ -38,3 +38,28 @@
   Needs `@uipath/maestro-builder-sdk` 6.93.9 or later. Studio Web ships its own SDK: when `compile` writes the old manual form (`mode="manual"` with the request as context rows), the run faults, so tell the user that this Studio Web build cannot write a plain HTTP call yet.
   From 6.93.9, `outputVar` is the body, so read `vars.<id>_response.x`, not `vars.<id>_response.body.x`, which read the old form's whole response.
 <!--skill-flavor:sdk-http-manual:end-->
+
+<!--skill-flavor:brownfield-merge-form:start-->
+  In Studio Web, merge through the round trip of the [Validation loop](../SKILL.md#validation-loop): it compiles the edit to `<Draft>/edited/` and merges that file, never the `.bpmn.ts`.
+<!--skill-flavor:brownfield-merge-form:end-->
+
+<!--skill-flavor:sibling-deploy:start-->
+  3. With the user's go-ahead, publish the open solution as [Publish and deploy](operate.md#publish-and-deploy) says, and have the user confirm it in Publish history.
+     A personal-workspace publish deploys itself: run no `deploy run`. A shared-location publish is deployed once with `uip solution deploy run`, as that section says.
+<!--skill-flavor:sibling-deploy:end-->
+
+<!--skill-flavor:sibling-redeploy:start-->
+  Ship the finished process by publishing the open solution again to the same destination.
+  A personal-workspace publish deploys itself. After a shared-location publish, with the user's go-ahead, move step 3's deployment to it with
+  `uip solution deploy upgrade --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --output json` (with no `--version`, it takes the newest published one).
+  Never run a second `deploy run`: it deploys to a new folder, which the node does not name.
+<!--skill-flavor:sibling-redeploy:end-->
+
+<!--skill-flavor:business-rule-key:start-->
+  `<decisionKey>` is the decision's `OutputArguments` property name (such as `decision1`), not its display name: a display name reads null. Studio Web cannot read a rule's output contract, so read `vars.<id>_businessRuleResponse.<decisionKey>.<column>` downstream, the whole result the builder already maps; ask the user for the decision's output name when a later node needs one column, and whether the rule is decision-keyed when that is not known.
+<!--skill-flavor:business-rule-key:end-->
+
+<!--skill-flavor:in-solution-debug:start-->
+  Debug runs the open solution, so it starts the child project; before reporting that the pair
+  works, read the child's returned values from the parent run (`debug-instances variables-all`).
+<!--skill-flavor:in-solution-debug:end-->

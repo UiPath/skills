@@ -1,0 +1,20 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/ReturnsLabels.bpmn#Event_start",
+      "uniqueId": "6546bf83-65fb-4c46-9788-669be30b193a",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "output": {
+        "type": "object",
+        "properties": {}
+      },
+      "displayName": "Manual trigger"
+    }
+  ]
+}

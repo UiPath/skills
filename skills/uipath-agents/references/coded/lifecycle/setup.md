@@ -4,13 +4,15 @@
 
 ```bash
 python --version                                           # 3.11, 3.12, or 3.13
-which uv  > /dev/null 2>&1 || echo "install uv:  curl -LsSf https://astral.sh/uv/install.sh | sh"
+which uv  > /dev/null 2>&1 || echo "install uv:  python -m pip install uv  (externally-managed Python: pipx install uv)"
 which uip > /dev/null 2>&1 || echo "install uip/runtimes: curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash"
 ```
 
 Windows PowerShell fresh-machine setup: `irm https://download.uipath.com/uipath-cli/install.ps1 | iex`. The UiPath installer handles Node.js, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14; install `uv` separately.
 
 ## Framework Selection
+
+> **Not an agent? Stop.** Deterministic logic with no LLM reasoning is a **Coded Function**, even when the user calls it an agent — apply [SKILL.md](../../../SKILL.md) § Project Type Detection step 1, use [`uipath-functions`](/uipath:uipath-functions), and do not run `uip codedagent new`.
 
 Pick the framework before starting: the package installed in the active venv selects the agent template. Install `<FRAMEWORK_PACKAGE>` before `new`, not after — with none installed, `new` fails with an error naming what to install.
 

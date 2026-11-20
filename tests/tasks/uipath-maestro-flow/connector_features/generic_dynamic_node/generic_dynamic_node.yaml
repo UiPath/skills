@@ -84,7 +84,7 @@ success_criteria:
 
   # ── Execution: connector calls ServiceNow and surfaces an array output ──
   - type: run_command
-    description: "ServiceNow list-all-records node on acr_user executes and surfaces an array output"
+    description: "ServiceNow generic list-records node on acr_user executes and surfaces an array output"
     command: "python3 $REFERENCE_DIR/_shared/check_generic_dynamic_node.py"
     timeout: 720
     expected_exit_code: 0

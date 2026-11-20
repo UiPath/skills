@@ -6,12 +6,10 @@
  * node) extracts against the taxonomy it carries instead of a published IxP
  * project's trained fields.
  *
- * This is the SOURCE route for that node, and it carries two requirements the
- * node itself does not (references/document-pipeline.md explains both): the
- * `model` block is the factory's — copy a real pair from the tenant, never
- * construct one — and the taxonomy's stable ids are written by hand, because
- * the factory emits `schema` verbatim and nothing mints them. The default route
- * is the CLI (references/extract-document-node.md), which needs neither.
+ * It takes no `model` argument: compile gives the step its IDP processor, named after the
+ * step's label, and writes the processor's resource file into the solution
+ * (references/document-pipeline.md). The taxonomy's stable ids are written by
+ * hand here, because an SDK without builder-sdk#2054 emits `schema` verbatim.
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
@@ -68,11 +66,7 @@ export default flow('seed-packet-reader')
   .step('extractSowing', dynamicExtract({
     fileRef: out('start', 'packetScan'),
     schema: sowingTaxonomy,
-    model: {
-      modelName: 'seedpackets-9c41e7b2-ixp',
-      folderKey: '4c9d1f70-6b2e-4a58-9f13-2ad5c8e0b741',
-    },
-  }))
+  }), { label: 'Extract sowing details' })
   .step('summarize', script(summarize))
   .return({ summary: out('summarize') })
   .build();

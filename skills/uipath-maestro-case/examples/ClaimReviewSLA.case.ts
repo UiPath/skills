@@ -1,20 +1,23 @@
 /**
  * ClaimReviewSLA — a Case plan that puts SLAs (deadlines) on the whole case and
- * on its review stage, and escalates as those deadlines approach and are missed.
+ * on both stages, and escalates as those deadlines approach and are missed.
  *
  * Case-level SLA, priority order (first match wins; the default is LAST):
  *   1. Urgent   (conditional) — 30 min; escalate on breach to a user group.
  *   2. Standard (conditional) — 5 days; no escalation.
  *   3. default  (always)      — 3 weeks; at-risk @ 80% to a MULTI-RECIPIENT
  *                               notification (a user AND a group).
- * The Review stage carries its own monthly (1 m) SLA.
  *
- * Together this exercises conditional SLAs (`when`), both escalation triggers
- * (`at-risk` + `sla-breached`), both recipient scopes (`toUser`/`toGroup`), a
- * multi-recipient notification, and case + stage SLAs across four units
- * (min/d/w/m). SLAs need no bindings or connector library — compile with
- * `uip maestro case compile`, check source with `uip maestro case check`, and validate
- * the artifact with `uip maestro case validate`.
+ * Stage-level SLAs:
+ *   Review  — flat monthly (1 m) SLA.
+ *   Resolve — CONDITIONAL stage SLA (first match wins; default LAST):
+ *     1. Urgent (conditional) — 2 weeks; displayName for sla-status-change ref.
+ *     2. default (always)     — 1 month.
+ *
+ * Together this exercises conditional SLAs (`when`) at both case and stage
+ * level, both escalation triggers (`at-risk` + `sla-breached`), both recipient
+ * scopes (`toUser`/`toGroup`), a multi-recipient notification, and SLAs across
+ * four units (min/d/w/m).
  */
 import { casePlan, rule, escalation, toUser, toGroup } from '@uipath/maestro-builder-sdk/case';
 
@@ -34,7 +37,23 @@ export default casePlan('claim-review-sla')
           .required()
           .entryWhen(rule('current-stage-entered')),
       )
-      // Stage-level SLA: 1 month from stage entry.
+      // Stage-level SLA: flat (unconditional) — 1 month from stage entry.
+      .sla({ count: 1, unit: 'm' }),
+  )
+  .stage('Resolve', (s) =>
+    s
+      .required()
+      .description('Final resolution; carries conditional stage-level SLAs.')
+      .entryWhen(rule('selected-stage-completed', { stage: 'Review' }))
+      .exitWhen(rule('required-tasks-completed'), { marksStageComplete: true })
+      .task('Close claim', (t) =>
+        t
+          .action({ title: 'Close the claim', priority: 'Normal', recipient: 'closer@corp.com' })
+          .required()
+          .entryWhen(rule('current-stage-entered')),
+      )
+      // Stage-level CONDITIONAL SLAs — same `when` + default-last pattern as case-level.
+      .sla({ when: '=js:vars.priority === "Urgent"', count: 2, unit: 'w', displayName: 'Resolve Urgent SLA' })
       .sla({ count: 1, unit: 'm' }),
   )
   .completeWhen(rule('required-stages-completed'))

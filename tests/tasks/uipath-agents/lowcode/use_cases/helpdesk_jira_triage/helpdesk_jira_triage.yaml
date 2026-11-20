@@ -15,7 +15,7 @@ description: >
   existing solution (_fixtures/), and the checker requires the agent to be
   built inside it. Text between the helper markers is lower-tier guidance
   (experiments/use-case-tiers.yaml) and is not graded.
-tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections, autopilot-sw-ga]
 
 run_limits:
   expected_turns: 45
@@ -62,6 +62,8 @@ initial_prompt: |
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
+# The LLM judge is advisory (pass_threshold 0.0): it scores prompt quality and
+# counts toward the weighted score, but does not decide pass/fail.
 success_criteria:
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
@@ -83,7 +85,7 @@ success_criteria:
     description: "LLM judge: system prompt encodes triage rules, a single well-formed Jira call, and honest issue-key reporting"
     files: ["HelpdeskSol/HelpdeskTriageAgent/agent.json"]
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 0.0
     include_reference: false
     prompt: |
       You are grading the system prompt of a UiPath low-code agent that

@@ -13,6 +13,8 @@
 
 > Designed in: [{SDD title}]({relative path to the SDD}) · sdd-sha256 {SDD_FINGERPRINT} *(Only when the genome is authored from an agreed SDD; omit otherwise.)*
 
+> Preferences: [{title}]({relative path to the preferences file}) *(Only when the user named one; omit otherwise. A component of a process genome omits it: the process genome's line holds.)*
+
 ## Overview
 
 {1-3 paragraphs: purpose, business problem, who it is for, what triggers it.}
@@ -31,9 +33,51 @@
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| {e.g. InvoiceQueue} | {Queue / Asset / Credential / Storage bucket / Connection / Folder} | {what the automation does with it} |
+{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
+
+### Queues
+
+| Queue | One item is | Item fields | Unique reference | Retries | Added by | Worked by |
+|-------|-------------|-------------|------------------|---------|----------|-----------|
+| {e.g. InvoiceQueue} | {one invoice} | {InvoiceNumber: Text, Amount: Number} | {InvoiceNumber, on} | {2} | {step 3} | {steps 4–7} |
+
+### Assets
+
+| Asset | Type | Value | Used by | Purpose |
+|-------|------|-------|---------|---------|
+| {e.g. ErpBaseUrl} | {Text / Integer / Bool / Secret} | {fixed value, or Configuration Question N; never a secret} | {steps} | {what it is for} |
+
+### Credentials
+
+| Asset | Account or persona | Signs in to | Used by |
+|-------|--------------------|-------------|---------|
+| {e.g. ErpApprover} | {the approver account} | {SAP, production} | {steps} |
+
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+
+### Connections
+
+| Connection | Connector | Signs in as | Used by |
+|------------|-----------|-------------|---------|
+
+### Data Fabric entities
+
+| Entity | Fields | Written by | Read by |
+|--------|--------|------------|---------|
+
+### Triggers
+
+| Trigger | Starts | Kind | When | Runners |
+|---------|--------|------|------|---------|
+| {e.g. DailyIntake} | {this process} | {Time / Queue / Event / API} | {weekdays 07:00, Europe/Berlin; or the queue; or the event; or the API endpoint} | {1} |
+
+### {Other service: Action Center, Document Understanding, Test Manager, Context Grounding}
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
 
 *Stub when none: "No Orchestrator or Integration Service resources required."*
 
@@ -53,6 +97,18 @@
 2. {Question}? ({setting | constant}; default: {value})
 
 *Stub when none: "No open values — no configuration needed."*
+
+## Open Decisions
+
+{Every point left to a person, numbered once and never renumbered: an entry stays when decided or withdrawn (format guide § Open Decisions). Each marked line names its entry: `*[Inferred: D1]*`.}
+
+1. {The decision as a question}? ({business outcome}; answered by: {the process owner}; builds now: {what the genome builds}; instead: {the other option}) — step {N}, {step name}
+2. {The point as a question}? ({run behaviour}; answered by: {the process owner}; recommended: {the evident intent, in words}; builds now: {the source's behaviour}) — step {N}, {step name}
+3. {The reading as a question}? ({reading}; answered by: {whoever knows the process}; reading: {what the genome takes it to be, and why it is inferred}) — step {N}, {step name}
+4. {What to supply}? ({material}; answered by: {whoever holds the source}; until answered: {a placeholder, a stop}) — step {N}, {step name}
+5. {A decided question}? (decided {YYYY-MM-DD}: {the answer})
+
+*Stub when the genome has never had one: "No open decisions."*
 
 ## Workflow
 
@@ -90,7 +146,7 @@
 
 ### Flow 1 — {unit of work}: {producer} → {consumer}
 
-**Role:** {producer | consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
+**Role:** {producer | consumer | producer and consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
 
 **Unit of work:** one {item}; reference {identifying field(s)}; fields as in {Interface / Handoffs row}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
 **Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
@@ -114,7 +170,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists (a flow with a `Decided:` line: that one row alone), each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|

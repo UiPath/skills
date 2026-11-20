@@ -2,7 +2,7 @@
 """Assert connector field-name fidelity in a built caseplan.json.
 
 The authority is the LIVE connector contract, fetched with `uip maestro case
-spec` at grade time: `.Data.Inputs.*[].Name` for request fields,
+spec` at grade time, after the grader's own `uip maestro case registry pull`: `.Data.Inputs.*[].Name` for request fields,
 `.Data.Outputs.ResponseFields[].Name` for response fields, and
 `.Data.Filter.Fields[].Name` for filterable fields. Expectations are NOT
 hardcoded here — a connector version bump changes the contract, and a frozen
@@ -82,6 +82,32 @@ def norm(name: str) -> str:
     return re.sub(r"[_\s]", "", name or "").lower()
 
 
+def pull_registry() -> None:
+    """Fill this machine's connector catalog, which `case spec` looks the type id up in.
+
+    The grader cannot count on the agent's pull: a Studio Web agent pulls inside the
+    browser page, so the catalog lands in the page's storage and this one stays empty.
+    """
+    try:
+        out = subprocess.run(
+            ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
+            capture_output=True, text=True, timeout=240, check=False,
+        ).stdout
+    except subprocess.TimeoutExpired:
+        infra("case registry pull timed out — the connector catalog may be missing")
+        return
+    except (FileNotFoundError, OSError) as exc:
+        infra(f"could not run `uip` ({exc}) — the connector catalog may be missing")
+        return
+    try:
+        payload = json.loads(out)
+    except json.JSONDecodeError:
+        infra("case registry pull returned non-JSON — the connector catalog may be missing")
+        return
+    if payload.get("Result") not in (None, "Success"):
+        infra(f"case registry pull failed: {payload.get('Message')} — the connector catalog may be missing")
+
+
 def spec(kind: str, type_id: str, connection_id: str) -> dict:
     try:
         return _spec(kind, type_id, connection_id)
@@ -112,8 +138,10 @@ def _spec(kind: str, type_id: str, connection_id: str) -> dict:
     if payload.get("Result") not in (None, "Success"):
         # e.g. `Connection "…" not found or inaccessible` — observed transiently on a
         # connection that resolved fine minutes later. Not a build defect.
-        infra(f"case spec --type {kind} {type_id} failed: {payload.get('Message')} — "
-              f"naming was NOT graded")
+        why = payload.get("Message")
+        if payload.get("Instructions"):
+            why = f"{why} ({payload['Instructions']})"
+        infra(f"case spec --type {kind} {type_id} failed: {why} — naming was NOT graded")
         return {}
     return payload.get("Data") or {}
 
@@ -508,6 +536,7 @@ def main() -> int:
     plan = json.load(open(path))
     root_bindings = plan.get("bindings") or []
 
+    pull_registry()
     seen = 0
     for label, connector_key, block in connector_nodes(plan):
         # connection id is context[name="resourceKey"]; the activity type id is

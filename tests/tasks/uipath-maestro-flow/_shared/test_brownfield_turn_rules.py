@@ -242,7 +242,7 @@ def test_work_loops_clear_work_first():
 
 def test_cleanups_are_guarded():
     unguarded = [c for c in _cleanups() if CLEANUP_GUARD not in c]
-    assert len(_cleanups()) >= 4, "expected the Editing, pipeline, hand and supplied-source cleanups"
+    assert len(_cleanups()) >= 3, "expected the Editing, pipeline and supplied-source cleanups"
     assert not unguarded, f"each .flow-sdk cleanup must start `{CLEANUP_GUARD}`:\n" + "\n".join(unguarded)
 
 

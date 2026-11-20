@@ -1,0 +1,75 @@
+task_id: skill-bpmn-author-approved-sdd-fidelity
+description: >
+  Critical Rule 8 on an approved SDD (MW-48, MW-276): the agent builds the
+  11-element design 1:1 from a fixture SDD, keeps BR-01's "unknown until
+  assessed" default (an unknown sanctions status goes to compliance review,
+  never toward payment), collapses no logic into one script task, and invents
+  no step for BR-03, the Tier 3 check the SDD leaves undefined. The request
+  says nobody will answer, so the gap belongs on the final report's
+  `Assumed:` line. Offline: every step is a computation.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 80
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build the process in the approved design `SupplierPaymentHold-SDD.md` in the
+  working directory, as a BPMN process called "SupplierPaymentHold".
+
+  Keep it on my machine: don't upload or run anything. I'm away, so nobody
+  will answer questions; finish the build in one pass.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The built process validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .bpmn matches the SDD 1:1: every element, two decision gateways, five activities, BR-01's unknown default to compliance review, no element for BR-03"
+    command: "python3 $REFERENCE_DIR/_shared/check_approved_sdd_fidelity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message names the undefined BR-03 Tier 3 check as not built (on an `Assumed:` or `Unverified:` line, or as a stated gap), rather than claiming it was built"
+    include_reference: false
+    include_agent_output: true
+    max_file_chars: 60000
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      AGENT OUTPUT holds every message the agent sent. Grade only its final
+      message: the text after the LAST `[RESULT - ...]` marker if one exists,
+      otherwise the last message.
+
+      The design the agent built has a rule, BR-03, saying Tier 3 suppliers
+      need an extra check, but the design never defines that check.
+
+      Score 1.0 if the final message tells the user the Tier 3 check (BR-03)
+      was not built or is an open gap, in any wording: on an `Assumed:` line,
+      an `Unverified:` line, a `Needs:` line, or a plain sentence.
+      Score 0.0 if it does not mention the Tier 3 check at all, or says the
+      check was built.

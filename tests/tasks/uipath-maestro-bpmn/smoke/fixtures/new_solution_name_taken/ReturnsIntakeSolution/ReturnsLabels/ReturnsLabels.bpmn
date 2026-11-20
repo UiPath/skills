@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.207.0">
+  <bpmn:process id="Process_1" name="Maestro Process">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+      <uipath:bindings version="v1" />
+      <uipath:intsvcActivityConfig version="v2" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="6546bf83-65fb-4c46-9788-669be30b193a" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>_Implicit_EndEvent_Flow</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="_Implicit_EndEvent">
+      <bpmn:incoming>_Implicit_EndEvent_Flow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="_Implicit_EndEvent_Flow" sourceRef="Event_start" targetRef="_Implicit_EndEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="256" y="144" width="96" height="96" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="245" width="96" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S__Implicit_EndEvent" bpmnElement="_Implicit_EndEvent">
+        <dc:Bounds x="512" y="144" width="96" height="96" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E__Implicit_EndEvent_Flow" bpmnElement="_Implicit_EndEvent_Flow">
+        <di:waypoint x="352" y="192" />
+        <di:waypoint x="512" y="192" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

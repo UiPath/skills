@@ -137,6 +137,21 @@ def test_other_flow_name_fails(write, capsys):
     assert "no discovered .flow file is named Other.flow" in capsys.readouterr().err
 
 
+def test_flow_path_ignores_a_backup_of_the_project(write, tmp_path):
+    write(_flow())
+    backup = tmp_path / "backup" / "InvoiceReaderSolution" / "InvoiceReader"
+    backup.mkdir(parents=True)
+    (backup / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    (backup / "InvoiceReader.flow").write_text(json.dumps(_flow(edges=[])))
+
+    assert main(["--flow", "InvoiceReaderSolution/InvoiceReader/InvoiceReader.flow", "file-ref"]) == 0
+
+
+def test_missing_flow_path_fails(write, capsys):
+    assert main(["--flow", "nowhere/InvoiceReader.flow", "file-ref"]) == 1
+    assert "no .flow file at nowhere/InvoiceReader.flow" in capsys.readouterr().err
+
+
 def _fields(*entries, only=False):
     return _run("fields", *(["--only"] if only else []), json.dumps(list(entries)))
 

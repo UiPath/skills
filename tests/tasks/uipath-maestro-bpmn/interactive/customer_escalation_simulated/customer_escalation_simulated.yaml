@@ -128,3 +128,9 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
+
+# A build request authorizes the Studio Web upload of the solution the run
+# created, so delete it after grading.
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

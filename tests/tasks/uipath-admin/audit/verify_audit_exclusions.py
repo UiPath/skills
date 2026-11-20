@@ -49,6 +49,16 @@ Env:
                      must still exist. Used with `absent` so a delete scenario
                      cannot be satisfied by clearing out rules the run did not own.
 
+Concurrency: several tasks, and several agents' runs, share one organization's
+rules. Rules that carry the reserved `ce-audit-excl` prefix but not this run's
+uuid8 belong to another run, so readback and unchanged leave them out of the
+comparison, and the pre-run snapshot never records them. Customer rules and this
+run's own rules are still compared strictly.
+One gap remains. A rule that a peer run's agent creates under a name without the
+reserved prefix looks like a customer rule here, so a concurrent list, org-scope
+or unchanged check can fail for a sibling's mistake. That sibling's own task
+fails in the same run, which points at the cause.
+
 Logging: rule names printed here are the ones this run seeded or asked for, so
 they are test-authored, not customer data. Every identifier — policy ids and
 selector values alike — is truncated through `gid()`, and no rule's stored
@@ -80,10 +90,30 @@ from audit_helpers import (  # noqa: E402  (path set above)
     selectors_of,
     unwrap,
 )
-from admin_helpers import load_seed, seed_entry  # noqa: E402  (path set above)
+from admin_helpers import load_seed, peer_test_object, seed_entry  # noqa: E402  (path set above)
 
 logging.basicConfig(level=logging.INFO, format="verify_audit_exclusions: %(message)s")
 logger = logging.getLogger(__name__)
+
+# Keep in step with _setup/setup_exclusion_rule.py and
+# _setup/cleanup_exclusion_marker.py; test_audit_exclusion_concurrency.py checks
+# that the three agree.
+RESERVED_PREFIX = "ce-audit-excl"
+
+
+def without_peers(rules):
+    """Drop rules that a concurrent or earlier test run owns.
+
+    Their owner creates, renames and deletes them on its own schedule, so they
+    can't tell us anything about this run's agent. Customer rules and this run's
+    own rules are kept.
+    """
+    kept = [r for r in rules if not peer_test_object(field(r, "Name"), RESERVED_PREFIX)]
+    skipped = len(rules) - len(kept)
+    if skipped:
+        logger.info("Ignoring %d peer test rule(s) owned by other runs", skipped)
+    return kept
+
 
 # Dimensions whose values are ids defined by the audit metadata catalog. `Tenant`
 # is deliberately absent: the service accepts a tenant id from outside the
@@ -142,11 +172,14 @@ def check_readback():
     if not path:
         fail("EXCL_SAVED_FILE must be set in readback mode")
 
-    live = read_rules()
+    live = without_peers(read_rules())
     live_ids = {str(field(r, "PolicyId") or "").strip().lower() for r in live}
 
     saved = unwrap(load_saved(path))
     records = find_records(saved, EXCLUSION_SIGNATURE)
+    if records is not None:
+        # A peer rule may have come or gone between the agent's read and this one.
+        records = without_peers(records)
     if records is None:
         if live:
             fail(
@@ -184,7 +217,9 @@ def check_unchanged():
             'could not be read"'
         )
     before = {str(i).strip().lower() for i in snapshot}
-    after = {str(field(r, "PolicyId") or "").strip().lower() for r in read_rules()}
+    # The snapshot already leaves peer rules out; leave them out here too, so a
+    # peer seeding or cleaning up mid-run doesn't count as a change.
+    after = {str(field(r, "PolicyId") or "").strip().lower() for r in without_peers(read_rules())}
 
     added = after - before
     removed = before - after

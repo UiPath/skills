@@ -119,7 +119,7 @@ uip codedapp pack <dist> [options]
 | `<dist>` | Path to build output directory | **Required** |
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
-| `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
+| `--output-dir <dir>` | Output directory for `.nupkg` | `./.uipath` |
 | `--author <author>` | Package author | `UiPath Developer` |
 | `--description <text>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
@@ -136,7 +136,7 @@ uip codedapp pack dist
 uip codedapp pack dist -n my-webapp --version 2.0.0
 
 # Pack to a custom output directory
-uip codedapp pack dist -o ./packages
+uip codedapp pack dist --output-dir ./packages
 
 # Preview packaging without creating the file
 uip codedapp pack dist --dry-run
@@ -242,6 +242,7 @@ uip codedapp deploy [options]
 | `--org-id <id>` | Organization ID | From `uip login` session |
 | `--org-name <name>` | Organization name (used for app URL) | From `uip login` session |
 | `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--folder-path <path>` | Folder path (`Shared`, `Finance/Invoicing`) or a unique folder display name, resolved to the folder key by the CLI. Mutually exclusive with `--folder-key` | none |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
 | `--access-token <token>` | Access token | From `uip login` session |
 
@@ -254,14 +255,17 @@ uip codedapp deploy
 # Deploy with explicit app name
 uip codedapp deploy -n my-webapp
 
+# Deploy into a folder named by path (no key lookup needed)
+uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing"
+
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
 
-# Same deploy, key via env var — skips the --folder-key pre-check (incomplete folder lookup on accounts with very many folders)
+# Same deploy, key via env var
 UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 ```
 
-> `--folder-key` pre-checks the key against one unpaged copy of the account's folder list, which is incomplete on accounts with very many folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
+> On `uip` older than 1.204.0 only, `--folder-key` pre-checked the key against an incomplete copy of the account's folder list and could report an existing folder as `not found among folders accessible to your account`. Current CLIs do not — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 
 **Fresh deploy output:**
 ```

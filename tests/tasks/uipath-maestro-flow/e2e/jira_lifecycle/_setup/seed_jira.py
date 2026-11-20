@@ -26,7 +26,7 @@ issues = [
     {"summary": f"coder-eval jira lifecycle {tag} item2", "priority": "Low"},
     {"summary": f"coder-eval jira lifecycle {tag} item3", "priority": "High"},
 ]
-conn = jira_is.connection_id()
+conn = jira_is.require_connection()
 seed = {
     "tag": tag,
     "project_key": jira_is.PROJECT_KEY,

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReturnsLabels",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "236a3a83-b303-47e0-ac9f-a22c9d5f559c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ReturnsLabels"
+    },
+    "locks": [],
+    "key": "2c621f56-a8eb-45e8-a5a4-2fef8a75cb4d",
+    "files": []
+  }
+}

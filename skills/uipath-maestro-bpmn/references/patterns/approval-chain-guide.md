@@ -54,13 +54,13 @@ export default bpmn('vendor-onboarding')
   // the chain. The joins the arms imply are the one shared reject merge.
   .choose('panelVerdict', [
     {
-      when: '=vars.complianceOutcome == "Approve" && vars.financeOutcome == "Approve"',
+      when: '=js:vars.complianceOutcome == "Approve" && vars.financeOutcome == "Approve"',
       label: 'Both approve',
       body: (b) =>
         b.humanTask('managerReview', { name: 'Manager review', ...review('managerOutcome', 'managerRationale') })
           .choose('managerVerdict', [
             {
-              when: '=vars.managerOutcome == "Approve"',
+              when: '=js:vars.managerOutcome == "Approve"',
               label: 'Approve',
               body: (a) => a.scriptTask('provision', { name: 'Provision vendor', script: 'return { ok: true };' })
                 .plainTask('notifyApproved', { name: 'Tell requester', element: 'bpmn:sendTask' })
@@ -123,7 +123,7 @@ Both chains can share the approver variables because only one runs per instance.
 - **Approver tasks**: `.humanTask()`, an inline form (the SDK cannot yet write an app-backed task).
   Map `=Action` and each form field into that approver's own variables.
   Resolving *who* approves is a lookup against your directory; the process holds the task, not the roster.
-- **Per-step reminders and SLA**: a non-interrupting `t.onTimer()` in the task's body; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
+- **Per-step SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; see [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 - **Segregation of duties**: enforce it at approver lookup, so no one person signs consecutive steps.
   It is not a BPMN construct.
 - **`evaluate`**: `.businessRule()`, a deployed BusinessRules package addressed by name.

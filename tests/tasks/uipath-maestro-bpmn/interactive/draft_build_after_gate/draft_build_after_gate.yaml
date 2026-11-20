@@ -8,7 +8,10 @@ description: >
 
   The replies are graded as the user reads them, by an itemized llm_judge
   over the agent-neutral dialog: both follow their templates and carry the
-  Studio Web link. Registry discovery before approval is graded only by the
+  Studio Web link. Under the studio-web agent the process is already on the
+  open canvas, so the skill never uploads: there each reply names the target
+  `/solution/<Project>/Process.bpmn` instead, and writing that target stands
+  in for the upload. Registry discovery before approval is graded only by the
   smokes: phase 4 pulls here, and coder_eval cannot scope a command check
   to one turn. Every step is a computation, so the build
   needs no tenant resource and the dialog measures the gate, not discovery.
@@ -19,9 +22,10 @@ tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:generate", "shape:mult
 
 run_limits:
   max_turns: 120
-  # Turn 1 is the skeleton plus one upload; turn 2 is the wiring, validate,
-  # refresh and a second upload. Grading needs at most 180 (validate) plus
-  # two judge calls.
+  # Turn 1 is the skeleton plus one upload (on Studio Web, one write to the
+  # open target); turn 2 is the wiring, validate, refresh and a second upload
+  # or target write. Grading needs at most 180 (validate) + 60 (outline-box
+  # check) plus two judge calls.
   turn_timeout: 1500
   task_timeout: 3600
 
@@ -70,7 +74,7 @@ success_criteria:
 
   # --- Turn 1: the 3c gate ---------------------------------------------------
   - type: llm_judge
-    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded, the Studio Web link, one line per box, the fixed question and three options, and nothing else"
+    description: "Turn 1 ends with the 3c reply in its template: the outline-ready line saying uploaded and the Studio Web link (in Studio Web, no `uploaded` and the open target's path), one line per box, the fixed question and three options, and nothing else"
     include_reference: false
     include_dialog: true
     max_file_chars: 60000
@@ -92,6 +96,18 @@ success_criteria:
       Ignore blank lines and markdown emphasis (`**`, `*`, backticks). Check
       every item:
 
+      STUDIO WEB. When the second line of the graded text is a plain path
+      that starts with `/solution/` and ends in `.bpmn`, the agent runs
+      inside Studio Web, where the process is already on the open canvas and
+      nothing is uploaded. For that reply only, items 1 and 2 read:
+      1. The first line starts with `ShippingQuote: outline ready (draft
+         mode).` and does not say `uploaded`. After that, the same line may
+         hold at most one more sentence, about a lookup that failed or
+         changes kept.
+      2. The second line is that `/solution/...bpmn` path as plain text, and
+         nothing else. A Markdown link (`[label](<path>)`) fails.
+      Every other reply is graded with items 1 and 2 below.
+
       1. The first line starts with `ShippingQuote: outline ready, uploaded
          (draft mode).` After that, the same line may hold at most one more
          sentence, about a lookup that failed or changes kept.
@@ -102,8 +118,11 @@ success_criteria:
          each naming one step of the process (with or without a bracketed
          kind, and with or without a trailing ` → <variable>`, the variable
          the step produces, which the skill puts in the box's label; that
-         suffix is not a line explaining a variable) in one short clause
-         under about 200 characters. There is no line for a start event,
+         suffix is not a line explaining a variable), optionally followed by
+         `: ` and the step's resource status (a resource name, a
+         which-of-two question, `none yet, create it or name one`, `not
+         checked`, or `no resource needed`), in one short clause under about
+         200 characters. There is no line for a start event,
          timer, gateway, branch, or end event.
       4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,
@@ -137,10 +156,16 @@ success_criteria:
     pass_threshold: 1.0
 
   # One upload shows the skeleton at the gate, one shows the built process.
+  # Studio Web has no upload (the skill's flavor forbids it): there the open
+  # canvas target `Process.bpmn`, the file Studio Web's `bpmn init` names, is
+  # written by `merge` or `compile -o`, and each write counts as the upload;
+  # a compile into `<Draft>/edited/` is not the target and does not count.
+  # The CLI's `bpmn init` names the file `<Name>.bpmn`, so a CLI agent still
+  # needs two real uploads.
   - type: command_executed
-    description: "The shape and the built process were both uploaded"
+    description: "At least two uploads (in Studio Web, writes to the open canvas target); which turn built is proven by the outline-box check"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b'
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload\b|(uip|\$UIP)\s+maestro\s+bpmn\s+(merge|compile)\b(?:\\\n|(?<= )\n|[^\n;&|])*\s(-o|--output-file)(\s+|=)["'']?(/solution/[^/\s"'']+/|\./)?Process\.bpmn(?![\w./-])'
     min_count: 2
     weight: 1.5
     pass_threshold: 1.0
@@ -172,6 +197,19 @@ success_criteria:
 
       Ignore blank lines and markdown emphasis. Check every item:
 
+      STUDIO WEB. When the second line of the graded report is a plain path
+      that starts with `/solution/` and ends in `.bpmn`, the agent runs
+      inside Studio Web, where nothing is uploaded. For that report only,
+      items 1 and 2 read:
+      1. Turn 2 ends with the report: its first line starts with
+         `ShippingQuote: built, validated` and contains `(draft mode).`,
+         and does not say `uploaded`; `, run` may follow `validated`. After
+         that, the same line may hold at most one more sentence, about
+         changes kept.
+      2. The second line is that `/solution/...bpmn` path as plain text, and
+         nothing else. A Markdown link (`[label](<path>)`) fails.
+      Every other report is graded with items 1 and 2 below.
+
       1. Turn 2 ends with the report: its first line starts with
          `ShippingQuote: built, validated, uploaded` and contains
          `(draft mode).`; `, run` may follow `uploaded`. After that, the same
@@ -199,6 +237,18 @@ success_criteria:
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  # A skeleton validates too, so hold Build it to replacing every outline box.
+  # It also fails a script step `merge` left as bpmn:task, which the canvas
+  # cannot read: on Studio Web this fails until Build it stops merging type
+  # changes.
+  - type: run_command
+    description: "Build it replaced every outline box with a typed step: no bare bpmn:task, and no script step left as bpmn:task"
+    command: "python3 $REFERENCE_DIR/_shared/check_no_outline_boxes.py ShippingQuote"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 post_run:

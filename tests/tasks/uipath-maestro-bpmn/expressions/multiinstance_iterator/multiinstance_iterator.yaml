@@ -1,10 +1,11 @@
 task_id: skill-bpmn-expr-multiinstance-iterator
 description: >
   Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author
-  a multi-instance SUBPROCESS whose body reads the current item and loop index at
-  subprocess depth — `iterator[0].item` and `iterator[0].loopCounter` — not the
-  task-level `iterator.item`. Grades the iterator-depth indexing rule from
-  references/patterns/high-volume-batch-guide.md. Authoring only — no cloud effects.
+  a multi-instance SUBPROCESS bound as `inputElement="iterator[0]"` (the way
+  Studio Web writes it) whose body reads the current item and 1-based loop
+  position as `iterator[0].item` and `iterator[0].loopCounter`. Grades the loop
+  rule in references/patterns/high-volume-batch-guide.md. Authoring only — no
+  cloud effects.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "node:loop"]
 
 run_limits:
@@ -24,15 +25,11 @@ initial_prompt: |
   - A multi-instance SUBPROCESS (`bpmn:subProcess` carrying a
     `bpmn:multiInstanceLoopCharacteristics` marker) that iterates the collection.
   - Inside the subprocess body, map the current item into a `CurrentLine`
-    variable and the current 0-based loop index into a `CurrentIndex` variable.
+    variable and the current 1-based loop position into a `CurrentIndex` variable.
   - A single end event.
 
   Requirements:
-  - Because this element sits at subprocess depth, the body must read the
-    current item as `iterator[0].item` and the loop index as
-    `iterator[0].loopCounter` (the task-level `iterator.item` /
-    `iterator.loopCounter` forms are WRONG at subprocess depth). Bind the
-    collection through the `uipath:loopCharacteristics` extension
+  - Bind the collection through the `uipath:loopCharacteristics` extension
     (`inputCollection`, `inputElement`) the way your skill prescribes — no
     registry template covers multi-instance markers, so author it from the
     canvas contract.

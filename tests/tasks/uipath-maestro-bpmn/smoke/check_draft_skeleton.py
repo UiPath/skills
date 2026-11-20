@@ -28,6 +28,36 @@ TYPED_ACTIVITIES = ("serviceTask", "sendTask", "receiveTask", "scriptTask", "use
                     "businessRuleTask", "manualTask", "callActivity")
 
 
+def wiring_payloads(root) -> list:
+    """Every uipath:activity payload except an error boundary's capture.
+
+    A decision that routes on the error code reads it from a variable, and the
+    builder SDK's onError({ errorVar }) writes that capture on the boundary as
+    a bare uipath:Activity payload holding one `=Error` output row and nothing
+    else. That is not wiring; any other payload, anywhere, is.
+    """
+    parents = {child: parent for parent in root.iter() for child in parent}
+    wiring = []
+    for act in root.iter(f"{{{NS['uipath']}}}activity"):
+        ext = parents.get(act)
+        owner = parents.get(ext) if ext is not None else None
+        kids = list(act)
+        types = [k for k in kids if k.tag == f"{{{NS['uipath']}}}type"]
+        outputs = [k for k in kids if k.tag == f"{{{NS['uipath']}}}output"]
+        capture = (
+            ext is not None and ext.tag == f"{{{NS['bpmn']}}}extensionElements"
+            and owner is not None and owner.tag == f"{{{NS['bpmn']}}}boundaryEvent"
+            and owner.find("bpmn:errorEventDefinition", NS) is not None
+            and len(kids) == 2 and len(types) == 1 and len(outputs) == 1
+            and attr(types[0], "value") == "uipath:Activity"
+            and attr(outputs[0], "name") == "Error" and attr(outputs[0], "source") == "=Error"
+            and len(outputs[0]) == 0
+        )
+        if not capture:
+            wiring.append(act)
+    return wiring
+
+
 def require_multi_instance(root) -> None:
     """One sequential multi-instance box that stops early, one parallel one.
 
@@ -72,6 +102,16 @@ def require_fork_exits_safe(root, flows) -> None:
     - A non-interrupting boundary path adds a token while the branch's own
       token still reaches the join, so it may end separately, but it must not
       add a join input that only delivers when it fires.
+    - A fork with more than one incoming flow waits for all of them, so a
+      loop back into the fork itself stalls; every branch must close at the
+      same join, and that join may have no more inputs than the fork has
+      branches, or a branch's second flow into it never delivers.
+    - A branch owns the nodes it reaches before the join. Any flow, a
+      decision arm included, that runs into a sibling branch's nodes or past
+      the join skips the branch's own join input. Join cardinality cannot see
+      this: a decompiled `.goto('record')` from a rejection arm into the
+      sibling branch leaves the join with as many inputs as the fork has
+      outputs, yet the join waits forever.
 
     Nested fork/join pairs are tracked by depth.
     """
@@ -95,18 +135,28 @@ def require_fork_exits_safe(root, flows) -> None:
         if e.find("bpmn:terminateEventDefinition", NS) is None
         and e.find("bpmn:errorEventDefinition", NS) is None
     }
+    safe_ends = {attr(e, "id") for e in elements(root, "endEvent")} - plain_ends
+    pred: dict[str, list[str]] = {}
+    for src, targets in succ.items():
+        for t in targets:
+            pred.setdefault(t, []).append(src)
+    for on, bids in interrupting.items():
+        for b in bids:
+            pred.setdefault(b, []).append(on)
     fork_set = set(forks)
     cap = len(forks) + 1
 
     def walk(stack, with_boundaries: bool):
         seen: set[tuple[str, int]] = set()
         entries: set[str] = set()  # sources whose flow closes the walk at its join
+        closed: set[str] = set()  # the join(s) that close the walk
         while stack:
             node, depth, src = stack.pop()
             if node in joins:
                 depth -= 1
                 if depth == 0:
                     entries.add(src)
+                    closed.add(node)
                     continue
             if (node, depth) in seen:
                 continue
@@ -117,18 +167,57 @@ def require_fork_exits_safe(root, flows) -> None:
             if with_boundaries:
                 nxt += interrupting.get(node, [])
             stack.extend((n, depth, node) for n in nxt)
-        return seen, entries
+        return seen, entries, closed
+
+    def feeds(closed, region):
+        """Nodes in region with a path to one of the closing joins."""
+        seen: set[str] = set()
+        stack = list(closed)
+        while stack:
+            node = stack.pop()
+            for p in pred.get(node, []):
+                if p in region and p not in seen:
+                    seen.add(p)
+                    stack.append(p)
+        return seen
+
+    def beyond(starts, fork):
+        """Nodes reachable after the join, stopping at the fork.
+
+        A flow straight back into the fork fails on its own (the fork then
+        waits for every incoming flow); stopping here only keeps that loop
+        from marking the fork's own branches as past the join.
+        """
+        seen: set[str] = set()
+        stack = list(starts)
+        while stack:
+            node = stack.pop()
+            if node in seen or node == fork:
+                continue
+            seen.add(node)
+            stack.extend(succ.get(node, []) + interrupting.get(node, []) + non_interrupting.get(node, []))
+        return seen
 
     for fork in forks:
+        if incoming.get(fork, 0) > 1:
+            fail(f"parallel fork {fork} has {incoming[fork]} incoming flows and waits for all of them; "
+                 "enter a loop back through a box before the fork, not the fork itself")
         branches = []
         for first in succ[fork]:
-            normal, own = walk([(first, 1, fork)], False)
+            normal, own, _ = walk([(first, 1, fork)], False)
             branches.append((first, {n for n, _ in normal}, own))
         if not any(own for _, _, own in branches):
             continue
+        regions = []
         for first, normal, own in branches:
-            full, entries = walk([(first, 1, fork)], True)
-            stuck = sorted({n for n, _ in full} & plain_ends)
+            full, entries, closed = walk([(first, 1, fork)], True)
+            region = {n for n, _ in full}
+            past = sorted(region & (beyond(closed, fork) - closed) - safe_ends)
+            if past:
+                fail(f"branch {first} of fork {fork} runs past the join to {past} without passing it, so its "
+                     "own join input never delivers; end that path with a terminate end event or keep it on "
+                     "its own branch")
+            stuck = sorted(region & plain_ends)
             if stuck:
                 fail(f"a path out of parallel fork {fork} stops at plain end event(s) {stuck} while the join "
                      "waits; end it with a terminate end event or merge it back onto its own branch")
@@ -139,12 +228,28 @@ def require_fork_exits_safe(root, flows) -> None:
                      "branch before the join")
             for node, depth in sorted(full):
                 for b in non_interrupting.get(node, []):
-                    _, extra = walk([(b, depth, node)], True)
+                    _, extra, _ = walk([(b, depth, node)], True)
                     added = sorted(extra - own)
                     if added:
                         fail(f"a non-interrupting path from {b} on fork {fork} feeds the join through {added}, "
                              "an input that only delivers when it fires; end it separately or merge it onto "
                              "its own branch")
+            regions.append((first, region, closed))
+        closing = set().union(*(c for _, _, c in regions))
+        if len(closing) > 1:
+            fail(f"branches of fork {fork} close at different joins {sorted(closing)}; a branch that reaches "
+                 "another fork's join leaves its own join input undelivered")
+        for join in closing:
+            if incoming.get(join, 0) > len(succ[fork]):
+                fail(f"join {join} has {incoming[join]} inputs but fork {fork} opens {len(succ[fork])} branches; "
+                     "a branch with two flows into the join stalls it")
+        for i, (first, region, closed) in enumerate(regions):
+            for other, other_region, _ in regions[i + 1:]:
+                shared = sorted(region & other_region & feeds(closed, region))
+                if shared:
+                    fail(f"branches {first} and {other} of fork {fork} both reach {shared} before the join; "
+                         "a flow into a sibling branch skips its own join input, so the join waits forever. "
+                         "Keep each branch's flows on its own branch or route them to the join")
 
 
 def main() -> None:
@@ -159,7 +264,7 @@ def main() -> None:
     for tag in TYPED_ACTIVITIES:
         if root.findall(f".//bpmn:{tag}", NS):
             fail(f"skeleton contains a typed bpmn:{tag}; draft mode must stop before wiring")
-    if root.findall(".//uipath:activity", NS):
+    if wiring_payloads(root):
         fail("skeleton contains a uipath:activity payload; draft mode must stop before wiring")
 
     flows = one_or_more(root, "sequenceFlow")

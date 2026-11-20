@@ -203,7 +203,8 @@ jobs:
           resolve_task_yaml() {
             local path="$1"
             if [[ "$path" == *.yaml ]]; then
-              echo "$path"
+              # A deleted task yaml has nothing left to run.
+              [ -f "$path" ] && echo "$path"
               return
             fi
             local d

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackAlert",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "16b391c1-da7e-4eb0-9b6a-e0b697c760ba",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackAlert"
+    },
+    "locks": [],
+    "key": "3ff1304a-d124-483f-b74f-70aff8d8e505",
+    "files": []
+  }
+}

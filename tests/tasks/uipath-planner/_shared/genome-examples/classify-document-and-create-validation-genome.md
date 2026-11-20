@@ -32,14 +32,21 @@ When the classification confidence falls below a configurable threshold, the aut
 
 ## Platform Dependencies
 
-| Resource | Type | Purpose |
-|----------|------|---------|
-| du_storage_bucket | Storage bucket | Holds the document while the validation task is open |
-| Validation folder | Orchestrator folder | Folder where Action Center tasks are created and assigned |
+### Storage buckets
+
+| Bucket | Holds | Written by | Read by |
+|--------|-------|------------|---------|
+| du_storage_bucket (Configuration Question 4) | the document while its validation task is open | step 4 | the validation task, step 5 |
+
+### Action Center
+
+| Resource | Used by | Purpose |
+|----------|---------|---------|
+| Validation task, in the folder of Configuration Question 5 | steps 4–5 | the reviewer confirms or corrects a low-confidence document type |
 
 ## Interface
 
-- **Inputs:** `DocumentPath` (string) — path to the document file to classify
+- **Inputs:** `DocumentPath` (string) — path to the document file to classify; the main workflow has no trigger of its own: another automation or a person calls it *[Inferred: D1]*
 - **Outputs:** `DocumentType` (string), `Confidence` (number 0-100), `ValidatedByHuman` (boolean)
 - **Side effects:** an Action Center task when confidence is below the threshold; the document uploaded to the storage bucket
 
@@ -51,6 +58,10 @@ When the classification confidence falls below a configurable threshold, the aut
 4. Which Orchestrator storage bucket holds documents during validation? (setting; default: du_storage_bucket)
 5. Which Orchestrator folder receives the Action Center tasks? (setting; default: the process's own folder)
 6. What task priority for validation tasks? (constant; default: Medium)
+
+## Open Decisions
+
+1. How is the main workflow started? (reading; answered by: whoever knows the process; reading: another automation or a person calls it with a document path, since it has no trigger of its own and none is described) — Interface
 
 ## Workflow
 

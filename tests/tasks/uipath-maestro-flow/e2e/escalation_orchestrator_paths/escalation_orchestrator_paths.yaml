@@ -128,6 +128,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "The project holds one .flow, with the flow built in it"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
     command: "python3 $REFERENCE_DIR/e2e/escalation_orchestrator_paths/check_escalation_orchestrator_paths.py"
     timeout: 3000  # budget-guard: manual x7. 7 x debug_budget(300, retries=1) = 2100 + margin
