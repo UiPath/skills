@@ -54,7 +54,6 @@ def test_intervals_and_single_tests_are_not_flagged():
 def test_extraction_leftovers_name_the_artifacts_of_the_document_route(tmp_path):
     assert plain.extraction_leftovers(tmp_path, "<definitions/>") == []
     (tmp_path / "run").mkdir()
-    (tmp_path / "run" / "review-notes.md").write_text("x")
-    (tmp_path / "cites.json").write_text("[]")
+    (tmp_path / "run" / "cites.json").write_text("[]")
     found = plain.extraction_leftovers(tmp_path, '<definitions xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model"/>')
-    assert len(found) == 3 and any("uipdm" in f for f in found)
+    assert len(found) == 2 and any("uipdm" in f for f in found)

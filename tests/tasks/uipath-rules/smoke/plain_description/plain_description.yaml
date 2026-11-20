@@ -7,7 +7,7 @@ description: >
   grader, the authoring profile and entry-point contract, the fee for 12 hidden
   weight and membership scenarios (ranges written as intervals, never a comma
   list), the annotation per row, and that no extraction artifact exists: the
-  extraction guides are not read, no cites.json or review-notes.md is written,
+  extraction guides are not read, no cites.json is written,
   and the .dmn carries no uipdm element.
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
@@ -80,7 +80,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No extraction artifact: no cites.json, no review-notes.md, no uipdm element in the .dmn"
+    description: "No extraction artifact: no cites.json, no uipdm element in the .dmn"
     command: "python3 $REFERENCE_DIR/_shared/plain_check.py route"
     timeout: 30
     expected_exit_code: 0

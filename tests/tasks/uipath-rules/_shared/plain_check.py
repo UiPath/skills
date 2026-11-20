@@ -9,7 +9,7 @@ route, so no extraction artifact may exist. Modes:
   shipping  authoring profile, entry-point contract, and the fee for every SCENARIO (the answer key; it never
             reaches the sandbox). The ranges must be intervals, never a comma list.
   names     every rule carries an annotation naming its case.
-  route     no extraction artifact: no cites.json, no review-notes.md, no uipdm element in the .dmn.
+  route     no extraction artifact: no cites.json, no uipdm element in the .dmn.
 
 DMN files are authored by the agent under test and parsed with stdlib ElementTree; helpers come from rules_check.py.
 """
@@ -53,7 +53,7 @@ def comma_range_cells(table) -> list[str]:
 
 def extraction_leftovers(root: Path, dmn_text: str) -> list[str]:
     """What only the document-extraction route writes."""
-    found = [str(path) for name in ("cites.json", "review-notes.md") for path in sorted(root.rglob(name))]
+    found = [str(path) for path in sorted(root.rglob("cites.json"))]
     if "uipdm" in dmn_text:
         found.append("a uipdm element or namespace in the .dmn")
     return found
@@ -80,7 +80,7 @@ def grade_route() -> None:
     found = extraction_leftovers(Path("."), dmn_file.read_text(encoding="utf-8"))
     if found:
         rc.fail("the extraction route ran for a request with no source document: " + "; ".join(found))
-    print("OK: no extraction artifact (no cites.json, no review-notes.md, no uipdm element)")
+    print("OK: no extraction artifact (no cites.json, no uipdm element)")
 
 
 if __name__ == "__main__":

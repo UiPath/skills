@@ -9,7 +9,7 @@ description: >
   submission window alone, the SOP's practice and example and the FAQ's verbal
   approval do not override the policy, and missing information routes to Refer.
   Also grades the uipdm inputVariable provenance, that no sourceRef is written
-  when no positions exist, and that review-notes.md records the assumptions and
+  when no positions exist, and that the .dmn itself (descriptions and qualityWarnings) records the assumptions and
   the amendment that was not applied. The rate schedule is reference data: the prompt
   names no mileage input, so a mileage input or row would fail the named-inputs check.
   The prompt asks for one table column per named input only so the grader can read the table.
@@ -110,15 +110,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "review-notes.md records the assumptions made"
-    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full notes"
+    description: "The .dmn records its assumptions, limits and the documents not applied"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full record"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "review-notes.md records both amendments and that Amendment 2 was not applied"
+    description: "The .dmn records both amendments and that Amendment 2 was not applied"
     command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py full ledger"
     timeout: 30
     expected_exit_code: 0

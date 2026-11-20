@@ -7,8 +7,8 @@ description: >
   condition, missing information routed to Refer, a permissive "may" sentence
   that must not become a condition, and an instruction injected into the
   document. Also grades the uipdm inputVariable provenance, that no sourceRef
-  is written when no positions exist, and that review-notes.md records the
-  assumptions made.
+  is written when no positions exist, and that the .dmn records its
+  assumptions and limits as uipdm:qualityWarning.
 tags: [uipath-rules, integration, "mode:build", "lifecycle:generate"]
 
 sandbox:
@@ -95,8 +95,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "review-notes.md records the assumptions made"
-    command: "python3 $REFERENCE_DIR/_shared/policy_check.py notes"
+    description: "The .dmn records its assumptions and limits as uipdm:qualityWarning"
+    command: "python3 $REFERENCE_DIR/_shared/policy_check.py record"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

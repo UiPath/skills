@@ -10,10 +10,10 @@ statements that contradict the policy and must not override it.
 Usage: multi_doc_check.py [full|light] <mode>. `full` is the six-document e2e (seven inputs, 24
 scenarios); `light` is the smoke (base, both amendments and a FAQ; four inputs, 14 scenarios).
 
-Modes validate, profile, outcomes, norefs and notes reuse policy_check.py (a
+Modes validate, profile, outcomes, norefs and record reuse policy_check.py (a
 private copy of the module, so its globals can be pointed at this project).
-`ledger` checks that review-notes.md records both amendments and which one was
-not applied.
+`ledger` checks that the .dmn (its descriptions and qualityWarnings) records both
+amendments and which one was not applied.
 """
 
 from __future__ import annotations
@@ -87,7 +87,7 @@ PROFILES = {
 }
 
 
-NOTES_FIXTURE = {
+RECORD_FIXTURE = {
     "full": [("the SOP's high-cost-city practice, not applied", r"\bsop\b"),
              ("the FAQ's verbal approval, not applied", r"faq|verbal")],
     "light": [("the FAQ's verbal approval, not applied", r"faq|verbal")],
@@ -100,7 +100,7 @@ def configure(profile: str) -> None:
     pc.INPUTS = inputs
     pc.OUTPUT = "outcome"
     pc.SCENARIOS = scenarios
-    pc.NOTES_FIXTURE = NOTES_FIXTURE[profile]
+    pc.RECORD_FIXTURE = RECORD_FIXTURE[profile]
 
 
 configure("full")
@@ -110,27 +110,28 @@ LEDGER_STATES = ("not yet effective", "not yet in effect", "not in effect", "not
 
 
 def ledger_ok(text: str) -> str | None:
-    """None when the notes record both amendments and say Amendment 2 was not applied, else the reason.
+    """None when the text records both amendments and says Amendment 2 was not applied, else the reason.
 
     Hyphens, underscores and runs of spaces count as one space, so "Amendment-2", "03-amendment-2.md" and
     "amendment  2" all name Amendment 2; the not-applied wording may be any of LEDGER_STATES.
     """
     text = re.sub(r"[\s_-]+", " ", text.lower().replace("as-of", "as of"))
     if not re.search(r"amendment 1(?!\d)", text) or not re.search(r"amendment 2(?!\d)", text):
-        return "review-notes.md does not mention both amendments"
+        return "the .dmn does not mention both amendments in a description or qualityWarning"
     window = 160  # the not-applied wording must sit next to a mention of Amendment 2
     for match in re.finditer(r"amendment 2(?!\d)", text):
         near = text[max(0, match.start() - window): match.end() + window]
         if any(state in near for state in LEDGER_STATES):
             return None
-    return "review-notes.md does not say Amendment 2 was not applied"
+    return "the .dmn does not say Amendment 2 was not applied"
 
 
 def grade_ledger() -> None:
-    reason = ledger_ok(pc.find_one("review-notes.md").read_text(encoding="utf-8"))
+    _, _, root = pc.load()
+    reason = ledger_ok(pc.record_text(root))
     if reason:
         pc.fail(reason)
-    print("OK: review-notes.md records both amendments and that Amendment 2 was not applied")
+    print("OK: the .dmn records both amendments and that Amendment 2 was not applied")
 
 
 if __name__ == "__main__":
@@ -143,9 +144,9 @@ if __name__ == "__main__":
     if mode == "validate":
         pc.rc.run_validate(pc.rc.find_project(pc.PROJECT_NAME))
         print("OK: uip rules validate passes")
-    elif mode in ("profile", "outcomes", "norefs", "notes"):
+    elif mode in ("profile", "outcomes", "norefs", "record"):
         {"profile": pc.grade_profile, "outcomes": pc.grade_outcomes, "norefs": pc.grade_norefs,
-         "notes": pc.grade_notes}[mode]()
+         "record": pc.grade_record}[mode]()
     elif mode == "ledger":
         grade_ledger()
     else:

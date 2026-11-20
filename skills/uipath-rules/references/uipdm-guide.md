@@ -29,10 +29,10 @@ An edit to a row keeps that row's `sourceRefs` unless the edit changes what the 
 `uip rules validate` accepts `uipdm:` elements without reading them. After `refresh` and `validate`, check every element against the schema:
 
 ```bash
-python3 "<SKILL_DIR>/scripts/check-uipdm.py" "<DMN_FILE>"
+node "<SKILL_DIR>/scripts/check-uipdm.mjs" "<DMN_FILE>"
 ```
 
-It needs `xmllint` (libxml2). Exit 0 prints how many elements were checked. Exit 1 lists each invalid element with the schema error; fix those and run it again. Exit 2 is a usage error or a missing `xmllint`: skip the check and say so in the summary. A `sourceRef` with no `page`, or with a `box` of three numbers, is rejected.
+It needs only `node`; it reads [uipdm.xsd](uipdm.xsd) from `references/`, or from its own folder when the script was copied elsewhere, or from a path given as a second argument. Exit 0 prints how many elements were checked. Exit 1 lists each invalid element with the reason; fix those and run it again. Exit 2 is a usage error, an unreadable file, or a schema construct the checker does not implement: show the error, skip the check, and say so in the summary. A `sourceRef` with no `page`, or with a `box` of three numbers, is rejected.
 
 ## Not verified
 

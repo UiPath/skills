@@ -1,6 +1,6 @@
 # Citation Guide
 
-A row's position in the policy comes from a verbatim quote that code resolves to a box. The model never produces coordinates (extraction rule 6).
+Read when a `dom.json` with page positions exists. A row's position in the policy comes from a verbatim quote that code resolves to a box. The model never produces coordinates (extraction rule 5). Citations of supporting documents are in [multi-document-guide.md](multi-document-guide.md); a rule with no quote is in [guided-guide.md](guided-guide.md) (Extraction).
 
 ## Record a citation (Extraction)
 
@@ -15,14 +15,6 @@ Append one entry per place a row was read to `<TEMP_DIR>/cites.json`:
 - `quote` is copied character for character from `document.md`, about 4-12 words, taken from the clause itself. A threshold alone (`$250,000`) appears many times; include its neighbouring words.
 - A row built from several clauses gets one entry per clause.
 - A quote may cross a line break. If a multi-line quote does not resolve, retry with a fragment from a single line of the clause.
-
-## Supporting-document citations
-
-Only the base document has a `dom.json` and `cites.json` entries. A row built from an amendment, higher-authority source, guidance, or reference data names the source in its annotation as `<DOCUMENT_NAME> p.<N> "<verbatim quote>"`, copied from that document's text. Add no `cites.json` entry and no `uipdm:sourceRef`: `resolve-refs.mjs` reads one `dom.json`, and a page number from another document would resolve to the wrong box. List these citations in the Finish summary as carrying no box. A row that combines a base clause and a supporting clause cites the base clause normally and the supporting one in the annotation.
-
-## Rules with no quote (user-stated)
-
-A rule that comes from a user's answer or a call, not from the document, has no clause to quote. Do not invent a quote and do not add a `cites.json` entry. Write a `uipdm:qualityWarning` on the row (`conditionId` or `field` set when known) with text starting `User-stated, not in document:` followed by the rule and who stated it. Ask the user to get it confirmed in writing, and list it in the Finish summary.
 
 ## Resolve (Finish)
 

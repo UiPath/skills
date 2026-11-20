@@ -108,19 +108,19 @@ def test_page_only_source_refs_are_allowed_without_digitizer_positions():
     assert pc.positioned_refs([page_only, boxed, block]) == [boxed, block]
 
 
-REAL_NOTES = """# Finish
-**Review level:** Headless. **validate:** Passed. The rule has not been evaluated against cases.
-**Assumptions:** none. **Uncovered clauses:** receipts may be a PDF or a photo, not a rule."""
+RECORD_DMN = """<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"
+  xmlns:uipdm="http://uipath.com/schema/1.0/dmn-ext/decision-model">
+  <extensionElements><uipdm:qualityWarning>Citations carry a page and no source box.</uipdm:qualityWarning></extensionElements>
+  <decision id="d" name="d"><description>Remote-work policy v2, effective 2026-01-01.</description></decision>
+</definitions>"""
 
 
-def test_notes_pass_for_a_real_finish_summary():
-    assert pc.notes_missing(REAL_NOTES) == []
+def test_record_text_reads_descriptions_and_quality_warnings():
+    text = pc.record_text(ET.fromstring(RECORD_DMN))
+    assert "no source box" in text and "Remote-work policy v2" in text
 
 
-def test_the_word_assumptions_alone_no_longer_passes():
-    assert pc.notes_missing("Assumptions: none.") != []
-
-
-@pytest.mark.parametrize("cut", ["review level", "validate", "not been evaluated", "receipts"])
-def test_notes_name_each_missing_item(cut):
-    assert pc.notes_missing(REAL_NOTES.replace(cut, "x").replace(cut.capitalize(), "x")) != []
+def test_record_names_each_missing_fixture_item(monkeypatch):
+    monkeypatch.setattr(pc, "RECORD_FIXTURE", [("the FAQ, not applied", r"faq")])
+    assert pc.record_missing("Assumptions recorded.") == ["the FAQ, not applied"]
+    assert pc.record_missing("The FAQ's verbal approval was not applied.") == []

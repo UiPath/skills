@@ -8,7 +8,7 @@ description: >
   receipt threshold alone, the FAQ's verbal approval does not override the
   policy, and missing information routes to Refer. Also grades the uipdm
   inputVariable provenance, that no sourceRef carries a box when no positions
-  exist, and that review-notes.md records the assumptions and the amendment
+  exist, and that the .dmn itself (descriptions and qualityWarnings) records the assumptions and the amendment
   that was not applied. Also grades that the Quick draft (IXP) scripts are not run: the documents include
   amendments, so one-shot is not offered, and no smoke task calls IXP. This is the fast subset of the e2e multi_doc_full task. The prompt
   asks for one table column per named input only so the grader can read the table.
@@ -106,15 +106,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "review-notes.md records the assumptions made"
-    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py light notes"
+    description: "The .dmn records its assumptions, limits and the documents not applied"
+    command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py light record"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "review-notes.md records both amendments and that Amendment 2 was not applied"
+    description: "The .dmn records both amendments and that Amendment 2 was not applied"
     command: "python3 $REFERENCE_DIR/_shared/multi_doc_check.py light ledger"
     timeout: 30
     expected_exit_code: 0

@@ -12,8 +12,8 @@ policy) into a BusinessRules project named ReimbursementRules. Modes:
             answer key; it lives here and is never staged into the sandbox).
   norefs    no uipdm:sourceRef with a box or blockId (no digitizer positions were supplied);
             a page-only sourceRef is allowed.
-  notes     review-notes.md exists and records the Finish items (review level, validate result,
-            not evaluated against cases, assumptions) and the clause this fixture plants.
+  record    the .dmn carries at least one uipdm:qualityWarning (assumptions and limits live in the rule,
+            not in a notes file) and records the items this fixture plants.
   refs      every uipdm:sourceRef box is exactly the box of a contiguous run of
             words in _setup/policy_digitized/dom.json, on the page it names.
 
@@ -187,28 +187,33 @@ def find_one(name: str) -> Path:
     return found[0]
 
 
-# What Finish tells the agent to write to review-notes.md (phase guide, "State the limits"), as (label, regex).
-NOTES_REQUIRED = [
-    ("the review level", r"review level"),
-    ("that the rule was not evaluated against cases", r"not (?:yet )?(?:been )?evaluated"),
-    ("the validate result", r"validate"),
-    ("the assumptions made", r"assum"),
-]
+# The .dmn is the reviewer's durable record: each decision's description (documents applied, amendments not
+# yet effective, documents read and not used) and every uipdm:qualityWarning (assumptions and limits).
 # One item per fixture, tied to a clause the fixture plants. multi_doc_check.configure replaces it.
-NOTES_FIXTURE = [("the permissive receipts sentence, listed as not a rule", r"receipt")]
+RECORD_FIXTURE: list[tuple[str, str]] = []
 
 
-def notes_missing(text: str) -> list[str]:
-    """Labels of the required items the notes lack. A generic phrase alone ("assumptions") is not enough."""
+def record_text(root: ET.Element) -> str:
+    """What the rule file itself tells a reviewer: every description and every uipdm:qualityWarning."""
+    parts = [el.text or "" for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "description"]
+    parts += ["".join(el.itertext()) for el in uipdm_elements(root, "qualityWarning")]
+    return "\n".join(parts)
+
+
+def record_missing(text: str) -> list[str]:
+    """Labels of the fixture items the rule file does not record."""
     text = text.lower()
-    return [label for label, pattern in NOTES_REQUIRED + NOTES_FIXTURE if not re.search(pattern, text)]
+    return [label for label, pattern in RECORD_FIXTURE if not re.search(pattern, text)]
 
 
-def grade_notes() -> None:
-    missing = notes_missing(find_one("review-notes.md").read_text(encoding="utf-8"))
+def grade_record() -> None:
+    _, _, root = load()
+    if not uipdm_elements(root, "qualityWarning"):
+        fail("the .dmn carries no uipdm:qualityWarning: its assumptions and limits are not recorded in the rule")
+    missing = record_missing(record_text(root))
     if missing:
-        fail("review-notes.md does not record: " + "; ".join(missing))
-    print("OK: review-notes.md records the review level, the validate result, that no cases were run, the assumptions, and the fixture's trap")
+        fail("the .dmn (descriptions and qualityWarnings) does not record: " + "; ".join(missing))
+    print("OK: the .dmn records its assumptions and limits as qualityWarning, and the fixture's items")
 
 
 def word_run_texts(dom: dict) -> dict[int, dict[str, str]]:
@@ -307,8 +312,8 @@ if __name__ == "__main__":
     if mode == "validate":
         rc.run_validate(rc.find_project(PROJECT_NAME))
         print("OK: uip rules validate passes")
-    elif mode in ("profile", "outcomes", "norefs", "refs", "notes"):
+    elif mode in ("profile", "outcomes", "norefs", "refs", "record"):
         {"profile": grade_profile, "outcomes": grade_outcomes, "norefs": grade_norefs, "refs": grade_refs,
-         "notes": grade_notes}[mode]()
+         "record": grade_record}[mode]()
     else:
         fail(f"unknown mode {mode!r}")
