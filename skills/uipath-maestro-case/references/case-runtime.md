@@ -232,7 +232,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   variable holds the same shape as a literal: an ISO-8601 duration
   (`PT10S`), date, or repeating cycle. Give an input a default so a manual
   start or `case debug` has a value, and never copy that default into the
-  timer: a literal timer ignores the value the case is started with.
+  timer: a literal timer ignores the value the case is started with. A value
+  that is not an ISO string at runtime (a number such as `10`, an unknown
+  variable) faults the timer with `TimerExpressionArgumentError`.
 
 ## SLA and runtime semantics
 
