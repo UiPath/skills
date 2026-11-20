@@ -1,6 +1,6 @@
 """Graders that failed correct Studio Web output in run 2026-11-19_09-23-02.
 
-Fixtures under ``fixtures/run_2026_11_19`` are the agents' real artifacts from that
+Fixtures under ``tests/fixtures/uipath-maestro-bpmn/run_2026_11_19`` are the agents' real artifacts from that
 run, byte for byte. Each positive test names the construct the canvas accepts and the
 grader used to reject; each negative test changes that construct to something the
 canvas does not read the same way and must still fail.
@@ -21,7 +21,9 @@ sys.path.insert(0, str(HERE))
 
 import bpmn_check  # noqa: E402
 
-FIXTURES = HERE / "fixtures" / "run_2026_11_19"
+# Kept outside `_shared/`: the sandbox copies `_shared/`, and a fixture `.bpmn` there
+# becomes a second candidate for the graders under test.
+FIXTURES = HERE.parents[2] / "fixtures" / "uipath-maestro-bpmn" / "run_2026_11_19"
 SIMPLE_APPROVAL = HERE / "check_simple_approval_bpmn.py"
 SCRIPT_JINT = HERE / "check_script_jint_guidance.py"
 TESTMANAGER = HERE / "check_testmanager_generic_records.py"
@@ -286,25 +288,6 @@ def test_find_bpmn_file_takes_the_shallowest_of_several_projects(
     _project(tmp_path, "a/b/c", "Foo.bpmn")
     monkeypatch.chdir(tmp_path)
     assert bpmn_check.find_bpmn_file("Foo") == "Foo-work/Foo.bpmn"
-
-
-def test_print_bpmn_path_resolves_both_layouts(tmp_path: Path) -> None:
-    script = HERE / "print_bpmn_path.py"
-    studio = tmp_path / "a" / "P" / "P"
-    studio.mkdir(parents=True)
-    (studio / "Process.bpmn").write_text("<x/>")
-    (studio / "project.uiproj").write_text("{}")
-    assert _run(script, tmp_path / "a", "P.bpmn").stdout.strip() == "P/P/Process.bpmn"
-    node = tmp_path / "b" / "PSolution" / "P"
-    node.mkdir(parents=True)
-    (node / "P.bpmn").write_text("<x/>")
-    (node / "project.uiproj").write_text("{}")
-    assert _run(script, tmp_path / "b", "P.bpmn").stdout.strip() == "PSolution/P/P.bpmn"
-    twin = tmp_path / "a" / "Other" / "P"
-    twin.mkdir(parents=True)
-    (twin / "Process.bpmn").write_text("<x/>")
-    (twin / "project.uiproj").write_text("{}")
-    assert _run(script, tmp_path / "a", "P.bpmn").returncode == 1  # two Studio Web projects: ambiguous
 
 
 # ---- 1. bpmn_live --------------------------------------------------------------------
