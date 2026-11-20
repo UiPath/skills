@@ -179,7 +179,7 @@ On a Flow project such an entry is refused (`CONNECTOR_NO_FLOW_DEFINITION`); if 
 An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
 It never asks Integration Service for a connector the catalog does serve: a misspelt action on Jira gets the catalog's closest action.
 
-Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
+Only when `prepare` cannot reach the tenant at all, or the tenant refuses connection-scoped reads (end of this section), fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
 Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
 A draft that cannot wait for access takes the form in §7.
 The identity comes from the catalog, never from the connector's OpenAPI document:
