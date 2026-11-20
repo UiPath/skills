@@ -638,6 +638,12 @@ binding half, which is the same for every connector-backed node.
   Keep `element` when you edit the node: without it, compile writes the registry's element
   and the node changes kind in the merged file.
 
+<!--skill-flavor:sdk-typed-element:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.9 or later; an older `decompile` writes no
+  `element`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and
+  decompile again.
+<!--skill-flavor:sdk-typed-element:end-->
+
 <!-- RULE:bpmn.brownfield.format -->
 - Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
