@@ -640,6 +640,12 @@ binding half, which is the same for every connector-backed node.
   a node whose extra mapping the source cannot state; keep it, and merge the edit
   (`bpmn.brownfield.merge`), which keeps that mapping from the original.
 
+<!--skill-flavor:sdk-variable-updates:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.9 or later; an older `decompile` writes no
+  `updateRows` and no header note, so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest` and decompile again.
+<!--skill-flavor:sdk-variable-updates:end-->
+
 <!-- RULE:bpmn.brownfield.format -->
 - Do not lay out a merged process again. `merge` keeps every shape and edge of the
   original where the user put it (it grows a lane, pool or expanded sub-process that has
