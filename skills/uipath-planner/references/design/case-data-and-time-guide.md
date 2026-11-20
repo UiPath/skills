@@ -167,7 +167,7 @@ Pick from the source's words — WHERE the work lives, never whether it interrup
 
 | Response | Source says | What you author | Interrupting cell |
 |---|---|---|---|
-| `notify-only` | notify / alert / page someone, nothing more | An escalation on the target's SLA rules — no stage, task, or condition | `n/a` |
+| `notify-only` | notify / alert / page someone, nothing more | An escalation on the target's SLA rules — no stage, task, or condition. The person notified is the escalation's `Notify:` cell; Target is `—` | `—` |
 | `start-task` | Follow-up work inside the SAME breached stage ("as part of the review", a named task for a manager or peer) | One task in the breached stage carrying `sla-status-change` as its OWN task-entry row, against that stage's (or the case's) SLA | `—` — a task entry interrupts nothing; never `Yes`/`No` |
 | `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the source says **interrupt**, **global interrupt**, **take over**, **stop** or **pause** the work, or when the lane must be cleared **before the case or stage can close**; `No` ONLY for parallel oversight that leaves the work running |
 | `exit-stage` | The breached stage should end or route away | A stage-exit row | Per exit semantics |
@@ -182,7 +182,7 @@ Read the Interrupting cell off the SOURCE's words, exactly like the Response cel
 - SLA exists only where the source mentions timing, read literally ("about a day" → 1 day). No timing → `—`, no SLA rule. Scope, status, and response are chosen separately (§ Choosing the response).
 - Every (scope, SLA) authors BOTH statuses, always. The rule is per status, not per SLA: a stated
   response for one status never removes the other status's row, and a status the source is silent on is
-  `notify-only` with Target and Interrupting `—` — an omitted row is an unauthored response, not a way to
+  `notify-only` with BOTH Target and Interrupting `—` (who is notified goes in the escalation's `Notify:` cell, never in Target) — an omitted row is an unauthored response, not a way to
   write "nothing happens". Never invent a stage, task, or routing change.
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
