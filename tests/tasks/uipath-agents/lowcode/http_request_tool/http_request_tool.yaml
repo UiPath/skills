@@ -2,11 +2,11 @@ task_id: skill-agent-http-request-tool
 description: >
   HTTP Request built-in tool guard. The tool is available only to inline
   agents in a Flow — Agent Builder has no UI for it. The prompt asks for it
-  on a standalone low-code agent. Verifies the agent does NOT author a
-  `type: "internal"` / `properties.toolType: "http-request"` resource on a
-  standalone agent project, even though `uip agent validate` accepts that
-  resource. A resource of that kind on an inline agent inside a Flow project
-  is allowed.
+  on a standalone low-code agent. Verifies the agent builds the standalone
+  agent project and does NOT author a `type: "internal"` /
+  `properties.toolType: "http-request"` resource on it, even though
+  `uip agent validate` accepts that resource. A run that creates nothing
+  fails: the skill's rule is to build the agent without the tool and say so.
 tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:http]
 
 run_limits:
@@ -37,19 +37,20 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  # Advisory: creating the agent without the tool and stopping before creating
-  # anything are both acceptable outcomes, so these never block.
+  # The guard above passes on an empty workspace. The skill tells the agent to
+  # build the standalone agent without the tool, so the project must exist.
   - type: run_command
-    description: "The workspace has an Agent project (advisory)"
+    description: "The workspace has a standalone Agent project (a project.uiproj with ProjectType Agent)"
     command: |-
       python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
     timeout: 10
     expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0
+    weight: 2.0
+    pass_threshold: 1.0
 
+  # Advisory: depends on the CLI build in the sandbox.
   - type: run_command
-    description: "uip agent validate reports the agent project Valid when one was created (advisory)"
+    description: "uip agent validate reports the agent project Valid (advisory)"
     command: |-
       uip agent validate RatesSol/RatesAgent --output json | python3 -c "import json, sys; t = sys.stdin.read(); d = json.loads(t[t.index('{'):]); sys.exit(0 if d.get('Result') == 'Success' and d.get('Data', {}).get('Status') == 'Valid' else 1)"
     timeout: 120

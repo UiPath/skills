@@ -1,0 +1,59 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__question": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.question"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "description": "Output content"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You answer currency-conversion questions. Give the converted amount and the exchange rate you used. If you cannot determine a rate, say so instead of guessing.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You answer currency-conversion questions. Give the converted amount and the exchange rate you used. If you cannot determine a rate, say so instead of guessing."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.start__output__question}}",
+      "contentTokens": [
+        {
+          "type": "variable",
+          "rawString": "input.start__output__question"
+        }
+      ]
+    }
+  ],
+  "projectId": "9a4e2c7f-1b58-4d36-8f0c-3e6a9b5d1c72"
+}

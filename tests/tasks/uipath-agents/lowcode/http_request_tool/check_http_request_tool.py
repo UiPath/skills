@@ -6,8 +6,9 @@ The HTTP Request built-in tool (`type: "internal"`, `properties.toolType:
 has no UI for it, so it must never be authored on a standalone agent — even
 though `uip agent validate` accepts the resource there.
 
-Walks the workspace for every tool resource of that kind and fails when one
-belongs to a standalone agent. An agent is inline when its folder sits directly
+Walks the workspace for every resource of that kind — matched on `type` and
+`properties.toolType` alone, so a hand-written one without `$resourceType` is
+still caught — and fails when one belongs to a standalone agent. An agent is inline when its folder sits directly
 inside a Flow project (a folder holding a `*.flow` file); anything else is
 standalone.
 
@@ -33,8 +34,7 @@ def is_http_request_tool(path: Path) -> bool:
         return False
     properties = resource.get("properties")
     return (
-        resource.get("$resourceType") == "tool"
-        and resource.get("type") == "internal"
+        resource.get("type") == "internal"
         and isinstance(properties, dict)
         and properties.get("toolType") == TOOL_TYPE
     )

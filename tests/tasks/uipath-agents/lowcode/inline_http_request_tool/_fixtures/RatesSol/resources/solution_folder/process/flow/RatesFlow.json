@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RatesFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b3d0a6f4-52c8-4e1b-a7f9-0d4c8e6a1f37",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "RatesFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "RatesFlow",
+      "package": {
+        "key": "e8a1f3c5-7d24-4b96-9c0e-5a3b7d1f2c68"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "2d7f9b4a-6c18-4e53-b0a9-8f1e3c5d7a26",
+    "files": []
+  }
+}
