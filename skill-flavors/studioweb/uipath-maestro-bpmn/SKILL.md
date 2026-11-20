@@ -1,7 +1,7 @@
 <!--skill-flavor:critical-rules-extra:start-->
 12. A new process goes into a project's main file in `/solution`: the `.bpmn` its `entry-points.json` names, `Process.bpmn` in a project Studio Web created (`uip maestro bpmn init` included). Studio Web packages any other `.bpmn` only as a non-default entry point and shows nothing outside `/solution`. Before you write a `.bpmn`:
     1. Pick the project: the one the request names (`B`, or `A/B`, names `/solution/B`), else the open one; with neither, go to step 3. When it does not exist, run `uip maestro bpmn init B` from `/solution`.
-    2. Before asking the user anything about placement, decide by running `uip maestro bpmn decompile <Main>.bpmn -o <Draft>/probe.bpmn.ts --style nested` and `uip maestro bpmn check <Draft>/probe.bpmn.ts --graph`, never by reading the XML (a template file is long). A template is empty: one start event and at most one end event, which is all an `init` or Studio Web template has. Build into it: ask nothing about replacing or a new project (a question about the name is separate: step 3). When the graph lists any other node, never build over it unasked: if the request named this project, ask the user whether to replace its process or use a new project. On *replace*, build into its main file through the [Validation loop](#validation-loop). On *new project*, go to step 3. When the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking whether to replace.
+    2. Decide by running `decompile` and `check --graph` on the main file, not by reading the XML: one start event and at most one end event is an empty template, so build into it and ask nothing about replacing. Any other node means never build over it unasked: if the request named this project, ask whether to replace its process or use a new project (*replace*: build into its main file through the [Validation loop](#validation-loop); *new project*: step 3); when the request says nobody will answer questions, or the project is only the open one, go to step 3 without asking whether to replace.
     3. For a new project, run `uip maestro bpmn init <NewProject>` from `/solution`. `<NewProject>` is the request's `.bpmn` name without `.bpmn` when `/solution` holds no folder of that name. Otherwise ask for the project name in one question before `init`, offering a short default for the process that `/solution` does not hold: Studio Web cannot rename a project, so a wrong guess leaves a stray one. When the request says nobody will answer questions, use that default without asking. When the answer names a folder `/solution` already holds, ask again. Never pass `--force`.
 
     A request that names a `.bpmn` file, gives a working directory or asks for a "local" project changes none of this, however firmly it says "main file": never add a `.bpmn` of that name or repoint `entry-points.json` at one, so the project keeps one `.bpmn`. Name the project and file you used on the final report's `Assumed:` line. An existing `.bpmn` outside `/solution` is edited through a copy ([Studio Web](#studio-web)).
@@ -136,7 +136,7 @@ uip maestro bpmn check .flow-sdk/<Name>.bpmn.ts --source
 uip maestro bpmn check .flow-sdk/<Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
 # 3. Compile the edit, then merge the delta into the target
 uip maestro bpmn compile .flow-sdk/<Name>.bpmn.ts -o <Draft>/edited/<Name>.bpmn
-uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn && { diff -q <Name>.bpmn .flow-sdk/original/<Name>.bpmn >/dev/null && echo "MERGE CHANGED NOTHING"; true; }
+uip maestro bpmn merge <Draft>/edited/<Name>.bpmn --original <Name>.bpmn --baseline <Draft>/baseline/<Name>.bpmn -o <Name>.bpmn
 # 4. The package files, then the product's own check on the file the canvas shows
 uip maestro bpmn refresh . --output json
 uip maestro bpmn validate <Name>.bpmn --output json
@@ -153,11 +153,11 @@ uip maestro bpmn format <Name>.bpmn
   `merge` reads what the baseline holds and the edit lacks as deleted. A copy of the
   target holds the pools, lanes and diagram the SDK does not model, so `merge` deletes
   them; the edited file shows `merge` no change, so it writes the target back as it was.
-  Step 3 prints `MERGE CHANGED NOTHING` when the merged `<Name>.bpmn` is byte-identical to `.flow-sdk/original/<Name>.bpmn`: the baseline holds the edit
-  (an add, a removal and a property change each make the file differ). Judge by that line, never by the `Authored` or `Removed` counts.
-  When `merge` cannot open the baseline or step 3 prints `MERGE CHANGED NOTHING`, run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again,
+  After step 3, run `diff -q <Name>.bpmn .flow-sdk/original/<Name>.bpmn`. No output means identical: `merge` changed nothing, so the baseline holds the edit
+  (an add, a removal and a property change each make the file differ). Judge by this, never by the `Authored` or `Removed` counts.
+  When `merge` cannot open the baseline or `diff -q` prints nothing, run `mkdir -p <Draft>/baseline`, run step 1's two baseline lines again,
   compile the edit again, and run step 3's `merge` again. Step 1's other lines stay unrun: they would overwrite the edit.
-  When step 3 prints it again, stop: run no other step and send no final report. Tell the user in one sentence that the edit did not reach `<Name>.bpmn` and the file is as it was.
+  When `diff -q` still prints nothing, stop: run no other step and send no final report. Tell the user in one sentence that the edit did not reach `<Name>.bpmn` and the file is as it was.
 - **Step 5b keeps the user's layout.** `merge` keeps every shape
   of the target, also where the user moved it. A newer SDK also draws the shapes of
   new elements; an older one draws none, and step 4 then reports
