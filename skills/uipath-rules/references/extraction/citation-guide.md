@@ -4,16 +4,9 @@ Read when a `dom.json` with page positions exists. A row's position in the polic
 
 ## Record a citation (Extraction)
 
-Append one entry per place a row was read to `<TEMP_DIR>/cites.json`:
+Record each citation in `<TEMP_DIR>/cites.json` as the guided guide says (Extraction, Do). With a `dom.json`, two points matter for resolving:
 
-```json
-[{ "id": "r1", "page": 1, "quote": "Employees with less than six months of service" }]
-```
-
-- `id` is the row's annotation name plus a number if the row has several cites, e.g. `under-six-months-1`.
-- `page` is the number in the `<!-- page: N -->` marker in `document.md` (it equals `dom.json` `pageIndex` + 1), never the printed number in a header or footer. Header and footer lines (for example `Page 3 of 69`) sit inline in the body text; skip them when copying a quote.
-- `quote` is copied character for character from `document.md`, about 4-12 words, taken from the clause itself. A threshold alone (`$250,000`) appears many times; include its neighbouring words.
-- A row built from several clauses gets one entry per clause.
+- `page` is the `<!-- page: N -->` marker, which equals `dom.json` `pageIndex` + 1.
 - A quote may cross a line break. If a multi-line quote does not resolve, retry with a fragment from a single line of the clause.
 
 ## Resolve (Finish)
@@ -34,4 +27,4 @@ Exit 2 is a usage error: fix the arguments. Run it once more after fixing quotes
 
 ## uipdm elements
 
-Elements, their placement, the page-only form for a run with no digitizer positions, and the schema check are in the [uipdm guide](../uipdm-guide.md). Extraction adds: write `uipdm:sourceRefs` only in Finish (Extraction records `cites.json` and nothing else); with no `dom.json`, write one page-only `sourceRef` per distinct page a row cites; do not put the quote in the file; and list the citations that carry no box in the Finish summary.
+Elements, their placement, the page-only form for a run with no digitizer positions, and the schema check are in the [uipdm guide](../uipdm-guide.md). Extraction adds: write `uipdm:sourceRefs` only in Finish (Extraction records `cites.json` and nothing else); do not put the quote in the file; and list the citations that carry no box in the Finish summary.

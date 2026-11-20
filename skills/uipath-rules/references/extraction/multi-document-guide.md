@@ -8,7 +8,7 @@ An amendment replaces the text it names only when it is effective on the as-of d
 
 ## Intake: register the documents
 
-**Build the document register.** For the base document and every supporting document, capture title, version, effective date, issuer and its authority (law, regulator guidance, organization policy, internal guidance), what it supersedes or amends, and jurisdiction or line of business when stated. Do not ask whether other documents exist. When the base document depends on one that was not supplied (an amendment, a schedule, a delegation of authority) and a rule needs it, that is a blocking question (question triage). Classify each by role:
+**Build the document register.** For the base document and every supporting document, capture title, version, effective date, issuer and its authority (law, regulator guidance, organization policy, internal guidance), what it supersedes or amends, and jurisdiction or line of business when stated. Classify each by role:
 
 | Role | Used for |
 |---|---|

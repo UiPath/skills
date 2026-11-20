@@ -18,7 +18,7 @@ The guided path after Framing ([start-guide.md](start-guide.md)): Intake, Unders
 
 **As-of date.** With one document the as-of date is today: show `As-of date: today (base document only)` for the user to correct. When the request names a past or future date, or the policy's own effective date is in the future, which date the rule should reflect is a blocking question.
 
-**More than one document.** When the request gives an amendment or any supporting document, read [multi-document-guide.md](multi-document-guide.md) now; it replaces the two paragraphs above and adds steps to Understanding, Extraction, and Finish.
+**More than one document.** When the request gives an amendment or any supporting document, read [multi-document-guide.md](multi-document-guide.md) now; it extends Document facts into a register, replaces the As-of date paragraph, and adds steps to Understanding, Extraction, and Finish.
 
 **Ask.** Nothing here. Show the Intake result and continue. Without `dom.json`, the result says that citations carry page numbers and no boxes; that is a statement, not a question. Items that need the user join the blocking questions asked after Inputs and structure (extraction rule 1): the as-of date when the rule above makes it a question, the page range of a long document the request did not scope, and a scoped page that is unreadable.
 
@@ -58,7 +58,7 @@ The guided path after Framing ([start-guide.md](start-guide.md)): Intake, Unders
 | **Answered by a supporting document** | A term defined in a glossary or FAQ; a code list or rate in reference data; a threshold stated in an amendment | Do not ask. Use the answer and cite it in the annotation. |
 | **Skip** | Definitions without a decision effect, filing and contact procedures, response-time targets, KPIs, rationale, purely informational supporting documents (training decks) | Do not extract; do not ask. Record an unused document as read, not used. |
 
-A rule that comes from a user answer or a call, not from the document, has no quote to cite. Record it with a `uipdm:qualityWarning` that says it is user-stated and names the answer (Extraction, Rules with no quote).
+A rule taken from a user's answer is recorded as Extraction says (Rules with no quote).
 
 ## Inputs and structure
 
