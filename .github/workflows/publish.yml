@@ -270,6 +270,8 @@ jobs:
               exit 1
             fi
           fi
+          # npm 12 wraps `npm view --json` in an array; npm 11 printed the object.
+          TAGS=$(echo "$TAGS" | jq -c 'if type == "array" then (.[0] // {}) else . end')
           BASE=$(node -p "require('./package.json').version")
           # Highest of two versions by M.N.P, ignoring any pre-release stamp.
           highest() { printf '%s\n%s\n' "${1%%-*}" "${2%%-*}" | sort -V | tail -1; }

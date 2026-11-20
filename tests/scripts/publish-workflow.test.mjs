@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -104,4 +105,15 @@ test("the npmjs job runs in the npm-publish environment", () => {
 test("dist-tag resolution fails closed and never moves latest backwards", () => {
   assert.doesNotMatch(PUBLISH, /npm view[^\n]*\|\| true/);
   assert.match(PUBLISH, /would not move it forward/);
+});
+
+// npm 12 prints `npm view --json` as an array; `.preview` on it fails the publish.
+test("dist-tag lookup reads both npm 11 and npm 12 output", () => {
+  const filter = PUBLISH.match(/TAGS=\$\(echo "\$TAGS" \| jq -c '([^']+)'\)/)?.[1];
+  assert.ok(filter, "publish.yml normalizes the npm view output");
+  const tags = (out) => JSON.parse(execFileSync("jq", ["-c", filter], { input: out }).toString());
+  const expected = { latest: "1.206.1", preview: "1.207.0-preview.1" };
+  assert.deepEqual(tags(JSON.stringify(expected)), expected);
+  assert.deepEqual(tags(JSON.stringify([expected])), expected);
+  assert.deepEqual(tags("[]"), {});
 });
