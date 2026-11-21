@@ -649,15 +649,15 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 
 **Declared by:** agent's start on a connector event (mail received, Data Fabric record created or updated). No SDK call declares it, so the code scan never finds it, and no CLI command writes it. Write the entries by hand, every value from connector discovery (table below), never from another trigger: operation and object names are connector-specific (`EMAIL_RECEIVED`, `UPDATED_V3`), so never write a generic `CREATED` unless discovery returns it.
 
-Wrong or missing trigger packs, deploys and pushes clean; agent never starts. After deploy, raise one real event and confirm a job starts: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` (`uip or triggers list` does not show event triggers).
+Wrong or missing trigger packs, deploys and pushes clean; agent never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
 
 - Only a solution deploy creates the trigger; publishing the package and creating its process creates none.
-- The deploy config gives each event trigger `runtimeType: Unattended`, which never starts a coded agent: set it to `Serverless` before deploy (`uip solution deploy config set <CONFIG_FILE> "<PROJECT>_EventTrigger-<EVENT_DISPLAY_NAME>" runtimeType Serverless`).
+- The deploy config gives each event trigger `runtimeType: Unattended`, which never starts a coded agent. Fetch the config with `uip solution deploy config get <SOLUTION_PACKAGE> -d <CONFIG_FILE>`, set the trigger with `uip solution deploy config set <CONFIG_FILE> "<TRIGGER_RESOURCE_NAME>" runtimeType Serverless` (the `kind: trigger` resource's `name` in the file, like `my-agent_EventTrigger-Record Created`), and pass `--config-file <CONFIG_FILE>` to `deploy run`, or to `deploy upgrade` for an existing deployment.
 - A Data Fabric entity event fires only on the entity copy the deployment installs in its folder; raise the test event there.
 
-**Event input:** event starts the agent with eight string inputs: `UiPathEventConnector`, `UiPathEvent`, `UiPathEventObjectType`, `UiPathEventObjectId` (the record's or item's id), `UiPathTime`, `UiPathCorrelationId`, `UiPathAdditionalEventData`, `UiPathTriggerActionId`. Undeclared ones are ignored; declare the ones the agent reads, as `str` defaulting to `""`, in its input model. With one entry point the binding needs no entry-point field: Orchestrator binds the trigger to it.
+**Event input:** event starts the agent with eight string inputs: `UiPathEventConnector`, `UiPathEvent`, `UiPathEventObjectType`, `UiPathEventObjectId` (the record's or item's id), `UiPathTime`, `UiPathCorrelationId`, `UiPathAdditionalEventData`, `UiPathTriggerActionId`. Undeclared ones are ignored; declare the ones the agent reads, as `str` defaulting to `""`, in its input model.
 
-**Binding entries:** one `EventTrigger`, plus one `Property` keyed to it when the event takes parameters:
+**Binding entries:** one `EventTrigger`, plus one `Property` keyed to it when the event takes parameters. The `EventTrigger` takes an entry-point field like any resource ([Step 4](#step-4-resolve-entrypoint-bindings)); with one entry point the field may be omitted, and Orchestrator binds the trigger to that entry point.
 
 ```json
 [
@@ -678,26 +678,28 @@ Wrong or missing trigger packs, deploys and pushes clean; agent never starts. Af
   },
   {
     "resource": "Property",
-    "key": "<TRIGGER_KEY>.<EVENT_DISPLAY_NAME>",
+    "key": "<OPERATION>_EventTrigger.<TRIGGER_KEY>",
     "value": {
       "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
-      "BindingsVersion": "2.1",
+      "BindingsVersion": "2.2",
       "ObjectName": "<OBJECT_NAME>",
-      "DisplayLabel": "<EVENT_PARAMETER>",
-      "ParentResourceKey": "EventTrigger.<TRIGGER_KEY>"
+      "ParentResourceKey": "EventTrigger.<TRIGGER_KEY>",
+      "TriggerCreateParameters": "<EVENT_PARAMETER_NAMES>",
+      "DebugQueryParameters": "<EVENT_PARAMETER_NAMES>"
     }
   }
 ]
 ```
 
-- `key`: name unique among the project's triggers. Each `Property` names its trigger in `metadata.ParentResourceKey` as `EventTrigger.<TRIGGER_KEY>`.
+- `key`: name unique among the project's triggers. `Property` names its trigger in `metadata.ParentResourceKey` as `EventTrigger.<TRIGGER_KEY>`.
+- `TriggerCreateParameters`, `DebugQueryParameters`: the `value` keys, comma-separated.
 - `ConnectionId.defaultValue`: connection's id, as in a connection binding.
 - `FilterExpression`: optional (**Filter expression** below).
 
-Data Fabric entity event scopes its `Property` to the entity and adds an `entity` resource that `Property` references:
+Data Fabric entity event scopes its `Property` to the entity and adds an `entity` resource that `Property` references in `FieldReferences`:
 
 ```json
 [
@@ -745,7 +747,7 @@ Data Fabric entity event scopes its `Property` to the entity and adds an `entity
 | Binding value | Discovery |
 |---|---|
 | `Connector` | connector key: `uip is connectors list --filter "<CONNECTOR_NAME>" --output json` |
-| `ConnectionId.defaultValue` | `Id` from `uip is connections list <CONNECTOR_KEY> --output json`; check it with `uip is connections ping <CONNECTION_ID> --output json` |
+| `ConnectionId.defaultValue` | `Id` from `uip is connections list <CONNECTOR_KEY> --all-folders --output json`; check it with `uip is connections ping <CONNECTION_ID> --output json` |
 | `Operation`, `ActivityName` | the event's `Name` (its `Operation` column reads `N/A`) and `DisplayName` from `uip is activities list <CONNECTOR_KEY> --triggers --output json` |
 | `ObjectName` | the event's `ObjectName`. A generic `CREATED` / `UPDATED` / `DELETED` event names none: take `Name` from `uip is triggers objects <CONNECTOR_KEY> <OPERATION> --connection-id <CONNECTION_ID> --output json` |
 | `Property` `value` keys | event parameters: `EventParameters` from `uip is triggers describe <CONNECTOR_KEY> <OPERATION> <OBJECT_NAME> --connection-id <CONNECTION_ID> --output json`, plus the object's `Parameters[].Name` from `triggers objects` |
