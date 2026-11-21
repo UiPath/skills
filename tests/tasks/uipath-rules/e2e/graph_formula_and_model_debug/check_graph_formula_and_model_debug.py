@@ -13,8 +13,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
-from graph_check import check_knowledge_models, engine_outputs  # noqa: E402
-from rules_check import fail, find_project, load_graph  # noqa: E402
+from graph_check import check_knowledge_models, engine_outputs, knowledge_models  # noqa: E402
+from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "FeeRules"
 # Either side of the 50000 band edge, and one large loan.
@@ -27,7 +27,17 @@ CASES = [
 
 def main() -> None:
     project = find_project(PROJECT)
-    check_knowledge_models(load_graph(project)[1])
+    root = load_graph(project)[1]
+    check_knowledge_models(root)
+
+    # Declared and wired is not called. An agent can carry the knowledgeRequirement and still
+    # inline the arithmetic, and the engine returns the right fee either way — so the engine
+    # grade alone would pass a rule in which the model never runs.
+    called = {text for decision in root.findall("dmn:decision", NS) for text in decision.itertext() if text}
+    for model in knowledge_models(root):
+        name = model.get("name")
+        if not any(f"{name}(" in text for text in called):
+            fail(f"no decision's logic calls {name}(...), so the model is wired but never runs")
     for inputs, expected in CASES:
         actual = engine_outputs(project, inputs)
         for name, value in expected.items():

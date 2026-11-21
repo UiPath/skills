@@ -242,12 +242,36 @@ def literal(text: str) -> object:
         return float(text)
     if text in ("true", "false"):
         return text == "true"
-    # A call or a formula is neither a literal nor a pass-through name. Returning the raw source
-    # here would grade `scoreModel(1)` as the string "scoreModel(1)" and silently mark a correct
-    # rule wrong. The engine grades those (graph_check.py engine).
+    # The FEEL constructors for the designer's own types. Critical Rule 5 offers date, time,
+    # date and time, and both durations as column types, so a cell spelling one of them is a
+    # literal like any other and is kept as its source text for comparison.
+    if re.fullmatch(r'(date and time|date|time|duration)\s*\(\s*"[^"]*"\s*\)', text):
+        return text
+    # Anything else carrying a call or an operator is neither a literal nor a name. Returning the
+    # raw source would grade `scoreModel(1)` as the string "scoreModel(1)" and silently mark a
+    # correct rule wrong. The engine grades those (graph_check.py engine).
     if re.search(r"[()+*/]|(?<![<>=!])-(?!\s*$)", text):
         fail(f"output cell {text!r} is a call or a formula; grade it with 'graph_check.py engine'")
     return text
+
+
+def read_name(names: dict, text: str) -> tuple[bool, object]:
+    """`text` as a name the table may read, plain or dotted, resolved against `names`.
+
+    A decision whose table has one output answers with that value, so a reader names it bare.
+    A decision with several answers with a structure, so a reader names one field of it —
+    `risk.riskBand`, which the guide documents. Without this the dotted form fell through to
+    `literal` and graded as its own source text, which is a wrong value and never an error.
+    """
+    parts = text.strip().split(".")
+    if parts[0] not in names:
+        return False, None
+    value: object = names[parts[0]]
+    for part in parts[1:]:
+        if not isinstance(value, dict) or part not in value:
+            return False, None
+        value = value[part]
+    return True, value
 
 
 def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict | None:
@@ -265,8 +289,11 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
             fail("a rule's input entries do not match the input columns")
         if all(unary_test(cell, inputs[column]) for cell, column in zip(cells, columns) if column in inputs):
             values = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:outputEntry", NS)]
-            hits.append({column: names[value.strip()] if value.strip() in names else literal(value)
-                         for column, value in zip(output_names(table), values)})
+            resolved = []
+            for value in values:
+                found, read = read_name(names, value)
+                resolved.append(read if found else literal(value))
+            hits.append(dict(zip(output_names(table), resolved)))
     policy = table.get("hitPolicy", "UNIQUE")
     if policy == "UNIQUE" and len(hits) > 1:
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")

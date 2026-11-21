@@ -197,6 +197,45 @@ class TestLiteralExpressionDecisions:
             gc.check_graph_cases(self.root(), [({}, {"fee": 300.0})])
 
 
+class TestMultiOutputUpstream:
+    """A decision with two outputs answers with a structure; a reader names one field of it."""
+
+    GRAPH = ('<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" id="d" name="C" namespace="urn:c">'
+             '<inputData id="in_amount" name="amount"><variable id="va" name="amount" typeRef="number" /></inputData>'
+             '<decision id="d_assess" name="assessment"><variable id="v1" name="assessment" />'
+             '<informationRequirement id="ir0"><requiredInput href="#in_amount" /></informationRequirement>'
+             '<decisionTable id="t1" hitPolicy="FIRST">'
+             '<input id="i1"><inputExpression id="ie1" typeRef="number"><text>amount</text></inputExpression></input>'
+             '<output id="o1" name="severity" typeRef="string" /><output id="o2" name="fastTrack" typeRef="boolean" />'
+             '<rule id="r1"><inputEntry id="ie_r1"><text>&lt; 1000</text></inputEntry>'
+             '<outputEntry id="oe1a"><text>"Minor"</text></outputEntry>'
+             '<outputEntry id="oe1b"><text>true</text></outputEntry></rule>'
+             '<rule id="r2"><inputEntry id="ie_r2"><text>-</text></inputEntry>'
+             '<outputEntry id="oe2a"><text>"Major"</text></outputEntry>'
+             '<outputEntry id="oe2b"><text>false</text></outputEntry></rule>'
+             "</decisionTable></decision>"
+             '<decision id="d_queue" name="queue"><variable id="v2" name="queue" typeRef="string" />'
+             '<informationRequirement id="ir1"><requiredDecision href="#d_assess" /></informationRequirement>'
+             '<decisionTable id="t2" hitPolicy="FIRST">'
+             '<input id="i2"><inputExpression id="ie2" typeRef="string"><text>assessment.severity</text></inputExpression></input>'
+             '<output id="o3" name="queueName" typeRef="string" />'
+             '<rule id="r3"><inputEntry id="ie_r3"><text>"Minor"</text></inputEntry>'
+             '<outputEntry id="oe3"><text>"Desk"</text></outputEntry></rule>'
+             '<rule id="r4"><inputEntry id="ie_r4"><text>-</text></inputEntry>'
+             '<outputEntry id="oe4"><text>"Senior"</text></outputEntry></rule>'
+             "</decisionTable></decision></definitions>")
+
+    def test_a_dotted_field_is_read_as_a_value(self):
+        root = ET.fromstring(self.GRAPH)
+        gc.check_graph_cases(root, [({"amount": 500}, {"severity": "Minor", "fastTrack": True, "queueName": "Desk"}),
+                                    ({"amount": 5000}, {"severity": "Major", "fastTrack": False, "queueName": "Senior"})])
+
+    def test_an_output_cell_passing_a_dotted_field_through_resolves(self):
+        # The queue table's output echoes a field of the upstream decision rather than a literal.
+        root = ET.fromstring(self.GRAPH.replace('<text>"Desk"</text>', "<text>assessment.severity</text>"))
+        gc.check_graph_cases(root, [({"amount": 500}, {"queueName": "Minor"})])
+
+
 class TestKnowledgeModels:
     """A knowledge model is callable, wired to a caller, and part of no cycle."""
 
