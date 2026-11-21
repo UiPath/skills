@@ -41,7 +41,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   unless `name` is given) is one of these, matched case-insensitively
   (`RESERVED_VARIABLE_NAME`): `vars`, `iterator`, `metadata`, `bindings`, `datafabric`,
   `instanceglobals`, `orchestrator`, `outputs`, `result`, `runtime`, `senderinfo`,
-  `this`. `check` does not report it. A public `.output()` may be named `result`.
+  `this`. `check` does not report it. A job node's `outputs` key and `outputVar` are
+  variable names too: `outputs: { result: '=result.x' }` fails `validate`, and a newer
+  SDK refuses it in `check` (`BPMN_JOB_OUTPUT_VAR_RESERVED`). Name the key for its
+  value: `outputs: { message: '=result.message' }`. A public `.output()` may be named `result`.
 
 <!-- RULE:bpmn.variables.inputs-through-start -->
 - A process input belongs to the start event, so a later step that reads `vars.<inputId>` is
@@ -298,6 +301,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - A job's output arguments are fields of `result`: map each one with `outputs` on the job node, as in `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`.
   The same `outputs` option reads an RPA process's (`.startProcess()`), an agent's (`.startAgent()`) and a waited-for agentic or case process's (`.startAgenticProcess()`, `.startCaseProcess()` without `async`) output arguments.
+  These builders take no `outputRows`, and only `.startAgenticProcess()` / `.startCaseProcess()` take `async`: an older SDK drops either silently, a newer one refuses it (`BPMN_UNKNOWN_OPTION`).
   `outputVar` (default `<id>_processResponse`) holds the job envelope, not the arguments; do not read an argument out of it with a `=js:` chain.
   The argument name is the workflow's own output argument, as the deployed process declares it; when no live run has shown it, say the mapping is unverified.
 
