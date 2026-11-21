@@ -98,9 +98,22 @@ No `dmndi:DMNDI` element — see [The diagram](#the-diagram).
 
 ## Reading an upstream decision
 
-**A decision reads another decision by that decision's `variable` name, never by its output column name.** Above, `rate` reads `risk`, not `riskBand`. This is the mistake a graph most often ships with, and nothing in the file looks wrong: the column name is right there in the upstream table, and a wrong read is a valid FEEL name the engine simply cannot resolve.
+**Count the upstream table's outputs first. That decides how to read it.**
 
-A decision whose table has several outputs answers with a structure, so a reader addresses one field of it — `risk.riskBand`. With one output, the decision answers with that one value and `risk` is the whole answer.
+| Upstream table has | It answers with | A reader names it |
+|---|---|---|
+| **one** output | that single value | `risk` — the decision's own name |
+| **two or more** outputs | a structure keyed by output name | `assessment.severity` — one field of it |
+
+A column name is never the handle on its own. Above, `risk` has one output whose column is `riskBand`, so `rate` reads it as `risk`:
+
+```
+<text>risk</text>            ← right
+<text>riskBand</text>        ← wrong: that is the column, not the decision
+<text>risk.riskBand</text>   ← wrong: only a decision with several outputs has fields
+```
+
+Reach for the dotted form **only** after counting two or more `<output>` elements in the upstream table. This is the mistake a graph most often ships with, and nothing in the file looks wrong: the column name sits right there in the upstream table, and a wrong read is a valid FEEL name the engine simply cannot resolve.
 
 ## Requirements
 
@@ -261,7 +274,8 @@ Never write the unsupported element.
 
 ## Anti-patterns
 
-- Reading an upstream decision by its output column name instead of its `variable` name
+- Reading a single-output upstream decision as `name.column`; it has no fields, and `name` is the whole answer
+- Reading an upstream decision by its output column name alone, with no decision name in front of it
 - A table that reads a name with no requirement edge to what declares it
 - Changing a decision's `id` to tidy it up, after consumers have bound to it
 - Splitting one answer across two decisions so each table is shorter
