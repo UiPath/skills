@@ -172,7 +172,7 @@ Diagnose first; the two repairs are opposites.
 | Entry is automatic from a decision, event, or SLA | The picker rule itself | Decision-routed |
 | Nothing either way | Assume person-launched — re-keying on an unstated fact invents a business rule | Person-launched |
 
-**Person-launched.** Give every eligible upstream primary stage a completing `required-tasks-completed` / `wait-for-user` / `Marks Stage Complete: Yes` exit ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+**Person-launched.** Give every eligible upstream primary stage a completing exit row `| required-tasks-completed | — | wait-for-user | Yes |` (WHEN, IF, Exit Type, Marks Stage Complete — `wait-for-user` is the Exit Type, never a WHEN) ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
 
 **Decision-routed.** All four edits, or the branch dual-fires or deadlocks:
 

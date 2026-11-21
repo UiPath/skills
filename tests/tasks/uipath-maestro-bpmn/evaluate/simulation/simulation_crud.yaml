@@ -8,7 +8,7 @@ description: >
   explicit `--output-schema`. Purely local, with no authentication, upload, or
   evaluation run. Verifies that the requested simulation state persists into
   the eval-set JSON.
-tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, feature:eval]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, feature:eval, studio-web-unsupported, studio-web-unsupported:no-eval-in-host]
 
 run_limits:
   expected_turns: 25
@@ -70,9 +70,9 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Solution-creation telemetry (report only; the BPMN artifact is graded below)"
+    description: "Solution-creation telemetry (solution init, or bpmn init which auto-scaffolds the solution off Studio Web; report only, the BPMN artifact is graded below)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(new|init)|maestro\s+bpmn\s+init[ \t]+["'']?[A-Za-z_$])'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0

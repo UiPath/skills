@@ -3,11 +3,11 @@
 Author a skeleton of blank boxes, real control flow and labels, compile and validate it, show it to the user, and stop for their approval.
 It makes no registry calls.
 
-**When.** The user wants to see the shape before it is built: *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
+**When.** The user asks for a draft or wants to see the shape before it is built: *create a draft*, *outline it*, *show me the shape*, *sketch it*, *what would it look like*, *before you build it*, or a session in plan mode.
 A request to build the process outright skips the draft and authors real nodes directly.
 A brownfield edit (the shape already exists) and a [discovery-only](bpmn-runtime.md#registry-extension-types) question (nothing is authored) skip it too.
-Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks to see the shape first.
-Judge the intent, not the word: a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) is a build, not the draft gate.
+Never ask the user whether to draft or build, and never block on that choice: decide from the request, and build when nothing in it asks for a draft or to see the shape first.
+A request for a draft, an outline or a sketch is the gate even when it describes the whole process, and a request whose wording leans toward a draft without saying it (*a rough version*, *a first pass*, *a quick mock-up*) gets the draft, unless it also says outright to build or deploy the whole process. That exception is for leaning wording only: a request for a draft, an outline or a sketch always gates. Like the brownfield and discovery-only cases above, a "draft project" or "draft handoff" that asks for a source-only deliverable (files to import or hand off later, with no upload or run) skips the gate: it is a build.
 A connector step it cannot resolve then follows [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector).
 Plan mode is the host's state: never enter it yourself to satisfy "show me first".
 
@@ -243,7 +243,8 @@ It is the turn's last tool call: before it, read [gate-reply-template.md](gate-r
   Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
-- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[?contains(Name,'<KEYWORD>') || contains(Name,'<keyword>')].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+  A tenant holds hundreds of entities, so never list them unfiltered. `contains` is case-sensitive: test each keyword from the box's label as written, capitalized and lowercase, and a plural by its stem (`Compan` for `companies`, matching `Company` and `Companies`), all joined with `||`.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
@@ -295,7 +296,10 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:end-->
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
-  A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
+  A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function, or a Maestro BPMN, Case or Flow process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is its `ProcessType` from [RULE `bpmn.orchestrator.process-type`](bpmn-runtime.md#http-and-orchestrator-work) (`Process`, `Agent`, `Api`, `Function`), and the folder binding carries no value.
+  Every other `none yet` box (a connector, Data Fabric, Business rule or queue box) stays a bare `.task()`, because `refresh` refuses a connection binding that is not a connection id: a connector or Data Fabric box is named as the second bullet of [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) says, and a Business rule or queue box keeps its gate label.
+  The final report lists them under `Needs:` and reads `built, not runnable yet`.
+  A connection the gate named is the user's choice once they pick *Build it*, their own personal one included, unless it is another person's or not `State: Enabled` ([connection rules](connectors.md#3-the-loop-author--check--prepare--check--compile)): treat that box as `none yet`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.

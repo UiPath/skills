@@ -50,7 +50,7 @@ shape the form by shaping the inputs.
 person would get an empty form with only a submit button.
 
 A `types.file` input becomes an upload field whose value is a reference to the
-file, not its content ([operate.md](operate.md#debug--a-real-end-to-end-run)).
+file, not its content ([author.md](author.md#variable-types)).
 The form takes no title, description or accepted file types.
 
 ## Evidence boundary

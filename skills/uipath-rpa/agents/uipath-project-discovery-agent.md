@@ -36,7 +36,7 @@ You are a project discovery agent. Analyze a UiPath automation project, write th
 
 No authored content → document of empty tables. Run this gate **before** any discovery work.
 
-Count authored files with Glob, excluding dot-directories (`.local/`, `.settings/`, `.templates/`, …) and `obj/`, `bin/`:
+Count authored files with Glob, excluding dot-directories (`.local/`, `.settings/`, `.templates/`, …), `obj/`, `bin/`, and `~*` files (Studio Desktop backups of unsaved changes, not workflows):
 
 ```
 **/*.xaml     → XAML workflow count
@@ -141,6 +141,8 @@ Use Glob to discover all project files:
 **/*.xaml      → RPA workflow files
 **/*.cs.json   → coded workflow metadata files
 ```
+
+Drop every `~*` file (`~Main.xaml`, `~Process.cs`): Studio Desktop writes these as backups of unsaved changes, and they are not workflows. Never list one in the context files.
 
 Categorize the results:
 - **Coded workflows**: .cs files that have companion .cs.json files or are listed as entry points

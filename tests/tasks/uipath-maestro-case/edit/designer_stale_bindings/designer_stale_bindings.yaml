@@ -4,13 +4,19 @@ description: >
   a Designer save leaves it: the Designer rewrites bindings_v2.json on publish
   and debug, but a save rewrites it only when an entry point, a file name or
   the BPMN changed, so a task added in the canvas can be missing from it, and
-  packing ships the file as it is (PO.Frontend develop 6e9f81386,
-  CanvasModelProvider / PackagingFileCreator; observed on an alpha Designer
-  save, 2026-10-15). Reuses the designer_saved_plan fixture, with the RPA
+  packing ships the file as it is (PO.Frontend CanvasModelProvider /
+  PackagingFileCreator; observed on an alpha Designer save). Reuses the designer_saved_plan fixture, with the RPA
   Workflow resource removed from bindings_v2.json before the run. The edit
-  itself touches no binding, so only the brownfield pull rule makes the agent
-  run `uip maestro case bindings sync`; graded on the sidecar matching the
-  plan afterwards. Local only; nothing is uploaded or debugged.
+  itself touches no binding; graded on the sidecar matching the plan
+  afterwards, however the agent regenerates it (`uip maestro case compile` run
+  in the project syncs it, and so does `uip maestro case bindings sync`). Local
+  only; nothing is uploaded
+  or debugged, because a debug run regenerates the sidecar itself and never
+  reaches Stage 5 (entered by a webhook). Asked the way a Studio Web user would
+  ask it. The fixture stays in the workspace: the Studio Web harness opens its
+  .uipx as the session's solution (projects under /solution/, where the in-page
+  SDK compiles) and exports edits back, so the graders read the workspace copy;
+  moving it to /solution/ in pre_run leaves Studio Web on an empty solution.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
@@ -35,19 +41,19 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  The case solution in ./ExpenseDesignerSaved was just pulled from Studio Web,
-  so the local copy is current: edit it locally and don't pull it again. It is
-  the expense-reporting case, project CMGoldenExpense.
+  You are a coding agent in a project that already contains the expense-
+  reporting case (solution ExpenseDesignerSaved, case project
+  CMGoldenExpense). No user is present, and nobody will answer a question or
+  grant approval, so do not ask, do not pause, and do not wait for input. Do
+  not delete or overwrite anything this run did not create, except what the
+  task asks you to change, and do not publish to a shared destination unless
+  the task asks for it.
 
-  Change the task "Wait for timer - S5" in the stage "Stage 5 - connector
-  entry" so it waits 15 minutes instead of 10 seconds. Leave everything else in
-  the case as it is, and leave the project ready to publish.
+  I just pulled the solution from Studio Web, so the copy here is current.
 
-  Do NOT run `uip maestro case debug`, and do not upload or publish. Do NOT ask
-  for approval, confirmation, or feedback. Finish with `uip maestro case
-  validate` passing on the case.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
+  The task "Wait for timer - S5" in the stage "Stage 5 - connector entry"
+  waits 10 seconds; make it wait 15 minutes. Leave everything else in the case
+  as it is; only validate it and have it ready to publish.
 
 success_criteria:
   - type: skill_triggered

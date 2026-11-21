@@ -4,7 +4,7 @@
 
 Start a coded or low-code agent and wait for its output. It may be published in Orchestrator or registered as a sibling project in this solution.
 
-Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, returns?, flavour? })`
+Signature: `agent({ key?, name, folderPath?, location?, projectId?, inputs, inputSchema?, returns?, flavour? })`
 
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
@@ -162,6 +162,10 @@ instead of copying the two ids:
   `process/function/`).
 - An older SDK ignores `project` and refuses the step for its missing key
   (`AGENT_NO_KEY`, `RPA_NO_KEY`, …). Then use the id recipe above.
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Evidence boundary
 

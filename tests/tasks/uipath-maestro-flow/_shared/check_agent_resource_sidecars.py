@@ -31,7 +31,10 @@ a reason, because gating a family nothing can emit is a criterion no one passes:
   * `memory.*` — a FEATURE (`features/<id>/feature.json`), not a resource.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py <FlowName>.flow
+    python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py <FlowName>.flow [--require <family-prefix>]
+
+`--require context.index` also fails when the flow has no resource node of that
+family, so a flow with no SOP index cannot pass as "grounding is live".
 
 Exit 0 on pass (including a flow with no gated resource nodes at all); exit 1
 with a `FAIL:` line naming each node whose resource is missing.
@@ -101,7 +104,19 @@ def _declared_ids(agent_dir: Path) -> dict[str, str]:
     return declared
 
 
+def _pop_required() -> str:
+    if "--require" not in sys.argv:
+        return ""
+    at = sys.argv.index("--require")
+    if at + 1 >= len(sys.argv):
+        fail("--require needs a resource family prefix, e.g. context.index")
+    value = sys.argv[at + 1]
+    del sys.argv[at:at + 2]
+    return value
+
+
 def main() -> None:
+    required = _pop_required()
     # POP the name off argv and hand it to `load_flow` as the name to find, the
     # way every sibling checker pins one. Left in argv it would be read as a
     # literal path instead, and the YAML cannot know the generated nesting.
@@ -110,6 +125,8 @@ def main() -> None:
     project_dir = flow_path.parent
 
     resources = [n for n in nodes if str(n.get("type", "")).startswith(RESOURCE_PREFIX)]
+    if required and not any(_family(str(n["type"])).startswith(required) for n in resources):
+        fail(f"{flow_path}: no {RESOURCE_PREFIX}{required}* node, so there is no {required} resource to ground the agent")
     if not resources:
         print(f"{flow_path}: no agent-resource nodes; nothing to join")
         return
