@@ -31,5 +31,8 @@ What to look for:
 ## Resolution
 
 - Re-authenticate the connection via `uip is connections edit <connection-id>` or through the Integration Service UI
+<!--skill-flavor:headless-sign-in-1:start-->
+- If the connector uses basic, API key, personal access token or custom auth and `uip is connections edit --help` lists `--field`, re-authenticate with no browser: `uip is connections edit <connection-id> --auth-type <auth-type> --field <key>=env.NAME --output json`. Never write the secret in a command. Never ask the person to paste a secret into chat. The uipath-platform skill has the full steps. If the playbook says the element token cannot be refreshed in place, keep delete and recreate.
+<!--skill-flavor:headless-sign-in-1:end-->
 - If the external service revoked access, re-authorize the app in the external service settings before re-authenticating
 - For connections used in production, consider setting up monitoring or alerts for connection health

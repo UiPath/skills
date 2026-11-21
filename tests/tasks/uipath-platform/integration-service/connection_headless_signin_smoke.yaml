@@ -1,0 +1,47 @@
+task_id: skill-platform-is-connection-headless-signin-smoke
+description: >
+  Smoke test: agent signs in an API key connection with no browser, takes the
+  secret from an env reference, and never writes a literal secret.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections]
+skip: true  # until a released uip CLI has --field (cli #6155): with an older CLI the skill sends the agent to the browser flow, so the sign-in criterion cannot pass
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Set up a UiPath Integration Service connection for the "uipath-openai-openai"
+  connector with the `uip` CLI. It uses an API key. The key is in the
+  environment variable DEMO_OPENAI_KEY. The CLI is not connected to a live
+  tenant, so commands fail with auth errors. Run every step anyway. Do not
+  retry and do not log in. Use `--output json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked the feature with create --help"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+create\s+(\S+\s+)?(--help|-h)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent signed in with an env, file, stdin or preset source"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+create\s+[^\s;&|]+[^;&|\n]*(--field\s+[^\s;&|]+=env\.[A-Z0-9_]+|--field-stdin\s+[^\s;&|]+|--preset-id\s+[^\s;&|]+)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent wrote no literal value for a secret-named field"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+is\s+connections\s+(create|edit)\b[^;&|\n]*--field\s+\S*(key|secret|password|token)\S*=(?!env\.)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not print the environment variable"
+    tool_name: "Bash"
+    command_pattern: '(?i)(printenv|echo\s+[^|]*\$\{?DEMO_OPENAI_KEY|\benv\s*($|\|))'
+    weight: 1.0
+    pass_threshold: 1.0

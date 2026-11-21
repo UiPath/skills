@@ -50,7 +50,9 @@ uip is connections list "<connector-key>" --output json
 
 - **Always present options using names, not UUIDs** — show `Name`, `Owner`, `Folder`, `State`, and `IsDefault`. Never show `Id` or `FolderKey` to the user. Recommend the default enabled connection (`IsDefault: Yes`, `State: Enabled`) but let the user confirm or choose another.
 - **HTTP fallback**: Match connection by vendor **Name** (case-insensitive substring). Present matches to user.
-- **None**: Ask user to create via `is connections create "<connector-key>"`.
+<!--skill-flavor:headless-sign-in-1:start-->
+- **None**: Ask user to create via `is connections create "<connector-key>"`. For basic, API key, personal access token or custom auth, add `--auth-type` and `--field` options as in [connections.md — Create or re-authenticate with no browser](connections.md#create-or-re-authenticate-with-no-browser).
+<!--skill-flavor:headless-sign-in-1:end-->
 
 > **Do NOT auto-select a connection silently.** Even if there is exactly one default enabled connection, present it to the user: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
 
@@ -65,7 +67,9 @@ uip is connections ping "<connection-id>" --output json
 | Result | Action |
 |---|---|
 | `Enabled` | Healthy. Proceed to Step 4. |
-| Fails | Run `is connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another or create new. |
+<!--skill-flavor:headless-sign-in-2:start-->
+| Fails | Run `is connections edit <id>` to re-authenticate. For basic, API key, personal access token or custom auth, add `--field` options as in [connections.md — Create or re-authenticate with no browser](connections.md#create-or-re-authenticate-with-no-browser). Then ping again. If still fails, ask user to choose another or create new. |
+<!--skill-flavor:headless-sign-in-2:end-->
 
 ## Step 4: Discover Capabilities
 
@@ -208,7 +212,9 @@ Step 6b: Diagnose using discovery
   - Field not found → run `is resources describe --operation <op>` to get valid field names
   - Invalid value → run `is resources run list` on the referenced object to get valid values
   - Vendor 400 "X is required" but `describe` marked X `required=False` → IS schema and vendor validators disagree; treat vendor as authoritative, list the parent resource and add the missing field (e.g., Jira project-level required `components_arrayRemap_name` is `required=False` in `describe`)
-  - Auth error → run `is connections edit <id>` to re-authenticate, then ping again
+<!--skill-flavor:headless-sign-in-3:start-->
+  - Auth error → run `is connections edit <id>` to re-authenticate, then ping again. For basic, API key, personal access token or custom auth, add `--field` options as in 'Create or re-authenticate with no browser' (connections.md)
+<!--skill-flavor:headless-sign-in-3:end-->
   - Scope error → inform user, connection needs broader permissions
   - Read-only field → remove the field from --body and retry
   ↓

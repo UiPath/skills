@@ -110,7 +110,9 @@ uip is connections list <connector-key> --output json           # list tenant's 
 
 If none exist: `uip is connections create <connector-key>` (interactive OAuth). If that can't be done in-session, use a placeholder `00000000-0000-0000-0000-000000000000` and flag it for the user — but the workflow will fail at runtime until a real connection is wired up.
 
-**Verify a connection is active:** `uip is connections ping <connection-id>`. If the ping fails, offer to re-authenticate with `uip is connections edit <connection-id>` (re-runs the OAuth flow for expired/revoked connections).
+<!--skill-flavor:headless-sign-in-1:start-->
+**Verify a connection is active:** `uip is connections ping <connection-id>`. If the ping fails, offer to re-authenticate with `uip is connections edit <connection-id>` (re-runs the OAuth flow for expired/revoked connections). For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 
 ### Step 4 — Get the fully-populated default XAML
 

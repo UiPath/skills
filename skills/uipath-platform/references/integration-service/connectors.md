@@ -118,4 +118,6 @@ After dropping intent-mismatched candidates per [Connector Disambiguation](#conn
 | Exactly one (native SQL connector, OR a single name-matched JDBC connection) | Take it silently. Disclose lifecycle from the discovery response. |
 | Native SQL connector AND a name-matched JDBC connection | **AskUser**. Option labels: `Native <DB> · <key>` / `JDBC gateway · <name> — likely <DB>`. Append the registry lifecycle (e.g. ` · PREVIEW`) per option. |
 | No native, only ambiguously-named JDBC connections (e.g. `DH-Conn-001`) | **AskUser**, flag each option as "purpose unknown, please confirm". |
-| No native and no JDBC connection | Fall back via the consumer skill's HTTP-fallback or placeholder patterns, or instruct the user to create a JDBC connection (`uip is connections create "uipath-uipath-jdbc"`). Do not silently STOP. |
+<!--skill-flavor:headless-sign-in-1:start-->
+| No native and no JDBC connection | Fall back via the consumer skill's HTTP-fallback or placeholder patterns, or instruct the user to create a JDBC connection (`uip is connections create "uipath-uipath-jdbc"`). JDBC uses basic auth: see [connections.md — Create or re-authenticate with no browser](connections.md#create-or-re-authenticate-with-no-browser). Do not silently STOP. |
+<!--skill-flavor:headless-sign-in-1:end-->

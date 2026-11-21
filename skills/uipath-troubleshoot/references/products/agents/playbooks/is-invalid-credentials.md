@@ -93,6 +93,10 @@ What to look for:
 
   > Use this same rebind, refresh, validate, and approval sequence for all resolution paths that create a new connection.
 
+<!--skill-flavor:headless-sign-in-1:start-->
+  > If the connector uses basic, API key, personal access token or custom auth and `uip is connections create --help` lists `--field`, create the connection with no browser in every path below that runs `connections create`: `uip is connections create <connector-key> --auth-type <auth-type> --field <key>=env.NAME --output json`. Never write the secret in a command. Never ask the person to paste a secret into chat. The uipath-platform skill has the full steps.
+
+<!--skill-flavor:headless-sign-in-1:end-->
 **If `Org/User secret` invalid — re-authenticate with updated credentials:**
 
   On the external system, regenerate the client secret. Then:
@@ -102,6 +106,10 @@ What to look for:
   ```
 
   Complete OAuth flow with the new credentials.
+<!--skill-flavor:headless-sign-in-2:start-->
+
+  If the connector uses basic, API key, personal access token or custom auth and `uip is connections edit --help` lists `--field`, re-authenticate with no browser: `uip is connections edit <connection-id> --auth-type <auth-type> --field <key>=env.NAME --output json`. Never write the secret in a command. Never ask the person to paste a secret into chat. The uipath-platform skill has the full steps. If the playbook says the element token cannot be refreshed in place, keep delete and recreate.
+<!--skill-flavor:headless-sign-in-2:end-->
 
 **If `Element token` invalid — recreate the connection:**
 

@@ -68,6 +68,8 @@ Only after the filtered, unfiltered, AND `--all-folders` listings have been exha
 - Re-authenticate a broken one: `uip is connections edit <connection-uuid>` opens a browser for OAuth.
 - Create one: give the user `uip is connections create <connector-key>` to run in their own terminal, where it opens a browser and waits for the consent. Run from your shell, it returns `Code: ConnectionAuthorizationPending` with `Data.AuthUrl` at once; don't hand the user that link, it expires within minutes. The command takes no folder, and after consent it prints the first connection listed for the connector, which may be an older one: find the new connection in `uip is connections list <connector-key> --output json` and check its `Folder` before using it.
 
+For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+
 Ping the new or repaired connection before stubbing. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 <!--skill-flavor:connection-remediation:end-->
 

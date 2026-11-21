@@ -71,7 +71,9 @@ What to look for:
   uip is connections edit <connection-id>
   ```
 
-  Completes OAuth re-authentication in the browser, lifting the lockout.
+<!--skill-flavor:headless-sign-in-1:start-->
+  Completes OAuth re-authentication in the browser, lifting the lockout. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 
 **If credentials were rotated on the external system — update credentials and re-authenticate:**
 

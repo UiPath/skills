@@ -44,7 +44,9 @@ What to look for:
 
 ## Resolution
 
-- Re-authenticate the IS connection: `uip is connections edit <connection-id>` (or via the Integration Service UI). See [Integration Service playbook](../../integration-service/playbooks/connection-auth-expired.md) for the full re-auth flow.
+<!--skill-flavor:headless-sign-in-1:start-->
+- Re-authenticate the IS connection: `uip is connections edit <connection-id>` (or via the Integration Service UI). See [Integration Service playbook](../../integration-service/playbooks/connection-auth-expired.md) for the full re-auth flow. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 - Once the IS connection is back to `Enabled`, re-probe the BYO config by issuing an idempotent `update` — this forces a fresh server-side validation:
 
   ```bash
