@@ -419,18 +419,7 @@
     }
   },
   "uipath-mcp-servers": {
-    "allow": [
-      {
-        "file": "SKILL.md",
-        "command": "or folders explore",
-        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "or folders stop-exploring",
-        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
-      }
-    ],
+    "allow": [],
     "ceiling": {
       "login": 1,
       "mcp serve": 2
@@ -460,52 +449,7 @@
       },
       {
         "file": "SKILL.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont create",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
         "command": "ont files",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files remove",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont get",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont update",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont validate",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
@@ -516,21 +460,6 @@
       {
         "file": "references/artifacts-guide.md",
         "command": "login",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont validate",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
@@ -554,78 +483,8 @@
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
-        "file": "references/errors-guide.md",
-        "command": "ont delete",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files remove",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont update",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/mapping-yarrrml-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/owl-patterns-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
         "file": "references/relationships-guide.md",
         "command": "df entities",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/relationships-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/summary-context-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/summary-context-guide.md",
-        "command": "ont files add",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       }
     ],
@@ -906,21 +765,6 @@
         "file": "references/develop-solution.md",
         "command": "login tenant set",
         "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
-      },
-      {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont files",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
-      },
-      {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont get",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
-      },
-      {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont update",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
       }
     ],
     "ceiling": {
