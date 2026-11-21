@@ -141,6 +141,8 @@ Leave `dmndi:DMNDI` out of a new `.dmn`. Run `uip rules format <PROJECT_DIR>` af
 
 Never place shapes by hand. `validate` does not look at the diagram and no diagnostic covers layout, so hand-written coordinates are reported by nothing and land on top of one another in the designer.
 
+**Keep an existing diagram.** Editing a `.dmn` that already has a `dmndi:DMNDI` element means keeping that element: write your change into the model and leave the diagram alone. Rewriting the file from scratch drops it, and the user's arranged layout is gone — `format` cannot put back coordinates the file no longer holds, so it lays the whole graph out afresh instead.
+
 ## Literal expressions
 
 A decision answers with one value from one FEEL expression instead of a table. Use it when there are no cases to enumerate — a calculation, a formula, a single conditional.

@@ -85,7 +85,19 @@ def required(element: ET.Element, kind: str) -> list[str]:
 
 
 def decision_for_output(root: ET.Element, output: str) -> ET.Element:
-    found = [d for d in decisions(root) if output in output_names(d.find("dmn:decisionTable", NS))]
+    """The decision that answers under `output`.
+
+    A decision table answers under its output column names. A decision whose logic is a literal
+    expression has no columns and answers under its own name, which is also what a reader of it
+    addresses — so it is matched on that. Without this a tableless decision reached
+    `output_names(None)` and raised, which failed a correct submission rather than grading it.
+    """
+    found = []
+    for decision in decisions(root):
+        table = decision.find("dmn:decisionTable", NS)
+        answers = output_names(table) if table is not None else [decision.get("name") or ""]
+        if output in answers:
+            found.append(decision)
     if len(found) != 1:
         fail(f"{len(found)} decisions return an output named {output}, expected exactly one")
     return found[0]
