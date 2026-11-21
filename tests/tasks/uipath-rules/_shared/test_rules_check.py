@@ -231,6 +231,21 @@ class TestProject:
         with pytest.raises(SystemExit):
             rc.load_rule(project)
 
+    def test_the_designers_type_constructors_are_literals(self):
+        # Critical Rule 5 offers these as column types, so a cell spelling one is not a call.
+        for cell in ('date("2026-01-01")', 'time("09:30:00")', 'date and time("2026-01-01T09:30:00")',
+                     'duration("P30D")', 'duration("P1Y2M")'):
+            assert rc.literal(cell) == cell
+
+    def test_a_dotted_upstream_field_resolves_instead_of_grading_as_text(self):
+        names = {"risk": {"riskBand": "High", "score": 7.0}, "fee": 12.5}
+        assert rc.read_name(names, "risk.riskBand") == (True, "High")
+        assert rc.read_name(names, " risk.score ") == (True, 7.0)
+        assert rc.read_name(names, "fee") == (True, 12.5)
+        assert rc.read_name(names, "risk.missing") == (False, None)
+        assert rc.read_name(names, "fee.anything") == (False, None)
+        assert rc.read_name(names, "notAName") == (False, None)
+
     def test_a_call_in_an_output_cell_is_not_read_as_a_string(self):
         # Returning the raw source would grade a correct rule wrong; the engine grades calls.
         with pytest.raises(SystemExit):

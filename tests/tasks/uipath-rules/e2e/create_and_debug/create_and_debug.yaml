@@ -11,7 +11,9 @@ sandbox:
   python: {}
 
 run_limits:
-  task_timeout: 2400
+  # 1800 turn + 1500 for the engine grade + 300 margin. At 2400 an agent that used its
+  # whole turn was killed partway through grading, which reads as a failure.
+  task_timeout: 3600
   turn_timeout: 1800
 
 reference:
