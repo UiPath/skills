@@ -26,6 +26,10 @@
   Needs `@uipath/maestro-builder-sdk` 6.88.1 or later. Studio Web ships its own SDK: when `decompile` refuses one of these elements with "has no builder equivalent", tell the user that this Studio Web build cannot edit that element yet.
 <!--skill-flavor:sdk-palette-elements:end-->
 
+<!--skill-flavor:sdk-typed-element:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.122.9 or later. Studio Web ships its own SDK: if a decompiled `Orchestrator.StartFlowProcess` `.activity()` has no `element`, tell the user that editing that node turns it into a call activity.
+<!--skill-flavor:sdk-typed-element:end-->
+
 <!--skill-flavor:sdk-script-result:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.7 or later. Studio Web ships its own SDK, and an older `check` does not report it: read `=result.response` yourself.
 <!--skill-flavor:sdk-script-result:end-->
