@@ -316,6 +316,13 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value, which deploy refuses until a value is set or an existing asset linked ([Local virtual asset § What happens at deploy](scenarios/virtual-resource.md#what-happens-at-deploy)). When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
 
+### Coded projects (TypeScript or Python SDK)
+
+A coded app or coded agent reaches a solution resource only when it is also declared in the project's `uipath_resources.ts` / `uipath_resources.py`; pack and push derive `bindings_v2.json` from that file.
+<!--skill-flavor:coded-project-declarations:start-->
+Run `uip resources add <NAME> --kind <asset|bucket|queue|process|entity|connection> [--folder-path <FOLDER_PATH> | --skip-verify] --output json` from the folder holding `package.json` / `pyproject.toml` (or pass `--project-path <PROJECT_DIR>`) — it writes the declaration and adds the resource to the solution; `--skip-verify` skips the tenant lookup for a resource the solution creates. When `uip resources --help` fails, write the declaration by hand: `uip solution pack` and `uip solution upload` add every declared resource the solution does not list yet. `uip solution resources add` alone leaves the code without a binding.
+<!--skill-flavor:coded-project-declarations:end-->
+
 ### Data Fabric kinds
 
 **Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. A repeated import returns `Unchanged`; it never overwrites. To pull a changed cloud definition, see [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote).

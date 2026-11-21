@@ -156,7 +156,7 @@ Package Details:
 
 **Generated metadata files** (inside `.nupkg`):
 - `operate.json` — Runtime configuration
-- `bindings.json` / `bindings_v2.json` — Resource bindings
+- `bindings.json` / `bindings_v2.json` — Resource bindings (`bindings_v2.json` derived from `uipath_resources.ts` from CLI 1.207 on)
 - `entry-points.json` — API entry point definitions
 - `package-descriptor.json` — Package file mapping
 
