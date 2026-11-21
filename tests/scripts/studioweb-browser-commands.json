@@ -784,12 +784,12 @@
       {
         "file": "SKILL.md",
         "command": "rules format",
-        "reason": "Temporary: the pinned browser surface is stale, not the guidance. `uip rules format` does run in the bundle — cli `packages/rules-tool/browser.json` excludes only `debug` and `describe`, and `packages/cli-browser/browser-commands.snapshot.json` lists `rules format` (cli#6193, cli#6197). assets/uip-browser-commands-snapshot.json is still cli c0d082ee of 2026-11-09 because the nightly refresh skips while a refresh PR is open and #4629 has been open since 2026-11-12. Delete this entry once that surface refresh lands."
+        "reason": "Temporary: the pinned browser surface is stale, not the guidance. `uip rules format` does run in the bundle — cli `packages/rules-tool/browser.json` excludes only `debug` and `describe`, and `packages/cli-browser/browser-commands.snapshot.json` lists `rules format` (cli#6193, cli#6197). assets/uip-browser-commands-snapshot.json is still cli c0d082ee of 2026-11-09 because the nightly refresh skipped while a refresh PR was open. Delete this entry once that surface refresh lands; the gate will say so itself, because `scanStudioweb` returns only mentions the bundle cannot run, so a runnable command leaves its allow entry matching nothing."
       },
       {
         "file": "references/drd-guide.md",
         "command": "rules format",
-        "reason": "Temporary, same cause as the SKILL.md entry above: the pinned browser surface is stale, not the guidance. `uip rules format` does run in the bundle. Delete both entries once the surface refresh (blocked by UiPath/skills#4629) lands."
+        "reason": "Temporary, same cause as the SKILL.md entry above: the pinned browser surface is stale, not the guidance. `uip rules format` does run in the bundle. Delete both entries once the surface refresh lands; the gate fails with \"allowlist entries ... match no mention any more\" until they go."
       }
     ],
     "ceiling": {
