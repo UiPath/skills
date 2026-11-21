@@ -111,6 +111,11 @@
 /tests/tasks/uipath-functions/js_http_author/ @lucarachiteanu
 /tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
+# Extension skill (Maestro community nodes through uip extension)
+/skills/uipath-extension/ @UiPath/maestro-cli-team
+/tests/tasks/uipath-extension/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-extension.jsonl @UiPath/maestro-cli-team
+
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria @roberts-cliff
 /skills/uipath-planner/scripts/check-genome.mjs @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria

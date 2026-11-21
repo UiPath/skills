@@ -1,0 +1,16 @@
+{"id": "uipath-extension-001", "prompt": "Check my function project against the Maestro community node gates before I submit it", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-002", "prompt": "Register my UiPath function as a Maestro community node in the community index", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-003", "prompt": "Run uip extension validate on this project and fix what the gates report", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-004", "prompt": "Open the pull request that adds my node to the Maestro Extensions community index", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-005", "prompt": "I made a function with uip function new and want to turn it into a Maestro Extensions node", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-006", "prompt": "Upload a dev build of my community node to my personal workspace and run it once", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-007", "prompt": "Release my Maestro node to a tenant folder in Orchestrator with uip extension upload", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-008", "prompt": "What does uip extension submit write into my project the first time I run it?", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-009", "prompt": "My community node fails the runtime-shape gate, what do I change?", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-010", "prompt": "Fill in maestro-extensions.json for my node and check that the TODO fields are gone", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-011", "prompt": "Do I still need the maestro-extensions SDK command to publish a Maestro community node?", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-012", "prompt": "submit dry run for my community node, show me the pull request it would open", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-013", "prompt": "Where should my Maestro Flow node go, my own workspace, a tenant folder, or the community index?", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-014", "prompt": "uip extension upload says to run submit first, what does that mean?", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-015", "prompt": "Publish a custom node for Maestro Flow built from a TypeScript coded function", "expected_skill": "uipath-extension"}
+{"id": "uipath-extension-016", "prompt": "Why does my node package have to be named maestro-extensions.publisher.name?", "expected_skill": "uipath-extension"}

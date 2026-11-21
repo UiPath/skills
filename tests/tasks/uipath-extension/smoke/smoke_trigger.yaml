@@ -1,0 +1,53 @@
+task_id: skill-extension-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-extension skill when asked to
+  check, upload or submit a Maestro community node built from a UiPath function.
+  Fans out over five direct requests and grades the trigger RATE (recall.yes)
+  so single-run routing nondeterminism does not flake the gate. Verifies the
+  skill fires on the Maestro community node signal.
+tags: [uipath-extension, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  # A budget of three tool calls: far short of a full run, and one step of
+  # margin for an agent that lists the workspace before it reads SKILL.md.
+  # With stop_early on_pass the run ends the moment SKILL.md is read, so this
+  # cap only bounds a miss.
+  max_turns: 3
+
+dataset:
+  id_field: id
+  rows:
+    - id: validate-node
+      prompt: |
+        I have a UiPath function project that I want to publish as a Maestro
+        community node. Check it against the community node gates.
+    - id: submit-to-index
+      prompt: |
+        Register my UiPath function as a Maestro Extensions community node by
+        opening the pull request on the community index.
+    - id: upload-dev-build
+      prompt: |
+        Upload a dev build of my Maestro community node to my personal workspace
+        and run it once with a sample input.
+    - id: release-to-folder
+      prompt: |
+        Release my Maestro community node to a tenant folder in Orchestrator
+        after the gates pass.
+    - id: adopt-function
+      prompt: |
+        I created a function with uip function new. Turn it into a Maestro
+        Extensions node and show me what gets added to the project.
+
+initial_prompt: "${row.prompt}"
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-extension skill"
+    skill_name: "uipath-extension"
+    expected_skill: "uipath-extension"
+    weight: 3.0
+    # Rate-based gate across the 5 rows: tolerates one unlucky miss. recall.yes
+    # 0.66 passes at 4/5 (0.8) and fails at 3/5 (0.6).
+    suite_thresholds: {recall.yes: 0.66}
+    stop_early:
+      on_pass: stop

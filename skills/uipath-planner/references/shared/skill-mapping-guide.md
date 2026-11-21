@@ -43,6 +43,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Action Center tasks at runtime | `uipath-tasks` |
 | Test Manager cases, sets, reports | `uipath-test` |
 | Identity, roles, tenants, audit | `uipath-admin` |
+| Maestro community node publishing: gates, upload to a personal workspace or tenant folder, community-index pull request | `uipath-extension` |
 
 ## Decision Tree for Ambiguous Steps
 

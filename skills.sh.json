@@ -19,6 +19,7 @@
         "uipath-ixp",
         "uipath-connector-builder",
         "uipath-functions",
+        "uipath-extension",
         "uipath-ontology"
       ]
     },
