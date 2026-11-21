@@ -12,7 +12,8 @@ Split when the rule has to answer more than one question, or when one answer is 
 |---|---|
 | The caller reads one value from one set of inputs | One decision |
 | The caller reads two values the business decides separately — a risk band *and* an interest rate | One decision each |
-| A value is decided once and read by two later decisions | Its own decision, required by both |
+| A value is decided once from the rule's own inputs and read by two later decisions | Its own decision, required by both |
+| The same calculation run over *different* arguments in different places | Not a decision at all — a [knowledge model](#knowledge-models), called by each |
 | One decision with a column the caller never reads, carried only to reach the next row | Still one decision; a column is not a decision |
 
 Do not split a single answer across tables to make each table smaller. Each decision becomes an entry point a consumer can bind to, so every split is part of the rule's public shape.
@@ -170,7 +171,9 @@ Prefer a decision table whenever the logic is a set of cases. A table shows its 
 
 ## Knowledge models
 
-A `businessKnowledgeModel` is a named FEEL function that decisions call. Use it when the same calculation is needed by more than one decision, or when a formula is worth naming.
+A `businessKnowledgeModel` is a named FEEL function that decisions call. Reach for one when the same calculation runs over **different arguments** in different places — a capacity worked out for an applicant and again for a co-applicant, from each one's own figures.
+
+A calculation that runs **once** over the rule's own inputs is a decision, however many decisions go on to read the answer: it is worked out once and every reader shares the one value. A model cannot do that — it has no value until something calls it. Making a model out of a value that is computed once buys nothing and costs an entry point, because a decision gets one and a model does not.
 
 ```xml
 <businessKnowledgeModel id="bkm_score" name="scoreModel" label="Score model">
