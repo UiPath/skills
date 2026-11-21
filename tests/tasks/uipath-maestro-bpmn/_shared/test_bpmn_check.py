@@ -258,6 +258,7 @@ def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch
         ".flow-sdk/original/ShipmentReview.bpmn",
         "tmp/ShipmentReview.bpmn",
         "tmp.Xa81kQ/ShipmentReview.bpmn",
+        "bpmn-draft/ShipmentReview/baseline/Process.bpmn",
     ],
 )
 def test_find_bpmn_file_skips_brownfield_scratch_files(tmp_path, monkeypatch, leftover) -> None:

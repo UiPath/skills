@@ -36,14 +36,21 @@ def _context(object_name: str, operation: str = "", version: str = "v2") -> str:
     )
 
 
-def _bpmn(object_name: str, marker: bool = True, version: str = "v2") -> str:
+def _bpmn(
+    object_name: str,
+    marker: bool = True,
+    version: str = "v2",
+    trigger_name: str = "=bindings.bEntity",
+) -> str:
     """Trimmed from the CI run 2026-10-22 artifact."""
     return (
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
         'xmlns:uipath="http://uipath.org/schema/bpmn"><bpmn:process id="p"><bpmn:extensionElements>'
         '<uipath:bindings version="v1">'
         '<uipath:binding id="bConn" default="c" resource="Connection" resourceKey="c" />'
-        f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" />'
+        f'<uipath:binding id="bEntity" default="SkillPickerEvalEntity" resource="entity" resourceKey="{ENTITY_KEY}" propertyAttribute="name" />'
+        f'<uipath:binding id="bFolder" default="f" resource="entity" resourceKey="{ENTITY_KEY}" propertyAttribute="folderKey" />'
+        f'<uipath:binding id="bOther" default="SkillPickerEvalEntity" resource="Property" resourceKey="{ENTITY_KEY}" />'
         "</uipath:bindings>"
         + ('<uipath:intsvcActivityConfig version="v2" />' if marker else "")
         + "</bpmn:extensionElements>"
@@ -51,7 +58,7 @@ def _bpmn(object_name: str, marker: bool = True, version: str = "v2") -> str:
         '<uipath:event version="v1"><uipath:type value="Intsvc.EventTrigger" version="v1" />'
         f'{_context("EntityTriggers_V3", "UPDATED_V3", version)}'
         '<uipath:input name="body" type="json" target="body">'
-        '<![CDATA[{"parameters":{"folderEntityName":"=bindings.bEntity"}}]]></uipath:input>'
+        f'<![CDATA[{{"parameters":{{"folderEntityName":"{trigger_name}"}}}}]]></uipath:input>'
         "</uipath:event></bpmn:extensionElements></bpmn:startEvent>"
         '<bpmn:sendTask id="Activity_Create"><bpmn:extensionElements><uipath:activity version="v1">'
         '<uipath:type value="Intsvc.ActivityExecution" version="v1" />'
@@ -104,3 +111,22 @@ def test_v1_nodes_fail_even_with_the_marker(tmp_path: Path) -> None:
     rc, out = _run(tmp_path, "CreateEntityRecord_V3", version="v1")
     assert rc != 0
     assert "activityConfigurationVersion is 'v1'" in out
+
+
+def test_trigger_literal_entity_is_not_a_picker(tmp_path: Path) -> None:
+    """A literal `folderEntityName` watches the entity but writes no picker."""
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="SkillPickerEvalEntity")
+    assert rc != 0
+    assert "not a read of" in out
+
+
+def test_trigger_read_of_a_binding_that_is_not_the_entity_picker_fails(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bOther")
+    assert rc != 0
+    assert "not a read of" in out
+
+
+def test_trigger_read_of_the_entity_folder_binding_is_not_the_name_picker(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bFolder")
+    assert rc != 0
+    assert "not a read of" in out

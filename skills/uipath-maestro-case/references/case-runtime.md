@@ -35,6 +35,23 @@ make from syntax alone. Exact signatures remain in the generated API.
   error. Write the complementary condition explicitly, even when the negative
   arm only routes to a close-out.
 
+<!-- RULE:case.action.names-app -->
+- An action task opens an Action App, and `.action({ ... })` with no `app`
+  names none. In a plan that binds any other resource, `case check`
+  (SDK 6.121.1+) warns `STRICT_BINDINGS_TASK_ABSENT` on it and
+  `case validate --strict` fails: the task cannot run. Name the app:
+
+  ```ts
+  .action({ title: 'Approve', recipient: 'approver@corp.com', app: { name: 'ApprovalApp', folder: 'Shared' } })
+  ```
+
+  If the app is not published yet, write `t.unresolved('action')` instead and
+  fill the task in once it is; do not invent an app name. Brownfield: a
+  decompiled quick form (an inline form, no app) is fine as is. `case check`
+  does not warn on it, but `case validate --strict` still reports
+  `STRICT_BINDINGS_TASK_ABSENT` there (a CLI false positive): keep the quick
+  form and do not add an app to silence it.
+
 ## Action recipients and the go-live trap
 
 <!-- RULE:case.recipient.externalize -->
@@ -212,8 +229,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 - An `sla-status-change` breach response uses only `{ sla }`; an at-risk response
   also names `{ escalation }`. Put an enter-stage response on an
-  `exceptionStage(...)` and call `.required(false)` so the secondary stage does
-  not gate `required-stages-completed`.
+  `exceptionStage(...)` with `.required(false)` ([Completion and
+  optionality](#completion-and-optionality)).
 
 <!-- RULE:case.sla.escalation-absent -->
 - An ABSENT `escalation` is the persisted representation of Breached — not a
@@ -264,14 +281,17 @@ make from syntax alone. Exact signatures remain in the generated API.
   ```
 
 <!-- RULE:case.optionality.explicit -->
-- Declare optionality when something consumes it. `.required(false)` and
-  omitting `.required()` are different statements in the emitted plan — the
-  builder writes `isRequired` only when you call it — and a
-  `required-stages-completed` exit reads that flag to decide which stages gate
-  completion. When a stage or task is deliberately optional, say so explicitly
-  rather than relying on a default the schema leaves unstated. Secondary lanes
-  are the common case: an `exceptionStage(...)` that gates normal completion is
-  almost never what was meant.
+- A task or stage the request (or SDD `Required` / `Required for Case
+  Completion: No`) calls optional gets `.required(false)`; one that must gate
+  gets `.required()`. Omitting it writes no `isRequired`, which the plan
+  compiler reads as not required: `required-tasks-completed` waits only on
+  tasks, and `required-stages-completed` only on primary stages, marked
+  `isRequired: true`.
+  The Designer writes the flag explicitly, so write it either way.
+- SDD `Stage Kind: secondary` is `.exceptionStage(label, fn)`, never
+  `.stage()`: only `exceptionStage` writes `stageType: secondary`. Add
+  `.required(false)`: the Designer forces it false on a secondary stage it
+  edits, and `check` warns `EXCEPTION_STAGE_REQUIRED` without it.
 
 ## Activation modes
 
@@ -324,6 +344,12 @@ make from syntax alone. Exact signatures remain in the generated API.
      the SDD declares a sub-property dereference, extract it from the
      producing task's own output root: `=response.<field>` on a connector
      or wait-for-connector task, `=<OutputName>.<field>` on other types.
+     An output argument that is an object named `response` is therefore
+     read `=response.<field>` on any type: `uip maestro case tasks describe
+     --type <TASK_TYPE> --id <ENTITY_KEY> --output json` lists it in
+     `Data.Outputs[]` as `name: "response"`, `type: "jsonSchema"`,
+     `_jsonSchema.type: "object"`. Keep that source through `check`'s
+     `REFERENCE_OUTPUT_SOURCE`, which compile does not run.
      When the SDD dereferences in place (e.g. inside a `$xref`
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.

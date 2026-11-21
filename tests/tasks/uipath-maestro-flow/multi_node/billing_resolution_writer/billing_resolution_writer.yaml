@@ -1,6 +1,17 @@
 task_id: skill-flow-devcon-billing-resolution-writer
 description: |
-  Build a Maestro Flow whose inline low-code agent (uipath.agent.autonomous) drafts a customer-facing billing-dispute resolution and then posts it to Slack. Graded by flow validate plus one flow debug run: the inline agent node must be present, the drafted email must cite the disputed invoice number, and the Slack Send-Message activity must have ACTUALLY posted (verified via a real message ts).
+  E2E (DevCon BillingDisputeResolution scenario): build a Flow whose agent writes a
+  customer-facing billing-dispute resolution email and posts it to Slack,
+  asked the way a business user asks it (it names no variables; an
+  agent writes the email). The grader maps the seeded
+  values onto the flow's declared inputs by meaning and reads the results among
+  its declared outputs by value. One debug run: the returned body mentions the
+  invoice and "USD 2,475.50" and is signed "Billing Support Team"; the subject
+  is one line; the per-run case reference comes back unchanged; and the
+  returned Slack ts is the response of an executed send to
+  #coding-agent-testing whose message's first line carries the case reference (optionally after a Subject: label) and
+  carries the body. The body must come from the executed agent's own output.
+  The sender identity is not graded.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -26,41 +37,48 @@ reference:
 post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
+  - command: python3 _setup/teardown_slack_posts.py
+    timeout: 300
 initial_prompt: |
-  Build a Maestro Flow "BillingResolutionWriter" (in a solution of the same
-  name) whose inline low-code agent drafts a customer-facing billing-dispute
-  resolution and then posts that resolution to Slack.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  - Trigger inputs: `customerName` (string), `invoiceNumber` (string),
-    `creditAmount` (number), `correlationId` (string).
-  - An inline low-code agent embedded in the flow project (not a separate
-    published agent) reads those inputs and returns two strings: the email
-    `subject` and the email `body`. The body must state the invoice number and
-    the approved credit amount. Map them to flow outputs `emailSubject` and
-    `emailBody`.
-  - Post the drafted resolution to Slack using the Slack "Send Message to
-    channel" activity: channel "coding-agent-testing", the Slack connection named
-    "is-sandboxes", send as `user`. The message text must be the agent's drafted
-    `body` verbatim, prefixed with the correlationId.
-  - Also map these flow outputs: `caseKey` = the incoming correlationId, and
-    `slackMessageId` = the identifier of the Slack message that was posted (from
-    the Slack Send Message node's output).
+  Build an automation called "BillingResolutionWriter" that writes the
+  resolution email for a billing dispute we've approved and sends it in the
+  #coding-agent-testing Slack channel. Use an agent to write the email.
 
-  Validate the final flow file — the task is not complete until `uip maestro
-  flow validate` passes. Grading then runs the flow under debug, so build it to
-  actually run, not merely validate.
+  The email should be signed by "Billing Support Team", and the body must
+  mention the invoice number and the credit amount, written like "USD
+  1,610.00". Start the email with the case reference ID.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  The automation receives the customer's name, the invoice number, the
+  approved credit in USD and a case reference ID.
+
+  When it finishes, return:
+  - the email subject, as a single line
+  - the email body as plain text: a greeting, two or three short paragraphs,
+    and the signature
+  - the case reference ID, unchanged
+  - the ID of the Slack message that was sent
+
+  <!-- helper:start -->
+  Build a Flow in this Flow project, not an agent project.
+  Inputs: customerName (string), invoiceNumber (string), approvedCredit
+  (number), caseReference (string).
+  Outputs: emailSubject (string), emailBody (string), caseKey (string),
+  slackMessageId (string).
+  The credit is written like "USD 1,234.56" and the body ends with the signature
+  "Billing Support Team". The Slack message holds the whole email body, and
+  its first line carries the caseReference, optionally after a "Subject:" label.
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
+  <!-- helper:end -->
+
+  Build and test the automation.
+
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
@@ -69,8 +87,17 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
-    description: 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the drafted email cites invoice MCS-2026-04872 and the approved credit, caseKey echoes the correlationId, and the Slack Send-Message activity actually posted (real message ts carrying the correlationId + invoice + the drafted resolution)'
+    description: 'Effects: one debug run in which the agent completes and its own output is the returned body, which mentions MCS-2026-05128 and "USD 2,475.50" and is signed "Billing Support Team"; the output named for the subject holds a one-line subject; the per-run case reference comes back unchanged; and the returned Slack ts is the response of an executed send to #coding-agent-testing whose message carries the case reference on its first line (optionally after a Subject: label), the invoice and the body'
     command: python3 $REFERENCE_DIR/multi_node/billing_resolution_writer/check_billing_resolution_writer.py
     timeout: 1200
     expected_exit_code: 0
@@ -79,13 +106,6 @@ success_criteria:
   - type: run_command
     description: 'Advisory: AGENT SIDECAR: the emitted agent.json carries a real model, a real system prompt, and typed outputs (not the scaffold defaults)'
     command: python3 $REFERENCE_DIR/_shared/check_inline_agent.py '**/agent.json'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0.0
-  - type: run_command
-    description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, no email literals; plus the Slack contract — correlationId in-global, caseKey/slackMessageId out-globals, exactly one Slack send-message-to-channel node sending as user, the posted message depending on the agent, caseKey routing the correlationId and slackMessageId from the executed send'
-    command: python3 $REFERENCE_DIR/_shared/advisory_billing_resolution_writer.py
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

@@ -36,8 +36,8 @@ What to look for:
 ## Resolution
 
 - **If user/robot not assigned:** assign with the appropriate role at Orchestrator → **Folder > Manage Access > Assign**
-- **If folder name contains comma:** rename the folder to remove the comma; re-publish so bindings refresh
-- **If solution cross-imported:** update bindings to the destination folder keys; re-deploy
+- **If folder name contains comma:** rename the folder to remove the comma; bindings refresh on the next publish, which is a later decision; after it, the process resolves the folder
+- **If solution cross-imported:** update bindings to the destination folder keys; they take effect on the next deploy, which is a later decision; after it, the process resolves the folder
 - **If API call:** include the correct `X-UIPATH-OrganizationUnitId` header
 - **If modern folder permissions:** ensure tenant-level access AND folder-level role for the account
 

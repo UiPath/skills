@@ -162,7 +162,7 @@ duration and points here; nothing restates a response.
 SLA at all. The case-level Scope cell is the bare word `case` — not `case: root` and not the case
 name; only the stage and task scopes take a `: <name>` qualifier. EXACTLY two rows per (Scope, SLA) —
 one `At-Risk`, one `Breached` — always. A status the source says nothing about
-is still authored: `notify-only` with Target and Interrupting `—`. `—` is legal ONLY in Target and
+is still authored: `notify-only` with BOTH Target and Interrupting `—` — who is notified goes in the SLA block's escalation `Notify:` cell, never in Target. `—` is legal ONLY in Target and
 Interrupting: **Response is a closed enum and `—` is never one of its values**, so a scope with no SLA gets
 NO rows here at all rather than a placeholder row. Rows are keyed to (Scope, SLA) — no SLA, no row.
 An omitted row is never how "nothing

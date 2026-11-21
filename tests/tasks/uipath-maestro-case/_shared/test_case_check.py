@@ -381,6 +381,29 @@ def test_timeout_reports_fail_not_traceback(monkeypatch):
     assert "half a payload" in msg
 
 
+def _debug_timeout(monkeypatch, stderr):
+    recorded = []
+    monkeypatch.setattr(case_check, "_record_debug_instance", recorded.append)
+
+    def timing_out(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw["timeout"], output=b"", stderr=stderr)
+
+    monkeypatch.setattr(case_check.subprocess, "run", timing_out)
+    with pytest.raises(SystemExit, match="timed out"):
+        case_check._run(["uip", "maestro", "case", "debug"], timeout=5, what="uip maestro case debug")
+    return recorded
+
+
+def test_debug_timeout_records_instance_from_stderr(monkeypatch):
+    uid = "0b6f1c2e-1111-4222-8333-444455556666"
+    err = f"Debug instance created \u2014 instanceId: {uid}\n".encode()
+    assert _debug_timeout(monkeypatch, err) == [{"instanceId": uid}]
+
+
+def test_debug_timeout_without_instance_id_records_nothing(monkeypatch):
+    assert _debug_timeout(monkeypatch, b"polling...\n") == []
+
+
 def _fake_pull(calls, writes=None, returncode=0):
     def run(cmd, **kw):
         calls.append(cmd)
