@@ -42,7 +42,6 @@
       "agent eval run results": 5,
       "agent eval run start": 8,
       "agent eval run status": 2,
-      "agent memory item remove": 2,
       "agent tool": 1,
       "agenthub mcp create": 1,
       "codedagent": 6,
@@ -374,8 +373,6 @@
       "login": 3,
       "login status": 1,
       "maestro bpmn": 37,
-      "maestro bpmn eval": 2,
-      "maestro bpmn eval list": 1,
       "maestro bpmn pack": 1,
       "solution pack": 2
     }
@@ -417,9 +414,7 @@
       "maestro": 1,
       "maestro flow": 25,
       "maestro flow eval": 16,
-      "maestro flow extraction check": 5,
       "maestro flow nodes": 1,
-      "maestro flow nodes provision": 1,
       "solution pack": 2
     }
   },
