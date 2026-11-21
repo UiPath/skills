@@ -29,7 +29,7 @@ If not logged in, run `uip login`.
 - Roles and assignments live at the Policy Administration Point (PAP). `check-access` is the Policy Decision Point (PDP): it computes effective access at a principal and scope, including services that do not expose assignments through `roles assignments list`.
 - Role-definition `--scope` values are `Organization`, `TenantGlobal`, `Tenant`, and `Project`; there is **no `Folder`** role shape. Folder scoping exists only on assignments.
 - `Tenant` binds a role to one tenant UUID. `TenantGlobal` is a reusable template available in every organization tenant.
-- Service-managed roles: `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, and `processmining`. `roles list --service <svc>` and `roles assignments list --service <svc>` surface their roles and assignments, but `roles create`, `roles update`, and `roles delete` cannot mutate them. Use the service CLI, such as `uip or roles ...`, and use `check-access` for effective access, including server-side rules absent from the catalog.
+- Service-managed roles: `orchestrator`, `dataservice`, `insights`, `taskmining`, `testmanager`, `automationops`, `casemanagement`, and `processmining`. `roles create`, `roles update`, and `roles delete` cannot mutate them. For `insights`, `automationops`, `casemanagement`, and `processmining`, `roles list --service <svc>` and `roles assignments list --service <svc>` surface their roles and assignments. For `orchestrator`, `dataservice`, `testmanager`, and `taskmining`, they do not: `roles list` returns an empty list, and `roles assignments list --service <svc>` fails with 403. Use `check-access --service <svc>` for the effective roles of one principal. Use the tool of the service for lists and changes: `uip df` for Data Fabric, `uip or` for Orchestrator. See [Services and role ownership](role-management.md#services-and-role-ownership).
 - Platform-level services `authz`, `oms`, `platform`, `identity`, and `licensing` reject custom-role authoring; listing works.
 - On `roles create/update/list` and `permissions list`, `--service` infers scope from the registry when used alone (for example, `studio` → `Tenant`, `apps` → `Organization`). Combine `--service` and `--scope` only to override the registry default.
 - Do not use `--service centralizedaccess`. The CLI rejects it on `roles create/list`, `roles assignments list`, and `permissions list` with `'centralizedaccess' is not a valid --service value`. For Centralized Access multi-service tenant/org roles and listings, omit `--service` and use `--scope <Tenant|Organization|TenantGlobal>`.
@@ -268,7 +268,7 @@ uip admin authorization permissions list --scope Project --service documentunder
 
 ## Check Access — `uip admin authorization check-access`
 
-Compute effective permissions at a scope through the PDP, including service-managed roles not surfaced by `roles assignments list`.
+Compute effective permissions at a scope through the PDP, including the roles of `orchestrator`, `dataservice`, `testmanager`, and `taskmining`, which `roles assignments list` does not return.
 
 Run:
 
@@ -312,7 +312,11 @@ For Folder scope, `Value.Id` is the folder UUID and `Value.ParentId` is the owni
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `cannot create roles for service X` | Service-managed or platform-level service | Use the service CLI, such as `uip or roles create` for Orchestrator |
+| `cannot create roles for service X` | Service-managed or platform-level service | Use the tool of the service, such as `uip or roles create` for Orchestrator or the Data Fabric UI for Data Fabric. See [Services and role ownership](role-management.md#services-and-role-ownership) |
+| Empty `roles list --service <svc>` for `orchestrator`, `dataservice`, `testmanager`, or `taskmining` | The Authorization Service does not return the roles of these services | Do not read it as "no roles exist". Use the tool in [Services and role ownership](role-management.md#services-and-role-ownership) |
+| 403 from `roles assignments list --service <svc>`, and the `Message` says that `<svc>` manages its own role assignments | The Authorization Service does not return the assignments of `orchestrator`, `dataservice`, `testmanager`, or `taskmining`. The 403 is not about the roles of the caller | Do not check or change the roles of the caller. Use the tool in [Services and role ownership](role-management.md#services-and-role-ownership) |
+| Any other 403 from `roles assignments list --service <svc>` | A missing permission or token scope. An older CLI also shows this generic text when the service manages its own role assignments | Run `uip login status --detailed`, then `check-access`. If both show no problem and `<svc>` is one of the four services above, use the tool in [Services and role ownership](role-management.md#services-and-role-ownership) |
+| `assignments create --service dataservice` rejected | Data Fabric manages its own role assignments | Use `uip df directory assign-roles`. See [Data Fabric role assignments](role-assignment-management.md#data-fabric-role-assignments) |
 | `role not found` | Invalid role ID | Run `roles list` |
 | `cannot delete built-in role` | Target is `BuiltIn` | Delete only `Custom` roles |
 | Updated role lost actions | `--file` omitted on update | Re-run `update` with populated `--file ./actions.json`, or fetch, edit, and resubmit |

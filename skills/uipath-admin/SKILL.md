@@ -28,7 +28,7 @@ Each rule is part of the agent contract.
 
 ### Universal
 
-1. **Route correctly:** Orchestrator-specific role/permission requests go to `uip or roles` (`uipath-platform`), not `uip admin authorization`. Organization/tenant audit always uses `uip admin audit <scope>` (`sources`, `events`, or `export`), never `uip or audit-logs`, including audit history, exports, login history, compliance dumps, and “who did what/where.”
+1. **Route correctly:** Orchestrator-specific role/permission requests go to `uip or roles` (`uipath-platform`), not `uip admin authorization`. Data Fabric role requests use `uip df roles` and `uip df directory`, not `uip admin authorization`. This includes requests to list roles, find who has a role, assign, or revoke. See [Data Fabric role assignments](references/authorization/role-assignment-management.md#data-fabric-role-assignments). Organization/tenant audit always uses `uip admin audit <scope>` (`sources`, `events`, or `export`), never `uip or audit-logs`, including audit history, exports, login history, compliance dumps, and “who did what/where.”
 2. **Verify login first:** Run `uip login status --output json`. If unauthenticated, stop and ask the user to run `uip login`; it opens an interactive browser flow and must not run in automated/non-interactive sessions. Environment-authenticated sessions are already logged in. Resolve the organization from the active session.
 3. **Use `--output json` on every command.** Parse programmatically and present conversationally.
 4. **Stop on error and show it verbatim.** Never retry authentication failures; ask the user to run `uip login`.
@@ -47,7 +47,7 @@ Each rule is part of the agent contract.
 11. **Built-in roles are read-only.** Create/update/delete only `Custom` roles. The CLI rejects service-managed or platform-level authoring; see [Services That Manage Their Own Roles](references/authorization/role-management.md#services-and-role-ownership).
 12. **`roles create/update` are PUT-style upserts.** Build the body from flags and `--file ./actions.json`; always `roles get` before update because omitted flags overwrite fields.
 13. **`--service` infers scope** (for example, `studio` → `Tenant`, `apps` → `Organization`); use `--scope` only to override. **Never guess a `serviceName`** — valid values and the re-derive command: [permission-catalog.md → serviceNames](references/authorization/permission-catalog.md#--service-servicenames-and-how-to-re-derive-them).
-14. **Listing supports every service; authoring does not.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. Use `check-access` for effective access.
+14. **Listing accepts every service; authoring does not.** `roles list --service <svc>` and `roles assignments list --service <svc>` accept every service. Use `check-access` for effective access. The Authorization Service does not return the roles of `orchestrator`, `dataservice`, `testmanager`, or `taskmining`. For these services, `roles list` is empty, and the empty list does not mean that no roles exist. `roles assignments list --service <svc>` fails with 403. If the error `Message` says that `<svc>` manages its own role assignments, the 403 is not about the permissions of the caller. Handle any other 403 as a permission or token-scope failure: run `uip login status --detailed`, then `check-access`. Use `check-access --service <svc>` for one principal. Use the tool of the service for lists and changes; see [Services and role ownership](references/authorization/role-management.md#services-and-role-ownership).
 15. **Scope vocabularies differ:** `roles create --scope` = `Organization|TenantGlobal|Tenant|Project`; assignment create adds `Folder|App`; assignment list excludes `TenantGlobal`; `check-access --scope` supports only `Tenant|Folder`.
 16. **Assignment create/delete requires principal resolution** under Rule 5; `--identity-id` is an unchecked raw UUID.
 17. **Assignment ownership must match the scope path:** the path's service segment is `lowercase(ownerServiceName)`, taken verbatim from the role's own `roles get` — `DocumentUnderstanding` → `/tenant/<tid>/documentunderstanding`. `CentralizedAccess` has no service segment (`/` or `/tenant/<tid>`). Never substitute a sibling service's segment and never copy one off another role's grant: `Reinfer` (display name **IXP**) is not Document Understanding. Display-name mappings apply to user-facing prose only, never to paths. Repair a mismatch by re-creating the assignment with `--service <slug>` or `--scope-path "/tenant/<tid>/<slug>"`; a `Tenant`-scope role takes no project segment. See [Validate Role's Owning Service](references/authorization/role-assignment-management.md#validate-role-service-binding-and-scope-path).
@@ -100,6 +100,8 @@ The rest are the inverse of the Critical Rules — never:
 - treat `audit events` as a bare array (R24), hand-loop dates to paginate (R25), invent source/target/type GUIDs (R26), or query events unbounded on a noisy tenant (R27);
 - name an actor the query didn't return (R27b), pass `--tenant-id` to `org` audit (R28), retry a 401 (R29), or save/report an error envelope as data (R29b);
 - use the next-day `--to-date` trick on `export` (R30), or `roles update` with only the changed flag (R12);
+- read an empty `roles list` for `orchestrator`, `dataservice`, `testmanager`, or `taskmining` as "no roles" (R14);
+- read a 403 that says the service manages its own role assignments as a permission gap (R14);
 - reach for `audit tenant exclusions`, create a selector-less exclusion rule, or invent a selector GUID (R30b);
 - write an exclusion rule without stating the impact and getting confirmation, or present one as retroactive (R30c);
 - pass `--tenant-id` to an exclusions command, or `--status` twice (R30b);
@@ -116,6 +118,7 @@ The rest are the inverse of the Critical Rules — never:
 | Grant permissions | [grant-permissions.md](references/authorization/grant-permissions.md) |
 | Assign a role | Resolve principal; `roles get`; validate owner service/path; create assignment |
 | Check effective access | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` |
+| Data Fabric roles: list, who has a role, assign, revoke | `uip df roles list --output json`; `uip df directory list --output json`. Confirm every write first. See [Data Fabric role assignments](references/authorization/role-assignment-management.md#data-fabric-role-assignments) |
 | Create tenant | [tenant-management.md](references/tenant-management.md) |
 | Add tenant service | `tenants services list-available --region <R>`; add; verify post-state |
 | Find public IP | `ip-restriction my-ip --output json`; return `Data.ipAddress` |

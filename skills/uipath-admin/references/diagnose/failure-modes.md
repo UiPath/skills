@@ -111,11 +111,13 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **The diagnosis is a single comparison in two halves:** what the principal *effectively holds* (Step 1, from the PDP) against what the denied action *requires* (Step 2, from the catalog). Step 3 branches on which half of the comparison failed. Do not name a cause before both halves are in hand.
 
+For a 403 from Data Fabric, such as a write to a Data Fabric entity or record, use [Data Fabric 403](#data-fabric-403). The Authorization Service does not list Data Fabric roles.
+
 ### Step 1 — Establish what the principal effectively holds
 
 Resolve the principal first (Rule 5): `users list --search`, `groups list`, `robot-accounts list`, or `external-apps get`. If the principal does not exist, that is the root cause — stop.
 
-Then run the PDP. It is authoritative for effective permissions, including the server-side role catalogs that `roles assignments list` never returns:
+Then run the PDP. It is authoritative for effective permissions, including the roles of `orchestrator`, `dataservice`, `testmanager`, and `taskmining`, which `roles assignments list` never returns:
 
 ```bash
 uip admin authorization check-access "<PRINCIPAL>" --output json
@@ -173,6 +175,8 @@ uip admin authorization roles get "<ROLE_ID>" --output json
 
 `roles get` returns `ActionDetails[].Name`; match it against the permission name from Step 2. Use the permission's own owning service for `--service`, not a guess.
 
+For `orchestrator`, `dataservice`, `testmanager`, or `taskmining`, `roles list --service <svc>` returns no roles. Use the tool in [Services and role ownership](../authorization/role-management.md#services-and-role-ownership) instead. For Data Fabric, use [Data Fabric 403](#data-fabric-403).
+
 State the diagnosis as: *principal holds `<roles>`, none of which carry `<PERMISSION.NAME>` (`ScopeType <SCOPE>`) → grant a `<SCOPE>`-shape role carrying it.* Never substitute a permission you did not find in Step 2.
 
 **Fix (Operate — present it, do not run it):** assign a role that carries the permission, directly or through a group the principal belongs to; or add the action to a custom role the principal already holds. `roles update` is a PUT-style upsert — run `roles get` first and resend the full action set (Rule 12). Built-in roles cannot be edited.
@@ -228,6 +232,19 @@ Validate the binding (Rule 17):
 > re-create the assignment on that basis, which reproduces the original mismatch.
 
 **Fix (Operate — present it, do not run it):** re-create the assignment at the scope path that matches the role's `ownerServiceName` and the permission's `ScopeType`, using `--service <slug>` or an explicit `--scope-path`. Derive `<slug>` as `lowercase(ownerServiceName)` from this role's own `roles get`; never copy a service segment off another role's grant, and do not add a project segment for a `Tenant`-scope role. `Reinfer` (display name IXP) and `DocumentUnderstanding` are different services with different segments. Never widen a scope to make the call pass, and never coerce a path onto a role that does not own that service — if no role owns the intended service, author one under it. For folder-level access to Orchestrator resources, use Orchestrator's own folder roles (`uip or roles`, `uipath-platform`). See [role-assignment-management.md — Validate Role Service Binding and Scope Path](../authorization/role-assignment-management.md#validate-role-service-binding-and-scope-path).
+
+### Data Fabric 403
+
+Use this path when a principal gets 403 from Data Fabric. An example is a write to a Data Fabric entity or record. Data Fabric manages its own roles. `roles list` and `roles assignments list` cannot show them, so do not use them here.
+
+1. Resolve the principal (Rule 5). For a robot account, run `uip admin robot-accounts list --search "<ROBOT_NAME>" --output json`. For a user or a group, use `users list --search` or `groups list`.
+2. Show the Data Fabric roles that the principal has now. Label each role `direct` or `inherited from <Group>`, as in Step 1:
+   ```bash
+   uip admin authorization check-access "<PRINCIPAL>" --service dataservice --output json
+   ```
+3. Report the gap: the Data Fabric roles that the principal has, and the role that the denied action needs. For example, a record write needs a role with write access. Stop here and let the user decide (Rule 34).
+
+**Fix (Operate — present it, do not run it):** add the Data Fabric role that the action needs with `uip df directory assign-roles`. Take the role ID from `uip df roles list`, not from `check-access`. [Data Fabric role assignments](../authorization/role-assignment-management.md#data-fabric-role-assignments) gives the rules for the role IDs, `--type`, UI access, and the confirmation.
 
 ---
 
