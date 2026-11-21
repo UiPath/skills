@@ -35,7 +35,19 @@ from rules_check import (
 
 DMNDI_NS = "https://www.omg.org/spec/DMN/20230324/DMNDI/"
 DC_NS = "http://www.omg.org/spec/DMN/20180521/DC/"
-# The size the designer draws each card, whatever width and height the file holds.
+# The size the designer draws each card, whatever width and height the file holds, from
+# PO.Frontend DrdLayout.ts on main.
+#
+# These are deliberately ahead of the CLI. `uip rules format` lays a diagram out with the
+# @uipath/dmn-editor-utils the CLI pins, and 0.1272.1 predates PO.Frontend#8458 by two hours:
+# it draws inputData at nodeWidth * 0.75 = 216 and has no knowledge-model width at all, so a
+# model gets the full 288. A file `format` wrote therefore carries 216 and 288, and is correct
+# for the layout it was written by.
+#
+# Grading against the designer's numbers is the stricter read, and the one that matters: a user
+# sees the designer. A diagram clear at 216 but colliding at 240 is a collision they would see.
+# Nothing `format` produces today is packed tightly enough for the two to disagree — its stride
+# is 336 — and the gap closes when the CLI next bumps the library.
 DRAWN_SIZE = {"decision": (288, 96), "inputData": (240, 96),
               "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
 

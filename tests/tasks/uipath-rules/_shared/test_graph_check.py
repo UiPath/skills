@@ -148,8 +148,9 @@ class TestDiagram:
             gc.check_no_overlap(root)
 
     def test_drawn_sizes_match_the_designer(self):
-        # PO.Frontend DrdLayout.ts: decision 288x96, inputData 240x96,
-        # businessKnowledgeModel 224x96, textAnnotation 224x64.
+        # PO.Frontend DrdLayout.ts on main, after #8458. Ahead of the CLI on purpose: the
+        # dmn-editor-utils the CLI pins still draws inputData 216 and a knowledge model 288,
+        # so a file `uip rules format` wrote carries those and is right for its own layout.
         assert gc.DRAWN_SIZE == {"decision": (288, 96), "inputData": (240, 96),
                                  "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
 
