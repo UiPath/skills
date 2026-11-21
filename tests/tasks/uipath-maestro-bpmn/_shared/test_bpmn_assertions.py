@@ -8,10 +8,11 @@ import os
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bpmn_assertions import assert_generated_project_scaffold, load_bpmn  # noqa: E402
+from _shared.bpmn_assertions import assert_generated_project_scaffold, has_source, load_bpmn  # noqa: E402
 
 
 class GeneratedProjectScaffoldTests(unittest.TestCase):
@@ -196,6 +197,17 @@ class LoadBpmnTests(unittest.TestCase):
     def test_fails_when_no_bpmn_exists(self) -> None:
         with self.assertRaises(SystemExit):
             load_bpmn("Missing/Missing.bpmn")
+
+
+class HasSourceTest(unittest.TestCase):
+    def test_rejects_an_output_with_no_source_or_body(self) -> None:
+        self.assertFalse(has_source(ET.fromstring('<output name="Process response" var="r" />')))
+
+    def test_accepts_a_source_attribute(self) -> None:
+        self.assertTrue(has_source(ET.fromstring('<output source="=result" var="r" />')))
+
+    def test_accepts_a_cdata_body(self) -> None:
+        self.assertTrue(has_source(ET.fromstring('<output var="r"><![CDATA[=result]]></output>')))
 
 
 if __name__ == "__main__":

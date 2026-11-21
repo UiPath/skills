@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _shared.bpmn_assertions import has_source  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     elements,
@@ -48,10 +49,10 @@ def main() -> None:
     out_vars = [
         o.attrib.get("var")
         for o in hitl[0].findall("bpmn:extensionElements/uipath:activity/uipath:output", NS)
-        if o.attrib.get("var")
+        if o.attrib.get("var") and has_source(o)
     ]
     if not out_vars:
-        fail("HITL activity has no output mapping binding a variable (var=); decision not captured")
+        fail("HITL activity has no output mapping binding a variable (var= and a source); decision not captured")
 
     cond_blob = " ".join(
         (c.text or "") for c in root.findall(".//bpmn:conditionExpression", NS)

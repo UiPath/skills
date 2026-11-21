@@ -122,6 +122,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _shared.bpmn_assertions import has_source  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     declared_variable_elements,
     NS,
@@ -334,10 +335,10 @@ def main() -> None:
     outputs = [
         o
         for o in hitl.findall("bpmn:extensionElements/uipath:activity/uipath:output", NS)
-        if o.attrib.get("var")
+        if o.attrib.get("var") and has_source(o)
     ]
     if not outputs:
-        fail("HITL activity has no output mapping (var=) capturing the reviewer's returned fields")
+        fail("HITL activity has no output mapping (var= and a source) capturing the reviewer's returned fields")
     if not any(o.attrib.get("type") for o in outputs):
         fail("HITL output mappings are untyped (no type= on any captured field)")
 
