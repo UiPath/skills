@@ -27,7 +27,7 @@ success_criteria:
   - type: command_executed
     description: "Agent signed in with an env, file, stdin or preset source"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connections\s+create\s+[^\s;&|]+[^;&|\n]*(--field\s+[^\s;&|]+=env\.[A-Z0-9_]+|--field-file\s+[^\s;&|]+=[^\s;&|]+|--field-stdin\s+[^\s;&|]+|--preset-id\s+[^\s;&|]+)'
+    command_pattern: 'uip\s+is\s+connections\s+create\s+[^\s;&|]+[^;&|\n]*(--field\s+[^\s;&|]+=env\.[A-Z0-9_]+|--field-stdin\s+[^\s;&|]+|--preset-id\s+[^\s;&|]+)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
