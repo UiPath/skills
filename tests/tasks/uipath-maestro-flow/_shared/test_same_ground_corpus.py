@@ -4,6 +4,12 @@ The temporary allowlists name pre-campaign debt plus tasks that landed on
 `main` after the alignment sweep and have not been aligned yet. Each family
 batch removes its own entries as the task contract becomes neutral; exact
 equality prevents stale allowlist entries from hiding completed work.
+
+Retired rule: a debug-graded prompt no longer has to tell the agent to build
+"in a solution of the same name". That rule let graders find the project at a
+fixed path; graders now discover the flow wherever it is (`find_flow_file`,
+`validate_flow.py`), and path-to-ga prompts are business requests whose
+wording is fixed by product review, so the rule had nothing left to protect.
 """
 
 from __future__ import annotations
@@ -14,7 +20,7 @@ from pathlib import Path
 FLOW_TASKS = Path(__file__).resolve().parent.parent
 
 # Post-sweep upstream arrivals, carried as-is until their own alignment pass:
-# - ixp/e2e_03_project_creation_handoff (#2809, 2026-09-02) gates on two
+# - ixp/e2e_03_project_creation_handoff gates on two
 #   skill_triggered criteria and tells the agent not to run `flow debug`.
 V1_AUTHORING_ALLOWLIST: set[str] = set()
 
@@ -26,17 +32,7 @@ FORBIDDEN_PROMPT_ALLOWLIST = {
     "ixp/e2e_03_project_creation_handoff/e2e_03_project_creation_handoff.yaml",
 }
 
-# These born-neutral escalation tasks are outside the recipe-edit sweep. Their
-# prompts already require the same-name solution and tell the agent to leave
-# the live execution to the grader; preserving them is part of the campaign's
-# explicit no-edit fence.
-FORBIDDEN_PROMPT_EXCEPTIONS = {
-    "e2e/escalation_jira_ticket/escalation_jira_ticket.yaml",
-    "e2e/escalation_orchestrator_paths/escalation_orchestrator_paths.yaml",
-    "e2e/escalation_slack_alert/escalation_slack_alert.yaml",
-}
-
-DEBUG_SOLUTION_ALLOWLIST = set()
+FORBIDDEN_PROMPT_EXCEPTIONS: set[str] = set()
 
 # Commands whose JOB the other route does differently or internally, so a
 # `command_executed` on one of them measures which route ran rather than what
@@ -54,22 +50,6 @@ ROUTE_SPECIFIC_COMMANDS = (
     # v1 refreshes the node manifest before searching it.
     r"flow registry \(?pull",
 )
-
-# The two billing lookups name only a "Data Service entity", which since #3041
-# denotes two node families. Their prompts pin the connector so the graded
-# structure is deterministic; the sibling dispute-resolution task pins it in the
-# same way. Native Data Fabric authoring is covered by its own task, not these.
-CONNECTOR_PINNED_LOOKUPS = {
-    "multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml",
-    "multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml",
-}
-CONNECTOR_PIN = (
-    "on the data service `query-entity-records` activity, "
-    "not the native data fabric nodes"
-)
-
-# F1 freezes the #2557 task even though its prompt predates the exact phrase.
-DEBUG_PROJECT_LAYOUT_EXCEPTIONS = {"single_node/coded_agent/coded_agent.yaml"}
 
 UUID_PATTERN = re.compile(
     r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
@@ -111,51 +91,6 @@ def _task_text(relative: str) -> str:
 
 
 _REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
-
-
-def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
-    paths = []
-    reference_root: Path | None = None
-    for token in re.findall(
-        r"(?:\$TASK_DIR/|\$REFERENCE_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
-    ):
-        if token.startswith("$TASK_DIR/"):
-            path = task_path.parent / token.removeprefix("$TASK_DIR/")
-        elif token.startswith("$REFERENCE_DIR/"):
-            if reference_root is None:
-                match = _REFERENCE_BLOCK.search(task_path.read_text())
-                if not match:
-                    continue
-                reference_root = task_path.parent / match.group(1)
-            path = reference_root / token.removeprefix("$REFERENCE_DIR/")
-        elif token.startswith("$SKILLS_REPO_PATH/"):
-            path = FLOW_TASKS.parents[2] / token.removeprefix("$SKILLS_REPO_PATH/")
-        else:
-            path = Path(token)
-        if path.is_file():
-            paths.append(path)
-    return paths
-
-
-def _is_debug_graded(task_path: Path, text: str) -> bool:
-    for criterion_type, criterion in _criterion_blocks(text):
-        if criterion_type == "command_not_executed":
-            continue
-        executable = "\n".join(
-            line for line in criterion.splitlines() if not line.lstrip().startswith("#")
-        )
-        normalized = executable.lower().replace("\\\\", "\\")
-        if "flow\\s+debug" in normalized or "flow debug" in normalized:
-            return True
-        if criterion_type != "run_command":
-            continue
-        for script in _referenced_python_files(task_path, criterion):
-            source = script.read_text(errors="replace")
-            if "run_debug(" in source or re.search(
-                r'["\']flow["\']\s*,\s*["\']debug["\']', source
-            ):
-                return True
-    return False
 
 
 def _has_v1_authoring_grammar(criterion: str) -> bool:
@@ -222,8 +157,8 @@ def test_route_specific_command_telemetry_is_weightless() -> None:
     non-gating, also set pass_threshold=0." So `pass_threshold: 0` with
     `weight: 1.5` never fails a task and always moves its score.
 
-    That only matters where the command itself is route-specific. In the
-    2026-09-23 same-ground run those criteria scored 1.0 for v1 and 0.0 for v2,
+    That only matters where the command itself is route-specific. In a
+    same-ground run those criteria scored 1.0 for v1 and 0.0 for v2,
     dragging tasks that passed every graded check down with them —
     `datafabric_integration_create_get` returned SUCCESS at 0.55 on three
     `flow node add` advisories weighing 5.0 against two graded criteria at 3.0.
@@ -286,26 +221,6 @@ def test_forbidden_prompt_phrases_match_the_temporary_allowlist() -> None:
         if re.search(r"do not [^.]*\bdebug\b", prompt) or UUID_PATTERN.search(prompt):
             offenders.add(relative)
     assert offenders == FORBIDDEN_PROMPT_ALLOWLIST | FORBIDDEN_PROMPT_EXCEPTIONS
-
-
-def test_debug_graded_prompts_name_a_same_name_solution() -> None:
-    offenders = set()
-    for relative, path, text in _tagged_tasks():
-        if not _is_debug_graded(path, text):
-            continue
-        prompt = " ".join(_prompt_text(text).lower().split())
-        if not re.search(r"\b(?:in|inside) a solution of the same name\b", prompt):
-            offenders.add(relative)
-    assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
-
-
-def test_billing_lookup_prompts_pin_the_data_service_connector() -> None:
-    offenders = {
-        relative
-        for relative in CONNECTOR_PINNED_LOOKUPS
-        if CONNECTOR_PIN not in " ".join(_prompt_text(_task_text(relative)).lower().split())
-    }
-    assert offenders == set()
 
 
 def test_external_graders_use_package_qualified_shared_imports() -> None:

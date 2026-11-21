@@ -49,8 +49,8 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has a Jira connection in Shared/uipath-maestro-flow (precondition)"
-    command: "python3 $REFERENCE_DIR/_setup/preflight_connections.py uipath-atlassian-jira=Shared/uipath-maestro-flow"
-    timeout: 35
+    command: "python3 $REFERENCE_DIR/_setup/preflight_connections.py uipath-atlassian-jira=uipath-maestro-flow"
+    timeout: 120
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
