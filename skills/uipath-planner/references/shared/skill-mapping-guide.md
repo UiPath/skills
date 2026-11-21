@@ -30,7 +30,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 **Human approval or validation checkpoints** inside a Flow, BPMN process, Case plan, or agent belong to the containing component's skill. Name `uipath-human-in-the-loop` in the Rationale column so the builder consults it for gate design.
 
-**Shared code of coded projects** — modules several coded functions or agents import, a library component of its own ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 6) — is built by its consumers' skill: `uipath-functions` for functions, `uipath-agents` for agents.
+**Shared code of coded projects** — modules several coded functions, agents or apps import, a library component of its own ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 6) — is built by the skill most of its consumers use: `uipath-functions` for functions, `uipath-agents` for agents, `uipath-coded-apps` for apps.
 
 **Solution packaging** (`.uipx`) is not a Build With row. A process genome records it under **Deployment** with `uipath-solution`.
 
