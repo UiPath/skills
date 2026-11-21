@@ -1,0 +1,60 @@
+task_id: skill-agent-http-request-tool
+description: >
+  HTTP Request built-in tool guard. The tool is available only to inline
+  agents in a Flow — Agent Builder has no UI for it. The prompt asks for it
+  on a standalone low-code agent. Verifies the agent builds the standalone
+  agent project and does NOT author a `type: "internal"` /
+  `properties.toolType: "http-request"` resource on it, even though
+  `uip agent validate` accepts that resource. A run that creates nothing
+  fails: the skill's rule is to build the agent without the tool and say so.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:http]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 1200
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a standalone UiPath low-code agent "RatesAgent" in a new solution
+  "RatesSol". It answers currency-conversion questions with rates from a
+  public web API that needs no credentials: `https://api.example.com/v1/rates`,
+  called with query parameters `base` and `symbols` (currency codes). Use the
+  platform's built-in HTTP request tool for the call. RatesAgent must stay a
+  standalone agent project — do not put it inside a flow.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "No standalone agent carries the HTTP Request built-in tool (inline agents in a Flow only)"
+    command: "python3 $REFERENCE_DIR/check_http_request_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The guard above passes on an empty workspace. The skill tells the agent to
+  # build the standalone agent without the tool, so the project must exist.
+  - type: run_command
+    description: "The workspace has a standalone Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory: depends on the CLI build in the sandbox. The project is found by
+  # its project.uiproj, so a different folder layout does not fail the check.
+  - type: run_command
+    description: "uip agent validate reports the agent project Valid (advisory)"
+    command: |-
+      python3 -c "import glob, json, os, subprocess, sys; dirs = [os.path.dirname(f) for f in glob.glob('**/project.uiproj', recursive=True) if json.load(open(f)).get('ProjectType') == 'Agent']; t = subprocess.run(['uip', 'agent', 'validate', dirs[0], '--output', 'json'], capture_output=True, text=True).stdout if dirs else '{}'; d = json.loads(t[t.index('{'):]); sys.exit(0 if d.get('Result') == 'Success' and d.get('Data', {}).get('Status') == 'Valid' else 1)"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0

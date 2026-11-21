@@ -469,7 +469,10 @@ The author writes the value verbatim into `resource.json` (or into the guardrail
 
 For each resource type's full schema, see the relevant capability file:
 
-- Tool resources (`$resourceType: "tool"`) — [capabilities/process/process.md](capabilities/process/process.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+- Tool resources (`$resourceType: "tool"`), by `type`:
+  - `process` / `agent` / `api` / `processOrchestration` — [capabilities/process/process.md](capabilities/process/process.md)
+  - `integration` — [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+  - `internal` (built-in tools, selected by `properties.toolType`) — [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md); `http-request` (inline agents in a Flow only) → [capabilities/built-in-tools/http-request.md](capabilities/built-in-tools/http-request.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
 - MCP server resources (`$resourceType: "mcp"`) — [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md)

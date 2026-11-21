@@ -196,6 +196,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 - Tools (`process` / `agent` / `api` / `processOrchestration`): [../process/process.md](../process/process.md) § Subtypes and § Tool resource.json Shape. Discovery is identical (`uip solution resources list` + `uip solution resources get`); subtype is selected by the `type` field.
 - Context index: [../context/index.md](../context/index.md) § Agent-Level Resource Shape.
 - Escalation: [../escalation/escalation.md](../escalation/escalation.md) § Agent-Level Resource.
+- Built-in tools (`type: "internal"`): [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) § Tool Registry — `toolType`, flow node type, and walkthrough per tool.
 
 ### Tool-specific notes
 
@@ -295,7 +296,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Agent-as-tool | `uipath.agent.resource.tool.agent.<release-key>` |
 | API workflow | `uipath.agent.resource.tool.api.<release-key>` |
 | Process Orchestration | `uipath.agent.resource.tool.processorchestration.<release-key>` |
-| Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` |
+| Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` — `<tool-name>` is not the `toolType`; exact node per tool in [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) § Tool Registry |
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index.<index-name>.<index-id>` |
 | Escalation | `uipath.agent.resource.escalation.<variant>` (e.g. `.coded-action-app`; discover with `uip maestro flow registry search "escalation"`) |

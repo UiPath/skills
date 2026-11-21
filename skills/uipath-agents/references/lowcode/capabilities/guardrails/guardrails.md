@@ -45,6 +45,7 @@ For each tool name you plan to put in `matchNames`:
 - **Not found** — **STOP.** Do not add the guardrail yet. Add the tool first, then return here:
   - Process tool — RPA / agent / API / agentic, local or external: [../process/process.md](../process/process.md)
   - Integration Service tool: [../integration-service/integration-service.md](../integration-service/integration-service.md)
+  - Built-in tool (Analyze Files, HTTP Request, …): [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md)
 
 > `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
 

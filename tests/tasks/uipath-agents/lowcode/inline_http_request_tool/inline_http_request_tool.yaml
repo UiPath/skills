@@ -1,0 +1,75 @@
+task_id: skill-agent-inline-http-request-tool
+description: >
+  HTTP Request built-in tool on an inline agent (positive path, brownfield).
+  The fixture ships a `RatesSol` solution with a JSON-authored Flow project
+  `RatesFlow` that already holds one inline low-code agent. The agent under
+  test adds the built-in HTTP Request tool to that inline agent: a GET pinned
+  to one URL, with the query parameters left to the model. Verifies the
+  resource under the inline agent's `resources/` folder: `type: "internal"`,
+  `properties.toolType: "http-request"`, a folder named after the resource
+  `id`, the method and URL pinned as `static` entries, `isSensitive` on every
+  pinned entry, `params` left unpinned, and `uip agent validate
+  --inline-in-flow` reporting the agent Valid with the resource counted.
+  The tool's flow-canvas node is out of scope: the prompt keeps it with the
+  user, so the task grades the agent-side resource only.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, inline-flow, feature:http]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/RatesSol
+      mount_point: RatesSol
+
+reference:
+  directory: .
+
+initial_prompt: |
+  RatesSol/ is a solution with one Flow project, RatesFlow. The flow already has
+  an inline low-code agent ("Rates agent") that answers currency-conversion
+  questions. Give that agent the platform's built-in HTTP request tool so it can
+  read live rates from a public web API that needs no credentials:
+  `https://api.example.com/v1/rates`, called with query parameters `base` and
+  `symbols` (currency codes).
+
+  Every call is a GET to that URL: the model must not be able to change the
+  method or the URL. The model chooses the query parameters.
+
+  Set the tool up on the agent only — its resource under the inline agent's
+  folder, refreshed and validated. I will add the tool's node to the flow canvas
+  myself in Studio Web, so do not edit RatesFlow.flow.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HTTP Request tool resource on the inline agent (toolType, folder named after id, GET and URL pinned with isSensitive, params left to the model)"
+    command: "python3 $REFERENCE_DIR/check_inline_http_request_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The inline agent's folder is the fixture's, so its path is fixed.
+  - type: run_command
+    description: "uip agent validate --inline-in-flow reports the inline agent Valid with the tool resource counted"
+    command: |-
+      uip agent validate RatesSol/RatesFlow/9a4e2c7f-1b58-4d36-8f0c-3e6a9b5d1c72 --inline-in-flow --output json | python3 -c "import json, sys; t = sys.stdin.read(); d = json.loads(t[t.index('{'):]); data = d.get('Data') or {}; v = data.get('Validated') or {}; sys.exit(0 if d.get('Result') == 'Success' and data.get('Status') == 'Valid' and (v.get('Resources') or v.get('resources') or 0) >= 1 else 1)"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -98,8 +98,9 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
 | Add a client-side tool (conversational only — executes on the client surface, not the server) | [capabilities/client-side-tools/client-side-tools.md](capabilities/client-side-tools/client-side-tools.md) | |
 | Add an MCP (Model Context Protocol) server tool | [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md) | |
-| Add a built-in tool (Analyze Files, Deep RAG, Batch Transform, Create File) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | the tool's walkthrough from its Tool Registry |
+| Add a built-in tool (Analyze Files, Deep RAG, Batch Transform, Create File, HTTP Request) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | the tool's walkthrough from its Tool Registry |
 | Research answers across long or multiple documents the agent receives at run time, with citations | [capabilities/built-in-tools/deeprag/planning.md](capabilities/built-in-tools/deeprag/planning.md) | [capabilities/built-in-tools/deeprag/impl-json.md](capabilities/built-in-tools/deeprag/impl-json.md) |
+| Call a public web API from an inline agent in a Flow (HTTP Request built-in tool — inline agents only, not standalone) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | [capabilities/built-in-tools/http-request.md](capabilities/built-in-tools/http-request.md) |
 | Accept a file as agent input or return a file as output | [agent-definition.md](agent-definition.md) § File Attachments | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) |
 | Add a context (Context Grounding / attachments / DataFabric) | [capabilities/context/context.md](capabilities/context/context.md) | applicable sibling |
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
@@ -121,6 +122,7 @@ See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) § What
 - Hand-editing memory feature JSON instead of using `uip agent memory`
 - camelCasing `contextType` / `retrievalMode` enum values (validate accepts it, Studio Web silently drops the resource)
 - Copy-pasting UUIDs across resources (every resource needs its own)
+- Adding the HTTP Request built-in tool to a standalone agent because the user asked for it and `uip agent validate` passed (inline agents in a Flow only — leave it out and say why)
 
 ## Completion Output
 
