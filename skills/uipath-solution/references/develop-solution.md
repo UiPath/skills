@@ -661,14 +661,14 @@ Adding a project does not automatically sync its resources. The refresh scans al
 
 If a non-virtualizable resource isn't found in cloud, refresh emits a warning and the deployment will fail until the resource is provisioned (or the binding is fixed/removed).
 
-A connection the solution ships for a person to sign in after deploying is declared locally. `add --source local` writes it with an empty spec; set the spec with `edit`. `connectorName` is read-only there (the patch reports Success and leaves it `""`), and the deploy fills it:
+A connection the solution ships for a person to sign in after deploying is declared locally. `add --source local` writes it with an empty spec; set the spec with `edit`. `<RESOURCE_KEY>` is `Data.Key` from `add`; `<CONNECTOR_VERSION>` is `Spec.ConnectorVersion` from `resources get <key>` on any connection of that connector (`resources list --kind Connection --source remote` lists keys with their `Type`). `connectorName` is read-only and stays `""` until the deploy fills it:
 
 ```bash
 uip solution resources add --source local --kind Connection --type <CONNECTOR_KEY> --name <CONNECTION_NAME> --output json
 uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>","pollingInterval":5}' --output json
 ```
 
-A project binds it by the resource's key, and `refresh` then warns `Connection <key> not found in Resource Catalog`, which is expected for a connection that does not exist yet. The deploy creates the connection, unauthenticated, in the deployment's folder. The install succeeds and stops at `ActivationStatus: NeedsSetupToActivate`, with the connection in `PendingResources` (`[CNS1072] You will need to authenticate this connection before proceeding further`), until a person authenticates it and activates the deployment.
+A project that uses it takes `<RESOURCE_KEY>` as its connection ID. `refresh` then warns `Connection <key> not found in Resource Catalog` and counts it under none of `Created`, `Imported` and `Skipped`, which is expected for a connection that does not exist yet. The deploy creates the connection, unauthenticated, in the deployment's folder, so the deployment ends `NeedsSetupToActivate` until a person authenticates it ([Pack and Deploy § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)).
 
 ### `bindings_v2.json` locations
 
