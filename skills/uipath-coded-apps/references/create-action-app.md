@@ -229,7 +229,7 @@ Run that as one command — `SCAFFOLD_OK` is the scaffold gate (Critical Rule 20
 cd <app-name> && npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
 ```
 
-If SDK services are needed:
+If SDK services are needed (solution app: run `npm install @uipath/uipath-typescript@preview --@uipath:registry=https://registry.npmjs.org` instead, for resource handles — [solution-resources-guide.md](solution-resources-guide.md)):
 ```bash
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
@@ -374,7 +374,7 @@ useEffect(() => {
 
 Merge over the explicit `defaultFormData` object (not over `prev`) so output fields keep their initial values and the merge never depends on stale batched state. This matches the template's `Form.tsx`.
 
-> **`folderId` — capture only when an SDK service needs it.** Folder-scoped Orchestrator services (Buckets, Assets, Queues, Processes, Jobs) and Data Fabric/Entities (optionally) require the task's `folderId` passed in the call. **Only if** the app calls one of those, add `const [folderId, setFolderId] = useState<number | null>(null);` and `setFolderId(task.folderId);` inside the `.then()`. Attachments are not folder-scoped — omit `folderId` entirely when the app uses only those or no SDK services (the form-only template omits it).
+> **`folderId` — capture only when an SDK service needs it.** Folder-scoped Orchestrator services (Buckets, Assets, Queues, Processes, Jobs) and Data Fabric/Entities (optionally) require the task's `folderId` passed in the call. **Only if** the app calls one of those, add `const [folderId, setFolderId] = useState<number | null>(null);` and `setFolderId(task.folderId);` inside the `.then()`. Attachments are not folder-scoped — omit `folderId` entirely when the app uses only those or no SDK services (the form-only template omits it). In a solution app, reach those services through declared resource handles instead ([solution-resources-guide.md](solution-resources-guide.md)).
 
 **Change handlers** — see the template's `Form.tsx` for the implementation. Two non-obvious rules:
 1. **Every edit must call `codedActionAppService.setTaskData(updated)`** after `setFormData` so Action Center persists in-progress data — not a generic React pattern.

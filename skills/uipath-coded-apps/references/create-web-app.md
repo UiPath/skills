@@ -78,6 +78,8 @@ Run these as **separate commands** in order. The `--@uipath:registry` flag binds
 
 **Common (always run):** both Q6 paths use `new UiPath()` (no config) — the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags injected by `@uipath/coded-apps-dev` (locally) or by the platform (in production). Tailwind is shared too.
 
+**Solution app** (Critical Rule 23): resource handles need the preview SDK — run `npm install @uipath/uipath-typescript@preview --@uipath:registry=https://registry.npmjs.org` in place of the SDK line below ([solution-resources-guide.md](solution-resources-guide.md)).
+
 ```bash
 # UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
@@ -225,6 +227,8 @@ import { assets, entities } from './uipath';
 const items = await assets.getAll({ folderId: 123 }); // replace 123 with your Orchestrator folder ID
 const records = await entities.getAllRecords('<entity-id>'); // entity ID is a UUID — look it up via entities.getAll() or the Data Fabric portal (not the friendly name)
 ```
+
+Literal folder ids and entity ids above are for standalone apps. Solution app: declare each resource and call `getByName(ProjectResources.<FIELD>)` ([solution-resources-guide.md](solution-resources-guide.md)).
 
 Method signatures come from the installed types (`node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts`); per-method scopes from the shipped `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` — see [oauth-scopes.md](oauth-scopes.md) for bundles and the lookup protocol.
 

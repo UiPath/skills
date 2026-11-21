@@ -4,6 +4,8 @@ Signatures/params/examples: `dist/assets/index.d.ts`, `dist/queues/index.d.ts`, 
 
 > **Scope pairing warning:** `Jobs.getOutput()` resolves file-type output arguments through the Attachments service internally — the app needs `OR.Folders` (or `OR.Folders.Read`) **in addition to** its Jobs scope, or the call 403s. Do not assume one scope per service; check the shipped table per method.
 
+> **Solution app:** reach Assets, Buckets, Queues, and Processes only through declared handles — `getByName(ProjectResources.<FIELD>)` — never by id, literal folder, or `getAll()` + name match. Recipes below that do so are for standalone apps. See [../solution-resources-guide.md](../solution-resources-guide.md).
+
 ## Job classification — agent vs process vs app
 
 An agent job is identified by **`packageType === 'Agent'`** — both when reading response objects and in OData `filter` strings (the SDK rewrites SDK field names to API names in `filter`/`orderby`/`select`/`expand` automatically).
