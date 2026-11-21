@@ -158,7 +158,7 @@ A `types.file` input takes a repeatable local file; the left side is the input n
   --attachment <inputName>=<localPath>
 ```
 
-At runtime the variable is an OBJECT, not a path: scripts read the uploaded name as `$vars.<triggerNodeId>.output.<inputName>.FullName` and see only `ID`, `FullName`, `MimeType`, `Metadata`, never content. A flow that parses the file passes that reference to a file-reading step, such as an RPA process taking it as its file argument ([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
+At runtime the variable is a file reference, not a path and never content: [its shape and name field](author.md#variable-types). A flow that parses the file passes that reference to a file-reading step, such as an RPA process taking it as its file argument ([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 <!--skill-flavor:operate-debug-attachment:end-->
 
 <!--skill-flavor:operate-debug-entry-point:start-->

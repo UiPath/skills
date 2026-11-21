@@ -39,7 +39,7 @@ What to look for:
 - **If empty string from removed variable:** delete and re-add the connector step so it stops referencing the orphaned variable
 - **If `Content-Type` / multipart mismatch after connector update:** delete and re-add the activity to pick up the new schema
 - **If schema bump:** update the inputs to match the new schema or pin to the prior connector version where supported
-- **If connection in bad state:** re-provision the connection, then re-publish or rebind the activity
+- **If connection in bad state:** re-provision the connection, or rebind the activity; a re-publish after it is a later decision
 - **If genuinely malformed payload:** validate the input JSON against the connector spec
 
 ## Notes

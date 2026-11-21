@@ -186,6 +186,6 @@ Any error not in this table → Rule 18. Topic-specific error tables live in the
 
 ## Packaging into a Solution
 
-To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery are in the `uipath-solution` skill (Data Fabric kinds).
 
 If the entity is a **local entity** — the user explicitly asked for it to be authored inside the solution — skip the import: author it with `uip df entities <verb> --local` per [`local-entities.md`](local-entities.md). It never touches the tenant until the solution deploys.
