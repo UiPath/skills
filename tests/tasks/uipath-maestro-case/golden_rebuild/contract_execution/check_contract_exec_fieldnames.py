@@ -223,10 +223,18 @@ def _check_output_sources(plan: dict, fixture: dict):
             continue
         path = f"{root}.{field}"
         if path not in allowed_paths:
-            _fail(
-                f"{where}: extract source `={path}` is not an SDD extract path; "
-                f"{_casing_hint(field, allowed_fields)}"
+            # An output the SDD never declares (e.g. the agent's own
+            # `response.analysisResult`) is extra, not a casing defect; only a
+            # re-cased SDD path or field is.
+            recased = any(_norm(path) == _norm(p) for p in allowed_paths) or any(
+                _norm(field) == _norm(f) for f in allowed_fields
             )
+            if recased:
+                _fail(
+                    f"{where}: extract source `={path}` is not an SDD extract path; "
+                    f"{_casing_hint(field, allowed_fields)}"
+                )
+            continue
         seen.add(path)
     missing = sorted(allowed_paths - seen)
     if missing:

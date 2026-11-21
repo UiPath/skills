@@ -1,27 +1,20 @@
 task_id: skill-bpmn-devcon-billing-invoice-lookup
 description: |
-  E2E greenfield (DevCon BillingDisputeResolution scenario): build a ~4-node
-  Maestro BPMN process that normalizes a messy invoice number and queries the
-  BillingDisputeERP Data Service entity; graded by validate plus three
-  ephemeral-solution `bpmn debug` runs over malformed inputs.
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a small
+  Maestro BPMN process that cleans up a messy invoice number and looks up its
+  rows in the BillingDisputeERP Data Service entity, asked the way a Studio
+  Web user would ask it. The grader imports the exact submitted project into
+  its own ephemeral solution and debugs it once per messy input (three forms
+  of two real invoices: MCS-2026-04872 has 8 rows and MCS-2026-05128 has 5 on
+  the live tenant). Each run must complete with no incidents, complete a Data
+  Service step, and return matchedInvoiceNumber and lineItemCount, read by
+  those names. Whether the agent ran its own test is advisory. Text between
+  the helper markers is lower-tier guidance (experiments/use-case-tiers.yaml)
+  and is not graded.
 
   Ported from Flow `multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml`.
-  Changes: the Data Service `query-entity-records` Flow node becomes a
-  `bpmn:sendTask` carrying the registry `Intsvc.ActivityExecution` wrapper
-  (curated `QueryEntityRecordsCurated`/`QueryEntityRecords_V3`, or the generic
-  entity object with operation List/method GET); the connection is a
-  process-level `=bindings.<id>` `resource="Connection"` binding instead of an
-  inline `connectionId`/`connectionFolderKey` pair; `flow debug`'s single
-  inline-payload call becomes, per malformed input, an ephemeral solution
-  import + `bpmn debug` + `debug-instance variables-all`/`incidents` read
-  (LIVE-ADDENDUM's canonical live pattern); and the bindings/non-stub-id check
-  now packs the project first (`uip maestro bpmn pack`), since BPMN
-  materializes `bindings_v2.json` only at pack time, unlike Flow's compiler,
-  which resolved the connection straight into the emitted node. The live
-  lookup criterion's timeout is raised from Flow's 1200s to 1590s to cover the
-  extra ephemeral-solution CLI round trips per case; see
-  `_shared/check_billing_invoice_lookup.py`'s module docstring for the
-  arithmetic.
+  BPMN materializes `bindings_v2.json` only at pack time, so the advisory
+  bindings check packs the project first.
 tags:
   - uipath-maestro-bpmn
   - e2e
@@ -52,36 +45,36 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  Build a UiPath Maestro BPMN process "BillingInvoiceLookup" (in a solution of
-  the same name) that looks up a disputed invoice's line items, tolerating
-  messy input.
+  You are a coding agent in an empty Agentic Process (Maestro BPMN) project.
+  No user is present, and nobody will answer a question or grant approval, so
+  do not ask, do not pause, and do not wait for input. Do not delete or
+  overwrite anything this run did not create, except what the task asks you
+  to change, and do not publish to a shared destination unless the task asks
+  for it.
 
-  - Input: process variable `invoiceNumber` (string). Callers may omit the
-    "MCS-" prefix, use wrong casing, or add whitespace.
-  - Normalize the input (trim, uppercase, prepend `MCS-` if absent), then look
-    up the matching rows in the existing `BillingDisputeERP` Data Service
-    entity.
-  - Outputs: `matchedInvoiceNumber` (string, first matched row's invoiceNumber)
-    and `lineItemCount` (number of rows returned).
+  Build a process called "BillingInvoiceLookup" that looks up the line items
+  in a disputed invoice, even when the caller types the invoice number
+  sloppily or with typos.
 
-  Build the lookup on the Data Service Query Entity Records connector
-  activity (`uipath-uipath-dataservice`).
+  - Input: invoiceNumber. Callers may leave out the "MCS-" prefix, use the
+    wrong casing, or add spaces.
+  - Clean the number up first: trim it, uppercase it, and add the "MCS-"
+    prefix when it is missing.
+  - Then look up the respective invoice and its rows in BillingDisputeERP, the
+    invoice table we keep in Data Service. It has one row per invoice line.
+  - Outputs: matchedInvoiceNumber (the invoice number of the first matching
+    row) and lineItemCount (how many rows matched).
 
-  Validate the final BPMN file — the task is not complete until `uip maestro
-  bpmn validate` passes. Grading then runs the process under debug against
-  live tenant data, so build it to actually run, not merely validate.
+  <!-- helper:start -->
+  Inputs: invoiceNumber (string).
+  Outputs: matchedInvoiceNumber (string), lineItemCount (number).
+  BillingDisputeERP is an existing Data Service entity, and its invoiceNumber
+  field holds values like "MCS-" then the year and a five-digit number. Use
+  the Data Service connection in the Shared folder, even though it is a
+  personal one.
+  <!-- helper:end -->
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  Build the process and do a test run.
 
 success_criteria:
   - type: run_command
@@ -91,10 +84,19 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  # Advisory: Studio Web's host may refuse the agent's own `bpmn debug`
+  # (UnavailableInHost) and its testbench stubs RunProject.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro bpmn debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug(?!-instances?)(?!\s+--help)\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
-    description: Check script debugs three malformed inputs (fail-fast, one ephemeral-solution bpmn debug run each); every exercised input must resolve to MCS-2026-04872 with 8 line items
-    command: python3 $REFERENCE_DIR/_shared/check_billing_invoice_lookup.py lookup
-    timeout: 1590  # 90 (solution init) + 180 (solution import) + 3 x (180 debug + 120 variables-all + 120 incidents) + 60 margin; see check_billing_invoice_lookup.py
+    description: 'Effects: three debug runs (2026-04872, mcs-2026-05128, "  MCS-2026-04872 "), each completing with no incidents and a completed Data Service step, return matchedInvoiceNumber=MCS-2026-04872/MCS-2026-05128/MCS-2026-04872 and lineItemCount=8/5/8'
+    command: python3 $REFERENCE_DIR/multi_node/billing_invoice_lookup/check_invoice_lookup_run.py
+    timeout: 1590  # 90 (solution init) + 180 (solution import) + 3 x (180 debug + 120 variables-all + 120 incidents) + 60 margin
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

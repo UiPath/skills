@@ -489,8 +489,13 @@ def main():
             f"metadata.caseIdentifierType must be {identifier_type!r}; got "
             f"{metadata.get('caseIdentifierType')!r}"
         )
-    if metadata.get("intsvcActivityConfig") != "v2":
-        _fail("metadata.intsvcActivityConfig must be 'v2'")
+    # Studio Web's case scaffold leaves the flag out (observed on both Studio Web
+    # runs, whose plans validate), so only an explicit other value is a defect.
+    if metadata.get("intsvcActivityConfig", "v2") != "v2":
+        _fail(
+            "metadata.intsvcActivityConfig must be 'v2' when set; got "
+            f"{metadata.get('intsvcActivityConfig')!r}"
+        )
 
     print(
         "OK: ContractExecution caseplan preserves 8 stages (3 interrupting secondary "

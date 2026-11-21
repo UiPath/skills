@@ -1,75 +1,117 @@
 task_id: skill-hitl-e2e-apptask-brownfield
-# NOTE: "e2e" here means authoring end-to-end (brownfield AppTask node insertion).
-# This test does NOT execute the flow at runtime. It validates the skill's ability
-# to resolve a deployed app, write resource files, and author the HITL node JSON.
-# Skipped until a shared staging app + tenant are available for CI.
 description: >
-  Authoring E2E test (AppTask surface): agent inserts a HITL node backed by an
-  existing deployed Action App into a brownfield flow. Tests the full AppTask
-  authoring path: credentials from ~/.uipath/.auth, solution context resolution,
-  app search, retrieve-configuration, resource file writing, debug overwrites,
-  node JSON with inputs.type=custom. Does not deploy or execute the flow.
-tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga]
-skip: true
-# Blocked: requires live tenant with a deployed Action App and ~/.uipath/.auth
-# credentials. Cannot be run in tempdir sandbox without real infrastructure.
-# Unblock when a shared staging app + tenant are available for CI.
-
+  E2E brown field (AppTask surface), asked the way a Studio Web user would ask
+  it: the project already holds an ExpenseAppTask flow that posts expenses to
+  SAP (a stand-in step); add a manager review before the posting using the
+  tenant's deployed ExpenseReviewApp Action Center app
+  (Shared/uipath-agents/ExpenseReviewSol). Graded on a real run: the grader
+  debugs the flow with a fresh expense id, finds the app task that run
+  created, checks it shows the expense id, employee and amount, approves it,
+  and checks the run then completed through the existing posting step with
+  status=posted and sapDocumentNumber=SAPEXP-<id>; then a second run is
+  rejected and must complete without the posting step, with status=rejected.
+  The posting step must sit behind the review. A structural check asks only
+  that the review step is backed by ExpenseReviewApp, not a quick form.
+  Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
+tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga, outcome-graded]
 run_limits:
   expected_turns: 25
   max_turns: 60
-  # task_timeout must be >= turn_timeout or the nightly default (1200s) silently
-  # caps this regardless of the larger per-turn budget below — see e2e_01's
-  # history (34aa3c773, re-fixed 2026-09-10) for the failure mode this avoids.
-  # Currently skip: true, so dormant until the test is unblocked.
-  task_timeout: 1800
+  # task_timeout must be >= turn_timeout or the nightly default (1200s)
+  # silently caps this. It covers one agent turn plus grading: validate (180s)
+  # and two live runs that wait on the app task (up to 1800s).
+  task_timeout: 4200
   turn_timeout: 1800
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/e2e_07_apptask_brownfield
+    - type: template_dir
+      path: ../uipath-maestro-flow/_setup
+      mount_point: _setup
+
+reference:
+  directory: ../uipath-maestro-flow
+
+# A fresh SolutionId per run, so concurrent runs never upload over each other
+# in Studio Web and post_run deletes only this run's debug solution.
+pre_run:
+  - command: "python3 -c \"import json,uuid;p='ExpenseAppTask/ExpenseAppTask.uipx';d=json.load(open(p));d['SolutionId']=str(uuid.uuid4());json.dump(d,open(p,'w'),indent=2)\""
+    timeout: 30
+  - command: python3 _setup/cleanup_hitl_runs.py mark
+    timeout: 30
+
+post_run:
+  - command: python3 _setup/cleanup_hitl_runs.py clean
+    timeout: 300
+  - command: python3 _setup/cleanup_solutions.py
+    timeout: 90
+
 initial_prompt: |
-  I have a UiPath Flow project and a deployed Action Center app called
-  "Expense Review" in the Shared folder. I need to add a HITL node to my
-  expense approval flow that uses this existing deployed app as the task form.
+  You are a coding agent in a project that already contains the ExpenseAppTask
+  flow, which posts employee expenses to SAP. No user is present, and nobody
+  will answer a question or grant approval, so do not ask, do not pause, and
+  do not wait for input. Do not delete or overwrite anything this run did not
+  create, except what the task asks you to change, and do not publish to a
+  shared destination unless the task asks for it.
 
-  First, create the starting flow at ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow:
+  Managers now have to review every expense before it is posted. Add that
+  review to the process using our existing "ExpenseReviewApp" Action Center
+  app in Shared/uipath-agents/ExpenseReviewSol as the task form. The reviewer
+  should see the expense id, employee, amount and description.
 
-  {
-    "nodes": [
-      {"id": "trigger1", "type": "core.trigger.manual", "label": "Start", "position": {"x": 100, "y": 200}},
-      {"id": "postExpense", "type": "core.action.script", "label": "Post to SAP", "position": {"x": 400, "y": 200}, "inputs": {"script": "console.log('posting');"}}
-    ],
-    "edges": [
-      {"id": "e1", "source": "trigger1", "target": "postExpense", "sourcePort": "output", "targetPort": "input"}
-    ],
-    "variables": [],
-    "definitions": []
-  }
+  - Post to SAP only when the manager approves.
+  - When they reject, end the flow with the status "rejected".
 
-  Add a Human-in-the-Loop node backed by the existing deployed "Expense Review"
-  app. Use the AppTask path (inputs.type = "custom"), not an inline QuickForm.
-  Wire the completed handle to the posting step and validate the flow.
+  Leave the rest of the flow as it is.
+
+  <!-- helper:start -->
+  ExpenseReviewApp has one text input, Content (string), and its outcomes are
+  approve and reject.
+  Inputs: expenseId (string), employeeName (string), amount (number),
+  description (string).
+  Outputs: status (string), sapDocumentNumber (string). status is "posted" or
+  "rejected". When approved, sapDocumentNumber is "SAPEXP-" followed by the
+  expenseId, built by the existing posting step.
+  The posting step goes after the review, never before it.
+  <!-- helper:end -->
+
+  Build and do a test run.
 
 success_criteria:
-  - type: file_contains
-    description: "HITL node with AppTask (custom) type is present in the flow file"
-    path: "ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow"
-    includes:
-      - '"uipath.human-in-the-loop.coded-action-app"'
-      - '"custom"'
+  - type: run_command
+    description: "uip maestro flow validate passes against the edited .flow file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "App reference is wired into the node"
-    path: "ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow"
-    includes:
-      - '"appSystemName"'
+  - type: run_command
+    description: "The review step is backed by the deployed ExpenseReviewApp (by name, resource key or system name), not a quick form, and the existing SAP posting step is kept"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_expense_apptask_run.py structure"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
+  # Advisory: Studio Web agents may test with the RunProject proxy tool, which
+  # the eval testbench stubs; and a run of this flow waits on a person.
   - type: command_executed
-    description: "Agent validated the flow"
+    description: "Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instance)(?!\s+--help)'
     min_count: 1
-    weight: 2.0
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Effects: the existing SAP posting step sits behind the review; a real run created an Action Center app task whose data shows the run's expense id, Dana Whitfield and 1840.5; after the grader approved it the run completed, the review and the posting step completed, and the outputs are status=posted and sapDocumentNumber=SAPEXP-<id>; a second run the grader rejected completed without the posting step, with status=rejected"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_expense_apptask_run.py run"
+    # Two runs, each with a 600s deadline that bounds every uip call, then a cancel.
+    timeout: 1800
+    expected_exit_code: 0
+    weight: 6.0
     pass_threshold: 1.0

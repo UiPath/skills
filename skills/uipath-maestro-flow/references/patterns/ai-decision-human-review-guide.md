@@ -94,7 +94,12 @@ counter only when the request bounds the retries.
 
 The commonest reduction: the flow already has an agent that scores the item and
 an action step after it. Insert only `confidenceGate` and `reviewDecision`. Bind
-the gate to the existing confidence field, keep the existing action as
-`applyDecision`, and retarget its inbound edge at the gate. Do not add a second
-analyzer or a second copy of the action. Keep `endRejected` as its own End; a
-rejection never reaches the action.
+the gate to the existing confidence field. `applyDecision` is the first existing
+step of the route the gate guards, even a log or script step before the action:
+retarget its inbound edge at the gate, and end the Approve arm with
+`.stepToRef('<that step id>')`. Do not copy that step or any step after it, and
+do not add a second analyzer. Leave the new steps out of `.layout(...)`: merge
+places them and shifts the later steps right to make room
+([brownfield.md](../brownfield.md)). That shift keeps the layout; do not move
+those steps back or give the new steps positions of your own. Keep `endRejected`
+as its own End; a rejection never reaches the action.

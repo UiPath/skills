@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="ProductCalc" name="ProductCalc" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="product" name="product" type="integer" elementId="ProductCalc" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="837c032a-a8a6-87b8-0aae-f823cbf84479" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_start_calculateProduct</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="calculateProduct" name="Calculate product" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="product" type="integer" source="=result.response" var="product" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_calculateProduct</bpmn:incoming>
+      <bpmn:outgoing>Flow_calculateProduct_end</bpmn:outgoing>
+      <bpmn:script>return 6 * 7;</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>Flow_calculateProduct_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_calculateProduct" sourceRef="start" targetRef="calculateProduct" />
+    <bpmn:sequenceFlow id="Flow_calculateProduct_end" sourceRef="calculateProduct" targetRef="end" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="ProductCalc">
+      <bpmndi:BPMNShape id="S_calculateProduct" bpmnElement="calculateProduct"><dc:Bounds x="338" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_end" bpmnElement="end"><dc:Bounds x="488" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_start" bpmnElement="start"><dc:Bounds x="252" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_calculateProduct_end" bpmnElement="Flow_calculateProduct_end"><di:waypoint x="438" y="232" /><di:waypoint x="488" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_start_calculateProduct" bpmnElement="Flow_start_calculateProduct"><di:waypoint x="288" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

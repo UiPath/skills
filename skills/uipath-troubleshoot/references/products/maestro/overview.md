@@ -69,8 +69,8 @@ uip maestro <type> instance element-executions <id> [-f <fk>]    — element exe
 uip maestro <type> instance variables <id> [-f <fk>]             — instance variables. Filter: --parent-element-id
 uip maestro <type> instance asset <id> [-f <fk>]                 — process definition asset (BPMN XML, Flow JSON, Case JSON)
 uip maestro <type> instance cursors <id> [-f <fk>]               — current execution cursor positions
-uip maestro <type> instance retry <id> [-f <fk>]                 — retry a faulted instance
-uip maestro <type> instance pause|resume|cancel <id> [-f <fk>]   — lifecycle control
+uip maestro <type> instance retry <id> [-f <fk>]                 — retry a faulted instance (a Later decision; never run unasked)
+uip maestro <type> instance pause|resume|cancel <id> [-f <fk>]   — lifecycle control (a Later decision; never run unasked)
 uip maestro <type> processes incidents <key> [--folder-key <fk>] — incidents across all instances of a process
 uip maestro <type> incident summary                              — tenant-level incident SUMMARIES ONLY (no errorDetails)
 uip maestro <type> incident get <incident-id>                    — get a single incident by ID
