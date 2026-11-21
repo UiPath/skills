@@ -9,7 +9,8 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SCRIPT = join(REPO_ROOT, "skills", "uipath-activity-migrator", "scripts", "ensure-migrator.mjs");
 
-// ensure-migrator.mjs is a Windows-only flow that shells out to curl, powershell.exe, tar/unzip and UiPath.Upgrade.exe.
+// ensure-migrator.mjs is a Windows-only flow that shells out to curl, powershell.exe, tar/unzip and UiPath.Upgrade.exe,
+// and asks `uip rpa project migrate version` first.
 // To exercise it on any OS without downloading or installing anything, the script runs unmodified under a preload that
 // (a) reports platform win32, (b) maps the backslash paths the script builds onto the host file system, and
 // (c) replaces child_process.spawnSync with a scripted fake driven by the FAKE_SCENARIO env var. The fake knows no
@@ -45,6 +46,12 @@ const arg = (command, re) => (re.exec(command) || [])[1];
 cp.spawnSync = (cmd, argv, opts) => {
   const command = String(cmd);
   const text = argv.join(' ');
+  if (command.startsWith('uip ')) {
+    // One shell command line; record it whole, and whether UIPATH_STUDIO_PID reached it.
+    calls.push(command + (opts && opts.env && 'UIPATH_STUDIO_PID' in opts.env ? ' [STUDIO_PID]' : ''));
+    if (scn.uip) return result(scn.uip);
+    return result({ status: 1, stderr: "'uip' is not recognized as an internal or external command" });
+  }
   calls.push(command.replace(/^.*[\\/]/, '') + ' ' + text.slice(0, 60));
   if (command === 'curl') {
     if (argv.includes('-sSIL')) return result(scn.head || { status: 1 });
@@ -233,7 +240,7 @@ test("a tool that starts is trusted: no .NET install is inspected, whatever runt
     writeRuntimeConfig(ctx.root, target);
     const r = run(ctx, {});
     assert.equal(r.json.status, "ok", target);
-    assert.deepEqual(Object.keys(r.json), ["status", "exe", "version", "source"]);
+    assert.deepEqual(Object.keys(r.json), ["status", "source", "command", "exe", "version"]);
     assert.deepEqual(r.calls, ["UiPath.Upgrade.exe version"], "starting the tool is the only runtime check");
   }
 });
@@ -580,6 +587,148 @@ test("a failing tool with a strict telemetry value is a plain verify failure", (
   const ctx = setup({ cached: "root" });
   const r = run(ctx, { version:{ status: 1, stderr: "boom" } }, { env: { UIPATH_TELEMETRY_DISABLED: "true" } });
   assert.equal(r.json.code, "verify-failed");
+});
+
+// --- uip rpa project migrate (Helm) ----------------------------------------
+// The uip path runs only when neither UIPATH_ACTIVITY_MIGRATOR_DIR nor UIPATH_ACTIVITY_MIGRATOR_URL is set.
+
+const UIP_VERSION_CALL = "uip rpa project migrate version";
+const uipVersion = (version = "27.0.207-dev") => ({ stdout: `${version}\n` });
+const uipFailure = (code, message, instructions = "Fix it like this.", stream = "stderr") => ({
+  status: 1,
+  [stream]: JSON.stringify({ Result: "Failure", Message: message, Instructions: instructions, Code: code }, null, 2) + "\n",
+});
+const UNKNOWN_COMMAND = {
+  status: 3,
+  stdout: JSON.stringify({ Result: "ValidationError", ErrorCode: "invalid_argument", Message: "error: unknown command 'migrate'" }) + "\n",
+};
+// A Helm released before the verb treats `migrate` as an unknown argument and exits with its own error.
+const OLD_HELM = { status: 1, stderr: "Unrecognized command or argument 'migrate'.\n" };
+
+function runUip(ctx, scenario, { args = [], env = {} } = {}) {
+  return run(ctx, scenario, { args, useEnvDir: false, env: { UIPATH_ACTIVITY_MIGRATOR_URL: "", LOCALAPPDATA: join(ctx.dir, "local"), ...env } });
+}
+
+test("a migrator in uip's Helm is reported as source uip with its command, and nothing else runs", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: { stdout: "Resolving Helm...\n27.0.207-dev\n" } });
+  assert.equal(r.status, 0);
+  assert.deepEqual(r.json, { status: "ok", source: "uip", command: "uip rpa project migrate", version: "27.0.207-dev" });
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no download and no exe start");
+});
+
+test("UIPATH_STUDIO_PID never reaches the uip command", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipVersion() }, { env: { UIPATH_STUDIO_PID: "1234" } });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.calls[0], UIP_VERSION_CALL);
+});
+
+test("uip's not-windows failure stops the run with its message, wherever uip prints it", () => {
+  for (const stream of ["stdout", "stderr"]) {
+    const ctx = setup({ cached: "root" });
+    const r = runUip(ctx, { uip: uipFailure("not-windows", "The Activity Migrator runs on Windows only.", "Run it on Windows.", stream) });
+    assert.equal(r.status, 1, stream);
+    assert.equal(r.json.code, "not-windows");
+    assert.match(r.json.message, /Windows only\. Run it on Windows\./);
+    assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no archive fallback");
+  }
+});
+
+test("helm-missing on a plain run reports missing with uip's message and downloads nothing", () => {
+  const ctx = setup();
+  const r = runUip(ctx, {
+    uip: uipFailure("helm-missing", "The Activity Migrator ships with Helm, which was not found: no @uipath/studio-helm-win32-x64.", "Reinstall the uip CLI with its optional dependencies, or set HELM_LOCAL_DIR to a Helm tools directory.", "stdout"),
+  });
+  assert.equal(r.status, 3);
+  assert.equal(r.json.status, "missing");
+  assert.match(fwd(r.json.dir), /\/local\/UiPath\/ActivityMigrator$/);
+  assert.equal(r.json.url, "https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip");
+  assert.match(r.json.uipMessage, /^uip rpa project migrate version: helm-missing: The Activity Migrator ships with Helm/);
+  assert.match(r.json.uipMessage, /HELM_LOCAL_DIR/);
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL], "no download without --install");
+});
+
+test("helm-missing with --install falls back to the archive download and keeps uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found.", "Reinstall the uip CLI.", "stdout"), curl: { ok: true }, expand: "ok" }, { args: ["--install"] });
+  assert.equal(r.status, 0);
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "downloaded");
+  assert.equal(r.json.command, r.json.exe);
+  assert.match(fwd(r.json.exe), /\/local\/UiPath\/ActivityMigrator\/current\/UiPath\.Upgrade\.exe$/);
+  assert.match(r.json.uipMessage, /helm-missing: Helm was not found\. Reinstall the uip CLI\./);
+  assert.equal(r.calls[0], UIP_VERSION_CALL);
+  assert.ok(r.calls.some((c) => c.startsWith("curl")));
+});
+
+test("a uip without project migrate, a Helm without the verb, or no uip fall back to the archive with the reason", () => {
+  for (const [uip, reason] of [[UNKNOWN_COMMAND, /unknown command 'migrate'/], [OLD_HELM, /Unrecognized command or argument 'migrate'/], [undefined, /not recognized/]]) {
+    const ctx = setup();
+    const missing = runUip(ctx, { uip });
+    assert.equal(missing.status, 3, String(reason));
+    assert.equal(missing.json.status, "missing");
+    assert.match(missing.json.uipMessage, reason);
+    const installed = runUip(ctx, { uip, curl: { ok: true }, expand: "ok" }, { args: ["--install"] });
+    assert.equal(installed.json.source, "downloaded", String(reason));
+    assert.match(installed.json.uipMessage, reason);
+  }
+});
+
+test("a cached archive tool is used after the fallback, with uip's message", () => {
+  const ctx = setup();
+  const local = join(ctx.dir, "local");
+  const cacheRoot = join(local, "UiPath", "ActivityMigrator", "current");
+  mkdirSync(cacheRoot, { recursive: true });
+  writeFileSync(join(cacheRoot, "UiPath.Upgrade.exe"), "exe");
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found.") });
+  assert.equal(r.json.status, "ok");
+  assert.equal(r.json.source, "cached");
+  assert.match(r.json.uipMessage, /helm-missing/);
+  assert.ok(!r.calls.some((c) => c.startsWith("curl") && c.includes("-o")), "no download");
+});
+
+test("an archive failure after the fallback still carries uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found."), curl: {}, psDownload: {} }, { args: ["--install"] });
+  assert.equal(r.json.code, "download-failed");
+  assert.match(r.json.uipMessage, /helm-missing: Helm was not found\./);
+});
+
+test("offline mode after the fallback is offline-missing with uip's message", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipFailure("helm-missing", "Helm was not found.") }, { args: ["--install"], env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.code, "offline-missing");
+  assert.match(r.json.uipMessage, /helm-missing/);
+  assert.deepEqual(r.calls, [UIP_VERSION_CALL]);
+});
+
+test("UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1 still asks uip, which downloads nothing", () => {
+  const ctx = setup();
+  const r = runUip(ctx, { uip: uipVersion() }, { env: { UIPATH_ACTIVITY_MIGRATOR_OFFLINE: "1" } });
+  assert.equal(r.json.source, "uip");
+});
+
+test("UIPATH_ACTIVITY_MIGRATOR_URL or UIPATH_ACTIVITY_MIGRATOR_DIR keeps uip out of it", () => {
+  const ctx = setup({ cached: "root" });
+  const viaDir = run(ctx, { uip: uipVersion() }, { env: { UIPATH_ACTIVITY_MIGRATOR_URL: "" } });
+  assert.equal(viaDir.json.source, "env");
+  assert.equal(viaDir.json.command, viaDir.json.exe);
+  assert.equal(viaDir.json.uipMessage, undefined);
+  assert.ok(!viaDir.calls.some((c) => c.startsWith("uip ")));
+  const viaUrl = runUip(ctx, { uip: uipVersion(), curl: { ok: true }, expand: "ok" }, { args: ["--install"], env: { UIPATH_ACTIVITY_MIGRATOR_URL: "http://example.invalid/UiPath.Upgrade.Cli.zip" } });
+  assert.equal(viaUrl.json.source, "downloaded");
+  assert.ok(!viaUrl.calls.some((c) => c.startsWith("uip ")));
+});
+
+test("--install and --force do not touch the archive when uip supplies the migrator", () => {
+  for (const flag of ["--install", "--force"]) {
+    const ctx = setup();
+    const r = runUip(ctx, { uip: uipVersion("26.10.3") }, { args: [flag] });
+    assert.equal(r.json.source, "uip", flag);
+    assert.equal(r.json.version, "26.10.3");
+    assert.deepEqual(r.calls, [UIP_VERSION_CALL], flag);
+  }
 });
 
 test("POSIX-style install dirs from Git Bash are normalised to Windows paths", { skip: process.platform !== "win32" }, () => {

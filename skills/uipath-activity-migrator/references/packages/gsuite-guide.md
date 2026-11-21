@@ -2,7 +2,7 @@
 
 > **Owner review pending.** Pre-filled from the migrator source (`UiPath.Upgrade.GSuiteActivities`). Lines marked `VERIFY` need confirmation by the GSuite package owners. Extend the three hooks; keep their headings.
 
-Extension `GSuiteActivities`. The public build lists its flags and runs its migrators (verified on 25.10.1; its preview gate is compiled in unconditionally). Still confirm with `"<MIGRATOR_EXE>" analyze --help`: a build that lists no `--gsuite-*` flag has no GSuite extension; report classic GSuite activities as not migrated and skip the rest of this guide.
+Extension `GSuiteActivities`. The public build lists its flags and runs its migrators (verified on 25.10.1; its preview gate is compiled in unconditionally). Still confirm with `<MIGRATOR> analyze --help`: a build that lists no `--gsuite-*` flag has no GSuite extension; report classic GSuite activities as not migrated and skip the rest of this guide.
 
 Applies when `project.json` lists `UiPath.GSuite.Activities`; the version alone does not decide it (a `3.5.10` project still carries classic activities, which the tool migrates while raising the package to its `3.8.10` minimum or the requested version). Do not pre-scan the XAML: the `analyze` run reports every affected activity per file.
 
@@ -16,7 +16,7 @@ Applies when `project.json` lists `UiPath.GSuite.Activities`; the version alone 
 
 ### Flags
 
-Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the installed build (Step 0).
+Availability and defaults come from `<MIGRATOR> analyze --help` on the installed build (Step 0).
 
 | Flag | Use |
 |---|---|

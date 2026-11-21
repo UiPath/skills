@@ -14,7 +14,7 @@ Extension `MailActivities`. Applies when `project.json` lists `UiPath.Mail.Activ
 
 ### Flags
 
-Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the installed build (Step 0).
+Availability and defaults come from `<MIGRATOR> analyze --help` on the installed build (Step 0).
 
 | Flag | Use |
 |---|---|
