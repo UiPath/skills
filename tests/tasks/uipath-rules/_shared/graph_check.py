@@ -310,7 +310,16 @@ def check_annotations_attached(root: ET.Element) -> None:
             fail(f"text annotation {note_id} is empty")
     tied = set()
     for association in root.findall("dmn:association", NS):
-        ends = [(association.get(end) or "").lstrip("#") for end in ("sourceRef", "targetRef")]
+        # tDMNElementReference: each end is a child element carrying `href`, not an attribute on
+        # `<association>`. The attribute spelling parses and validates but the designer reads no
+        # ends and drops the connector (PO.Frontend DrdProjection.ts), so it is not accepted here.
+        ends = []
+        for end in ("sourceRef", "targetRef"):
+            child = association.find(f"dmn:{end}", NS)
+            if child is None:
+                fail(f"association {association.get('id')} has no <{end} href=\"#...\" /> child element"
+                     f"; {end} is never an attribute")
+            ends.append((child.get("href") or "").lstrip("#"))
         for end in ends:
             if end not in ids:
                 fail(f"association {association.get('id')} points at {end}, which the file does not hold")
