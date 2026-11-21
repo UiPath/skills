@@ -212,12 +212,17 @@ A note on the diagram, tied to the element it is about. It holds no logic, gets 
 <textAnnotation id="textAnnotation_1">
   <text>Thresholds reviewed quarterly by Credit Risk.</text>
 </textAnnotation>
-<association id="association_1" sourceRef="#decision_risk" targetRef="#textAnnotation_1" />
+<association id="association_1">
+  <sourceRef href="#decision_risk" />
+  <targetRef href="#textAnnotation_1" />
+</association>
 ```
 
 Use one for context a reviewer needs and the table cannot carry — where a threshold came from, when it is next reviewed. Per-row reasoning belongs in the annotation column instead, and a description of one element belongs in its `<description>`.
 
 An annotation may be tied to any element except another annotation. It is drawn 224 by 64, narrower and shorter than a decision card, so `uip rules format` places it like anything else.
+
+**`sourceRef` and `targetRef` are child elements, never attributes.** The DMN schema types them as `tDMNElementReference`, so each carries the id on its own `href`. Written as attributes on `<association>` the file still parses and `validate` still passes, but the designer reads no ends and drops the connector: the annotation draws as a box floating beside the graph, tied to nothing.
 
 ## Verifying
 

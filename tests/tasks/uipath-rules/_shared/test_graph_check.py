@@ -254,7 +254,8 @@ class TestKnowledgeModels:
 
 class TestTextAnnotations:
     NOTE = '<textAnnotation id="ta_1"><text>Reviewed quarterly.</text></textAnnotation>'
-    TIE = '<association id="assoc_1" sourceRef="#decision_risk" targetRef="#ta_1" />'
+    TIE = ('<association id="assoc_1"><sourceRef href="#decision_risk" />'
+           '<targetRef href="#ta_1" /></association>')
 
     def with_note(self, note=None, tie=None):
         text = (FIXTURE / DMN).read_text(encoding="utf-8")
@@ -275,7 +276,14 @@ class TestTextAnnotations:
     def test_an_association_pointing_at_a_missing_element_fails(self):
         with pytest.raises(SystemExit):
             gc.check_annotations_attached(self.with_note(
-                tie='<association id="assoc_1" sourceRef="#decision_gone" targetRef="#ta_1" />'))
+                tie='<association id="assoc_1"><sourceRef href="#decision_gone" />'
+                    '<targetRef href="#ta_1" /></association>'))
+
+    def test_ends_written_as_attributes_fail(self):
+        # Parses and validates, but the designer reads no ends and drops the connector.
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.with_note(
+                tie='<association id="assoc_1" sourceRef="#decision_risk" targetRef="#ta_1" />'))
 
 
 class TestProject:
