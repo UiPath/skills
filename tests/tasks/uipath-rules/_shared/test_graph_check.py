@@ -160,6 +160,42 @@ class TestDiagram:
             gc.check_no_overlap(root)
 
 
+class TestLiteralExpressionDecisions:
+    """A decision whose logic is a literal expression has no output columns of its own."""
+
+    GRAPH = ('<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" id="d" name="F" namespace="urn:f">'
+             '<decision id="d_band" name="band"><variable id="v1" name="band" typeRef="string" />'
+             '<decisionTable id="t1"><output id="o1" name="band" typeRef="string" />'
+             '<rule id="r1"><outputEntry id="oe1"><text>"Large"</text></outputEntry></rule></decisionTable></decision>'
+             '<decision id="d_fee" name="fee"><variable id="v2" name="fee" typeRef="number" />'
+             '<informationRequirement id="ir"><requiredDecision href="#d_band" /></informationRequirement>'
+             '<literalExpression id="le" typeRef="number"><text>loanAmount * 0.015</text></literalExpression>'
+             "</decision></definitions>")
+
+    def root(self):
+        return ET.fromstring(self.GRAPH)
+
+    def test_it_is_found_by_its_own_name(self):
+        assert gc.decision_for_output(self.root(), "fee").get("id") == "d_fee"
+
+    def test_a_table_is_still_found_by_its_output_column(self):
+        assert gc.decision_for_output(self.root(), "band").get("id") == "d_band"
+
+    def test_check_chain_reads_it_as_the_downstream_decision(self):
+        # Regression: this raised AttributeError on output_names(None) and failed a correct rule.
+        gc.check_chain(self.root(), "fee", "band")
+
+    def test_a_name_no_decision_answers_under_still_fails(self):
+        with pytest.raises(SystemExit):
+            gc.decision_for_output(self.root(), "nothing")
+
+    def test_cases_skip_it_rather_than_guessing(self):
+        # The offline evaluator does not run FEEL, so a case expecting `fee` fails loudly.
+        gc.check_graph_cases(self.root(), [({}, {"band": "Large"})])
+        with pytest.raises(SystemExit):
+            gc.check_graph_cases(self.root(), [({}, {"fee": 300.0})])
+
+
 class TestKnowledgeModels:
     """A knowledge model is callable, wired to a caller, and part of no cycle."""
 
