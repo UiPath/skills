@@ -259,11 +259,14 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:case.exit.branch-entry -->
 - `exitToStage` does not route at run time: the runtime drops the exit's
-  target and, when a stage completes, enters every stage whose entry holds. A
-  bare `selected-stage-completed` entry holds for every branch out of that
-  stage, so a stage that branches several ways opens every destination at once.
-  Gate each destination's entry on its own branch, with the expression its exit
-  carries:
+  target and, when a stage completes or exits, enters every stage whose entry
+  holds. A bare `selected-stage-completed` or `selected-stage-exited` entry
+  holds for every branch out of that stage, so a stage that branches several
+  ways opens every destination at once. Gate each destination's entry on its
+  own branch, with the expression its exit carries; when the exits differ only
+  by which task completed, with an expression on a variable only that task
+  writes (`validate --strict` refuses `selected-tasks-completed` in a stage
+  entry):
 
   ```ts
   .stage('Review', s => s
