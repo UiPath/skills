@@ -13,7 +13,7 @@ description: >
   had to work out that it must close the run first, either by finishing the
   logs or with `executions finish`.
 
-  The prompt names the day and the test set and nothing else; the precondition,
+  The prompt names the day and the per-run test set (report-set.txt) and nothing else; the precondition,
   the closing route and `--output json` are all left to the skill.
 tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case]
 
@@ -28,9 +28,15 @@ run_limits:
 #
 # The premise IS an open execution, and the task consumes it by closing it. So
 # pre_run opens exactly one fresh run with no log started and LEAVES IT OPEN,
-# then records its ExecutionId so the oracle grades that exact run. It sweeps
-# EARLIER DAYS' runs but spares today, so a concurrent variant run's in-flight
-# execution is never destroyed; growth stays bounded to one day's runs.
+# then records its ExecutionId so the oracle grades that exact run.
+#
+# Each run gets its OWN test set, EVFX-REPORT-SET-<UTC stamp>-<6 hex>, named in
+# report-set.txt. A shared EVFX-REPORT-SET collected one open run per variant
+# run each day (seven on 2026-11-20, one already closed and booked), so "the
+# run that counted against today" had no single answer: agents booked or
+# reported the wrong one, or asked which. A per-run set holds exactly the run
+# under test and cannot collide with a concurrent run. post_run deletes the
+# set; pre_run also sweeps per-run sets that earlier days' runs left behind.
 pre_run:
   - timeout: 280
     command: |
@@ -82,18 +88,30 @@ pre_run:
       if r.returncode != 0:
           fail("this CLI has no 'uip tm executions set-reporting-date'")
 
-      # 1. test set — create if absent, never delete
+      # 1. this run's own test set (see the header comment), plus a sweep of
+      #    per-run sets earlier days left behind if their post_run did not run.
+      import datetime, secrets
+      now = datetime.datetime.now(datetime.timezone.utc)
+      SET = f"{SET}-{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      today = now.strftime("%Y%m%d")
+      old = call("sets.sweep", "tm", "testsets", "list", "--project-key", P,
+                 "--filter", "EVFX-REPORT-SET-", "--limit", "100")
+      for x in (old.get("Data") or []):
+          name, key = x.get("Name") or "", pick(x, "TestSetKey", "Key", "ObjKey")
+          stamp = name[len("EVFX-REPORT-SET-"):len("EVFX-REPORT-SET-") + 8]
+          if key and stamp.isdigit() and stamp < today:
+              call(f"set.sweep.{key}", "tm", "testsets", "delete", "--test-set-key", key, "--yes")
+      call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
       ts = by_name("set.find", "testsets", SET)
-      if not ts:
-          call("set.create", "tm", "testsets", "create", "--project-key", P,
-               "--name", SET)
-          ts = by_name("set.refind", "testsets", SET)
       if not ts:
           fail(f"could not create or find {SET}")
       set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
-      set_id = ts.get("Id")
       if not set_key:
           fail(f"{SET} has no key")
+      with open("report-set.txt", "w", encoding="utf-8") as fh:
+          fh.write(SET)
+      with open("report-set-key.txt", "w", encoding="utf-8") as fh:
+          fh.write(set_key)
 
       # 2. cases — create if absent, then assign (assign is idempotent)
       keys = []
@@ -118,23 +136,6 @@ pre_run:
       missing = [c for c in CASES if c not in assigned]
       if missing:
           fail(f"cases not assigned to {SET}: {missing}")
-
-      # 3. clear what EARLIER DAYS left, but SPARE today. A concurrent variant
-      #    run shares this CLAIM set and may have an OPEN run in flight right
-      #    now; deleting every run would destroy another run's fixture. Earlier
-      #    days' runs (including this task's own, booked by a prior invocation)
-      #    are safe to remove, so growth stays bounded to one day's runs.
-      import datetime
-      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-      if set_id:
-          d = call("execs.list", "tm", "executions", "list", "--project-key", P,
-                   "--test-set-id", set_id, "--limit", "100")
-          for row in (d.get("Data") or []):
-              eid = row.get("Id")
-              created = str(row.get("Created") or "")
-              if eid and not created.startswith(today):
-                  call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
-                       "--execution-id", eid, "--project-key", P, "--yes")
 
       # 4. open exactly one run and LEAVE IT OPEN. The premise is a run that
       #    "counted against today" and is NOT closed yet: set-reporting-date
@@ -162,13 +163,21 @@ pre_run:
       with open("reporting_run_id.txt", "w", encoding="utf-8") as fh:
           fh.write(eid)
 
-      print(f"FIXTURE: ready set_key={set_key!r} execution={eid!r} (OPEN)",
+      print(f"FIXTURE: ready set={SET!r} set_key={set_key!r} execution={eid!r} (OPEN)",
             flush=True)
       EOF
 
+# The per-run set and its run are this task's alone; remove them once graded.
+post_run:
+  - command: |
+      [ -f report-set-key.txt ] && uip tm testsets delete \
+        --test-set-key "$(cat report-set-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
-  The run on our "EVFX-REPORT-SET" test set in the CLAIM project (Test Manager)
-  counted against today. Finance needs it booked to 2026-09-21 instead.
+  The run on our test set named in report-set.txt (in this folder) in the CLAIM
+  project (Test Manager) counted against today. Finance needs it booked to
+  2026-09-21 instead.
 
   Please get that run booked to 2026-09-21 and confirm the date Test Manager
   ended up storing. No need to check back with me.
@@ -246,14 +255,15 @@ success_criteria:
       eid = p.read_text(encoding='utf-8').strip()
       assert eid, 'reporting_run_id.txt is empty'
 
-      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-REPORT-SET')
+      name = pathlib.Path('report-set.txt').read_text(encoding='utf-8').strip()
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter',name)
       sid = next((x['Id'] for x in (sets.get('Data') or [])
-                  if x.get('Name') == 'EVFX-REPORT-SET'), None)
-      assert sid, 'EVFX-REPORT-SET not found'
+                  if x.get('Name') == name), None)
+      assert sid, f'{name} not found'
       runs = (uip('tm','executions','list','--project-key','CLAIM',
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
       run = next((r for r in runs if r.get('Id') == eid), None)
-      assert run, f'the run pre_run opened ({eid}) is gone from EVFX-REPORT-SET'
+      assert run, f'the run pre_run opened ({eid}) is gone from {name}'
       rd = (run.get('ReportingDate') or '')
       assert rd.startswith('2026-09-21'), f'expected 2026-09-21 on {eid}, stored {rd!r}'
       "
