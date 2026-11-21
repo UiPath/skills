@@ -17,6 +17,13 @@
  * `=output.RiskDecision.riskBand` (`uip maestro case check` rejects both).
  * `resultSchema` is the `_jsonSchema` on the `output` row that
  * `uip maestro case tasks describe --type business-rule` returns.
+ *
+ * `RiskDecision` is a decision key, and a rule carries one per decision. A rule
+ * that holds several decisions returns them all, so name the one you want:
+ * `=RiskDecision.riskBand` reads that decision, `=RateDecision.interestRate`
+ * another. Take the keys from the `_jsonSchema` above rather than guessing —
+ * they are the decisions' names, not the entry points' display names, and a
+ * display name reads null.
  */
 import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
