@@ -2,13 +2,16 @@
 
 *Exact signatures, fields, and defaults: `documentClassify()` and `dynamicExtract()`.*
 
+The Extract document node (`uipath.ixp.extract-document-builder`) is opt-in:
+add it only when the user names it. "We don't have a trained model yet" does
+not name it. Every other extraction request, including one with no model yet,
+goes to a published IXP model or an IXP project ([ixp.md](ixp.md)), never to
+this node.
+
 Two document steps that need no trained IxP fields: classification
 (`uipath.document.classify`) labels a document, and the Extract document node
-(`uipath.ixp.extract-document-builder`) pulls fields against a taxonomy you
-author INLINE ([Two ways to author it](#two-ways-to-author-it)). It is
-opt-in: add it only when the user names the Extract document node. Any other
-extraction request, one with no trained model included, goes to a published
-IXP model or an IXP project ([ixp.md](ixp.md)), never to this node.
+pulls fields against a taxonomy you author INLINE
+([Two ways to author it](#two-ways-to-author-it)).
 
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
 `dynamicExtract({ fileRef, schema?, pageRange?, modelConfig? })`.
