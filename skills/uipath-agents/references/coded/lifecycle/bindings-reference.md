@@ -649,7 +649,7 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 
 **Declared by:** agent's start on a connector event (mail received, Data Fabric record created or updated). No SDK call declares it, so the code scan never finds it, and no CLI command writes it. Write the entries by hand, every value from connector discovery (table below), never from another trigger: operation and object names are connector-specific (`EMAIL_RECEIVED`, `UPDATED_V3`), so never write a generic `CREATED` unless discovery returns it.
 
-Wrong or missing trigger packs, deploys and pushes clean; agent never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
+A trigger with a wrong `Operation`, or none, packs, deploys and pushes clean; agent never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
 
 - Only a solution deploy creates the trigger; publishing the package and creating its process creates none.
 - The deploy config gives each event trigger `runtimeType: Unattended`, which never starts a coded agent. Fetch the config with `uip solution deploy config get <SOLUTION_PACKAGE> -d <CONFIG_FILE>`, set the trigger with `uip solution deploy config set <CONFIG_FILE> "<TRIGGER_RESOURCE_NAME>" runtimeType Serverless` (the `kind: trigger` resource's `name` in the file, like `my-agent_EventTrigger-Record Created`), and pass `--config-file <CONFIG_FILE>` to `deploy run`, or to `deploy upgrade` for an existing deployment.
@@ -657,7 +657,7 @@ Wrong or missing trigger packs, deploys and pushes clean; agent never starts. Af
 
 **Event input:** event starts the agent with eight string inputs: `UiPathEventConnector`, `UiPathEvent`, `UiPathEventObjectType`, `UiPathEventObjectId` (the record's or item's id), `UiPathTime`, `UiPathCorrelationId`, `UiPathAdditionalEventData`, `UiPathTriggerActionId`. Undeclared ones are ignored; declare the ones the agent reads, as `str` defaulting to `""`, in its input model.
 
-**Binding entries:** one `EventTrigger`, plus one `Property` keyed to it when the event takes parameters. The `EventTrigger` takes an entry-point field like any resource ([Step 4](#step-4-resolve-entrypoint-bindings)); with one entry point the field may be omitted, and Orchestrator binds the trigger to that entry point.
+**Binding entries:** one `EventTrigger`, plus one `Property` keyed to it when the event takes parameters. The `EventTrigger` takes an entry-point field like any resource ([Step 4](#step-4-resolve-entrypoint-bindings)), but with several entry points it is never left unbound: without the field Orchestrator binds the trigger to the first entry point in `entry-points.json`, with no warning. Each `init` run gives every entry point a new `uniqueId`; copy the new one into the field after every run, since a stale one fails the deploy (`Cannot set entry point. The entry point with path '' was not found`).
 
 ```json
 [
@@ -665,7 +665,7 @@ Wrong or missing trigger packs, deploys and pushes clean; agent never starts. Af
     "resource": "EventTrigger",
     "key": "<TRIGGER_KEY>",
     "value": {
-      "ConnectionId": { "defaultValue": "<CONNECTION_ID>", "isExpression": false }
+      "ConnectionId": { "defaultValue": "<CONNECTION_ID>", "isExpression": false, "displayName": "Connection" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -680,7 +680,7 @@ Wrong or missing trigger packs, deploys and pushes clean; agent never starts. Af
     "resource": "Property",
     "key": "<OPERATION>_EventTrigger.<TRIGGER_KEY>",
     "value": {
-      "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false }
+      "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false, "displayName": "<EVENT_PARAMETER>" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -697,6 +697,7 @@ Wrong or missing trigger packs, deploys and pushes clean; agent never starts. Af
 - `key`: name unique among the project's triggers. `Property` names its trigger in `metadata.ParentResourceKey` as `EventTrigger.<TRIGGER_KEY>`.
 - `TriggerCreateParameters`, `DebugQueryParameters`: the `value` keys, comma-separated.
 - `ConnectionId.defaultValue`: connection's id, as in a connection binding.
+- `displayName` on every `value` entry: push fails without it (`validation errors for Bindings … displayName Field required`).
 - `FilterExpression`: optional (**Filter expression** below).
 
 Data Fabric entity event scopes its `Property` to the entity and adds an `entity` resource that `Property` references in `FieldReferences`:
@@ -709,7 +710,7 @@ Data Fabric entity event scopes its `Property` to the entity and adds an `entity
     "activityDisplayName": "Connector",
     "value": {
       "name": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "Entity" },
-      "folderKey": { "defaultValue": "", "isExpression": false }
+      "folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderKey" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -725,9 +726,9 @@ Data Fabric entity event scopes its `Property` to the entity and adds an `entity
     "id": "Property_<OPERATION>_<TRIGGER_KEY>",
     "activityDisplayName": "Connector",
     "value": {
-      "entityScope": { "defaultValue": "folder", "isExpression": false },
-      "folderEntityName": { "defaultValue": "<ENTITY_NAME>", "isExpression": false },
-      "folderEntityName_folderKey": { "defaultValue": "", "isExpression": false }
+      "entityScope": { "defaultValue": "folder", "isExpression": false, "displayName": "entityScope" },
+      "folderEntityName": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "folderEntityName" },
+      "folderEntityName_folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderEntityName_folderKey" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
