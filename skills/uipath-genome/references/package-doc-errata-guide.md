@@ -44,6 +44,12 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Get File List, Upload Files | declare the `Result` / `AllResults` variable as `scg:List(umo365fm:O365DriveRemoteItem)` | Both are `OutArgument<O365DriveRemoteItem[]>`: bind a `umo365fm:O365DriveRemoteItem[]` variable. A `List` variable fails to load (`Set property '…Result' threw an exception`) |
 | Set Email Categories | `CategoriesToAssign` / `SpecificCategoriesToRemove` only as a VB flat attribute, since an `InArgument` cannot be typed `String[]` | `<InArgument x:TypeArguments="s:String[]">` works in VB and C# projects; only `x:String[]` fails to load |
 
+## `UiPath.UIAutomation.Activities` — docs shipped with 26.10.9 and earlier
+
+| Doc | Installed docs say | What the build does |
+|---|---|---|
+| Target System (§ Window Selector), `NAppAttachMode` | the attach mode decides which windows inner activities search: `ByProcessName` "all windows with the same process name", `ByInstance` the whole instance, its windows ranked by the window selector's `title` | Treats a browser card as working in one tab under every attach mode: an inner activity whose window selector is a web selector searches the tab of the card's `InUiElement`, else the tab the card attached to, and the selector's `url` and `title` are not compared with it |
+
 ## `UiPath.UIAutomation.Activities` — docs shipped with 26.10.8 and earlier
 
 | Doc | Installed docs say | What the build does |
