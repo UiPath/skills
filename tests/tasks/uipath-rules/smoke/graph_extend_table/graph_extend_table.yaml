@@ -7,6 +7,11 @@ description: >
   their values, no two cards overlapping, the new decision requiring the
   original one, both decisions' values on the policy cases, and
   `uip rules validate` run by the grader.
+
+  Starts from a single decision table and turns it into a graph. The sibling
+  task graph_extend_arranged starts from a graph that is already two decisions
+  with a hand-arranged diagram; between them they cover both brownfield shapes.
+
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:

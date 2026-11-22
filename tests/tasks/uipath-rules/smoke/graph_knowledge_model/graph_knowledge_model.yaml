@@ -5,8 +5,14 @@ description: >
   Grades skill activation, the model carrying a variable and encapsulated
   logic, a decision actually calling it, the annotation being tied to an
   element, no cards overlapping, and `uip rules validate` run by the grader.
-  The discount itself is graded by the engine in the e2e task: a call is FEEL
-  the offline evaluator does not run.
+
+  The discount values are deliberately not graded. A call is FEEL the offline
+  evaluator does not run, and the model's own signature is not pinned by the
+  prompt — the agent chooses what the model takes and what the decision keeps,
+  so there are no fixed parameters to evaluate its table against. No e2e task
+  covers DiscountRules either; graph_formula_and_model_debug grades a model
+  through the engine, but FeeRules, not this one. What this task grades is the
+  structural contract of a knowledge model, which is what the skill teaches.
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:

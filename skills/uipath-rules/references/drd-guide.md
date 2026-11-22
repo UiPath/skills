@@ -151,11 +151,9 @@ Each decision carries `<uipath:authoring editor="…" />` naming the editor its 
 
 ## The diagram
 
-Leave `dmndi:DMNDI` out of a new `.dmn`. Run `uip rules format <PROJECT_DIR>` after adding or removing an input or a decision: it draws a shape for each new element, leaves placed shapes where the user left them, and drops the shapes of deleted ones.
+Critical Rule 10 owns this: never place shapes by hand, leave `dmndi:DMNDI` out of a new `.dmn`, run `uip rules format <PROJECT_DIR>` after adding or removing any drawn element, and keep an existing `dmndi:DMNDI` when you edit a file that has one.
 
-Never place shapes by hand. `validate` does not look at the diagram and no diagnostic covers layout, so hand-written coordinates are reported by nothing and land on top of one another in the designer.
-
-**Keep an existing diagram.** Editing a `.dmn` that already has a `dmndi:DMNDI` element means keeping that element: write your change into the model and leave the diagram alone. Rewriting the file from scratch drops it, and the user's arranged layout is gone — `format` cannot put back coordinates the file no longer holds, so it lays the whole graph out afresh instead.
+Every element the canvas draws counts, not only inputs and decisions: a knowledge model and a text annotation are placed too, so adding either is a reason to run `format`.
 
 ## Literal expressions
 
@@ -175,7 +173,7 @@ A decision answers with one value from one FEEL expression instead of a table. U
 ```
 
 - **Always set `typeRef`** on the `literalExpression`, and give the decision's `variable` the same type. Without it, `validate` reports `DMN_LITERAL_EXPRESSION_TYPE_MISSING`.
-- The expression reads the names the decision requires, by the same rules a table's input expression follows: an input argument by its name, an upstream decision by that decision's `variable` name.
+- The expression reads the names the decision requires, by the same rules a table's input expression follows: an input argument by its name, an upstream decision as [Reading an upstream decision](#reading-an-upstream-decision) describes.
 - It answers with one value, so a reader addresses the decision itself — `fee`, never `fee.something`.
 - An empty `<text>` is `DMN_LITERAL_EXPRESSION_EMPTY`.
 - It has no rules, so it carries no `<annotation>` column and no `<annotationEntry>`.
@@ -204,7 +202,11 @@ And the decision that calls it:
 
 ```xml
 <decision id="decision_score" name="score" label="Score">
+  <extensionElements><uipath:authoring editor="literal-expression" /></extensionElements>
   <variable id="variable_score" name="score" typeRef="number" />
+  <informationRequirement id="informationRequirement_score_creditScore">
+    <requiredInput href="#inputData_creditScore" />
+  </informationRequirement>
   <knowledgeRequirement id="knowledgeRequirement_score">
     <requiredKnowledge href="#bkm_score" />
   </knowledgeRequirement>

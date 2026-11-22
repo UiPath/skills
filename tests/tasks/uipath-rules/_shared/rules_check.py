@@ -72,7 +72,7 @@ def run_validate(project: Path) -> None:
 
 
 def load_graph(project: Path) -> tuple[Path, ET.Element]:
-    """The project's one `.dmn`, once it holds the profile `validate` deliberately accepts: decision tables only."""
+    """The project's one `.dmn`, once it holds the profile the skill authors: every decision's logic a decision table or a literal expression, knowledge models and text annotations allowed, no knowledge source or decision service."""
     dmn_files = list(project.glob("*.dmn"))
     if len(dmn_files) != 1:
         fail(f"expected exactly one .dmn in {project}/, found {len(dmn_files)}")

@@ -6,6 +6,11 @@ description: >
   at the size the designer draws them, the published entry points being kept,
   the new decision requiring the risk band, all three decisions' values on the
   policy cases, and `uip rules validate` run by the grader.
+
+  Starts from a graph that is already two decisions with a hand-arranged
+  diagram. The sibling task graph_extend_table starts from a single decision
+  table; between them they cover both brownfield shapes.
+
 tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
 
 sandbox:
