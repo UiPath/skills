@@ -263,15 +263,18 @@ make from syntax alone. Exact signatures remain in the generated API.
   holds. A bare `selected-stage-completed` or `selected-stage-exited` entry
   holds for every branch out of that stage, so a stage that branches several
   ways opens every destination at once. Gate each destination's entry on its
-  own branch, with the expression its exit carries; when the exits differ only
-  by which task completed, with an expression on a variable only that task
-  writes (`validate --strict` refuses `selected-tasks-completed` in a stage
-  entry):
+  own branch, with the expression its exit carries:
 
   ```ts
   .stage('Review', s => s
     .entryWhen(rule('selected-stage-completed', { stage: 'Triage', expression: '=js:vars.route === "review"' })))
   ```
+
+  When the exits differ only by which task completed, have every deciding task
+  write one shared variable, each its own value, and gate on that value. A
+  variable only one task writes keeps its value when the stage runs again, so
+  that task's destination opens again on a later pass. `validate --strict`
+  refuses `selected-tasks-completed` in a stage entry.
 
 <!-- RULE:case.skip.live -->
 - Whether a skipped task satisfies a completion rule is runtime behavior. For a
