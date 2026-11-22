@@ -71,7 +71,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 ### Step 1.5: Resolve SME Review Items
 
-Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 6 interview ran, a point it put to the user is not asked again: left open, it keeps its default, or is `blocking` when it has none (rule 5). Every other item is asked. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one prompt; every other item stays in the Action Required table with its default applied. If there are any to ask:
+Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. One item is one decision: the same gap marked in several sections is asked once. When the Phase 1 Step 6 interview ran, ask only the items whose answerer is one of the user's roles ([interview-guide.md](../interview/interview-guide.md) § Asking rule 1), and none the interview put to the user: an item not asked keeps its default, or is `blocking` when it has none (rule 5). Otherwise every item is asked. In autonomous mode, ask only the items with no defensible default (the candidates for `blocking`, rule 5), in one prompt; every other item stays in the Action Required table with its default applied. If there are any to ask:
 
 > **Batching rule.** One structured prompt holds at most 4 questions, one item each, with the item's own options (at most 4, the default applied first) or its default named. More than 4 items take further prompts, grouped by SDD section, waiting for answers between them. Never drop an item to fit a prompt.
 
@@ -177,7 +177,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
-9. Output a summary in the conversation. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
+9. Output a summary in the conversation. When items are open, it counts them by the role that answers them and names `interview <SDD_PATH>` as the way to have them asked. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
 ```markdown
 ## SDD Generated
@@ -187,8 +187,6 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ...
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
-<AUTONOMOUS ONLY, when items are open: "`interview <SDD_PATH>` asks them, by who answers them.">
-<INTERVIEW RAN, when items are open: the open items counted by role, and `interview <SDD_PATH>` to ask them ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
 - `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.

@@ -213,7 +213,7 @@ Recommended Scope + Project List + Queue Architecture>
 
 **The confirmation.** Ask the guide's structured confirmation question: recommendation option 1, single-product alternatives, then "Solution (customize)". **If the user picks "Solution (customize)":** re-run Level 1.75's customize branch, re-emit the summary with the customized project list, and re-ask; maximum 3 revisions, then proceed with latest composition. **If the user picks a single-product alternative:** re-run Step 4 with that forced primary, including Level 1.5 for RPA.
 
-**Without the interview**, ask at most 5 clarifying questions in one round; if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 1.5 asks the items the interview did not ([sdd-writing-guide.md](sdd-writing-guide.md)).
+**Without the interview**, ask at most 5 clarifying questions in one round; if the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. With it, every point left open keeps its `[SME REVIEW]` marker, and Phase 3 Step 1.5 does not ask it again ([sdd-writing-guide.md](sdd-writing-guide.md)).
 
 ## Phase 2 — Architecture Review
 
