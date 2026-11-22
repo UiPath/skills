@@ -20,6 +20,7 @@ uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json
 # Whether the pack is APPLIED is a separate question from what is covered.
 # Coverage cannot answer it (it runs pack-on or pack-off) — this can.
 # A known pack that was never applied returns 200 with Active: false.
+# Data.Mode says how an active pack runs: "enforce", "audit" (Observe) or null.
 # A 404 means the packId itself is not usable (unknown, or a catalog stub
 # with no bundle) — NOT "not applied"; check it against catalog list.
 uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json \
@@ -75,10 +76,27 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `ImpactedClauseId` — the clause whose rollup this drift pulled down
 - `UnmetSettings[]` — `{ Key, Expected, Actual }`, same predicate shape as `ManualConfigChecks` above
 
+**Conflicts and the apply plan** — what enforcing would change in the tenant's existing AOps policies. Present on an updated CLI (`Data.CoverageVersion` is the tell; see [Graceful degrade](#conflicts-and-apply-plan--before-enforcing)):
+- `Data.CoverageVersion` — fingerprint of this coverage result. INTERNAL: never shown. Enforcing sends it back, and the service rejects an old one, so it is only good until the tenant changes. Keep it in `coverage.json` as returned.
+- `Data.ConflictStatus` — whether conflicts were worked out:
+  - `"evaluated"` — `Summary.ConflictCount` is exact (may be 0).
+  - `"unavailable"` — the service could not work them out. Do not offer to enforce; re-run coverage.
+  - `"not-applicable"` — nothing to resolve (for example, the pack is already running with its own policies). Show no conflict section.
+- `Data.Clauses[].Conflicts[]` — one per setting where an existing policy disagrees with the standard:
+  - `ConflictId` — opaque id, sent back with the admin's choice when enforcing. Never parse it, never show it.
+  - `ControlDisplayName` / `ProductIdentifier` / `PackValueDisplay` — the setting, its product, and the standard's value, display-ready.
+  - `Policies[]` — each existing policy the enforce would change, grouped by license type: `PolicyName`, `LicenseTypes[].DisplayName`, and `Lines[]` `{ Setting, Current, Recommended, IsMet }` with `Current` / `Recommended` display-ready. `Setting` is a raw policy key — never show it.
+  - `Settings[].CurrentValues[].OwnerPackIds` — when present, the current value comes from **another active standard** in Enforce. Name it (resolve the id with `catalog list`).
+- `Data.ApplyPlan[]` — what enforcing does in AOps, one entry per product and license type (`ProductIdentifier`, `LicenseTypeIdentifier`, `Action`, `PolicyName`, `SourcePolicyId`, `SourcePolicyName`). May be **absent**, not just empty. `Action`:
+  - `"update"` — the standard's own policy is written in place.
+  - `"new"` — a new policy is created. With `SourcePolicyId`, it starts as a copy of that policy, which itself is **never changed** (the admin's own policy stays as it is).
+  - Older servers sent `"create"` / `"copy"` / `"split"`; read all three as `"new"`.
+
 `Data.Summary` (PRODUCT-grain counts + a clause rollup — read these directly, do NOT recompute):
 - `DeploymentPolicyCount` — total products · four **disjoint** product tallies that sum to it: `InPlaceCount` (fully applied) + `NeedsManualConfigCount` (deployed, manual setup pending) + `UnverifiableCount` (policy missing, nothing checkable) + `NewCount` (nothing deployed). `NewCount == 0` does NOT mean fully applied — needs-manual-config and unverifiable products aren't counted in it. Omitting `UnverifiableCount` makes the tallies not add up.
 - `DriftedControlCount` — total drifted settings across all products. `> 0` is the signal to offer `restore` (see next-action case 3a).
 - `ClauseSummary.FullyDeployedCount` / `PartiallyDeployedCount` / `NotDeployedCount` — the clause rollup driving the SUMMARY counts and the all-applied check
+- `ConflictCount` — total conflicts across all clauses. Trust it only when `ConflictStatus == "evaluated"`.
 
 `Data.PackId` / `ScopeLevel` / `ScopeTargetId` — identify the pack + tenant scope (internal; the user sees the tenant NAME from auth context, not the id).
 
@@ -100,7 +118,7 @@ For each ⟳ drifted control, show the same expected-vs-actual line from its `Un
 
 **Next-action suggestion (state-aware).** Two INDEPENDENT axes decide the call-to-action. Read each from its own source — never derive one from the other:
 
-- **Is the pack applied?** — `state get` → `Data.Active`. This is the ONLY authority.
+- **Is the pack applied?** — `state get` → `Data.Active`, then `Data.Mode`. This is the ONLY authority. `Mode == "audit"` (Observe) means the standard only reports: it wrote nothing to AOps, so coverage shows the tenant's own policies. `"enforce"` or `null` means its settings are applied.
 - **What is covered?** — the coverage counts. Posture only.
 
 Coverage compares the pack against **whatever policies the tenant already has**, applied or not (`Does NOT require the pack to be enabled`). So coverage numbers cannot tell you whether the pack is on, in either direction:
@@ -112,6 +130,7 @@ Coverage compares the pack against **whatever policies the tenant already has**,
 Evaluate IN THIS ORDER (first match wins):
 
 1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good.
+1b. **Pack active in Observe** (`Data.Active == true` and `Data.Mode == "audit"`) — the standard reports what it would block but changes no settings, so read coverage as in case 1: any coverage is the tenant's own policies. Offer `'Start enforcing <packName>'` (writes its settings and blocks at runtime). Never offer "Reset" or treat a gap as drift here — nothing was applied to drift from. Cases 2 and 3 below assume `Mode` is `"enforce"` or `null`.
 2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply.
 3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the drift case FIRST:
    - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`:** offer `'Reset the changed <packName> settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
@@ -150,7 +169,7 @@ Terminology rules:
 - Never say "compliance gaps" — say "settings not yet configured"
 - Never claim the tenant IS compliant
 
-Render this gap template ONLY for cases 1 and 3 above (pack not applied, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps.
+Render this gap template ONLY for cases 1, 1b and 3 above (pack not applied, in Observe, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps.
 
 ```
 <packName> Posture — <tenantName>  ·  <date>
@@ -170,7 +189,7 @@ SUMMARY
 │ Quickest win            │ <clauseName with fewest gaps AND ≥1 High setting>│
 └─────────────────────────┴──────────────────────────────────────┘
 
-<call-to-action per Next-action suggestion (this template renders for cases 1 and 3): case 1 (pack not applied) → 'Apply <packName> settings' / 'Apply High impact <packName> settings' / 'Apply only <specific area> settings'; case 3 (applied, gaps remain) → in order: 'Reset the changed <packName> settings back to the standard' (when ⟳ settings or a Cannot-Be-Checked product exist), then 'Configure the manual <packName> settings' (when ⚙ settings exist)>
+<call-to-action per Next-action suggestion (this template renders for cases 1, 1b and 3): case 1 (pack not applied) → 'Apply <packName> settings' / 'Apply High impact <packName> settings' / 'Apply only <specific area> settings'; case 1b (Observe) → 'Start enforcing <packName>'; case 3 (applied, gaps remain) → in order: 'Reset the changed <packName> settings back to the standard' (when ⟳ settings or a Cannot-Be-Checked product exist), then 'Configure the manual <packName> settings' (when ⚙ settings exist)>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DETAILS
@@ -230,7 +249,50 @@ Next action (state-aware — see "Next-action suggestion"):
   · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed <packName> settings back to the standard'
   · Active == true, partial gaps        → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
   · nothing applied yet                 → 'Apply <packName> settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
+  · active in Observe                   → 'Start enforcing <packName>'
 ```
+
+## Conflicts and apply plan — before enforcing
+
+Render this block after DETAILS and before the Next action, ONLY when the standard is not enforcing yet: case 1 (not applied) or case 1b (Observe). It previews what enforcing would change, so the admin can decide before being asked to confirm. On a pack already in Enforce, drifted settings also come back as conflicts — those are the ⟳ rows above; do not list them twice.
+
+Pick the part by `ConflictStatus`:
+- `"evaluated"`, `ConflictCount > 0` — render the conflicts and the apply plan.
+- `"evaluated"`, `ConflictCount == 0` — render only the apply plan, headed "No conflicts with your existing policies."
+- `"unavailable"` — render one line: "Couldn't check for conflicts with your existing policies. Ask me to check again before enforcing." Do NOT offer to enforce in this reply.
+- `"not-applicable"` — render nothing from this block.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEFORE YOU ENFORCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your existing policies disagree with <packName> on <ConflictCount> settings.
+When you enforce, you choose for each one: keep your current value, or use the standard's.
+
+  <ControlDisplayName>  (<clauseName>)
+    Standard: <PackValueDisplay>
+    <PolicyName> · <LicenseTypes[].DisplayName, joined>: currently <Current>
+    [one line per entry in Policies[]; add "— set by <other standard>" when OwnerPackIds names one]
+
+  [repeat per conflict]
+
+What enforcing changes in Automation Ops:
+  · <product> · <license>: updates the standard's policy <PolicyName>
+  · <product> · <license>: creates <PolicyName>, a copy of your <SourcePolicyName> — yours is not changed
+  · <product> · <license>: creates <PolicyName>
+```
+
+Rules:
+- **`Current` across lines.** A conflict's `Lines[]` can hold several raw keys behind one setting (for example seven PII toggles). Show the distinct `Current` values of the lines with `IsMet == false`, joined with " / ". Never show `Setting` keys or raw values.
+- **License.** Show license display names only when the conflict has more than one entry in `Policies[]`, or the apply plan has more than one entry for the product; otherwise leave them out. In the apply plan, leave out `NoLicense` and split the other identifiers into words (`StudioPro` → Studio Pro).
+- **Product.** Use the product's display name: `AITrustLayer` → AI Trust Layer, `StudioWeb` → Studio Web, `Development` → Studio, `IntegrationService` → Integration Service. Otherwise split the identifier into words.
+- **Policy names** are secondary detail here and nowhere else in the posture output. They are what the admin recognises in Automation Ops. Never show policy ids.
+- **No `ApplyPlan`** (absent or empty): leave out "What enforcing changes".
+- Conflicts are information at this stage. Do not ask for the choices here, and never pick one on the admin's behalf. The enforce flow asks, after this preview.
+- In Observe, conflicts change nothing: Observe writes nothing to AOps. Say so if the user asks why the conflicts are still there.
+
+**Graceful degrade:** when `Data.CoverageVersion` is absent, the CLI is older than the conflict preview. Render nothing from this block, and add one line after DETAILS: "Updating the uip CLI adds a preview of what enforcing would change." Never infer conflicts from the ✗ rows.
 
 ## All settings applied
 
@@ -309,4 +371,8 @@ Always run fresh before presenting a posture plan. Coverage reflects live tenant
 - **Summing only three product counts** — `InPlaceCount + NeedsManualConfigCount + NewCount` does NOT equal `DeploymentPolicyCount` when any product is `unverifiable`. Read the counts; never recompute a total from a subset.
 - **Reading `PolicyId` on every product** — it can be absent when there is no live policy. Check for the key; never infer its presence from `Status` (a fully-drifted product is `"new"` and does have one).
 - **Inferring whether the pack is applied from coverage numbers** — the single most damaging mistake here, and it fails in both directions. Zero coverage can mean an enabled pack whose settings were all changed away (remedy: `restore`, not apply). Partial or full coverage can mean the tenant's own pre-existing policies coincide with the standard while the pack is off (so the apply offer must still be made). Coverage runs pack-on or pack-off by design — read `Data.Active` from `state get` and nothing else.
+- **Showing `CoverageVersion` or a `ConflictId`** — both are internal handles for the enforce call. Neither ever appears in user-facing output.
+- **Reusing an old `CoverageVersion`** — it is only good until the tenant's policies change. Enforcing sends the one from the coverage run just before it; never carry one over from an earlier turn.
+- **Choosing keep or the standard's value for the admin** — a conflict is the admin's decision. Coverage previews it; the enforce flow asks.
+- **Treating an Observe pack as applied** — `Mode == "audit"` writes nothing to AOps. Its gaps are not drift, and "Reset" is never the remedy.
 - **Suppressing the apply offer because coverage looks good** — a user asking to apply a standard on a tenant that merely happens to satisfy part of it must still be offered the apply. Coincidental coverage is not an applied pack.

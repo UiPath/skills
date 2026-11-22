@@ -204,5 +204,5 @@ uip gov compliance-packs state enable  organization $ORG_ID <packId> --output js
 uip gov compliance-packs state list   organization $ORG_ID          --output json
 ```
 
-`state coverage` does NOT require the pack to be enabled first — it reads live tenant state fresh every call.
+`state coverage` does NOT require the pack to be enabled first — it reads live tenant state fresh every call. On an updated CLI it also returns `CoverageVersion` (sent back when enforcing; a stale one is rejected), `ConflictStatus`, per-clause `Conflicts[]` and `ApplyPlan[]` — see [`compliance-pack/coverage/impl.md`](./compliance-pack/coverage/impl.md).
 All state commands use positional args `<scopeLevel> <scopeTargetId>`. There is no `--tenant-id` flag.
