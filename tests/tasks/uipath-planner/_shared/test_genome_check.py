@@ -251,7 +251,9 @@ def test_checker_reads_rules_not_lookalikes(tmp_path):
     login = text.replace("## Workflow\n", "## Workflow\n\nSigns in on the login_page form.\n", 1)
     assert run(tmp_path, login, profile="strict") == 0                      # 'in_' counts only at a word start
     field = text.replace("## Workflow\n", "## Workflow\n\nStores the message id in the reply's `in_reply_to` field.\n", 1)
-    assert run(tmp_path, field, profile="strict") == 0                      # and before a capital, as UiPath names arguments
+    assert run(tmp_path, field, profile="strict") == 0                      # and in a word holding a capital, as UiPath names arguments
+    typed = text.replace("## Workflow\n", "## Workflow\n\nReads the path from in_strFilePath.\n", 1)
+    assert run(tmp_path, typed, profile="strict") == 1                      # a type prefix after 'in_' still counts
 
 
 def test_unfilled_cross_part_reference_fails_strict_only(tmp_path):

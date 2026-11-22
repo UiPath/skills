@@ -148,7 +148,24 @@ Extracted genomes only: where every part of the genome came from. A genome witho
 
 ## Source values
 
-A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4): comparison literals, operators and case rules, spelled exactly; counts, attempts and loop bounds, and whether the loop tests before or after its body; lengths, positions and occurrences in text operations; waits, pauses and timeouts, in the source's unit; set or typed; flags that change control flow, and in a plan or graph each node's flags, mappings and conditions; date and number formats; values bound to a built-in; a parameter's unit, its default, and which of two filled parameters overrides the other; texts the run emits and its screens show (log lines, failure messages with their codes, reasons, message bodies and templates, a screen's titles, labels and notices), with their wording and substitutions; field names of what it writes, sends or parses, with their fallbacks, the stored values behind named choices and statuses, and each service call's endpoint and method; how a missing, null, empty, zero or unparsable value tests and what it becomes, and each check on an input; the tables the logic ships with it (rule, lookup, threshold and seed rows, configuration), every row; each computed value's formula (a hash with its algorithm and what it covers), rounding, and each sort's direction and tie-breaks; the kind of each file read or written, the date or field a filter, sort or window uses, and the filter that selects a value's rows with the row it keeps; and each choice the genome states for a condition, computation, pick, handler, parse or written text, the plain ones included (untrimmed, case-sensitive, ties keep the order read, the errors a handler takes, a value's written form).
+A genome is extracted through a rendering of the source, which can hide a typed value, and an extraction can paraphrase one. When the build reads the export, an empty value in a rendering is "not shown", never "not set": the value is read from the source object before it is built as unset. Before a group builds on a step, the build checks against the step's source objects every value of these kinds the genome cites ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4):
+
+- comparison literals, operators and case rules, spelled exactly;
+- counts, attempts and loop bounds, and whether the loop tests before or after its body;
+- lengths, positions and occurrences in text operations;
+- waits, pauses and timeouts, in the source's unit;
+- set or typed;
+- flags that change control flow, and in a plan or graph each node's flags, mappings and conditions;
+- date and number formats;
+- values bound to a built-in;
+- a parameter's unit, its default, and which of two filled parameters overrides the other;
+- texts the run emits and its screens show (log lines, failure messages with their codes, reasons, message bodies and templates, a screen's titles, labels and notices), with their wording and substitutions;
+- field names of what it writes, sends or parses, with their fallbacks, the stored values behind named choices and statuses, and each service call's endpoint and method;
+- how a missing, null, empty, zero or unparsable value tests and what it becomes, and each check on an input;
+- the tables the logic ships with it (rule, lookup, threshold and seed rows, configuration), every row;
+- each computed value's formula (a hash with its algorithm and what it covers), rounding, and each sort's direction and tie-breaks;
+- the kind of each file read or written, the date or field a filter, sort or window uses, and the filter that selects a value's rows with the row it keeps;
+- each choice the genome states for a condition, computation, pick, handler, parse or written text, the plain ones included (untrimmed, case-sensitive, ties keep the order read, the errors a handler takes, a value's written form).
 
 Three readings decide what is built:
 

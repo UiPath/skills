@@ -359,9 +359,9 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
 
   const body = bodyWithoutSourceMap(text);
   for (const tok of BANNED_BODY_TOKENS) {
-    // a prefix token counts at a word start before a capital, as UiPath names arguments and variables: `in_Folder`,
-    // never "login_page" or a record's field `in_reply_to`, which the genome spells as the source does
-    if (tok.endsWith("_") ? new RegExp(`\\b${esc(tok)}[A-Z]`).test(body) : body.includes(tok)) r.strict(`code-level token '${tok}' in the genome body (outside Source Map)`);
+    // a prefix token counts at a word start, in a word holding a capital, as UiPath names arguments and variables:
+    // `in_Folder`, `in_strPath`, never "login_page" or a record's field `in_reply_to`, which the genome spells as the source does
+    if (tok.endsWith("_") ? new RegExp(`\\b${esc(tok)}\\w*[A-Z]`).test(body) : body.includes(tok)) r.strict(`code-level token '${tok}' in the genome body (outside Source Map)`);
   }
   const unfilled = text.match(UNFILLED_REFERENCE);
   if (unfilled) r.strict(`${unfilled.length} cross-part reference(s) left unfilled, first: ${unfilled[0]}`);
