@@ -192,7 +192,9 @@ ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 
 # Tenant scope
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json
-uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --output json
+uip gov compliance-packs settings get --output json   # ModeSelectionEnabled: which enable/disable flow applies
+uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --mode audit --output json   # Observe: reports only
+uip gov compliance-packs state enable  tenant $TENANT_ID <packId> --mode enforce --coverage-version <v> --conflict-resolutions-file <file> --output json   # every conflict answered first (full-apply/impl.md)
 uip gov compliance-packs state disable tenant $TENANT_ID <packId> --output json
 uip gov compliance-packs state restore tenant $TENANT_ID <packId> --output json  # overwrites live policies — confirm with user first (restore/impl.md)
 uip gov compliance-packs state get    tenant $TENANT_ID <packId> --output json
@@ -200,7 +202,7 @@ uip gov compliance-packs state list   tenant $TENANT_ID          --output json
 
 # Organization scope (all tenants)
 uip gov compliance-packs state coverage organization $ORG_ID <packId> --output json
-uip gov compliance-packs state enable  organization $ORG_ID <packId> --output json
+uip gov compliance-packs state enable  organization $ORG_ID <packId> --mode enforce --output json
 uip gov compliance-packs state list   organization $ORG_ID          --output json
 ```
 

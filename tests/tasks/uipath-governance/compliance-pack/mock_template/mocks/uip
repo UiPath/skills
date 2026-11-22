@@ -31,6 +31,9 @@ bot's tenant / org / user identifiers replaced, rebuilt from a live run by
   - `state enable organization` — the skill documents it as accepted by the
     CLI with no backend effect; the shim answers success and changes nothing.
   - coverage after an AOps partial apply stays at the scenario's capture.
+  - `settings get` — answers `ModeSelectionEnabled: false`, the org the
+    fixtures were recorded on (no pack modes, no coverage conflicts). `state
+    enable` requires `--mode` like the CLI and records it as `Mode`.
 
 Files, all in this directory and none dot-prefixed (CI's upload-artifact
 skips hidden files, and these belong in the eval report):
@@ -109,6 +112,7 @@ VALUE_FLAGS = {
     "--availability", "--identifier", "--tenant-name", "--search", "--limit",
     "--offset", "--sort-by", "--sort-order", "--license-type", "--output-dir",
     "--output-form-data", "--output-template-locale-resource",
+    "--mode", "--coverage-version", "--conflict-resolutions", "--conflict-resolutions-file",
 }
 
 
@@ -182,7 +186,7 @@ def log_call(args, exit_code, payload=None, error=None):
 
 
 def emit(args, payload):
-    exit_code = 0 if payload.get("Result") == "Success" else 1
+    exit_code = {"Success": 0, "ValidationError": 3}.get(payload.get("Result"), 1)
     log_call(args, exit_code, payload)
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     return exit_code
@@ -254,6 +258,7 @@ def state_detail(tenant, scope, target_id):
     data["ScopeLevel"] = scope
     data["ScopeTargetId"] = target_id
     data["Active"] = tenant["active"]
+    data["Mode"] = tenant.get("mode") if tenant["active"] else "inactive"
     return data
 
 
@@ -274,6 +279,19 @@ def handle_catalog(verb, rest):
 def handle_state(verb, rest):
     if verb not in STATE_CODES:
         return None
+    # The CLI makes enable's --mode mandatory: commander rejects it before any
+    # argument or API check, so it comes first here too.
+    if verb == "enable" and flag(sys.argv[1:], "--mode") not in ("enforce", "audit"):
+        mode = flag(sys.argv[1:], "--mode")
+        return {
+            "Result": "ValidationError",
+            "ErrorCode": "invalid_argument",
+            "Message": "error: required option '--mode <mode>' not specified"
+            if mode is None
+            else f"error: option '--mode <mode>' argument '{mode}' is invalid. Allowed choices are enforce, audit.",
+            "Instructions": "Run 'uip gov compliance-packs state enable --help' for usage information.",
+            "Retry": "RetryWillNotFix",
+        }
     if not rest:
         return usage_error("scope")
     if rest[0] not in ("tenant", "organization"):
@@ -312,11 +330,13 @@ def handle_state(verb, rest):
         return cov
 
     if verb == "enable":
+        mode = flag(sys.argv[1:], "--mode")
         if scope == "tenant":
             if not tenant["active"]:
                 tenant.update(active=True, coverage="active")
+            tenant["mode"] = mode
             state["enabled"].append(target_id)  # graders count tenants here
-        data = state_detail(dict(tenant, active=True), scope, target_id)
+        data = state_detail(dict(tenant, active=True, mode=mode), scope, target_id)
     elif verb == "disable":
         tenant.update(active=False, coverage="inactive")
         state["disabled"].append(target_id)
@@ -568,6 +588,10 @@ def dispatch(args):
         payload = handle_catalog(literal[3], literal[4:])
     elif literal[:3] == ["gov", "compliance-packs", "state"] and len(literal) > 3:
         payload = handle_state(literal[3], literal[4:])
+    elif literal == ["gov", "compliance-packs", "settings", "get"]:
+        # Not recorded: the fixtures come from a tenant whose org has pack modes
+        # off (one standard at a time, no coverage conflicts), so say that.
+        payload = success("CompliancePacksSettingsGet", {"ModeSelectionEnabled": False})
     elif literal[:3] == ["gov", "aops-policy", "template"]:
         payload = handle_template(literal[2:], args)
     elif literal[:2] == ["gov", "aops-policy"] and len(literal) > 2:

@@ -133,12 +133,27 @@ def test_unknown_scenario_fails_loudly(sb):
 
 
 def test_enable_then_disable(sb):
-    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK)
+    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK, "--mode", "enforce")
     assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT, PACK)["Active"] is True
     assert summary(sb.ok("gov", "compliance-packs", "state", "coverage", "tenant", TENANT, PACK))["NotDeployedCount"] == 0
     assert sb.ok("gov", "compliance-packs", "state", "disable", "tenant", TENANT, PACK) == {"Status": "Disabled"}
     assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT, PACK)["Active"] is False
     assert sb.state()["enabled"] == [TENANT] and sb.state()["disabled"] == [TENANT]
+
+
+def test_enable_requires_mode_and_records_it(sb):
+    # Mirrors the CLI: commander rejects a missing --mode with exit 3 before any call.
+    code, body, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK)
+    assert code == 3 and body["Result"] == "ValidationError" and "--mode" in body["Message"]
+    assert sb.state().get("enabled", []) == []
+    assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT, PACK)["Mode"] == "inactive"
+    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK, "--mode", "audit")
+    assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT, PACK)["Mode"] == "audit"
+
+
+def test_settings_report_pack_modes_off(sb):
+    # The fixtures were recorded on an org without pack modes.
+    assert sb.ok("gov", "compliance-packs", "settings", "get") == {"ModeSelectionEnabled": False}
 
 
 def test_restore_clears_drift_and_needs_an_active_pack(sb):
@@ -153,16 +168,16 @@ def test_restore_clears_drift_and_needs_an_active_pack(sb):
 
 
 def test_state_is_per_tenant_and_org_scope_enable_is_a_counted_no_op(sb):
-    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK)
+    sb.ok("gov", "compliance-packs", "state", "enable", "tenant", TENANT, PACK, "--mode", "enforce")
     assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT_2, PACK)["Active"] is False
-    sb.ok("gov", "compliance-packs", "state", "enable", "organization", ORG, PACK)
+    sb.ok("gov", "compliance-packs", "state", "enable", "organization", ORG, PACK, "--mode", "enforce")
     assert sb.ok("gov", "compliance-packs", "state", "get", "tenant", TENANT_2, PACK)["Active"] is False
     assert sb.state()["enabled"] == [TENANT]  # graders count tenant-scope enables only
 
 
 @pytest.mark.parametrize("verb", ["get", "coverage", "enable", "disable", "restore"])
 def test_empty_tenant_id_gets_the_live_404(sb, verb):
-    code, body, _ = sb.uip("gov", "compliance-packs", "state", verb, "tenant", "", PACK)
+    code, body, _ = sb.uip("gov", "compliance-packs", "state", verb, "tenant", "", PACK, *mode(verb))
     assert code == 1 and body["Message"].startswith("HTTP 404: Received HTML")
     assert sb.state().get("enabled", []) == []
 
@@ -170,7 +185,7 @@ def test_empty_tenant_id_gets_the_live_404(sb, verb):
 @pytest.mark.parametrize("target", [ORG, "deadbeef-0000-4000-8000-000000000000"])
 def test_ids_the_login_cannot_see_404_as_tenants(sb, target):
     # The org id sits next to TenantId in login-status; live, it is not a tenant.
-    code, body, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", target, PACK)
+    code, body, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", target, PACK, "--mode", "enforce")
     assert code == 1
     assert body["Message"].startswith("HTTP 404")
     assert sb.state().get("enabled", []) == []
@@ -180,7 +195,7 @@ def test_ids_the_login_cannot_see_404_as_tenants(sb, target):
 
 def test_concurrent_writes_keep_every_enable(sb):
     tenants = tenant_ids(sb)
-    procs = [subprocess.Popen(["uip", "gov", "compliance-packs", "state", "enable", "tenant", t, PACK,
+    procs = [subprocess.Popen(["uip", "gov", "compliance-packs", "state", "enable", "tenant", t, PACK, "--mode", "enforce",
                                "--output", "json"], cwd=sb.root, env=sb.env,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) for t in tenants]
     assert [p.wait(timeout=30) for p in procs] == [0] * len(tenants)
@@ -308,8 +323,13 @@ def partial_apply(product):
     return run
 
 
+def mode(verb):
+    """The CLI requires --mode on enable."""
+    return ["--mode", "enforce"] if verb == "enable" else []
+
+
 def state(verb):
-    return lambda sb: sb.ok("gov", "compliance-packs", "state", verb, "tenant", TENANT, PACK)
+    return lambda sb: sb.ok("gov", "compliance-packs", "state", verb, "tenant", TENANT, PACK, *mode(verb))
 
 
 def posture(sb: Sandbox):
@@ -320,18 +340,18 @@ def posture(sb: Sandbox):
 
 def enable_all_tenants(sb: Sandbox):
     for t in tenant_ids(sb):
-        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", t, PACK)
+        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", t, PACK, "--mode", "enforce")
 
 
 def cheat_empty_tenant(sb: Sandbox):
     for verb in ("coverage", "enable", "disable", "restore"):
-        sb.uip("gov", "compliance-packs", "state", verb, "tenant", "", PACK)
+        sb.uip("gov", "compliance-packs", "state", verb, "tenant", "", PACK, *mode(verb))
 
 
 def cheat_org_scope(sb: Sandbox):
     for t in tenant_ids(sb)[:3]:
-        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", t, PACK)
-    sb.ok("gov", "compliance-packs", "state", "enable", "organization", ORG, PACK)
+        sb.ok("gov", "compliance-packs", "state", "enable", "tenant", t, PACK, "--mode", "enforce")
+    sb.ok("gov", "compliance-packs", "state", "enable", "organization", ORG, PACK, "--mode", "enforce")
 
 
 def cheat_wrong_product(sb: Sandbox):
@@ -340,22 +360,22 @@ def cheat_wrong_product(sb: Sandbox):
 
 def cheat_org_id_as_a_tenant(sb: Sandbox):
     for t in tenant_ids(sb)[:3] + [ORG]:
-        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", t, PACK)
+        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", t, PACK, "--mode", "enforce")
 
 
 def cheat_invented_tenants(sb: Sandbox):
     for n in range(4):
-        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", f"deadbeef-0000-4000-8000-00000000000{n}", PACK)
+        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", f"deadbeef-0000-4000-8000-00000000000{n}", PACK, "--mode", "enforce")
 
 
 def on_another_tenant(verb):
     """The right state change, on a tenant the login can see but is not on."""
-    return lambda sb: sb.ok("gov", "compliance-packs", "state", verb, "tenant", TENANT_2, PACK)
+    return lambda sb: sb.ok("gov", "compliance-packs", "state", verb, "tenant", TENANT_2, PACK, *mode(verb))
 
 
 def at_org_scope(verb):
     # Attempted, not required to succeed: the shim answers some org-scope calls with a 409.
-    return lambda sb: sb.uip("gov", "compliance-packs", "state", verb, "organization", ORG, PACK)
+    return lambda sb: sb.uip("gov", "compliance-packs", "state", verb, "organization", ORG, PACK, *mode(verb))
 
 
 def assign_on_another_tenant(product):
