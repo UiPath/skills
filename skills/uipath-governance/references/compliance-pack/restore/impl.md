@@ -8,6 +8,15 @@ Use this when the user wants to undo changes made to a configured standard, or a
 
 `<packName>` below = the standard's display name (e.g. "ISO 42001") — from the user's request or `Data.Packs[].PackName` in `catalog list`.
 
+## Which fix to use
+
+```bash
+uip gov compliance-packs settings get --output json
+```
+
+- **Modes on** (`Data.ModeSelectionEnabled == true`) — do NOT run `state restore`. Enforce the standard again instead, through [`../full-apply/impl.md`](../full-apply/impl.md) Steps 3–6: on an enforced standard, each changed setting comes back from coverage as a conflict, so the admin chooses per setting — `keep` accepts the change, the standard's value puts it back. Restore would reset every one, and wipe configured manual values too. A standard that is not enforced (`Mode` `"audit"` or null) is not restored: enforcing it is the fix — [coverage case 3·0](../coverage/impl.md#posture-plan-presentation).
+- **Modes off**, or `settings` unknown (older CLI) — enforcing again does not correct changes; `state restore` is the only fix. Continue below.
+
 ## Check current state first
 
 ```bash
