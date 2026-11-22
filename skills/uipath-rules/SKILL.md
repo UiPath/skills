@@ -1,16 +1,16 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
+description: "UiPath Business Rules — a `.dmn` rule (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `format`, `validate`, `debug`). Author, edit, review, validate, and debug a rule from a policy, spreadsheet, or description — one decision table, or a decision graph of several decisions linked by requirements, with literal expressions, business knowledge models and text annotations; list and describe deployed rules. For .bpmn business rule tasks→uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml→uipath-rpa. For caseplan.case/caseplan.json business rule tasks→uipath-maestro-case. For solution pack/publish/deploy→uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Business Rules
 
-A Business Rules project holds one `.dmn` rule of one or more decision tables. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
+A Business Rules project holds one `.dmn` rule of one or more decisions. DMN and FEEL follow the OMG standard; this skill covers only what UiPath accepts on top of it.
 
 ## When to Use This Skill
 
-- Create a business rule (decision table) from a policy, spreadsheet, or description
+- Create a business rule from a policy, spreadsheet, or description — one decision, or a graph of several
 - Edit the rows, columns, or hit policy of a `.dmn` in a BusinessRules project
 - Validate or debug a rule that returns the wrong output
 - List deployed rules or read a deployed rule's inputs and outputs
@@ -27,7 +27,7 @@ A Business Rules project holds one `.dmn` rule of one or more decision tables. D
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed design expects, from every decision and not only the last.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not available on tenant '<TENANT>'` or `Business Rules is a preview feature and is not enabled for your organization.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
-9. **Name every rule.** Declare one `<annotation name="Annotation" />` after the table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column. A decision whose logic is a literal expression has no rules, so it has neither.
+9. **Name every rule.** Declare one `<annotation name="Annotation" />` after each table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column. A decision whose logic is a literal expression has no rules, so it has neither.
 10. **Never place diagram shapes by hand; `format` draws them.** Leave DMNDI out of a new `.dmn`, and run `uip rules format <PROJECT_DIR>` after adding or removing an input or a decision. It adds a shape for each new element, leaves placed shapes where the user left them, and drops the shapes of deleted ones. `validate` never looks at the diagram, so a shape you place yourself is reported by nothing; it just lands on top of another card in the designer. When you edit a `.dmn` that already has one, **keep its `dmndi:DMNDI` element as it is**: rewriting the file without it throws away the layout the user arranged, and `format` then lays the whole graph out afresh.
 
 ## Quick Start
@@ -56,9 +56,9 @@ Show the table as Markdown before authoring and after each change — one table 
 | 3 | - | - | "Low" | Default |
 ```
 
-### 3. Author the table
+### 3. Author the rule
 
-Replace the scaffolded table with the reviewed design.
+Replace the scaffolded table with the reviewed design, and add the other decisions a graph needs.
 
 ### 4. Format, refresh and validate
 
