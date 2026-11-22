@@ -1,6 +1,6 @@
 /**
- * CreditDecision — a Case plan that calls a published business rule (a
- * decision table) and copies one decision column into a case variable.
+ * CreditDecision — a Case plan that calls a published business rule and copies
+ * one decision's output into a case variable.
  *
  *   .businessRule('CreditRisk', { folder: 'Shared', resultSchema })
  *
