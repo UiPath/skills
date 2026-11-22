@@ -94,7 +94,7 @@ Option 1 is Recommended. After writing, the offer is § After Writing's first qu
 
 ## Asking
 
-1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked. The question is skipped, and no other role is offered, when the entries name one answerer between them, or the request names the user's roles.
+1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked. The question is skipped when the entries name one answerer between them, or the request names the user's roles.
 2. **Order.** Before writing: missing before needs confirmation, then process order. After writing: § After Writing.
 3. **Batches.** One prompt holds at most 4 questions, one entry each, with at most 4 options, the Recommended option first (with none recommended, the one built now first), the default named. While entries remain after a batch, its fourth question offers "use the defaults for the rest" (after writing, the rest of the group). A batch before writing is asked alone; its answers can change the verb's product selection.
 4. **New gaps.** An answer that opens a gap adds an entry: before writing, a P0 one is asked in turn and any other is written as an item; after writing, it is a new entry at the end of the genome's Open Decisions, with its default ([open-questions-guide.md](../shared/open-questions-guide.md) § Where Answers Go).

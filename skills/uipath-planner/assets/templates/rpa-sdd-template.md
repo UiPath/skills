@@ -76,7 +76,11 @@ section again from it, with every open question. See open-questions-guide.md for
 -->
 ## Action Required — SME Review Items
 
-<COUNT> questions are open: <COUNT_NEEDED> needed before the genome is written, the rest with a default applied in its section.
+<COUNT> questions are open: <COUNT_NEEDED> needed before the genome is written, the rest with a default applied in its section. By role: <ROLE> <COUNT>; <ROLE> <COUNT>.
+
+How to answer:
+1. After an item's `Answer`, write the letter of the option you choose, a value, `default` to keep a value's default, or your own words. An item left blank stays open.
+2. Then ask `uipath-planner` to interview you on the rest: "Interview me on the open questions", adding a role to be asked only that person's. The interview writes your answers into this document.
 
 **D1. <QUESTION>**
 - **Context:** <WHAT_IS_UNKNOWN>

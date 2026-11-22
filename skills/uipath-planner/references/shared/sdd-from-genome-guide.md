@@ -84,7 +84,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - `edit` writes again the sections the edit changed, and Action Required, keeping its answers ([open-questions-guide.md](open-questions-guide.md) Writing Rule 1), then the fingerprint.
    - A person's edit to any other section is a change request: `edit` "The SDD was edited: update the genome" ([edit-guide.md](../edit/edit-guide.md)). The genome takes the change, and the SDD is written from it again.
 6. **A designed genome's SDD** keeps its body as `design` wrote it. After the genome is written and after every edit, its Action Required section is written again from the genome, holding:
-   - the SDD's own items carried as entries, under the ids the genome gives them, each naming the id the SDD's body marks it with where the two differ (`was D3`);
+   - the SDD's own items carried as entries, under the ids the genome gives them, a process genome's named with their component ([open-questions-guide.md](open-questions-guide.md) § Items), each naming the id the SDD's body marks it with where the two differ (`was D3`);
    - the SDD's items that touch no genome section, as the SDD wrote them, under their SDD ids;
    - the genome's Configuration Questions;
    - every entry the genome added.
