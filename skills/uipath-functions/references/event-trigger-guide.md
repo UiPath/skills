@@ -5,9 +5,9 @@ Function started by an Integration Service connector event (mail received, Data 
 ## Rules
 
 1. **Take every value from connector discovery** ([Where values come from](#where-values-come-from)), never from another trigger. Operation and object names are connector-specific (`EMAIL_RECEIVED`, `UPDATED_V3`): never write a generic `CREATED` unless discovery returns it.
-2. **Bind the trigger to the function it starts**: `value.EntryPointUniqueId.defaultValue` is the function's `uniqueId` in `entry-points.json`. A Python project with one entry point may omit the field; Orchestrator then binds the trigger to that entry point.
+2. **Bind the trigger to the function it starts**: `value.EntryPointUniqueId.defaultValue` is the function's `uniqueId` in `entry-points.json`, `displayName` its `filePath`. Without the field Orchestrator binds a Python project's trigger to the first entry point in `entry-points.json`, with no warning, so omit it only when the project has one. Python `init` gives every entry point a new `uniqueId` on each run; copy the new one into the field after every run, since a stale one fails the deploy (`Cannot set entry point. The entry point with path '' was not found`).
 3. **Declare the event inputs.** Event starts the function with eight string inputs: `UiPathEventConnector`, `UiPathEvent`, `UiPathEventObjectType`, `UiPathEventObjectId` (the record's or item's id), `UiPathTime`, `UiPathCorrelationId`, `UiPathAdditionalEventData`, `UiPathTriggerActionId`. JS/TS: declare all eight as optional strings — the input contract rejects undeclared properties, and the job faults with `Input validation failed … must NOT have additional properties` before the handler runs. Python: undeclared inputs are ignored; declare the ones the code reads, as `str` defaulting to `""`.
-4. **A clean gate proves nothing.** Wrong or missing trigger packs, publishes, deploys and pushes clean; function never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
+4. **A clean gate proves nothing.** A trigger with a wrong `Operation`, or none, packs, publishes, deploys and pushes clean; function never starts. After deploy, raise one real event and confirm it starts a job that succeeds: `uip or jobs list --folder-key <DEPLOYMENT_FOLDER_KEY> --output json` lists it with `Source: IntegrationTrigger` and `State: Successful` (`uip or triggers list` does not show event triggers).
    - Only a solution deploy creates the trigger; publishing the package and creating its process, with triggers auto-created, creates none.
    - The deploy config gives each event trigger `runtimeType: Unattended`, which never starts a function. Fetch the config with `uip solution deploy config get <SOLUTION_PACKAGE> -d <CONFIG_FILE>`, set the trigger with `uip solution deploy config set <CONFIG_FILE> "<TRIGGER_RESOURCE_NAME>" runtimeType Serverless` (the `kind: trigger` resource's `name` in the file, like `my-function_EventTrigger-Record Created`), and pass `--config-file <CONFIG_FILE>` to `deploy run`, or to `deploy upgrade` for an existing deployment.
    - A Data Fabric entity event fires only on the entity copy the deployment installs in its folder; raise the test event there.
@@ -22,8 +22,8 @@ One `EventTrigger`, plus one `Property` keyed to it when the event takes paramet
     "resource": "EventTrigger",
     "key": "<TRIGGER_KEY>",
     "value": {
-      "ConnectionId": { "defaultValue": "<CONNECTION_ID>", "isExpression": false },
-      "EntryPointUniqueId": { "defaultValue": "<ENTRY_POINT_UNIQUE_ID>", "isExpression": false }
+      "ConnectionId": { "defaultValue": "<CONNECTION_ID>", "isExpression": false, "displayName": "Connection" },
+      "EntryPointUniqueId": { "defaultValue": "<ENTRY_POINT_UNIQUE_ID>", "isExpression": false, "displayName": "<ENTRY_POINT_FILE_PATH>" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -38,7 +38,7 @@ One `EventTrigger`, plus one `Property` keyed to it when the event takes paramet
     "resource": "Property",
     "key": "<OPERATION>_EventTrigger.<TRIGGER_KEY>",
     "value": {
-      "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false }
+      "<EVENT_PARAMETER>": { "defaultValue": "<PARAMETER_VALUE>", "isExpression": false, "displayName": "<EVENT_PARAMETER>" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -55,6 +55,7 @@ One `EventTrigger`, plus one `Property` keyed to it when the event takes paramet
 - `key`: name unique among the project's triggers. `Property` names its trigger in `metadata.ParentResourceKey` as `EventTrigger.<TRIGGER_KEY>`.
 - `TriggerCreateParameters`, `DebugQueryParameters`: the `value` keys, comma-separated.
 - `ConnectionId.defaultValue`: connection's id.
+- `displayName` on every `value` entry: push of a Python project fails without it (`validation errors for Bindings … displayName Field required`).
 - `FilterExpression`: optional ([Filter expression](#filter-expression)).
 
 Data Fabric entity event scopes its `Property` to the entity and adds an `entity` resource that `Property` references in `FieldReferences`:
@@ -67,7 +68,7 @@ Data Fabric entity event scopes its `Property` to the entity and adds an `entity
     "activityDisplayName": "Connector",
     "value": {
       "name": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "Entity" },
-      "folderKey": { "defaultValue": "", "isExpression": false }
+      "folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderKey" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
@@ -83,9 +84,9 @@ Data Fabric entity event scopes its `Property` to the entity and adds an `entity
     "id": "Property_<OPERATION>_<TRIGGER_KEY>",
     "activityDisplayName": "Connector",
     "value": {
-      "entityScope": { "defaultValue": "folder", "isExpression": false },
-      "folderEntityName": { "defaultValue": "<ENTITY_NAME>", "isExpression": false },
-      "folderEntityName_folderKey": { "defaultValue": "", "isExpression": false }
+      "entityScope": { "defaultValue": "folder", "isExpression": false, "displayName": "entityScope" },
+      "folderEntityName": { "defaultValue": "<ENTITY_NAME>", "isExpression": false, "displayName": "folderEntityName" },
+      "folderEntityName_folderKey": { "defaultValue": "", "isExpression": false, "displayName": "folderEntityName_folderKey" }
     },
     "metadata": {
       "ActivityName": "<EVENT_DISPLAY_NAME>",
