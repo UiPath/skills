@@ -1,0 +1,114 @@
+task_id: skill-planner-interview-author-requested
+description: >
+  Integration: `author` on a one-sentence idea, where the request asks to be interviewed before the
+  genome is written. The request accepts the interview offer, so no offer question is asked; the
+  interview still asks only the points that change the design (P0), and everything else is written as
+  open entries and Configuration Questions, the approval limit with `default: none`. No SDD is written
+  and the genome passes the strict check. The closing offers the interview on the open items. A
+  simulated process owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Write a genome for this automation, in this folder. Interview me before you write it.
+
+  When a supplier invoice comes in, enter it in our ERP and get it approved when it is over the limit.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice handling in accounts payable. You decide business
+    outcomes, rules and scope. You do not know how the ERP can be reached by a robot, nor the
+    environments' hosts and mailboxes.
+  goal: |
+    Be interviewed, get the genome written, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "When a question asks for something you do not know (how a system is reached, a host, a mailbox), say it is for the system's owner or the environment's owners."
+    - "If the agent offers edits, the SDD or a build after writing the genome, decline: the genome is all you want."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No offer question; the interview asks P0 points only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea —
+      supplier invoices entered in an ERP, approved when over a limit — and asked to be interviewed before
+      it is written. Read the dialog and the agent's questions, whether asked in chat or as structured
+      questions, up to the point the genome is written.
+
+      Check three things:
+      1. The agent does not ask whether the user wants an interview: the request already said so.
+      2. The interview's questions are points that change the product, scope or architecture: the
+         trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the approval (who,
+         its outcomes, how long it waits), how invoices are read, what is in and out of scope. A question
+         about a preferences file is allowed.
+      3. Not asked before writing: the limit's amount or currency, who is notified, how a business
+         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
+         environment value (a mailbox, a folder, a host).
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. One question from item 3 fails item 3.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing offers the interview on the open items"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). It must count
+      the questions still open in the genome by the role that answers them, and offer the interview on
+      them, naming `interview <genome file name>`. Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,0 +1,117 @@
+task_id: skill-planner-interview-design-caller
+description: >
+  Integration: `design` for a caller's request, a `planner-design-request: v1` block with
+  `execution: interactive`, `audience: business` and `stop-after: sdd`, on a half-page PDD for
+  supplier invoice entry. The caller already held the business conversation, so no interview is
+  offered and the only stop is the architecture review. Step 1.5 asks nothing: every item keeps its
+  default. What the user sees uses business words, not the skill's vocabulary, and the run ends on one
+  `planner-design-result: v1` block. No genome, no build. A simulated business user approves the review.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 2700
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../design_thin/fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Design the solution for this request.
+
+  ```text
+  planner-design-request: v1
+  source: pdd.md
+  output: supplier-invoice-entry-sdd.md
+  execution: interactive
+  audience: business
+  stop-after: sdd
+  ```
+
+  It will run on Automation Cloud.
+
+simulation:
+  enabled: true
+  persona: |
+    You are a business user in accounts payable. You approve a design that does what the PDD describes.
+  goal: |
+    Approve the design and get the design document written, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first."
+    - "When asked whether the design works for you, approve it as proposed."
+    - "If the agent offers an interview, more questions or a build, decline."
+    - "Once the agent reports the design document written, end the conversation."
+  max_turns: 4
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "The SDD was written where the request names it"
+    path: "supplier-invoice-entry-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No genome was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '-genome\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Every open item keeps its default"
+    path: "supplier-invoice-entry-sdd.md"
+    pattern: '\[SME REVIEW\]'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No interview offer: the architecture review is the only stop, and nothing is asked after it"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      A calling skill sent a design request block (`planner-design-request: v1`, interactive, for a
+      business audience) on a thin PDD for supplier invoice entry. Read the dialog and the agent's
+      questions, whether asked in chat or as structured questions.
+
+      Score 1.0 when the only question the agent asks is the review of the proposed design (does the
+      design work for the user), with no interview offer, no question about running autonomously or
+      interactively, and no round of questions about open items after the review. Score 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Business words only, ending on one planner-design-result block"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      A calling skill sent a design request for a business audience. Read everything the agent wrote to
+      the user.
+
+      Check two things:
+      1. The text the user reads uses business words: it does not say "SDD", "genome", "phase", "SME
+         REVIEW", "marker" or "Step 1.5". A file name is allowed.
+      2. The run's final message ends on exactly one `planner-design-result: v1` block.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Design does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa|solution)\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,81 @@
+task_id: skill-planner-interview-apply-readiness
+description: >
+  Integration: `edit`'s "Apply the answers" from a readiness file, beside an authored genome with no SDD.
+  Under Decisions still open, the business decision D2 carries an answer that changes what is built, and
+  the Configuration Question CQ5 carries a value. D2 reads decided in the genome and its readiness item
+  is marked applied; CQ5's answer stays in the readiness file for the build, and the genome's question
+  is unchanged. No SDD is written and the genome passes the strict check.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+    - type: template_dir
+      path: ../edit_no_sdd/fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  I filled in answers in the readiness file in this folder, under Decisions still open. Apply the answers.
+
+  Do not build anything in this run.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "D2 reads decided in the genome; the unanswered entries stay open"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries ecb-fx-rates-genome.md decided 2 &&
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries ecb-fx-rates-genome.md open 1 3 4
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The readiness item for D2 is marked applied"
+    path: "ecb-fx-rates-readiness.md"
+    pattern: '(?s)\*\*D2\.(?:(?!\n\*\*[A-Z]+\d+\.).)*Applied'
+    flags: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CQ5's answer stays in the readiness file"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items ecb-fx-rates-readiness.md answered CQ5"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's sender-mailbox question keeps no default, left for the build"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs line '^5\\. Which mailbox sends[^\\n]*default: none'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

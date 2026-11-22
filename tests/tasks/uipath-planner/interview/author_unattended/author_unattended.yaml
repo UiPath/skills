@@ -1,0 +1,78 @@
+task_id: skill-planner-interview-author-unattended
+description: >
+  Integration: `author` on a one-sentence idea, in a run that says nobody will answer questions. The
+  interview is never offered in an unattended run and the follow-up rounds ask nothing, so the run asks
+  no structured question and writes a genome with no SDD. A business value the idea does not give (the
+  approval limit) reads `default: none` instead of an invented amount. The closing names the open
+  questions by role, `interview <genome>` and the offer to write the SDD for answerers outside the
+  session, and asks for the preferences file. Nothing is built.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Write a genome for this automation, in this folder. Run unattended: nobody will answer questions.
+
+  When a supplier invoice comes in, enter it in our ERP and get it approved when it is over the limit.
+
+  Do not build anything in this run.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing names what is open, by role, and how it gets answered"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of a one-sentence idea, in a run where
+      nobody answers questions. Read the agent's final message, its closing summary.
+
+      It must do all four:
+      1. Count the questions still open in the genome (open decisions and configuration values), split
+         by who answers them (a role such as the process owner or the system's owner).
+      2. Name the interview command for the genome, in the form `interview <genome file name>`.
+      3. Offer to write an SDD (solution design document) for answerers who are not in the session.
+      4. Ask whether the user has a preferences file (team standing answers and development standards).
+
+      Score 1.0 when all four are present, 0.75 with three, 0.5 with two, 0.0 with one or none. Counts
+      by tier or by group alone, with no role, do not meet item 1. Do not grade the genome itself.
+    weight: 2.0
+    pass_threshold: 0.75

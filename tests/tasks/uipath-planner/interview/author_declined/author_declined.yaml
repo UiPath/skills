@@ -1,0 +1,99 @@
+task_id: skill-planner-interview-author-declined
+description: >
+  Integration: `author` on a one-sentence idea, where the request declines the interview and asks for
+  defaults with the open points written down. No offer question and no interview; at most one round of
+  follow-up questions. The genome is written with defaults and open entries, the approval limit as a
+  Configuration Question with `default: none`, no SDD, and passes the strict check. With no round
+  asked, the closing asks for the preferences file; it names `interview <genome>` and offers to write
+  the SDD for answerers outside the session. A simulated process owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Write a genome for this automation, in this folder. Do not interview me: use your defaults and write the open points down.
+
+  When a supplier invoice comes in, enter it in our ERP and get it approved when it is over the limit.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice handling in accounts payable. You want the genome
+    written with defaults and do not want to be interviewed.
+  goal: |
+    Get the genome written with its open points listed, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first."
+    - "When asked for a preferences file, answer that you have none."
+    - "If the agent offers an interview, edits, the SDD or a build after writing the genome, decline."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 6
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No interview, at most one follow-up round, and a closing that says how to answer"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea and
+      said: do not interview me, use your defaults and write the open points down. Read the dialog and the
+      agent's questions, whether asked in chat or as structured questions.
+
+      Check three things:
+      1. The agent neither offers nor runs an interview, and asks at most one round of follow-up
+         questions before writing the genome.
+      2. The final message names the interview command for the genome (`interview <genome file name>`)
+         and offers to write an SDD (solution design document) for answerers who are not in the session.
+      3. When no follow-up round was asked, the final message asks whether the user has a preferences
+         file (team standing answers and development standards); when a round was asked, that round
+         asked it.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0

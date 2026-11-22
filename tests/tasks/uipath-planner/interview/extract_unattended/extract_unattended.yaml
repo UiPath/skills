@@ -1,0 +1,78 @@
+task_id: skill-planner-interview-extract-unattended
+description: >
+  Integration: `extract` of a three-workflow XAML project "to rebuild later", in a run that says nobody
+  will answer questions. No structured question is asked and no SDD is written, since the request is
+  not a documentation request and does not ask for one. The closing message, which every run writes,
+  unattended included, counts the open questions by the role that answers them, names
+  `interview <genome>` and offers to write the SDD for answerers outside the session. Nothing is built.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../extract_component/fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  `InvoiceIntake/` is a UiPath project. Extract its genome into this folder: we will rebuild it later. It does not run in Orchestrator, and there are no other resources for it. Run unattended: nobody will answer questions.
+
+  Do not build anything in this run.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not scaffold, build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing names what is open, by role, and how it gets answered"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for the genome (an automation blueprint) of a small UiPath project, in a run where
+      nobody answers questions, and wrote no SDD (solution design document). Read the agent's final
+      message, its closing summary.
+
+      It must do all three:
+      1. Count the questions still open in the genome, split by who answers them (a role such as the
+         process owner or the system's owner). Counts by tier or group alone, with no role, do not
+         meet this item.
+      2. Name the interview command for the genome, in the form `interview <genome file name>`.
+      3. Offer to write the SDD for answerers who are not in the session.
+
+      Score 1.0 when all three are present, 0.5 with two, 0.0 with one or none. Do not grade the genome.
+    weight: 2.0
+    pass_threshold: 1.0

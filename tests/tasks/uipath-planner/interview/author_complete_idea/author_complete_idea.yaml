@@ -1,0 +1,103 @@
+task_id: skill-planner-interview-author-complete-idea
+description: >
+  Integration: `author` on an idea that states its trigger, source, scope, recipient and retry rule
+  (a weekday download of the euro reference rates, mailed to finance). The interview is offered only
+  when a point that changes the design is open, so there is no offer, or one that counts such points
+  only; at most one round of questions comes before writing, and it asks for the preferences file. A
+  genome only, passing the strict check. The closing counts the open entries by role, names
+  `interview <genome>` and offers to write the SDD for answerers outside the session. A simulated
+  requester answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Write a genome for this automation, in this folder:
+
+  Every weekday at 07:00, download the euro foreign exchange reference rates the European Central Bank publishes, keep the rates for USD, GBP, CHF and RON, and e-mail them as a table to finance@contoso.com. If today's rates are not published yet, try again every 30 minutes until 10:00, then e-mail finance that they are missing.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You work in finance and asked for this automation. You know what finance needs from the rates mail.
+  goal: |
+    Get the genome written, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "If the agent offers edits, an interview, the SDD or a build after writing the genome, decline."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 6
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No offer, or one counting design-changing points only; one round at most, with the preferences file"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of an idea that states its schedule (weekday
+      07:00), source (the European Central Bank's euro reference rates), scope (USD, GBP, CHF, RON),
+      recipient and retry rule. Read the dialog and the agent's questions, whether asked in chat or as
+      structured questions, up to the point the genome is written.
+
+      Check three things:
+      1. Either no interview is offered, or the offer counts only points that change the design (the
+         product, the scope or the architecture), each named, none of them a value the idea already gives.
+      2. At most one round of questions comes before writing.
+      3. That round, or the final message when there was no round, asks whether the user has a
+         preferences file (team standing answers and development standards).
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing counts open entries by role and names the interview and the SDD offer"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). It must:
+      1. Count the questions still open in the genome, split by the role that answers them.
+      2. Name the interview command for the genome, `interview <genome file name>`.
+      3. Offer to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 1.0

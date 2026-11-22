@@ -1,0 +1,105 @@
+task_id: skill-planner-interview-readiness-file
+description: >
+  Integration: `interview` on a folder holding an authored genome and the readiness file `prepare` wrote
+  beside it, with a request that names no document and no role. The request reaches the planner's
+  interview. Its gap list is the genome's open entries and every readiness item with a blank `Answer:`,
+  the build's own questions included, each asked once. The items name several answerers, so the roles
+  question is asked, listing the readiness sections' roles with the genome's. Answered as the engineer:
+  each answer goes after its item's `Answer:` in the readiness file, the build's answers change no genome
+  section, and other roles' items stay blank. The closing names the tasks without asking them. A
+  simulated engineer answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+    - type: template_dir
+      path: ../edit_no_sdd/fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Interview me on the open questions in this folder.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the engineer who will build this automation. You answer the build's own questions: where the
+    project goes, the product, the packages, where the settings live, and the build's gaps in the genome.
+  goal: |
+    Answer the open questions that are yours, so the readiness file records them, then stop.
+  constraints:
+    - "When asked how you want to answer, choose to go through every item, a batch at a time."
+    - "When asked which roles you answer for, answer: the engineer."
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "Never answer a question you were not asked, and ask the agent for nothing else."
+    - "Once the agent says the answers are written and lists what is still open, end the conversation."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The engineer's readiness items R2–R6 carry answers"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items ecb-fx-rates-readiness.md answered R2-6"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Other roles' items stay blank"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs items ecb-fx-rates-readiness.md blank D1-4 CQ1-3 CQ5-8"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The build's answers change no genome section"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs unchanged ecb-fx-rates-genome.md
+      a540659a348aae34d3ec5d5af5c5212079e458d60e6c52047ec0db18d6f4c3b0
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The roles question lists the engineer; each item is asked once; tasks are named, not asked"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked to be interviewed on the open questions in a folder that holds a genome (an
+      automation blueprint) and a readiness file for its build, without naming a document or a role. The
+      readiness file holds the build's questions (R2–R6, the engineer's), tasks with a `Status:` line
+      (R7, R8, R12) and the genome's decisions and configuration values (D1–D4, CQ1–CQ8, for the process
+      owner and the environment's owners). Read the dialog and the agent's questions, whether asked in
+      chat or as structured questions.
+
+      Check three things:
+      1. A question asks which roles the user answers for, and its options include the engineer.
+      2. Each item asked is asked once.
+      3. The tasks (R7, R8, R12) are not asked; the final message names them.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0

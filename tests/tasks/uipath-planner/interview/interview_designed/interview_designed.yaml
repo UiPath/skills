@@ -1,0 +1,105 @@
+task_id: skill-planner-interview-designed-genome
+description: >
+  Integration: `interview` on a designed genome (a process genome and two components, its `Designed in:`
+  line pinned to the agreed SDD), by a user who says they are the process owner. The SDD's Action
+  Required, written again from the genome, holds the open items; the process owner's are the component's
+  business decisions D3–D7, three constants and a baseline item kept in the SDD alone, and the others
+  belong to the system's owner, the environment's owners, the delivery lead and whoever holds the
+  source. Only the process owner's items are asked, by id. An answer to an item from the SDD's own
+  design is a design revise first and the genome follows, with the `Designed in:` fingerprint taken
+  again; an answer to an entry the genome added is a genome edit. D3–D7 read decided, the other roles'
+  entries stay open, and the genome passes the strict check. A simulated process owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Interview me on the open questions in the genome in this folder. I'm the process owner.
+
+  Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice entry, and you agreed its SDD. You decide business
+    outcomes and rules. You do not know how the ERP or the mailbox can be reached, nor the environments'
+    tenants, machines and groups.
+  goal: |
+    Answer the open questions that are yours, so the genome and its SDD record them, then stop.
+  constraints:
+    - "When asked how you want to answer, choose to go through every item, a batch at a time."
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. When it asks for a value, keep its default."
+    - "If asked which roles you answer for, answer: only the process owner."
+    - "Never answer a question you were not asked, and ask the agent for nothing else."
+    - "Once the agent says the answers are applied and lists what is still open, end the conversation."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The process owner's entries D3–D7 read decided in the component genome"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries supplier-invoice-entry-genome/supplier-invoice-entry-genome.md decided 3-7"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The other roles' entries stay open"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries supplier-invoice-entry-genome/supplier-invoice-entry-genome.md open 1 2 &&
+      node $REFERENCE_DIR/_shared/check_interview.mjs entries supplier-invoice-entry-genome.md open 1
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check, its Designed in fingerprint matching the SDD"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No second SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '^(?!(.*/)?supplier-invoice-entry-sdd\\.md$).*sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The process owner's items only, by id, with no roles question"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, who said they are the process owner, asked to be interviewed on the open questions of a
+      genome (an automation blueprint) designed from an agreed SDD (solution design document). The SDD's
+      open items for the process owner: the business decisions D3–D7, the constants CQ6, CQ7 and CQ9, and
+      a baseline item (today's handling time and volumes) kept in the SDD alone. For other roles: how the
+      ERP and the mailbox are reached, the environments' values, shared libraries, sample invoices. Read
+      the dialog and the agent's questions, whether asked in chat or as structured questions.
+
+      Check three things:
+      1. The agent never asks which roles the user answers for.
+      2. The questions asked are the process owner's items only, each named by its id.
+      3. The final message names what is still open, by the role that answers it.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0

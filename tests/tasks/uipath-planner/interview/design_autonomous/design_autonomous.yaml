@@ -1,0 +1,109 @@
+task_id: skill-planner-interview-design-autonomous
+description: >
+  Integration: `design`, autonomous, on a half-page PDD for supplier invoice entry. The interview is
+  never offered in an autonomous run: at most one prompt, holding only the items with no defensible
+  default. Every other gap keeps its marker and default, and the SDD carries a Decisions Made block.
+  The closing names the open counts and `interview <SDD>` in one line. The run stops at the SDD: no
+  genome, no build. A simulated process owner answers the one prompt, if there is one.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 2700
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../design_thin/fixtures
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Design a solution from `pdd.md` in this folder. Decide on your own, without pausing at checkpoints. It will run on Automation Cloud.
+
+  Stop once the SDD is written: no genome and no build in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice entry. You asked for a design decided without you.
+  goal: |
+    Get the SDD written, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first."
+    - "If the agent offers an interview, the genome or a build, decline."
+    - "Once the agent reports the SDD written, end the conversation."
+  max_turns: 4
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "An SDD was written"
+    path: "*-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No genome was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '-genome\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The SDD carries a Decisions Made block"
+    path: "*-sdd.md"
+    pattern: '(?m)^## Decisions Made'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The gaps keep their markers"
+    path: "*-sdd.md"
+    pattern: '\[SME REVIEW\]'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No interview offer, and at most one prompt of items with no defensible default"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for an autonomous design of a thin PDD (supplier invoice entry): decide on your own,
+      without pausing at checkpoints. Read the dialog and the agent's questions, whether asked in chat or
+      as structured questions.
+
+      Score 1.0 when the agent offers no interview and asks at most one prompt before the SDD is done,
+      holding only items that have no defensible default (such as how an in-scope system can be reached
+      at all). Score 0.5 when it asks one prompt that also holds items with a usable default. Score 0.0
+      when it offers an interview or asks more than one prompt.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing names the open counts and `interview <SDD>`"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the SDD (solution design document). It must give the
+      number of items still open and name the interview command for the SDD, in the form
+      `interview <SDD file name>`, as the way to answer them. Score 1.0 when both are there, 0.5 with the
+      count only, 0.0 otherwise.
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Design does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa|solution)\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
