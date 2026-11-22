@@ -103,6 +103,9 @@ success_criteria:
       A calling skill sent a design request for a business audience. Read everything the agent wrote to
       the user.
 
+      The transcript may show the final message twice, once as the assistant's message and once as the
+      run's result: read it as one message.
+
       Check two things:
       1. The text the user reads uses business words: it does not say "SDD", "genome", "phase", "SME
          REVIEW", "marker" or "Step 1.5". A file name is allowed.

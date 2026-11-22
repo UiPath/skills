@@ -33,7 +33,7 @@ simulation:
   goal: |
     Get the project documented, answering the open questions that are yours, then stop.
   constraints:
-    - "When asked which roles you answer for, answer: the process owner."
+    - "Do not say which role you hold until the agent asks; when asked which roles you answer for, answer: the process owner."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "Do not ask for the interview yourself; answer it when the agent offers it."
@@ -59,7 +59,7 @@ success_criteria:
   - type: file_matches_regex
     description: "The SDD was written, with Action Required ahead of its body"
     path: "*-sdd.md"
-    pattern: '(?s)^## Action Required.*^## 1\. '
+    pattern: '(?s)^## Action Required.*^## 1\.? '
     flags: 8
     weight: 2.0
     pass_threshold: 1.0
