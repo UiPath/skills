@@ -668,7 +668,7 @@ uip solution resources add --source local --kind Connection --type <CONNECTOR_KE
 uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>","pollingInterval":5}' --output json
 ```
 
-A project that uses it takes `<RESOURCE_KEY>` as its connection ID. `refresh` then warns `Connection <key> not found in Resource Catalog` and counts it under none of `Created`, `Imported` and `Skipped`, which is expected for a connection that does not exist yet. The deploy creates an `AuthenticateAfterDeployment` connection, unauthenticated, in the deployment's folder, so the deployment ends `NeedsSetupToActivate` until a person authenticates it ([Pack and Deploy § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)).
+A project that uses it takes `<RESOURCE_KEY>` as its connection ID and a folder key beside it, for which `Data.FolderKey` from `add` serves; a case rule bound with no folder key faults at start (`102010`, `Value cannot be null. (Parameter 'Folder')`). `refresh` then warns `Connection <key> not found in Resource Catalog` and counts it under none of `Created`, `Imported` and `Skipped`, which is expected for a connection that does not exist yet. The deploy creates an `AuthenticateAfterDeployment` connection, unauthenticated, in the deployment's folder, so the deployment ends `NeedsSetupToActivate`; a person's sign-in to the connection alone does not activate it ([Pack and Deploy § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)).
 
 ### `bindings_v2.json` locations
 
