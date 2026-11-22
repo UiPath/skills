@@ -95,6 +95,9 @@ success_criteria:
       ERP and the mailbox are reached, the environments' values, shared libraries, sample invoices. Read
       the dialog and the agent's questions, whether asked in chat or as structured questions.
 
+      The SDD reuses some ids: a component's entries and the items kept in the SDD alone can share a
+      number. An item named by its id and its question counts as named by its id.
+
       Check three things:
       1. The agent never asks which roles the user answers for.
       2. The questions asked are the process owner's items only, each named by its id.

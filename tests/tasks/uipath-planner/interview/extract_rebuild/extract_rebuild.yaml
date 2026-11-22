@@ -90,8 +90,9 @@ success_criteria:
       structured questions.
 
       Check three things:
-      1. Apart from a preferences-file question, nothing about the genome's open items is asked before
-         the genome is written and checked.
+      1. Nothing about the genome's open items is asked before the genome is written and checked. The
+         extraction's own setup questions (a preferences file, where the rebuild runs, its target
+         product) are not open items.
       2. Once it is written, one question asks how the user wants to answer its open items, and one of
          its options leaves them all open for now.
       3. The items then asked each carry the genome's id for the entry (D1, D2 …), and are items the

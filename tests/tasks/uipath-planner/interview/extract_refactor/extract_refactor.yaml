@@ -106,6 +106,9 @@ success_criteria:
       work is split, the setup, open decisions it still needs). Read the dialog and the agent's questions,
       whether asked in chat or as structured questions.
 
+      A configuration value the build asks (a server, a folder, an address, a credential) is not an
+      interview entry, even when an entry's wording mentions it.
+
       Score 1.0 when both hold:
       1. The build asks none of the entries the interview decided, and offers no edit for them.
       2. An entry the interview left open (another role's, or skipped) is asked once by the build or

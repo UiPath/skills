@@ -70,6 +70,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
+    description: "The SDD's Action Required says how to answer, the interview included"
+    path: "supplier-invoice-entry-sdd.md"
+    pattern: '(?s)How to answer:.*uipath-planner.{0,40}interview'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
     description: "Every open item keeps its default"
     path: "supplier-invoice-entry-sdd.md"
     pattern: '\[SME REVIEW\]'

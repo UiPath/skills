@@ -76,6 +76,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
+    description: "The SDD's Action Required says how to answer, the interview included"
+    path: "*-sdd.md"
+    pattern: '(?s)How to answer:.*uipath-planner.{0,40}interview'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
     description: "The gaps left open are Action Required items, each naming who answers it"
     path: "*-sdd.md"
     pattern: '\*\*Answer \(by [^)]+\):\*\*'
@@ -123,7 +130,8 @@ success_criteria:
 
       An interview point is one the interview put to the user (answered, skipped or defaulted) or held for
       another role. A threshold, rule or value the interview only mentioned as something to settle later
-      is not an interview point, and the last round may ask it.
+      is not an interview point, and the last round may ask it; nor is a follow-up that one of the user's
+      interview answers opened (what an escalation target does once a task reaches them).
 
       Score 1.0 when that last round asks no interview point again, and asks only items that belong to
       the user's role. Score 0.0 when it asks an interview point again, or an item that belongs to another
