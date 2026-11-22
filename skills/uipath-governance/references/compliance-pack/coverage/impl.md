@@ -6,6 +6,8 @@ Compares the compliance standard's recommended settings against what is currentl
 
 `<packId>` / `<packName>` below = the standard being checked, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). Coverage is per standard — if the user asked about posture without naming one, resolve it there first; do not default to whichever pack is listed first.
 
+The output mirrors the Compliance Standards page in the UiPath admin portal: three requirement counts (**Not applied** / **Needs configuration** / **Applied**), a **Policy Status** panel per product, the requirements listed under those headings, and an **Outside platform scope** list. Before the standard is applied — or while it is active but not enforced — it also shows what applying or enforcing will do: settings that will still need configuration, conflicts with existing policies, and which policies will be created or updated.
+
 ## Command
 
 **Pre-condition:** `$SESSION_TEMP/catalog.json` must exist — run `catalog get` first (see `catalog/impl.md`). The coverage response does NOT carry display names for clauses (`ClauseName` comes back null) — the plain-English clause names the template requires come from joining coverage `Clauses[].ClauseId` to catalog `Clauses[].ClauseId` → `ClauseName` in `catalog.json`.
@@ -48,10 +50,12 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - INTERNAL only; the user-facing posture is driven entirely by clauses + per-setting `Controls[]`. Do NOT gate the all-applied case on `Summary.NewCount == 0` — with the disjoint counts a `needs-manual-config` product leaves `NewCount == 0` yet the pack is not fully applied.
 - `PolicyId` may be **absent entirely** (not null) when the product has no live policy. Do not infer its presence from `Status` — a fully-drifted product is `"new"` and still carries a `PolicyId`. Any step that resolves a `PolicyId` must check for the key and skip the product when it is missing.
 
-`Data.Clauses[].Status` (per-control rollup):
+`Data.Clauses[].Status` (per-control rollup). The admin portal calls a clause a **requirement** — use that word in output — and these are its three headings:
 - `"fully-deployed"` — every checkable setting satisfied — display as **Applied** (✓)
-- `"partially-deployed"` — some but not all satisfied, OR nothing satisfied yet but ⚙ manual configuration is pending — display as **Partially Applied** (◐). A clause showing `0/<n>` with this status is expected, not a data error: pending-manual controls keep a clause out of `"not-deployed"`.
-- `"not-deployed"` — none satisfied — display as **Not Applied** (✗)
+- `"partially-deployed"` — some but not all satisfied, OR nothing satisfied yet but ⚙ manual configuration is pending — display as **Needs configuration** (⚙). A clause showing `0/<n>` with this status is expected, not a data error: pending-manual controls keep a clause out of `"not-deployed"`.
+- `"not-deployed"` — none satisfied — display as **Not applied** (✗)
+
+`Data.Clauses[].CheckableControlCount` → "N UiPath settings" on the requirement's line; `DeployedControlCount` → how many are applied. Clauses with no mapped setting are not in coverage at all: they are `catalog.json` `Data.UnsupportedClauses[]` (`ClauseId`, `ClauseName`, `Description`) → **Outside platform scope**.
 
 `Data.Clauses[].Controls[]` (per-setting; present on updated CLI) — the truthful per-setting view:
 - `ControlDisplayName` — setting name
@@ -60,6 +64,11 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `Impact` — `"High"` / `"Medium"` / `"Low"`
 - `RecommendedSetting` — the recommended value
 - `Status` — `"deployed"` (✓ Applied) / `"not-deployed"` (✗ Not Applied) / `"manual"` (⚙ Needs Manual Configuration — admin must set a value)
+- `StatusAfterApply` — **before an apply that writes the pack's policies only** (pack not active, or active but not enforced): the setting's status right after applying/enforcing; `"manual"` = will still need configuration. Absent once the pack is enforced, or on an older server.
+- `PackSettings[]` (`Key`, `PackValue`) — what applying writes for this setting.
+- `EnforcedBy[]` — existing policies that already meet this setting ("Already enforced by <policy>"), each with `PolicyName`, `LicenseTypes[].DisplayName` and `Lines[]`.
+
+`Data.Clauses[].ManualConfigControlCountAfterApply` — sent with `StatusAfterApply`: how many of the clause's settings will still need configuration right after applying/enforcing.
 
 `Data.Clauses[].ManualConfigChecks[]` (the actionable "what to set" detail behind every `Status == "manual"` control) — join to a `Controls[]` entry by `ControlId`, falling back to `ControlDisplayName` when `ControlId` is absent (pre-2.1.0 bundles omit it; the display name is always present):
 - `ControlDisplayName` / `ControlId` — the setting
@@ -74,6 +83,23 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `PackValueDisplay` — the value the standard expects, already display-ready
 - `ImpactedClauseId` — the clause whose rollup this drift pulled down
 - `UnmetSettings[]` — `{ Key, Expected, Actual }`, same predicate shape as `ManualConfigChecks` above
+- `Lines[]` — the same failing settings as display-ready text (`Current` = now, `Recommended` = the standard's value). Prefer them over `UnmetSettings[]` when present; follow the [line rules](#line-rules).
+
+`Data.DeploymentPolicies[].Policies[]` — every live policy of the product in the license types the pack deploys to (one per license-type group): `PolicyId`, `PolicyName` (the live Aops name, which can carry a suffix such as "(12)"), `LicenseTypes[].DisplayName` (e.g. "RPA Developer"), its own `Status` and `DriftedControls[]`. Empty when the product has no live policy. For the **card title** use `catalog.json` `Data.DeploymentPolicies[].PolicyName` (join by `ProductIdentifier`), with `ProductDisplayName` for the "<ProductDisplayName> Policy" subtitle — never the live name.
+
+**Conflicts** — existing policy values that applying/enforcing would change:
+- `Data.ConflictStatus`: `"evaluated"` (`ConflictCount` can be trusted, may be 0) · `"unavailable"` (could not be checked — do not offer apply) · `"not-applicable"` (nothing to resolve: the pack is enforced, not tenant scope, or a pack without values — say nothing about conflicts). An active pack in Observe or with no mode chosen still returns `"evaluated"`: its conflicts describe what enforcing would change.
+- `Data.Summary.ConflictCount` — total. `Data.Clauses[].ConflictCount` / `Conflicts[]` — per clause; a setting under several clauses is listed once, under the first.
+- Each conflict: `ControlDisplayName`, `ProductIdentifier`, `PackValueDisplay`, and `Policies[]` — the existing policies that would change, each with `PolicyName`, `LicenseTypes[].DisplayName` and `Lines[]`.
+- A conflicting setting also shows as `Status: "not-deployed"` in `Controls[]`. Its remedy is applying/enforcing the standard, not restore and not the product UI.
+
+**Apply plan** — `Data.ApplyPlan[]`, before an enforce apply only (absent otherwise): one entry per product and license type, `Action`: `"create"` (new policy from the standard's values) · `"copy"` (new policy starting from the slot's existing policy, which is not changed) · `"update"` (an existing policy of the standard, written in place) · `"split"` (new policy split off a policy shared with another license type). "Will be created" = `create` + `copy` + `split`; "will be updated" = `update`. Count **entries, not products**: there is one entry per product and license type, so a product deployed to two license types (e.g. RPA Developer and Automation Developer) counts twice. The two numbers must add up to `ApplyPlan.length`.
+
+### Line rules
+
+`Lines[]` (conflicts, drift, enforced-by) carry `Key`, `Setting`, `Current`, `Recommended`, `IsMet`. `Current` / `Recommended` are display-ready; show them verbatim. `Setting` is the Policy Library label when one exists, otherwise the server falls back to the raw key:
+- **Never print a raw key.** When a line's `Setting` equals its `Key`, don't show it. Group such lines under the setting's `ControlDisplayName` by change: `<n> settings, <Current values joined by "/"> → <Recommended>` (e.g. `Agent Guardrail — Prompt Injection Prevention: 3 settings, Not set/Disabled → Enabled`). A single unlabelled line becomes `<ControlDisplayName>: <Current> → <Recommended>`. Labelled lines show as `<Setting>: <Current> → <Recommended>`.
+- **Every distinct change must appear.** Group only lines with the same `Recommended`; a different kind of change (e.g. `Both → Pre`, or a list value) gets its own line. Before printing, check that every `Lines[]` entry is covered by exactly one printed line.
 
 `Data.Summary` (PRODUCT-grain counts + a clause rollup — read these directly, do NOT recompute):
 - `DeploymentPolicyCount` — total products · four **disjoint** product tallies that sum to it: `InPlaceCount` (fully applied) + `NeedsManualConfigCount` (deployed, manual setup pending) + `UnverifiableCount` (policy missing, nothing checkable) + `NewCount` (nothing deployed). `NewCount == 0` does NOT mean fully applied — needs-manual-config and unverifiable products aren't counted in it. Omitting `UnverifiableCount` makes the tallies not add up.
@@ -101,6 +127,7 @@ For each ⟳ drifted control, show the same expected-vs-actual line from its `Un
 **Next-action suggestion (state-aware).** Two INDEPENDENT axes decide the call-to-action. Read each from its own source — never derive one from the other:
 
 - **Is the pack applied?** — `state get` → `Data.Active`. This is the ONLY authority.
+- **Is it enforced?** — `state get` → `Data.Mode`, read only when `Active == true`: `"enforce"` → **Enforced** · `"audit"` → **Observe** · null or absent → **Mode not chosen** (runs as Observe until a mode is chosen). An active pack that is not enforced has live policies, but the runtime only simulates, and coverage still describes an enforce apply (`ConflictStatus`, `Conflicts[]`, `StatusAfterApply`, `ApplyPlan`). Never label it Enforced.
 - **What is covered?** — the coverage counts. Posture only.
 
 Coverage compares the pack against **whatever policies the tenant already has**, applied or not (`Does NOT require the pack to be enabled`). So coverage numbers cannot tell you whether the pack is on, in either direction:
@@ -111,15 +138,16 @@ Coverage compares the pack against **whatever policies the tenant already has**,
 
 Evaluate IN THIS ORDER (first match wins):
 
-1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good.
-2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply.
-3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the drift case FIRST:
+1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good. Render the [If you apply](#if-you-apply--if-you-enforce) block with it. When `ConflictStatus == "unavailable"`, do NOT offer to apply in this run: say `Couldn't check for conflicts with your existing policies. Retry.`
+2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply. If the pack is not enforced, add the [If you enforce](#if-you-apply--if-you-enforce) block and the enforce call-to-action from case 3.
+3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the enforce and drift cases FIRST:
+   - **3·0. If the pack is not enforced** (`Mode` is `"audit"`, null or absent): render the [If you enforce](#if-you-apply--if-you-enforce) block, and offer first: `To enforce the standard, choose Enforce on the Compliance Standards page in the admin portal.` The CLI cannot set the mode yet; never run `state enable` to change it. Every ✗ setting that is in `Conflicts[]` is covered by this offer — enforcing replaces it with the standard's value. Do NOT route a conflict to restore or to the product UI.
    - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`:** offer `'Reset the changed <packName> settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
    - If any ⚙ `manual` controls exist: `'Configure the manual <packName> settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
-   - On an active pack there is no third remedy: a plain ✗ (not-deployed, not drifted) only occurs under a Cannot-Be-Checked product whose policy is missing — restore recreates it (3a). Never tell the user to configure an active pack's settings in the product's own UI. (Exception: an older server that doesn't return drift fields at all — then ✗ under an active pack is indistinguishable drift, and restore is still the remedy.)
-   - Fallback, if that ever fails to hold — ✗ settings on an active pack with no drift and no Cannot-Be-Checked product: do NOT leave them unexplained. Offer restore anyway (it re-asserts the standard's values on every live policy) and say the settings are not in place for a reason the posture data doesn't explain.
+   - On an active pack there is no third remedy: a plain ✗ (not-deployed, not drifted, not a conflict) only occurs under a Cannot-Be-Checked product whose policy is missing — restore recreates it (3a). Never tell the user to configure an active pack's settings in the product's own UI. (Exception: an older server that doesn't return drift fields at all — then ✗ under an active pack is indistinguishable drift, and restore is still the remedy.)
+   - Fallback, if that ever fails to hold — ✗ settings on an active pack with no drift, no conflict and no Cannot-Be-Checked product: do NOT leave them unexplained. Offer restore anyway (it re-asserts the standard's values on every live policy) and say the settings are not in place for a reason the posture data doesn't explain.
 
-   These are not exclusive — a tenant can have ⟳, ⚙, and ✗ at once. Offer each that applies, drift first.
+   These are not exclusive — a tenant can have ⟳, ⚙, and ✗ at once. Offer each that applies: enforce first (3·0), then drift, then manual.
 
    **Degraded-response check:** the server computes drift and `unverifiable` only when its own internal pack-state read succeeds; on failure it silently returns coverage WITHOUT them (products with deleted policies then show as `new`). The tell: on an active pack, a `new` product ALWAYS carries drifted controls — so `Active == true` plus a `new` product with `DriftedControlCount == 0` means the response is degraded. Re-run coverage before acting on it.
 
@@ -138,10 +166,11 @@ A setting is a **gap** when its `Status != "deployed"` — i.e. `not-deployed` (
 The two tie-breaks pull opposite ways on purpose — a single-clause tie must not name the same clause in both rows. If it still does (one clause is genuinely both), leave Quickest win blank rather than repeat it.
 
 Terminology rules:
-- Use "settings" NOT "controls" in output
-- Use plain-English clause names (joined from `catalog.json` by `ClauseId` — see the pre-condition; coverage's own `ClauseName` is null) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
-- Use `Controls[].ControlDisplayName` as setting name, NOT product identifiers
-- **NEVER write raw API status strings** — product `in-place`/`needs-manual-config`/`unverifiable`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `deployed`/`not-deployed`/`manual` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
+- Use "settings" NOT "controls", and "requirements" for clauses, in output
+- Use plain-English clause names (joined from `catalog.json` by `ClauseId` — see the pre-condition; coverage's own `ClauseName` is null) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference
+- Use `Controls[].ControlDisplayName` as setting name, NOT product identifiers; use the catalog `PolicyName` / `ProductDisplayName` for policies, never product identifiers, policy ids or live policy names as titles
+- Mode words: **Enforced**, **Observe**, **Mode not chosen**. Policy badges: **Stable**, **N drifted**, **Cannot Be Checked**
+- **NEVER write raw API status strings** — product `in-place`/`needs-manual-config`/`unverifiable`/`new`; clause `fully-deployed`/`partially-deployed`/`not-deployed`; control `deployed`/`not-deployed`/`manual`; `ConflictStatus` `evaluated`/`unavailable`/`not-applicable`; `ApplyPlan` `create`/`copy`/`update`/`split`; mode `enforce`/`audit` — in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
   - `"in-place"` → **Applied** (or ✓)
   - `"new"` → **Not Applied** (or ✗)
   - `"unverifiable"` → **Cannot Be Checked** — the product's policy is missing, so say the settings can't be verified. Never report an unverifiable product as Applied.
@@ -150,33 +179,55 @@ Terminology rules:
 - Never say "compliance gaps" — say "settings not yet configured"
 - Never claim the tenant IS compliant
 
-Render this gap template ONLY for cases 1 and 3 above (pack not applied, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps.
+Render this template ONLY for cases 1 and 3 above (pack not applied, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps. It follows the admin portal page: requirement counts, policy status, then the requirements under their headings.
 
 ```
-<packName> Posture — <tenantName>  ·  <date>
+<packName> — <tenantName>  ·  <date>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-SUMMARY
-┌─────────────────────────┬──────────────────────────────────────┐
-│ Overall coverage        │ <appliedControlCount> / <checkableControlCount> settings  (<pct>%)  │
-│ Clauses fully covered   │ <clausesFullyDeployed> / <totalClauses>          │
-│ Clauses with gaps       │ <clausesWithGaps> / <totalClauses>               │
-├─────────────────────────┼──────────────────────────────────────┤
-│ 🔴 High impact gaps     │ <highGapCount> settings across <highClauseCount> clauses  │
-│ 🟡 Medium impact gaps   │ <medGapCount> settings across <medClauseCount> clauses    │
-│ 🟢 Low impact gaps      │ <lowGapCount> settings across <lowClauseCount> clauses    │
-├─────────────────────────┼──────────────────────────────────────┤
-│ Biggest risk area       │ <clauseName with most High-impact gap settings>  │
-│ Quickest win            │ <clauseName with fewest gaps AND ≥1 High setting>│
-└─────────────────────────┴──────────────────────────────────────┘
+REQUIREMENTS
+┌──────────────────────┬──────────────────────┬──────────────────────┐
+│ Not applied          │ Needs configuration  │ Applied              │
+│ <NotDeployedCount>   │ <PartiallyDepl…Count>│ <FullyDeployedCount> │
+└──────────────────────┴──────────────────────┴──────────────────────┘
+<pack not active: "Not applied on this tenant yet." · active: nothing>
 
-<call-to-action per Next-action suggestion (this template renders for cases 1 and 3): case 1 (pack not applied) → 'Apply <packName> settings' / 'Apply High impact <packName> settings' / 'Apply only <specific area> settings'; case 3 (applied, gaps remain) → in order: 'Reset the changed <packName> settings back to the standard' (when ⟳ settings or a Cannot-Be-Checked product exist), then 'Configure the manual <packName> settings' (when ⚙ settings exist)>
+POLICY STATUS · <Enforced | Observe | Mode not chosen>  ·  <S> stable[ · <D> drifted][ · <U> cannot be checked]
+  <catalog PolicyName>                      <ProductDisplayName> Policy   ● <Stable | N drifted | Cannot Be Checked>
+  … one line per product
+(active pack only; omit the panel when the pack is not active)
+
+<IF YOU APPLY / IF YOU ENFORCE block — see below; case 1, and any active pack that is not enforced>
+
+IMPACT OF WHAT'S NOT APPLIED
+  🔴 High    <highGapCount> settings across <highClauseCount> requirements
+  🟡 Medium  <medGapCount> settings across <medClauseCount> requirements
+  🟢 Low     <lowGapCount> settings across <lowClauseCount> requirements
+  Biggest risk area: <clauseName with most High-impact gap settings>
+  Quickest win:      <clauseName with fewest gaps AND ≥1 High setting>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Needs configuration  (<PartiallyDeployedCount> requirements)
+UiPath settings are applied but these requirements also need manual configuration steps. Once completed, they will move to Applied.
+  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath settings[ — waits on the conflicts above]
+  … every requirement with this status
 
-Needs Configuration  (<N> of <total>)
+Not applied  (<NotDeployedCount> requirements)
+Requirements not yet addressed by any UiPath settings.
+  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath settings[ — waits on the conflicts above]
+
+Applied  (<FullyDeployedCount> requirements)
+Requirements fully addressed by UiPath recommended settings applied through this pack. No further action needed.
+  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath setting(s)
+
+Outside platform scope  (<count> requirements)
+These requirements cannot be addressed through platform configuration. Your auditor will need independent organizational evidence.
+  • <ClauseId> — <ClauseName>: <Description>
+  (first 3, then "and <N> more")
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DETAILS  (per requirement with gaps; all of them on 'Show full details')
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   <clauseName>                                       <deployedControlCount>/<checkableControlCount> <bar>
   ┌───────────────────────────────────┬─────────────────────┬────────┐
@@ -190,7 +241,8 @@ Needs Configuration  (<N> of <total>)
   Marker = `Control.Status` + drift join: ✓ deployed · ✗ not-deployed · ⟳ not-deployed AND in `DriftedControls[]` · ⚙ manual
   For each ⚙ row, add a sub-line from `ManualConfigChecks` (`Expected` vs `Actual`):
     ⚙ <ControlDisplayName> — set to <Expected>; currently <Actual, or "not set">
-  For each ⟳ row, add a sub-line from `DriftedControls[].UnmetSettings[]`:
+  For each ⟳ row, add a sub-line from `DriftedControls[].Lines[]` (per the line rules),
+  falling back to `UnmetSettings[]` only when `Lines` is empty:
     ⟳ <ControlDisplayName> — standard expects <PackValueDisplay>; currently <Actual>
   Rendering `Actual` — never print it verbatim, whatever its type:
   - Scalar tokens (`yes`/`no`/`true`/`false`/`null`): translate into the vocabulary of
@@ -217,20 +269,56 @@ Needs Configuration  (<N> of <total>)
   standard recreates that policy with the recommended values."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Applied  (<N> of <total>)  ✓
-┌────────────────────────────────────────┬──────────┐
-│ Clause                                 │ Settings │
-├────────────────────────────────────────┼──────────┤
-│ <clauseName>                           │ X / X  ✓ │
-└────────────────────────────────────────┴──────────┘
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Next action (state-aware — see "Next-action suggestion"):
+  · active, not enforced                → 'To enforce the standard, choose Enforce on the Compliance Standards page in the admin portal.'
   · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed <packName> settings back to the standard'
-  · Active == true, partial gaps        → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
+  · Active == true, ⚙ settings          → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
   · nothing applied yet                 → 'Apply <packName> settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
 ```
+
+Layout rules:
+- **Do not compress the layout.** Every non-empty section (Needs configuration, Not applied, Applied) lists **every** requirement in it on its own line. Never merge requirements into "N other requirements", and never mention a requirement only inside the conflict table. The number of lines in a section must equal its count in the REQUIREMENTS row; check this before printing. Omit a section with zero entries (its count still shows in the REQUIREMENTS row).
+- Append `— waits on the conflicts above` to a requirement whose remaining gaps are all conflicts (`Clauses[].ConflictCount > 0` and no ⚙ setting). Count these from the data; never estimate.
+- **POLICY STATUS is one line per product**, never a sentence: the catalog `PolicyName` verbatim (no shortening, no live-name suffix such as "(12)"), then `<ProductDisplayName> Policy`, then the badge. Two products can share a policy name (Studio and Studio Web); the subtitle tells them apart. Stable = product `in-place` or `needs-manual-config` with `DriftedControlCount == 0`; drifted = `DriftedControlCount > 0`; Cannot Be Checked = `unverifiable`. Only when a product has several entries in `Policies[]`, list each under its line as `<LicenseTypes[].DisplayName joined by ", ">: <live PolicyName>`.
+- Drift: a product with `DriftedControlCount > 0` gets its ⟳ settings listed under its POLICY STATUS line (`<ControlDisplayName>` + its `Lines[]` per the [line rules](#line-rules) + `Requirement impacted by this drift: <clauseName> (<ImpactedClauseId>)`), as well as the ⟳ rows in DETAILS.
+
+### If you apply / If you enforce
+
+Rendered for case 1 (pack not active: "IF YOU APPLY THE STANDARD") and for an active pack that is not enforced ("IF YOU ENFORCE THE STANDARD"):
+
+```
+IF YOU APPLY THE STANDARD                (or: IF YOU ENFORCE THE STANDARD)
+  ✓ <count of Controls[].StatusAfterApply == "deployed"> settings will be applied
+  ⚙ <sum of Clauses[].ManualConfigControlCountAfterApply> settings will still need a value only you can set
+  Policies: <N> will be created · <M> will be updated
+
+⚠ <ConflictCount> existing settings differ from the standard
+  <clauseName> (<ClauseId>)
+    <ControlDisplayName> — standard: <PackValueDisplay>
+      <lines per the line rules>
+Applying replaces these values with the standard's values.   (or: Enforcing replaces …)
+```
+
+- The two counts come from `StatusAfterApply` and `ManualConfigControlCountAfterApply` only — never from `ManualConfigChecks[]` entries, keys or products. If `StatusAfterApply` is absent on every control (older server), drop the two count lines rather than guess.
+- **Compute all three numbers with a command — never count by reading the JSON.** Then check: will-be-applied + still-need-a-value = the total number of `Controls[]` entries, and created + updated = `ApplyPlan.length`. If either check fails, recompute; never print numbers that don't add up.
+  ```bash
+  jq '{applied: ([.Data.Clauses[].Controls[]? | select(.StatusAfterApply == "deployed")] | length),
+       manual:  ([.Data.Clauses[].ManualConfigControlCountAfterApply // 0] | add),
+       total:   ([.Data.Clauses[].Controls[]?] | length),
+       created: ([.Data.ApplyPlan[]? | select(.Action != "update")] | length),
+       updated: ([.Data.ApplyPlan[]? | select(.Action == "update")] | length)}' "$SESSION_TEMP/coverage.json"
+  ```
+  ```powershell
+  $c = (Get-Content "$tmpDir\coverage.json" -Raw | ConvertFrom-Json).Data
+  $ctl = @($c.Clauses | ForEach-Object { $_.Controls })
+  [pscustomobject]@{ applied = @($ctl | Where-Object StatusAfterApply -eq 'deployed').Count
+    manual = ($c.Clauses | Measure-Object ManualConfigControlCountAfterApply -Sum).Sum; total = $ctl.Count
+    created = @($c.ApplyPlan | Where-Object Action -ne 'update').Count; updated = @($c.ApplyPlan | Where-Object Action -eq 'update').Count }
+  ```
+- Policies line from `ApplyPlan[]` (see the field notes): count entries, not products — created + updated must equal `ApplyPlan.length`. Omit a zero part, and omit the line when `ApplyPlan` is absent.
+- Conflict part by `ConflictStatus`: `"evaluated"` with 0 → `No conflicts with your existing policies.` · `"evaluated"` with conflicts → the list above, grouped by requirement · `"unavailable"` → `Couldn't check for conflicts with your existing policies. Retry.` (and no apply offer) · `"not-applicable"` → nothing.
+- `uip gov compliance-packs state enable` cannot keep an existing value yet, so applying always takes the standard's value for every conflict. Say so before any apply confirmation, and name the count. An admin who wants to keep a value should apply from the Compliance Standards page in the admin portal instead.
+- A ✗ setting that is a conflict is listed once, in the conflict list, not again with a separate explanation.
 
 ## All settings applied
 
@@ -251,7 +339,7 @@ Do NOT call `state enable` in this case.
 
 When the user accepts `'Configure the manual <packName> settings'` (offered ONLY in the already-applied / partial state), hand off to this skill's AOps policy mechanic to update the EXISTING deployed policy. Do NOT re-enable the pack (`state enable`) and do NOT create a new policy — the pack already deployed one policy per product; a `manual` setting is just an org-specific formData key on that policy that automation could not fill. This mutation happens on the **AOps branch** (Critical Rule 3: one branch per mutation).
 
-Each ⚙ setting is a `Data.Clauses[].ManualConfigChecks[]` entry: `{ ProductIdentifier, Key, Expected, Actual }`. Group them by `ProductIdentifier` — one policy per product, updated once.
+Each ⚙ setting is a `Data.Clauses[].ManualConfigChecks[]` entry: `{ ProductIdentifier, Key, Expected, Actual }`. Group them by `ProductIdentifier`. A product can have several live policies, one per license-type group (`DeploymentPolicies[].Policies[]`): update each of them, once.
 
 Per product:
 1. **Resolve the pack's policy id for the product.** `uip gov aops-policy deployment tenant get <TENANT_ID> --output json` → the `TenantPolicies[]` entry whose `ProductIdentifier` matches → its `PolicyIdentifier`. Cross-check it belongs to the pack against `state get tenant <TENANT_ID> <packId>` `Policies[].ExternalPolicyId`.
@@ -310,3 +398,9 @@ Always run fresh before presenting a posture plan. Coverage reflects live tenant
 - **Reading `PolicyId` on every product** — it can be absent when there is no live policy. Check for the key; never infer its presence from `Status` (a fully-drifted product is `"new"` and does have one).
 - **Inferring whether the pack is applied from coverage numbers** — the single most damaging mistake here, and it fails in both directions. Zero coverage can mean an enabled pack whose settings were all changed away (remedy: `restore`, not apply). Partial or full coverage can mean the tenant's own pre-existing policies coincide with the standard while the pack is off (so the apply offer must still be made). Coverage runs pack-on or pack-off by design — read `Data.Active` from `state get` and nothing else.
 - **Suppressing the apply offer because coverage looks good** — a user asking to apply a standard on a tenant that merely happens to satisfy part of it must still be offered the apply. Coincidental coverage is not an applied pack.
+- **Labelling an active pack Enforced when its `Mode` is `"audit"` or null** — it is Observe / Mode not chosen, and its conflicts still apply.
+- **Routing a conflict to restore or the product UI** — a ✗ setting in `Conflicts[]` is fixed by applying/enforcing the standard. Never say re-applying won't change it: applying takes the standard's value for every conflict.
+- **Hiding conflicts before an apply** — when `ConflictCount > 0`, the user sees the list and the "replaces these values" warning before any `y`. Never offer apply when `ConflictStatus == "unavailable"`.
+- **Counting settings left after apply from anything but `StatusAfterApply` / `ManualConfigControlCountAfterApply`** — counting `ManualConfigChecks[]` keys or products gives the wrong number.
+- **Compressing the layout** — "N other requirements", a requirement named only in the conflict list, or policies listed in a sentence. Every requirement and every policy gets its own line.
+- **Printing raw formData keys or live policy names** — follow the line rules; card titles use the catalog `PolicyName`.

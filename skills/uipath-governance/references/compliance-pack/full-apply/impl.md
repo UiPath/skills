@@ -10,11 +10,13 @@ Applies the entire compliance standard in one command. Backend creates and deplo
 
 ## Pre-condition
 
-Coverage (posture analysis) has been run and presented. At least one policy has `status: "new"`.
+Coverage (posture analysis) has been run and presented. At least one policy has `status: "new"`. If coverage returned `ConflictStatus == "unavailable"`, do not apply: tell the user conflicts with existing policies couldn't be checked and to retry.
 
 ## Confirmation
 
-Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group settings by impact. For settings needing user-supplied values (flagged by `synthesize-formdata` notEmpty warnings), list them with a plain-English prompt.
+Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group settings by impact. List the settings that will still need user-supplied values after apply — coverage `Clauses[].Controls[]` with `StatusAfterApply == "manual"`, with the `ManualConfigChecks[]` expectation as the plain-English prompt (fall back to `synthesize-formdata` notEmpty warnings only when `StatusAfterApply` is absent).
+
+When coverage has `Summary.ConflictCount > 0`, add the conflict warning to the confirmation (below the ⚠ section): `state enable` cannot keep an existing value yet, so every conflicting setting is replaced with the standard's value. Render the conflict lines per [coverage § Line rules](../coverage/impl.md#line-rules).
 
 ```
 Configure <packName> settings on <tenantName>?
@@ -35,6 +37,12 @@ Configure <packName> settings on <tenantName>?
   • <controlDisplayName>  — <plain-English prompt for the value>
   • ...
 (omit the ⚠ section if no settings need user-supplied values)
+
+⚠ <ConflictCount> existing settings will be replaced with the standard's values:
+  • <ControlDisplayName> (<license type labels>: <PolicyName>) — <Current> → <Recommended>
+  • ...
+To keep an existing value, apply from the Compliance Standards page in the admin portal instead.
+(omit this section when ConflictCount == 0)
 
 Proceed? (y/n)
 ```
