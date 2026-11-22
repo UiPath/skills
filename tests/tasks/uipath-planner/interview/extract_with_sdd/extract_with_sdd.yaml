@@ -112,7 +112,9 @@ success_criteria:
     prompt: |
       Read the agent's final message after it applied the user's answers. It must name the genome file
       and the SDD file, and count the items still open both by group (business decisions, material,
-      configuration values …) and by the role that answers them. Score 1.0 when all of that is there,
-      0.5 when one of the two counts is missing, 0.0 when a file or both counts are missing.
+      configuration values …) and by the role that answers them. A group shown by the items' ids or
+      labels (CQ1–CQ10 for configuration values, the preferences item) counts as named. Score 1.0 when
+      all of that is there, 0.5 when one of the two counts is missing, 0.0 when a file or both counts are
+      missing.
     weight: 2.0
     pass_threshold: 1.0

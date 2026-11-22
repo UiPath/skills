@@ -100,7 +100,8 @@ success_criteria:
          changes the product, scope or architecture, such as the trigger and schedule, volume and run
          window, judgement steps with no rule, a human step's actor, outcomes or wait limit, how a system
          is reached, scope boundaries; not every such point has to be asked. It does not ask a threshold's
-         value, who is told, a business exception's handling or an environment value, and no separate
+         value, who is told, a business exception's handling (unless its answer can add or remove a
+         person's step in the automation, which changes the architecture) or an environment value, and no separate
          round of up to five clarifying questions is asked on top of it. A later round, once the SDD's
          sections are written, about items marked for review is graded elsewhere: ignore it here.
 
@@ -120,9 +121,13 @@ success_criteria:
       that is not in the session (such as the system's owner). After writing the SDD's sections, the agent
       may ask a last round about the items still marked for review.
 
-      Score 1.0 when that last round asks none of the points the interview asked or left open, and asks
-      only items that belong to the user's role. Score 0.0 when it asks any interview point again, or an
-      item that belongs to another role. Score 1.0 when there is no last round.
+      An interview point is one the interview put to the user (answered, skipped or defaulted) or held for
+      another role. A threshold, rule or value the interview only mentioned as something to settle later
+      is not an interview point, and the last round may ask it.
+
+      Score 1.0 when that last round asks no interview point again, and asks only items that belong to
+      the user's role. Score 0.0 when it asks an interview point again, or an item that belongs to another
+      role. Score 1.0 when there is no last round.
     weight: 1.5
     pass_threshold: 1.0
 

@@ -96,7 +96,8 @@ success_criteria:
          scope. Not every such point has to be asked. A question about a preferences file is allowed.
       3. Not asked before writing: the limit's amount or currency, who is notified, how a business
          exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
-         environment value (a mailbox, a folder, a host).
+         environment value (a mailbox, a folder, a host). What an approver's decision leads to (what
+         happens to a rejected invoice) is part of the approval's outcomes, and is allowed.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. One question from item 3 fails item 3.
     weight: 2.5

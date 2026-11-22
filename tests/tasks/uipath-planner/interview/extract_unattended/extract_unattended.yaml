@@ -3,7 +3,7 @@ description: >
   Integration: `extract` of a three-workflow XAML project "to rebuild later", in a run that says nobody
   will answer questions. No structured question is asked and no SDD is written, since the request is
   not a documentation request and does not ask for one. The closing message, which every run writes,
-  unattended included, counts the open questions by the role that answers them, names
+  unattended included, counts the open decisions by the role that answers them, names
   `interview <genome>` and offers to write the SDD for answerers outside the session. Nothing is built.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
@@ -67,9 +67,9 @@ success_criteria:
       message, its closing summary.
 
       It must do all three:
-      1. Count the questions still open in the genome, split by who answers them (a role such as the
-         process owner or the system's owner). Counts by tier or group alone, with no role, do not
-         meet this item.
+      1. Count the genome's open decisions, split by who answers them (a role such as the process owner
+         or the system's owner). Decisions counted by tier or group alone, with no role, do not meet this
+         item; configuration values may be counted without a role.
       2. Name the interview command for the genome, in the form `interview <genome file name>`.
       3. Offer to write the SDD for answerers who are not in the session.
 

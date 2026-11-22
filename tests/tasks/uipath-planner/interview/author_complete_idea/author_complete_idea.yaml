@@ -77,6 +77,8 @@ success_criteria:
       recipient and retry rule. Read the dialog and the agent's questions, whether asked in chat or as
       structured questions, up to the point the genome is written.
 
+      A summary written after the genome, listing its open questions, is not an offer.
+
       Check three things:
       1. Either no interview is offered, or the offer counts only points that change the design (the
          product, the scope or the architecture), each named, none of them a value the idea already gives.
