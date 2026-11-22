@@ -142,7 +142,7 @@ uip function serve [--port 7070] [--runtime node|deno]   # JS/TS only — local 
 uip function run                     # both languages — one-shot local execution
 uip function pack [--nolock]         # build the .nupkg
 uip function publish [--feed-id <FEED_ID>]      # upload package to a process feed
-uip function push --project-id <PROJECT_ID> [--ignore-resources]   # sync sources to Studio Web and import bindings.json resources
+uip function push --project-id <PROJECT_ID> [--ignore-resources]   # both languages — sync sources to Studio Web; Python also imports bindings.json resources (--ignore-resources skips)
 uip function runtime-install         # JS/TS — one-time runtime pre-install (otherwise downloaded on first serve/run)
 ```
 
