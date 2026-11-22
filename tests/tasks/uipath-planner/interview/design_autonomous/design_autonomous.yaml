@@ -82,6 +82,10 @@ success_criteria:
       without pausing at checkpoints. Read the dialog and the agent's questions, whether asked in chat or
       as structured questions.
 
+      A prompt is a message that stops and waits for the user's answer before the SDD is finished. The
+      final summary, which lists the items still open with their defaults and may name a command to
+      answer them later, is not a prompt and not an interview offer.
+
       Score 1.0 when the agent offers no interview and asks at most one prompt before the SDD is done,
       holding only items that have no defensible default (such as how an in-scope system can be reached
       at all). Score 0.5 when it asks one prompt that also holds items with a usable default. Score 0.0

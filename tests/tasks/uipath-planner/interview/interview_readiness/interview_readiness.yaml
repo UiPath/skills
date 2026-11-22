@@ -5,9 +5,9 @@ description: >
   interview. Its gap list is the genome's open entries and every readiness item with a blank `Answer:`,
   the build's own questions included, each asked once. The items name several answerers, so the roles
   question is asked, listing the readiness sections' roles with the genome's. Answered as the engineer:
-  each answer goes after its item's `Answer:` in the readiness file, the build's answers change no genome
-  section, and other roles' items stay blank. The closing names the tasks without asking them. A
-  simulated engineer answers.
+  each answer goes after its item's `Answer:` in the readiness file, the genome's open entries stay
+  open (a ruling on a genome gap may edit the genome, which still passes the strict check), and other
+  roles' items stay blank. The closing names the tasks without asking them. A simulated engineer answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -64,14 +64,21 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # R2 is a genome gap to rule on: its answer is a genome edit, so the genome may change; the business entries may not.
   - type: run_command
-    description: "The build's answers change no genome section"
-    command: >-
-      node $REFERENCE_DIR/_shared/check_interview.mjs unchanged ecb-fx-rates-genome.md
-      a540659a348aae34d3ec5d5af5c5212079e458d60e6c52047ec0db18d6f4c3b0
+    description: "The genome's open entries stay open: the engineer's answers decide none of them"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs entries ecb-fx-rates-genome.md open 1-4"
     timeout: 30
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command

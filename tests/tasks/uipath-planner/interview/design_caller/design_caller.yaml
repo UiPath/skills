@@ -86,6 +86,9 @@ success_criteria:
       business audience) on a thin PDD for supplier invoice entry. Read the dialog and the agent's
       questions, whether asked in chat or as structured questions.
 
+      A question is a message that stops and waits for the user's answer. The final message, which lists
+      the points still open with what is built until they are answered, asks nothing.
+
       Score 1.0 when the only question the agent asks is the review of the proposed design (does the
       design work for the user), with no interview offer, no question about running autonomously or
       interactively, and no round of questions about open items after the review. Score 0.0 otherwise.

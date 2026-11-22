@@ -90,10 +90,10 @@ success_criteria:
 
       Check three things:
       1. The agent does not ask whether the user wants an interview: the request already said so.
-      2. The interview's questions are points that change the product, scope or architecture: the
-         trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the approval (who,
-         its outcomes, how long it waits), how invoices are read, what is in and out of scope. A question
-         about a preferences file is allowed.
+      2. Every question the interview asks is a point that changes the product, scope or architecture,
+         such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
+         approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of
+         scope. Not every such point has to be asked. A question about a preferences file is allowed.
       3. Not asked before writing: the limit's amount or currency, who is notified, how a business
          exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
          environment value (a mailbox, a folder, a host).

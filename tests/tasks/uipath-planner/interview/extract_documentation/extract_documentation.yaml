@@ -36,6 +36,8 @@ simulation:
     - "When asked which roles you answer for, answer: the process owner."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
+    - "Do not ask for the interview yourself; answer it when the agent offers it."
+    - "You answer only as the process owner: if offered other roles' questions, decline them."
     - "When asked whether you want to adjust anything, or offered a build, say no."
     - "Once the agent reports the answers applied and what is still open, end the conversation."
   max_turns: 10
@@ -57,15 +59,15 @@ success_criteria:
   - type: file_matches_regex
     description: "The SDD was written, with Action Required ahead of its body"
     path: "*-sdd.md"
-    pattern: '(?s)^## Action Required.*<!-- planner-sdd-body:v1 -->'
+    pattern: '(?s)^## Action Required.*^## 1\. '
     flags: 8
     weight: 2.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Some of the SDD's items carry the user's answers"
+    description: "The SDD's Document History records the interview"
     path: "*-sdd.md"
-    pattern: '\*\*Answer \(by the process owner\):\*\* \S'
+    pattern: 'Interview: \d+ points? answered by'
     weight: 1.5
     pass_threshold: 1.0
 

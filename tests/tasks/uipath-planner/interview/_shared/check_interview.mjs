@@ -9,17 +9,19 @@
 //   line <regex>                          some line of a genome file (any depth) matches, case-insensitive
 //   entries <genome> <state> <ids>...     each Open Decisions entry is in that state: open, decided, withdrawn;
 //                                         ids as `3` or `2-11`; <genome> is a path or a glob such as `*-genome.md`
-//   items <file> <answered|blank> <ids>... each item `**D<n>. …**`, `**CQ<n>. …**` or `**R<n>. …**` of an SDD's
-//                                         Action Required, or anywhere in a readiness file, is answered (its `Answer`
-//                                         line filled, or the item gone) or blank (present, unfilled); ids as `D3`,
-//                                         `D2-11`, `CQ10`, `R3-6`
+//   items <file> <answered|blank> <ids>... each item `**D<n>. …**`, `**CQ<n>. …**` or `**R<n>. …**` (a readiness
+//                                         item may carry both: `**R15. D1. …**`) of an SDD's Action Required, or
+//                                         anywhere in a readiness file, is answered (its `Answer` line filled, or the
+//                                         item gone) or blank (present, unfilled); ids as `D3`, `D2-11`, `CQ10`, `R3-6`.
+//                                         An item is its heading and the `- ` lines under it; any other text ends it.
 //   count <file> <regex> <min>            at least <min> lines of the file match, case-insensitive
 //   unchanged <file> <sha256> [section]   the file, or its `## <section>`, hashes to <sha256> (line endings LF)
 //   body <sdd> <sha256>                   the SDD below `<!-- planner-sdd-body:v1 -->` hashes to <sha256>
 //
 // A failing check prints the current hash, so a fixture's hash is read by running the check once.
 //
-// check-genome.mjs is the skill's own checker, found under $SKILLS_REPO_PATH, else above this file.
+// check-genome.mjs is the skill's own checker: in coder-eval's container, in the plugin under test (each plugin
+// mounts at /work/plugins/<i>); on a host, under $SKILLS_REPO_PATH or above this file.
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -27,6 +29,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const CHECKER = join("skills", "uipath-planner", "scripts", "check-genome.mjs");
+const CONTAINER_PLUGINS = "/work/plugins";
+const GRADER_DIR = dirname(fileURLToPath(import.meta.url));
 const SDD_BODY = "<!-- planner-sdd-body:v1 -->";
 const GENOME = /-genome\.md$/;
 const STATES = ["open", "decided", "withdrawn"];
@@ -55,10 +59,11 @@ function section(text, name) {
 }
 
 function checkerPath() {
-  const roots = [process.env.SKILLS_REPO_PATH];
-  for (let d = dirname(fileURLToPath(import.meta.url)); d !== dirname(d); d = dirname(d)) roots.push(d);
+  const plugins = existsSync(CONTAINER_PLUGINS) ? readdirSync(CONTAINER_PLUGINS).map((p) => join(CONTAINER_PLUGINS, p)) : [];
+  const roots = [...plugins, process.env.SKILLS_REPO_PATH];
+  for (let d = GRADER_DIR; d !== dirname(d); d = dirname(d)) roots.push(d);
   const hit = roots.filter(Boolean).map((r) => resolve(r, CHECKER)).find(existsSync);
-  if (!hit) fail(`check-genome.mjs not found: set SKILLS_REPO_PATH to the skills repository`, 2);
+  if (!hit) fail(`check-genome.mjs not found in ${CONTAINER_PLUGINS}/*, $SKILLS_REPO_PATH or above ${GRADER_DIR}`, 2);
   return hit;
 }
 
@@ -117,12 +122,18 @@ switch (command) {
     const text = read(file);
     const body = section(text, "Action Required") ?? text;
     const answers = new Map();
-    let current = null;
+    let current = [];
     for (const l of body.split("\n")) {
-      const item = /^\*\*((?:D|CQ|R)\d+)\.\s/.exec(l);
-      if (item) answers.set((current = item[1]), "");
-      const answer = current !== null && /^- \*\*Answer(?: \(by [^)]+\))?:\*\*(.*)$/.exec(l);
-      if (answer) answers.set(current, answer[1].trim());
+      const item = /^\*\*(?:(R\d+)\.\s+)?((?:D|CQ|R)\d+)\.\s/.exec(l);
+      if (item) {
+        current = [item[1], item[2]].filter(Boolean);
+        for (const id of current) answers.set(id, "");
+        continue;
+      }
+      if (l.trim() && !/^\s*- /.test(l)) current = [];
+      const answer = /^- \*\*Answer(?: \(by [^)]+\))?:\*\*(.*)$/.exec(l);
+      if (answer) for (const id of current) answers.set(id, answer[1].trim());
+      if (answer) current = [];
     }
     const wanted = rest.flatMap((a) => {
       const m = /^(D|CQ|R)(\d+)(?:-(\d+))?$/.exec(a);

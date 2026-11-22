@@ -97,6 +97,19 @@ def test_items_reads_a_readiness_file(tmp_path):
     assert grade(tmp_path, "items", readiness.name, "blank", "D1", "D3-4", "CQ1-3", "CQ6-8", "R2-6").returncode == 0
 
 
+def test_items_takes_both_ids_of_a_readiness_heading_and_ends_an_item_at_other_text(tmp_path):
+    (tmp_path / "x-readiness.md").write_text(
+        "## 6. Decisions still open\n\n"
+        "**R15. D1. Which rates?**\n- **Context:** the process owner.\n- **Options:**\n  - a. Latest.\n"
+        "- **Answer:** a (the user, in prepare, 2026-01-02)\n\n"
+        "**D6. What starts a run?**\n- **Answer (by whoever knows the process):**\n\n"
+        "The source states what each defect was meant to do.\n\n- Step 6: the log names the previous mail.\n"
+        "- **Answer (by the process owner):** none: fix it\n",
+        encoding="utf-8")
+    assert grade(tmp_path, "items", "x-readiness.md", "answered", "R15", "D1").returncode == 0
+    assert grade(tmp_path, "items", "x-readiness.md", "blank", "D6").returncode == 0
+
+
 def test_count_needs_the_minimum(sandbox):
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "1").returncode == 0
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "2").returncode == 1

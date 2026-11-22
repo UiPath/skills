@@ -96,11 +96,13 @@ success_criteria:
       1. The agent does not ask whether to run autonomously or interactively.
       2. Before scope is confirmed, after a summary of the process, one question offers an interview,
          counting the open points that change the design.
-      3. Once accepted, the interview asks only points that change the product, scope or architecture:
-         the trigger and schedule, volume and run window, judgement steps with no rule, a human step's
-         actor, outcomes or wait limit, how a system is reached, scope boundaries. It does not ask a
-         threshold's value, who is told, a business exception's handling or an environment value, and no
-         separate round of clarifying questions follows it.
+      3. Once accepted, every question of the interview, before scope is confirmed, is a point that
+         changes the product, scope or architecture, such as the trigger and schedule, volume and run
+         window, judgement steps with no rule, a human step's actor, outcomes or wait limit, how a system
+         is reached, scope boundaries; not every such point has to be asked. It does not ask a threshold's
+         value, who is told, a business exception's handling or an environment value, and no separate
+         round of up to five clarifying questions is asked on top of it. A later round, once the SDD's
+         sections are written, about items marked for review is graded elsewhere: ignore it here.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. A single point beyond the list in
       item 3 costs that item.

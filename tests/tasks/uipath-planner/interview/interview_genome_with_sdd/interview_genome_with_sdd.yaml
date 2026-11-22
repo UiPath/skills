@@ -110,8 +110,9 @@ success_criteria:
 
       Check three things:
       1. The agent never asks which roles the user answers for.
-      2. The questions asked are the process owner's items only, each named by its SDD id; the defects
-         list may be asked as one question.
+      2. The questions asked are the process owner's items only (D1, D2, D3, D4, D7, CQ10, the defects
+         list), each named by its SDD id; the defects list may be asked as one question, and a new entry
+         that one of the user's answers opens may be asked too.
       3. No configuration value other than CQ10 is asked.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.

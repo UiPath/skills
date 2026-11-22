@@ -43,7 +43,8 @@ simulation:
     - "When a question lists options, pick the one marked as built now; otherwise the one marked Recommended; otherwise the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "When a question asks for something you do not know (how SAP is reached, a tenant, a folder, a machine), say it is for the system's owner or the environment's owners."
-    - "When the agent says it cannot create a project or write a workflow, tell it to stop there and end the conversation."
+    - "If the agent says this workspace's settings block creating the project and asks whether to start the build anyway, say yes: start it, and stop once it cannot create the project."
+    - "When the build reports that it cannot create a project or write a workflow, tell it to stop there and end the conversation."
   max_turns: 16
 
 success_criteria:
