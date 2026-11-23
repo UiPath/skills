@@ -449,18 +449,9 @@ jobs:
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
           AUTH_REFRESH_INTERVAL_S:  "1200"
         run: |
-          bash .github/scripts/refresh-auth.sh
-          # Every token this run issues, host-only (mode 600, outside /tmp/runs),
-          # so the report scrubber can remove tokens the file has since rotated out.
-          umask 077
-          grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
-          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
-          # containers (reference anti-cheat), so container-root can no longer
-          # read the host-owned ~/.uipath extra_mount (mounted by
-          # experiments/nightly.yaml) by capability. Widen it recursively via
-          # the "other" bits so the mounted .auth file (mode 600) is readable —
-          # mirrors coder-eval's own grant_container_access.
-          chmod -R o+rwX "$HOME/.uipath"
+          # Mint into staging, record the tokens host-side, then install (see the
+          # script: a rotation that cannot be recorded is never handed out).
+          bash .github/scripts/rotate-auth.sh
           # Keep the login fresh for the whole run: the ROPC token lives ~1h and
           # graders re-read the file per call. Silent (a background process cannot
           # register masks); status goes to a file a later step prints. Detached
@@ -468,7 +459,7 @@ jobs:
           cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
           #!/usr/bin/env bash
           # Bounded: dies at the deadline (job timeout + margin) or when its pid
-          # file (the lease) is gone or replaced by a later job, so a force-killed job cannot leave it renewing.
+          # file (the lease) is gone or replaced by a later job.
           umask 077
           echo $$ > "$RUNNER_TEMP/auth-refresher.pid"
           deadline=$(( $(date +%s) + 23400 ))
@@ -476,9 +467,7 @@ jobs:
           while [ "$(date +%s)" -lt "$deadline" ] && lease; do
             sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"
             lease && [ "$(date +%s)" -lt "$deadline" ] || exit 0
-            if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
-              chmod -R o+rwX "$HOME/.uipath"
-              grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
+            if ROTATE_QUIET=1 bash .github/scripts/rotate-auth.sh; then
               echo "$(date -u +%H:%M:%S) refreshed" >> "$RUNNER_TEMP/auth-refresh.log"
             else
               echo "$(date -u +%H:%M:%S) FAILED" >> "$RUNNER_TEMP/auth-refresh.log"
@@ -575,9 +564,11 @@ jobs:
 
           # Tenant coordinates for live e2e graders (escalation_is.py
           # configured_target). Non-secret, read from ~/.uipath/.auth. The login
-          # itself is NOT exported: graders that need it build env-auth per
-          # subprocess from the mounted file (_shared/uip_auth.py), so no agent
-          # env, log or artifact carries a token and offline tasks stay logged out.
+          # itself is NOT exported as UIPATH_CLI_* env: graders that need it build
+          # env-auth per subprocess from the mounted file (_shared/uip_auth.py), so
+          # those variables are never in the agent's env and offline tasks stay
+          # logged out. (The Delegate / Studio Web agents still receive their own
+          # DELEGATE_AUTH_TOKEN below; that is the agent's login, not a grader one.)
           passthrough_extra="UIPATH_URL,UIPATH_ORGANIZATION_ID,UIPATH_TENANT_ID"
           AUTH_FILE="$HOME/.uipath/.auth"
           for key in UIPATH_URL UIPATH_ORGANIZATION_ID UIPATH_TENANT_ID; do
@@ -721,7 +712,10 @@ jobs:
           args+=(-D "sandbox.docker.env_passthrough_extra=[$passthrough_extra]")
 
           # After the clamp, so a delegate run reports the -j it will actually use.
-          args+=(-j "$j" -v --model "$model")
+          # No -v: verbose mode streams agent and grader output (which can echo a
+          # rotated token no one could mask) into the live Actions log. Detail
+          # stays in each task's task.log, which the scrub covers.
+          args+=(-j "$j" --model "$model")
 
           # Task globs are `args` entries like everything else: the action
           # promotes none of the CLI's flags to named inputs, so there is no
@@ -803,9 +797,13 @@ jobs:
           E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
+          TASK_COUNT:                ${{ needs.partition.outputs.linux_count }}
         # Fail closed: on any error the run dir is wiped and this step fails; the
         # publishing steps below require its success, so nothing is published.
-        run: python3 .github/scripts/scrub-run-artifacts.py /tmp/runs
+        # The refresher stops first so the issued-tokens record is final.
+        run: |
+          kill "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" 2>/dev/null || true
+          python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-tasks "$TASK_COUNT"
 
       - name: Report auth refresher status
         if: always()
@@ -971,8 +969,16 @@ jobs:
 
       - name: Plaintext summary + verdict
         if: always()
+        env:
+          SCRUB_OUTCOME: ${{ steps.scrub.outcome }}
+          TASK_COUNT:    ${{ needs.partition.outputs.linux_count }}
         run: |
           set -uo pipefail
+          # Reads the run dir, so it only runs on what the scrub left behind.
+          if [ "$SCRUB_OUTCOME" != "success" ]; then
+            echo "FAIL — run results withheld (artifact scrub did not succeed)" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
           # VARIANTS. `ls -td */ | head -n 1` picked one of them: correct only
           # while nightly.yaml declares a single variant, and a second variant
@@ -983,14 +989,15 @@ jobs:
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          python - "$run_dir" "$TASK_COUNT" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          print(f"\n{ok}/{len(rows)} PASS (linux)")
-          sys.exit(0 if rows and ok == len(rows) else 1)
+          expected = int(sys.argv[2])
+          print(f"\n{ok}/{expected} PASS (linux)")
+          sys.exit(0 if len(rows) == expected and ok == expected else 1)
           PY
 
   run-windows:

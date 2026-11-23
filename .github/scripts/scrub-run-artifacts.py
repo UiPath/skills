@@ -1,27 +1,34 @@
 #!/usr/bin/env python3
-"""Publish only an allow-listed set of result files from a coder-eval run dir.
+"""Reduce a coder-eval run dir to publishable result files; fail closed.
 
-Runs carry a live UiPath login, so the run dir is reduced before anything is
-published (GitHub artifact, evalboard blob, job summary):
+Runs carry a live UiPath login, so nothing agent- or grader-authored is trusted:
 
-* Everything outside the allow-list is deleted unopened: agent artifact dirs, transcripts,
-  workspace copies, binaries, archives, symlinks. Their contents are never read.
-* Allowed files must be strict UTF-8 text without NUL bytes, else they are
-  deleted too. In the kept files every secret this job forwarded and every
-  UiPath token issued during the run (the mounted .auth only holds the latest)
-  is replaced verbatim. A verify pass re-reads every kept file.
-* On any error the whole run dir is wiped, a fixed message is printed and the
-  exit code is 1; the workflow's publishing steps require this step's success,
-  so they publish nothing. Under GITHUB_ACTIONS a missing or empty issued-tokens
-  record is also an error.
+* Allow-list of files (see `allowed`); everything else is deleted unopened.
+* Per-task reports are REBUILT from allow-listed structured fields only (status,
+  scores, timings, criterion description/score/threshold/gating): `task.json` is
+  rewritten and `task.html` re-rendered (html-escaped) from that data. Agent
+  iterations, judge transcripts, criterion details/errors and command output are
+  never copied, so no renderer escaping can hide a credential in them.
+* Other kept files (`run.*`, `experiment.*`, `variant.*`, `task.log`) must be strict
+  UTF-8 text; every forwarded secret and every UiPath token issued in the run is
+  replaced verbatim, then a verify pass re-reads each file once.
+* An unreadable required result (`run.json`, any `task.json`) or a task count that
+  differs from --expect-tasks means the run is incomplete.
+* A `publication-disabled` flag in $RUNNER_TEMP (written when a rotated token could
+  not be recorded), a missing issued-tokens record under CI, or any error wipes the
+  run dir (best effort), prints a fixed message and exits 1. Publishing steps
+  require this step's success.
 
-Usage: scrub-run-artifacts.py <run_dir>
+Usage: scrub-run-artifacts.py <run_dir> [--expect-tasks N]
 """
 
 from __future__ import annotations
 
+import html
+import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 
@@ -35,11 +42,21 @@ SECRET_ENV = (
     "UIPATH_BOT_PASSWORD",
     "UIPATH_CLI_AUTH_TOKEN",
 )
-# Report files at <run_dir>, <run_dir>/<variant>/ and per-task dirs below it.
 TOP_LEVEL = frozenset({"run.json", "run.md", "experiment.json", "experiment.md", "experiment.html", "experiment.log"})
 VARIANT_LEVEL = frozenset({"variant.json", "variant.md", "variant.html"})
 TASK_LEVEL = frozenset({"task.json", "task.log", "task.html"})
 MIN_TOKEN = 28
+_REPLICATE = re.compile(r"\d+")
+# Structured fields copied into the published task.json (nothing free-form).
+_TASK_FIELDS = (
+    "task_id", "variant_id", "agent_type", "model_used", "started_at", "completed_at",
+    "duration_seconds", "setup_ms", "grading_ms", "final_status", "max_turns_exhausted",
+    "weighted_score", "iteration_count", "error_phase",
+)
+_CRITERION_FIELDS = (
+    "result_kind", "criterion_type", "description", "score", "evaluation_status", "pass_threshold", "gating",
+)
+_STR_CAP = 2000
 
 
 def allowed(rel: pathlib.PurePosixPath) -> bool:
@@ -48,9 +65,9 @@ def allowed(rel: pathlib.PurePosixPath) -> bool:
         return False
     if len(parts) == 1:
         return parts[0] in TOP_LEVEL
-    if len(parts) == 2 and parts[1] in VARIANT_LEVEL:
-        return True
-    return len(parts) == 4 and parts[-1] in TASK_LEVEL  # <variant>/<task>/<NN>/
+    if len(parts) == 2:
+        return parts[1] in VARIANT_LEVEL
+    return len(parts) == 4 and bool(_REPLICATE.fullmatch(parts[2])) and parts[3] in TASK_LEVEL  # <variant>/<task>/<NN>/
 
 
 def _is_text(data: bytes) -> bool:
@@ -61,6 +78,41 @@ def _is_text(data: bytes) -> bool:
     except UnicodeDecodeError:
         return False
     return True
+
+
+def _scalar(value: object) -> object:
+    if isinstance(value, str):
+        return value[:_STR_CAP]
+    return value if isinstance(value, (bool, int, float)) or value is None else None
+
+
+def _criteria(items: object) -> list[dict]:
+    if not isinstance(items, list):
+        return []
+    return [{k: _scalar(c.get(k)) for k in _CRITERION_FIELDS} for c in items if isinstance(c, dict)]
+
+
+def sanitize_task(raw: dict) -> dict:
+    out = {k: _scalar(raw.get(k)) for k in _TASK_FIELDS}
+    out["success_criteria_results"] = _criteria(raw.get("success_criteria_results"))
+    out["post_failure_criteria_results"] = _criteria(raw.get("post_failure_criteria_results"))
+    return out
+
+
+def render_task_html(task: dict) -> str:
+    esc = lambda v: html.escape("" if v is None else str(v))  # noqa: E731
+    rows = "".join(
+        f"<tr><td>{esc(c['description'])}</td><td>{esc(c['criterion_type'])}</td><td>{esc(c['score'])}</td>"
+        f"<td>{esc(c['pass_threshold'])}</td><td>{esc(c['evaluation_status'])}</td></tr>"
+        for c in task["success_criteria_results"] + task["post_failure_criteria_results"]
+    )
+    head = "".join(f"<li>{esc(k)}: {esc(task[k])}</li>" for k in _TASK_FIELDS)
+    return (
+        "<!doctype html><meta charset=utf-8><title>task result</title>"
+        f"<h1>{esc(task['task_id'])}</h1><ul>{head}</ul>"
+        "<table><tr><th>criterion</th><th>type</th><th>score</th><th>threshold</th><th>status</th></tr>"
+        f"{rows}</table><p>Reduced report: agent output, judge transcripts and criterion details are not published.</p>"
+    )
 
 
 def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) -> list[bytes]:
@@ -76,50 +128,89 @@ def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) 
     return sorted({v.encode("utf-8") for v in values}, key=len, reverse=True)
 
 
-def scrub(root: pathlib.Path, needles: list[bytes]) -> int:
+def _replace(data: bytes, needles: list[bytes]) -> bytes:
+    for needle in needles:
+        data = data.replace(needle, b"***")
+    return data
+
+
+def scrub(root: pathlib.Path, needles: list[bytes], expect_tasks: int | None = None) -> int:
     """Reduce `root` in place; returns the number of withheld files."""
     withheld = 0
+    tasks = 0
+    kept: list[pathlib.Path] = []
     for path in sorted(root.rglob("*")):
         if path.is_dir() and not path.is_symlink():
             continue
-        if path.is_symlink() or not path.is_file():  # links, FIFOs, sockets, devices: never opened
+        rel = pathlib.PurePosixPath(path.relative_to(root).as_posix())
+        if path.is_symlink() or not path.is_file() or not allowed(rel):  # never opened
             path.unlink()
-            withheld += 1
-            continue
-        if not allowed(pathlib.PurePosixPath(path.relative_to(root).as_posix())):
-            path.unlink()  # never opened
             withheld += 1
             continue
         data = path.read_bytes()
         if not _is_text(data):
+            if rel.name in ("run.json", "task.json"):
+                raise RuntimeError("required result unreadable")
             path.unlink()
             withheld += 1
             continue
-        out = data
-        for needle in needles:
-            out = out.replace(needle, b"***")
-        if out != data:
-            path.write_bytes(out)
-    for path in root.rglob("*"):  # verify
-        if path.is_file() and any(n in path.read_bytes() for n in needles):
+        if rel.name == "task.json":
+            task = sanitize_task(json.loads(data))
+            if not task["task_id"] or task["final_status"] is None:
+                raise RuntimeError("task result incomplete")
+            data = json.dumps(task, indent=2).encode("utf-8")
+            (path.parent / "task.html").write_bytes(render_task_html(task).encode("utf-8"))
+            tasks += 1
+        elif rel.name == "task.html":
+            continue  # re-rendered from its task.json
+        path.write_bytes(_replace(data, needles))
+        kept.append(path)
+    for html_path in root.rglob("task.html"):  # a task.html without a task.json is not published
+        if not (html_path.parent / "task.json").is_file():
+            html_path.unlink()
+            withheld += 1
+    for html_path in root.rglob("task.html"):
+        kept.append(html_path)
+        html_path.write_bytes(_replace(html_path.read_bytes(), needles))
+    if expect_tasks is not None and tasks != expect_tasks:
+        raise RuntimeError("task count differs from the expected count")
+    for path in kept:  # verify, one read per file
+        data = path.read_bytes()
+        if any(n in data for n in needles):
             raise RuntimeError("secret survived the scrub")
     return withheld
 
 
-def main(argv: list[str]) -> int:
-    root = pathlib.Path(argv[1])
+def _wipe(root: pathlib.Path) -> None:
     try:
-        issued = pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens"
-        if os.environ.get("GITHUB_ACTIONS") and not _values({}, pathlib.Path(os.devnull), issued):
-            raise RuntimeError("no issued-tokens record")
-        needles = _values(dict(os.environ), pathlib.Path(os.path.expanduser("~/.uipath/.auth")), issued)
-        withheld = scrub(root, needles)
-    except Exception:  # fixed message only: never echo a value or a path
-        for child in root.iterdir() if root.is_dir() else ():
+        children = list(root.iterdir()) if root.is_dir() else []
+    except OSError:
+        children = []
+    for child in children:
+        try:
             if child.is_dir() and not child.is_symlink():
                 shutil.rmtree(child, ignore_errors=True)
             else:
                 child.unlink(missing_ok=True)
+        except OSError:
+            pass  # best effort; publication is blocked by the exit code
+
+
+def main(argv: list[str]) -> int:
+    root = pathlib.Path(argv[1])
+    expect = int(argv[argv.index("--expect-tasks") + 1]) if "--expect-tasks" in argv else None
+    try:
+        runner_temp = pathlib.Path(os.environ.get("RUNNER_TEMP", ""))
+        issued = runner_temp / "issued-tokens"
+        if os.environ.get("GITHUB_ACTIONS"):
+            if (runner_temp / "publication-disabled").exists():
+                raise RuntimeError("publication disabled")
+            if not _values({}, pathlib.Path(os.devnull), issued):
+                raise RuntimeError("no issued-tokens record")
+        needles = _values(dict(os.environ), pathlib.Path(os.path.expanduser("~/.uipath/.auth")), issued)
+        withheld = scrub(root, needles, expect)
+    except BaseException:  # fixed message only: never echo a value or a path
+        _wipe(root)
         print("::error::scrub failed; run files withheld from publication")
         return 1
     print(f"::notice::{withheld} file(s) outside the publication allow-list withheld")

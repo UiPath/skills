@@ -1,8 +1,10 @@
 """Per-subprocess `uip` login for graders that need the eval tenant.
 
 The run keeps a live ROPC login in the mounted `.auth` file (a host-side
-refresher renews it). It is NOT exported into the task environment: the agent,
-its logs and the uploaded artifacts never see a token. A grader that must reach
+refresher renews it). It is NOT exported as UIPATH_CLI_* env into the task
+environment, so the agent never gets grader env-auth (Delegate / Studio Web
+agents still receive their own DELEGATE_AUTH_TOKEN; that is a separate login).
+A grader that must reach
 the tenant passes `grader_env()` as `env=` to its own `uip` subprocess, which
 turns the file into the CLI's env-auth for that one call. A task that never
 calls this stays logged out. Only the run's mounted file (or UIPATH_AUTH_FILE) is used,

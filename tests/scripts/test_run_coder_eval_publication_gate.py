@@ -1,0 +1,65 @@
+"""run-coder-eval.yml: nothing reads or publishes the run dir unless the scrub succeeded."""
+
+from __future__ import annotations
+
+import pathlib
+import re
+
+import yaml
+
+WORKFLOW = pathlib.Path(__file__).resolve().parents[2] / ".github/workflows/run-coder-eval.yml"
+# Steps after the scrub that touch no run data (only timestamps from the refresher log).
+UNGATED = {"Report auth refresher status"}
+
+
+def _linux_steps():
+    jobs = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
+    for job in jobs.values():
+        steps = job.get("steps", [])
+        if any(s.get("id") == "scrub" for s in steps):
+            return steps
+    raise AssertionError("no job has a step with id: scrub")
+
+
+def _after_scrub():
+    steps = _linux_steps()
+    index = next(i for i, s in enumerate(steps) if s.get("id") == "scrub")
+    return steps[index], steps[index + 1 :]
+
+
+def test_every_always_step_after_the_scrub_requires_its_success():
+    _, after = _after_scrub()
+    assert after, "expected publishing steps after the scrub"
+    for step in after:
+        condition = str(step.get("if", ""))
+        if step.get("name") in UNGATED or "always()" not in condition:
+            continue
+        gated = "steps.scrub.outcome == 'success'" in condition
+        # The verdict step must run (to fail the job) but reads the dir only after checking the outcome.
+        checks_outcome = step.get("env", {}).get("SCRUB_OUTCOME") == "${{ steps.scrub.outcome }}" and (
+            '"$SCRUB_OUTCOME" != "success"' in step.get("run", "")
+        )
+        assert gated or checks_outcome, f"{step.get('name')!r} runs after the scrub without requiring its success"
+
+
+def test_the_verdict_step_emits_a_fixed_message_when_the_scrub_failed():
+    _, after = _after_scrub()
+    (verdict,) = [s for s in after if s.get("name") == "Plaintext summary + verdict"]
+    run = verdict["run"]
+    guard = run.index('if [ "$SCRUB_OUTCOME" != "success" ]')
+    assert guard < run.index("python"), "the outcome check must precede anything that reads /tmp/runs"
+    assert "withheld" in run[guard : guard + 200] and "exit 1" in run[guard : guard + 200]
+    assert "expected = int(sys.argv[2])" in run  # verdict compares against the expected task count
+
+
+def test_the_scrub_stops_the_refresher_and_checks_the_task_count():
+    scrub, _ = _after_scrub()
+    run = scrub["run"]
+    assert run.index("auth-refresher.pid") < run.index("scrub-run-artifacts.py")
+    assert '--expect-tasks "$TASK_COUNT"' in run
+
+
+def test_the_eval_does_not_stream_verbose_output_to_the_live_log():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert re.search(r'args\+=\(-j "\$j" --model "\$model"\)', text)
+    assert not re.search(r'args\+=\(-j "\$j" -v\b', text)
