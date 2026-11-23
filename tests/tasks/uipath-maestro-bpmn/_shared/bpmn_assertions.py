@@ -114,7 +114,7 @@ def assert_has_shape(root: ET.Element, bpmn_id: str) -> None:
 
 def descriptor_file_names(descriptor: dict) -> set[str]:
     # Two descriptor shapes are legal. `uip maestro bpmn init` and
-    # `uip maestro bpmn update-metadata` write a `files` name -> path map
+    # `uip maestro bpmn refresh` write a `files` name -> path map
     # (`"bindings.json": "bindings_v2.json"`); hand-authored synthetic metadata
     # uses a top-level `content` array of `content/<file>` paths. Compare
     # basenames so either shape satisfies the same requirement.
@@ -153,7 +153,7 @@ def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -
     if project.get("main") not in (None, bpmn_name):
         fail("project.uiproj main does not reference the BPMN file")
 
-    # `update-metadata` always rewrites operate.json `main` to the entry-point
+    # `refresh` always rewrites operate.json `main` to the entry-point
     # path `/content/<file>#<start-event-id>`; hand-authored metadata uses the
     # bare filename. Accept both.
     operate_main = str(operate.get("main") or "")

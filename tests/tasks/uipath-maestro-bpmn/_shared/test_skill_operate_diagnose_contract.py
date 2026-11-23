@@ -62,7 +62,7 @@ V1_RULES = [
     ("references/operate.md", "**Never reuse a previous run's inputs silently.**"),
     ("references/operate.md", "Never retry a faulted instance before reading its incidents and deployed asset"),
     ("references/operate.md", "After every lifecycle command, fetch the instance again"),
-    ("references/operate.md", "never use the deprecated `update-metadata`"),
+    ("references/operate.md", "`refresh` is the only command that writes them"),
     ("references/operate.md", '**"Publish" means Studio Web upload**'),
     ("references/operate.md", "Never use `debug` as validation"),
     # evaluate

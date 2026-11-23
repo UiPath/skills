@@ -212,9 +212,7 @@ These are the ones that survive both:
 - **Stale generated package files** — `entry-points.json` names an old start
   event or file, `package-descriptor.json` omits the current BPMN,
   `bindings_v2.json` does not match the binding references in the BPMN. Owner:
-  `Generated package metadata`; run `refresh`. The deprecated `update-metadata`
-  does not materialize `Intsvc.*` connection bindings — a package it wrote
-  validates and faults at run time.
+  `Generated package metadata`; run `refresh`.
 - **Gateway takes the wrong branch or stalls** — the conditions are fine
   syntactically and wrong semantically, or the default flow points where the
   author did not mean. Read the variables at the gateway and the element

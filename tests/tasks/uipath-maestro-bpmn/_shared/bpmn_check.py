@@ -975,7 +975,7 @@ def require_no_hand_authored_package_files() -> None:
     (skill-bpmn-event-trigger-start and skill-bpmn-integration-service-boundary both
     failed on exactly this, run 2026-09-25). What the boundary forbids is an agent
     INVENTING that metadata by hand, or baking a tenant binding into a draft. So each
-    present file must carry the shape `init` / `update-metadata` write — the same
+    present file must carry the shape `init` / `refresh` write — the same
     shape `assert_generated_project_scaffold` asserts — and bindings must stay
     unresolved.
     """
@@ -999,7 +999,7 @@ def require_no_hand_authored_package_files() -> None:
                 hand_authored.append(path)
                 continue
             if name == "package-descriptor.json":
-                # `init`/`update-metadata` write a `files` name->path map; a top-level
+                # `init`/`refresh` write a `files` name->path map; a top-level
                 # `content` array is the hand-written synthetic shape.
                 if not isinstance(data.get("files"), dict):
                     hand_authored.append(path)
@@ -1028,7 +1028,7 @@ def require_no_hand_authored_package_files() -> None:
     if hand_authored:
         fail(
             "draft must not hand-author generated package files (leave them to "
-            f"`uip maestro bpmn init` / `update-metadata`): {hand_authored}"
+            f"`uip maestro bpmn init` / `refresh`): {hand_authored}"
         )
     if bound:
         fail(f"draft bindings must stay unresolved — connection ids found: {bound}")

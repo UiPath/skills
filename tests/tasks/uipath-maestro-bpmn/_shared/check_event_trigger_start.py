@@ -64,7 +64,7 @@ def main() -> None:
         fail("trigger start event must have an outgoing sequence flow")
 
     # Draft boundary: connection binding + package metadata are CLI-owned. Files the
-    # CLI wrote (`init` / `update-metadata`) are that boundary; hand-written ones, or a
+    # CLI wrote (`init` / `refresh`) are that boundary; hand-written ones, or a
     # resolved connection id, are what breach it — see require_no_hand_authored_package_files.
     require_no_hand_authored_package_files()
 

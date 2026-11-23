@@ -3,7 +3,7 @@ description: >
   Author a Maestro BPMN API workflow invocation, covering the
   Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval. The
   package-metadata assertions accept either shape that ships today:
-  `uip maestro bpmn update-metadata` output (operate.json main as
+  `uip maestro bpmn refresh` output (operate.json main as
   /content/<bpmn>#<start>, package-descriptor.json as a files map) or
   hand-authored synthetic metadata using bare names and a content array.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:service-task", "feature:api-workflow"]
