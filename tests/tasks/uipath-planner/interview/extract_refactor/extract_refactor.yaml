@@ -5,8 +5,8 @@ description: >
   and before the hand-over, and applies its answers; then it hands the genome to `uipath-genome` with
   the request quoted. The build asks none of the entries the interview decided and offers no edit for
   them; an entry the interview left open is asked once, by the build or named by it, never by both
-  skills. Project and workflow writes are denied, so the run ends in the build's question phase. A
-  simulated process owner answers.
+  skills. The request stops the run before any project is created, so it ends in the build's question
+  phase. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -17,8 +17,8 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../../extract_component/fixtures
-    # .claude/settings.json denies writing a project or workflow, so the run is graded on what each
-    # skill asks before the build writes anything (Claude Code reads it; other harnesses do not).
+    # Backstop for the request's stop: .claude/settings.json denies writing a project or workflow
+    # (Claude Code reads it; other harnesses do not).
     - type: template_dir
       path: ../_setup/build_stop
 
@@ -28,7 +28,7 @@ reference:
 initial_prompt: |
   `InvoiceIntake/` is a UiPath project. Refactor it: rebuild it in this folder as a clean project that does the same. It does not run in Orchestrator, and there are no other resources for it.
 
-  I'm the process owner. Use Sonnet subagents for reading.
+  I'm the process owner. Use Sonnet subagents for reading. In this run, go as far as the build's questions: ask them, then stop before creating any project.
 
 simulation:
   enabled: true
@@ -44,8 +44,7 @@ simulation:
     - "Do not ask for the interview yourself; answer it when the agent offers it."
     - "You answer only as the process owner: if offered other roles' questions, decline them."
     - "When asked whether you want to adjust anything, say no. When the same message also offers the interview, accept the interview."
-    - "If the agent says this workspace's settings block creating the project and asks whether to start the build anyway, say yes: start it, and stop once it cannot create the project."
-    - "When the build reports that it cannot create a project or write a workflow, tell it to stop there and end the conversation."
+    - "Once the build has asked its questions and stops before creating a project, or reports that it cannot create one, end the conversation."
   max_turns: 16
 
 success_criteria:
