@@ -41,6 +41,13 @@ def test_only_the_allow_list_survives(tmp_path, monkeypatch):
     for name in ("task.json", "task.log", "task.html"):
         (task / name).write_text("ok", encoding="utf-8")
     (task / "artifacts" / "env.txt").write_text(f"dump {TOKEN}", encoding="utf-8")
+    (task / "artifacts" / "task.json").write_text("{}", encoding="utf-8")
+    (task / "artifacts" / "task.log").write_text("{}", encoding="utf-8")
+    (task / "deeper").mkdir()
+    (task / "deeper" / "task.json").write_text("{}", encoding="utf-8")
+    (run / "variant" / "x").mkdir()
+    (run / "variant" / "x" / "variant.json").write_text("{}", encoding="utf-8")
+    (run / "variant" / "task" / "task.json").write_text("{}", encoding="utf-8")
     (task / "transcript.jsonl").write_text("{}", encoding="utf-8")
     (run / "notes.txt").write_text("x", encoding="utf-8")
     assert scrub_mod.main(["x", str(run)]) == 0
@@ -128,3 +135,9 @@ def test_fifo_is_removed_not_opened(tmp_path, monkeypatch):
     os.mkfifo(run / "run.json")
     assert scrub_mod.main(["x", str(run)]) == 0
     assert _names(run) == [] and not (run / "run.json").exists()
+
+
+def test_newline_only_issued_record_fails_closed_in_ci(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch, issued=("\n",))
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert scrub_mod.main(["x", str(run)]) == 1

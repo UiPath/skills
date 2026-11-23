@@ -4,9 +4,8 @@
 Runs carry a live UiPath login, so the run dir is reduced before anything is
 published (GitHub artifact, evalboard blob, job summary):
 
-* Everything outside ALLOWED is deleted: agent artifact dirs, transcripts,
-  workspace copies, binaries, archives, symlinks. Nothing about their contents
-  is trusted or inspected.
+* Everything outside the allow-list is deleted unopened: agent artifact dirs, transcripts,
+  workspace copies, binaries, archives, symlinks. Their contents are never read.
 * Allowed files must be strict UTF-8 text without NUL bytes, else they are
   deleted too. In the kept files every secret this job forwarded and every
   UiPath token issued during the run (the mounted .auth only holds the latest)
@@ -51,7 +50,7 @@ def allowed(rel: pathlib.PurePosixPath) -> bool:
         return parts[0] in TOP_LEVEL
     if len(parts) == 2 and parts[1] in VARIANT_LEVEL:
         return True
-    return len(parts) >= 3 and parts[-1] in TASK_LEVEL
+    return len(parts) == 4 and parts[-1] in TASK_LEVEL  # <variant>/<task>/<NN>/
 
 
 def _is_text(data: bytes) -> bool:
@@ -87,8 +86,12 @@ def scrub(root: pathlib.Path, needles: list[bytes]) -> int:
             path.unlink()
             withheld += 1
             continue
+        if not allowed(pathlib.PurePosixPath(path.relative_to(root).as_posix())):
+            path.unlink()  # never opened
+            withheld += 1
+            continue
         data = path.read_bytes()
-        if not allowed(pathlib.PurePosixPath(path.relative_to(root).as_posix())) or not _is_text(data):
+        if not _is_text(data):
             path.unlink()
             withheld += 1
             continue
@@ -107,7 +110,7 @@ def main(argv: list[str]) -> int:
     root = pathlib.Path(argv[1])
     try:
         issued = pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens"
-        if os.environ.get("GITHUB_ACTIONS") and (not issued.is_file() or issued.stat().st_size == 0):
+        if os.environ.get("GITHUB_ACTIONS") and not _values({}, pathlib.Path(os.devnull), issued):
             raise RuntimeError("no issued-tokens record")
         needles = _values(dict(os.environ), pathlib.Path(os.path.expanduser("~/.uipath/.auth")), issued)
         withheld = scrub(root, needles)

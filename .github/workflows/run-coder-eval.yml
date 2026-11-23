@@ -753,8 +753,8 @@ jobs:
       # the CLI takes is in the single `args` block the prep step composed: the
       # action promotes none of its flags to named inputs. That is also why there
       # is no job-summary switch here — the action writes none, so the report is
-      # appended below, after redaction. JUnit lands at /tmp/runs/junit.xml and
-      # travels with the run into the artifact and the blob.
+      # appended below, after the scrub. JUnit lands at /tmp/runs/junit.xml but is
+      # withheld by the scrub's allow-list, like every non-report file.
       - name: Run coder-eval
         id: eval
         # A moving major tag, not a SHA like the third-party actions above.
@@ -786,9 +786,9 @@ jobs:
         run: |
           find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
 
-      # Ported from smoke-skills.yml, which has had this since the reports
-      # started carrying agent transcripts. This workflow never had it, so its
-      # artifact has been shipping unredacted transcripts all along. Runs BEFORE
+      # Reduces the run dir to an allow-list of result files and replaces secrets
+      # and issued tokens in them (.github/scripts/scrub-run-artifacts.py); fails
+      # closed. Ported in spirit from smoke-skills.yml. Runs BEFORE
       # anything that publishes the tree — the artifact upload, the job summary,
       # and the evalboard blob — and AFTER the cleanup above, which removes tens
       # of thousands of files this walk would otherwise scan for nothing.
