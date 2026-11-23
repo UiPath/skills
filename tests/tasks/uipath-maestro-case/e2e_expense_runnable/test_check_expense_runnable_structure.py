@@ -3,29 +3,41 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import yaml
+
+# The checker lives in the suite's `_shared`; `_shared.case_check` resolves from
+# the suite root.
+SUITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SUITE, "_shared"))
+sys.path.insert(0, SUITE)
 
 from check_expense_runnable_structure import (  # noqa: E402
     _assert_required_external_bindings,
 )
 from _shared.case_check import selected_stage_ids, stage_transitions  # noqa: E402
 
+TURN_TIMEOUT = 4800
+
 
 class RunLimitTests(unittest.TestCase):
-    def test_turn_timeout_covers_the_full_e2e_task_budget(self) -> None:
-        task_yaml = Path(__file__).with_name("expense_runnable_e2e.yaml").read_text(
-            encoding="utf-8"
+    def test_task_timeout_leaves_grading_room_after_the_full_turn(self) -> None:
+        task = yaml.safe_load(
+            Path(__file__).with_name("expense_runnable_e2e.yaml").read_text(encoding="utf-8")
         )
-        limits = {}
-        for line in task_yaml.splitlines():
-            name, separator, value = line.strip().partition(":")
-            if separator and name in {"task_timeout", "turn_timeout"}:
-                limits[name] = int(value.strip())
-        self.assertEqual(limits["turn_timeout"], limits["task_timeout"])
+        limits = task["run_limits"]
+        criteria = sum(
+            criterion.get("timeout", 0) for criterion in task["success_criteria"]
+        )
+        self.assertEqual(limits["turn_timeout"], TURN_TIMEOUT)
+        self.assertGreaterEqual(
+            limits["task_timeout"], limits["turn_timeout"] + criteria
+        )
 
 
 class StageTransitionTests(unittest.TestCase):
@@ -110,3 +122,20 @@ class ResourceBindingTests(unittest.TestCase):
         resources[4]["value"]["name"]["defaultValue"] = "CaseTest"
         with self.assertRaisesRegex(SystemExit, "Maestro Case"):
             _assert_required_external_bindings({"resources": resources})
+
+
+class BindingsLocationTests(unittest.TestCase):
+    def test_bindings_are_read_beside_the_discovered_plan(self) -> None:
+        checker = Path(__file__).resolve().parents[1] / "_shared" / "check_expense_runnable_structure.py"
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory) / "ExpenseReimbursementRunnableSolution" / "ExpenseReimbursementRunnable"
+            project.mkdir(parents=True)
+            (project / "caseplan.json").write_text("{}", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(checker)], cwd=directory, capture_output=True, text=True
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            os.path.join("ExpenseReimbursementRunnableSolution", "ExpenseReimbursementRunnable", "bindings_v2.json"),
+            result.stderr,
+        )

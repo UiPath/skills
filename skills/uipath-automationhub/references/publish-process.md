@@ -17,7 +17,7 @@ curl -s -w "\n%{http_code} %{redirect_url}" \
 The last line is `<status> <redirect target>` — the target is empty unless the response was a 3xx. Read both: a 3xx alone is ambiguous, a 3xx **to `portal_/unregistered`** is the tenant-not-enabled signal below. Never add `-L`.
 
 - **200** → save the `data` array (reused in Step 2) and tell the user "Connected to Automation Hub."
-- **401** → token missing/expired: if it came from `~/.uipath/.auth`, ask the user to run `uip login` again; re-resolve and retry. **Never** add `x-ah-openapi-auth` to "fix" a 401 — that routes to the admin-token path and guarantees failure.
+- **401** → token missing/expired: with a `uip login` session, re-run the request (its `uip login refresh` renews the token); if it still fails, ask the user to run `uip login` again. **Never** add `x-ah-openapi-auth` to "fix" a 401 — that routes to the admin-token path and guarantees failure.
 - **403** → the user is authenticated but lacks AH access on this tenant.
 - **404 / 3xx to `portal_/unregistered` / 422 tenant lookup** → AH is not available on this tenant. Confirm the org/tenant first; if they're right, report the message for the matching case, verbatim, from [`api-endpoints.md`](api-endpoints.md) → **Automation Hub not available on this tenant** — then **stop**.
 

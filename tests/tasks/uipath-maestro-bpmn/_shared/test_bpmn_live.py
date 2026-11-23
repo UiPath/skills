@@ -263,3 +263,90 @@ def test_import_exact_imports_from_the_solution_dir_without_flags(
     assert arguments[-1] == str(project.resolve())
     assert "--solution-file" not in arguments
     assert cwd == solution
+
+
+def _rule_process(*, task_name: str = "Rate", script: str, documentation: str = "") -> str:
+    return f"""<bpmn:definitions xmlns:bpmn="{bpmn_live.BPMN_NS}" xmlns:uipath="{bpmn_live.UIPATH_NS}">
+  <bpmn:process id="Process_1">
+    <bpmn:scriptTask id="Task_1" name="{task_name}">
+      <bpmn:documentation>{documentation}</bpmn:documentation>
+      <bpmn:script><![CDATA[{script}]]></bpmn:script>
+    </bpmn:scriptTask>
+  </bpmn:process>
+</bpmn:definitions>"""
+
+
+CLASSIFYING_SCRIPT = 'return vars.down ? (vars.workaround ? "Sev2" : "Sev1") : "Sev3";'
+
+
+def test_assert_rule_encoded_accepts_a_script_that_names_every_severity() -> None:
+    bpmn_live.assert_rule_encoded(_rule_process(script=CLASSIFYING_SCRIPT))
+
+
+def test_assert_rule_encoded_matches_severities_case_insensitively() -> None:
+    bpmn_live.assert_rule_encoded(_rule_process(script='return vars.a ? "sev1" : vars.b ? "SEV2" : "sev3";'))
+
+
+def test_assert_rule_encoded_accepts_severities_in_uipath_values() -> None:
+    text = f"""<bpmn:definitions xmlns:bpmn="{bpmn_live.BPMN_NS}" xmlns:uipath="{bpmn_live.UIPATH_NS}">
+  <bpmn:process id="Process_1">
+    <bpmn:task id="Task_1"><bpmn:extensionElements><uipath:mapping version="v1">
+      <uipath:output name="severity" var="v" source='=vars.down ? "Sev2" : "Sev3"' />
+      <uipath:input name="level" value="Sev1" />
+    </uipath:mapping></bpmn:extensionElements></bpmn:task>
+  </bpmn:process>
+</bpmn:definitions>"""
+    bpmn_live.assert_rule_encoded(text)
+
+
+def test_assert_rule_encoded_ignores_names_and_documentation() -> None:
+    text = _rule_process(
+        task_name="Rate Sev1 or Sev2 or Sev3",
+        script='return "Sev1";',
+        documentation="Sev1, Sev2 and Sev3",
+    )
+    with pytest.raises(bpmn_live.CheckFailure, match="never names"):
+        bpmn_live.assert_rule_encoded(text)
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        '// Sev2 Sev3\nreturn {severity: "Sev1"};',
+        '/* Sev2 Sev3 */ return {severity: "Sev1"};',
+        'return "Sev1"; // Sev2\n/* Sev3 */',
+    ],
+)
+def test_assert_rule_encoded_ignores_names_in_comments(script: str) -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match="never names"):
+        bpmn_live.assert_rule_encoded(_rule_process(script=script))
+
+
+def test_assert_rule_encoded_keeps_comment_markers_inside_strings() -> None:
+    script = 'var u = "http://x"; return vars.down ? (vars.workaround ? "Sev2" : "Sev1") : "Sev3"; // done'
+    bpmn_live.assert_rule_encoded(_rule_process(script=script))
+    bpmn_live.assert_rule_encoded(_rule_process(script='var a = "//"; var b = "/*"; return ["Sev1", "Sev2", "Sev3"];'))
+
+
+def test_assert_rule_encoded_reports_the_missing_severities() -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match=r"\['Sev2', 'Sev3'\]"):
+        bpmn_live.assert_rule_encoded(_rule_process(script='return "Sev1";'))
+
+
+def test_assert_rule_encoded_rejects_malformed_xml() -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match="not well-formed"):
+        bpmn_live.assert_rule_encoded("<bpmn:definitions")
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [("Yes", True), (" TRUE ", True), ("no", False), ("False", False), (True, True), (False, False)],
+)
+def test_norm_value_reads_boolean_words(value, expected) -> None:
+    assert bpmn_live.norm_value(value) is expected
+
+
+@pytest.mark.parametrize("number", [0, 1, 1.0, 0.0])
+@pytest.mark.parametrize("boolean", [True, False])
+def test_norm_value_keeps_numbers_apart_from_booleans(number, boolean) -> None:
+    assert bpmn_live.norm_value(number) != bpmn_live.norm_value(boolean)

@@ -437,7 +437,7 @@ Maps `solution_folder` to the actual Orchestrator folder so Studio Web can resol
   "docVersion": "1.0.0",
   "tenants": [
     {
-      "tenantKey": "<UIPATH_TENANT_ID>",   // From ~/.uipath/.auth
+      "tenantKey": "<TENANT_ID>",   // Data.TenantId from `uip login status --output json`
       "resources": [
         {
           "solutionResourceKey": "<release-key-guid>",  // Same as referenceKey in agent resource
@@ -466,7 +466,9 @@ For the generic debug_overwrites shape (capability-agnostic), see [../../solutio
 
 > **Fallback path.** When `uip solution resources get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
 
-> **SECURITY: Never read `~/.uipath/.auth` directly** — the access token must not appear in Claude's context. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
+<!--skill-flavor:rest-fallback-auth:start-->
+> **SECURITY: Never read the CLI's credentials file or extract the access token** — it must not appear in Claude's context. Make the Orchestrator calls below with `uip api`, which adds base URL, organization, tenant and token itself and returns only the response (`Data.Body`). If `uip api` is an unknown command, run `uip update`, then retry.
+<!--skill-flavor:rest-fallback-auth:end-->
 
 ### Step 1: Discover the process and its folder
 
@@ -486,13 +488,14 @@ Returns, for each match:
 
 ### Step 2: Query `/odata/Releases` for ProcessKey, ProcessVersion, FeedId, and raw .NET schemas (RPA)
 
-Use a shell wrapper to query the Releases API — this keeps the access token inside the shell. Filter by `ProcessKey` (string, exact match):
+<!--skill-flavor:releases-query:start-->
+Query the Releases API with `uip api`. Filter by `ProcessKey` (string, exact match):
 
 ```bash
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+uip api "orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'<PROCESS_KEY>'&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
+  --folder-key "<FOLDER_KEY_GUID>" --output json
 ```
+<!--skill-flavor:releases-query:end-->
 
 Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter by `ProcessKey` (string) or `Name` instead. The `Key` GUID from Step 1 is used as `referenceKey` and process-declaration `key`, never as a filter value.
 
@@ -506,11 +509,12 @@ Returns:
 
 This API returns JSON Schema format input/output arguments and entry point metadata. It works for **all 4 process types**.
 
+<!--skill-flavor:entry-points-query:start-->
 ```bash
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+uip api "orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='<PROCESS_KEY>:<VERSION>')?feedId=<FEED_ID>" \
+  --folder-key "<FOLDER_KEY_GUID>" --output json
 ```
+<!--skill-flavor:entry-points-query:end-->
 
 - `<PROCESS_KEY>:<VERSION>` — e.g., `TestRPA.process.TestRPA:1.0.0` (from Step 2: `ProcessKey` + `ProcessVersion`)
 - `feedId` — from Step 2 `FeedId`. Always pass it; required for agents published via solution feeds.

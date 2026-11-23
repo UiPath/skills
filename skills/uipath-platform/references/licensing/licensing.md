@@ -100,7 +100,7 @@ Each concept is covered authoritatively in the linked workflow guide:
 
 ## REST API Fallback
 
-When the CLI does not cover an operation, use the License Resource Manager / License Accountant APIs directly with a stored token from `~/.uipath/.auth`. See [orchestrator.md - REST API](../orchestrator/orchestrator.md) for the auth pattern.
+When the CLI does not cover an operation, call the License Resource Manager / License Accountant APIs through `uip api` (for example `uip api "<SERVICE_PATH>" --output json`). Never extract the access token.
 
 ---
 
