@@ -139,8 +139,9 @@ success_criteria:
       Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
       1. It counts the genome's open decisions by the role that answers them (the process owner, the
          system's owner …), or says that none is open. Configuration values need no role, and those
-         listed beside the decisions are not part of their count; when every decision belongs to one
-         role, saying so is the count.
+         listed beside the decisions are not part of their count, nor are the build's own questions
+         (how the work is split or queued, libraries, technology, setup); when every decision belongs to
+         one role, saying so is the count.
       2. It asks none of the open questions itself. Ending on "Want to adjust anything?", or offering
          the interview, an SDD or edits, is not asking an open question.
 
