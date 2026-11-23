@@ -196,6 +196,8 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
+On this `.activity()`, `path` is the operation's route under the connector, copied from `Operation.Path` of `uip is resources describe <CONNECTOR_KEY> <OBJECT_NAME> --operation <VERB> --output json`, saved or run now (`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
+Never the provider's REST route (`/rest/api/2/issue`): `validate` accepts it, and the debug run faults at the node (observed on Jira Create Issue: `102002 Integration Services operation failed`, provider 401).
 Copy the `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, `activityConfigurationVersion: 'v2'` included.
 Without `--input-details` the command returns only the extension type's V1 template (`activityConfigurationVersion` defaults to `v1` there), whose context a V2 task does not carry.
 `--input-details` takes the node's values as JSON, `'{}'` when you have none yet; `Data.V2.MissingRequired` lists the required inputs still unset.
