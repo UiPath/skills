@@ -100,9 +100,13 @@ success_criteria:
     include_reference: false
     prompt: |
       Read the agent's final message after it applied the user's answers to the genome (an automation
-      blueprint). It must count what is still open by the role that answers it, name the interview
-      command (`interview <genome file name>`) for the others, and offer to write an SDD (solution design
-      document) for answerers who are not in the session. Score 1.0 when all three hold, 0.5 with two,
-      0.0 otherwise.
+      blueprint). It must:
+      1. Say which decisions are still open and who answers each (counted by role, or each named with
+         its role), or say that none is.
+      2. When a decision is still open, name the interview command (`interview <genome file name>`).
+      3. Offer to write an SDD (solution design document).
+      Configuration values the build asks need no role and no interview command.
+
+      Score 1.0 when all that applies holds, 0.5 when one item is missing, 0.0 otherwise.
     weight: 2.0
     pass_threshold: 1.0
