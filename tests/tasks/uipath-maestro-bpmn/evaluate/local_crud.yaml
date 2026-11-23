@@ -5,7 +5,7 @@ description: >
   an exact-match evaluator, an eval set, and a data point. No authentication,
   upload, or evaluation run. Tests whether the skill teaches the correct
   local-CRUD workflow and persists the expected artifacts.
-tags: [uipath-maestro-bpmn, mode:build, lifecycle:generate, feature:eval]
+tags: [uipath-maestro-bpmn, mode:build, lifecycle:generate, feature:eval, studio-web-unsupported, studio-web-unsupported:no-eval-in-host]
 
 run_limits:
   expected_turns: 20
