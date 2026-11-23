@@ -1,6 +1,6 @@
 # Open Questions Guide — the questions an SDD puts to people
 
-Every SDD the planner writes holds every question still open about what gets built, in `## Action Required — SME Review Items`: before the design, where whoever answers reads the questions first, or, in the Maestro BPMN template, last, with its count in §1 so the design reads first. The genome holds the same questions for agents: its Configuration Questions and its Open Decisions ([genome-questions-guide.md](genome-questions-guide.md)). This section is their rendering for people.
+Every SDD the planner writes holds every question still open about what gets built, in `## Action Required — SME Review Items`, where the template places it: before the design, so whoever answers reads the questions first, or last, with its count in the overview, so the design reads first. The genome holds the same questions for agents: its Configuration Questions and its Open Decisions ([genome-questions-guide.md](genome-questions-guide.md)). This section is their rendering for people.
 
 Who writes it:
 - `design` writes it from its own gaps, before a genome exists ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 1.5).
