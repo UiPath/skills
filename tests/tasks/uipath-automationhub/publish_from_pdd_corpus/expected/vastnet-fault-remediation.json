@@ -36,6 +36,9 @@
   ],
   "PagerDuty": [
    "pagerduty"
+  ],
+  "Customer Success Systems": [
+   "customer success"
   ]
  },
  "allow_other_category": true

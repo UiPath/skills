@@ -98,11 +98,23 @@ TIMER_PARSES = [
     "p = next(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn'))\nr = ET.parse(p).getroot()\nPY",
     "python3 - ScheduledReportBpmn/ScheduledReportBpmn.bpmn <<'EOF'\n"
     "import sys, xml.etree.ElementTree as ET\nET.parse(sys.argv[1])\nEOF",
+    # Studio Web: validate loads the XML and reports XML_NOT_WELL_FORMED.
+    "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
+    "uip maestro bpmn validate ScheduledReportBpmn --output json",
+    # Studio Web: the main file is Process.bpmn, and there is no python3.
+    "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/ScheduledReportBpmn/Process.bpmn')\"",
+    "node -e \"const {DOMParser}=require('@xmldom/xmldom');"
+    "new DOMParser().parseFromString(require('fs').readFileSync('ScheduledReportBpmn/Process.bpmn','utf8'),'text/xml')\"",
+    "node -e 'const fs=require(\"fs\");const {XMLParser}=require(\"fast-xml-parser\");"
+    "new XMLParser().parse(fs.readFileSync(process.argv[1],\"utf8\"))' ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
+    "node - <<'JS'\nconst {DOMParser}=require('xmldom');\n"
+    "new DOMParser().parseFromString(require('fs').readFileSync('Process.bpmn','utf8'))\nJS",
 ]
 
 TIMER_NOT_PARSES = [
     # No parse at all.
-    "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
+    "uip maestro bpmn check ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
+    "uip maestro bpmn validate OtherProject --output json",
     "xmllint --noout ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     # A parse of something else; the name only in a LATER, unrelated command.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; "
@@ -113,6 +125,12 @@ TIMER_NOT_PARSES = [
     "ls ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     # The name in the program, but no ET.parse anywhere in it.
     "python3 -c \"print(open('ScheduledReportBpmn/ScheduledReportBpmn.bpmn').read()[:200])\"",
+    # node without a parser: a read or a regex is not a parse.
+    "node -e \"console.log(require('fs').readFileSync('Process.bpmn','utf8').length)\"",
+    "node -e \"/<bpmn:process/.test(require('fs').readFileSync('Process.bpmn','utf8'))\"",
+    "grep -c 'bpmn:process' ScheduledReportBpmn/Process.bpmn",
+    # node parser of something else, the name only in a later command.
+    "node -e \"new (require('xmldom').DOMParser)().parseFromString('<a/>')\"; ls Process.bpmn",
 ]
 
 
@@ -124,6 +142,72 @@ def test_timer_xml_check_counts_a_parse_of_the_file(command: str) -> None:
 @pytest.mark.parametrize("command", TIMER_NOT_PARSES)
 def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
+
+
+# --- author_validate: the same check, InvoiceApproval project ---------------------
+
+_AUTHOR = "smoke/author_validate.yaml"
+
+AUTHOR_PARSES = [
+    "uip maestro bpmn validate InvoiceApproval/InvoiceApproval.bpmn --output json",
+    "uip maestro bpmn validate InvoiceApproval --output json",
+    "python3 -c \"import xml.etree.ElementTree as ET, pathlib; "
+    "ET.parse(next(pathlib.Path('.').rglob('InvoiceApproval/*.bpmn')))\"",
+    # The name comes before ET.parse.
+    "python3 -c \"import xml.etree.ElementTree as ET, pathlib; "
+    "fs=list(pathlib.Path('.').rglob('InvoiceApproval.bpmn')); ET.parse(fs[0])\"",
+    "python3 -c \"import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])\" InvoiceApproval/InvoiceApproval.bpmn",
+    "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/InvoiceApproval/Process.bpmn')\"",
+    "node -e \"const {DOMParser}=require('@xmldom/xmldom');"
+    "new DOMParser().parseFromString(require('fs').readFileSync('InvoiceApproval/Process.bpmn','utf8'),'text/xml')\"",
+    "node -e 'const x=require(\"xml2js\");x.parseString(require(\"fs\").readFileSync(process.argv[1]),()=>{})' "
+    "InvoiceApproval/InvoiceApproval.bpmn",
+]
+
+AUTHOR_NOT_PARSES = [
+    "uip maestro bpmn check InvoiceApproval/InvoiceApproval.bpmn",
+    "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; ls InvoiceApproval/InvoiceApproval.bpmn",
+    "node -e \"console.log(require('fs').readFileSync('InvoiceApproval/Process.bpmn','utf8').length)\"",
+    "grep -c 'bpmn:process' InvoiceApproval/InvoiceApproval.bpmn",
+]
+
+
+@pytest.mark.parametrize("command", AUTHOR_PARSES)
+def test_author_xml_check_counts_a_parse(command: str) -> None:
+    assert _hits(_pattern(_AUTHOR, "explicit validation"), command), command
+
+
+@pytest.mark.parametrize("command", AUTHOR_NOT_PARSES)
+def test_author_xml_check_ignores_anything_else(command: str) -> None:
+    assert not _hits(_pattern(_AUTHOR, "explicit validation"), command), command
+
+
+def test_author_prompt_is_surface_neutral() -> None:
+    prompt = yaml.safe_load((_SUITE / _AUTHOR).read_text(encoding="utf-8"))["initial_prompt"]
+    assert "python3 -c" not in prompt, "the prompt hands the agent a python-only command"
+
+
+def test_timer_prompt_is_surface_neutral() -> None:
+    prompt = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))["initial_prompt"]
+    assert "node" in prompt
+    assert "bpmn validate" in prompt
+
+
+def test_xml_regex_time_bound() -> None:
+    # Both branches of the quoted-program loop used to match a backslash, so a long
+    # run of them with no ET.parse after it backtracked exponentially and hung the
+    # grader (skills#4712). A subprocess bounds the check, since a stuck
+    # regex cannot be interrupted in-process.
+    pattern = _pattern(_TIMER, "well-formed-XML").pattern
+    probe = (
+        "import re, sys\n"
+        "rx = re.compile(sys.argv[1], re.DOTALL)\n"
+        "assert not rx.search('python3 -c \"' + '\\\\' * 200 + 'x')\n"
+        "assert not rx.search('python3 -c \"' + '\\\\\\\"' * 200 + 'x')\n"
+        "assert not rx.search('node -e \"' + '\\\\' * 200 + 'x')\n"
+        "assert not rx.search('node -e \"' + '\\\\\\\"' * 200 + 'x')\n"
+    )
+    subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
 
 
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:

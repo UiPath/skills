@@ -6,7 +6,7 @@ description: >
   — natural-language similarity → llm-judge-output, deterministic JSON shape
   similarity → json-similarity, substring presence → contains. The evaluator
   taxonomy is the shared eval engine, identical to Flow.
-tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:discover, feature:eval]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:discover, feature:eval, studio-web-unsupported, studio-web-unsupported:no-eval-in-host]
 
 run_limits:
   expected_turns: 15

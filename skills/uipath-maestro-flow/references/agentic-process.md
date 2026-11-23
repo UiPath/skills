@@ -4,7 +4,7 @@
 
 Invoke a deployed Maestro agentic process.
 
-Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, returns? })`
+Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns? })`
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
 
@@ -23,7 +23,7 @@ See [Orchestrator Processes](or-processes.md) and use the `ProcessOrchestration`
 
 Run a deployed Maestro agentic process synchronously.
 
-Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, returns?, form?, completion? })`.
+Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns?, form?, completion? })`.
 
 ```ts
 .step('intake', agenticProcess({ name: 'ProcurementProcess', folderPath: 'Shared',
@@ -56,6 +56,10 @@ through `.onError(...)`. Local replay treats it as dispatch-only.
   folderPath: 'Shared', form: 'flow', completion: 'fire-and-forget',
   inputs: { claimId: input('claimId') } }))
 ```
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## In-solution sibling
 

@@ -74,22 +74,41 @@ one flow: the next compile overwrites what the commands wrote.
 
 Both routes need the same taxonomy, and
 [extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
-written. One difference decides between them: every field group and field must
-carry a stable id, and `nodes schema set` mints those for you, while a `schema`
-passed to the factory is emitted verbatim — `flow validate` warns about each
-missing id, and the remedy its warning names, `nodes schema set`, is overwritten
-by the next compile. On this route the ids have to be written into the source,
-which the taxonomy guide warns against because hand-managed ids are how
-annotations detach from fields.
+written. Write it without ids on either route: every field group and field
+must carry a stable id, and both `nodes schema set` and compile mint them.
+Compile keeps an id the source carries. For an entry with none it takes the
+id the `.flow` it overwrites has for the same name (a group by its key, a field
+by its name within that group), else mints one from that name, so a recompile
+or an unrelated edit keeps it. It prints what it kept and minted:
+
+```text
+compile: "extract" taxonomy ids: 1 group and 2 field id(s) kept, 0 group and 1 field id(s) minted
+```
+
+Matching is by name, so a rename mints a new id and detaches what is stored
+against the old one. Before a rename, copy the entry's `x-uipath-field-id`
+(or `x-uipath-field-group-id`) from the compiled `.flow` onto the renamed entry
+in the source; decompile prints them, so a decompiled source already has them.
+Treat a minted count after a rename as a dropped id, as `set`'s
+`FieldIdsMinted` ([Reading the output](extract-document-taxonomy.md#reading-the-output)):
+restore the id and recompile. On an SDK
+without builder-sdk#2054, the factory emits the `schema` verbatim and `flow
+validate` warns about every missing id; author with the CLI there.
 
 ## Schema and outputs
 
 `schema` is the extraction taxonomy: an object with `prompt` (the overall
 instructions) and `outputSchema` (the field groups and the field types they
-reference). It is emitted as the node's `schemaDocument`. `flow validate` only
-warns about any other shape, so it will not catch a bare JSON-Schema object
-with `properties` alone for you — the format, with a worked example, is in
-[extract-document-taxonomy.md](extract-document-taxonomy.md).
+reference). It is emitted as the node's `schemaDocument`. `check` refuses the
+content problems `nodes schema set` refuses, each under its own code. A bare
+JSON-Schema object (`properties` alone) or the legacy `{taxonomy, fieldTypes}`
+form is only a warning there (`EXTRACT_TAXONOMY_BARE`, `_LEGACY`), as in `flow
+validate`, but `set` refuses both and the processor gets no fields: fix either
+warning before compiling. The codes are in
+[When it refuses](extract-document-taxonomy.md#when-it-refuses). When `check`
+reports none of these for a broken taxonomy, the SDK is older (no
+builder-sdk#2055) and `flow validate` only warns about a wrong shape. The format, with a worked example, is
+in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 Classification lands at `out('classify', ...)`. What the node emits at run time
 is a processed document, with the extracted values at `result.output`, one
