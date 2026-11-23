@@ -70,7 +70,7 @@ Read sample documents, design and write the taxonomy, fix rejections, and valida
 .step('extractDocument1', dynamicExtract({
   fileRef: input('invoice'),
   schema: { prompt: '…', outputSchema: { type: 'object', properties: { /* groups */ }, $defs: { /* field types */ } } },
-}), { version: '1.0.0', label: 'Extract Invoice' })
+}), { label: 'Extract Invoice' })
 ```
 
 Read documents first: relying only on the user's sentence misses actual fields and invents absent ones.
@@ -206,7 +206,7 @@ These limits are not enforced by `check` but improve extraction:
 - **Model settings:** A document with no `config` gets one built from `inputs.modelConfig`.
 - **Validation:** `check` refuses a non-schema or limit violation before anything is written ([When it refuses](#when-it-refuses)). Compile does not run `check`; run it first.
 - **The processor:** Compile and merge give the node its processor key and, inside a solution, write the processor's resource file with this taxonomy ([extract-document-node.md](extract-document-node.md#making-it-actually-extract)).
-- **Draft protection:** When someone left an editing session in Studio Web that was not valid yet, the node's schema carries that draft (`x-uipath-schema-editor-draft`, with the editor's problems in `x-uipath-schema-editor-issues`), and decompile prints both in the step's `schema`. Merge refuses to change such a node's schema and writes nothing (SDK with builder-sdk#2256). Deleting the `x-uipath-schema-editor-draft` key from the source throws the draft away; do it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and the editor's issue messages, and stop; the request is not done. Do not repair a missing processor either: that writes `inputs.processorKey` into the node. Report it instead. Never hand-edit `inputs.schemaDocument` to bypass this.
+- **Draft protection:** When someone left an editing session in Studio Web that was not valid yet, the node's schema carries that draft (`x-uipath-schema-editor-draft`, with the editor's problems in `x-uipath-schema-editor-issues`), and decompile prints both in the step's `schema`. Check for the draft yourself after every decompile, whatever the SDK version: while that key is in the step's `schema`, do not edit the schema and do not merge a change to it until the user, in this conversation, says what to do; report the draft and its issue messages first. Merge's own refusal (SDK with builder-sdk#2256: it writes nothing) is only the backstop. Deleting the `x-uipath-schema-editor-draft` key from the source throws the draft away; do it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and the editor's issue messages, and stop; the request is not done. Do not repair a missing processor either: that writes `inputs.processorKey` into the node. Report it instead. Never hand-edit `inputs.schemaDocument` to bypass this.
 
 ## Editing a taxonomy that already exists
 

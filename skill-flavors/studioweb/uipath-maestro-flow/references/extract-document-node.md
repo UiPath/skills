@@ -7,7 +7,7 @@
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
-At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `compile` and `merge` add the processor of each Extract document node they write to the open solution instead of writing a file under `resources/` (merge with UiPath/cli#6361). Nothing else creates it: the designer provisions only nodes without a key. So `ResourcePending` here means the node has no processor. When the message names a retry, run it once; otherwise, or if it reports `ResourcePending` again, report the message and stop.
+At run time the extraction service resolves which processor to use from `inputs.processorKey`, a solution resource holding its own copy of the taxonomy. This host has no `.uipx`, so `compile` and `merge` add the processor of each Extract document node they write to the open solution instead of writing a file under `resources/` (merge with UiPath/cli#6361). Nothing else creates it: the designer provisions only nodes without a key. So a `ResourcePending` list in the compile or merge output (`Data.ResourcePending`: the host could not add the processor) means the node has no processor. When the message names a retry ("Compile again to retry"), run it once; otherwise, or if it reports `ResourcePending` again, report the message and stop.
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-after-save:start-->

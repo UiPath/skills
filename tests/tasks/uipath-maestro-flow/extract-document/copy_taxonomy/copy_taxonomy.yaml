@@ -13,6 +13,11 @@ description: >
   No `flow debug`: the task is offline authoring, and nothing in it deploys or
   runs the flow.
 
+  Blocked by UiPath/builder-sdk#2254 on the SDK route: the fixture's trigger
+  fans out to two open-tailed Extract nodes, decompile cannot spell that
+  shape, and merge drops `extractCreditNote1`. Expect this task to fail until
+  that fix ships; do not change the fixture to route around it.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
 
 sandbox:
@@ -103,6 +108,13 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory: agent did not fall back to the retired CLI graph commands (nodes, edges, variables)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+(nodes|edges|variables)\s+'
+    weight: 1.0
+    pass_threshold: 0.0
 
 run_limits:
   expected_turns: 12

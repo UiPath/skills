@@ -115,7 +115,7 @@ uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```
 
-**An Extract document node** takes this round trip too: it decompiles to `dynamicExtract()`, its `processorKey` and taxonomy with it ([`references/extract-document-node.md`](references/extract-document-node.md)). It needs Studio Web's SDK at 6.119.0 or later.
+**An Extract document node** takes this round trip as `dynamicExtract()` with its `processorKey` and taxonomy; it needs Studio Web's SDK 6.119.0 or later ([`references/extract-document-node.md`](references/extract-document-node.md)).
 
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop an edit: [undo](references/brownfield.md#dropping-an-edit). A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 

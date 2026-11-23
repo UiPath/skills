@@ -14,6 +14,9 @@ description: >
   Extract Invoice and every other original node stay as seeded, and the
   `.flow` is written by the decompile -> merge loop.
 
+  No `flow debug`: a locally authored Extract document node extracts nothing
+  until the flow is saved once in Studio Web.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:extract-document]
 
 sandbox:
@@ -103,6 +106,13 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Advisory: agent did not fall back to the retired CLI graph commands (nodes, edges, variables)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+(nodes|edges|variables)\s+'
+    weight: 1.0
+    pass_threshold: 0.0
 
 run_limits:
   expected_turns: 12
