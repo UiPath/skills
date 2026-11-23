@@ -2,7 +2,7 @@
 
 A public coded app is a Coded Web App that **anyone with the link can open without signing in** — customers, suppliers, event guests. It runs as a **confidential external application** of the tenant, through the Apps service: the browser never holds a token, only a session cookie, and the app can reach only the resources it declares.
 
-> **Preview.** Public coded apps need `@uipath/uipath-typescript` `1.9.0-preview.0` or later and a CLI with the `resources` tool. If `uip resources --help` fails, the CLI is too old: tell the user to install the preview CLI (`npm install -g @uipath/cli@preview`). Do not hand-roll a workaround.
+> **Preview.** Public coded apps need `@uipath/uipath-typescript@preview` (`1.9.0-preview.0` or later) and the preview CLI (`npm install -g @uipath/cli@preview`, `1.207.0-preview.341` or later). The preview CLI does not ship `uip resources` yet: if `uip resources --help` fails, write `source/uipath_resources.ts` by hand in the exact shape shown in [resource-declarations.md](resource-declarations.md), then run `uip solution resources refresh`.
 
 ## When to use
 
@@ -20,12 +20,12 @@ A public coded app is a Coded Web App that **anyone with the link can open witho
    | `Processes` | `start(handle, { inputArguments })` | starts one job |
    | `Jobs` | `getOutput(jobKey)` | output of jobs this visitor started (or of a process open to all) |
    | `Entities` | `insertRecord(handle, data)` | inserts a record |
-   | `Entities` | `getRecordByName(handle, recordId)` | records this visitor created (or any, if open to all) |
-   | `Entities` | `getRecordsByName(handle, { pageSize, cursor })` | entities open to all only |
+   | `Entities` | `getRecordByName(handle.name, recordId)` | records this visitor created (or any, if open to all) |
+   | `Entities` | `getRecordsByName(handle.name, { pageSize, cursor })` | entities open to all only |
    | `Buckets` | `uploadFile(handle, fileName, content)` | uploads a file |
 
    Edit/delete, filtering, Action apps, tenant-level entities: **not supported**. Put that logic in a process (RPA, coded function, agent, Maestro, API workflow) and `start` it.
-4. **Declare every resource with `uip resources add`** — never hand-write `bindings_v2.json`; it is derived at pack time from `uipath_resources.ts`. See [resource-declarations.md](resource-declarations.md). An undeclared resource is refused with 403.
+4. **Declare every resource in `uipath_resources.ts`** (`uip resources add`) — never hand-write `bindings_v2.json`; it is derived at pack time from `uipath_resources.ts`. See [resource-declarations.md](resource-declarations.md). An undeclared resource is refused with 403.
 5. **Data Fabric entities must be folder-scoped.**
 6. **Never return secrets in a job's output** (session tokens, one-time codes). Orchestrator keeps job inputs/outputs and the visitor's browser receives its own job output. Send one-time codes by email from the process.
 7. **Never handle the client secret in the conversation.** Ask the user to `export APP_CLIENT_SECRET=...` in their own shell; pass it as `"$APP_CLIENT_SECRET"`. `uip solution deploy config set ... clientSecret` echoes the value — always add `--output-filter Property`.
@@ -71,12 +71,12 @@ await entities.insertRecord(ProjectResources.eventFeedback, { guestName, comment
 }
 ```
 
-`access.mode`: `session` = only the visitor who created a record/job can read it; `all` = every visitor. `key` is the binding key (`Name.FolderPath` for processes/buckets, the entity name for entities — run `uip resources list` to see them).
+`access.mode`: `session` = only the visitor who created a record/job can read it; `all` = every visitor. A resource missing from `access` follows the platform default, which is currently `all` — list every resource the app reads, and use `session` for anything personal. `key` is the binding key (`Name.FolderPath` for processes/buckets, the entity name for entities — run `uip resources list` to see them).
 
 Then:
 
 ```bash
-(cd feedback-app/source && npm run build)      # pack does not build
+(cd feedback-app/source && npm run build)      # checks it compiles; pack also builds it
 uip solution resources refresh
 uip solution pack . ./output --version 1.0.0
 uip solution publish ./output/Feedback_1.0.0.zip
@@ -122,4 +122,5 @@ The upgrade keeps the stored secret **and its scope** (a changed `scope` in `uip
 | 404 reading a record/job | Another visitor created it, or the session expired |
 | `invalid_client` or `invalid_scope` on every call | Wrong secret, missing scope on the external app, or `uipath.json` missing from `source/dist` |
 | Upgrade 404 | Version not published yet |
+| 401 on every call in one browser only | The browser blocks third-party cookies (the session cookie comes from `uipath.com`, the app runs on `uipath.host`) |
 | Deploy screen does not list the external app | It is not confidential, or the Solutions build predates the picker fix — deploy with the CLI |

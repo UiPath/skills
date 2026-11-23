@@ -2,7 +2,7 @@
 
 A coded app declares the Solution resources it uses (processes, entities, buckets, assets, queues, connections) **once**, in `uipath_resources.ts` next to `package.json`. The tooling derives `bindings_v2.json` from it at pack time, so Solutions can connect and override each resource on deploy. **Never write `bindings_v2.json` by hand** in a project that has `uipath_resources.ts`.
 
-> **Preview.** Needs a CLI with the `resources` tool (`uip resources --help`) and an SDK with the `@uipath/uipath-typescript/resources` entry point. If either is missing, tell the user the feature needs the preview builds.
+> **Preview.** Needs a CLI with the `resources` tool (`uip resources --help`) and an SDK with the `@uipath/uipath-typescript/resources` entry point. Install the preview SDK with `npm install @uipath/uipath-typescript@preview`. The preview CLI (`@uipath/cli@preview`) does not ship `uip resources` yet: until it does, write the file by hand in the exact shape below and run `uip solution resources refresh` to add the resources to the solution.
 
 ## Declare a resource
 
@@ -18,7 +18,7 @@ uip resources sync --project-path ./<app>/source      # declare solution resourc
 
 `add` looks the resource up in the tenant, writes the declaration, and adds the resource to the solution. Inside a solution, `--project-path` is the app's `source/` folder (where `package.json` is).
 
-Generated file (do not hand-edit the shape; re-run `add` to change it):
+Generated file (keep this exact shape; re-run `add` to change it):
 
 ```ts
 import { resource } from '@uipath/uipath-typescript/resources';
@@ -37,11 +37,13 @@ Pass the handle where the SDK takes a resource name — never retype the name or
 import { ProjectResources } from '../uipath_resources';
 
 await entities.insertRecord(ProjectResources.eventFeedback, { guestName, comment });
-await processes.start(ProjectResources.summarize, { inputArguments: { text } });
+await processes.start(ProjectResources.summarize, { inputArguments: JSON.stringify({ text }) });
 const asset = await assets.getByName(ProjectResources.invoiceThreshold);
 ```
 
-At runtime the SDK applies the deployment's overrides to the declared name and folder, so the same code works after Solutions maps a resource to a different one.
+At runtime the SDK applies the deployment's overrides to the declared name and folder, so the same code works after Solutions maps a resource to a different one. In a public app the SDK sends only the binding key, and the Apps service applies the override.
+
+The entity read calls (`getRecordByName`, `getRecordsByName`) take a string: pass `ProjectResources.eventFeedback.name`.
 
 ## Binding keys
 
@@ -56,5 +58,5 @@ Use these keys in `uipath.json` `access` entries for public apps ([public-coded-
 ## Gotchas
 
 - **Entity names must be unique in the tenant.** `add` looks entities up by name only. If several folders hold an entity with that name (each solution deployment copies its entities into its folder), `add` warns `Found N entity resources named ... Marking unresolved` and imports an empty definition — the deploy then creates an entity without fields. Use a unique name, or remove the stale copies.
-- `pack` does not build the app: run `npm run build` first.
+- `uip solution pack` installs and builds each coded app itself (`--skip-build` turns that off).
 - A declaration written while logged out stays `"Solution": "Pending"`; run `uip solution resources refresh` after logging in.
