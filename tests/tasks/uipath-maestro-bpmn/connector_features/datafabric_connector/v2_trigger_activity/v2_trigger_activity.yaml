@@ -62,6 +62,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+<<<<<<< HEAD
     description: "Agent produced the trigger via the SDK (compile) or a V2 registry element (registry get --input-details)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+bpmn\s+(?:compile\s+(?!--help)\S|registry\s+get\s+Intsvc\.EventTrigger(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity)'
@@ -70,6 +71,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+=======
+>>>>>>> 8f2986f2c (fix(uipath-maestro-bpmn): follow-up to #5109 review (workspace SDK upgrade, Studio Web fallback) (#5194))
     description: "Agent built the activity as a V2 element with the entity in --input-details"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity'
