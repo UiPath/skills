@@ -197,7 +197,7 @@ The closing message of every run, unattended included, names:
 1. the genome and any SDD;
 2. how many questions are open — the SDD's Action Required, or the genome's open entries — per group and by the role that answers them, and how many are needed before the build;
 3. every `FAIL` left after the third round;
-4. with no SDD and items open, `interview <GENOME_MD>` as the way to answer them, and an offer to write the SDD for answerers who are not in the session ([edit-guide.md](../edit/edit-guide.md), "Write the SDD");
+4. with no SDD and items open, `interview <GENOME_MD>` as the way any answerer, in this session or a later one, answers them, and an offer to write the SDD for answerers who are not in the session ([edit-guide.md](../edit/edit-guide.md), "Write the SDD");
 5. the preferences file question, when Step 1 left it to this message.
 
 It ends on "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)). A ruling given in reply is written in as [extracted-genome-guide.md § Source Defects](../shared/extracted-genome-guide.md) says, and an SDD written again. Edits: [edit-guide.md](../edit/edit-guide.md).

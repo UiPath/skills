@@ -85,12 +85,12 @@ An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](
 
 Before writing, one structured question, with the counts from the gap list:
 
-> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
+> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
 > 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
 
-Option 1 is Recommended. After writing, the offer is § After Writing's first question.
+Option 1 is Recommended. A request that asks to be interviewed has chosen it: the offer's text is stated without its question and options, so the user knows what waits until after writing, and the first batch follows. After writing, the offer is § After Writing's first question.
 
 ## Asking
 
