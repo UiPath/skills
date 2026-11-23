@@ -359,6 +359,14 @@ flowchart LR
 |---|---|
 | <ALTERNATIVE> | <REASON> |
 
+### Requirements Traceability
+
+<!-- Each requirement or business rule, from its source to the decision, data contract, NFR and test it leads to. OPTIONAL subsection — written only for a caller's `traceability: required` (caller-request-guide.md), omitted otherwise (exempt from the template-superset check). -->
+
+| Requirement / rule | Source section | Decision or interface | Data contract / NFR | Acceptance criterion | Open gap |
+|---|---|---|---|---|---|
+| <ID_AND_REQUIREMENT> | <SOURCE_HEADING_LINK> | <DECISION> | <CONTRACT_OR_NFR> | <TEST_OR_CRITERION> | <GAP_OR_—> |
+
 ---
 
 ## 11. Build Specification
