@@ -539,6 +539,38 @@ jobs:
           # override needs: to bash its `[...]` list is a character class.
           args=(-e experiments/nightly.yaml)
 
+          # Grader / pre-run auth for EVERY agent. The ROPC token is mounted at
+          # /.uipath/.auth, but the in-container `uip` looks under its own
+          # $HOME/.uipath, so it reports "Not logged in" (exit 2). Hand it the
+          # token through the CLI's env-auth instead, plus the tenant coordinates
+          # live e2e graders read (escalation_is.py configured_target). Values
+          # come from ~/.uipath/.auth; the UIPATH_CLI_* names are already in
+          # nightly.yaml's env_passthrough_extra, the UIPATH_* ones are added
+          # below. The token is a frozen copy: tasks that start after the ~1h
+          # ROPC TTL still see it expired (no refresher loop here).
+          passthrough_extra="UIPATH_URL,UIPATH_ORGANIZATION_ID,UIPATH_TENANT_ID"
+          AUTH_FILE="$HOME/.uipath/.auth"
+          for pair in UIPATH_CLI_AUTH_TOKEN:UIPATH_ACCESS_TOKEN \
+                      UIPATH_CLI_ORGANIZATION_NAME:UIPATH_ORGANIZATION_NAME \
+                      UIPATH_CLI_ORGANIZATION_ID:UIPATH_ORGANIZATION_ID \
+                      UIPATH_CLI_TENANT_NAME:UIPATH_TENANT_NAME \
+                      UIPATH_CLI_TENANT_ID:UIPATH_TENANT_ID \
+                      UIPATH_ORGANIZATION_ID:UIPATH_ORGANIZATION_ID \
+                      UIPATH_TENANT_ID:UIPATH_TENANT_ID \
+                      UIPATH_URL:UIPATH_URL; do
+            out="${pair%%:*}"; key="${pair##*:}"
+            val="$(sed -n "s/^$key=//p" "$AUTH_FILE")"
+            if [ -z "$val" ]; then
+              echo "::error::no $key in $AUTH_FILE — the ROPC login did not complete"
+              exit 1
+            fi
+            if [ "$out" = "UIPATH_CLI_AUTH_TOKEN" ]; then
+              echo "::add-mask::$val"
+            fi
+            env_lines+=("$out=$val")
+          done
+          env_lines+=("UIPATH_CLI_ENABLE_ENV_AUTH=true")
+
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
           # delegate via the ROPC user token minted above. The model always
@@ -662,10 +694,13 @@ jobs:
             delegate_env="$delegate_env,DELEGATE_ORG_ID,USER_ID,DELEGATE_ORG_SLUG"
             delegate_env="$delegate_env,DELEGATE_TENANT_SLUG,DELEGATE_ENV,USE_LLM_GATEWAY_FOR_FIREWORKS"
             delegate_env="$delegate_env,DELEGATE_STDIO_VERBOSE,DELEGATE_STDIO_LOG_MAX_CHARS,DELEGATE_STALL_TIMEOUT_S"
-            args+=(-D "sandbox.docker.env_passthrough_extra=[$delegate_env]")
+            passthrough_extra="$passthrough_extra,$delegate_env"
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
           fi
+
+          # One -D for the whole list (append-semantics onto nightly.yaml's own).
+          args+=(-D "sandbox.docker.env_passthrough_extra=[$passthrough_extra]")
 
           # After the clamp, so a delegate run reports the -j it will actually use.
           args+=(-j "$j" -v --model "$model")
