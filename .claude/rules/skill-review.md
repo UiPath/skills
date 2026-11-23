@@ -96,7 +96,7 @@ Is the skill ready for public use as a plugin?
 - Works on all platforms the skill claims to support
 - CODEOWNERS entry exists
 
-**Red flags:** description that triggers on generic terms, missing `→` redirects for sibling skills, description over 1024 chars, hardcoded localhost URLs or personal paths, no CODEOWNERS entry.
+**Red flags:** description that triggers on generic terms, missing `→` redirects for sibling skills, description over 1024 chars, hardcoded localhost URLs or personal paths, no CODEOWNERS entry, any step that reads `~/.uipath/.auth`, extracts a bearer token, or asks the user for one (see `content-quality.md` § Credentials and Authentication).
 
 ## Output Format
 
