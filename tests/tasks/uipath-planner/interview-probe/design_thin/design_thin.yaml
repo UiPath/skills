@@ -1,0 +1,210 @@
+task_id: skill-planner-interview-design-thin-pdd-devprompt
+description: >
+  Integration: `design`, interactive, on a half-page PDD for supplier invoice entry that gives no
+  trigger, volume, approver or ERP access route. The request names the execution mode, so it is not
+  asked. After the Phase 1 summary and before scope confirmation, one question offers the interview,
+  counting the points that change the design (P0). Accepted, only P0 points are asked, with no
+  clarifying-questions round on top; answered points carry no marker. The SDD records the interview in
+  its Document History and holds every other gap as an Action Required item, which tells its reader
+  how to answer, the interview included. Step 1.5 asks no point the interview asked or left open. The
+  closing counts the open items by role. The interview's P0-only questions and the closing's
+  `interview <SDD>` are advisory. The run stops at the SDD: no genome, no build. A simulated process
+  owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  # One design turn reads the PDD and the guides and writes the SDD; the dialog adds the interview
+  # and the architecture review.
+  turn_timeout: 1800
+  task_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../interview/design_thin/fixtures
+
+agent:
+  system_prompt: |
+    You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+
+    A skill's SKILL.md and the reference files it points to are instructions for this task, not background
+    reading: follow every step they give, including a step that asks the user a question and waits for the
+    answer, and the closing message they specify.
+
+reference:
+  directory: ../../interview
+
+initial_prompt: |
+  Design a solution from `pdd.md` in this folder. Work interactively: pause at each checkpoint for my review. It will run on Automation Cloud.
+
+  I'm the process owner. Stop once the SDD is written: no genome and no build in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice entry in accounts payable. You decide business
+    outcomes, rules and scope. You do not know how the ERP can be reached by a robot, nor the
+    environments' hosts and mailboxes.
+  goal: |
+    Get the SDD written for this process, answering the questions that are yours, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When the agent offers to interview you, accept."
+    - "When a question asks for something you do not know (how a system is reached, a host, a mailbox), say it is for the system's owner or the environment's owners."
+    - "At a design checkpoint or architecture review, approve it as proposed in a few words."
+    - "If the agent offers to write the genome or to build, decline: the SDD is all you want."
+    - "Once the agent reports the SDD written, end the conversation."
+  max_turns: 14
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "An SDD was written"
+    path: "*-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No genome was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '-genome\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The SDD's Document History records the interview"
+    path: "*-sdd.md"
+    pattern: 'Interview: \d+ points? answered by [^;\n]+; \d+ left open'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The SDD's Action Required says how to answer, the interview included"
+    path: "*-sdd.md"
+    pattern: '(?s)How to answer:.*uipath-planner.{0,40}interview'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The gaps left open are Action Required items, each naming who answers it"
+    path: "*-sdd.md"
+    pattern: '\*\*Answer \(by [^)]+\):\*\*'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The interview is offered after the Phase 1 summary, with no clarifying round on top and no environment value asked"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for an interactive design of a thin PDD (supplier invoice entry:
+      no trigger, volume, approver or ERP access route) and named the execution mode. Read the dialog and
+      the agent's questions, whether asked in chat or as structured questions.
+
+      Check three things:
+      1. The agent does not ask whether to run autonomously or interactively.
+      2. Before scope is confirmed, after a summary of the process, one question offers an interview,
+         counting the open points that change the design. The offer may also name the points it leaves
+         for after writing; naming them is neither counting nor asking them.
+      3. Before scope is confirmed, no separate round of up to five clarifying questions is asked on top
+         of the interview, and no question asks only for an environment value (a mailbox, a folder, a
+         host, an account) or only for what another role answers (how a robot reaches a system, asked on
+         its own). A question about a preferences file is allowed, and so is where the automation runs
+         (Automation Cloud, Automation Suite, standalone Orchestrator). A later round, once the SDD's
+         sections are written, is graded elsewhere: ignore it here.
+
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the interview asks points that change the design only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for an interactive design of a thin PDD (supplier invoice entry:
+      no trigger, volume, approver or ERP access route) and accepted an interview. Read the dialog and the
+      agent's questions, whether asked in chat or as structured questions, up to the point scope is
+      confirmed; a later round, once the SDD's sections are written, is graded elsewhere.
+
+      Score 1.0 when every question of the interview is a point that changes the product, scope or
+      architecture, such as the trigger and schedule, volume and run window, judgement steps with no
+      rule, a human step's actor, outcomes or wait limit, how a system is reached, scope boundaries (not
+      every such point has to be asked), and it asks no threshold's value, no one to tell and no business
+      exception's handling (unless its answer can add or remove a person's step in the automation, which
+      changes the architecture). Score 0.0 when a single question goes beyond that.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "Step 1.5 asks no point the interview asked or left open"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      In this design run the agent first interviewed the user (the process owner) on the points that change
+      the design. Some points were answered; others were left open: skipped, defaulted, or held for a role
+      that is not in the session (such as the system's owner). After writing the SDD's sections, the agent
+      may ask a last round about the items still marked for review.
+
+      An interview point is one the interview put to the user (answered, skipped or defaulted) or held for
+      another role. A threshold, rule or value the interview only mentioned as something to settle later
+      is not an interview point, and the last round may ask it; nor is a follow-up that one of the user's
+      interview answers opened (what an escalation target does once a task reaches them).
+
+      An item belongs to the role it was asked of when it was asked: an answer can narrow an item and
+      move what is left of it to another role, so the role the final SDD names may differ. A business
+      rule, an outcome, who is told or how long records are kept is the process owner's, even when an
+      option names another role that would supply a value.
+
+      Score 1.0 when that last round asks no interview point again, and asks only items that belong to
+      the user's role. Score 0.0 when it asks an interview point again, or an item that belongs to another
+      role. Score 1.0 when there is no last round.
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing counts the open items by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the SDD (solution design document). Score 1.0 when
+      it counts the items still open, split by the role that answers them (the process owner, the
+      system's owner, the environment's owners …), or says that none is open; 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names `interview <SDD>`"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the SDD (solution design document). Score 1.0 when
+      it names the interview command for the SDD, in the form `interview <SDD file name>`; 0.0 otherwise.
+    # Advisory: the SDD's How to answer is the gated record; the closing line is recorded, not gated.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Design does not scaffold, build or run a project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa|solution)\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
