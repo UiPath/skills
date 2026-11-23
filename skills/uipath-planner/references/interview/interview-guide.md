@@ -59,7 +59,7 @@ SDD homes use the RPA template's numbers; another product's template holds the s
 | Trigger and schedule | the source names no start, or two | P0 | the process owner | § 1 Process Overview | Workflow step 1; Deployment | SDD |
 | Volume, peaks, run window | no volume, or one that sits near a product threshold | P0 | the process owner | § 1 Process Overview | Transactional Shape evidence | SDD |
 | Judgement steps | a step decides over free text or varied documents and the source gives no rule | P0 | the process owner | § 4 Business Rules, Rules That Need Reasoning | Business Rules | SDD |
-| Human steps | an approval, review or sign-off with no actor, no outcomes or no wait limit | P0 | the process owner | § 3 Step Details; § 7 | Actors and Systems; Workflow | SDD |
+| Human steps | an approval, review or sign-off with no actor, no outcomes or no wait limit; the threshold that sends an item to it is a business rule | P0 | the process owner | § 3 Step Details; § 7 | Actors and Systems; Workflow | SDD |
 | Access route per system | no API, UI or file interface is known for an in-scope system | P0 | the system's owner | § 9 Application Inventory | Target Applications | SDD |
 | Scope boundaries | in-scope and out-of-scope statements conflict, or a step's side is unstated | P0 | the process owner | § 1 In Scope / Out of Scope | Overview | SDD |
 | Inputs | where items come from or their format is unstated | P1 | whoever knows the process | § 3; § 5 Data Definitions | Interface; Workflow | SDD |
@@ -90,7 +90,7 @@ Before writing, one structured question, with the counts from the gap list:
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
 > 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
 
-Option 1 is Recommended. After writing, the offer is § After Writing's first question.
+Option 1 is Recommended. A request that asks to be interviewed before writing accepts it: the offer question is skipped, and the interview asks the P0 entries the offer would have counted, nothing more. After writing, the offer is § After Writing's first question.
 
 ## Asking
 
