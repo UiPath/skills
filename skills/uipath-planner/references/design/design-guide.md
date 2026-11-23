@@ -50,7 +50,7 @@ Exception: when the Constraint Gate blocks Solutions for standalone, Automation 
 | Phase 1 Step 2 | the source signals a non-scriptable interactive sign-in (hardware 2FA token, smart card, biometric) | [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md) |
 | Phase 2 Step 1 | — | the SDD template(s) the Template Mapping names, in `../assets/templates/` |
 | Phase 2 Step 2 | filling §14 Packages or its equivalent | [package-selection-guide.md](package-selection-guide.md) |
-| Phase 2 Step 2 or Phase 3 | filling RPA §4 Business Rules or BPMN §5 Gateways | [business-rules-guide.md](business-rules-guide.md) |
+| Phase 2 Step 2 or Phase 3 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions | [business-rules-guide.md](business-rules-guide.md) |
 | Phase 3 | Phase 2 Step 5 is approved (or skipped in autonomous mode) | [sdd-writing-guide.md](sdd-writing-guide.md) whole; its § Read Plan names Phase 3's reads |
 
 ## Anti-patterns
@@ -228,7 +228,7 @@ The SDD is automation-type-agnostic: include only in-scope type coverage. Soluti
 Generate the sections the template's `Phase 2 sections:` line names (the Case template: Sections 1–4). What they hinge on:
 
 - **RPA:** §10 applies Level 2.5 Part A ([rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals)) — Single vs Master Project, sub-projects, queue schema; §11 Project Structure is the most load-bearing section — the genome's components come from it; §13 applies Level 2 ([rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode)); §14 infers NuGet packages from §9 and the process steps.
-- **Maestro BPMN:** §5 Gateways carries the decision tables and the reasoning list ([Business Rules Guide](business-rules-guide.md)).
+- **Maestro BPMN:** §3 Business Rules and Decisions carries the decision tables and the reasoning list ([Business Rules Guide](business-rules-guide.md)).
 - **Agents:** §9 Project Structure states Coded vs Low-code. **API Workflows:** §4 Execution Flow is high-level steps, no JavaScript.
 - **Case Management:** Sections 1–4 per [case-product-guide.md](case-product-guide.md) and [case-data-and-time-guide.md](case-data-and-time-guide.md). Headings render in the template's long form (`## Section 1: Case Definition`, …): `uipath-maestro-case` parses the heading TEXT verbatim, and `§N` is notation in planner documents only.
 
@@ -239,7 +239,7 @@ Generate the sections the template's `Phase 2 sections:` line names (the Case te
 | RPA (Single Project) | Workflow Inventory | `.xaml` or `.cs` workflow files |
 | RPA (Master Project) | Workflow Inventory **per sub-project** | `.xaml` or `.cs` workflow files, grouped by sub-project |
 | Flow | Nodes Inventory | Flow nodes |
-| BPMN | Activities Inventory | BPMN activities / tasks (service, script, user, call activity, subprocess) |
+| BPMN | §2 Steps | BPMN activities / tasks (service, script, user, call activity, subprocess) |
 | Case | §2 Stages & Tasks | Stage blocks plus task summary/detail blocks |
 | Agents | Tools | Python functions, RPA/API workflow bindings |
 | Coded Apps | Pages + Components | Routes and React/Angular/Vue components |
@@ -253,7 +253,7 @@ For RPA Master Project, assign each PDD step to a §10 sub-project, then, within
 
 For each Phase 1 integrated component and non-primary placement, flag the template section:
 
-- **HITL:** Flow host → flag touchpoints and route implementation to `uipath-human-in-the-loop`; Coded Agent → escalation belongs to `uipath-agents` build (HITL defers coded-agent wiring); BPMN `userTask` → §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL task); Case → `action` detail in §2 Stages & Tasks with Action App intent (never HITL skill); RPA → Action Center / long-running workflow in RPA template.
+- **HITL:** Flow host → flag touchpoints and route implementation to `uipath-human-in-the-loop`; Coded Agent → escalation belongs to `uipath-agents` build (HITL defers coded-agent wiring); BPMN `userTask` → §5 Human Tasks, authored inline by `uipath-maestro-bpmn` (no HITL task); Case → `action` detail in §2 Stages & Tasks with Action App intent (never HITL skill); RPA → Action Center / long-running workflow in RPA template.
 - **Integration Service connectors:** list in Application Inventory (RPA) or the Connectors section (other types); check `uip is connectors list`; route existing connector configuration to `uipath-platform`, custom build to `uipath-connector-builder`.
 - **IXP / Document Understanding models:** for semi-structured extraction, list in the host's "IXP / Document Understanding Models" table (Flow/BPMN/Case/Agent/RPA); for API Workflow or Coded App primary, make a row in §Solution / Project Breakdown. Route implementation to `uipath-ixp`, before consumers.
 - **Coded Functions** (TypeScript / JavaScript / Python): atomic deterministic transform / compute (e.g., parsing, scoring, custom-auth API calls, IS-connection queries) only when justified by [placement rule 6](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step); keep host-native logic in host inventory. List in host "Coded Functions" table (Flow/BPMN/Case/Agent); route to `uipath-functions` before consumers; no per-project SDD file (see [Template Mapping](scope-recommendation-guide.md#template-mapping)).

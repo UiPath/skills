@@ -69,7 +69,13 @@ const nameOf = cell => firstKey(cell) ?? (/[A-Za-z0-9]/.test(cell ?? '') ? cell.
 const findings = [];
 const fail = (rule, message) => findings.push(`FAIL: [${rule}] ${message}`);
 
-const isBpmn = lines.some(line => /^## \d+\. Activities Inventory/.test(line));
+/** A section heading of any of `names`, numbered or not. A BPMN SDD written before the PDD-aligned layout keeps its old names. */
+const heading = (...names) => new RegExp(`^#{2,3} (?:\\d+\\. )?(?:${names.join('|')})\\b`);
+const inventoryHeading = heading('Steps', 'Activities Inventory');
+const errorHeading = heading('Exceptions and Error Handling', 'Error Handling');
+const eventsHeading = heading('Events');
+
+const isBpmn = lines.some(line => /^### Sequence Flows/.test(line));
 const breakdown = section(/Solution \/ Project Breakdown/).join('\n');
 const rulesRows = table(section(/^### Business Rules Projects/));
 
@@ -111,11 +117,11 @@ if (isRpa) {
         if (workflow && !runs.test(row.Runs ?? '')) fail('rpa-runs', `workflow \`${workflow}\` does not say when it runs; Runs is one of \`once, before the items\`, \`per item\`, \`once, after the items\`, \`own entry point\``);
     }
 } else if (isBpmn) {
-    const inventory = table(section(/^## \d+\. Activities Inventory/));
+    const inventory = table(section(inventoryHeading));
     const typeOf = new Map(inventory.map(row => [firstKey(row['Node Key']), row['Step Kind'] ?? row['BPMN Element Type'] ?? '']));
     const isRule = kind => /^\s*(rule|businessRuleTask)\s*$/i.test(kind);
     const gateways = new Set(table(section(/^### Gateways/)).map(row => firstKey(row['Gateway Key'])));
-    const eventRows = table(section(/^## \d+\. Events/));
+    const eventRows = table(section(eventsHeading));
     const events = new Set(eventRows.map(row => firstKey(row['Event Key'])));
     const subprocessRows = table(section(/^### Subprocesses/));
 
@@ -134,18 +140,18 @@ if (isRpa) {
     }
 
     // error-catch
-    for (const row of table(section(/^## \d+\. Error Handling/))) {
+    for (const row of table(section(errorHeading))) {
         if (!('Failing Node' in row)) break;
         const node = firstKey(row['Failing Node']);
         if (!node) continue;
         if (!typeOf.has(node)) {
-            fail('error-catch', `Error Handling names \`${node}\`, which is not an Activities Inventory node; each row names one node`);
+            fail('error-catch', `Error Handling names \`${node}\`, which is not a step in Steps; each row names one node`);
             continue;
         }
         const catcher = firstKey(row['Caught By']);
         const next = firstKey(row.Then);
         if (next && !typeOf.has(next) && !gateways.has(next) && !events.has(next)) {
-            fail('error-catch', `after a failure of \`${node}\` the run continues at \`${next}\`, which is not an Activities Inventory node, a gateway or an event`);
+            fail('error-catch', `after a failure of \`${node}\` the run continues at \`${next}\`, which is not a step in Steps, a gateway or an event`);
         }
         if (!catcher) {
             if (!next && !/ends as failed/i.test(row.Then ?? '')) fail('error-catch', `nothing catches a failure of \`${node}\`, so the run ends as failed and Then says exactly \`run ends as failed\`; for the run to carry on, name the boundary error event in Caught By`);
@@ -219,7 +225,7 @@ if (isRpa) {
     const known = new Set([...typeOf.keys(), ...gateways, ...events, ...subprocessRows.map(row => firstKey(row['Subprocess Key']))]);
     for (const flow of flows) {
         for (const end of [firstKey(flow.Source), firstKey(flow.Target)]) {
-            if (end && !known.has(end)) fail('unknown-node', `a flow names \`${end}\`, which is not an Activities Inventory node, a gateway, an event or a subprocess`);
+            if (end && !known.has(end)) fail('unknown-node', `a flow names \`${end}\`, which is not a step in Steps, a gateway, an event or a subprocess`);
         }
     }
     for (const row of subprocessRows) {
@@ -227,7 +233,7 @@ if (isRpa) {
         const inside = new Set(keys(row['Nodes Inside']));
         if (!subprocess || inside.size === 0) continue;
         for (const node of inside) {
-            if (!typeOf.has(node) && !gateways.has(node) && !events.has(node)) fail('loop-nodes', `subprocess \`${subprocess}\` lists \`${node}\`, which is not an Activities Inventory node, a gateway or an event`);
+            if (!typeOf.has(node) && !gateways.has(node) && !events.has(node)) fail('loop-nodes', `subprocess \`${subprocess}\` lists \`${node}\`, which is not a step in Steps, a gateway or an event`);
         }
         if (!/^\s*yes/i.test(row['Multi-instance?'] ?? '')) continue;
         for (const flow of flows) {

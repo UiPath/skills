@@ -6,7 +6,7 @@ Business rules in an SDD: validation rules, DMN-style decision tables, and rules
 
 | Type | Test | Lands in |
 |---|---|---|
-| **Deterministic: validation** | Checks a value's form: regex, range, type, allowed values. | RPA §4 validation table; BPMN §7 Data Objects & Variables |
+| **Deterministic: validation** | Checks a value's form: regex, range, type, allowed values. | RPA §4 validation table; BPMN §4 Data |
 | **Deterministic: decision** | Explicit logic over structured data decides an outcome: thresholds, lists, lookups, dates, calculations. The same inputs always give the same output. | A decision table ([Decision tables](#2-decision-tables)) |
 | **Reasoning: agent** | It takes interpretation or unstructured input (free text, a document, a judgment call), and an agent can apply it from its inputs. | The reasoning list ([Rules that need reasoning](#3-rules-that-need-reasoning)), applied by an agent |
 | **Reasoning: person** | It needs a person's authority or accountability, or knowledge the inputs don't carry. | The reasoning list, applied by a person (HITL) |
@@ -54,7 +54,7 @@ Cells (FEEL unary-test subset):
 - **Complete.** Aim for every combination of inputs to match a row. Under `UNIQUE`, cover the remaining combinations with rows of their own (`not(...)`, open ranges), because an all-`-` row would overlap every other row. A last all-`-` default row is valid only under `FIRST`, where order makes it the fallback.
 - **Design intent, not proof.** Hit policy and completeness describe what the table must do. Do not certify a table overlap-free or complete by reading it: the build proves it (see Proof).
 - **Traceable.** Every row cites its BR in `Rule`; a row that only completes the table cites `[DEFAULT]` or `[SME REVIEW]` instead. Every decision BR appears in at least one row.
-- **Independent test cases.** Write one test case per row in the Testing Strategy (RPA §17; BPMN §13 Gateway / Branch Coverage). Take its inputs and expected output from a PDD example or an SME-confirmed value, never from the row itself: a case derived from the row passes even when the row is wrong. When neither source gives one, write the case with `[SME REVIEW]` in place of the expected output.
+- **Independent test cases.** Write one test case per row in the Testing Strategy (RPA §17; BPMN §9 Gateway / Branch Coverage). Take its inputs and expected output from a PDD example or an SME-confirmed value, never from the row itself: a case derived from the row passes even when the row is wrong. When neither source gives one, write the case with `[SME REVIEW]` in place of the expected output.
 - **Proof.** The genome component that hosts the decision (the BPMN or RPA component) carries its test cases as acceptance criteria, and the build proves the table with tools. For a `.dmn` business rule: `uip rules validate <PROJECT_DIR> --output json`, then `uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json` once per test case. For coded logic in an RPA process: one unit test per test case. A failing case is a defect in the row or in the test case's source; resolve it with the SME, never by editing the expected output to match.
 - **Runs in.** BPMN: the Rule step's node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Component Placement Guide → Per-task component placement](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step).
 - **No decision rules:** write `None. No rule decides an outcome.`

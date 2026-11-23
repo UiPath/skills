@@ -85,7 +85,7 @@ A `Credential` asset keeps the secret safe, not the integration managed: a tier-
 
 A third-party API with no catalog connector gets a custom connector (see Integration Service above), not an API Workflow wrapper.
 
-**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, BPMN Activities Inventory serviceTask rows, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`. Scope is unchanged ([derived-component rule](product-selection-guide.md#solution-signals)).
+**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, BPMN §2 Steps rows, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`. Scope is unchanged ([derived-component rule](product-selection-guide.md#solution-signals)).
 
 ### Reusability & shared assets
 

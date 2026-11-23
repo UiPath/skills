@@ -6,7 +6,7 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 
 | Phase | Condition | Read |
 |---|---|---|
-| Step 1 | filling RPA §4 Business Rules or BPMN §5 Gateways, and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
+| Step 1 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions, and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
 | Step 2 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
 | Step 2 item 6 | finalizing a Case Management draft | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Finalizing a Case Draft |
 | Step 2 item 8 | a Case Management SDD | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § SDD Conformance Checklist |
@@ -29,7 +29,7 @@ The skeleton write contains, in this order:
 
 1. The title/header + `## Document History`.
 2. The `<!-- planner-handoff:v1 -->` marker **and** the `## Planner Handoff` header, with `Status: draft` and `Template validation: pending` (full field list in Step 2 item 2). Both signals MUST be in this first write so detection works even on a partial file: the marker says "planner SDD", the `Status` field says whether it is consumable.
-3. The `## Decisions Made` block (autonomous mode) and the `## Recommended Scope` block (both modes) — formats in Step 2 item 3.
+3. The `## Decisions Made` block (autonomous mode) and the `## Recommended Scope` block (both modes) — formats in Step 2 item 3 — when the template places them in its front matter. The Maestro BPMN template holds both in its §10 Design Decisions, written when that section is reached.
 4. Every Phase 1 / Phase 2 section you already have.
 
 Then append the remaining Phase 3 sections to that file with follow-up file edits or writes **as you generate them** — do not buffer them in context and do not rewrite the whole file per section.
@@ -119,7 +119,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    **Keep the `<!-- planner-sdd-body:v1 -->` line** the template places directly above the first body section, after the Table of Contents. It is not a template instruction: a caller's host reads every H2 above it as front matter ([caller-request-guide.md](caller-request-guide.md) § SDD Signals a Caller's Host May Read).
 
-3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or product body. It sits before the Table of Contents in every template. The block makes the highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or product body, before the Table of Contents. The Maestro BPMN template is the exception: its Decisions Made and Recommended Scope are subsections of §10 Design Decisions, written in both execution modes, since that chapter is the SDD's record of its decisions for the people who approve it. The block makes the highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
 
    The template holds the table, row 1 always **Platform constraints**.
 
@@ -134,7 +134,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
 
-4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
+4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents. The Maestro BPMN template places it last instead, after Next Steps, and §1's `Open questions` row gives its count. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
    - its marker in the body names it (`[SME REVIEW] D2: <note>`);
    - a `default-carried` item lists its options, the default applied marked `(built now)`, or as a value its `Default:`; for a value or material nobody has yet (a production amount, sample documents), the `Default:` is what the design builds until it arrives (an empty setting, a placeholder document), never an invented value;
