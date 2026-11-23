@@ -158,6 +158,7 @@ Entities and choice sets are either tenant-level or folder-scoped. Records and f
 | Create / update / delete entity, add/remove/update fields | [`entity-schema.md`](entity-schema.md) |
 | Create / update a **federated** entity (from a connector or another entity) | [`federated-entity-creation.md`](federated-entity-creation.md) |
 | Author an entity **into a solution** (`entities … --local`) | [`local-entities.md`](local-entities.md) |
+| Create an approved **entity set** from one `entities.json` (script, dependency order, read-back) | [`entities-from-schema-guide.md`](entities-from-schema-guide.md) |
 | Read / filter / paginate / sort records | [`records-query.md`](records-query.md) + [`filter-platform-contract.md`](filter-platform-contract.md) |
 | Insert / update / delete records | [`records-query.md`](records-query.md) |
 | Aggregates / group-by | [`records-query.md` → Aggregates](records-query.md#aggregates-server-side) |
