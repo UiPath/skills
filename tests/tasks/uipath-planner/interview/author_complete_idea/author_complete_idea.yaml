@@ -97,7 +97,8 @@ success_criteria:
     include_reference: false
     prompt: |
       Read the agent's final message after it wrote the genome (an automation blueprint). It must:
-      1. Count the questions still open in the genome, split by the role that answers them.
+      1. Count the genome's open decisions, split by the role that answers them (configuration values
+         need no role).
       2. Name the interview command for the genome, `interview <genome file name>`.
       3. Offer to write an SDD (solution design document) for answerers who are not in the session.
 
