@@ -86,8 +86,9 @@ success_criteria:
       agent's questions, whether asked in chat or as structured questions.
 
       Check two things:
-      1. The agent neither offers nor runs an interview, and asks at most one round of follow-up
-         questions before writing the genome.
+      1. Before the genome is written, the agent neither offers nor runs an interview, and asks at most
+         one round of follow-up questions. The final message, once the genome is written, may name
+         `interview <genome>` as the way to answer later: that is not an offer.
       2. When no follow-up round was asked, the final message asks whether the user has a preferences
          file (team standing answers and development standards); when a round was asked, that round
          asked it.

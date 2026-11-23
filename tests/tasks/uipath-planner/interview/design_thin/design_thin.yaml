@@ -109,7 +109,8 @@ success_criteria:
       3. Before scope is confirmed, no separate round of up to five clarifying questions is asked on top
          of the interview, and no question asks only for an environment value (a mailbox, a folder, a
          host, an account) or only for what another role answers (how a robot reaches a system, asked on
-         its own). A later round, once the SDD's sections are written, is graded elsewhere: ignore it here.
+         its own). A question about a preferences file is allowed. A later round, once the SDD's sections
+         are written, is graded elsewhere: ignore it here.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
@@ -152,7 +153,9 @@ success_criteria:
       interview answers opened (what an escalation target does once a task reaches them).
 
       An item belongs to the role it was asked of when it was asked: an answer can narrow an item and
-      move what is left of it to another role, so the role the final SDD names may differ.
+      move what is left of it to another role, so the role the final SDD names may differ. A business
+      rule, an outcome, who is told or how long records are kept is the process owner's, even when an
+      option names another role that would supply a value.
 
       Score 1.0 when that last round asks no interview point again, and asks only items that belong to
       the user's role. Score 0.0 when it asks an interview point again, or an item that belongs to another

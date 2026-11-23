@@ -83,15 +83,16 @@ success_criteria:
       without pausing at checkpoints. Read the dialog and the agent's questions, whether asked in chat or
       as structured questions.
 
-      Only what comes before the SDD is written is graded here. A prompt is a message that stops and
-      waits for the user's answer before the SDD is finished. The final summary, after the SDD is
-      written, which lists the items still open and may name `interview <SDD>` or offer to interview the
-      user on them later, is neither a prompt nor an interview offer for this check.
+      Only the messages sent before the SDD is written are graded here. A prompt is such a message that
+      stops and waits for the user's answer. The message that reports the SDD written is outside this
+      check, whatever it says: its next steps, `interview <SDD>` and any offer to interview the user later
+      are not graded.
 
-      Score 1.0 when the agent offers no interview and asks at most one prompt before the SDD is done,
-      holding only items that have no defensible default (such as how an in-scope system can be reached
-      at all). Score 0.5 when it asks one prompt that also holds items with a usable default. Score 0.0
-      when it offers an interview or asks more than one prompt.
+      Score 1.0 when, before the SDD is written, no message asks whether the user wants to be
+      interviewed, and at most one prompt is asked, holding only items that have no defensible default
+      (such as how an in-scope system can be reached at all). Score 0.5 when that one prompt also holds
+      items with a usable default. Score 0.0 when a message before the SDD is written asks whether to
+      interview the user, or more than one prompt is asked.
     weight: 2.0
     pass_threshold: 1.0
 

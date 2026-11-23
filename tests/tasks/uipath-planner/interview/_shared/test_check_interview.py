@@ -135,6 +135,22 @@ def test_unchanged_and_body_hash_with_lf_endings(sandbox):
     assert r.returncode == 1 and sha(body) in r.stdout
 
 
+def test_kept_allows_added_lines_and_fails_on_a_changed_one(sandbox):
+    genome = sandbox / GENOME.name
+    text = genome.read_text(encoding="utf-8")
+    start = text.index("\n## Configuration Questions")
+    end = text.index("\n## ", start + 5)
+    added = text[:end] + "\n99. Which group takes the tasks? (setting; default: none)\n" + text[end:]
+    genome.write_text(added, encoding="utf-8")
+    assert grade(sandbox, "kept", genome.name, str(GENOME), "Configuration Questions").returncode == 0
+    cqs = re.sub(r"(?m)^(1\. .*?default: )[^)]*\)", r"\g<1>answered)", text[start:end], count=1)
+    answered = text[:start] + cqs + text[end:]
+    assert answered != text
+    genome.write_text(answered, encoding="utf-8")
+    r = grade(sandbox, "kept", genome.name, str(GENOME), "Configuration Questions")
+    assert r.returncode == 1 and "changed or gone" in r.stdout
+
+
 def test_usage_errors_exit_2(sandbox):
     assert grade(sandbox, "bogus").returncode == 2
     assert grade(sandbox, "entries", GENOME.name, "closed", "1").returncode == 2

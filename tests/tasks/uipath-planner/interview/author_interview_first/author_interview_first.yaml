@@ -94,7 +94,8 @@ success_criteria:
          Saying which points it will ask and which it leaves for after writing is not asking.
       2. No question before writing asks only for an environment value (a mailbox, a folder, a host, an
          account) or only for what another role answers (how a robot reaches a system, asked on its own).
-         A question that asks which system is used and how it is reached asks the user's part.
+         A question that asks which system is used and how it is reached asks the user's part. A question
+         about a preferences file (team standing answers and development standards) is allowed.
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5

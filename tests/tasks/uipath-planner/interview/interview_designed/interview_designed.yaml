@@ -99,7 +99,8 @@ success_criteria:
       number. An item named by its id and its question counts as named by its id.
 
       Check three things:
-      1. The agent never asks which roles the user answers for.
+      1. The agent never asks which roles the user answers for. Saying that other roles' items stay open
+         unless the user can answer them is not asking.
       2. The questions asked are the process owner's items only, each named by its id.
       3. The final message names what is still open, by the role that answers it.
 

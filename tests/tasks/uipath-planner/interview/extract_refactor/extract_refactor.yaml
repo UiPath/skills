@@ -43,7 +43,7 @@ simulation:
     - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
     - "Do not ask for the interview yourself; answer it when the agent offers it."
     - "You answer only as the process owner: if offered other roles' questions, decline them."
-    - "When asked whether you want to adjust anything, say no."
+    - "When asked whether you want to adjust anything, say no. When the same message also offers the interview, accept the interview."
     - "If the agent says this workspace's settings block creating the project and asks whether to start the build anyway, say yes: start it, and stop once it cannot create the project."
     - "When the build reports that it cannot create a project or write a workflow, tell it to stop there and end the conversation."
   max_turns: 16
@@ -107,7 +107,9 @@ success_criteria:
       whether asked in chat or as structured questions.
 
       A configuration value the build asks (a server, a folder, an address, a credential) is not an
-      interview entry, even when an entry's wording mentions it.
+      interview entry, even when an entry's wording mentions it. When no interview ran (the user declined
+      it, or it was never asked), it decided nothing and left every entry open: the build may ask each
+      entry once.
 
       Score 1.0 when both hold:
       1. The build asks none of the entries the interview decided, and offers no edit for them.

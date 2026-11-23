@@ -16,6 +16,8 @@
 //                                         An item is its heading and the `- ` lines under it; any other text ends it.
 //   count <file> <regex> <min>            at least <min> lines of the file match, case-insensitive
 //   unchanged <file> <sha256> [section]   the file, or its `## <section>`, hashes to <sha256> (line endings LF)
+//   kept <file> <fixture> <section>       the file's `## <section>` holds every line of the fixture's, in order;
+//                                         lines may be added (an answer that opens a new question)
 //   body <sdd> <sha256>                   the SDD below `<!-- planner-sdd-body:v1 -->` hashes to <sha256>
 //
 // A failing check prints the current hash, so a fixture's hash is read by running the check once.
@@ -154,6 +156,26 @@ switch (command) {
     if (n < Number(min)) fail(`${file}: ${n} line(s) match /${pattern}/i, expected at least ${min}`);
     break;
   }
+  case "kept": {
+    const [file, fixture, name] = args;
+    if (!file || !fixture || !name) fail("usage: kept <file> <fixture> <section>", 2);
+    if (!existsSync(fixture)) fail(`${fixture} is missing`, 2);
+    if (!existsSync(file)) fail(`${file} is missing`);
+    const want = section(read(fixture), name);
+    if (want === null) fail(`${fixture}: no "## ${name}" section`, 2);
+    const got = section(read(file), name);
+    if (got === null) fail(`${file}: no "## ${name}" section`);
+    const lines = got.split("\n");
+    let at = 0;
+    const lost = want.split("\n").filter((l) => {
+      const i = lines.indexOf(l, at);
+      if (i < 0) return true;
+      at = i + 1;
+      return false;
+    });
+    if (lost.length) fail(`${file} § ${name}: ${lost.length} line(s) of the fixture's changed or gone, first: ${lost[0]}`);
+    break;
+  }
   case "unchanged":
   case "body": {
     const [file, sha, name] = args;
@@ -167,5 +189,5 @@ switch (command) {
     break;
   }
   default:
-    fail("usage: check_interview.mjs {absent <regex> | strict | line <regex> | entries <genome> <state> <ids>... | items <sdd> <answered|blank> <ids>... | count <file> <regex> <min> | unchanged <file> <sha256> [section]}", 2);
+    fail("usage: check_interview.mjs {absent <regex> | strict | line <regex> | entries <genome> <state> <ids>... | items <sdd> <answered|blank> <ids>... | count <file> <regex> <min> | unchanged <file> <sha256> [section] | kept <file> <fixture> <section> | body <sdd> <sha256>}", 2);
 }
