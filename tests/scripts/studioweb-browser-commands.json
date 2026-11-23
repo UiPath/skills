@@ -33,6 +33,11 @@
         "file": "SKILL.md",
         "command": "eval",
         "reason": "Prose: `uip eval ... delete` is named as an example of a tenant delete that needs user confirmation, not an instruction to run it."
+      },
+      {
+        "file": "references/lowcode/capabilities/process/solution-files.md",
+        "command": "api",
+        "reason": "Studio Web note: names `uip api` as missing from this host, to say Steps 2-3 do not run here. Not an instruction to run it."
       }
     ],
     "ceiling": {
@@ -97,7 +102,7 @@
       "guardrails byo-configurations": 1,
       "login": 37,
       "login refresh": 2,
-      "login status": 16,
+      "login status": 19,
       "login tenant list": 4,
       "login tenant set": 3,
       "logout": 2,
@@ -146,7 +151,9 @@
       "ah idea-flows list": 3,
       "ah phases set": 3,
       "ah users list": 3,
-      "login": 14,
+      "login": 16,
+      "login refresh": 9,
+      "login status": 3,
       "login tenant set": 1
     }
   },
@@ -206,6 +213,21 @@
         "file": "references/widgets/decisions-and-reasons.md",
         "command": "codedapp pack",
         "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "codedapp delete",
+        "reason": "The confirm-before-delete Critical Rule. Studio Web's host-scope override (Studio Web Command Scope) says `uip codedapp` does not run here, so the rule is Node-only guidance."
+      },
+      {
+        "file": "references/commands-reference.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
+      },
+      {
+        "file": "references/pack-publish-deploy.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
       }
     ],
     "ceiling": {
@@ -336,8 +358,8 @@
       "gov compliance-packs state get": 7,
       "gov compliance-packs state list": 3,
       "gov compliance-packs state restore": 2,
-      "login": 50,
-      "login status": 20,
+      "login": 51,
+      "login status": 49,
       "login tenant list": 5,
       "login tenant set": 3
     }
@@ -346,10 +368,13 @@
     "allow": [],
     "ceiling": {
       "agent": 1,
+      "api": 6,
       "codedapp pack": 1,
-      "login": 3,
+      "login": 4,
+      "login status": 1,
       "maestro flow hitl": 2,
-      "traces decisions": 1
+      "traces decisions": 1,
+      "update": 1
     }
   },
   "uipath-insights": {
@@ -768,6 +793,7 @@
       }
     ],
     "ceiling": {
+      "api": 12,
       "codedagent": 1,
       "context-grounding": 11,
       "df entities": 1,
@@ -775,8 +801,9 @@
       "eval run": 1,
       "gov aops-policy deployed-policy": 1,
       "llm-configuration": 1,
-      "login": 30,
-      "login status": 18,
+      "login": 32,
+      "login refresh": 5,
+      "login status": 22,
       "login tenant list": 3,
       "login tenant set": 10,
       "login which": 3,
@@ -796,7 +823,8 @@
       "traces feedback get": 2,
       "traces feedback list": 2,
       "traces feedback list detailed": 3,
-      "traces feedback update": 5
+      "traces feedback update": 5,
+      "update": 1
     }
   },
   "uipath-process-mining": {
@@ -1012,6 +1040,11 @@
         "file": "references/products/integration-service/overview.md",
         "command": "is triggers",
         "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/coded-apps/overview.md",
+        "command": "codedapp delete",
+        "reason": "Command-summary list of the Node CLI's `codedapp` verbs, describing what each does; not an instruction to delete anything."
       }
     ],
     "ceiling": {

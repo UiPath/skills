@@ -100,6 +100,8 @@ A reachable application — the target or a comparable instance — is a **windf
 - every type-ahead, menu-path and collect-matching-elements step, as `run` rows — a collection on a record that has elements;
 - the input method of every application the build did not explore ([live-application-guide.md § Exploring](live-application-guide.md)).
 
+An element the source found by image or by fixed coordinates, and every no-selector outcome ([selector-translation-guide.md](selector-translation-guide.md), the rule that no selector is a valid outcome), also carries a TODO on its acting activity: the annotation starts `TODO live pass:` and says what to capture, so the workflow shows, where it is opened, what its live-check row still owes.
+
 The file opens with a short paragraph for the engineer, in the voice of the open-items files ([open-items-guide.md](open-items-guide.md) rule 1): what the rows are, that the read-only rows come first, that the `run` rows run only on a test instance or on data that can be restored, and how a row is closed.
 
 The offline migration reads its definitions back against [selector-translation-guide.md § Checking a definition](selector-translation-guide.md), fixes what fails, and labels every element `offline-unverified` until a live check confirms it. A structural pass proves shape, not that anything matches the screen.

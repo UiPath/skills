@@ -992,6 +992,12 @@ _ADVISORY = [
         ["uip maestro bpmn eval evaluators create x --type exact-match"],
     ),
     (
+        "evaluate/no_auto_upload.yaml",
+        "created the solution",
+        ["uip solution init Baz", "uip maestro bpmn init LocalOnly"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn check Process.bpmn"],
+    ),
+    (
         "evaluate/simulation/simulation_crud.yaml",
         "Solution-creation telemetry",
         ["uip solution init Foo", "uip maestro bpmn init SimEval"],

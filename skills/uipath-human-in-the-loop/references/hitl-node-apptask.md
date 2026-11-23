@@ -14,30 +14,32 @@ Before writing the node JSON, resolve the app and register it with the solution.
 
 ### Step 1 — Resolve solution context and credentials
 
-**Read credentials from the active `uip` session:**
+**Read session details from the active `uip` session** — never read, `cat`, or `source` the CLI's credentials file:
 
 ```bash
-source "$HOME/.uipath/.auth"
-# Variables now available:
-# UIPATH_ACCESS_TOKEN       — bearer token
-# UIPATH_URL                — e.g. https://cloud.uipath.com
-# UIPATH_ORGANIZATION_NAME  — org name (slug)
-# UIPATH_ORGANIZATION_ID    — org UUID
-# UIPATH_TENANT_NAME
-# UIPATH_TENANT_ID
-# UIPATH_PROJECT_ID
+uip login status --output json
 ```
 
-Map to working variables:
+Map to working variables (`Data.Status` must be `Logged in`; otherwise ask the user to run `uip login`):
 
 | Variable | Source |
 |---|---|
-| `BASE_URL` | `$UIPATH_URL` |
-| `ORG_NAME` | `$UIPATH_ORGANIZATION_NAME` |
-| `ORG_ID` | `$UIPATH_ORGANIZATION_ID` |
-| `TENANT_ID` | `$UIPATH_TENANT_ID` |
-| `ACCESS_TOKEN` | `$UIPATH_ACCESS_TOKEN` |
-| `USER_ID` | `sub` claim — base64url-decode the middle segment of `ACCESS_TOKEN`, parse JSON, read `sub` |
+| `BASE_URL` | `Data.BaseUrl` |
+| `ORG_NAME` | `Data.Organization` |
+| `ORG_ID` | `Data.OrganizationId` |
+| `TENANT_ID` | `Data.TenantId` |
+| `USER_ID` | `Data.UserId` |
+
+**Sending the requests below** — use `uip api`, which adds `{BASE_URL}`, `{ORG_NAME}` and the token itself (never extract the token). All three are organization-level `studio_` calls: pass the path after `{ORG_NAME}/`, `--level organization`, and the tenant header. For a POST, write the JSON body to a file first:
+
+```bash
+uip api "studio_/backend/api/resourcebuilder/solutions/<SOLUTION_ID>/resources/search?kind=app&..." \
+  --level organization --header "x-uipath-tenantid: <TENANT_ID>" --output json
+uip api "studio_/backend/api/resourcebuilder/solutions/<SOLUTION_ID>/resources/retrieve-configuration" \
+  --level organization --method POST --input "<BODY_FILE>" --header "x-uipath-tenantid: <TENANT_ID>" --output json
+```
+
+The response is in `Data.Body`. If `uip api` is an unknown command, run `uip update`, then retry.
 
 **Resolve solution context:**
 
@@ -73,7 +75,7 @@ GET {BASE_URL}/{ORG_NAME}/studio_/backend/api/resourcebuilder/solutions/{SOLUTIO
   &searchTerm={APP_NAME}
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+Headers: `x-uipath-tenantid: {TENANT_ID}` (`uip api` adds authorization and `Accept: application/json`)
 
 Response:
 
@@ -124,7 +126,7 @@ Content-Type: application/json
 }
 ```
 
-Headers: `Authorization: Bearer {ACCESS_TOKEN}`, `Content-Type: application/json`, `Accept: application/json`, `x-uipath-tenantid: {TENANT_ID}`
+Headers: `x-uipath-tenantid: {TENANT_ID}` (`uip api` adds authorization; `--input` sets `Content-Type: application/json`)
 
 The response is a resource object. Key extractions from `spec`:
 

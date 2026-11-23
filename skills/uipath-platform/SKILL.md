@@ -22,7 +22,7 @@ Classify the requested **outcome** before running any command:
 
 **Always reach for `uip` CLI commands first.** The CLI covers auth, Orchestrator (folders, processes, jobs, machines, users, roles, sessions, calendars, settings, audit logs, credential stores, feeds, attachments), resources (assets, queues, queue items, storage buckets, bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), traces, and licensing end-to-end.
 
-Hand-rolling HTTP calls — reading `~/.uipath/.auth` and POSTing to `/odata/...` or `/orchestrator_/...` — almost always misses something the CLI gets right: the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape (`Key eq '...'` with escaped single quotes), pagination envelope, retry semantics, validation error shape, or `Result/Code/Data` output contract. **Reach for raw REST only after you've searched [`references/uip-commands.md`](references/uip-commands.md) for your task and confirmed no `uip` command covers it.** The CLI is the source of truth.
+Hand-rolling HTTP calls — fetching a token and POSTing to `/odata/...` or `/orchestrator_/...` — almost always misses something the CLI gets right: the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape (`Key eq '...'` with escaped single quotes), pagination envelope, retry semantics, validation error shape, or `Result/Code/Data` output contract. **Reach for raw REST only after you've searched [`references/uip-commands.md`](references/uip-commands.md) for your task and confirmed no `uip` command covers it.** The CLI is the source of truth.
 
 If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Search the command index first. Examples of what people often miss:
 
@@ -73,7 +73,7 @@ Useful flags: `--skip-node`, `--skip-skills`, `--skip-dotnet`, `--skip-python`, 
 Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 
 - **CLI bootstrap / workstation setup**: fresh machine, `uip` missing, Node/npm missing, Python or .NET SDK missing, or an LLM coding agent needs UiPath skills installed
-- **Auth & tenant**: login, logout, switch tenant, named login profiles via `--profile <name>`, `~/.uipath/.auth`, OAuth token, organization
+- **Auth & tenant**: login, logout, switch tenant, named login profiles via `--profile <name>`, session details (`uip login status`), REST calls the CLI does not cover (`uip api`), organization
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
@@ -100,20 +100,45 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 
 For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload) and CI/CD pipelines that build and deploy UiPath solutions, load [`uipath-solution`](/uipath:uipath-solution).
 
-## Auth token location
+## Session Details and REST Authentication
 
-The default login stores credentials at **`~/.uipath/.auth`**:
+The CLI owns its credentials file. Never read, `cat`, `grep`, or `source` it: it holds the access token and the refresh token, and anything read lands in the conversation.
 
+**Organization, tenant, base URL, expiry** — read them from `uip login status --output json`:
+
+| Field | Value |
+|---|---|
+| `Data.Status` | Session state, e.g. `Logged in` |
+| `Data.BaseUrl` | Cloud base URL, e.g. `https://cloud.uipath.com` |
+| `Data.Organization` / `Data.OrganizationId` | Organization name / UUID |
+| `Data.Tenant` / `Data.TenantId` | Tenant name / UUID |
+| `Data.Identity` | Logged-in user or application |
+| `Data.ExpirationDate` | Access-token expiry |
+
+A status other than `Logged in` does not end the task: still run the requested command, then report its result. If it fails with an authentication error, tell the user to run `uip login`.
+
+**REST call the CLI does not cover** — use `uip api`. The CLI adds base URL, organization, tenant and a fresh access token, and prints only the response; the token never reaches the shell or the conversation:
+
+```bash
+uip api "orchestrator_/odata/Folders?\$top=1" --output json
+uip api "<SERVICE_PATH>" --method POST --input "<BODY_FILE>" --output json
+uip api "<SERVICE_PATH>" --level organization --header "x-uipath-tenantid: <TENANT_ID>" --output json
 ```
-UIPATH_URL=https://cloud.uipath.com
-UIPATH_ORGANIZATION_NAME=my_org
-UIPATH_TENANT_NAME=my_tenant
-UIPATH_ACCESS_TOKEN=eyJ...
-UIPATH_ORGANIZATION_ID=...
-UIPATH_TENANT_ID=...
-```
 
-Named profiles store credentials at **`~/.uipath/profiles/<name>/.auth`**. Use named profiles when the user asks to keep multiple UiPath logins on the same machine:
+| Option | Use |
+|---|---|
+| `<SERVICE_PATH>` | Path under `<BASE_URL>/<ORG>/<TENANT>` (or `<BASE_URL>/<ORG>` with `--level organization`), e.g. `orchestrator_/odata/Releases?...`. Omit the leading `/` (Git Bash on Windows rewrites it). Never a full URL |
+| `--method <METHOD>` | `GET` (default), `POST`, `PUT`, `PATCH`, `DELETE` |
+| `--input <FILE>` | Request body; `Content-Type` defaults to `application/json` |
+| `--folder-key <FOLDER_KEY>` | Sends `X-UIPATH-FolderKey` |
+| `--header "<NAME>: <VALUE>"` | Extra headers (variadic). `Authorization` cannot be set |
+| `--output-file <FILE>` | Save body to a file (binary downloads) |
+
+Response: `Data.StatusCode`, `Data.Body` (parsed JSON or text). Non-2xx fails with `Context.HttpStatus` and the service's error in `Data.Body`; `401` exits `2` → ask the user to run `uip login`. If `uip api` is an unknown command, run `uip update`, then retry.
+
+Never extract the access token: no `uip login refresh --output json` for REST, no `curl` with a bearer header, never ask the user to paste a token.
+
+Named profiles keep several UiPath logins on one machine:
 
 ```bash
 uip login --profile dev --output json
@@ -121,15 +146,15 @@ uip login status --profile dev --output json
 uip login which --profile dev --output json
 ```
 
+`uip login which` returns the path of the credentials file behind a login, never its contents. Use it to locate a profile's file; never open the file it names.
+
 Rules:
 
-- `--profile <name>` is a global option. Pass it on every `uip` command that should use that login, for example `uip --profile dev or folders list --output json`.
-- `default` means the built-in unprofiled login and maps back to `~/.uipath/.auth`.
+- `--profile <name>` is a global option. Pass it on every `uip` command that should use that login, for example `uip --profile dev or folders list --output json` and `uip --profile dev api "orchestrator_/odata/Folders" --output json`.
+- `default` means the built-in unprofiled login.
 - Profile names may contain only letters, numbers, `.`, `_`, and `-`. Never use paths like `../prod`.
 - `--profile` and auth-command `--file <folder>` are mutually exclusive. Use one or the other.
-- A missing named profile does not fall back to `~/.uipath/.auth` or Robot credentials. Tell the user to run `uip login --profile <name>`.
-
-These tokens can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case. If a named profile is active, read the path from `uip login which --profile <name> --output json` rather than assuming `~/.uipath/.auth`.
+- A missing named profile does not fall back to the default login or Robot credentials. Tell the user to run `uip login --profile <name>`.
 
 ## Quick Start
 
@@ -378,7 +403,7 @@ Every `uip` command accepts:
 
 - **Starting jobs requires runtimes — check before you offer.** Before proposing to publish, schedule or run anything, check the target folder's runtimes and tell the user which stages can and cannot complete ([end-to-end-readiness-guide.md](references/orchestrator/end-to-end-readiness-guide.md)). Error 2818 "no runtimes configured" means the folder needs machine templates with Unattended/Development runtimes assigned.
 - **For `uip solution` pack / publish / deploy / activate flows, load [`uipath-solution`](/uipath:uipath-solution).** This skill owns the auth and Orchestrator surface those flows depend on; the solution skill owns the lifecycle commands.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
+- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API through `uip api` ([Session Details and REST Authentication](#session-details-and-rest-authentication)). See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
 - **Orchestrator rate-limits some endpoints per tenant.** Filtered `jobs list` / `queue-items list` calls are budgeted per minute, and `--export` on `jobs logs` / `audit-logs list` has a quota of 100 per day. The CLI does not retry a 429 (`ErrorCode: rate_limited`). Read [references/orchestrator/api-limits.md](references/orchestrator/api-limits.md) before writing any poller, loop or script over these commands.
 
 ## References
