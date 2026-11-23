@@ -34,7 +34,7 @@ node `dim(288, 96)` and each container at least `dim(560, 320)`;
 or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:compile-layout-sdk-upgrade:end-->
 
-A hand edit adding nodes leaves new nodes at `layout.nodes[<id>].position` 0,0. After such an edit to a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and place the nodes in source with `.layout()` (below).
+Add nodes in the `.flow.ts` source and recompile; `compile` positions them. A node added to the `.flow` outside `compile` (a hand edit) lands at `layout.nodes[<id>].position` 0,0: on a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and place the nodes in source with `.layout()` (below), then recompile.
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 
