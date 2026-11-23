@@ -262,6 +262,17 @@ If the app uses a client-side router (React Router, Vue Router), see the **Optio
 
 ## Run Locally
 
+Give the user both paths. Do not check which one they have, or suggest installing the extension.
+
+**With the UiPath Apps extension** in VS Code or UiPath Studio Desktop:
+
+- **VS Code:** open the app folder, pick **Preview app** in Run and Debug, and press F5. **Stop** (Shift+F5) ends the preview; closing its tab leaves it running.
+- **Studio Desktop:** for an app in a `.uipx` solution, press **Run** on the ribbon. **Stop** ends the preview.
+
+The preview opens in an editor panel; sign in with its **Connect** button. It needs port 5173 free, so stop any `npm run dev` first, and do not leave a dev server of your own running when you hand off.
+
+**Without it**, from the app root (`<app-name>`, or `<project>/source` in a solution):
+
 ```bash
 npm run dev
 ```

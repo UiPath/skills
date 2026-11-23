@@ -118,6 +118,9 @@ public/du-vs-wc
   relying on it being hoisted out of the widget package breaks the day it isn't.
 - **Exclude `public/du-vs-wc` from eslint** (`globalIgnores`) — the bundle ships `.ts` sources under
   `du-assets/` that are not yours to lint.
+- **The UiPath Apps preview starts Vite itself, so `predev` does not run there.** If `public/du-vs-wc`
+  is missing or older than the installed package (a fresh clone, a pull, a widget upgrade), run
+  `npm run stage-du-wc` once before previewing there.
 
 `vite.config.ts` needs no widget-specific code:
 

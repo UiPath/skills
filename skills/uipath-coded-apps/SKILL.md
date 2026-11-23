@@ -88,6 +88,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 |---|---|
 | **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
+| **Run or preview a Coded Web App locally** | [references/create-web-app.md § Run Locally](references/create-web-app.md#run-locally) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
@@ -235,6 +236,7 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | `The action schema uses the same property name more than once: '<name>' in <sections>` (publish 400) | Root field name reused across `inputs` / `outputs` / `inOuts` / `outcomes` on a new app or first publish | Rename the duplicate (pre-filled editable field → one `inOuts` field), re-run `scripts/validate-action-schema.js`, republish. Existing published app → keep names, validate with `--upgrade`. See [create-action-app.md](references/create-action-app.md#validate-the-schema-required-before-proposing-it). |
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
+| UiPath Apps preview fails: `Port <port> is already serving something` | A dev server, often `npm run dev`, already holds the preview's port | Stop that server (ask first if you did not start it), then have the user start the preview again |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
 
 > **Folder identifier names differ across CLI and SDK.** The CLI uses `--folder-path` (path or display name), `--folder-key` / `UIPATH_FOLDER_KEY` (GUID), and both apply only to the coded-app `deploy` and `delete` commands. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
@@ -252,7 +254,8 @@ When you finish a task, report only what's applicable to the work actually done:
    - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
    - External Application client ID — if one was created this session
 4. **Next steps**, depending on where the task stopped:
-   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
+   - **Scaffolded or built (Web, except dashboards):** both preview paths in [Run Locally](references/create-web-app.md#run-locally): the UiPath Apps preview, or `npm run dev`. Stop any dev server you started first
+   - **Scaffolded only (Action):** `cd <app-name> && npm run dev` to run locally
    - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
    - **Published but not deployed:** run `uip codedapp deploy` to go live
    - **Deployed (Web):** open/share the deployment URL; verify sign-in flow

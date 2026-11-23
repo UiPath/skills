@@ -27,10 +27,15 @@ Vague reports like *"login doesn't work"*, *"fails after login"*, or *"the app i
 Check if already running, else start in the background:
 
 ```bash
-lsof -i :5173 2>/dev/null || (npm run dev &)
+PID=$(lsof -ti tcp:5173 -sTCP:LISTEN 2>/dev/null | head -1)
+if [ -z "$PID" ]; then npm run dev &
+elif ps -o args= -p "$PID" | grep -q uiapp-overlay; then echo "UIPATH_APPS_PREVIEW"
+fi
 ```
 
 Adjust the port if `vite.config.ts` uses a non-default `server.port`.
+
+`UIPATH_APPS_PREVIEW` means a UiPath Apps preview holds the port. Do not reuse or stop it yourself: a second browser on it disconnects the preview's point-and-edit. Ask the user to stop it (**Stop** on the debug toolbar or the Studio Desktop ribbon; closing its tab does not stop it), then rerun this step. If they keep it running, skip the reproduction. If you started a server in place of the preview, stop it when debugging ends, or the preview cannot start.
 
 ### 0b — Check for Chrome and Playwright
 
@@ -306,6 +311,8 @@ If you see a `redirect_uri_mismatch` error, identify the actual URL the browser 
 ## Step 3: Clear Browser State
 
 Stale OAuth tokens and PKCE state cause most auth-callback failures. Clear before re-testing if Step 0 showed a suspicious callback state (e.g. `?code=` still in the URL, or `completeOAuth` errors in the console).
+
+**UiPath Apps preview:** the extension holds the session, so clearing browser state does not reach it, and it restores that session without checking scopes. After a sign-in or scope fix, have the user choose **Sign out of this app** in the preview panel's account menu, then **Connect**.
 
 **Option A — run a clear-state Playwright script** before re-running Step 0c:
 
