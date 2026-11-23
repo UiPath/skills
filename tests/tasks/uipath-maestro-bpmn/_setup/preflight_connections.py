@@ -37,7 +37,6 @@ FAILURE scored against the skill.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 

@@ -463,6 +463,7 @@ jobs:
           # from the runner's process tracking so it outlives this step.
           cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
           #!/usr/bin/env bash
+          echo $$ > "$RUNNER_TEMP/auth-refresher.pid"
           while sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"; do
             if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
               chmod -R o+rwX "$HOME/.uipath"
@@ -474,7 +475,6 @@ jobs:
           REFRESH
           if command -v setsid >/dev/null; then
             env RUNNER_TRACKING_ID="" setsid nohup bash "$RUNNER_TEMP/auth-refresher.sh" >/dev/null 2>&1 &
-            echo $! > "$RUNNER_TEMP/auth-refresher.pid"
           else
             echo "::warning::no setsid; auth refresher not started, runs over ~1h lose grader auth"
           fi

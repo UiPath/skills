@@ -62,11 +62,13 @@ def main() -> int:
     not_uploaded: list[str] = []
     failed: list[str] = []
 
-    try:
-        env = grader_env()
-    except AuthExpired as exc:
-        logger.warning("skipping cleanup, no usable login: %s", exc)
-        return 0
+    env = None
+    if policy != "never":  # preserving needs no login
+        try:
+            env = grader_env()
+        except AuthExpired as exc:
+            logger.warning("skipping cleanup, no usable login: %s", exc)
+            return 0
 
     for path in paths:
         try:
