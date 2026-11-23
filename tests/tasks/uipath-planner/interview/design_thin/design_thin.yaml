@@ -5,9 +5,10 @@ description: >
   asked. After the Phase 1 summary and before scope confirmation, one question offers the interview,
   counting the points that change the design (P0). Accepted, only P0 points are asked, with no
   clarifying-questions round on top; answered points carry no marker. The SDD records the interview in
-  its Document History and holds every other gap as an Action Required item. Step 1.5 asks no point
-  the interview asked or left open. The closing counts the open items by role and names
-  `interview <SDD>`. The run stops at the SDD: no genome, no build. A simulated process owner answers.
+  its Document History and holds every other gap as an Action Required item, which tells its reader
+  how to answer, the interview included. Step 1.5 asks no point the interview asked or left open. The
+  closing naming the open items by role and `interview <SDD>` is recorded as advisory. The run stops
+  at the SDD: no genome, no build. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -140,7 +141,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts open items by role and names `interview <SDD>`"
+    description: "Advisory: the closing counts open items by role and names `interview <SDD>`"
     include_agent_output: true
     include_reference: false
     prompt: |
@@ -148,8 +149,9 @@ success_criteria:
       the items still open, split by the role that answers them (the process owner, the system's owner,
       the environment's owners …), and name the interview command for the SDD, in the form
       `interview <SDD file name>`. Score 1.0 when both are there, 0.5 with one, 0.0 with neither.
-    weight: 1.5
-    pass_threshold: 1.0
+    # Advisory: the SDD's How to answer is the gated record; the closing line is recorded, not gated.
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Design does not scaffold, build or run a project"

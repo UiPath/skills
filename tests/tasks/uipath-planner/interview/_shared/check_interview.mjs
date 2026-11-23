@@ -10,7 +10,7 @@
 //   entries <genome> <state> <ids>...     each Open Decisions entry is in that state: open, decided, withdrawn;
 //                                         ids as `3` or `2-11`; <genome> is a path or a glob such as `*-genome.md`
 //   items <file> <answered|blank> <ids>... each item `**D<n>. …**`, `**CQ<n>. …**` or `**R<n>. …**` (a readiness
-//                                         item may carry both: `**R15. D1. …**`) of an SDD's Action Required, or
+//                                         item may carry both: `**R15. D1. …**`, `**R15. D1 — …**`) of an SDD's Action Required, or
 //                                         anywhere in a readiness file, is answered (its `Answer` line filled, or the
 //                                         item gone) or blank (present, unfilled); ids as `D3`, `D2-11`, `CQ10`, `R3-6`.
 //                                         An item is its heading and the `- ` lines under it; any other text ends it.
@@ -124,7 +124,7 @@ switch (command) {
     const answers = new Map();
     let current = [];
     for (const l of body.split("\n")) {
-      const item = /^\*\*(?:(R\d+)\.\s+)?((?:D|CQ|R)\d+)\.\s/.exec(l);
+      const item = /^\*\*(?:(R\d+)\.\s+)?((?:D|CQ|R)\d+)(?:[.:]|\s+[—–-])\s/.exec(l);
       if (item) {
         current = [item[1], item[2]].filter(Boolean);
         for (const id of current) answers.set(id, "");

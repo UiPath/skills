@@ -110,6 +110,14 @@ def test_items_takes_both_ids_of_a_readiness_heading_and_ends_an_item_at_other_t
     assert grade(tmp_path, "items", "x-readiness.md", "blank", "D6").returncode == 0
 
 
+def test_items_takes_a_dash_after_the_id(tmp_path):
+    (tmp_path / "x-readiness.md").write_text(
+        "**R13. D1 — Which rates?**\n- **Answer:**\n\n**R14. D2 — Which day?**\n- **Answer:** a\n", encoding="utf-8")
+    assert grade(tmp_path, "items", "x-readiness.md", "blank", "R13", "D1").returncode == 0
+    assert grade(tmp_path, "items", "x-readiness.md", "answered", "D2").returncode == 0
+    assert grade(tmp_path, "count", "x-readiness.md", r"^\*\*(?:R\d+\.\s+)?D[12](?:[.:]|\s+[—–-])\s", "2").returncode == 0
+
+
 def test_count_needs_the_minimum(sandbox):
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "1").returncode == 0
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "2").returncode == 1

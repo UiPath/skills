@@ -109,7 +109,8 @@ success_criteria:
     include_reference: false
     prompt: |
       Read the agent's final message after it wrote the genome (an automation blueprint). It must count
-      the questions still open in the genome by the role that answers them, and offer the interview on
-      them, naming `interview <genome file name>`. Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+      the genome's open decisions by the role that answers them (configuration values need no role), and
+      offer the interview on them, naming `interview <genome file name>`. Score 1.0 when both hold, 0.5
+      with one, 0.0 with neither.
     weight: 1.5
     pass_threshold: 1.0
