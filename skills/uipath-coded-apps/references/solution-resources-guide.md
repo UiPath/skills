@@ -36,7 +36,7 @@ export class ProjectResources {
 1. **Literal values only.** CLI and Studio Web read the file as text; a computed value is skipped with a warning.
 2. **Field name:** camelCase of the resource name, as the CLI writes it (`invoiceThreshold` for `Invoice Threshold`).
 3. **Folder:** existing tenant resource keeps its tenant folder; a resource the solution creates and deploys has no `folderPath`.
-4. **Entity:** `name` only (Data Fabric entities are not folder-scoped). **Connection:** `id` plus connector key; admins remap it by id.
+4. **Entity:** `name` only; the declaration has no folder field, whether the entity is tenant-scoped or folder-scoped (section 2 treats the two differently). **Connection:** `id` plus connector key; admins remap it by id.
 5. **Never write `bindings_v2.json`.** Pack, push, and Studio Web publish/debug derive it from this file.
 
 ## 2. Add every declared resource to the solution
@@ -57,7 +57,8 @@ Run the steps from the solution root (folder holding the `.uipx`) or pass `--sol
    | Declared as | Command |
    |---|---|
    | Existing tenant resource (has `folderPath`) | `uip solution resources add --source remote --kind <KIND> --name "<NAME>" --folder-path "<FOLDER_PATH>" --output json` |
-   | Entity | `uip solution resources add --source remote --kind Entity --name "<ENTITY_NAME>" --output json` (add `--folder-path` only when the name is ambiguous) |
+   | Folder-scoped entity (created in a folder, e.g. `uip df entities create --folder-key`) | `uip solution resources add --source remote --kind Entity --name "<ENTITY_NAME>" --folder-path "<FOLDER_PATH>" --output json` |
+   | Tenant-scoped entity (created without a folder) | Do not add: it is not a solution resource. The destination tenant must already hold an entity with the same name and schema (fields and SQL types); the solution does not provision it. |
    | Connection | `uip solution resources add --source remote --kind Connection --cloud-key <CONNECTION_ID> --output json` |
 <!--skill-flavor:local-stub-row:start-->
    | Resource the solution creates (asset/bucket/queue without `folderPath`) | `uip solution resources add --source local --kind <KIND> --name "<NAME>" --output json` (asset: add `--type <ASSET_TYPE>`) |
@@ -67,7 +68,7 @@ Run the steps from the solution root (folder holding the `.uipx`) or pass `--sol
 <!--skill-flavor:add-idempotency:start-->
    Repeating an identical add returns `Status: "Unchanged"`.
 <!--skill-flavor:add-idempotency:end-->
-3. List again and confirm every declared resource is present. On no match or several matches, fix `--name` / `--folder-path` (or pass `--cloud-key`) and retry once; still failing, stop and name the missing resource to the user.
+3. List again and confirm every declared resource except tenant-scoped entities is present. On no match or several matches, fix `--name` / `--folder-path` (or pass `--cloud-key`) and retry once; still failing, stop and name the missing resource to the user.
 
 ## 3. Reach resources only through their handles
 
@@ -100,5 +101,6 @@ An omitted `folderPath` means the folder the app runs in (deploy folder meta tag
 | `getAll()` then `.find(x => x.name === '<NAME>')` | `getByName(ProjectResources.<FIELD>)` |
 | `{ folderId: <NUMBER> }` | Handle's `folderPath` — folder ids differ per environment |
 | `getByName('<NAME>', { folderPath: '<FOLDER_PATH>' })` repeating a declaration | `getByName(ProjectResources.<FIELD>)` — one source of truth |
-| A resource used in code but not declared, or declared but not in the solution | Sections 1 and 2 |
+| A resource used in code but not declared, or declared but not in the solution (tenant-scoped entities excepted) | Sections 1 and 2 |
+| `uip solution resources add` for a tenant-scoped entity | Leave it out of the solution; the destination tenant holds it |
 | Hand-written `bindings_v2.json` | Declare in `uipath_resources.ts` |
