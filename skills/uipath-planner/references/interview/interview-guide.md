@@ -100,7 +100,7 @@ Option 1 is Recommended. After writing, the offer is § After Writing's first qu
 4. **New gaps.** An answer that opens a gap adds an entry: before writing, a P0 one is asked in turn and any other is written as an item; after writing, it is a new entry at the end of the genome's Open Decisions, with its default ([open-questions-guide.md](../shared/open-questions-guide.md) § Where Answers Go).
 5. **Unclear or partial answers.** Take the best reading, write it as the verb writes any gap (`[SME REVIEW]` in an SDD, `*[Inferred: D<n>]*` in a genome) and move on; never ask the same entry twice.
 6. **Stop** when the user says stop or accepts defaults for everything left, or when the user's roles have no entry left.
-7. **What remains.** The closing summary counts the items still open by role, and names how each reaches whoever answers it: the SDD; for a genome with no SDD, an offer to write it ([edit-guide.md](../edit/edit-guide.md), "Write the SDD"); the readiness file for the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
+7. **What remains.** The closing summary counts the items still open by role, and says how each reaches whoever answers it: an SDD item reaches its answerer in the SDD; with no SDD, the summary offers to write it ([edit-guide.md](../edit/edit-guide.md), "Write the SDD") whenever an open item's answerer is not in the session; the readiness file carries the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
 
 ## After Writing
 
