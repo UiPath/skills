@@ -475,7 +475,7 @@ jobs:
           lease() { [ "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" = "$$" ]; }
           while [ "$(date +%s)" -lt "$deadline" ] && lease; do
             sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"
-            lease || exit 0
+            lease && [ "$(date +%s)" -lt "$deadline" ] || exit 0
             if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
               chmod -R o+rwX "$HOME/.uipath"
               grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
@@ -793,6 +793,7 @@ jobs:
       # and the evalboard blob — and AFTER the cleanup above, which removes tens
       # of thousands of files this walk would otherwise scan for nothing.
       - name: Redact secrets from the eval report
+        id: scrub
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
@@ -802,69 +803,10 @@ jobs:
           E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
-        run: |
-          python - <<'PY'
-          import os
-          import pathlib
+        # Fail closed: on any error the run dir is wiped and this step fails; the
+        # publishing steps below require its success, so nothing is published.
+        run: python3 .github/scripts/scrub-run-artifacts.py /tmp/runs
 
-          # Every secret this job forwards into the run, not just the ones
-          # smoke-skills.yml strips. It matters more here than there: this report
-          # is uploaded twice (a GitHub artifact and, when the identity is wired,
-          # an evalboard blob) and its run.md is echoed into the job summary.
-          names = (
-              "AWS_BEARER_TOKEN_BEDROCK",
-              "CODEX_API_KEY",
-              "GEMINI_API_KEY",
-              "E2E_PROCESS_KEY",
-              "E2E_LONG_PROCESS_KEY",
-              "UIPATH_ROPC_CLIENT_SECRET",
-              "UIPATH_BOT_PASSWORD",
-              # The ROPC user token, which the delegate host and the in-container
-              # uip CLI both use. Read from the file rather than the environment:
-              # this workflow mints it at runtime, so no secret carries it.
-              "UIPATH_CLI_AUTH_TOKEN",
-          )
-          values = [os.environ[n] for n in names if len(os.environ.get(n, "")) >= 8]
-
-          auth = pathlib.Path(os.path.expanduser("~/.uipath/.auth"))
-          if auth.is_file():
-              for line in auth.read_text(encoding="utf-8", errors="ignore").splitlines():
-                  # Token only. Redacting the org/tenant SLUGS as well would
-                  # garble every report that legitimately names the tenant.
-                  if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
-                      values.append(line.split("=", 1)[1])
-
-          # Every token issued this run (the file only holds the latest).
-          issued = pathlib.Path(os.environ["RUNNER_TEMP"]) / "issued-tokens"
-          if issued.is_file():
-              values += [
-                  line.strip()
-                  for line in issued.read_text(encoding="utf-8", errors="ignore").splitlines()
-                  if len(line.strip()) > 28
-              ]
-
-          if not values:
-              raise SystemExit(0)
-
-          # Every file, whatever its name, extension or encoding: a workspace dump
-          # (.txt, .env, no extension, UTF-16) is as public as the report. Raw
-          # bytes, so nothing is skipped on decode; a file that cannot be read
-          # or rewritten is deleted rather than uploaded unscrubbed (fail closed).
-          needles = [v.encode("utf-8") for v in values]
-          needles += [v.encode("utf-16-le") for v in values]
-          for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if path.is_symlink() or not path.is_file():
-                  continue
-              try:
-                  data = path.read_bytes()
-                  redacted = data
-                  for needle in needles:
-                      redacted = redacted.replace(needle, b"***")
-                  if redacted != data:
-                      path.write_bytes(redacted)
-              except OSError:
-                  path.unlink(missing_ok=True)
-          PY
       - name: Report auth refresher status
         if: always()
         run: |
@@ -892,7 +834,7 @@ jobs:
       # ==================================================================
 
       - name: Publish the run to evalboard
-        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        if: always() && steps.scrub.outcome == 'success' && env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         env:
           # The only step in the job that sees the credential. Mirrors how the ADO
@@ -986,7 +928,7 @@ jobs:
       # path, with the literal as a fallback: a composite action's outputs may not
       # propagate from a step that exited non-zero, and this step runs on failure.
       - name: Append the run report to the job summary
-        if: always()
+        if: always() && steps.scrub.outcome == 'success'
         env:
           RUN_MD: ${{ steps.eval.outputs.run-md-path }}
         run: |
@@ -999,7 +941,7 @@ jobs:
           fi
 
       - name: Upload eval report
-        if: always()
+        if: always() && steps.scrub.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: coder-eval-linux-${{ github.run_id }}
