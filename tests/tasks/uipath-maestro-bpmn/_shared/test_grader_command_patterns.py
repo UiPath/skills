@@ -982,26 +982,26 @@ _ADVISORY = [
     (
         "evaluate/local_crud.yaml",
         "created a solution",
-        ["uip solution init Foo", "uip maestro bpmn init SmokeEval"],
-        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn init && ls", "uip maestro bpmn check Process.bpmn", "uip solution init --help", "uip solution new -h"],
+        ["uip solution init Foo", "uip maestro bpmn init SmokeEval", "uip solution init ./Foo", "uip solution init --output json Foo"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn init && ls", "uip maestro bpmn check Process.bpmn", "uip solution init --help", "uip solution new -h", "uip solution init Foo --help"],
     ),
     (
         "evaluate/evaluator_type_choice.yaml",
         "created the solution",
-        ["uip solution init Bar", "uip maestro bpmn init EvalTypeChoice"],
-        ["uip maestro bpmn eval evaluators create x --type exact-match", "uip solution init --help", "uip solution new -h"],
+        ["uip solution init Bar", "uip maestro bpmn init EvalTypeChoice", "uip solution init ./Foo", "uip solution init --output json Foo"],
+        ["uip maestro bpmn eval evaluators create x --type exact-match", "uip solution init --help", "uip solution new -h", "uip solution init Foo --help"],
     ),
     (
         "evaluate/no_auto_upload.yaml",
         "created the solution",
-        ["uip solution init Baz", "uip maestro bpmn init LocalOnly"],
-        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn check Process.bpmn", "uip solution init --help", "uip solution new -h"],
+        ["uip solution init Baz", "uip maestro bpmn init LocalOnly", "uip solution init ./Foo", "uip solution init --output json Foo"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn check Process.bpmn", "uip solution init --help", "uip solution new -h", "uip solution init Foo --help"],
     ),
     (
         "evaluate/simulation/simulation_crud.yaml",
         "Solution-creation telemetry",
-        ["uip solution init Foo", "uip maestro bpmn init SimEval"],
-        ["uip maestro bpmn eval simulation add a --set s", "uip solution init --help", "uip solution new -h"],
+        ["uip solution init Foo", "uip maestro bpmn init SimEval", "uip solution init ./Foo", "uip solution init --output json Foo"],
+        ["uip maestro bpmn eval simulation add a --set s", "uip solution init --help", "uip solution new -h", "uip solution init Foo --help"],
     ),
 ]
 
