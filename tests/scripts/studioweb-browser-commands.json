@@ -217,7 +217,7 @@
       {
         "file": "SKILL.md",
         "command": "codedapp delete",
-        "reason": "Critical Rule 23 (confirm before a delete). Studio Web's host-scope override (Studio Web Command Scope) says `uip codedapp` does not run here, so the rule is Node-only guidance."
+        "reason": "The confirm-before-delete Critical Rule. Studio Web's host-scope override (Studio Web Command Scope) says `uip codedapp` does not run here, so the rule is Node-only guidance."
       },
       {
         "file": "references/commands-reference.md",
