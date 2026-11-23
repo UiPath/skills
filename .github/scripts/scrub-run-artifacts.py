@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Fail-closed scrub of a coder-eval run directory before anything is published.
 
-Every secret this job forwarded, plus every UiPath token issued during the run
-(the mounted .auth only holds the latest), is replaced in EVERY file as raw
-bytes (UTF-8 and UTF-16-LE). Anything that cannot be inspected is deleted, not
-published: symlinks and archives or compressed files (a token inside a ZIP or
-gzip member survives a byte replace). A final verify pass re-reads every file.
+Allow-list, not deny-list: only clean text is published. A file survives only if
+it is strict UTF-8 (or BOM-marked UTF-16) with no NUL bytes and no archive magic;
+symlinks, binaries, archives and compressed files are withheld (a token inside a
+ZIP or gzip member survives a byte replace). In the kept files every secret this
+job forwarded, plus every UiPath token issued during the run (the mounted .auth
+only holds the latest), is replaced as raw bytes in its UTF-8, UTF-16-LE and
+base64 (three alignments) forms; JWT characters need no JSON or URL escaping.
+A final verify pass re-reads every file.
 On any error the whole run directory is wiped, a fixed message is printed and the
 exit code is 1, so the workflow's publishing steps (gated on this step's success)
 publish nothing. Usage: scrub-run-artifacts.py <run_dir>
@@ -13,6 +16,7 @@ publish nothing. Usage: scrub-run-artifacts.py <run_dir>
 
 from __future__ import annotations
 
+import base64
 import os
 import pathlib
 import shutil
@@ -34,8 +38,36 @@ _MAGIC = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08", b"\x1f\x8b", b"BZh", b"\x
 MIN_TOKEN = 28
 
 
-def _is_archive(head: bytes) -> bool:
-    return head.startswith(_MAGIC) or head[257:262] == b"ustar"
+def _is_text(data: bytes) -> bool:
+    """Clean text only: no archive magic, no NUL, strict UTF-8 or BOM UTF-16."""
+    if data.startswith(_MAGIC) or data[257:262] == b"ustar":
+        return False
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        try:
+            data.decode("utf-16")
+            return True
+        except UnicodeDecodeError:
+            return False
+    if b"\x00" in data:
+        return False
+    try:
+        data.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
+def _needles(values: list[str]) -> list[bytes]:
+    out: list[bytes] = []
+    for v in values:
+        raw = v.encode("utf-8")
+        out += [raw, v.encode("utf-16-le")]
+        for skew in range(3):  # base64 of the value at each alignment
+            enc = base64.b64encode(b"x" * skew + raw).decode()
+            lead = (4 * skew + 2) // 3  # chars that depend on the skew bytes
+            tail = enc.rstrip("=")
+            out.append(tail[lead:-1].encode() if len(tail) - lead > 12 else tail.encode())
+    return out
 
 
 def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) -> list[str]:
@@ -54,7 +86,7 @@ def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) 
 
 def scrub(root: pathlib.Path, values: list[str]) -> int:
     """Scrub `root` in place; returns the number of withheld (deleted) files."""
-    needles = [v.encode("utf-8") for v in values] + [v.encode("utf-16-le") for v in values]
+    needles = _needles(values)
     withheld = 0
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
@@ -64,7 +96,7 @@ def scrub(root: pathlib.Path, values: list[str]) -> int:
         if not path.is_file():
             continue
         data = path.read_bytes()
-        if _is_archive(data[:300]):
+        if not _is_text(data):
             path.unlink()
             withheld += 1
             continue
@@ -96,7 +128,7 @@ def main(argv: list[str]) -> int:
         print("::error::scrub failed; run files withheld from publication")
         return 1
     if withheld:
-        print(f"::warning::{withheld} archive/symlink file(s) withheld from publication")
+        print(f"::warning::{withheld} non-text/symlink file(s) withheld from publication")
     return 0
 
 

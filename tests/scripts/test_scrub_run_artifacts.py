@@ -34,10 +34,34 @@ def _env(tmp_path, monkeypatch, issued=(TOKEN,)):
 def test_plain_and_utf16_and_extensionless_are_redacted(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
     (run / "notes.txt").write_text(f"dump {TOKEN}", encoding="utf-8")
-    (run / "envdump").write_bytes(TOKEN.encode("utf-16-le"))
-    (run / "bad.log").write_bytes(b"\xff\xfe" + TOKEN.encode() + b"\xff")
+    (run / "envdump").write_bytes(b"\xff\xfe" + TOKEN.encode("utf-16-le"))
+    (run / "bad.log").write_bytes(b"\xff" + TOKEN.encode() + b"\xff")  # not UTF-8: withheld
     assert scrub_mod.main(["x", str(run)]) == 0
+    assert sorted(p.name for p in run.iterdir()) == ["envdump", "notes.txt"]
     assert all(TOKEN.encode() not in p.read_bytes() for p in run.iterdir())
+
+
+@pytest.mark.parametrize("skew", [0, 1, 2])
+def test_base64_forms_are_redacted(tmp_path, monkeypatch, skew):
+    import base64
+
+    run = _env(tmp_path, monkeypatch)
+    blob = base64.b64encode(b"a" * skew + TOKEN.encode()).decode()
+    (run / "auth.txt").write_text(f"Authorization: Basic {blob}", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    text = (run / "auth.txt").read_text(encoding="utf-8")
+    assert blob not in text and "***" in text
+
+
+def test_binary_and_unknown_formats_are_withheld(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    import zlib
+
+    (run / "shot.png").write_bytes(b"\x89PNG\r\n\x1a\n" + TOKEN.encode() + b"\x00\x01")
+    (run / "stream.bin").write_bytes(zlib.compress(TOKEN.encode()))
+    (run / "ok.md").write_text("fine", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    assert [p.name for p in run.iterdir()] == ["ok.md"]
 
 
 def test_token_inside_compressed_report_is_withheld(tmp_path, monkeypatch):
