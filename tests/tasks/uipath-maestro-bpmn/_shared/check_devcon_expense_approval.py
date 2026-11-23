@@ -131,6 +131,7 @@ from _shared.bpmn_check import (  # noqa: E402
     has_uipath_extension,
     parse_bpmn,
     text_content,
+    vars_ref,
 )
 
 AMOUNT_RE = re.compile(r"amount", re.IGNORECASE)
@@ -196,14 +197,15 @@ def _vars_match(expr) -> re.Match | None:
     if not isinstance(expr, str):
         return None
     text = expr.strip()
-    if text.startswith("="):
-        text = text[1:]
-    return _VARS_EXPR.match(text)
+    if not text.startswith("="):
+        text = "=" + text
+    path = vars_ref(text, fields=True)
+    return _VARS_EXPR.match(f"vars.{path}") if path else None
 
 
 def expr_var_ref(expr) -> str | None:
-    """The base variable id an `=vars.<id>` or `=vars.<id>.<field>` value
-    expression references, or None."""
+    """The base variable id an `=vars.<id>` / `=js:vars.<id>` or
+    `=vars.<id>.<field>` value expression references, or None."""
     match = _vars_match(expr)
     return match.group(1) if match else None
 
