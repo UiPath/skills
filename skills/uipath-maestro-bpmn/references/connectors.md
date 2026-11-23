@@ -127,10 +127,10 @@ uip is connections ping <CONNECTION_ID> --output json                 # Data.Sta
 ```
 
 - With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in, else the one with `IsDefault: Yes`, else the first one listed, skipping every connection the next bullet rules out (including the requester's own personal one), and name it on the final report's `Assumed:` line.
-- A connection is a sender's identity. Never bind, or offer on an outline, a connection that is another person's
-  (its folder is `<USER_NAME>'s workspace`, or its Name is someone else's email), and never bind one as a stand-in for a
-  mailbox, channel or account the request names (`ar@…`) that has no connection. Bind the requester's own personal connection
-  only when they say to, or pick *Build it* on a draft gate that named it. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
+- A connection is a sender's identity. Never bind, or offer on an outline, another person's personal connection (its folder is `<USER_NAME>'s workspace`).
+  A connection in a shared folder belongs to the team whoever its `Owner` is, even when its Name is an email: it is a normal candidate, chosen by the bullet above. "Use whatever exists" means nobody will answer which one.
+  Never bind any connection as a stand-in for a mailbox, channel or account the request names (`ar@…`) that has no connection.
+  Bind the requester's own personal connection only when they say to, or pick *Build it* on a draft gate that named it. When no connection is left to bind, leave the step unbound (§7) and name the missing connection on `Needs:`.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
