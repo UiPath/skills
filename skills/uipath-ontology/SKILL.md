@@ -49,6 +49,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 15. **What the user gives is authoritative.** Ask before changing anything the user stated. Produce the schema, the mapping and the optional summary and context; no business rules, functions or actions.
 16. **Constraints are optional.** The ontology service stores a SHACL constraints file without using it, so write one only when the user supplies one or asks for it. Record required, range and value-list rules in the schema's `rdfs:comment` text ([owl-patterns-guide.md](references/owl-patterns-guide.md)).
 17. **No `uip ont`, no build.** When a `uip ont` command fails with `unknown command 'ont'` (Stage 1 checks this before anything else), the installed `uip` predates the ontology tool. Stop, tell the user to update `uip` and re-run, and report what is done so far (the saved model, the local entities). Never pack, refresh or import resources to work around it: a package without the ontology is not the result.
+18. **No Ontology service, no ontology.** When `uip ont validate`, `get` or `list` fails with `ErrorCode: not_supported`, the connected environment has no Ontology service; Automation Suite ships none. Stop: tell the user ontologies need an Automation Cloud tenant, and report what is done so far (the saved model, the local entities, the artifacts). Never retry, re-login, pack as validated, or deploy to that environment.
 
 ## Paths
 
@@ -275,7 +276,8 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 | Signal | Action |
 |---|---|
 | `ValidationFailed`, `ArtifactCheckFailed` | The ERRORs are in `Data` (`Data.violations`); fix each per [errors-guide.md](references/errors-guide.md), then `files add` and validate |
-| `ServiceValidationUnavailable` | Ask for `uip login`, then validate again; stop if the service stays unreachable |
+| `ServiceValidationUnavailable` with `ErrorCode: authentication_required` | Ask for `uip login`, then validate again; stop if the service stays unreachable |
+| `ErrorCode: not_supported` on `validate`, `get` or `list` | No Ontology service on this environment (Automation Suite): stop and say an Automation Cloud tenant is needed (Critical Rule 18) |
 | `ServiceValidationFailed` | Stop and tell the user; never pack as validated |
 | `XF-012`, `XF-013` | Entity missing from the solution or column not a field: author or fix the local entity, link it with `uip ont update --add-entity`, validate |
 | `XF-017`, `RELATIONSHIP_CYCLE` | Keep one `RELATIONSHIP` field per relationship; the inverse lives in the schema only |
