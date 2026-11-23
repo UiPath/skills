@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "w1",
+      "Name": "Webhook Data",
+      "TraceId": "cc000000-0000-4000-8000-000000000001",
+      "Attributes": "{\"Data\": {\"payload\": {\"id\": \"5008e00000ZZZZZ\", \"eventType\": \"UPDATED\", \"objectName\": \"Case\", \"data\": {\"CaseNumber\": \"CASE-0042\"}}}}"
+    },
+    {
+      "Id": "w2",
+      "Name": "Webhook User Filters",
+      "TraceId": "cc000000-0000-4000-8000-000000000001",
+      "Attributes": "{\"DataFilters\": {\"input\": {\"filter\": \"(Id == '5008e00000AAAAA')\"}, \"output\": {\"matched\": []}}}"
+    }
+  ]
+}

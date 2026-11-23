@@ -1,0 +1,144 @@
+{
+  "Result": "Success",
+  "Code": "TriggerTraceList",
+  "Pagination": {
+    "Returned": 12,
+    "Limit": 60,
+    "Total": 12,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "TraceId": "aa000000-0000-4000-8000-000000000000",
+      "StartTime": "2026-11-23T14:00:00Z",
+      "EndTime": "2026-11-23T14:00:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa010000-0000-4000-8000-000000000001",
+      "StartTime": "2026-11-23T13:55:00Z",
+      "EndTime": "2026-11-23T13:55:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa020000-0000-4000-8000-000000000002",
+      "StartTime": "2026-11-23T13:50:00Z",
+      "EndTime": "2026-11-23T13:50:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa030000-0000-4000-8000-000000000003",
+      "StartTime": "2026-11-23T13:45:00Z",
+      "EndTime": "2026-11-23T13:45:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa040000-0000-4000-8000-000000000004",
+      "StartTime": "2026-11-23T13:40:00Z",
+      "EndTime": "2026-11-23T13:40:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa050000-0000-4000-8000-000000000005",
+      "StartTime": "2026-11-23T13:35:00Z",
+      "EndTime": "2026-11-23T13:35:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa060000-0000-4000-8000-000000000006",
+      "StartTime": "2026-11-23T13:30:00Z",
+      "EndTime": "2026-11-23T13:30:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa070000-0000-4000-8000-000000000007",
+      "StartTime": "2026-11-23T13:25:00Z",
+      "EndTime": "2026-11-23T13:25:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa080000-0000-4000-8000-000000000008",
+      "StartTime": "2026-11-23T13:20:00Z",
+      "EndTime": "2026-11-23T13:20:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa090000-0000-4000-8000-000000000009",
+      "StartTime": "2026-11-23T13:15:00Z",
+      "EndTime": "2026-11-23T13:15:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa100000-0000-4000-8000-000000000010",
+      "StartTime": "2026-11-23T13:10:00Z",
+      "EndTime": "2026-11-23T13:10:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 1,
+      "EventsFetched": 2,
+      "Notified": true,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    },
+    {
+      "TraceId": "aa110000-0000-4000-8000-000000000011",
+      "StartTime": "2026-11-23T13:05:00Z",
+      "EndTime": "2026-11-23T13:05:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fe9ac74e-1f48-4ebe-ae13-39060acf0763"
+    }
+  ]
+}

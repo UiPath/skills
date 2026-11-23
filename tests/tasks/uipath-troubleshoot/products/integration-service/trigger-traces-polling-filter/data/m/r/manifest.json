@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Outlook POLLING trigger. The filter span uses result.filter / result.matches / result.nonMatches -- not the webhook DataFilters.input/output keys. An agent that looks only for DataFilters finds nothing and reports no filter data. First-match-wins.",
+  "rules": [
+    { "match": "or triggers list --type event --folder-path ISTriggersReliability/Outlook", "file": "triggers-event-list.json" },
+    { "match": "is trigger-traces list", "file": "traces-fetched-not-matched.json" },
+    { "match": "traces spans get", "file": "spans-polling.json" },
+    { "match": "is correlated-jobs list", "file": "correlated-empty.json" },
+    { "match": "is connections ping", "file": "connection-healthy.json" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "TriggerTraceList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 60,
+    "Total": 1,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "TraceId": "cc000000-0000-4000-8000-000000000001",
+      "StartTime": "2026-11-23T09:40:00Z",
+      "EndTime": "2026-11-23T09:40:01Z",
+      "Outcome": "Success",
+      "EventsMatched": 0,
+      "EventsFetched": 2,
+      "Notified": false,
+      "DataReceived": true,
+      "ConnectionId": "fab4793a-fd51-4ed2-ad72-281245407ff3"
+    }
+  ]
+}

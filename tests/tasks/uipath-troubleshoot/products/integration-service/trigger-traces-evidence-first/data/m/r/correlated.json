@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "CorrelatedJobList",
+  "Data": [
+    {
+      "EventHistoryId": "eb5cc304-42e7-f111-91f3-0022482a93b5",
+      "JobId": "251503171",
+      "JobOrQueueItemKey": "c3f9a55c-0a0e-431b-9ca8-f9bb30cbf369",
+      "DispatchStatus": 0,
+      "DispatchErrorCode": null,
+      "DispatchError": null,
+      "CallbackTime": "2026-11-23T14:00:01.400Z",
+      "EventType": "ISSUE_CREATED",
+      "ObjectType": "issues",
+      "ObjectId": "ISS-4821"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "_doc": "Trigger that polled cleanly for 24h: every cycle Success, events fetched and matched, dispatch confirmed. The connection and the enabled flag are healthy, so a configuration-first investigation finds nothing and wastes the run. First-match-wins.",
+  "rules": [
+    { "match": "or triggers list --type event --folder-path ISTriggersReliability/Jira", "file": "triggers-event-list.json" },
+    { "match": "is trigger-traces list --trigger-key 5bd87595-39bd-4f52-83ee-7ce521e371b5", "file": "traces-healthy.json" },
+    { "match": "is trigger-traces list --trigger-id 571ca280-16d1-f111-bf5b-000d3a66d571", "file": "traces-healthy.json" },
+    { "match": "is correlated-jobs list", "file": "correlated.json" },
+    { "match": "traces spans get", "file": "spans-polling.json" },
+    { "match": "is connections ping", "file": "connection-healthy.json" },
+    { "match": "or triggers history", "file": "history-empty.json" },
+    { "match": "or jobs list", "file": "jobs-list.json" }
+  ]
+}

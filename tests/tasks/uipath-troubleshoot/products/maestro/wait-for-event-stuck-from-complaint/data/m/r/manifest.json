@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "_doc": "Instances stuck on a mid-process Wait-For-Event. The user names only a process and 'running for hours' -- no instance id, no URL. The agent must discover the instances, read intSvcTriggerId off their spans, then correlate the WFE filter against the record the user actually updated. First-match-wins.",
+  "rules": [
+    { "match": "maestro bpmn instances list", "file": "instances-running.json" },
+    { "match": "traces spans get 7c1e521f-0001", "file": "spans-instance.json" },
+    { "match": "traces spans get 7c1e521f-0002", "file": "spans-instance.json" },
+    { "match": "traces spans get 7c1e521f-0003", "file": "spans-instance.json" },
+    { "match": "traces spans get cc000000", "file": "spans-wfe-trace.json" },
+    { "match": "traces spans get", "file": "spans-wfe-trace.json" },
+    { "match": "is trigger-traces list --instance-id", "file": "traces-wfe.json" },
+    { "match": "is trigger-traces list", "file": "traces-wfe.json" },
+    { "match": "is connections ping", "file": "connection-healthy.json" }
+  ]
+}

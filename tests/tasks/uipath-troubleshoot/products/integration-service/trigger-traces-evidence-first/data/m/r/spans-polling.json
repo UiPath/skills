@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "Id": "a1",
+      "Name": "Data - 1",
+      "TraceId": "aa000000-0000-4000-8000-000000000000",
+      "Attributes": "{\"request\": {\"query\": {\"where\": \"created>'2026-11-23T13:55:00Z'\", \"pageSize\": 50}, \"path\": \"/issues\"}, \"response\": [{\"id\": \"ISS-4821\", \"created\": \"2026-11-23T13:59:50Z\"}, {\"id\": \"ISS-4820\", \"created\": \"2026-11-23T13:40:00Z\"}]}"
+    },
+    {
+      "Id": "a2",
+      "Name": "UserFilters - 1",
+      "TraceId": "aa000000-0000-4000-8000-000000000000",
+      "Attributes": "{\"result\": {\"filter\": \"(project == 'SUP')\", \"matches\": [{\"id\": \"ISS-4821\", \"eventType\": \"CREATED\"}], \"nonMatches\": [{\"id\": \"ISS-4820\", \"eventType\": \"CREATED\"}]}}"
+    }
+  ]
+}

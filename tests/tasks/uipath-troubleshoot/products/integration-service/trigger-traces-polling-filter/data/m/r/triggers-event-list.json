@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "TriggerList",
+  "Data": [
+    {
+      "Key": "9d41e8b2-7c55-4a1e-9f3a-5d0c2b7e4411",
+      "Name": "ProcessEmails_EventTrigger-Wait for Email",
+      "Enabled": true,
+      "ReleaseName": "ProcessEmails",
+      "ConnectorKey": "uipath-microsoft-outlook365",
+      "Operation": "EMAIL_RECEIVED",
+      "ObjectName": "messages",
+      "TriggerActionId": "c71f22ad-55e0-f111-91f3-0022482a93b5"
+    }
+  ]
+}

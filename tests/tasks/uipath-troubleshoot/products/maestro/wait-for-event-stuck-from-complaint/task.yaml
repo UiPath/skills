@@ -1,0 +1,106 @@
+task_id: skill-troubleshoot-maestro-wait-for-event-stuck-from-complaint
+description: >
+  Instances stuck on a mid-process Wait-For-Event, reported as a complaint with
+  no instance id and no URL -- "running for hours even though I updated the
+  cases". The agent must discover the stuck instances itself, confirm the
+  element is a WFE by its intSvcTriggerId, and read the correlation filter to
+  find that it names a different record than the one updated. Guards the
+  generic anchoring in wait-for-event-stuck.md, which previously assumed the
+  user arrives with an instance id.
+tags: [uipath-troubleshoot, maestro, e2e, mode:diagnose]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Grep", "Glob", "Skill", "TodoWrite"]
+
+run_limits:
+  expected_turns: 16
+  task_timeout: 3000
+  max_turns: 48
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: data
+  mock_path_dirs:
+    - m
+
+pre_run:
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
+reference:
+  directory: reference
+
+initial_prompt: |
+  Some of my ProcessCases instances in Maestro have been running for hours and
+  are not moving forward. I keep updating the Salesforce cases and nothing
+  happens.
+
+  Work out why. Do not run mutating commands; give me the commands instead.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  # The agent was given no instance id, so it has to find them.
+  - type: command_executed
+    description: "Agent discovered the stuck instances itself"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instances\s+list[\s\S]*--status[\s="'']+Running'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read an instance's spans to find the waiting element"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried the Wait-For-Event trigger by instance id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+trigger-traces\s+list[\s\S]*--instance-id'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent finds the correlation filter names a different case"
+    weight: 4.0
+    pass_threshold: 0.7
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
+    include_dialog: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      The correct answer is that each instance waits on one specific Salesforce
+      case, the filter names `5008e00000AAAAA`, and the case that was updated
+      (`5008e00000ZZZZZ`) is a different record — so the filter rejected it.
+
+        1.0  Says the instances wait on a specific record AND names the case id
+             from the filter, or shows the filter expression.
+        0.8  Says the correlation filter rejected the update because it names a
+             different record, without the id.
+        0.5  Identifies the Wait-For-Event as the parked element but does not
+             reach the filter.
+        0.2  Blames the connection, the trigger being broken, or a dispatch
+             failure.
+        0.0  Reaches no conclusion, or asks the user for an instance id instead
+             of discovering the instances.
+
+      Deduct to at most 0.5 if the agent claims correlated-jobs should be used
+      here — that endpoint cannot correlate a Wait-For-Event trigger.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
