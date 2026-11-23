@@ -108,12 +108,14 @@ The CLI owns its credentials file. Never read, `cat`, `grep`, or `source` it: it
 
 | Field | Value |
 |---|---|
-| `Data.Status` | `Logged in` when the session is usable; anything else → ask the user to run `uip login` |
+| `Data.Status` | Session state, e.g. `Logged in` |
 | `Data.BaseUrl` | Cloud base URL, e.g. `https://cloud.uipath.com` |
 | `Data.Organization` / `Data.OrganizationId` | Organization name / UUID |
 | `Data.Tenant` / `Data.TenantId` | Tenant name / UUID |
 | `Data.Identity` | Logged-in user or application |
 | `Data.ExpirationDate` | Access-token expiry |
+
+A status other than `Logged in` does not end the task: still run the requested command, then report its result. If it fails with an authentication error, tell the user to run `uip login`.
 
 **Bearer token for a REST call the CLI does not cover** — get it from `uip login refresh --output json` (`Data.AccessToken`; refreshes when the token expires within 5 minutes, `--login-validity <MINUTES>` for longer calls). Capture and use it in the same shell invocation; never print it:
 
@@ -132,7 +134,10 @@ Named profiles keep several UiPath logins on one machine:
 ```bash
 uip login --profile dev --output json
 uip login status --profile dev --output json
+uip login which --profile dev --output json
 ```
+
+`uip login which` returns the path of the credentials file behind a login, never its contents. Use it to locate a profile's file; never open the file it names.
 
 Rules:
 
