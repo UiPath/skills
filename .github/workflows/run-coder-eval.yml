@@ -472,7 +472,12 @@ jobs:
             fi
           done
           REFRESH
-          env RUNNER_TRACKING_ID="" setsid nohup bash "$RUNNER_TEMP/auth-refresher.sh" >/dev/null 2>&1 &
+          if command -v setsid >/dev/null; then
+            env RUNNER_TRACKING_ID="" setsid nohup bash "$RUNNER_TEMP/auth-refresher.sh" >/dev/null 2>&1 &
+            echo $! > "$RUNNER_TEMP/auth-refresher.pid"
+          else
+            echo "::warning::no setsid; auth refresher not started, runs over ~1h lose grader auth"
+          fi
 
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
@@ -835,6 +840,7 @@ jobs:
         if: always()
         run: |
           cat "$RUNNER_TEMP/auth-refresh.log" 2>/dev/null || echo "no refresh fired (run shorter than the interval)"
+          kill "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" 2>/dev/null || true
 
       # ==================================================================
       # Evalboard publish. Entirely additive and entirely best-effort: every

@@ -41,12 +41,9 @@ import os
 import subprocess
 import sys
 
-_directory = os.path.dirname(os.path.abspath(__file__))
-while _directory != os.path.dirname(_directory) and not os.path.isdir(os.path.join(_directory, "_shared")):
-    _directory = os.path.dirname(_directory)
-sys.path.insert(0, _directory)
-
-from _shared.uip_auth import grader_env  # noqa: E402
+# Sibling copy: _setup is mounted alone into task sandboxes (no _shared next to it).
+# sys.path[0] is this directory, so a bare import resolves in every load mode.
+from uip_auth import AuthExpired, grader_env  # noqa: E402
 
 
 def _connections(key: str) -> list[dict]:

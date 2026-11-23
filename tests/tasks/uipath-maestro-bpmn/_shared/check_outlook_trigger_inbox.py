@@ -77,7 +77,6 @@ import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.uip_auth import grader_env  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
@@ -87,6 +86,7 @@ from _shared.bpmn_check import (  # noqa: E402
     has_typed_uipath_extension,
     parse_bpmn,
 )
+from _shared.uip_auth import grader_env  # noqa: E402
 
 BPMN_NS = NS["bpmn"]
 CONNECTOR_KEY = "uipath-microsoft-outlook365"

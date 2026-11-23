@@ -5,7 +5,8 @@ refresher renews it). It is NOT exported into the task environment: the agent,
 its logs and the uploaded artifacts never see a token. A grader that must reach
 the tenant passes `grader_env()` as `env=` to its own `uip` subprocess, which
 turns the file into the CLI's env-auth for that one call. A task that never
-calls this stays logged out. Without an auth file the environment is returned
+calls this stays logged out. Only the run's mounted file (or UIPATH_AUTH_FILE) is used,
+never a developer's own ~/.uipath login. Without an auth file the environment is returned
 unchanged, so offline use is unaffected.
 """
 
@@ -17,7 +18,7 @@ import os
 import time
 from collections.abc import Callable, Mapping
 
-_FILE_CANDIDATES = (os.environ.get("UIPATH_AUTH_FILE", ""), "/.uipath/.auth", os.path.expanduser("~/.uipath/.auth"))
+_FILE_CANDIDATES = (os.environ.get("UIPATH_AUTH_FILE", ""), "/.uipath/.auth")
 _MAP = {
     "UIPATH_CLI_AUTH_TOKEN": "UIPATH_ACCESS_TOKEN",
     "UIPATH_CLI_ORGANIZATION_NAME": "UIPATH_ORGANIZATION_NAME",

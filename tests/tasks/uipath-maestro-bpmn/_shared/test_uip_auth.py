@@ -72,3 +72,13 @@ def test_unreadable_file_retries_then_raises(tmp_path, monkeypatch):
     monkeypatch.setattr(uip_auth, "_read", lambda _p: (_ for _ in ()).throw(PermissionError()))
     with pytest.raises(uip_auth.AuthExpired, match="unreadable"):
         uip_auth.grader_env({}, candidates=(str(f),), sleep=lambda _s: None)
+
+
+def test_setup_copy_is_identical():
+    """_setup is mounted alone into sandboxes, so it carries its own copy."""
+    shared = Path(__file__).resolve().parent
+    assert (shared / "uip_auth.py").read_bytes() == (shared.parent / "_setup" / "uip_auth.py").read_bytes()
+
+
+def test_home_login_is_never_picked_up():
+    assert not any(".uipath" in c and c != "/.uipath/.auth" for c in uip_auth._FILE_CANDIDATES)
