@@ -221,7 +221,7 @@ Both resolve against the same library and both take the same `connection` / `fol
 - `object` names what a **generic** event watches — `record-created` and its kin on Data Fabric, Salesforce, ServiceNow, Jira. Such an entry carries no default, so without it the node emits `objectName: ""`, validates, and watches nothing. `check` reports `EVENT_GENERIC_NO_OBJECT`. A curated event has its object built in and refuses one (`EVENT_OBJECT_NOT_GENERIC`).
 - A folder entity on a Data Fabric entity trigger (`record-created-preview-`, `record-updated-preview-`; object `EntityTriggers_V3`) is `entity: { name, folder: '<folder path>' }`, never `filter: { entityScope, folderEntityName }`: a literal filter watches the records but writes no picker, so `refresh` declares no entity and a deploy cannot re-point it.
 <!--skill-flavor:sdk-event-entity:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.123.0 or later; an older SDK reports `TS2353` on `entity`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and run `check` again. Never fall back to the literal `filter`.
+  Needs `@uipath/maestro-builder-sdk` 6.123.0 or later; an older SDK reports `TS2353` on `entity`, so upgrade the copy `uip` resolves, the project's first (`npm install --save-dev @uipath/maestro-builder-sdk@latest` when `package.json` lists it), else `npm install -g @uipath/maestro-builder-sdk@latest`, and run `check` again. Never fall back to the literal `filter`.
 <!--skill-flavor:sdk-event-entity:end-->
   `check` reports `RESOURCE_UNRESOLVED` and prints the `uip maestro registry prepare --entity <name> --folder-path <path>` that records the keys, as for `.dataService()`; the trigger and a task on that entity share one binding pair. Run `uip maestro bpmn refresh` after `compile`.
 

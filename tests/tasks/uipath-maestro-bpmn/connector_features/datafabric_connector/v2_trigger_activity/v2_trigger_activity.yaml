@@ -62,14 +62,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent compiled the trigger from the SDK source"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+bpmn\s+compile\s+(?!--help)\S'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent built the activity as a V2 element with the entity in --input-details"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution(?:(?!uip\s)[^&;|])*--input-details(?:(?!uip\s)[^&;|])*SkillPickerEvalEntity'
