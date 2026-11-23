@@ -40,10 +40,10 @@ initial_prompt: |
   - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
     every node and an edge for every sequence flow.
   - Before finishing, validate that the generated project BPMN is well-formed
-    XML with an explicit Bash command that parses it with an XML parser your
-    environment has (for example Python's `xml.etree.ElementTree`, or a `node -e`
-    script with a real XML parser), or `uip maestro bpmn validate`, which reports
-    malformed XML. A grep or regex check is not a parse.
+    XML with an explicit Bash command that parses it: Python's
+    `xml.etree.ElementTree` where `python3` exists, otherwise
+    `uip maestro bpmn validate <file>`, which reports malformed XML. A grep or
+    regex check is not a parse.
   - Do not upload, publish, deploy, debug, run, or pack anything, and do not
     pause for approval or confirmation.
 
@@ -64,11 +64,11 @@ success_criteria:
   - type: command_executed
     description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
     tool_name: "Bash"
-    # An XML parse of THIS file, by whichever parser the surface has: Python
-    # ElementTree (local, three shapes) or a `node` DOM/XML-library parse
-    # (Studio Web has no python3; the file there is Process.bpmn). A bare
-    # regex or grep is not a parse. Each is bounded to its own program so a
-    # later, unrelated `find` cannot supply the name. The Python shapes:
+    # An XML parse of THIS file: Python ElementTree (local) or
+    # `uip maestro bpmn validate <file>` (Studio Web has no python3; the file there
+    # is `<Project>/Process.bpmn`). A grep or regex is not a parse. Each shape is
+    # bounded to its own program so a later, unrelated `find` cannot supply the name.
+    # The Python shapes:
     # (1) `ET.parse(` and the file name inside the same quoted `python3 -c` program,
     #     in either order (an agent that globbed into a variable wrote
     #     `fs=list(...rglob('ScheduledReportBpmn.bpmn')); ET.parse(fs[0])`, R14 v2,
@@ -83,13 +83,12 @@ success_criteria:
     # A quoted program's characters are an escape pair (`\\.`) or one
     # non-backslash character (`[^\\]`). Keep the two alternatives disjoint: if
     # both can match a backslash, the regex backtracks exponentially.
-    # `uip maestro bpmn validate <project>` also counts: it loads the XML first and
-    # reports XML_NOT_WELL_FORMED, and it is the one parser both surfaces have.
-    # The node shapes mirror (1)-(3) with a parser marker (DOMParser,
-    # parseFromString, xmldom, fast-xml-parser, xml2js, XMLParser, libxmljs)
-    # in place of `ET.parse(`.
+    # `uip maestro bpmn validate <file>` also counts: it loads the XML first and
+    # reports XML_NOT_WELL_FORMED. It needs the file, not the project folder: a
+    # directory is rejected before any XML is read. The file token is the task's
+    # name, or Process.bpmn in a folder of that name (or bare, after a `cd`).
     # Cases in _shared/test_grader_command_patterns.py.
-    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1)[^\\])*ET\.parse\()(?=(?:\\.|(?!\1)[^\\])*(?:ScheduledReportBpmn|Process)\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2)[^\\])*ET\.parse\((?:\\.|(?!\2)[^\\])*\\?\2\s+[^\s;&|]*(?:ScheduledReportBpmn|Process)\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*(?:ScheduledReportBpmn|Process)\.bpmn)|node(?:js)?\s+(?:-e|-p|--eval|--print)\s+\\?(["''])(?=(?:\\.|(?!\5)[^\\])*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs))(?=(?:\\.|(?!\5)[^\\])*(?:ScheduledReportBpmn|Process)\.bpmn)|node(?:js)?\s+(?:-e|-p|--eval|--print)\s+\\?(["''])(?:\\.|(?!\6)[^\\])*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs)(?:\\.|(?!\6)[^\\])*\\?\6\s+[^\s;&|]*(?:ScheduledReportBpmn|Process)\.bpmn|node(?:js)?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\7)(?=(?:(?!\s\8(?:\s|$)).)*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs))(?=(?:(?!\s\8(?:\s|$)).)*(?:ScheduledReportBpmn|Process)\.bpmn)|(?:uip|\$UIP)\s+maestro\s+bpmn\s+validate\s+(?:--\S+\s+)*["\'']?[^\s;&|"\'']*(?:ScheduledReportBpmn|Process)'
+    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1)[^\\])*ET\.parse\()(?=(?:\\.|(?!\1)[^\\])*(?:ScheduledReportBpmn(?:/Process)?|(?<![\w/])(?:\./)?Process)\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2)[^\\])*ET\.parse\((?:\\.|(?!\2)[^\\])*\\?\2\s+[^\s;&|]*(?:ScheduledReportBpmn(?:/Process)?|(?<![\w/])(?:\./)?Process)\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*(?:ScheduledReportBpmn(?:/Process)?|(?<![\w/])(?:\./)?Process)\.bpmn)|(?:uip|\$UIP)\s+maestro\s+bpmn\s+validate(?:\s+-[\w-]+(?:=\S*|\s+(?!-)[^\s;&|]+)?)*\s+[\"'']?[^\s;&|\"'']*?(?:ScheduledReportBpmn(?:/Process)?|(?<![\w/])(?:\./)?Process)\.bpmn'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
