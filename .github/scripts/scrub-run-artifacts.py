@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
-"""Fail-closed scrub of a coder-eval run directory before anything is published.
+"""Publish only an allow-listed set of result files from a coder-eval run dir.
 
-Allow-list, not deny-list: only clean text is published. A file survives only if
-it is strict UTF-8 with no NUL bytes and no archive magic (UTF-16/32 are withheld);
-symlinks, binaries, archives and compressed files are withheld (a token inside a
-ZIP or gzip member survives a byte replace). In the kept files every secret this
-job forwarded, plus every UiPath token issued during the run (the mounted .auth
-only holds the latest), is replaced as raw bytes in its UTF-8, base64 and base64url (three alignments)
-forms (values under 20 characters: aligned base64 only); JWT characters need no JSON or URL escaping.
-A final verify pass re-reads every file.
-On any error the whole run directory is wiped, a fixed message is printed and the
-exit code is 1, so the workflow's publishing steps (gated on this step's success)
-publish nothing. Usage: scrub-run-artifacts.py <run_dir>
+Runs carry a live UiPath login, so the run dir is reduced before anything is
+published (GitHub artifact, evalboard blob, job summary):
+
+* Everything outside ALLOWED is deleted: agent artifact dirs, transcripts,
+  workspace copies, binaries, archives, symlinks. Nothing about their contents
+  is trusted or inspected.
+* Allowed files must be strict UTF-8 text without NUL bytes, else they are
+  deleted too. In the kept files every secret this job forwarded and every
+  UiPath token issued during the run (the mounted .auth only holds the latest)
+  is replaced verbatim. A verify pass re-reads every kept file.
+* On any error the whole run dir is wiped, a fixed message is printed and the
+  exit code is 1; the workflow's publishing steps require this step's success,
+  so they publish nothing. Under GITHUB_ACTIONS a missing or empty issued-tokens
+  record is also an error.
+
+Usage: scrub-run-artifacts.py <run_dir>
 """
 
 from __future__ import annotations
 
-import base64
-import html
-import json
 import os
 import pathlib
 import shutil
 import sys
-import urllib.parse
 
 SECRET_ENV = (
     "AWS_BEARER_TOKEN_BEDROCK",
@@ -35,73 +36,59 @@ SECRET_ENV = (
     "UIPATH_BOT_PASSWORD",
     "UIPATH_CLI_AUTH_TOKEN",
 )
-# Compressed or archive containers: contents are invisible to a byte replace.
-_MAGIC = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08", b"\x1f\x8b", b"BZh", b"\xfd7zXZ\x00",
-          b"7z\xbc\xaf\x27\x1c", b"\x28\xb5\x2f\xfd", b"\x04\x22\x4d\x18", b"Rar!", b"\x1f\x9d", b"\x1f\xa0")
+# Report files at <run_dir>, <run_dir>/<variant>/ and per-task dirs below it.
+TOP_LEVEL = frozenset({"run.json", "run.md", "experiment.json", "experiment.md", "experiment.html", "experiment.log"})
+VARIANT_LEVEL = frozenset({"variant.json", "variant.md", "variant.html"})
+TASK_LEVEL = frozenset({"task.json", "task.log", "task.html"})
 MIN_TOKEN = 28
 
 
-def _is_text(data: bytes) -> bool:
-    """Clean text only: no archive magic, no NUL, strict UTF-8 (UTF-16/32 carry NULs: withheld)."""
-    if data.startswith(_MAGIC) or data[257:262] == b"ustar":
+def allowed(rel: pathlib.PurePosixPath) -> bool:
+    parts = rel.parts
+    if "artifacts" in parts[:-1]:
         return False
+    if len(parts) == 1:
+        return parts[0] in TOP_LEVEL
+    if len(parts) == 2 and parts[1] in VARIANT_LEVEL:
+        return True
+    return len(parts) >= 3 and parts[-1] in TASK_LEVEL
+
+
+def _is_text(data: bytes) -> bool:
     if b"\x00" in data:
         return False
     try:
         data.decode("utf-8")
-        return True
     except UnicodeDecodeError:
         return False
+    return True
 
 
-def _needles(values: list[str]) -> list[bytes]:
-    out: list[bytes] = []
-    for v in values:
-        raw = v.encode("utf-8")
-        out.append(raw)
-        for encode in (base64.b64encode, base64.urlsafe_b64encode):  # aligned form: exact for whole 3-byte groups
-            out.append(encode(raw).decode()[: len(raw) // 3 * 4].encode())
-        if len(raw) < 20:  # core too short to match safely at the other alignments
-            continue
-        for encode in (base64.b64encode, base64.urlsafe_b64encode):
-            for skew in range(3):  # base64 of the value at each alignment
-                enc = encode(b"x" * skew + raw).decode().rstrip("=")
-                lead = (4 * skew + 2) // 3  # leading chars that depend on the skew bytes
-                out.append(enc[lead + 1 : -1].encode())  # drop the partial last char too
-    for v in values:  # secrets with markup-significant characters (token chars need no escaping)
-        for form in (json.dumps(v)[1:-1], html.escape(v), urllib.parse.quote(v), urllib.parse.quote_plus(v)):
-            if form != v:
-                out.append(form.encode("utf-8"))
-    return sorted(set(out), key=len, reverse=True)  # longest first: no fragment survives
-
-
-def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) -> list[str]:
+def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) -> list[bytes]:
     values = [env[n] for n in SECRET_ENV if len(env.get(n, "")) >= 8]
     for source, prefixes in ((auth_file, ("UIPATH_ACCESS_TOKEN=", "UIPATH_REFRESH_TOKEN=")), (issued, ())):
         if source.is_file():
             for line in source.read_text(encoding="utf-8", errors="ignore").splitlines():
                 line = line.strip()
-                if prefixes:
-                    # Tokens only: redacting org/tenant slugs would garble reports.
+                if prefixes:  # tokens only: org/tenant slugs would garble reports
                     line = next((line.split("=", 1)[1] for p in prefixes if line.startswith(p)), "")
                 if len(line) > MIN_TOKEN:
                     values.append(line)
-    return values
+    return sorted({v.encode("utf-8") for v in values}, key=len, reverse=True)
 
 
-def scrub(root: pathlib.Path, values: list[str]) -> int:
-    """Scrub `root` in place; returns the number of withheld (deleted) files."""
-    needles = _needles(values)
+def scrub(root: pathlib.Path, needles: list[bytes]) -> int:
+    """Reduce `root` in place; returns the number of withheld files."""
     withheld = 0
     for path in sorted(root.rglob("*")):
-        if path.is_symlink():
+        if path.is_dir() and not path.is_symlink():
+            continue
+        if path.is_symlink() or not path.is_file():  # links, FIFOs, sockets, devices: never opened
             path.unlink()
             withheld += 1
             continue
-        if not path.is_file():
-            continue
         data = path.read_bytes()
-        if not _is_text(data):
+        if not allowed(pathlib.PurePosixPath(path.relative_to(root).as_posix())) or not _is_text(data):
             path.unlink()
             withheld += 1
             continue
@@ -119,17 +106,11 @@ def scrub(root: pathlib.Path, values: list[str]) -> int:
 def main(argv: list[str]) -> int:
     root = pathlib.Path(argv[1])
     try:
-        values = _values(
-            dict(os.environ),
-            pathlib.Path(os.path.expanduser("~/.uipath/.auth")),
-            pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens",
-        )
         issued = pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens"
         if os.environ.get("GITHUB_ACTIONS") and (not issued.is_file() or issued.stat().st_size == 0):
             raise RuntimeError("no issued-tokens record")
-        if not values:
-            return 0
-        withheld = scrub(root, values)
+        needles = _values(dict(os.environ), pathlib.Path(os.path.expanduser("~/.uipath/.auth")), issued)
+        withheld = scrub(root, needles)
     except Exception:  # fixed message only: never echo a value or a path
         for child in root.iterdir() if root.is_dir() else ():
             if child.is_dir() and not child.is_symlink():
@@ -138,8 +119,7 @@ def main(argv: list[str]) -> int:
                 child.unlink(missing_ok=True)
         print("::error::scrub failed; run files withheld from publication")
         return 1
-    if withheld:
-        print(f"::warning::{withheld} non-text/symlink file(s) withheld from publication")
+    print(f"::notice::{withheld} file(s) outside the publication allow-list withheld")
     return 0
 
 
