@@ -34,6 +34,8 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 12. **Author the field schema for EVERY activity — `activity create` does NOT infer fields.** An activity with no fields renders in Studio Web as a single raw JSON body in and raw JSON out, with zero typed inputs/outputs — a half-built connector that still validates and publishes, so the omission is easy to miss (it's a recurring failure: "got it valid and published" while skipping the schema). After `activity create`, ALWAYS define the request/response fields from the vendor's documented schema — either pass `--fields-file <json>` on `activity create` for the whole schema at once, or add them one at a time with `activity field create`. `validate` emits a WARNING for any fieldless activity — treat it as must-fix. Never report a connector "done" with fieldless activities; if a raw-body passthrough is genuinely intended, say so explicitly.
 13. **The icon must stay visible on a dark surface.** `app/element/image.svg` is the connector's icon in Studio Web. `builder validate` does NOT check this (it only warns when the file is missing), but the periodic build fails an icon whose ink has under 1.5:1 contrast on Studio Web's dark surface (`#1F1F1F`) — a black logo, or shapes with no `fill`. When you add or replace the icon, check it against the rules in [references/icon.md](references/icon.md). Fix black ink with a `@media (prefers-color-scheme: dark)` rule or `fill="currentColor"`. Never recolour a brand logo.
 
+14. **Pick the route before `init`: legacy or community.** Follow [Pick the route first](#pick-the-route-first). On a community connector, activities run scripts: no hook on an activity, no `trigger create`.
+
 ## Connection design (host, region, discovered values)
 
 Decide how each per-connection value reaches the request BEFORE scaffolding — getting this wrong is the most common rework:
@@ -47,6 +49,20 @@ Decide how each per-connection value reaches the request BEFORE scaffolding — 
 ## Workflows
 
 Each workflow is an ordered sequence of copy-paste-ready commands. Use placeholders (`<ORG>`, `https://api.example.com`) — never real secrets.
+
+### Pick the route first
+
+Community is the v4 route: the CLI calls it v4 (`--v4`, `flags.v4Compatible`).
+
+New connector:
+1. Run `uip --version`.
+2. No prerelease tag → **legacy route**: the workflows below.
+3. Prerelease tag (any `-<tag>`: `-alpha`, `-beta`, `-preview`, `-dev`) → ask the user (`AskUserQuestion`): **Legacy** or **Community (only for Flow)**.
+   - Legacy → the workflows below.
+   - Community → follow [references/v4-flow.md](references/v4-flow.md). Write scripts per [references/scripts.md](references/scripts.md).
+
+Existing connector: `flags.v4Compatible: true` in `element-metadata.json` → community route. Otherwise legacy.
+The community route needs a preview CLI. Run `uip --version` here too: no prerelease tag → stop and tell the user to install a preview build.
 
 ### New connector (full lifecycle)
 ```bash
@@ -152,6 +168,7 @@ uip is connectors                      # tenant/catalog + design-connector lifec
   builder                              # author a connector ON DISK
     init                               # create-or-EDIT the connector shell in ONE verb
                                        #   (folds the old scaffold / metadata / global / base+pagination preset)
+                                       #   --v4 (preview CLI): community route
         preset apply --kind base|pagination
         header delete <vendorName>
     auth     set | get | system (create|list)
@@ -160,6 +177,7 @@ uip is connectors                      # tenant/catalog + design-connector lifec
              method (get|set|curate)
              param  (create|list|get|delete)
              hook   (create|list|get|delete)
+             script (list|get|delete)  # preview CLI, community route
     trigger  create                    # --event-kind polling|webhook|all (folds the event preset + polling)
     inspect                            # read-only whole-connector rollup
     validate                           # full check set; exits non-zero on failure
@@ -182,6 +200,8 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 | Authentication setup: all 19 auth types (incl. JWT Bearer claims, FPS, none) and the OAuth/JWT scope surface | [references/auth.md](references/auth.md) |
 | Auth-system resources: auth-validation, onProvision/onDelete, OAuth token overrides | [references/system-resources.md](references/system-resources.md) |
 | When to write a hook vs use a built-in (decision table + good/avoidable patterns), execution order, context vars, done(), naming | [references/hooks.md](references/hooks.md) |
+| Community route (Flow only): workflow, rules, what differs from legacy | [references/v4-flow.md](references/v4-flow.md) |
+| Writing a script: what is in scope (`context`, `intsvc`), patterns, limits | [references/scripts.md](references/scripts.md) |
 | Polling and webhook triggers: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
 | Debugging auth / activity / hook / trigger / pagination issues (workflow + checklists) | [references/debugging.md](references/debugging.md) |
 
@@ -200,3 +220,4 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 11. Naming a field — especially the primary key — after a URL path token or your own convention instead of the key the vendor actually returns. Response fields are resolved by name against the raw vendor JSON, so a wrong name yields an empty activity output and NO error at any layer (standard-resources.md §fields).
 12. Reporting a connector "done" with fieldless activities (Rule 12) — `activity create` writes endpoints/methods/auth but NOT the field schema; an activity with no `field create` / `--fields-file` shows only a raw JSON body in Studio and trips a `validate` WARNING. Author fields before finishing, and never treat a 0-error/has-warnings validate as a pass.
 13. Shipping a black or unfilled icon (Rule 13) — it passes `validate` and then disappears on Studio Web's dark surface, and the periodic build fails it. Add a `prefers-color-scheme: dark` rule or use `currentColor`.
+14. Starting the community route without asking, or on a CLI with no prerelease tag (Rule 14) — `init --v4` and `--method-script-ref` do not exist there.
