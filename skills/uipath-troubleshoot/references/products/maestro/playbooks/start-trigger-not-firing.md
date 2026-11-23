@@ -102,12 +102,20 @@ What to look for:
    is in it. The `UserFilters` span holds `DataFilters.input.filter` and
    `DataFilters.output.matched`. Quote the expression and name the field that failed.
 
-6. **Matched but no instance (CA004).**
+6. **Matched but no instance (CA004).** Correlate the trace first; counting
+   instances in a window cannot show that a specific event started a specific
+   instance.
 
    ```bash
-   uip or jobs list --folder-path "<folder>" --output json
-   uip maestro bpmn instances list --process-key <process-key> --folder-key <folder-key> --from-date <iso> --output json
+   uip is correlated-jobs list --trace-id <trace-id> --trigger-key <trigger-key> \\
+     --folder-path "<folder>" --output json
    ```
+
+   For a Maestro start trigger `JobId` is the **process instance external id**,
+   not an Orchestrator job id — resolve it with
+   `uip maestro bpmn instances list --process-key <process-key> --folder-key <folder-key>`
+   and match on `ExternalId`. See
+   [investigation_guide.md § Step 4](../../integration-service/investigation_guide.md#step-4--what-the-trace-actually-started).
 
 ## Resolution
 

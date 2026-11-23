@@ -110,11 +110,19 @@ What to look for:
    `DataFilters.input.filter` and `DataFilters.output.matched`. For CA003, quote the
    expression and show which field of the payload failed it.
 
-6. **Matched but no execution (CA004).** The trigger did its part; look downstream.
+6. **Matched but no execution (CA004).** Correlate the trace before blaming
+   anything downstream — this says whether the dispatch produced a job at all.
 
    ```bash
-   uip or jobs list --folder-path "<folder>" --output json
+   uip is correlated-jobs list --trace-id <trace-id> --trigger-key <trigger-key> \\
+     --folder-path "<folder>" --output json
    ```
+
+   Fewer rows than the trace's `EventsMatched`, or a non-null `DispatchError`,
+   means dispatch failed and `DispatchErrorCode` names why. A full set with
+   `DispatchStatus: 0` means the trigger succeeded and the fault is in what it
+   started — take `JobId` from there. See
+   [investigation_guide.md § Step 4](../investigation_guide.md#step-4--what-the-trace-actually-started).
 
 ## Resolution
 

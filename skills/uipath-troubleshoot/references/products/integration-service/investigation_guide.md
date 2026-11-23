@@ -111,8 +111,8 @@ with what the user sees.
 | **`Outcome: Faulted`** | the poll or delivery itself failed | Step 3 — the error is in the spans |
 | **`EventsFetched: 0`** | the connector saw no events; the cause is upstream of UiPath | Step 3 — check the query window actually sent |
 | **`EventsFetched > 0`, `EventsMatched: 0`** | events arrived and **the trigger's filter rejected them** | Step 3 — compare filter against payload |
-| **`EventsMatched > 0`, `Notified: false`** | matched but dispatch failed | `uip or jobs list` in the trigger's folder |
-| **`EventsMatched > 0`, `Notified: true`** | the trigger did its job — the fault is downstream | Orchestrator job state, or the Maestro instance |
+| **`EventsMatched > 0`, `Notified: false`** | matched but dispatch failed | Step 4 — correlate the trace |
+| **`EventsMatched > 0`, `Notified: true`** | the trigger did its job — the fault is downstream | Step 4, then the job or instance it names |
 
 ### Step 3 — spans carry the filter and the payload
 
@@ -134,3 +134,38 @@ produces a trace that fetched data and matched nothing. Quote the expression and
 back to the user — it is the fastest way to end a "but I did update it" disagreement.
 
 Span `Attributes` arrive as a JSON string; parse before reading fields.
+
+### Step 4 — what the trace actually started
+
+```bash
+uip is correlated-jobs list --trace-id <trace-id> --trigger-key <trigger-key> \
+  --folder-path "<folder>" --output json
+```
+
+One row per event the trace dispatched, carrying `JobId`, `DispatchStatus`,
+`DispatchErrorCode`, `DispatchError`, `EventType`, `ObjectType` and `ObjectId`.
+
+This is what separates **matched but nothing ran** from **ran and then failed** —
+the two read identically on the trace alone. Do not substitute a time-window
+comparison against `uip or jobs list`: totals that agree over a window do not
+show that *this* event started *that* job, and a job near the window edge counts
+on one side and not the other.
+
+- **Row count equals the trace's `EventsMatched`, `DispatchStatus: 0`** — the
+  trigger did everything right. Any fault is in the job or instance; take
+  `JobId` and continue there.
+- **Fewer rows than `EventsMatched`, or a non-null `DispatchError`** — dispatch
+  itself failed. `DispatchErrorCode` and `DispatchError` name the reason.
+- **Empty with a `Warning`** — the trace matched nothing, so there is nothing to
+  correlate. Go back to Step 2; this is not a dispatch failure.
+
+**`JobId` is overloaded.** It is an Orchestrator job for a trigger that starts a
+process and a Maestro process instance's external id for one that starts a
+Maestro process. Route the deep link on what the trigger starts, never on the
+payload: `orchestrator_` for the first, `maestro_/processes/{processKey}/instances/{instanceId}`
+for the second.
+
+**No Wait-For-Event.** This endpoint authorizes against a folder on every call
+and has no `source=maestro` bypass, so a per-instance WFE trigger cannot be
+correlated. That is consistent rather than missing: a WFE resumes a running
+instance instead of dispatching, so there is no job to find.
