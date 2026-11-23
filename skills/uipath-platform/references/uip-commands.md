@@ -5,7 +5,7 @@
 **Global flags:**
 - `--output json` — always use when calling programmatically
 - `--output-filter <expr>` — JMESPath filter for JSON output
-- `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
+- `--profile <name>` — use a named login profile; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
 - `--log-level debug` — enable debug logging (`--log-file <path>` writes it to a file instead of stderr)
 
@@ -49,15 +49,14 @@ iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
 | Command | Description |
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
-| `uip login status` | Show current login status |
-| `uip login which` | Show which `.auth` file backs the current login |
+| `uip login status` | Show login status, base URL, organization and tenant names and IDs, expiry |
+| `uip login refresh` | Refresh the session; with `--output json` returns `Data.AccessToken` for REST calls the CLI does not cover. Always pipe it into a variable; never run it bare or print its output |
 | `uip login tenant list` | List available tenants |
 | `uip login tenant set <name>` | Set active tenant |
 | `uip logout` | End session and clear tokens |
 
 Named profiles:
 - Use `uip login --profile dev`, then pass `--profile dev` on each command that should use that login.
-- Profile credentials live at `~/.uipath/profiles/dev/.auth`; the built-in default stays at `~/.uipath/.auth`.
 - Missing profiles do not fall back to the default login or Robot credentials.
 - Valid profile names use letters, numbers, `.`, `_`, and `-`; `default` is reserved for the built-in login.
 - Do not combine `--profile <name>` with auth-command `--file <folder>`.
