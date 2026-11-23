@@ -27,7 +27,7 @@ The marker is a no-op: at runtime the target's own resolution detects it in the 
 - A **migrated Attach Window**: a *real* card whose selector carries the marker (`IsDisplayNameAuto` false/absent, kept its classic display name; its children's selectors do not mirror the card selector). The variable holds a window selector there; attaching with the raw value is correct, at any nesting depth.
 - Any target with a bound `InUiElement`: element-relative search; the scope constraint is waived.
 
-Detection is structural (marker text + card discriminators). A `[PostMigration Action Required]` annotation is a useful hint when present, it sits on the wrapped child and points straight at a finding, but never the filter: some defect shapes carry none.
+Detection is structural (marker text + card discriminators). A `[PostMigration Action Required]` annotation is a useful hint when present, it sits on the wrapped child, sometimes on its generated card too, and points straight at a finding, but never the filter: some defect shapes carry none.
 
 ## Scan (structural)
 
@@ -124,7 +124,7 @@ Migrator annotations are **one line per message**: each line is `[PostMigration 
 
 Where a fixed activity (the wrapped child or the card for Fix 1; the check for Fix 2) carries `sap2010:Annotation.AnnotationText`, replace **only the line whose message is the fixed defect** with `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <one line — what was done>`. Every other line, including the `[Existing annotation]: ` tail, stays verbatim. No line matches the fixed defect, or the activity carries no annotation at all → add the `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <one line — what was done>` line, as a new `sap2010:Annotation.AnnotationText` attribute when none exists: SKILL.md Rule 12 requires the mark on every edit.
 
-A **healthy** construction (a redundant full-value generated card, a migrated Attach Window) gets the same treatment on every activity of it whose annotation carries a migrator line about the expression selector: replace only that line with `Verified healthy by uipath-activity-migrator on <YYYY-MM-DD>: <value class and why it works>`. The migrator can annotate both a generated card and its wrapped child: check both and rewrite each line found, never the card alone. This removes the action request from Studio and from the analyzer warnings, so the report need not mention the construction. Rewrite only when the value class came from an authoritative source (XAML default, `Assign`, config read locally); leave the annotation untouched for `unresolved` values or values supplied from memory.
+A **healthy** construction (a redundant full-value generated card, a migrated Attach Window) gets the same treatment on each of its activities whose annotation carries a migrator line about the expression selector: replace only that line with `Verified healthy by uipath-activity-migrator on <YYYY-MM-DD>: <value class and why it works>`. The migrator can annotate both a generated card and its wrapped child: check both and rewrite each line found. This removes the action request from Studio and from the analyzer warnings, so the report need not mention the construction. Rewrite only when the value class came from an authoritative source (XAML default, `Assign`, config read locally); leave the annotation untouched for `unresolved` values or values supplied from memory.
 
 ## Validate
 
