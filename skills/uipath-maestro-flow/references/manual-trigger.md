@@ -62,8 +62,8 @@ that ends terminally (or hands off with `.stepToRef(...)`) joins nothing.
 `{ default: true }` on one `.entryPoint()` makes that root the default
 (`isDefaultEntryPoint`) instead of `.trigger()`. `.trigger()` keeps its id, its
 inputs and every `input()` read. Decompile writes it when the `.flow` marks a
-root other than `start` as the default, for instance a trigger added with
-`uip maestro flow node add`. Keep it when you edit the source. Two entry points
+root other than `start` as the default, for instance a trigger added to the
+`.flow` outside the SDK source. Keep it when you edit the source. Two entry points
 with `default: true` are refused (`ENTRY_POINT_DEFAULT`).
 
 Every root's inputs need their own names. Inputs, outputs and vars share one
