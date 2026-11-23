@@ -1,11 +1,11 @@
 <!--skill-flavor:draft-steps:start-->
-1. Draft into the target that [Studio Web](../SKILL.md#studio-web) defines; a new process goes where [Critical Rule 12](../SKILL.md#critical-rules) says.
+1. Draft into the target that [Studio Web](../SKILL.md#studio-web) defines; a new process goes where [Critical Rule 13](../SKILL.md#critical-rules) says.
 2. Run step 1 of the [Validation loop](../SKILL.md#validation-loop) to seed `.flow-sdk/<Name>.bpmn.ts` from the target: the block's `cd` and `mkdir` lines and all of step 1's lines in one command, before you write the skeleton.
    When the target is empty, write the skeleton as the loop's empty-target rule says instead.
 3. Rewrite the chain as the skeleton, in one write, keeping the seeded process id and start event id.
    When the seeded source has `.metadata({ entryPointId: false })` and the target is in a project, delete that key, or `refresh` fails. A [target outside a project](../SKILL.md#studio-web) keeps the key and skips `refresh`.
 4. Run steps 2 to 4 of the [Validation loop](../SKILL.md#validation-loop): `check`, compile into `<Draft>/edited/`, `merge` into the target, `refresh` and `validate`.
-   Merge keeps the shapes the user already has on the canvas. A template (one start event and at most one end event) or a process the user chose to *replace* ([Critical Rule 12](../SKILL.md#critical-rules) step 2) has none to keep. An empty target has nothing to merge into: compile straight over it instead of merging.
+   Merge keeps the shapes the user already has on the canvas. A template (one start event and at most one end event) or a process the user chose to *replace* ([Critical Rule 13](../SKILL.md#critical-rules) step 2) has none to keep. An empty target has nothing to merge into: compile straight over it instead of merging.
    For all three, then run `format <Name>.bpmn --relayout` (loop step 5a), then `refresh` and `validate` again.
    `validate` must report `Status: Valid`.
 <!--skill-flavor:draft-steps:end-->
