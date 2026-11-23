@@ -69,6 +69,7 @@ The names are stable:
 | `flow-script-metadata` | the `$metadata` parameter of a script function |
 | `flow-merge-source` | `merge <Name>.flow.ts --original <Name>.flow`, from the `// @decompiled-from` stamp |
 | `project-min-version` | `flowSdk.minVersion`, below |
+| `flow-entry-point-default` | `.entryPoint(id, spec, { default: true })` ([manual-trigger.md](manual-trigger.md#multiple-entry-points)) |
 
 To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
 From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
