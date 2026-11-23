@@ -574,21 +574,21 @@ test("the default Case skill keeps its terminal commands (the guard is not vacuo
 // Studio Web runs a project from its main file (PO.Frontend PackagingUtil.ts
 // `project.mainFileId`), so a new process written as a second `<Name>.bpmn`,
 // a nested project or under the eval harness's `/sandbox` never runs (coder_eval
-// studio-web runs 2026-11-16, PR #4808). Rule 12 states the precondition up
+// studio-web runs 2026-11-16, PR #4808). Rule 13 states the precondition up
 // front; the default flavor, where `init` writes `<Name>.bpmn`, must not carry it.
 test("the studioweb BPMN skill finds the project before writing and never builds over an existing process", (t) => {
   const skill = readFileSync(join(buildStudioweb(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.match(skill, /^12\. A new process goes into a project's main file in `\/solution`/m);
+  assert.match(skill, /^13\. A new process goes into a project's main file in `\/solution`/m);
   assert.match(skill, /never build over it/);
   assert.match(skill, /ask the user whether to replace its process or use a new project/);
   assert.match(skill, /run `uip maestro bpmn init <NewProject>` from `\/solution`/);
   assert.match(skill, /Never pass `--force`/);
 });
 
-test("the default BPMN skill carries no Studio Web Rule 12", (t) => {
+test("the default BPMN skill carries no Studio Web Rule 13", (t) => {
   const skill = readFileSync(join(buildDefault(t), "uipath-maestro-bpmn", "SKILL.md"), "utf8");
 
-  assert.doesNotMatch(skill, /^12\. A new process goes into/m);
+  assert.doesNotMatch(skill, /^1\d\. A new process goes into/m);
   assert.ok(!skill.includes("/solution"));
 });
