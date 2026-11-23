@@ -1,0 +1,7 @@
+{
+  "maestro bpmn debug": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/maestro.ts (UiPath/Autopilot#8066)",
+  "maestro case debug": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/maestro.ts (UiPath/Autopilot#8066)",
+  "maestro case pack": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/maestro.ts (UiPath/Autopilot#8066)",
+  "maestro flow debug": "served by the Studio Web host: UiPath/Autopilot src/packages/autopilot-plugin-studioweb/src/cli/interceptors/maestro.ts (`uip maestro <flow|case|bpmn> debug`)",
+  "rpa init": "served by the Studio Web host: UiPath/Autopilot subcommandInterceptors/index.ts"
+}

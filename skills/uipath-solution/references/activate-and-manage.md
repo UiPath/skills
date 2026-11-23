@@ -2,6 +2,8 @@
 
 Activate deployed solutions, uninstall deployments, and manage published solution packages.
 
+Waiting deployment commands print progress to stderr (`--log-file` redirects it, `--log-level error` silences it) and leave stdout as the final envelope; see [progress while deploying](pack-and-deploy.md#step-4-deploy-to-orchestrator).
+
 > For full option details on any command, use `--help` (e.g., `uip solution deploy activate --help`).
 
 ## When to Use
@@ -52,6 +54,8 @@ uip solution deploy activate "MyDeployment" --timeout 600 --poll-interval 10000 
 | `--timeout <seconds>` | Polling timeout | 360 |
 | `--poll-interval <ms>` | Polling interval | 5000 |
 
+Successful activation returns `Data.OrchestratorUrl` and, when the installed folder key is known, `Data.FolderUrl`; use these [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator) to open the deployment.
+
 ## Step 2: Check Deployment Status
 
 After activation (or any deployment operation), verify the state:
@@ -70,7 +74,15 @@ uip solution deploy status <pipeline-deployment-id> --output json
 uip solution deploy list --output json
 ```
 
-With a deployment name or key the answer is `Code: SolutionDeployment` (the pipeline-id form keeps `Code: SolutionDeployStatus`, so `Code` tells the two `Data` shapes apart) and `Data: { DeploymentKey, Superseded, CurrentDeploymentKey, InstallDeploymentKey, Name, PackageName, PackageVersion, NewPackageVersionAvailable, Operation, OperationStatus, DeploymentStatus, ActivationStatus, Actions, PendingResources?, NextSteps? }`. The state fields describe the **current** record of that deployment: `Superseded: true` means the key you passed belongs to an earlier record (every operation creates a new one) and `CurrentDeploymentKey` is the one to use from now on. A name is never `Superseded`: it resolves to whatever record is current, and `DeploymentKey` equals `CurrentDeploymentKey`. `DeploymentStatus` is the record's own status — `SuccessfulActivate` when the version runs, `SuccessfulInstall` when it is installed and waits — and every session can read it; `ActivationStatus` and `Actions` come from the deployment search, read only from this record's own row — an external app can read it on a server with the Pipelines deployment search, a user session everywhere — and `PendingResources` from the deployment's resources, read with a user session; a session that cannot read them, or a record the search has not indexed yet, gets `ActivationStatus: null`, `Actions: null`, no `PendingResources`, and a `NextSteps` line saying why (never an empty `Actions` list, which would mean the service offers no action). `NextSteps` is present exactly when the deployment is not live; `PendingResources` lists the resources that still need configuration (`Kind`, `Name`, `Type`) and why (`Reason`, from the activation validation — `[CNS1072] You will need to authenticate this connection before proceeding further` for a connection; `null` when the server gives none). A key is looked up across every feed; on a server without that lookup, a key outside the tenant feed needs `--personal-workspace` or `--feed <name-or-key>`, as with `deploy list`.
+With a deployment name or key the answer is `Code: SolutionDeployment` (the pipeline-id form keeps `Code: SolutionDeployStatus`, so `Code` tells the two `Data` shapes apart) and `Data: { DeploymentKey, Superseded, CurrentDeploymentKey, InstallDeploymentKey, Name, PackageName, PackageVersion, NewPackageVersionAvailable, Operation, OperationStatus, DeploymentStatus, ActivationStatus, Actions, PendingResources?, NextSteps? }`.
+The state fields describe the **current** record of that deployment: `Superseded: true` means the key you passed belongs to an earlier record (every operation creates a new one) and `CurrentDeploymentKey` is the one to use from now on.
+A name is never `Superseded`: it resolves to whatever record is current, and `DeploymentKey` equals `CurrentDeploymentKey`.
+`DeploymentStatus` is the record's own status — `SuccessfulActivate` when the version runs, `SuccessfulInstall` when it is installed and waits — and every session can read it; `ActivationStatus` and `Actions` come from the deployment search, read only from this record's own row — an external app can read it on a server with the Pipelines deployment search, a user session everywhere.
+`PendingResources` comes from the deployment's activation check, which an external app can read too on current servers; on older servers it needs a user session.
+When the search has no row for the record, a current server still gives `ActivationStatus` (`NeedsSetupToActivate` or `ReadyToActivate`, from that same check) with `Actions: null`.
+Otherwise — an older server, or a session that cannot read them — the answer is `ActivationStatus: null`, `Actions: null`, no `PendingResources`, and a `NextSteps` line saying why (never an empty `Actions` list, which would mean the service offers no action).
+`NextSteps` is present exactly when the deployment is not live; `PendingResources` lists the resources that still need configuration (`Kind`, `Name`, `Type`), why (`Reason`, from the activation validation — `[CNS1072] You will need to authenticate this connection before proceeding further` for a connection; `null` when the server gives none), and where (`FolderPaths`, the Orchestrator folders the resource lives in; `null` when the server does not report them).
+A key is looked up across every feed; on a server without that lookup, a key outside the tenant feed needs `--personal-workspace` or `--feed <name-or-key>`, as with `deploy list`.
 
 > The pipeline-id form reads the run against the **tenant** feed and takes no
 > feed flag, so it cannot see a run in a Personal Workspace or a folder feed.
@@ -106,11 +118,19 @@ uip solution deploy upgrade --name <deployment-name> --package-name <pkg> \
 
 # Discard the pending draft a rejected attempt left behind, then upgrade
 uip solution deploy upgrade <deployment-key> --version 2.0.0 --discard-draft --output json
+
+# Confirm the permanent deletion of resources the upgrade stops using (newer CLI builds)
+uip solution deploy upgrade <deployment-key> --version 2.0.0 --acknowledge-permanent-deletion --output json
 ```
 
-Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus }`, plus `PendingResources` (each with its `Reason`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey` and the state fields are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none.
+Find the deployment's key, name and package with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status, Operation, DeploymentName, ToVersion, PipelineDeploymentId, DeploymentKey, DeploymentStatus, Actions, ActivationStatus, OrchestratorUrl, FolderUrl }`, plus `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` when the deployment is not live; the key form adds `FromVersion` (the version left behind) and `InstallDeploymentKey` — the key that stays the same across upgrades, so a pipeline that comes back later should store that one, not `DeploymentKey`, which changes with every upgrade. `Status` is the pipeline run's terminal status — `DeploymentSucceeded` once the upgrade landed, or `Accepted` with `--no-wait` (where `Operation`, `DeploymentKey`, the state fields, and the links are absent, because no run has finished to report them). `DeploymentStatus` and `ActivationStatus` are the second axis: whether the new version **runs** (see below). `PipelineDeploymentId` is what `uip solution deploy status` reads. With `--discard-draft`, `DiscardedDraftKey` names the draft that was deleted first; it is absent when there was none. With `--acknowledge-permanent-deletion`, `PermanentlyDeletedResources` names each resource (`kind 'name'`) that was confirmed and deleted; it is absent otherwise.
+
+Use the returned [deployment links](pack-and-deploy.md#open-the-deployment-in-orchestrator); `FolderUrl` is present only when the installed folder key is known.
+
+On newer CLI builds a successful upgrade also checks that the deployment's folder can run the unattended jobs of the new version's RPA processes, test cases and MCP servers. It reports any missing runtime in `Data.Warnings` (also logged on stderr unless `--log-level` or `--log-file` says otherwise) and still exits as a success. Assign a machine to the folder instead of upgrading again — see [Folder runtime check](deploy-folder-runtimes.md).
 
 **Behavior and limits:**
+
 - The deployment's **existing configuration is preserved** — the server carries each unchanged resource's configuration forward and takes only changed specs from the new package, so an upgrade does not regenerate a credential asset's secret. Resources the new version adds are created. This is the reason to use `deploy upgrade` rather than uninstall-and-redeploy.
 - **Both forms work from CI/CD.** The key form resolves the key through a Pipelines lookup that external apps (client-credentials) can call, so it needs neither `--package-name` nor `--personal-workspace`: name, package and feed come from the deployment itself, and a key stored before an earlier upgrade still resolves to the deployment's current generation — so pass either the `Key` from `deploy list` or an `InstallDeploymentKey` you stored; both reach the live deployment. The name form needs `--package-name` because nothing name-keyed in Pipelines reports the package; with `--version` as well it makes no version lookup. It does check the name exists first — the install route treats an unknown name as a fresh install, so a typo fails with `ErrorCode: not_found` instead of creating a deployment. On a server that predates the by-key lookup, a key answers `ErrorCode: not_found` and the message points at the name form.
 - **An external app can only upgrade tenant-feed deployments.** The server ignores the feed header on client-credentials requests, so a Personal Workspace or folder-feed deployment — addressed by key, or by name with `--personal-workspace` — is refused (`ErrorCode: permission_denied`) rather than silently creating a new tenant-feed deployment under the same name. Run those upgrades with a user session.
@@ -120,12 +140,17 @@ Find the deployment's key, name and package with `uip solution deploy list`. On 
   - **Drop the attempt:** once the cause is fixed, `deploy upgrade <deployment-or-draft-key> --discard-draft [--version <v>]` deletes the draft and upgrades the live version with its own configuration. It works from CI/CD by key; the name form finds the draft only with a user session. A draft still being validated cannot be discarded yet (`Retry: RetryLater`). On a server without the Pipelines discard endpoint the command says so and installs nothing — delete the draft in Orchestrator (Solutions → the deployment → Delete draft), then retry.
   - **Finish the attempt:** re-run the `deploy run` that failed, with the **same** `--package-version` and a corrected `--config-file` — the server re-validates the draft with the new file. Settings and resource links the file does not name keep the values the draft was rejected with, so name every one you mean to change.
   - A deployment whose *first* install never completed has nothing to upgrade: finish it with `deploy run`, or delete the draft in Orchestrator.
+  - **Not for a draft that only awaits permanent-deletion consent** (next bullet): that one is neither fixed nor discarded but re-run with `--acknowledge-permanent-deletion`, and `--discard-draft` there means *upgrade with the deployment's current links*, which keeps the resources.
+- **An upgrade that would permanently delete resources needs consent.** When the upgrade unlinks a queue or bucket that no other folder uses, Orchestrator deletes it with its data, and newer servers ask first (schedule error `4026`). Older servers ask instead when a link replaces a copy the deployment installed. Newer CLI builds then stop: `Upgrading '<name>' will permanently delete <n> resource(s) along with their data: <kind> '<name>', …` (`ErrorCode: invalid_argument`), the resources also in `Data.PermanentDeletionResources` (shape in [When a deploy would permanently delete resources](pack-and-deploy.md#when-a-deploy-would-permanently-delete-resources)), the deployment still on its version, and the attempt kept as a pending draft. Ask the user, then either:
+  - **Confirm:** run the **same** `deploy upgrade` command with `--acknowledge-permanent-deletion` added. **Never** add `--discard-draft`, which deletes the draft that carries the configuration being confirmed and upgrades without it while still reporting success; the command refuses the two together on such a draft. With the flag, a pending draft of the same version that awaits this confirmation is re-run instead of refused as above; each listed resource is acknowledged, the upgrade runs once more within the same `--timeout`, and `PermanentlyDeletedResources` names what was deleted. A second refusal stops the command (no loop), and a refused acknowledgement (`Acknowledging the permanent deletion of … failed: …`) stops it before the second install. The flag has no effect with `--no-wait`, which never sees the run end: such a draft is refused as without it.
+  - **Keep the resources:** `deploy upgrade <draft-key> --discard-draft [--version <v>]` without the flag, which upgrades with the deployment's current links, or re-link or share those resources in Orchestrator first.
+  - On a CLI build without the flag the option is unknown; against a server that predates the confirmation, the upgrade never reaches a terminal status and the command reports its usual timeout (`did not finish within …s`, "It may still be running").
 - By default the command **waits** for the install to reach a terminal state (`--timeout <seconds>`, default 300; `--poll-interval <ms>`, default 5000). Pass `--no-wait` to return as soon as the install is accepted.
 - A failure reports the server's reason (for example `Solution folder not found` when the deployment's solution folder was deleted), not a bare status. The reason normally comes from the pipeline run itself; when the run record has already been recycled the CLI reads the deployment's validation result instead, and says `the server reported no reason.` only when the server genuinely gives none.
-- **`Status: DeploymentSucceeded` does not mean the new version runs.** Read `DeploymentStatus` and `ActivationStatus` in the same output. `SuccessfulInstall` / `NeedsSetupToActivate` means the new version is installed but does not run until "Setup activation" is completed in Orchestrator (Tenant > Solutions > Deployments; the UI shows the deployment as **Inactive (Needs setup)**) — typically an Integration Service connection whose configuration the upgrade could not carry over; `PendingResources` names it with the `Reason` the activation validation gives, and `NextSteps` says what to do. The old version keeps running meanwhile. Do **not** run the upgrade again: the content is already there. The CLI has no command for this step on an existing deployment (`deploy config link` only serves a new `deploy run`, and `deploy upgrade` takes no config file), and `deploy activate` is refused with `4007 … cannot be activated` until it is done. `ReadyToActivate` / `Inactive` is different: run `uip solution deploy activate <deployment-name>`. A pipeline that ends at `ValidationFailed` while the record reports `SuccessfulInstall` is reported the same way — the install landed and the errors, which open `NextSteps`, come from the activation validation the pipeline runs after the install (measured on both `deploy run` and `deploy upgrade`) — not as a rejected attempt.
-- **Any published version of the same package is a valid target.** Omit `--version` to take the newest (one extra lookup), or pass `--version <version>` for a specific one — including an older version, to step back. Requesting the version already deployed is not refused; it comes back as `Operation: "ConfigurationChange"` (see above) — unless a pending draft is in the way, which is refused whatever the version (see above).
+- **`Status: DeploymentSucceeded` does not mean the new version runs.** Read `DeploymentStatus` and `ActivationStatus` in the same output. `SuccessfulInstall` / `NeedsSetupToActivate` means the new version is installed but does not run until activation setup is completed in Orchestrator (Tenant > Solutions > Deployments; click **Activate deployment** on the deployment, which the UI shows as **Inactive (Needs setup)**) — typically an Integration Service connection whose configuration the upgrade could not carry over; `PendingResources` names it with the `Reason` the activation validation gives and the Orchestrator folders it lives in (`FolderPaths`), and `NextSteps` says what to do. On current servers this report is the same for an external app (CI/CD) as for a user session. The old version keeps running meanwhile. Do **not** run the upgrade again: the content is already there. The CLI has no command for this step on an existing deployment (`deploy config link` only serves a new `deploy run`, and `deploy upgrade` takes no config file), and `deploy activate` is refused with `4007 … cannot be activated` until it is done. `ReadyToActivate` / `Inactive` is different: run `uip solution deploy activate <deployment-name>`. A pipeline that ends at `ValidationFailed` while the record reports `SuccessfulInstall` is reported the same way — the install landed and the errors, which open `NextSteps`, come from the activation validation the pipeline runs after the install (measured on both `deploy run` and `deploy upgrade`) — not as a rejected attempt.
+- **Any published version of the same package is a valid target.** Omit `--version` to take the newest (one extra lookup), or pass `--version <version>` for a specific one — including an older version, to step back. Requesting the version already deployed is not refused; it comes back as `Operation: "ConfigurationChange"` (see above) — unless a pending draft is in the way, which is refused whatever the version (see above), the one exception being a same-version draft that awaits permanent-deletion consent, which `--acknowledge-permanent-deletion` re-runs.
 - **A key is one record, not the deployment.** `deploy run`, `deploy upgrade` and the Orchestrator wizard each create a new deployment record with its own key; `deploy list` shows the newest one, and `InstallDeploymentKey` is the one that never changes. A key from before an upgrade is *superseded*: `deploy upgrade <key>` resolves it to the deployment's current generation through the Pipelines lookup and upgrades that; on a server without the lookup, a user session's fallback reads the record's name and continues as the name form, so the version you ask for is what moves, and asking for the version already live is a `ConfigurationChange`. `deploy status <key>` answers `Superseded: true` with `CurrentDeploymentKey`. Store `InstallDeploymentKey`, or take the current key from `deploy list`.
-- **An abandoned "Setup activation" has an exit.** Starting the wizard in Orchestrator and leaving it creates an `ActivationSetup` / `Draft` record on top (`Actions: [Install, Delete]`). `uip solution deploy delete <deployment-name> --yes` removes that record alone; the installed record is the head again, still `NeedsSetupToActivate`, folder and resources untouched. Finishing the wizard instead lands `ActivationSetup` / `Successful` / `Active`.
+- **An abandoned activation wizard has an exit.** Starting the wizard in Orchestrator and leaving it creates an `ActivationSetup` / `Draft` record on top (`Actions: [Install, Delete]`). `uip solution deploy delete <deployment-name> --yes` removes that record alone; the installed record is the head again, still `NeedsSetupToActivate`, folder and resources untouched. Finishing the wizard instead lands `ActivationSetup` / `Successful` / `Active`.
 - The server decides what may be upgraded, and refuses synchronously — before any `PipelineDeploymentId` exists — when the deployment name does not exist, when it belongs to a different package than `--package-name`, when an operation is already in progress on it, when a pending draft for another version stands in the way (reported as the pending-draft refusal above), or when it is not in an upgradeable state. A deployment an **earlier CLI version** left in `ValidateError` (the late-validation state described above) is upgradeable on current Orchestrator, which is how you move it on; on an older Automation Solutions build it is refused, and uninstall-and-redeploy is the only way out.
 
 ## Step 3: Uninstall a Deployment
@@ -133,19 +158,37 @@ Find the deployment's key, name and package with `uip solution deploy list`. On 
 Remove a deployment, including all provisioned resources and the Orchestrator folder:
 
 ```bash
-uip solution deploy uninstall "MyDeployment" --output json
+uip solution deploy uninstall "MyDeployment" --yes --output json
 
 # With custom polling
-uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000 --output json
+uip solution deploy uninstall "MyDeployment" --yes --timeout 600 --poll-interval 10000 --output json
+
+# Past uncompleted jobs and the permanent deletion of linked resources -- only with the user's consent
+uip solution deploy uninstall "MyDeployment" --force --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<deployment-name>` | Name of the deployment to uninstall (required) | -- |
+| `-y, --yes` | Confirm the uninstall (required; the CLI never prompts) | -- |
+| `--force` | Uninstall past uncompleted jobs and the permanent deletion of resources replaced by links (sends `forceUninstall: true`); implies `--yes`. See [When the uninstall is refused](#when-the-uninstall-is-refused) | off |
 | `--timeout <seconds>` | Polling timeout | 360 |
 | `--poll-interval <ms>` | Polling interval | 5000 |
 
 This is destructive -- it removes the Orchestrator folder and all resources that were provisioned by the deployment.
+
+### When the uninstall is refused
+
+Orchestrator refuses an uninstall for two causes the caller may override. Both fail with `ErrorCode: invalid_argument` and `Retry: RetryWillNotFix` -- the consent is the flag, so retrying without it changes nothing:
+
+- **Uncompleted jobs** in the deployment's folder (`[2824] Jobs are not in final state yet.`): `Message` "Uninstall failed with status: FailedUninstall: this deployment has uncompleted jobs; --force uninstalls anyway.", `Data.JobsNotInFinalState: true`.
+- **Permanent deletion** of installed resources that were replaced by links: `Message` "...uninstalling it permanently deletes these resources and their data: Queue 'Invoices', ...", `Data.PermanentDeletionResources: [{ Key, Kind, Name }]`. On newer servers the refusal can come synchronously instead (HTTP 409, error `4026`, after an earlier attempt): `Message` "Deployment '<name>' was not uninstalled: ...", nothing ran.
+
+`Data` also carries `DeploymentName` and `InstanceId`. Show the user the cause and the listed resources and ask. Only on explicit consent re-run with `--force` (no `--yes` needed): unfinished jobs are abandoned, and the listed resources are deleted with their data. Without consent, do not uninstall; for uncompleted jobs alone, letting them finish and running the command again without `--force` also works.
+
+**Do not force a blocked uninstall.** When the validation also holds an error `--force` cannot skip, the failure does not offer `--force` and says `Retry: RetryLater`; the 409 form reads "Deployment '<name>' was not uninstalled: its Uninstall validation reports errors that --force cannot get past: [code] text"; after a `FailedUninstall` run the service's own reasons are printed instead. Resolve that error in Orchestrator, then run `deploy uninstall <name> --yes` again (it then asks for any confirmation on its own).
+
+A CLI build that predates the flag rejects `--force` as an unknown option: update the CLI, or force-uninstall from the Orchestrator Solutions UI. Older servers already accept `forceUninstall` (the UI's force uninstall uses it).
 
 ### Then Delete the Deployment Record
 
@@ -164,6 +207,8 @@ The service offers one action per state, and `deploy list` reports which in `Act
 | Never installed (`Draft`, e.g. a failed install) | `Install, Delete` | `deploy delete` |
 
 So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first: when the record lists actions but not `Delete` it refuses locally and names the command to run instead, so it cannot remove a live deployment's resources. A record that lists no actions at all is the exception — nothing is known about it, so the request goes to the server and the server decides.
+
+**It works from CI/CD.** On a server with the Pipelines delete route, an external app (client-credentials) login can delete tenant-feed records, so a pipeline can clean up after its own uninstalls and failed installs. On an older server, a user session falls back to the previous route, and an external app is refused (`ErrorCode: permission_denied`, `Retry: RetryWillNotFix`) with nothing deleted: run that delete with a user session. A draft that is still being validated cannot be deleted yet (`Retry: RetryLater`); wait for its run to finish, then retry.
 
 The leftover record does not block a redeploy of the same package, so the delete is housekeeping. Do it when a tenant is shared, where uninstalled and failed deployments otherwise accumulate in every `deploy list`.
 
@@ -207,6 +252,8 @@ uip solution packages download "MySolution" --package-version "1.0.0" --destinat
 
 Use `--destination <path>` for the local output file or directory. Reserve `--output json` for the CLI response format when you need to parse the command result.
 
+On CLIs that report it, `Data.SolutionId` is the ID of the solution the package was packed from (the `.uipx` `SolutionId`). It is how a deployed package leads back to its source: when that solution is in Studio Web, `uip solution download <SolutionId> --extract` exports it. Find the package of a deployment with `uip solution deploy list` (`PackageName`, `PackageVersion`). A CLI that predates the field never reports it; a newer one leaves it out only when the archive carries no solution ID.
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<package-name>` | Published solution package name | -- |
@@ -245,7 +292,7 @@ List deployments, uninstall an old one, and clean up the published package versi
 uip solution deploy list --limit 20 --output json
 
 # Uninstall the old deployment
-uip solution deploy uninstall "MySolution-v1" --output json
+uip solution deploy uninstall "MySolution-v1" --yes --output json
 
 # Remove the record it leaves behind
 uip solution deploy delete "MySolution-v1" --yes --output json
@@ -288,7 +335,7 @@ Activation is not instant. It provisions processes, queues, assets, and other re
 
 ### Uninstall is Destructive
 
-`deploy uninstall` removes the Orchestrator folder and all resources inside it. There is no undo. Verify the deployment name carefully before running this command.
+`deploy uninstall` removes the Orchestrator folder and all resources inside it. There is no undo. Verify the deployment name carefully before running this command. `--force` goes further -- it abandons unfinished jobs and deletes resources replaced by links with their data -- so pass it only with the user's consent ([When the uninstall is refused](#when-the-uninstall-is-refused)).
 
 ### Polling Units
 

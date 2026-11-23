@@ -164,11 +164,23 @@ uip solution deploy run -n "InvoiceAutomation-v2" \
   --folder-name "MySolutionFolder" --output json
 ```
 
-A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId` and `InstanceId`. When a resource needs "Setup activation" in Orchestrator before the deployment can be activated — an Integration Service connection that must be authenticated, typically — the run is still `Result: Success`: the install landed, `ActivationStatus: NeedsSetupToActivate`, `PendingResources` names each resource with its `Reason` (`[CNS1072] You will need to authenticate this connection before proceeding further`), and `NextSteps` gives the Orchestrator step. Do **not** run the deploy again: the deployment exists. On such a run the pipeline itself can end at `ValidationFailed` **after** the install landed (the deployment record reports `SuccessfulInstall`); the CLI still reports the deployment, keeps the pipeline's word in `Status`, and opens `NextSteps` with the pipeline's errors, which come from the activation validation the pipeline runs after the install. `ReadyToActivate` means the install landed and the activation did not run: `uip solution deploy activate <name>`. Any other refused activation is a failure with `Retry activation with: uip solution deploy activate <name>`.
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`, along with `DeploymentKey`, `PipelineDeploymentId`, `InstanceId`, and the [deployment links](#open-the-deployment-in-orchestrator) `OrchestratorUrl` / `FolderUrl` (when available). When a resource needs activation setup in Orchestrator (click **Activate deployment** on the deployment) before it can be activated — an Integration Service connection that must be authenticated, typically — the run is still `Result: Success`: the install landed, `ActivationStatus: NeedsSetupToActivate`, `PendingResources` names each resource with its `Reason` (`[CNS1072] You will need to authenticate this connection before proceeding further`) and its Orchestrator folders (`FolderPaths`, `null` when the server does not report them), and `NextSteps` gives the Orchestrator step. When the server already reports that state after the install, `deploy run` does not attempt the activation. Do **not** run the deploy again: the deployment exists. On such a run the pipeline itself can end at `ValidationFailed` **after** the install landed; the CLI still reports the deployment, keeps the pipeline's word in `Status`, adds `DeploymentStatus: SuccessfulInstall` to say the install landed, and opens `NextSteps` with the pipeline's errors, which come from the activation validation the pipeline runs after the install. Older CLI builds can report such a run as a failure ("Nothing was installed … pending draft") when they read it before the deployment record settled; `uip solution deploy status <name>` then shows `DeploymentStatus: SuccessfulInstall`, so do not deploy again or delete it. `ReadyToActivate` means the install landed and the activation did not run: `uip solution deploy activate <name>`. Any other refused activation is a failure with `Retry activation with: uip solution deploy activate <name>`.
 
-This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned — that is a `ValidationFailed` before the install; the one whose record reports `SuccessfulInstall` is the landed case above, and a success. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
+This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes through the same Pipelines install as a tenant one, so it validates the package against the target before installing and waits for the run to reach a terminal state — it does not return early. A configuration the target rejects fails the command (exit `1`, `ErrorCode: invalid_argument`, `ValidationFailed` in `Message`) with the per-resource errors in `Instructions`, and nothing is provisioned — that is a `ValidationFailed` before the install; the one with `DeploymentStatus: SuccessfulInstall` is the landed case above, and a success. (`--wait` is still accepted and does nothing; older CLI versions needed it on those feeds.)
 
 The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
+
+While `deploy run` waits, progress goes to **stderr**: one plain line per observed status change, plus a heartbeat after at least 30 seconds without an update. Lines include elapsed time and the server's pipeline, operation, deployment and activation statuses when the polled response carries them; there is no estimated percentage. The same progress appears for waiting `deploy upgrade`, `deploy activate` and `deploy uninstall`; `upgrade --no-wait` returns immediately. Terminals and CI both get plain lines. `--log-file` routes progress into the file instead of stderr; `--log-level error` silences progress. MCP `run_command` combines stdout and stderr in its text response, so use `--log-level error` when that combined response must contain only the result. **Stdout stays the same final envelope**, so parse stdout alone for `--output json` and keep stderr visible while waiting.
+
+<!--skill-flavor:tests-upload:start-->
+A Tests project rides in the solution package but gets no solution resource, so `deploy run` does not install it. Upload its package to the deployment folder's feed yourself — the `<SOLUTION>.Tests.<PROJECT>.<VERSION>.nupkg` under `files/` in the packed `.zip`. The upload is refused (`A testing project should contain at least one entry point.`) unless at least one of its test cases has `editingStatus` `Publishable` in `project.json`:
+
+```bash
+uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --output json
+```
+
+`<FOLDER_PATH>` is the `Data.FolderPath` that `deploy run` returned. Orchestrator creates the testing process from the upload, so skip `uip or processes create`: it is refused (`A testing process already exists for this package`).
+<!--skill-flavor:tests-upload:end-->
 
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
@@ -188,10 +200,21 @@ Key options:
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
 | `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
+| `--acknowledge-permanent-deletion` | Confirm that resources this deploy stops using are deleted with their data: a queue or bucket it unlinks that no other folder uses (older servers: an installed copy a link deletes, `deleteInstalledCopy: true`). Newer CLI builds only. See [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources) | (off — the deploy stops and lists them) |
 | `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
 | `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI proactively refreshes it before the deploy starts. Useful for long deploys close to token expiry. | 10 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
+
+### Open the deployment in Orchestrator
+
+On successful `deploy run`, `Data.OrchestratorUrl` opens the deployment overview in Orchestrator's Solutions tab. `Data.FolderUrl` opens the automations page in the installed solution folder when its key is known. With `--log-level info`, the CLI also writes `Deployed: <OrchestratorUrl>` to stderr through the logger, or to the configured log file.
+
+Use the returned links: they use the session's base URL, organization name and tenant name, and select the right tenant or folder feed. Browser routes are `orchestrator_/solutions-management` and `orchestrator_/folder-solutions-management`; `automationsolutions_` serves the API and remote module, and the deprecated `solutions_` route does not work. If the deployment key is unavailable, the link opens the feed's Solutions tab. A missing folder key omits `FolderUrl`; missing browser session coordinates or a URL construction error omit both links without changing the deploy result. If links are absent, direct the user to Orchestrator → Tenant (or the target folder feed) → Solutions → Deployments; never construct a URL by hand.
+
+### A folder with no runtime for a process
+
+On newer CLI builds, once the package is installed, `deploy run` and `deploy upgrade` check that the deployment's folder has a runtime for the unattended jobs of its RPA processes, test cases and MCP servers. A missing one is reported in `Data.Warnings`, and the deploy still exits as a success: do **not** deploy again, assign a machine to the folder. What is checked, the warning texts and the fix are in [Folder runtime check](deploy-folder-runtimes.md).
 
 ### A deploy that stops in `Draft`
 
@@ -206,7 +229,9 @@ uip solution deploy list --personal-workspace --output json
 uip solution deploy list --feed "<name-or-key>" --output json
 ```
 
-The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`:
+The server can also refuse the install request itself over one of the deployment's resources, with an HTTP 400 whose message names that resource — `A resource with kind: 'connection' and name: '…' already exists in the same location.` for two links to connections that share a name, `Property '<property>' is required.` for an empty required property — and it still keeps the attempt as a draft. `Instructions` then say to fix that resource in the `--config-file`, and name the draft or the command that lists it. Older CLI builds answer that 400 with a package hint instead (`Check package name/version with: uip solution packages list.`, or `Ensure the package was published …` on a feed) and do not mention the draft: the package is fine, so fix the resource and rerun with the same `--name` and `--package-version`. Each retry under a new name leaves one more draft; `uip solution deploy list --operation-status Draft --output json` (with the deploy's feed flag) lists them.
+
+The fix is the deploy config, not a retry — rerunning the same command with the same config reproduces the same `Draft`. (One exception, a refusal that asks for consent rather than a fix: [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).)
 
 ```bash
 uip solution deploy config get "MySolution" -d config.json --output json
@@ -222,7 +247,48 @@ uip solution deploy run -n "MyDeployment" \
 
 Rerun it with the **same** `--name` and `--package-version` as the attempt that failed — the server re-validates the draft with the new file. That holds for a draft left by an install and by an update of a live deployment alike, and the CLI's "already deployed" guard deliberately lets it through, because rerunning is the fix. Settings and resource links the file does not name keep the values the draft was rejected with, so name every one you mean to change.
 
-While the draft exists it owns the deployment, as in the Orchestrator UI, which offers only "continue editing" and "delete draft". `deploy run` refuses any *other* version for that name before sending anything (`ErrorCode: invalid_argument`, naming the draft) — including the version already live, which the server would otherwise answer by installing the draft's version instead — and `deploy upgrade` refuses the deployment outright. To drop the attempt instead, discard the draft first: in Orchestrator (Delete draft), or, for an update of an existing deployment, `uip solution deploy upgrade <draft-key> --discard-draft --version <live-version>` (see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)). Under an external app that `deploy run` check only warns and the deploy goes ahead — the server then runs the draft and installs the draft's version — so from CI/CD ask only for the draft's version, or discard the draft first.
+While the draft exists it owns the deployment, as in the Orchestrator UI, which offers only "continue editing" and "delete draft". `deploy run` refuses any *other* version for that name before sending anything (`ErrorCode: invalid_argument`, naming the draft) — including the version already live, which the server would otherwise answer by installing the draft's version instead — and `deploy upgrade` refuses the deployment outright. To drop the attempt instead, discard the draft first: in Orchestrator (Delete draft), with `uip solution deploy delete <deployment-name> --yes` (see [Then Delete the Deployment Record](activate-and-manage.md#then-delete-the-deployment-record)), or, for an update of an existing deployment, `uip solution deploy upgrade <draft-key> --discard-draft --version <live-version>` (see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place)). Under an external app that `deploy run` check only warns and the deploy goes ahead — the server then runs the draft and installs the draft's version — so from CI/CD ask only for the draft's version, or discard the draft first.
+
+#### When a deploy would permanently delete resources
+
+An in-place update under an existing `--name` can delete resources with their data. On newer servers that is a queue or bucket the update unlinks (`deploy config unlink`) when the solution folders were the last place it was shared: unsharing it deletes it in Orchestrator. Older servers, and tenants that do not run this check yet, ask instead when a link (`deploy config link`, `linkToResource`) replaces a copy the deployment already **installed**. Either way the server asks for confirmation first (schedule error `4026`), and newer CLI builds stop there instead of deploying. On an older server they stop this way only for a link that deletes its copy (`deleteInstalledCopy: true`); a link that keeps it is refused instead (see the end of this section):
+
+```json
+{
+  "Result": "Failure",
+  "Message": "Deploying '<DEPLOYMENT_NAME>' will permanently delete 1 resource(s) along with their data: queue '<QUEUE_NAME>'. The deployment stops using them and nothing else holds them: a queue or bucket it unlinks that no other folder uses, or, on older servers, an installed copy a link replaces.",
+  "Instructions": "Nothing was installed; the attempt is kept as a pending draft (<DRAFT_KEY>). To confirm the deletion, re-run the same command with --acknowledge-permanent-deletion. To keep the resources instead, keep those resources linked in the --config-file (uip solution deploy config link <file> <resource> --name <existing> [--folder-path <path>]), or share them into another folder in Orchestrator first, then re-run. On an older server that still asks for a link that replaces an installed copy, remove the link instead (uip solution deploy config unlink <file> <resource>).",
+  "ErrorCode": "invalid_argument",
+  "Retry": "RetryWillNotFix",
+  "Data": {
+    "PipelineDeploymentId": "<PIPELINE_DEPLOYMENT_ID>",
+    "DeploymentKey": "<DRAFT_KEY>",
+    "PermanentDeletionResources": [{ "Key": "<RESOURCE_KEY>", "Kind": "queue", "Name": "<QUEUE_NAME>", "SolutionResource": "<SOLUTION_RESOURCE_NAME>" }]
+  }
+}
+```
+
+`Message` names each resource as `kind 'name'`. Each `Data.PermanentDeletionResources` entry has the `Key` to acknowledge, the `Kind`, and the `Name` of the resource that gets deleted; `SolutionResource` is added only when the solution's own resource has a different name. Nothing was installed: the live version keeps running and the attempt stays as a pending draft. The config is not wrong, so there is nothing to fix in it; the question is whether the user wants those resources and their data gone. Ask, then take one of two ways out:
+
+- **Confirm:** re-run the **same** command with `--acknowledge-permanent-deletion`. Same `--name`, same `--package-version`, same `--config-file`, so the server reuses the draft. The CLI acknowledges each listed resource, runs the identical install once more within the same `--timeout`, and the success output names what was deleted in `PermanentlyDeletedResources`. It never acknowledges a list it could not read, and if the server still asks after that one retry the command stops rather than loop (`The server still requires confirmation for '<name>' after acknowledging …`). An acknowledgement the server refuses fails (`Acknowledging the permanent deletion of <kind> '<name>' (<key>) failed: …`) before the second install. A `404` there means the server does not offer the acknowledge route yet, so confirm in Orchestrator instead.
+- **Keep the resources:** keep them linked in the `--config-file` (`uip solution deploy config link <file> <resource> --name <existing> [--folder-path <path>]`), or share them into another folder in Orchestrator first, then re-run the same command without the flag. On an older server that asks about a link replacing an installed copy, remove that link (`uip solution deploy config unlink <file> <resource>`): such a server cannot keep the copy.
+
+**On an older server, a link that keeps its copy is refused, not confirmed.** Such a server ignores `deleteInstalledCopy` and still asks to confirm deleting the copy. When the `--config-file` links that resource with `deleteInstalledCopy: false` (the default), `deploy run` stops with `Deploying '<DEPLOYMENT_NAME>' would permanently delete the installed copy of <kind> '<name>', along with its data, although the --config-file links it with deleteInstalledCopy: false (keep, the default): this server does not support keeping the installed copy…` (`ErrorCode: invalid_argument`, `Retry: RetryWillNotFix`). It never acknowledges, with or without `--acknowledge-permanent-deletion`. Nothing was installed, the attempt stays a pending draft, and `Data.PermanentDeletionResources` lists the resources as above. `Instructions` gives the exact commands. Ask the user, then:
+
+- **Accept the deletion:** set it on the link (`uip solution deploy config link <file> <resource> --name <existing> --delete-installed-copy`), then re-run the same command with `--acknowledge-permanent-deletion`.
+- **Keep the copy:** remove the link (`uip solution deploy config unlink <file> <resource>`), then re-run.
+
+So on an older server the ordinary stop above happens only for a link with `deleteInstalledCopy: true`.
+
+`-y, --yes` is not this consent: it only skips the already-deployed check. Nothing prompts. The same stop applies to `deploy upgrade` when it unlinks such a queue or bucket (older servers: when it links over an installed copy), and there the confirming re-run must not add `--discard-draft` — see [Upgrade a Deployment In Place](activate-and-manage.md#upgrade-a-deployment-in-place). The flag only exists on newer CLI builds; on an older one the option is unknown (check `uip solution deploy run --help`). Against a server that predates the confirmation, such a deploy never reaches a terminal status, and the CLI reports its usual timeout ("may still be in progress").
+
+### A re-run under an existing deployment's name
+
+The Pipelines install is keyed on the deployment name. `deploy run --yes` with the `--name` of a live deployment of the **same** package does not create a second copy: it re-applies that deployment's configuration (same version) or upgrades it (another version), in the folder it already has — so a separate copy needs a different `--name`, not just `--yes`. Two refusals are about the name itself, and neither means the package is missing from the feed, so do not answer them with a publish: `DeploymentAlreadyInProgress` (`Retry: RetryLater`) means an earlier run under that name has not finished — wait, follow it with `deploy list` under the same feed flag, then `deploy upgrade <deployment-key>` or pick another `--name`; `NameInUseByAnotherDeployment` means the name belongs to a deployment of another package — pick another `--name`. Any other install refusal on a Personal Workspace or folder feed usually is a package that was never published there (`uip solution publish <package> --personal-workspace` / `--feed <name-or-key>`).
+
+### Solutions that carry an ontology
+
+Name conflicts, the post-deploy check and install errors for a solution with an ontology: see [scenarios/ontology-solution.md](scenarios/ontology-solution.md).
 
 ## Step 5: Check Deployment Status
 
@@ -232,7 +298,7 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
 
-`deploy status` also accepts a **deployment name** or **key** (the `DeploymentKey` in the `deploy run` output, or a key from `deploy list`): it then reports the record's `OperationStatus`, `DeploymentStatus`, `ActivationStatus`, `Actions`, whether the key is `Superseded`, and, when the deployment is not live, `PendingResources` (each with its `Reason`) and `NextSteps` — see [Check Deployment Status](activate-and-manage.md#step-2-check-deployment-status).
+`deploy status` also accepts a **deployment name** or **key** (the `DeploymentKey` in the `deploy run` output, or a key from `deploy list`): it then reports the record's `OperationStatus`, `DeploymentStatus`, `ActivationStatus`, `Actions`, whether the key is `Superseded`, and, when the deployment is not live, `PendingResources` (each with its `Reason` and `FolderPaths`) and `NextSteps` — see [Check Deployment Status](activate-and-manage.md#step-2-check-deployment-status).
 
 The CLI also falls back to the persistent `searchSearchDeployments22` record if the pipeline service has already recycled the in-flight tracking ID — so a deployment that finishes while the CLI is between polls is still surfaced as `DeploymentSucceeded` rather than a polling failure.
 
@@ -272,7 +338,8 @@ The CLI exposes `get` / `set` / `link` / `unlink` for the common edits, but the 
   "configuration": { /* kind-specific properties */ },
   "linkToResource": {                                 // optional — present only when linked
     "name": "ProductionBucket",
-    "folderPath": "Shared/Production"
+    "folderPath": "Shared/Production",
+    "deleteInstalledCopy": false                      // false (default, also when omitted): keep the copy the previous version installed; true: delete it with its data. Applies to deploy run --config-file onto an existing deployment
   }
 }
 ```
@@ -315,9 +382,37 @@ uip solution deploy config link config.json MyQueue \
   --name ProductionQueue --folder-path "Shared/Production"
 ```
 
-Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist.
+Effect on the file: appends `linkToResource: { name, folderPath, deleteInstalledCopy }` to the matched resource entry (`deleteInstalledCopy` is explained below). The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist. An `Entity` resource cannot be linked: the deploy refuses it (`Resource kind 'entity' does not support linking.`), so every deployment provisions a new, empty entity in its folder. Load its records after the deploy:
+
+```bash
+uip df records import "<ENTITY_ID>" --file "<CSV_PATH>" --folder-key "<FOLDER_KEY>" --output json
+```
+
+`<FOLDER_KEY>` is the deployment's `FolderKey` in `uip solution deploy list --output json`; `uip df entities list --folder-key "<FOLDER_KEY>" --output json` gives the entity's `Id`, and the CSV's header row names each field by its `DisplayName` from that listing — a field's `Name` is refused as `Invalid column header`.
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
+
+When the file is passed to `deploy run --config-file` for an existing deployment (a re-deploy under an existing `--name`), a link can replace a copy the previous version installed. The link decides what happens to that copy. Keeping it is the default; deleting it needs the flag:
+
+```bash
+uip solution deploy config link config.json MyQueue \
+  --name ProductionQueue --delete-installed-copy
+```
+
+| Flag | Written to `linkToResource` | Installed copy when the link is deployed |
+|---|---|---|
+| (none) | `"deleteInstalledCopy": false` | Kept in its folder, no longer managed by the solution |
+| `--keep-installed-copy` | `"deleteInstalledCopy": false` | Kept, as with no flag; states the default explicitly |
+| `--delete-installed-copy` | `"deleteInstalledCopy": true` | Permanently deleted with its data |
+
+The two flags cannot be combined (exit `3`, file unchanged). A first install has no installed copy, and `deploy upgrade` takes no config file, so the flags have no effect there. `config link` replaces the whole link, so re-linking without a flag resets an earlier `--delete-installed-copy` to keep; `Data.LinkedTo.DeleteInstalledCopy` in the output shows what was written. `deploy run` also sends `false` for a link in the file with no `deleteInstalledCopy` key (hand-edited, or written by an older CLI), without changing the file. So deleting a copy always needs an explicit `--delete-installed-copy` or `"deleteInstalledCopy": true`. Newer servers do not ask for consent here, because the link is the choice. Older servers cannot keep the copy, see [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
+
+Four refusals come from such links. Errors `5028` and `5002` stop the install call before anything runs: nothing is scheduled, but the attempt is kept as a pending draft, see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft). `deploy run` reports `ErrorCode: invalid_argument`, `Retry: RetryWillNotFix`.
+
+- **`'<name>' cannot be kept: it has the same name as the installed copy in the solution folder…` (error `5028`).** A kept copy already holds the name of the link's target. Two cases: this link keeps its own copy (the default) and its target has that copy's name, or another resource of the same kind keeps a copy with that name in the same folder. The second case fires even when this link deletes its own copy, so `--delete-installed-copy` on this link does not help there. A link keeps its copy by default, so a target with the copy's own name is refused until that link sets `--delete-installed-copy` or targets another name. Delete the copy that holds the name (`deploy config link <file> <resource> --name <existing> --delete-installed-copy` on the link that keeps it), or link a target with a different name, then re-run.
+- **`A resource with kind: '<kind>' and name: '<name>' already exists in the same location.` (error `5002`).** Two names would match in the solution folder: a kept copy has the same name as another resource's name or link name, or two links point at targets with the same name. Names compare case-insensitively. Link a target with a different name, or stop keeping the copy (`--delete-installed-copy` on the link that keeps it), then re-run. A resource name set in the config file that another resource of that kind already uses there gets the same refusal: choose another name.
+- **`ValidationFailed` with `A resource named '<X>' already exists in the solution folder…`.** Orchestrator's link name check on upgrade (not every tenant runs it yet): a resource in the solution folder already has the link target's name. Link a target with a different name, or rename or delete `<X>` in Orchestrator first, then re-run. The attempt is a normal draft, see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft).
+- **`Deploying '<name>' would permanently delete the installed copy of <kind> '<name>'… this server does not support keeping the installed copy…`.** An older server ignored the keep choice. `--acknowledge-permanent-deletion` does not get past it; the attempt is a pending draft. Set `--delete-installed-copy` on the link and confirm, or unlink to keep the copy, see [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
 
 ### Unlink a Resource
 
@@ -345,6 +440,8 @@ uip solution deploy run -n "InvoiceAutomation-Prod" \
 ```
 
 Without `--config-file`, the deployment uses package defaults. With `--config-file`, every resource is provisioned exactly as the file describes — fresh-install for any entry without `linkToResource`, bound for any entry with one.
+
+Re-running under an existing `--name` updates that deployment in place. A link there to a resource the deployment already installed keeps the installed copy in its folder, unless the link sets `--delete-installed-copy` (see [Link to an Existing Orchestrator Resource](#link-to-an-existing-orchestrator-resource)). Unlinking a queue or bucket that no other folder uses deletes it, so the deploy stops for consent (`--acknowledge-permanent-deletion`). Older servers stop for consent on a link that deletes an installed copy instead, and refuse a link that keeps one. See [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
 
 ---
 
@@ -436,7 +533,7 @@ Two ways around it:
 # A. Let deploy create the folder FIRST, then provision into it.
 uip solution deploy run --name my-deployment --package-name my-package \
   --package-version 1.0.0 --folder-name MySolution --output json
-# → read Data.FolderPath / Data.FolderKey from the response, then create the
+# → read Data.FolderPath from the response, then create the
 #   assets, folder-deploy IXP, and assign the robot into THAT folder.
 
 # B. Skip solution deploy and bind each piece into the existing folder.
@@ -453,7 +550,7 @@ On `deploy run`, `--parent-folder-path` is the **parent** folder, not the deploy
 
 ### Config `link` Connects to Existing Resources
 
-`config link` does not copy or move a resource. It writes a `linkToResource` directive that points the deployment at an existing Orchestrator/Apps resource instead of creating a new one. The linked resource must already exist in the specified folder when `deploy run` executes.
+`config link` does not copy or move a resource. It writes a `linkToResource` directive that points the deployment at an existing Orchestrator/Apps resource instead of creating a new one. The linked resource must already exist in the specified folder when `deploy run` executes. When the file is passed to `deploy run --config-file` for an existing deployment, linking a resource the deployment already installed keeps that copy in its folder, unless the link carries `--delete-installed-copy` (see [Link to an Existing Orchestrator Resource](#link-to-an-existing-orchestrator-resource)). Older servers cannot keep the copy, see [When a deploy would permanently delete resources](#when-a-deploy-would-permanently-delete-resources).
 
 ### Cross-Resource References Don't Auto-Update
 

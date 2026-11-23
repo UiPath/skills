@@ -172,6 +172,8 @@ Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, `Data.TraceId`, a
 ```bash
 uip solution init "<SOLUTION_NAME>" --output json
 ```
+
+Only for a new solution. If the folder already holds a `.uipx`, do not run it ([Critical Rule 10](critical-rules/critical-rules.md)): it overwrites the manifest with a new `SolutionId` and an empty `Projects` list.
 <!--skill-flavor:create-solution:end-->
 
 ### Register Project with Solution
@@ -259,12 +261,6 @@ Uninstall removes the resources and the folder; the deployment itself stays in `
 uip solution deploy delete "<DEPLOYMENT_NAME>" --yes --output json
 ```
 
-### Bundle for Upload
-
-```bash
-uip solution bundle . -d ./dist --output json
-```
-
 ## Resource Discovery
 
 `uip solution resources list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
@@ -285,6 +281,8 @@ uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--
 - `--search <term>` — substring match on the resource name (case-insensitive). **Only valid with `--source remote`.**
 
 > **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), both flags must be omitted — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
+
+> **Always pass `--solution-folder <SOLUTION_DIR>` with `--source local`.** `<SOLUTION_DIR>` is the folder containing the `.uipx` (absolute, or relative such as `..` from an agent project). Run from any other folder without it — the workspace root or the agent project — and the CLI returns `Success` with empty `Data`, not an error. A `--solution-folder` that exists but is not the solution folder also returns empty `Data`. So empty `Data` for a resource the user says is in the solution means the wrong folder: confirm the path contains the `.uipx` and re-run. Never fall back to `--source remote` to find an in-solution resource — a same-named remote copy has a different `Key` and folder.
 
 **Output row:**
 
@@ -352,6 +350,8 @@ All commands run from the same working directory — no `cd` needed. Pass paths 
 
 <!--skill-flavor:e2e-scaffold:start-->
 ```bash
+# Skip `solution init` when <SOLUTION_NAME>/ already holds a `.uipx`: it
+# overwrites the manifest (new SolutionId, empty Projects).
 uip solution init "<SOLUTION_NAME>" --output json
 # `agent init` auto-registers the project in the parent `.uipx` because
 # the agent path lives inside the solution directory. Confirm via

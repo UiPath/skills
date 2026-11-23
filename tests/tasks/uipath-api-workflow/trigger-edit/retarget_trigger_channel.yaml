@@ -16,12 +16,8 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: _setup
-      mount_point: _setup
-
-pre_run:
-  - command: "python3 _setup/seed.py"
-    timeout: 60
+      path: _fixtures/SlackAlert
+      mount_point: SlackAlert
 
 initial_prompt: |
   The `SlackAlert` API workflow project currently fires when a button is
@@ -36,7 +32,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The trigger in Workflow.json now targets the new channel"
-    command: 'grep -q "C_NEW_CHANNEL_ID" SlackAlert/Workflow.json'
+    command: 'grep -q "C_NEW_CHANNEL_ID" SlackAlert/SlackAlert/Workflow.json'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -44,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "PRIMARY — the EventTrigger binding tracks the new channel (without it the deploy still subscribes to the old one)"
-    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); t=[r for r in d[\"resources\"] if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and \"C_NEW_CHANNEL_ID\" in t[0][\"metadata\"].get(\"FilterExpression\",\"\") else 1)" SlackAlert/bindings_v2.json'
+    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); t=[r for r in d[\"resources\"] if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and \"C_NEW_CHANNEL_ID\" in t[0][\"metadata\"].get(\"FilterExpression\",\"\") else 1)" SlackAlert/SlackAlert/bindings_v2.json'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -52,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "No reference to the old channel survives in either artifact"
-    command: '! grep -rq "C_OLD_CHANNEL_ID" SlackAlert/Workflow.json SlackAlert/bindings_v2.json'
+    command: '! grep -rq "C_OLD_CHANNEL_ID" SlackAlert/SlackAlert/Workflow.json SlackAlert/SlackAlert/bindings_v2.json'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -60,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "The trigger is still the first activity after WorkflowStart, still an IntSvcEvent call"
-    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); seq=d[\"do\"][0][\"Sequence_1\"][\"do\"]; sys.exit(0 if list(seq[0])[0]==\"WorkflowStart\" and seq[1][list(seq[1])[0]].get(\"call\")==\"UiPath.IntSvcEvent\" else 1)" SlackAlert/Workflow.json'
+    command: 'python3 -c "import json,sys; d=json.load(open(sys.argv[1])); seq=d[\"do\"][0][\"Sequence_1\"][\"do\"]; sys.exit(0 if list(seq[0])[0]==\"WorkflowStart\" and seq[1][list(seq[1])[0]].get(\"call\")==\"UiPath.IntSvcEvent\" else 1)" SlackAlert/SlackAlert/Workflow.json'
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -75,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow still passes offline validation"
-    command: 'uip api-workflow validate SlackAlert/Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'uip api-workflow validate SlackAlert/SlackAlert/Workflow.json --output json | grep -q ''"Status": "Valid"'''
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

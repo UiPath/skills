@@ -7,12 +7,17 @@ description: >
   are exercised anywhere. The paging assertion is the sharp one: the second page
   of a five-per-page walk is `--limit 5 --offset 5`, so an agent that treats
   `--offset` as a page number rather than a zero-based item offset fails it.
-  Graders are segment-scoped (a lookahead stops at newline, `&&`, `;`, `|`, or the
-  next `uip`) so batched calls grade per command, and `list detailed` is accepted
-  for the paged cross-trace read — same filters, same data; the span read must
-  stay plain `list`.
-  Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
+  `list detailed` is accepted for the paged cross-trace read — same filters,
+  same data; the span read must stay plain `list`.
+  `uip` is an offline `record_cli` mock that answers every call with a 404
+  envelope — the graded behavior is the argv each call received.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 
 run_limits:
   expected_turns: 12
@@ -32,26 +37,51 @@ initial_prompt: |
   back; do not go looking for substitute traces or agents.
 
 success_criteria:
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  # `verb` is a token prefix, so "traces feedback list" also matches
+  # `list detailed` — intended for the cross-trace criteria below.
+  - type: cli_called
     description: "Agent scoped the first read to a single span with --span-id"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?!\s+detailed)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--span-id)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback list"
+    flags:
+      span-id: "b7e41c93a05d2f68"
+      agent-id: {absent: true}
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  # Must-NOT guard; its positive control is the criterion above.
+  - type: cli_called
+    description: "The span read stayed plain `list`, not `list detailed`"
+    tool: uip
+    verb: "traces feedback list detailed"
+    flags:
+      span-id: {present: true}
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: cli_called
     description: "Cross-trace read filtered by sentiment and agent attribution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?:\s+detailed)?(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--agent-version)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback list"
+    flags:
+      negative: {present: true}
+      agent-id: "c41d7b62-05ae-4f39-9a18-73e2b6d4c08f"
+      agent-version: "2.4.0"
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Second page of that same filtered walk is --limit 5 --offset 5 (zero-based offset)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list(?:\s+detailed)?(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--negative)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--limit[\s=]5(?:\s|$))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--offset[\s=]5(?:\s|$))'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback list"
+    flags:
+      negative: {present: true}
+      limit: "5"
+      offset: "5"
     weight: 2.0
     pass_threshold: 1.0

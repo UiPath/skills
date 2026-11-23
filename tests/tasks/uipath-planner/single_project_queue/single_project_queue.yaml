@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-single-project-queue
+task_id: skill-planner-design-single-project-queue
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill on a PDD for a
   SINGLE RPA project that consumes an EXISTING Orchestrator queue owned by an
@@ -8,7 +8,7 @@ description: >
   schema) and the independent Attendance/Initiation project-mode dimensions.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
   UiPath Automation Cloud as the delivery model.
 
@@ -16,7 +16,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Payment Exception Rework
+  # Process Definition Document: Payment Exception Rework
 
   ## Process Overview
   - **Process Name:** Payment Exception Rework
@@ -108,7 +108,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
+  # Full `design` SDD authoring runs in one unbroken autonomous turn. Raise BOTH
   # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
   # turn_timeout for the long authoring turn.
   task_timeout: 2700

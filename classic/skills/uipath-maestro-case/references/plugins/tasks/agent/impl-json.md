@@ -1,0 +1,61 @@
+# agent task — Implementation (Direct JSON Write)
+
+> **Shared shape.** The rules every resource task follows — id/elementId format, `=bindings.` references, the Phase 2/3 split, binding dedup, output binding, and the placeholder fallback — are in [resource-task-common.md](../resource-task-common.md). This file states only what is specific to this type.
+
+
+## Task JSON Shape
+
+```json
+{
+  "id": "tH3kLmNp9",
+  "type": "agent",
+  "displayName": "Classify Purchase Order",
+  "elementId": "Stage_aB3kL9-tH3kLmNp9",
+  "isRequired": true,
+  "shouldRunOnlyOnce": false,
+  "description": "Reads the purchase order and returns its spend category with a confidence score.",
+  "data": {
+    "name": "=bindings.bG0SraLpg",
+    "folderPath": "=bindings.bH1iJK2lm",
+    "inputs": [],
+    "outputs": []
+  }
+}
+```
+
+
+## Procedure
+
+**Step 0 — Get inputs/outputs schema:**
+
+```bash
+uip maestro case tasks describe --type agent --id "<entityKey>" --output json
+```
+
+
+> **Built-inline sibling.** An agent built inline at the Rule 18 gate ([planning.md § Creating an Agent inline](planning.md#creating-an-agent-inline)) is already a **fully resolved task** by Phase 2 — bound during planning. Its I/O was read during planning from the sibling's raw `entry-points.json` (`entryPoints[0].input.properties` / `.output.properties` — case-preserving), located/confirmed via `uip maestro case registry search "<Name>" --type agent --local --output json` (`search`, not `get` — `get --local` matches only the opaque `entityKey`, never the name). Do **not** read field names from the `--output json` `Resource.{Inputs,Outputs}` — its keys are PascalCased. NOT tenant `tasks describe` (the sibling isn't in the tenant). Skip Step 0's `tasks describe` for it; the binding shape below is identical, only the `folderPath` default differs: it is **empty `""`** (co-located — see [planning.md § Step 3 Binding](planning.md#creating-an-agent-inline)), NOT the `solution_folder` sentinel (`resourceKey` keeps the sentinel; `folderPath` does not).
+
+**Step 1 — Root-level bindings:**
+
+
+- `resource`: `"process"`
+- `resourceSubType`: `"Agent"`
+- `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime. **Built-inline sibling:** `folderPath` default is **empty `""`** (co-located — the case starts the agent in its own deployed folder) while `resourceKey="solution_folder.<name>"` keeps the sentinel. Do NOT set `folderPath` to `solution_folder` — it passes `validate` but fails invocation with `folder not exist`. See [planning.md § Step 3 Binding](planning.md#creating-an-agent-inline).
+
+
+**Step 2 — Write task:**
+
+2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
+3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+
+4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. `activation-mode: parallel` (`current-stage-entered`) tasks get their own single-task inner array; only `parallel-after-predecessor` siblings (`runs-sequentially`) may share `tasks[laneIndex][]`. If `lane` conflicts with mode, mode wins.
+
+> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
+
+## Post-Write Verification
+
+- `type: "agent"`
+- the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "Agent"`, `propertyAttribute` = `name` / `folderPath`
+- `id` captured in `id-map.json`
+
+<!-- END: impl-json.md -->

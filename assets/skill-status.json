@@ -57,16 +57,16 @@
       },
       "last_synced": null
     },
-    "uipath-automation-discovery": {
-      "status": "preview",
+    "uipath-automationhub": {
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
       },
       "last_synced": null
     },
-    "uipath-automationhub": {
-      "status": "stable",
+    "uipath-bundles": {
+      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
@@ -145,14 +145,6 @@
       },
       "last_synced": null
     },
-    "uipath-knowledge-bundles": {
-      "status": "preview",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
     "uipath-maestro-bpmn": {
       "status": "in-development",
       "confluence": {
@@ -162,7 +154,7 @@
       "last_synced": null
     },
     "uipath-maestro-case": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
@@ -178,6 +170,14 @@
       "last_synced": null
     },
     "uipath-mcp-servers": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-ontology": {
       "status": "preview",
       "confluence": {
         "page_id": null,
@@ -258,6 +258,14 @@
       "last_synced": null
     },
     "uipath-troubleshoot": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-vertical-solutions": {
       "status": "preview",
       "confluence": {
         "page_id": null,

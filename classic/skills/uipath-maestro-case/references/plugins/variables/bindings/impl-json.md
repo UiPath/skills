@@ -1,0 +1,143 @@
+# Resource Bindings — Implementation
+
+Top-level binding creation. Referenced by **all** task plugins — non-connector tasks for name + folderPath bindings, connector tasks for ConnectionId + folderKey bindings. Every task type MUST create bindings; see each task plugin's §Root-level bindings section.
+
+> **No `planning.md`** — bindings are created during implementation (driven by each task plugin's §Root-level bindings), not planned as standalone elements. Intentional, not a gap.
+
+## Destination
+
+Bindings live at top-level `bindings[]` in `caseplan.case` (no `root` wrapper, no `data.inputs`).
+
+## What Bindings Are
+
+The bindings array stores resource metadata for tasks — process names, folder paths, connection IDs. Tasks reference these indirectly via `=bindings.<id>` instead of storing literal values.
+
+## Per Task Type
+
+| Task Type | `resource` | `resourceSubType` | Bindings Created |
+|---|---|---|---|
+| process | `"process"` | `"ProcessOrchestration"` | name + folderPath |
+| action | `"app"` | — | name + folderPath |
+| agent | `"process"` | `"Agent"` | name + folderPath |
+| rpa | `"process"` | — | name + folderPath |
+| api-workflow | `"process"` | `"Api"` | name + folderPath |
+| function | `"process"` | `"Function"` | name + folderPath |
+| business-rule | `"BusinessRule"` | — | name + folderPath |
+| case-management | `"process"` | `"CaseManagement"` | name + folderPath |
+| connector (activity/trigger) | `"Connection"` | — | ConnectionId + folderKey |
+
+## Binding Creation
+
+Create **two** binding entries in top-level `bindings[]` per **resource**, not per task — a name entry and a folderPath entry sharing one `resourceKey`, because one key is one resource. Tasks pointing at the same resource reuse that pair: the golden's two action tasks on one app carry the same `=bindings.<id>` in both their `data.name` fields, and minting a second pair for the second task is what `CASE_MGMT_BINDING_KEY_SHARED` reads as three resources claiming one binding. Dedup rule and lookup order are in [Deduplication](#deduplication) below. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
+
+**Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case. Two `default` rules are not interchangeable: a **FolderKey / `folderKey` binding `default` is load-bearing** — it has no fallback, and without it the folder key is silently dropped from `bindings_v2.json` (`validate --strict` reports `STRICT_CONNECTION_FOLDER_KEY_NO_DEFAULT`). A **ConnectionId binding `default`** is written but also falls back: the sidecar takes `attributeDefault(group, "ConnectionId") ?? resourceKey`, and for a connection `resourceKey` is the connection id, so the sidecar is correct either way. Emit both anyway; never rely on the fallback.
+
+### Full binding shape — non-connector tasks
+
+For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
+
+```json
+[
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "name",
+    "type": "string",
+    "resource": "<see Per Task Type table>",
+    "resourceSubType": "<see Per Task Type table, omit key if none>",
+    "resourceKey": "<folderPath>.<name>",
+    "default": "<name>",
+    "propertyAttribute": "name"
+  },
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "<same as above>",
+    "resourceSubType": "<same as above>",
+    "resourceKey": "<folderPath>.<name>",
+    "default": "<folderPath>",
+    "propertyAttribute": "folderPath"
+  }
+]
+```
+
+### Full binding shape — connector tasks (activity / trigger)
+
+> **`name` and `propertyAttribute` deliberately differ** for connector bindings — the CLI's `binding-builder.ts` (in `uipcli-case-validate/packages/case-tool/src/utils/`) is the source of truth. Match it so the file matches canonical CLI output. **`name` carries no runtime meaning on a connection binding** — `case-bindings-service.ts` groups and keys on `resourceKey` and reads values by `propertyAttribute`, never by `name`, and the connector key comes from the connector task's `context`. Write the canonical `name`; do not build a check on it, and do not treat a differently-named connection binding as a defect.
+
+ConnectionBinding `name` is **templated** with the connector key (`` `${connectorKey} connection` ``); FolderKey binding `name` is `"FolderKey"` (PascalCase) while its `propertyAttribute` is `"folderKey"` (camelCase). Both bindings share the same `resourceKey` (the connection UUID):
+
+```json
+[
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "<connectorKey> connection",
+    "type": "string",
+    "resource": "Connection",
+    "resourceKey": "<connection-id>",
+    "default": "<connection-id>",
+    "propertyAttribute": "ConnectionId"
+  },
+  {
+    "id": "<b + 8 alphanumeric chars>",
+    "name": "FolderKey",
+    "type": "string",
+    "resource": "Connection",
+    "resourceKey": "<connection-id>",
+    "default": "<folderKey>",
+    "propertyAttribute": "folderKey"
+  }
+]
+```
+
+Concrete example for Microsoft Outlook 365: `name: "uipath-microsoft-outlook365 connection"` on the ConnectionBinding.
+
+The FolderKey binding is **omitted entirely** when `spec.connection.folderKey` is `null` (see `binding-builder.ts:73-83`).
+
+### Data sources — non-connector tasks
+
+| Field | Source |
+|---|---|
+| `name` | `registry-resolved.json` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
+| `folderPath` | `registry-resolved.json` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
+
+### resourceKey construction — non-connector tasks
+
+```
+resourceKey = "<folderPath>.<name>"
+```
+
+Examples:
+- folderPath `"Shared"`, name `"KYC"` → `"Shared.KYC"`
+- folderPath `"Shared/Finance"`, name `"InvoiceProcess"` → `"Shared/Finance.InvoiceProcess"`
+- folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
+- **api-workflow** — `name` is the registry entry's own `name` field, read verbatim: often the generic literal `"API Workflow"` (folderPath `"Shared/Finance/EnrichInvoice"` → `"Shared/Finance/EnrichInvoice.API Workflow"`), but a workflow given a real name carries that instead (e.g. `"ContractOperationsApi"`). Never assume which — using the wrong one produces a `resourceKey` Orchestrator can't resolve. See [api-workflow/planning.md § Registry Resolution](../../tasks/api-workflow/planning.md#registry-resolution).
+
+> **Inline-built sibling (agent / api-workflow / business-rule) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent, API workflow, or business rule built inline at the Rule 18 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
+
+### Data sources — connector tasks
+
+| Binding | `name` | `propertyAttribute` | `default` | `resourceKey` |
+|---|---|---|---|---|
+| ConnectionBinding | `` `${connectorKey} connection` `` (templated, e.g. `"uipath-microsoft-outlook365 connection"`) | `"ConnectionId"` | `connection-id` from `registry-resolved.json` | `connection-id` from `registry-resolved.json` |
+| FolderKey binding (omit when `spec.connection.folderKey === null`) | `"FolderKey"` (PascalCase) | `"folderKey"` (camelCase — different from `name`) | `folderKey` from `get-connection` (Step 1) | `connection-id` from `registry-resolved.json` (same as ConnectionBinding) |
+
+### Task references
+
+Non-connector: set `data.name` to `=bindings.<nameBindingId>` and `data.folderPath` to `=bindings.<folderPathBindingId>`.
+Connector: set `data.context[].connection` to `=bindings.<connBindingId>` and `data.context[].folderKey` to `=bindings.<folderBindingId>`.
+Do NOT use literal strings.
+
+## Deduplication
+
+Multiple tasks referencing the same resource share one binding pair (stated at [Binding Creation](#binding-creation) above; repeated here because this is where the lookup happens). Deduped by `default + resource + resourceKey`. Before creating a new binding, check if an existing entry in top-level `bindings[]` matches on all three fields. If found, reuse the existing binding's `id` instead of creating a new one.
+
+## Binding ID Generation
+
+IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
+
+## bindings_v2.json Sync
+
+`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+
+<!-- END: impl-json.md -->

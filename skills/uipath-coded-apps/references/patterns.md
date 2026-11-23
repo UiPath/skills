@@ -152,7 +152,7 @@ function InstanceMonitor({ instanceId, folderKey }: { instanceId: string; folder
 - `deps` — **CRITICAL for master-detail UIs.** Pass values that identify what you're polling (e.g., `[instanceId]`). When any dep changes, the hook resets `data` to `null`, sets `isLoading` to `true`, and immediately refetches. Without this, switching between items shows stale data with no loading indicator.
 - `enabled` — tie to a condition (e.g., `!!selectedInstance`) so polling only runs when needed
 - `immediate: false` — skip first fetch if the initial data is already loaded by another effect
-- `interval` — default 5000ms; increase for less-critical data to reduce API load
+- `interval` — default 5000ms; increase for less-critical data to reduce API load. Polling Data Fabric entities: use the interval and rules in [sdk/data-fabric.md](sdk/data-fabric.md) trap 10
 
 ### Master-detail pattern — MANDATORY for list + detail layouts
 

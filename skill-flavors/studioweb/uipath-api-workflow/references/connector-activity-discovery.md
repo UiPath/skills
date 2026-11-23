@@ -66,7 +66,7 @@ Studio Web maintains the connection and solution resource model. For additional 
 <!--skill-flavor:solution-metadata:end-->
 
 <!--skill-flavor:solution-resource-fields:start-->
-### Solution Resources as Activity Fields in Studio Web
+### Solution resources as activity fields
 
 Use `--resource-key` when a live Studio Web resource capability exposes the exact key. Continue to pass the resource name through `--inputs`. When the key or resource operation is unavailable, report the exact host capability gap.
 <!--skill-flavor:solution-resource-fields:end-->

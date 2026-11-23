@@ -2,7 +2,7 @@
 """Assert connector field-name fidelity in a built caseplan.json.
 
 The authority is the LIVE connector contract, fetched with `uip maestro case
-spec` at grade time: `.Data.Inputs.*[].Name` for request fields,
+spec` at grade time, after the grader's own `uip maestro case registry pull`: `.Data.Inputs.*[].Name` for request fields,
 `.Data.Outputs.ResponseFields[].Name` for response fields, and
 `.Data.Filter.Fields[].Name` for filterable fields. Expectations are NOT
 hardcoded here — a connector version bump changes the contract, and a frozen
@@ -38,6 +38,8 @@ from _shared.case_check import existing_caseplan  # noqa: E402
 CASEPLAN = "ConnectorNaming/ConnectorNaming/caseplan.json"
 ERROR_OUTPUT_NAMES = {"error"}
 ENVELOPE_BODY_KEYS = {"parameters", "filters", "queryParams"}
+# `filters` holds the compiled `expression`, never a request field: check_filter grades it
+FILTER_ENVELOPE_KEY = "filters"
 ERROR_ENVELOPE = ["code", "message", "detail", "category", "status", "element"]
 # The exact request fields fixtures/sdd.md declares, keyed by connectorKey (NOT by the
 # node's free-text displayName, which an agent can rename). A count floor was gameable
@@ -80,6 +82,32 @@ def norm(name: str) -> str:
     return re.sub(r"[_\s]", "", name or "").lower()
 
 
+def pull_registry() -> None:
+    """Fill this machine's connector catalog, which `case spec` looks the type id up in.
+
+    The grader cannot count on the agent's pull: a Studio Web agent pulls inside the
+    browser page, so the catalog lands in the page's storage and this one stays empty.
+    """
+    try:
+        out = subprocess.run(
+            ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
+            capture_output=True, text=True, timeout=240, check=False,
+        ).stdout
+    except subprocess.TimeoutExpired:
+        infra("case registry pull timed out — the connector catalog may be missing")
+        return
+    except (FileNotFoundError, OSError) as exc:
+        infra(f"could not run `uip` ({exc}) — the connector catalog may be missing")
+        return
+    try:
+        payload = json.loads(out)
+    except json.JSONDecodeError:
+        infra("case registry pull returned non-JSON — the connector catalog may be missing")
+        return
+    if payload.get("Result") not in (None, "Success"):
+        infra(f"case registry pull failed: {payload.get('Message')} — the connector catalog may be missing")
+
+
 def spec(kind: str, type_id: str, connection_id: str) -> dict:
     try:
         return _spec(kind, type_id, connection_id)
@@ -110,8 +138,10 @@ def _spec(kind: str, type_id: str, connection_id: str) -> dict:
     if payload.get("Result") not in (None, "Success"):
         # e.g. `Connection "…" not found or inaccessible` — observed transiently on a
         # connection that resolved fine minutes later. Not a build defect.
-        infra(f"case spec --type {kind} {type_id} failed: {payload.get('Message')} — "
-              f"naming was NOT graded")
+        why = payload.get("Message")
+        if payload.get("Instructions"):
+            why = f"{why} ({payload['Instructions']})"
+        infra(f"case spec --type {kind} {type_id} failed: {why} — naming was NOT graded")
         return {}
     return payload.get("Data") or {}
 
@@ -187,6 +217,12 @@ def check_inputs(label: str, block: dict, auth: list[str], connector_key: str = 
             # structural envelope keys a trigger input body carries, not contract fields:
             # `parameters` holds eventParameters, `filters` holds the filter tree
             if not prefix and written in ENVELOPE_BODY_KEYS:
+                if written == FILTER_ENVELOPE_KEY:
+                    # a populated filter is a populated request; its field names are
+                    # check_filter's to grade, and `expression` is not a contract field
+                    if value:
+                        written_count += 1
+                    continue
                 # recurse into the envelope: eventParameters ARE contract fields
                 if isinstance(value, dict):
                     walk(value, prefix)
@@ -444,17 +480,21 @@ def check_bindings(label: str, block: dict, root_bindings: list) -> None:
     folder — and copies neither onto itself. A dangling or malformed binding
     renders as a broken node in Studio Web while `validate` stays green.
 
-    Empty and omitted are the SAME state here: the FE reads per-activity
-    property bindings at `data.context[name="metadata"].bindings` (via
-    getContextMap in PackagingUtil) and never reads `data.bindings`, and
-    `bindings?: UiPathBinding[]` is optional in the CLI's own type model. Only a
-    non-empty copy is the defect this guards."""
+    `data.bindings` may list the picker rows `splice` writes (an `entity` a
+    resource picker chose), as the Case Designer lists them. A Connection row
+    there — the connection or its folder copied onto the task — is the defect
+    this guards."""
     by_id = {b.get("id"): b for b in root_bindings if isinstance(b, dict)}
     ctx = {c.get("name"): c.get("value") for c in (block.get("context") or [])}
 
-    if block.get("bindings"):
-        fail(f"{label}: data.bindings must be empty or omitted — root bindings are never copied "
-             f"onto the task (got {block.get('bindings')!r})")
+    referenced = {m.group(1) for name in ("connection", "folderKey")
+                  if (m := re.fullmatch(r"=bindings\.(\w+)", str(ctx.get(name))))}
+    copied = [b for b in (block.get("bindings") or [])
+              if isinstance(b, dict)
+              and (b.get("resource") == "Connection" or b.get("id") in referenced)]
+    if copied:
+        fail(f"{label}: data.bindings must not copy the connection or folder binding onto the "
+             f"task — those stay root bindings (got {copied!r})")
 
     conn_id = ctx.get("resourceKey")
     for ctx_name, attr in (("connection", "ConnectionId"), ("folderKey", "folderKey")):
@@ -496,6 +536,7 @@ def main() -> int:
     plan = json.load(open(path))
     root_bindings = plan.get("bindings") or []
 
+    pull_registry()
     seen = 0
     for label, connector_key, block in connector_nodes(plan):
         # connection id is context[name="resourceKey"]; the activity type id is

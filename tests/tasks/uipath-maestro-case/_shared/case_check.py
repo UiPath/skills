@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 import time
+from enum import Enum
 from typing import Any, Iterable, NoReturn, Sequence
 
 
@@ -122,6 +123,24 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+# Written by `_setup/localize_tenant_ids.py` in the sandbox when the task ran it.
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def localize_ids(text: str, map_path: str = TENANT_ID_MAP) -> str:
+    """Rewrite the cloud-tenant IDs in a reference fixture the way the task's pre_run
+    rewrote the sandbox copy, so a checker compares against the IDs the agent saw.
+    Returns ``text`` unchanged when the task did not localize."""
+    if not os.path.isfile(map_path):
+        return text
+    with open(map_path, encoding="utf-8") as f:
+        changed = {cloud: live for cloud, live in json.load(f).items() if cloud != live}
+    if not changed:
+        return text
+    pattern = re.compile("|".join(re.escape(cloud) for cloud in changed), re.IGNORECASE)
+    return pattern.sub(lambda m: changed[m.group(0).lower()], text)
+
+
 def exit_type(condition: dict) -> str:
     """A stage exit condition's type, reading an absent `type` as `exit-only`.
 
@@ -209,7 +228,7 @@ def normalize_audit_entry(entry: dict) -> dict:
 def registry_audit_entries(payload: object) -> list[dict]:
     """Read every legal registry-audit representation as one list of entries.
 
-    Accepts a bare list (hand-written, and the planner lane's verbatim ledger),
+    Accepts a bare list (hand-written, and the planner's verbatim ledger),
     a `resolutions` / `resources` envelope, and `uip maestro case sdd resolve`'s
     own `{resolved, unresolved, scope}` object. Entries come back normalized by
     `normalize_audit_entry`, so a grader asserts one shape whichever wrote it.
@@ -233,6 +252,55 @@ def registry_audit_entries(payload: object) -> list[dict]:
     if not all(isinstance(entry, dict) for entry in entries):
         _fail("registry-resolved.json entries must be objects")
     return [normalize_audit_entry(entry) for entry in entries]
+
+
+REGISTRY_CACHE_DIR = os.path.join("~", ".uip", "case-resources")
+REGISTRY_PULL_TIMEOUT_S = 60
+
+
+def _pull_registry_cache(path: str) -> None:
+    """Pull the live registry into the grader's own cache; FAIL if `path` still is not written.
+
+    A harness whose `uip` runs outside this container leaves no cache here: Studio Web's
+    browser CLI keeps it in the page's storage. The audit is graded against the tenant either way.
+    A plain pull keeps any index already cached and fetches only the missing ones. It also
+    skips the fetch while `<type>-index.meta.json` is under 24h old, even with the index gone,
+    so an orphaned meta file is removed first.
+    """
+    what = "uip maestro case registry pull"
+    meta = os.path.splitext(path)[0] + ".meta.json"
+    if os.path.isfile(meta):
+        os.remove(meta)
+    try:
+        proc = _run(
+            ["uip", "maestro", "case", "registry", "pull", "--output", "json"],
+            timeout=REGISTRY_PULL_TIMEOUT_S,
+            what=what,
+        )
+    except OSError as exc:
+        _fail(f"registry cache {path} is absent and the grader could not run `{what}`: {exc}")
+    if not os.path.isfile(path):
+        _fail(
+            f"registry cache {path} is absent, and the grader's own `{what}` did not write it "
+            f"(exit {proc.returncode}), so the audit cannot be checked against the tenant: an "
+            f"environment failure, not the agent's\nstdout: {proc.stdout[-1500:]}\nstderr: {proc.stderr[-1500:]}"
+        )
+    print(f"registry cache {path} was absent; grading against the grader's own `{what}`", file=sys.stderr)
+
+
+def read_registry_cache(cache_file: str) -> list:
+    """Load `~/.uip/case-resources/<cache_file>`, pulling the live registry first when it is absent."""
+    path = os.path.expanduser(os.path.join(REGISTRY_CACHE_DIR, cache_file))
+    if not os.path.isfile(path):
+        _pull_registry_cache(path)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        _fail(f"registry cache {path} is unreadable: {exc}")
+    if not isinstance(data, list):
+        _fail(f"registry cache {path} is not a JSON array")
+    return data
 
 
 def iter_tasks(plan: dict):
@@ -592,13 +660,43 @@ def _fail(msg: str) -> NoReturn:
 # still fails on the first attempt: a plan defect must never be retried into a
 # pass, and a real platform regression must still turn the suite red — which is
 # why the retry announces itself on stdout instead of absorbing the fault.
+# 2026-11-19, skill-case-single-business-rule: grader debug exit 1, finalStatus
+# Suspended, "No incident details returned by PIMS", while the agent's debug of the same plan completed.
 _TRANSIENT_DEBUG_HTTP = frozenset({"403", "408", "409", "425", "429", "500", "502", "503", "504"})
 _DEBUG_PHASE_FAULT = re.compile(r"Failed during [\w-]+:\s*(\d{3})\b")
 _DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
+_DEBUG_SUSPENDED = re.compile(r'"finalStatus"\s*:\s*"Suspended"', re.IGNORECASE)
+_DEBUG_NO_INCIDENT = "No incident details returned by PIMS"
 _DEBUG_RETRY_SLEEP_S = 15
+_SUSPENDED_REASON = "the debug session suspended with no incident details"
 
 
-def debug_fault_is_transient(output: str) -> str | None:
+class SuspendedRun(Enum):
+    """How a Suspended debug run with no incident is read."""
+
+    PARKED = "parked"  # the case waits on a timer by design
+    TRANSIENT = "transient"  # a completing case; Suspended is the tenant's fault
+
+
+def retry_after_cancelled(reason: str = "the debug instance was cancelled mid-run") -> None:
+    print(
+        f"NOTE: retrying `uip maestro case debug` once — {reason}, "
+        "which is the tenant's fault and not the plan's.",
+        flush=True,
+    )
+    time.sleep(_DEBUG_RETRY_SLEEP_S)
+
+
+def _suspended_without_incident(payload: dict | None) -> bool:
+    """A clean exit carries only ``Data``, not the CLI message, so no incidents stands in for it."""
+    payload = payload or {}
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
+    return status == "Suspended" and not _get_ci(payload, "incidents", "Incidents")
+
+
+def debug_fault_is_transient(
+    output: str, suspended: SuspendedRun = SuspendedRun.TRANSIENT
+) -> str | None:
     """Name the tenant-side fault in a failed ``case debug`` output, else None.
 
     Matches only the two observed shapes: an HTTP status from the debug
@@ -611,7 +709,109 @@ def debug_fault_is_transient(output: str) -> str | None:
         return f"HTTP {match.group(1)} from the debug service"
     if _DEBUG_CANCELLED.search(output):
         return "the debug instance was cancelled mid-run"
+    if (
+        suspended is SuspendedRun.TRANSIENT
+        and _DEBUG_SUSPENDED.search(output)
+        and _DEBUG_NO_INCIDENT in output
+    ):
+        return _SUSPENDED_REASON
     return None
+
+
+# Why a debug run did not complete, for the FAIL message. `case debug` fetches
+# the incidents of a faulted run, but its JSON drops them (UiPath/cli#5519;
+# `flow debug` inlines them on `Data.incidents`). Until that ships, the only
+# incident text is the WARN line it logs on stderr:
+#   Debug session faulted with 1 incident(s). First: [CODE] message (element tJ2dcRjxB)
+# and the `Incidents: [...]` line its incident callback logs.
+_DEBUG_FIRST_INCIDENT = re.compile(
+    r"Debug session faulted with (\d+) incident\(s\)\.\s*First:\s*\[([^\]]*)\]\s*(.*?)\s*$",
+    re.MULTILINE,
+)
+_DEBUG_INCIDENTS_LINE = re.compile(r"Incidents:\s*(\[.*\])\s*$", re.MULTILINE)
+_DEBUG_DONE_STATUSES = frozenset({"completed", "successful"})
+# Element states worth naming under "Why:". NotStarted / Pending / InProgress
+# elements are bystanders of a fault, not its cause.
+_DEBUG_ELEMENT_FAULT = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
+
+
+def _incident_line(incident: Any) -> str | None:
+    if not isinstance(incident, dict):
+        return None
+    message = _get_ci(incident, "errorMessage", "message")
+    code = _get_ci(incident, "errorCode", "code")
+    element = _get_ci(incident, "elementId")
+    if not (message or code):
+        return None
+    line = f"[{code or 'no-code'}] {message or ''}".rstrip()
+    return f"{line} (element {element})" if element else line
+
+
+def debug_failure_lines(payload: Any, stderr: str = "") -> list[str]:
+    """Explain a debug run that did not complete, one finding per line.
+
+    ``payload`` is the debug ``Data`` object (or the whole envelope); ``stderr``
+    is the CLI's stderr, where the incident WARN line lands. Returns, in order:
+    the incidents on ``Data.incidents``; else the incidents named on stderr; then
+    every element execution that did not complete. Returns ``[]`` for a
+    Completed run.
+
+    Example: ``["incident [CONN_401] Unauthorized (element tJ2dcRjxB)",
+    "element tJ2dcRjxB (SendTask) Failed"]``. Returns ``[]`` too when the
+    output carries no status and no incident (the run never started).
+    """
+    data = payload if isinstance(payload, dict) else {}
+    if isinstance(_get_ci(data, "Data"), dict):
+        data = _get_ci(data, "Data")
+    status = _get_ci(data, "finalStatus", "FinalStatus", "status", "Status")
+    if isinstance(status, str) and status.lower() in _DEBUG_DONE_STATUSES:
+        return []
+
+    incidents = [
+        line for line in map(_incident_line, _get_ci(data, "incidents", "Incidents") or [])
+        if line
+    ]
+    if not incidents:
+        for match in _DEBUG_INCIDENTS_LINE.finditer(stderr or ""):
+            try:
+                listed = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            incidents.extend(line for line in map(_incident_line, listed) if line)
+    if not incidents:
+        for match in _DEBUG_FIRST_INCIDENT.finditer(stderr or ""):
+            count, code, rest = match.groups()
+            more = f" (first of {count})" if count != "1" else ""
+            incidents.append(f"[{code}] {rest}{more}")
+
+    lines = [f"incident {line}" for line in dict.fromkeys(incidents)]
+    for execution in _get_ci(data, "elementExecutions", "ElementExecutions") or []:
+        if not isinstance(execution, dict):
+            continue
+        state = _get_ci(execution, "status", "Status")
+        if not _DEBUG_ELEMENT_FAULT.search(str(state or "")):
+            continue
+        element = _get_ci(execution, "elementId", "ElementId")
+        kind = _get_ci(execution, "elementType", "ElementType")
+        lines.append(f"element {element} ({kind}) {state}")
+    if not lines and status:
+        # Only for a run that reported a status: an exit before the run started
+        # (auth, missing project) has no Data, and its raw output says enough.
+        lines.append(
+            f"no incident or failed element in the debug output (finalStatus={status})"
+        )
+    return lines
+
+
+def format_debug_failure(payload: Any, stderr: str = "") -> str:
+    """``debug_failure_lines`` as an indented block for a FAIL message."""
+    lines = debug_failure_lines(payload, stderr)
+    return "Why:\n  - " + "\n  - ".join(lines) if lines else ""
+
+
+_INSTANCE_ID_RE = re.compile(
+    r'instanceId"?\s*[:=]\s*"?([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})', re.I
+)
 
 
 def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
@@ -629,6 +829,10 @@ def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.Completed
             s.decode("utf-8", "replace") if isinstance(s, bytes) else (s or "")
             for s in (e.stdout, e.stderr)
         )
+        if "case debug" in what:
+            found = _INSTANCE_ID_RE.search(f"{out}\n{err}")
+            if found:
+                _record_debug_instance({"instanceId": found.group(1)})
         _fail(f"{what} timed out after {timeout}s\nstdout: {out}\nstderr: {err}")
 
 
@@ -788,26 +992,29 @@ def run_debug(
         project_glob=project_glob,
         solution_glob=solution_glob,
         refresh_timeout=refresh_timeout,
+        suspended=SuspendedRun.TRANSIENT,
     )
     status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
-    if status == "Cancelled":
+    if status == "Cancelled" or _suspended_without_incident(payload):
         # Same tenant-side fault as the non-zero-exit path, reported through a
         # clean exit. One retry, announced, then it counts.
-        print(
-            "NOTE: retrying `uip maestro case debug` once — the debug instance "
-            "was cancelled mid-run, which is the tenant's fault and not the plan's.",
-            flush=True,
+        retry_after_cancelled(
+            "the debug instance was cancelled mid-run" if status == "Cancelled" else _SUSPENDED_REASON
         )
-        time.sleep(_DEBUG_RETRY_SLEEP_S)
         payload = start_debug(
             timeout=timeout,
             project_glob=project_glob,
             solution_glob=solution_glob,
             refresh_timeout=refresh_timeout,
+            suspended=SuspendedRun.TRANSIENT,
         )
         status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
-        _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
+        _fail(
+            f"Case did not complete (finalStatus={status})\n"
+            f"{format_debug_failure(payload)}\n"
+            f"Payload: {json.dumps(payload, default=str)[:2000]}"
+        )
     return payload
 
 
@@ -817,6 +1024,7 @@ def start_debug(
     project_glob: str = "**/project.uiproj",
     solution_glob: str = "**/*.uipx",
     refresh_timeout: int = 120,
+    suspended: SuspendedRun = SuspendedRun.PARKED,
 ) -> dict:
     """Like ``run_debug`` but does NOT require ``finalStatus == Completed``.
 
@@ -828,41 +1036,58 @@ def start_debug(
     Exits if the debug command fails to launch / does not return parseable
     JSON. A non-Completed ``finalStatus`` is NOT a failure here.
     """
-    project_dir = find_project_dir(project_glob)
-    solution_dir = find_solution_dir(solution_glob)
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
+    in_studio_web = os.path.isdir("/solution")
 
-    refresh_cmd = [
-        "uip", "solution", "resources", "refresh",
-        "--solution-folder", solution_dir,
-        "--output", "json",
-    ]
-    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
-    r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
-    if r.returncode != 0:
-        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
-        # output fails with "Node already added to the graph" (RetryWillNotFix).
-        # When the agent already refreshed, the resource docs are on disk and debug
-        # can proceed; only that exact re-refresh failure is tolerated.
-        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
-        if not (already_refreshed and duplicate_node):
-            _fail(
-                f"solution resources refresh exit {r.returncode}\n"
-                f"stdout: {r.stdout}\nstderr: {r.stderr}"
-            )
+    if in_studio_web:
+        project_dir = find_project_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        project_dir = find_project_dir(project_glob)
+        solution_dir = find_solution_dir(solution_glob)
+
+    if not in_studio_web:
+        refresh_cmd = [
+            "uip", "solution", "resources", "refresh",
+            "--solution-folder", solution_dir,
+            "--output", "json",
+        ]
+        already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
+        r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
+        if r.returncode != 0:
+            # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+            # output fails with "Node already added to the graph" (RetryWillNotFix).
+            # When the agent already refreshed, the resource docs are on disk and debug
+            # can proceed; only that exact re-refresh failure is tolerated.
+            duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+            if not (already_refreshed and duplicate_node):
+                _fail(
+                    f"solution resources refresh exit {r.returncode}\n"
+                    f"stdout: {r.stdout}\nstderr: {r.stderr}"
+                )
 
     debug_cmd = [
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
+    started = time.monotonic()
     for attempt in (1, 2):
         r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
         if r.returncode == 0:
             break
-        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
+        timed_out = _debug_poll_timeout(r.stdout)
+        if timed_out:
+            payload = _follow_instance(timed_out, started + timeout, timeout)
+            _record_debug_instance(payload)
+            return payload
+        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}", suspended)
         if fault is None or attempt == 2:
             retried = " (after one retry)" if attempt == 2 else ""
+            # The reason first: the raw dump below is mostly --log-level debug noise.
+            why = format_debug_failure(_parse_json(r.stdout) or {}, r.stderr)
             _fail(
-                f"case debug exit {r.returncode}{retried}\n"
+                f"case debug exit {r.returncode}{retried}\n{why}\n"
                 f"stdout: {r.stdout}\nstderr: {r.stderr}"
             )
         print(
@@ -877,7 +1102,83 @@ def start_debug(
     payload = data.get("Data") if isinstance(data, dict) and "Data" in data else data
     if not isinstance(payload, dict):
         _fail(f"case debug payload is not a JSON object: {type(payload).__name__}\n{r.stdout[:1000]}")
+    _record_debug_instance(payload)
     return payload
+
+
+_DEBUG_POLL_TIMEOUT = re.compile(r"timed out", re.IGNORECASE)
+_FOLLOW_EVERY_S = 20
+
+
+def _debug_poll_timeout(stdout: str) -> str | None:
+    """Instance id from the CLI's debug poll-timeout envelope, else None."""
+    envelope = _parse_json(stdout) or {}
+    data = _get_ci(envelope, "Data")
+    instance_id = _get_ci(data, "instanceId", "InstanceId") if isinstance(data, dict) else None
+    if not instance_id:
+        return None
+    code = _get_ci(envelope, "ErrorCode", "Code")
+    text = f"{_get_ci(envelope, 'Message') or ''} {code or ''}"
+    if not _DEBUG_POLL_TIMEOUT.search(text):
+        return None
+    return str(instance_id)
+
+
+_SUSPENDED = "suspended"
+
+
+def _follow_done(status: str, case_run: Any) -> bool:
+    """Suspended is parked, not terminal, but waiting on it never ends in a reason."""
+    return status.lower() in case_run.TERMINAL or status.lower() == _SUSPENDED
+
+
+def _follow_instance(instance_id: str, deadline: float, budget_s: int) -> dict:
+    """Follow a debug instance past the CLI's poll timeout; return a debug-shaped payload.
+
+    Fails when the budget is spent with the instance still not terminal.
+    """
+    setup = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_setup")
+    if setup not in sys.path:
+        sys.path.insert(0, setup)
+    import case_run  # noqa: PLC0415
+
+    print(
+        f"NOTE: `uip maestro case debug` stopped polling; following instance {instance_id}.",
+        flush=True,
+    )
+    status = case_run.instance_status(instance_id)
+    while not _follow_done(status, case_run) and time.monotonic() < deadline:
+        time.sleep(_FOLLOW_EVERY_S)
+        status = case_run.instance_status(instance_id)
+    if not _follow_done(status, case_run):
+        _fail(
+            f"case debug instance {instance_id} still {status or 'Running'} "
+            f"after {budget_s}s"
+        )
+    payload = {
+        "instanceId": instance_id,
+        "finalStatus": status,
+        "elementExecutions": case_run.instance_executions(instance_id),
+    }
+    if status.lower() in case_run.FAILED or status.lower() == _SUSPENDED:
+        payload["incidents"] = case_run.instance_incidents(instance_id)
+    return payload
+
+
+def _record_debug_instance(payload: dict) -> None:
+    """Record the debug instance so post_run cancels it."""
+    instance_id = _get_ci(payload, "instanceId", "InstanceId")
+    if not instance_id:
+        return
+    setup = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "_setup")
+    if setup not in sys.path:
+        sys.path.insert(0, setup)
+    try:
+        from case_run import record_debug_instance  # noqa: PLC0415
+
+        record_debug_instance(str(instance_id))
+    except Exception as error:  # noqa: BLE001 - recording is a cleanup backstop, never a grading failure
+        print(f"case_check: could not record debug instance {instance_id}: {error}", file=sys.stderr)
 
 
 def payload_contains(

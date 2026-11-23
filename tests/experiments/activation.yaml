@@ -39,12 +39,6 @@ defaults:
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
-    permission_mode: acceptEdits
-    # Skill must be allowed so the agent can invoke a skill when it decides
-    # to. Read/Write/Bash included so the agent isn't starved of basic tools
-    # when it decides NOT to use Skill — removing them would bias the
-    # decision toward "don't invoke".
-    allowed_tools: [Skill, Bash, Read, Write, Edit, Glob, Grep]
     plugins:
       - type: local
         path: $SKILLS_REPO_PATH

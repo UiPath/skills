@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "0c9eb6d3-75a1-48d9-8ea0-a52e06cd87d3",
+  "Projects": [
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "VendorDueDiligenceAgent/project.uiproj",
+      "Id": "8877b055-38bb-4f4d-927e-913a822a2413"
+    }
+  ]
+}

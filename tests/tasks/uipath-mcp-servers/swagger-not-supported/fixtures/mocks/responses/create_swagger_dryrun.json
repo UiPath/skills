@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/servers/swagger-mcp"
+        }
+      ],
+      "ParentType": "swagger",
+      "Resolved": {
+        "Name": "Petstore",
+        "Slug": "petstore-mcp",
+        "SwaggerUrl": "https://petstore3.swagger.io/api/v3/openapi.json"
+      }
+    }
+  }
+}

@@ -33,8 +33,10 @@ uip solution resources list --kind App --source remote --search "<APP_NAME>" --o
 
 ```bash
 # --kind and --search only work with --source remote; list everything, filter .Data[] client-side by Kind == "App".
-uip solution resources list --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 ```
+
+`<SOLUTION_DIR>` is the folder containing the `.uipx`. Empty `Data` for an app the user says is in the solution means the wrong folder — see [../../project-lifecycle.md § Resource Discovery](../../project-lifecycle.md#resource-discovery). Never fall back to `--source remote` for it.
 
 The row's `Source` field (`"Local"` or `"Remote"`) determines whether the app is solution-internal or external.
 
@@ -52,7 +54,7 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 
 ### Step 3 — Fetch the app's action schema
 
-Pass the `Key` from Step 2 to `uip solution resources get` — one CLI-native call returns the app spec, including the action schema. Works for both external (`Source: "Remote"`) and solution-internal (`Source: "Local"`) apps, even before the app is imported into the solution. Run from the solution directory (or pass `--solution-folder <path>`).
+Pass the `Key` from Step 2 to `uip solution resources get`. Run from the solution directory (or pass `--solution-folder <path>`). For external apps (`Source: "Remote"`) one call returns the app spec, including the action schema, even before the app is imported into the solution. Solution-internal apps (`Source: "Local"`) return no action schema — see below.
 
 ```bash
 uip solution resources get <APP_KEY> --output json
@@ -66,16 +68,20 @@ The `Data.Spec` object carries everything needed to build the channel:
 | `Name` | `channel.properties.appName` (matches the `Name` from `resources list`) |
 | `ActionSchema` | a JSON **string** — `json.loads` it to get `inputs` / `inOuts` / `outputs` / `outcomes` (Step 4) |
 
-`channel.properties.appVersion` (the integer deploy version) is the `version` field of the parsed `ActionSchema` — not `Spec.Version`, which is the package semver (e.g. `"1.0.0"`).
+**Solution-internal apps (`Source: "Local"`): `ActionSchema` is `null`.** No `uip` command returns the form of an app that lives in the solution — not `resources get`, `--include-dependencies`, or a `resources refresh`. Read it from the app project instead: `<SOLUTION_DIR>/<APP_NAME>/.app/schemas/*.json`. It has the same shape as the parsed `ActionSchema` below (`version`, `inputs`, `inOuts`, `outputs`, `outcomes`) — use it as-is. `.app/` is a hidden directory and `rg` skips it, so open it by path or list it with `find <SOLUTION_DIR>/<APP_NAME>/.app/schemas -name '*.json'`. Never invent form fields: if no schema file exists, stop and report it.
+
+`uip solution resources refresh` re-keys solution-internal apps. After a refresh, take `channel.properties.resourceKey` from a fresh `resources list`.
+
+`channel.properties.appVersion` (the integer deploy version) is the `version` field of the parsed `ActionSchema` (or of the `.app/schemas` file) — not `Spec.Version`, which is the package semver (e.g. `"1.0.0"`).
 
 Parsed `ActionSchema` shape:
 
 ```jsonc
 {
   "version": 1,
-  "inputs":   [{ "name": "Content", "type": "System.String", ... }],
+  "inputs":   [{ "name": "<INPUT_NAME>", "type": "System.String", ... }],
   "outputs":  [],
-  "inOuts":   [{ "name": "Comment", "type": "System.String", "description": "..." }],
+  "inOuts":   [{ "name": "<INOUT_NAME>", "type": "System.String", "description": "..." }],
   "outcomes": [{ "name": "approve", "description": "..." }, { "name": "reject", ... }]
 }
 ```
@@ -253,11 +259,10 @@ After refresh, confirm the four solution-level app files exist under `resources/
 
 If any are missing, hand-author them using the templates above and the Apps API + `publish/versions` + Orchestrator `/odata/Releases` data. The `process/webApp/<AppName>.json` file is the one most commonly missing and its absence causes "Resource provisioning failed (#100)" on solution import.
 
-### Step 8 — Bundle and upload
+### Step 8 — Upload
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
 
 ## Gotchas

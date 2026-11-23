@@ -81,10 +81,12 @@ Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or ass
 ## Adding an escalation guardrail — step-by-step
 
 <!--skill-flavor:scaffolding-gate:start-->
-**Scaffolding gate (MANDATORY):** when the request includes creating a solution
-or agent, run both `uip solution init` and `uip agent init` before app discovery.
-An incompatible or missing escalation app rejects only the guardrail; it does
-not cancel the requested local solution and agent scaffolding.
+**Scaffolding gate (MANDATORY):** when the request includes creating an agent,
+scaffold it with `uip agent init "<SOLUTION>/<AGENT>"` before app discovery. Run
+`uip solution init` only when the request asks for a new solution and the target
+directory has no `.uipx` — never on an existing solution. An incompatible or
+missing escalation app rejects only the guardrail; it does not cancel the
+requested scaffolding.
 <!--skill-flavor:scaffolding-gate:end-->
 
 **Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
@@ -140,6 +142,8 @@ Do not edit files, refresh, validate, or respond to the user between
 `resources list` and this required `resources get` attempt. A missing catalog
 row is not a completed schema check and is never permission to skip the
 command.
+
+> `ToolInputs` / `ToolOutputs` carry the text payload only. For a guardrail with `detectionScope: "Files"` or `"Both"`, the reviewer does not receive file contents; the flagged file names are in the evaluation's `reason` (`Flagged files: …`), reachable through `AgentTrace`. See [files-guide.md](files-guide.md).
 
 **Step 2 — Verify the app exposes the guardrail action-schema contract** (do this **before** writing the guardrail JSON — an incompatible app must be rejected, not authored).
 

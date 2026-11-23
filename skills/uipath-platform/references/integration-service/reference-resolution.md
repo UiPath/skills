@@ -2,7 +2,7 @@
 
 How to resolve reference fields — fields whose values must be looked up from another resource before create/update operations.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: `uip is --help`, and `--help` on each subcommand. Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Reference IDs Are Connection-Scoped (CRITICAL)
@@ -158,23 +158,21 @@ Reference fields on `4.0.0` activities (the activity's `configuration` JSON repo
 
 `run list` cannot resolve these — there is no object to list. Run the script instead:
 
-
+```bash
 # 1. Describe with --activity-version 4.0.0 AND --operation <verb> — without --operation the
 #    response is an operation summary and carries no requestFields/reference blocks
-```bash
 uip is resources describe "<connector-key>" "<object-name>" \
   --activity-version 4.0.0 --operation <METHOD> --output json
-```
+
 # 2. For each reference field, run its script against the bound connection
-```bash
 uip is resources run script --connection-id "<id>" \
   --connector-key "<connector-key>" --script-ref "<reference.scriptRef>" --output json
-```
 
 # 3. Match the user's input against reference.lookupNames in the returned rows
 #    Extract reference.lookupValue as the resolved ID
 
 # 4. Write the resolved ID (never the display name) into the node / --body
+```
 
 `--connection-id` and `--connector-key` are both required with `--script-ref`. The metadata itself is not connection-scoped, but the **lookup is**: the script runs with the connection's credential, so the same connection-scoping rules apply ([Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical)).
 

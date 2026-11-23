@@ -67,7 +67,7 @@ uip or folders create "Invoicing" --parent "Finance" -d "Invoice processing" --o
 Verify the folder structure before proceeding.
 
 ```bash
-# Folders the current user can access
+# Folders the current user can access (an external app without OR.Default: every folder its scopes reach)
 uip or folders list --output json
 
 # All folders in the tenant (requires admin permissions)
@@ -76,7 +76,7 @@ uip or folders list --all --output json
 # Filter: only standard top-level folders
 uip or folders list --all --type standard --top-level --output json
 
-# Get details for a specific folder
+# Get details for a specific folder (a Personal Workspace too, by key or path)
 uip or folders get "Finance" --output json
 uip or folders get <folder-key-guid> --output json
 
@@ -92,13 +92,17 @@ uip or folders delete "Finance/Invoicing" --output json
 uip or folders delete <folder-key-guid> --output json
 ```
 
-The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
+The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, a user gets only the folders they are assigned to, directly or through a group.
+
+An external application (client credentials) whose token has no `OR.Default` scope works differently: Orchestrator applies its scopes in every folder, and its folder roles play no part. Plain `folders list` then returns every folder those scopes reach. On `uip` 1.207.x and older it returned only the folders of the tenant's shared service account (the identity Orchestrator runs such a token as) (often none, or an unrelated `Monitor-Apps`), so an empty or one-row answer there does not mean the app has no folders: use `--all` or `folders get <path>`.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
 ### Step 3: Create Roles
 
 Roles group permissions and are scoped to either the tenant or a folder. Create the role first (it starts with zero permissions), then add permissions to it.
+
+> **Check the standard roles before creating one.** `Automation User`, `Automation Developer`, `Automation Publisher`, `Folder Administrator` and `Orchestrator Administrator` cover most needs and cannot be changed. Create a custom role only when none carries the permission needed — see [choose-roles.md](choose-roles.md).
 
 > **⚠️ `uip or roles` is the Orchestrator RBAC catalog — a different store from Identity/organization authorization roles (`uip admin authorization roles`, see [uipath-admin](/uipath:uipath-admin)). The two are disjoint: a role created with `admin authorization roles` does NOT appear in `uip or roles list`, and vice versa.** Both have Tenant-scoped roles, so "a tenant-level role" alone doesn't tell you which one. For any Orchestrator role/permission lifecycle — create, add/remove permissions, assign to users/folders — use `uip or roles`. Reach for `admin authorization roles` only for org-level Identity roles that span services.
 
@@ -112,39 +116,40 @@ uip or roles update <role-key> \
   --output json
 ```
 
-Use `uip or roles permissions` to discover all grantable permission names. Use `uip or roles get <key>` to inspect a role's current grants.
+Use `uip or roles permissions list --limit 1000` to discover all grantable permission names (the default `--limit` of 50 returns only part of them). Use `uip or roles get <key>` to inspect a role's current grants.
 
 Role types:
 
 - **Tenant** — Applies across the entire tenant. Assigned via `uip or users assign-roles`.
 - **Folder** — Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
-> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <user-key> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users <role-key> --add-users <user-key>` — that command does NOT replace the role's other assignees.
+> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <username> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users set <role-key> --add-user-keys <user-key>` — that command does NOT replace the role's other assignees.
 
 #### Inspect / Audit / Delete Roles
 
 ```bash
 # List all roles in the tenant
-uip or roles list --output json
+uip or roles list --limit 1000 --output json
 
-# Full grantable-permissions catalogue (large — use --output-filter)
-uip or roles permissions --output json
+# Full grantable-permissions catalogue. The default --limit of 50 returns only part of it,
+# and --output-filter refuses to run without an explicit --limit
+uip or roles permissions list --limit 1000 --output json
 
 # Effective permissions for one user (tenant + folder roles merged)
-uip or roles user-permissions <user-key-guid> --folder-path "Finance" --output json
+uip or roles user-permissions list <username> --folder-path "Finance" --output json
 
 # Roles assigned to a user (tenant + folder)
-uip or roles user-roles <user-key-guid> --output json
+uip or roles user-roles list <username> --output json
 
 # Manage user assignments on a single role (add/remove users at the role level)
-uip or roles users <role-key> --add-users <user-key-1>,<user-key-2> --output json
-uip or roles users <role-key> --remove-users <user-key-1> --output json
+uip or roles users set <role-key> --add-user-keys <user-key-1>,<user-key-2> --output json
+uip or roles users set <role-key> --remove-user-keys <user-key-1> --output json
 
 # Delete a role. Static built-in roles (Folder Administrator etc.) cannot be deleted.
 uip or roles delete <role-key> --output json
 ```
 
-`roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
+`roles user-permissions list` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles list` is the inverse — given a user, which role assignments exist. `permissions`, `user-roles`, `user-permissions` and `users` are command groups, not commands: without `list` (or `set`) they print their help and exit 1, or reject the value typed after them as an unknown command.
 
 For the forward lookup — "who holds this role" — use `roles users list`:
 
@@ -229,7 +234,7 @@ Key flags on `users update`:
 
 `DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users update --license-type Unattended` on the robot key to set the license profile.
 
-> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
+> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users set <role-key> --add-user-keys/--remove-user-keys` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
 
 ### Step 5: Assign Users to Folders
 
@@ -255,8 +260,10 @@ Key details:
 Machines define execution hosts and their license slot allocations. They are tenant-scoped and must be assigned to folders separately.
 
 ```bash
-uip or machines create --name "finance-runner-01" --output json
+uip or machines create "finance-runner-01" --output json
 ```
+
+The machine name is the argument, as in `folders create` and `queues create`. `-n, --name` still works as a deprecated alias and prints a warning; giving the name both ways, or not at all, fails with `invalid_argument`.
 
 Key options:
 
@@ -279,6 +286,14 @@ uip or machines assign <key1> <key2> <key3> --folder-path "Finance" --output jso
 ```
 
 Verify: `uip or machines list --folder-path "Finance" --output json`.
+
+> **A folder takes only one serverless machine.** Assigning a second one fails. The error says the folder already has a serverless machine and a folder takes only one, lists the machine keys that were not assigned, and points to `machines list` and `machines unassign`. A CLI from before that message returns only the service's `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.` The CLI does not look up which machine is already in the folder. To see it and, if you want the new one instead, free the folder:
+>
+> ```bash
+> uip or machines list --folder-path "Finance" --output json
+> uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
+> uip or machines assign <new-machine-key-guid> --folder-path "Finance" --output json
+> ```
 
 ### Step 7b: Inspect / Edit / Unassign / Delete Machines
 
@@ -306,7 +321,6 @@ Notes:
 - `machines update` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines update` echoes the new name when you rename.
 - Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
 - `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
-- Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
 - `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
 
 ### Step 8: Configure Licenses
@@ -361,7 +375,7 @@ uip or users assign \
   --output json
 
 # 6. Create a machine
-uip or machines create --name "finance-runner-01" \
+uip or machines create "finance-runner-01" \
   --unattended-slots 2 -d "Finance department runner" --output json
 # Response: { "Data": { "Key": "m1m2m3m4-..." } }
 
@@ -409,7 +423,7 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 ### `--all` flag on folders list enables filtering
 
-Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
+Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to (an external app without `OR.Default`: every folder its scopes reach) and rejects filter flags.
 
 `folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
 

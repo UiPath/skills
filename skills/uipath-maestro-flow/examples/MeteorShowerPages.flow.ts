@@ -13,7 +13,7 @@
  *
  * Generic scenario: page through a meteor-shower sightings feed until it ends.
  */
-import { flow, http, script, js, tmpl, v, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, http, script, js, tmpl, v, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('meteor-shower-pages')
   .name('MeteorShowerPages')
@@ -27,13 +27,15 @@ export default flow('meteor-shower-pages')
       .step('fetchPage', http({
         method: 'GET',
         url: tmpl`https://sightings.example.com/meteors?page=${v('page')}`,
-        managed: false,
+        managed: true,
         returns: { hasNextPage: 'boolean' },
       }), { updates: { page: js`$vars.page + 1` } }),
     { limit: 50 },
   )
-  .step('reportPages', script({
-    code: 'return "read " + String($vars.page - 1) + " page(s) of sightings";',
-  }))
+  .step('reportPages', script(reportPages))
   .return({ pagesRead: out('reportPages') })
   .build();
+
+function reportPages($vars: FlowVars) {
+  return "read " + String($vars.page - 1) + " page(s) of sightings";
+}

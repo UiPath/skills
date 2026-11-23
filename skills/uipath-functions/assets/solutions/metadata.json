@@ -1,0 +1,199 @@
+{
+  "_snapshotDate": "2026-04-24",
+  "_source": "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata",
+  "_note": "Trimmed projection: agents only consume {kind, type} for SubType lookup. See bindings-reference.md → SubType Metadata for the refresh recipe.",
+  "entries": [
+    {
+      "kind": "taskCatalog",
+      "type": null
+    },
+    {
+      "kind": "mcpServer",
+      "type": "Coded"
+    },
+    {
+      "kind": "mcpServer",
+      "type": "Command"
+    },
+    {
+      "kind": "mcpServer",
+      "type": "Remote"
+    },
+    {
+      "kind": "mcpServer",
+      "type": "UiPath"
+    },
+    {
+      "kind": "remoteA2aAgent",
+      "type": "RemoteA2aAgent"
+    },
+    {
+      "kind": "app",
+      "type": null
+    },
+    {
+      "kind": "app",
+      "type": "Coded"
+    },
+    {
+      "kind": "app",
+      "type": "CodedAction"
+    },
+    {
+      "kind": "appVersion",
+      "type": null
+    },
+    {
+      "kind": "connection",
+      "type": null
+    },
+    {
+      "kind": "connector",
+      "type": null
+    },
+    {
+      "kind": "choiceSet",
+      "type": null
+    },
+    {
+      "kind": "entity",
+      "type": null
+    },
+    {
+      "kind": "entity",
+      "type": "caseCommentEntity"
+    },
+    {
+      "kind": "entity",
+      "type": "caseDocumentEntity"
+    },
+    {
+      "kind": "entity",
+      "type": "caseMainEntity"
+    },
+    {
+      "kind": "entity",
+      "type": "nativeEntity"
+    },
+    {
+      "kind": "index",
+      "type": null
+    },
+    {
+      "kind": "memorySpace",
+      "type": null
+    },
+    {
+      "kind": "asset",
+      "type": "stringAsset"
+    },
+    {
+      "kind": "asset",
+      "type": "integerAsset"
+    },
+    {
+      "kind": "asset",
+      "type": "booleanAsset"
+    },
+    {
+      "kind": "asset",
+      "type": "credentialAsset"
+    },
+    {
+      "kind": "asset",
+      "type": "secretAsset"
+    },
+    {
+      "kind": "bucket",
+      "type": "orchestratorBucket"
+    },
+    {
+      "kind": "bucket",
+      "type": "amazonBucket"
+    },
+    {
+      "kind": "bucket",
+      "type": "azureBucket"
+    },
+    {
+      "kind": "businessRule",
+      "type": null
+    },
+    {
+      "kind": "calendar",
+      "type": null
+    },
+    {
+      "kind": "credentialStore",
+      "type": null
+    },
+    {
+      "kind": "library",
+      "type": null
+    },
+    {
+      "kind": "package",
+      "type": null
+    },
+    {
+      "kind": "process",
+      "type": null
+    },
+    {
+      "kind": "process",
+      "type": "agent"
+    },
+    {
+      "kind": "process",
+      "type": "api"
+    },
+    {
+      "kind": "process",
+      "type": "caseManagement"
+    },
+    {
+      "kind": "process",
+      "type": "flow"
+    },
+    {
+      "kind": "process",
+      "type": "mcpServer"
+    },
+    {
+      "kind": "process",
+      "type": "process"
+    },
+    {
+      "kind": "process",
+      "type": "processOrchestration"
+    },
+    {
+      "kind": "process",
+      "type": "testAutomationProcess"
+    },
+    {
+      "kind": "process",
+      "type": "webApp"
+    },
+    {
+      "kind": "queue",
+      "type": null
+    },
+    {
+      "kind": "trigger",
+      "type": "connectedEventTrigger"
+    },
+    {
+      "kind": "trigger",
+      "type": "queueTrigger"
+    },
+    {
+      "kind": "trigger",
+      "type": "timeTrigger"
+    },
+    {
+      "kind": "webhook",
+      "type": null
+    }
+  ]
+}

@@ -247,11 +247,10 @@ Check the `Warnings` array in the refresh output. Common warnings:
 - `Index uses <type>, which is not yet supported` — data source is GoogleDrive/OneDrive/Dropbox/Confluence/Attachments; hand-author the solution-level files. Step 3's `dataSourceType` check should have caught this earlier.
 - `Storage bucket "<NAME>" not found in Orchestrator folder` — the bucket was deleted or lives in a different folder than the index.
 
-### Step 7 — Bundle and upload
+### Step 7 — Upload
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
 
 The upload response includes a `Data.DesignerUrl` — open it to verify the context appears wired to the ECS index in Studio Web.

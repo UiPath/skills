@@ -8,9 +8,19 @@ on:
         required: true
         type: string
       channel:
-        description: GitHub Packages dist-tag and prerelease label
+        description: GitHub Packages dist-tag and prerelease label (dev, preview, or stable)
         required: true
         type: string
+      commit:
+        description: stable only. Full git sha to check out and build
+        required: false
+        type: string
+        default: ""
+      version:
+        description: stable only. Exact version to publish, <base>-stable.<sprint>, or <base>-stable.<sprint>.<n> for a re-cut
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -30,6 +40,12 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Empty for dev/preview, which build the triggering ref as before.
+          ref: ${{ inputs.commit }}
+          # stable checks the commit is on main, which needs the history; dev and
+          # preview stay shallow. Strings, because a numeric 0 reads as false.
+          fetch-depth: ${{ inputs.channel == 'stable' && '0' || '1' }}
 
       - uses: actions/setup-node@v4
         with:
@@ -37,12 +53,14 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@uipath"
 
-      - name: Validate inputs and stamp version
+      - name: Validate inputs and stamp version and gitHead
         id: package_metadata
         shell: bash
         env:
           FLAVOR: ${{ inputs.flavor }}
           CHANNEL: ${{ inputs.channel }}
+          COMMIT: ${{ inputs.commit }}
+          STABLE_VERSION: ${{ inputs.version }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           if [[ ! "$FLAVOR" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || [ "$FLAVOR" = "default" ]; then
@@ -53,8 +71,35 @@ jobs:
             echo "Skill flavor is not a real directory: $FLAVOR" >&2
             exit 1
           fi
+          # Nothing from the checkout is read before the stable arm has proven
+          # its commit is on main: the tree could be any sha GitHub can fetch.
           case "$CHANNEL" in
-            dev|preview) ;;
+            dev|preview)
+              if [ -n "$COMMIT$STABLE_VERSION" ]; then
+                echo "commit and version are accepted only for the stable channel" >&2
+                exit 1
+              fi
+              BASE=$(node -p "require('./package.json').version")
+              VERSION="${BASE}-${CHANNEL}.${RUN_NUMBER}"
+              ;;
+            stable)
+              if [[ ! "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || [ "$(git rev-parse HEAD)" != "$COMMIT" ]; then
+                echo "stable needs commit to be the full sha that was checked out: $COMMIT" >&2
+                exit 1
+              fi
+              if ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+                echo "stable commit is not on main: $COMMIT" >&2
+                exit 1
+              fi
+              BASE=$(node -p "require('./package.json').version")
+              # An optional trailing counter names a re-cut in the same sprint
+              # (-stable.206.1 sorts above -stable.206); npm versions are immutable.
+              if [[ ! "$STABLE_VERSION" =~ ^${BASE//./\\.}-stable\.[0-9]+(\.[0-9]+)?$ ]]; then
+                echo "stable version must be ${BASE}-stable.<sprint> or ${BASE}-stable.<sprint>.<n> for this commit: $STABLE_VERSION" >&2
+                exit 1
+              fi
+              VERSION="$STABLE_VERSION"
+              ;;
             *) echo "Unsupported flavor package channel: $CHANNEL" >&2; exit 1 ;;
           esac
 
@@ -66,9 +111,11 @@ jobs:
           ')
           echo "package_name=$PACKAGE_NAME" >> "$GITHUB_OUTPUT"
 
-          BASE=$(node -p "require('./package.json').version")
-          VERSION="${BASE}-${CHANNEL}.${RUN_NUMBER}"
           npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # The composer copies the root manifest into the flavor package, so
+          # this records the built commit. npm does not set gitHead itself
+          # when publishing a tarball.
+          npm pkg set gitHead="$(git rev-parse HEAD)"
           node scripts/sync-version.mjs
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Publishing $PACKAGE_NAME@$VERSION to dist-tag $CHANNEL"
@@ -90,6 +137,26 @@ jobs:
             --flavor "$FLAVOR" \
             --version "$VERSION")
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      # Same gate as publish.yml: scan the selected tarball's exact bytes.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      # The gate comes from the publisher's own ref (main for the stable caller),
+      # not from the built commit: a stable build re-cuts a commit that may
+      # predate the gate, and its rules must be today's either way. The scanner
+      # reads its allowlist next to itself, so the scripts folder is enough.
+      - uses: actions/checkout@v4
+        with:
+          path: .publisher
+          sparse-checkout: scripts
+          fetch-depth: 1
+
+      - name: Scan the flavor tarball for customer-blocked content
+        env:
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        run: python3 .publisher/scripts/check-sensitive-content.py "$TARBALL"
 
       - name: Require the GitHub Packages registry
         run: |

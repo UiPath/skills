@@ -9,7 +9,9 @@ description: >
   connection resource. Verifies design-time artifacts only (no
   runtime connector invocation). Cloud auth required — depends on
   the staging tenant having the `uipath-uipath-airdk` (GenAI
-  Activities) connector available.
+  Activities) connector available. The prompt names the connector and its
+  Web Search activity: "a GenAI tool" alone let agents pick the built-in
+  DeepRAG tool instead, which grades nothing about IS.
 tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
@@ -21,8 +23,9 @@ reference:
 
 initial_prompt: |
   Create a UiPath low-code agent "ResearchAgent" that can look things up.
-  Give it a GenAI tool so it can research questions on demand. The solution
-  should be named "ResearchSol".
+  Give it the Web Search activity from the UiPath GenAI Activities Integration
+  Service connector as a tool, so it can research questions on demand. The
+  solution should be named "ResearchSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -37,19 +40,21 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
+  - type: run_command
+    description: "A solution manifest (.uipx) or a project.uiproj exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or glob.glob('**/project.uiproj', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
-  - type: command_executed
-    description: "Agent scaffolded the agent project with uip agent init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
+  - type: run_command
+    description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -65,10 +70,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Studio Web cannot run `uip solution resources refresh` (no .uipx on disk), so the
+  # studioweb skill declares each resource with `resources add` instead; either counts.
   - type: command_executed
-    description: "Agent refreshed solution resources"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    description: "Agent declared the connection in the solution: uip solution resources refresh, or resources add --kind Connection (CLI or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+(?:refresh\b|add\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Connection\b)|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"add")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Connection")'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

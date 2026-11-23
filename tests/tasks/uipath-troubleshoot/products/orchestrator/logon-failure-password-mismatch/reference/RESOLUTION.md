@@ -26,7 +26,7 @@ network, and RDP path are healthy. The fault is scoped to the
 `UIPATH\USER1` credential.
 
 **Why:** AD `PasswordLastSet` for `UIPATH\USER1` is
-`2026-05-11T07:14:00Z` (yesterday, per the initial report and the
+`2026-05-11T07:14:00Z` (per the initial report and the
 `_meta.ad_password_last_set_observed` annotation on
 `or users get`). The Orchestrator-stored credential record shows
 `PasswordLastSet: 2026-05-04T09:00:00Z` — seven days older than AD.

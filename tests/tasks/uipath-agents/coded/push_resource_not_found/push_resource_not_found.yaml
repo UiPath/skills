@@ -11,7 +11,7 @@ description: >
   correct `ConnectionId` in bindings.json, and re-push so the connection
   actually imports. CLI is mocked — tests behavior, not cloud
   connectivity.
-tags: [uipath-agents, integration, coded, mode:diagnose, feature:file-sync]
+tags: [uipath-agents, integration, coded, mode:diagnose, feature:file-sync, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 18

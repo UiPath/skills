@@ -4,7 +4,7 @@ Detailed reference for the end-to-end review process. The SKILL.md provides the 
 
 ## PDD as Source of Truth
 
-The **Process Design Document (PDD)** — also called Process Definition Document, Solution Design Document (SDD), or Requirements Specification — is the primary benchmark for the review. When available, the PDD defines:
+The **Process Definition Document (PDD)** — also called Solution Design Document (SDD) or Requirements Specification — is the primary benchmark for the review. When available, the PDD defines:
 
 - **Business process description** — what the automation should do, step by step
 - **Expected inputs and outputs** — data types, formats, sources, destinations

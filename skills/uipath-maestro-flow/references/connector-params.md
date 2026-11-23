@@ -4,21 +4,12 @@
 
 Call a curated or generic Integration Service operation.
 
-**Some Data Fabric entity operations are Integration Service connector actions.**
-"Data Fabric" and "Data Service" name one product — the tenant displays connector
-key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE:
-`core.datafabric.*` has all four verbs (`dataFabricRead()`,
-`dataFabricCreate()`, `dataFabricUpdate()`, `dataFabricDelete()`), and the read
-verb covers filters, paging and sort. What still routes here is get-by-id when
-the whole value of a long-text field is needed (a native read, even one filtered
-on `Id`, returns a 10,000-character preview), the file record fields, and the
-Record Created / Updated events; see [`data-fabric.md`](data-fabric.md) for the
-routing table.
+**Some Data Fabric entity operations are Integration Service connector actions.** "Data Fabric" and "Data Service" name one product; the tenant displays connector key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE: `core.datafabric.*` has `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()`, and `dataFabricDelete()`; read covers filters, paging, and sort. Route here only get-by-id when the whole long-text value is needed (native reads, including `Id` filters, return a 10,000-character preview), file record fields, and Record Created / Updated events; see [`data-fabric.md`](data-fabric.md).
 
 Signatures:
 
 - `connector(descriptor, inputs, opts?)`
-- `connector(key, action, inputs?, { connection, folder, object?, version? })` (`connection` and `folder` are required: `check` reports `BINDING_MISSING` without them)
+- `connector(key, action, inputs?, { connection, folder, object?, version? })`; `connection` and `folder` are required: `check` reports `BINDING_MISSING` without them.
 
 ```ts
 .step('issue', connector('uipath-atlassian-jira', 'get-issue',
@@ -28,209 +19,117 @@ Signatures:
 
 ## At a glance
 
-Call a curated or generic connector operation using a generated descriptor or key/action pair.
-
-Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
-record fields, Record Created/Updated events, or a scenario that names the
-connector. Record CRUD is native ([Data Fabric](data-fabric.md)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+Call a curated or generic operation through a generated descriptor or key/action pair. Use connector `uipath-uipath-dataservice` for file record fields, Record Created/Updated events, or scenarios naming the connector; record CRUD is native ([Data Fabric](data-fabric.md)). Discover tenant-specific fields and ids and preserve every scenario-named input.
 
 **Bindings: [`bindings.md`](bindings.md)**
 
 ## Author first — `check` names every prepare you owe
 
-Authoring never waits on `prepare`, and no discovery command precedes the
-source. The loop is:
+Authoring never waits on `prepare`, and no discovery command precedes the source:
 
-1. **Search** the library and read the operation's page.
-2. **Author** the step from the task's own words — the fields you intend,
-   `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
-   generic operation.
-3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
-   gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
-   `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
-   Three codes say the operation itself does not resolve, so no prepare
-   fixes them; edit the source and re-run `check`:
-   - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
-     connector, or version). The message lists the connector's operations and
-     a `Closest:` match. The operation is the node type's slug, not the
-     tenant's `objectName` (`send-email`, not `send-mail-v2`). If the operation
-     is newer than the library, run `uip maestro registry pull`.
-   - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
-     add `{ object: '<name>' }`. The message lists the objects.
-   - `CONNECTOR_OBJECT_NOT_GENERIC` — `object` on a single, non-generic
-     operation; drop the `object` option.
-4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
-   invocation, and it finds the connection itself and writes `bindings.json`.
-   `prepare` repoints the import itself; it only asks when two flows
-   import the same connector, or you passed `--no-source-rewrite`.
-5. **Check again, then compile.**
+1. **Search** the library and read the operation page.
+2. **Author** intended fields, `lookup()` id tokens, and `{ object: '<name-as-the-task-said-it>' }` for generic operations.
+<!--skill-flavor:check-source:start-->
+3. **Run** `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
+<!--skill-flavor:check-source:end-->
+   gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
+   `CONNECTOR_NOT_IN_LIBRARY`, `CONNECTOR_OBJECT_REQUIRED`, and `CONNECTOR_OBJECT_NOT_GENERIC` mean the operation itself does not resolve; no prepare fixes them. Edit the source and re-run `check`:
+   - `CONNECTOR_NOT_IN_LIBRARY`: no library layer has the operation, connector, or version, and with no library pulled neither does the tenant. The message lists operations and a `Closest:` match. Use the node type slug, not tenant `objectName` (`send-email`, not `send-mail-v2`).
+<!--skill-flavor:not-in-library-pull:start-->
+     With no library pulled, `check` and `compile` already ask the tenant through `uip`; the last sentence says what it answered. With a pulled library they do not ask; refresh a newer operation with `uip maestro registry pull`. "The tenant was asked … and does not serve it" means the name is wrong or the connector is not available on this tenant: fix the name or use `http()`. Otherwise the sentence gives `uip`'s reason: run `uip login` only when it says `uip` is not logged in or the session expired; for anything else report `uip`'s reason and stop.
+<!--skill-flavor:not-in-library-pull:end-->
+   - `CONNECTOR_OBJECT_REQUIRED`: add `{ object: '<name>' }`; the message lists objects.
+   - `CONNECTOR_OBJECT_NOT_GENERIC`: remove `object` from a single, non-generic operation.
+4. **Prepare once**: run one invocation composing `--object`, `--resolve`, and `-f`; it finds the connection and writes `bindings.json`. It repoints the import and asks only when two flows import the same connector or `--no-source-rewrite` was passed.
+5. **Run `check` again, then compile.**
 
-Every prepare command below is the one `check` prints at step 3 — shown here
-so its flags are documented, not as a step to run before the source exists.
+Every prepare command below is the command `check` prints at step 3, documented here rather than prescribed before source authoring.
 
 ## Three contracts to settle before authoring
 
-Check these before the first connector call; they are the common places where a
-plausible Flow compiles but loses the intended runtime or Studio Web contract:
-
-1. **Runtime strings use `tmpl`, not `js`.** For example,
-   ``where: tmpl`invoiceNumber = '${input('invoiceNumber')}'` `` builds a string.
-   ``js`invoiceNumber = '${input('invoiceNumber')}'` `` is JavaScript assignment
-   syntax and evaluates to only the assigned value. See
-   [Structured filters](#structured-filters-ceql).
-2. **Schema-dynamic fields require a prepared descriptor.** Resolving parent
-   values is not enough: run `registry prepare` with those values and import the
-   generated descriptor so the Flow retains its schema-replay metadata. See
-   [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop).
-3. **Paged reference lookups use exactly `nextPage`.** When
-   `Pagination.HasMore` is true, pass `Pagination.NextPageToken` as
-   `--query "nextPage=<token>"`; do not guess `page`, `pageToken`, or
-   `nextPageToken`. See
-   [Resolving connection-scoped reference values](#resolving-connection-scoped-reference-values).
+1. Runtime strings use `tmpl`, not `js`: ``where: tmpl`invoiceNumber = '${input('invoiceNumber')}'` `` builds a string; ``js`invoiceNumber = '${input('invoiceNumber')}'` `` evaluates to only the assigned value. See [Structured filters](#structured-filters-ceql).
+2. Schema-dynamic fields require a prepared descriptor; parent values alone are insufficient. Run `registry prepare` with them and import its generated descriptor so schema-replay metadata remains. See [the parent-field loop](#schema-dynamic-operations-the-parent-field-loop).
+3. Paged reference lookups use exactly `nextPage`: when `Pagination.HasMore` is true, pass `Pagination.NextPageToken` as `--query "nextPage=<token>"`; never use `page`, `pageToken`, or `nextPageToken`. See [Resolving connection-scoped reference values](#resolving-connection-scoped-reference-values).
 
 ## Discovering operations and fields
 
-`$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
-(machine-readable, for compiling) point at a connector library staged by the
-environment. It is not baked into the npm package, so when those variables are
-unset, fetch one into the project:
+<!--skill-flavor:library-discovery:start-->
+`uip maestro registry pull` downloads the published library to `~/.uipath/cache/flow-sdk/library/current/`; `compile`, `check`, and `registry search` resolve it without a flag. The project receives only `.flow-sdk/connectors/`, one descriptor per referenced connector.
 
 ```bash
 uip maestro registry pull
 ```
 
-The library and its Markdown go to a shared cache
-(`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and
-`registry search` resolve them from there with no flag. The project gets only
-`.flow-sdk/connectors/`, holding a descriptor per connector it references.
+If download fails or none is published (Automation Suite), pull is optional: `pull` fetches referenced connectors through `uip` into `.flow-sdk/connectors-local/` (use `--connector <key>` for a key not yet in source); `registry search` searches the tenant catalog; `check`, `compile`, `decompile`, `merge`, and `registry describe` fetch missing operations through `uip` into `.flow-sdk/connectors-local/` and continue. These require logged-in `uip` and an SDK recent enough to fetch; see [CLI-LOOP.md](CLI-LOOP.md#installing-the-package). With neither a library nor a working `uip`, connector work stops at a message giving the reason; fix what it names (`uip login` only for a session problem). `$FLOW_SDK_LIBRARY_JSON`, when set, overrides the cache.
 
-To read the Markdown directly, ask where it is:
-
-```bash
-FLOW_SDK_LIBRARY_MD="$(uip maestro registry path --library-md --output plain)" \
-  || echo "no connector library yet: run uip maestro registry pull" >&2
-```
-
-The four library verbs are `pull`, `search`, `path` and `prepare`.
-Like the authoring verbs they need a prerelease `@uipath/cli`, and they hold no logic of their own — each one runs the `@uipath/maestro-builder-sdk` installed in this workspace.
-`uip` is the entry point and is what delivers these skills, so it is present wherever this guidance is being read.
-(The package also exposes a `flow-sdk` bin for invoking the same commands directly, which is what the printed remedies fall back to when nothing sets `FLOW_SDK_INVOKED_AS`.)
+Library verbs are `pull`, `search`, `describe`, `path`, and `prepare`; they require prerelease `@uipath/cli` and run the installed `@uipath/maestro-builder-sdk`. `uip` is the entry point and is present here. The package also exposes `flow-sdk`; printed remedies use it when `FLOW_SDK_INVOKED_AS` is unset.
+<!--skill-flavor:library-discovery:end-->
 
 **`uip maestro registry` is not `uip maestro flow registry`.** The names are one
 word apart and the jobs are unrelated: this one is the connector library the
 compilers resolve operations against, while `uip maestro flow registry
 pull|search|get` syncs the tenant's **node manifests** — the node types other
-references reach for (`uipath.core.function`, `uipath.core.agent.<name>`). A
-connector operation is never in the node registry and a node type is never in
-the library, so a miss in one is not evidence about the other.
+references reach for (`uipath.core.function`, `uipath.core.agent.<name>`).
+Connectors are never node-registry entries and nodes are never library entries, so a miss in one is not evidence about the other.
 
-Search that library for static contracts:
+<!--skill-flavor:library-search:start-->
+Search static contracts, then read an operation page:
 
 ```bash
-jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path}' \
-  "$FLOW_SDK_LIBRARY_MD/index.json"
-sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
+uip maestro registry search 'send email'
+uip maestro registry describe uipath.connector.uipath-microsoft-outlook365.send-email
 ```
 
-When `check` refuses a connection-specific field as unknown — or warns the
-schema is unprepared — materialize the live schema rather than guessing or
-hand-editing the emitted Flow; its diagnostic names this command. It reads the
-schema through the tenant, so it needs a live Integration Service connection
-and a logged-in `uip`; without one, fall back to the curated operation in the
-markdown library.
+`describe` renders from the operation entry with or without a pulled library; tenant-fetched pages identify that on their first line.
+<!--skill-flavor:library-search:end-->
+
+When `check` rejects a connection-specific field or warns that schema is unprepared, materialize live schema with the diagnostic command; do not guess or edit emitted Flow. It needs a live Integration Service connection and logged-in `uip`; otherwise author only fields listed by `registry describe`.
 
 ```bash
-uip maestro registry prepare <connector-key> <action>
+uip maestro registry prepare <connector-key> --action <action>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> --object <api-object-name>
+uip maestro registry prepare <connector-key> --action <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
-The result lands in `.flow-sdk/connectors-local/`, which the compilers union over the
-library. Calls accumulate, so preparing a second operation keeps the first.
+Results land in `.flow-sdk/connectors-local/`, which compilers union over the library; calls accumulate. `prepare` chooses a connection. Pass `--connection-id <id>` only to pin one; non-`Enabled` connections are refused with enabled alternatives. A `Failed` connection returns an empty schema, so preparing through it would write a no-field overlay and the next compile would reject every input as unknown; the refusal is the only signal that says "connection", not "field".
 
-`prepare` picks the connection itself (see below). Pass `--connection-id <id>`
-only to pin a specific one, and expect it to be checked: a connection whose
-`State` is not `Enabled` is refused, naming the enabled alternatives. A `Failed`
-connection answers field discovery with an empty schema, so preparing through
-it would write an overlay with no fields and the next compile would still
-reject every input as unknown — the refusal is the only signal that says
-"connection", not "field".
-
-Descriptors from either tree are imported with their real `.ts` extension — a
-`.js` specifier does not resolve, because these are sources rather than compiled
-output. The paths are relative to the source, which sits in `.flow-sdk/` beside
-both trees:
+<!--skill-flavor:descriptor-imports:start-->
+Import descriptors from either tree with the real `.ts` extension (a `.js` specifier does not resolve); paths are relative to the source in `.flow-sdk/`:
 
 ```ts
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
 import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
+<!--skill-flavor:descriptor-imports:end-->
 
-Older environments provide the same tool as a bare `prepare-connector` on
-`PATH`. The arguments are identical apart from one name: a connector version is
-`--connector-version` here, because `--version` is Commander's own flag and
-would print the CLI version instead of reaching the generator.
-
-For many connectors that first command is **not enough on its own** — see the
-parent-field loop below before concluding a field does not exist.
+Older environments expose bare `prepare-connector` with identical arguments except connector version is `--connector-version` (not Commander's `--version`). For many connectors the first prepare is insufficient; use the parent-field loop before concluding a field does not exist.
 
 ### A Generic operation is authored from the LIBRARY, not through registry prepare
 
-Author it directly, with the **library's** action id and the object as an option:
+Use the library action id and object option directly:
 
 ```ts
-.step('users', connector('uipath-servicenow-servicenow', 'list-all-records',
+.step('users', connector('uipath-servicenow-servicenow', 'list-records',
   {}, { connection: 'sn', folder: 'shared', object: 'acr_user' }))
 ```
 
-That is the generic form, and it needs no live resolution: it compiles off the
-baked library, validates, and runs. `registry prepare` is for a **curated,
-schema-dynamic** op whose real fields the connection decides (Jira create-issue
-and friends) — a generic list usually has no connection-specific input fields at
-all, so preparing one resolves nothing and costs a round trip.
-
-Reach for it here only when a field you need is genuinely missing, and know what
-it changes. The two namespaces differ: the library calls this `list-all-records`
-and materializes it per object, while the registry serves `list-records`, so
-`registry get` finds nothing under the library id and `registry prepare` reports
-the connector's real action list with the closest matches first. Re-running with
-the registry id succeeds — and yields a CURATED descriptor pinned to one object
-(`ListAccountRecoveryEnrolledUser`), whose node type is `…list-records`. That is
-a different node from the generic one you were asked for. Author the generic call
-above unless you specifically want that.
+This generic form needs no live resolution and compiles from the baked library. `registry prepare` is for curated schema-dynamic operations; for a generic operation use it only when a needed field is genuinely missing (a generic list usually has none, so preparing resolves nothing). The library and the registry use the same id, `list-records`. Older libraries called it `list-all-records`; against the current library that id is `CONNECTOR_NOT_IN_LIBRARY`. ServiceNow's `list-records` is one object-less entry, so `object: 'acr_user'` is accepted with a warning and the tenant resolves it at dispatch; a connector with static objects (Coupa) has one `list-records` entry per object.
 
 ### Finding the object id for a Generic operation
 
-Do not hunt for it, and do not resolve it before authoring: write the step
-with `{ object: '<name-as-the-task-said-it>' }` and let `check` name this
-command (`OBJECT_UNPREPARED`). `--object` matches, it does not equality-test —
-any casing, resolved against the connected catalog (exact, then
-case-insensitive on API name and display name, narrowed to objects that
-support the action's verb):
+Author `{ object: '<name-as-the-task-said-it>' }` and let `check` name the `OBJECT_UNPREPARED` command. `--object` matches exact, then case-insensitive API/display names, narrowed to objects supporting the action verb:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --object Company__C
+uip maestro registry prepare <connector-key> --action <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
-When the name matches **several** objects, the command refuses and prints the
-candidates (API name, display name, custom, operations). `Custom: yes` marks a
-tenant-only object, so a task that says "custom" means one of those rows. Pick
-by the task's wording, or present the candidates and let the user choose —
-never pick for them — then re-run with the chosen `Name`. When **nothing**
-matches, the command has already retried a refreshed catalog: the object is
-not on this connection, so surface that rather than inventing a name. Do not
-hand-filter the catalog with `uip is resources list` + `--output-filter` — the
-matching, the verb narrowing and the staleness retry are prepare's job now,
-and the match is recorded in `.flow-sdk/connectors-local/resolutions.json` (the
-`objects` section) beside the lookup resolutions.
+Multiple matches are refused with API name, display name, custom, and operations; `Custom: yes` marks tenant-only objects; a task that says "custom" means one of those rows. Pick by the task's wording, or present the candidates and let the user choose—never pick for them—then re-run with the chosen `Name`. No match after catalog refresh means the object is not on that connection; report it. Do not use `uip is resources list` plus `--output-filter`; prepare performs matching, verb narrowing, retry, and records it in `.flow-sdk/connectors-local/resolutions.json` under `objects`.
 
 ## Structured filters (CEQL)
 
-An Integration Service list operation takes a server-side filter through a
-FilterBuilder parameter — usually `where`, sometimes `q`. **Write the CEQL
-string; the SDK derives the tree.**
+List operations accept a server-side FilterBuilder parameter, usually `where`, sometimes `q`. **Write the CEQL string; the SDK derives the tree.**
 
 ```ts
 connector('uipath-microsoft-azureactivedirectory', 'list-groups',
@@ -238,26 +137,12 @@ connector('uipath-microsoft-azureactivedirectory', 'list-groups',
   { connection: 'entra', folder: 'shared' })
 ```
 
-That emits BOTH halves the artifact must carry: the runtime query at
-`inputs.detail.queryParameters.where`, and the design-time tree at
-`essentialConfiguration.savedFilterTrees.where` inside the node's
-`configuration`. Studio Web renders the FilterBuilder from the tree; product
-validation rejects a filter that has only one of the two, so a string alone
-fails `validate` even though the run would have worked.
+The artifact must contain both runtime `inputs.detail.queryParameters.where` and design-time `configuration.essentialConfiguration.savedFilterTrees.where`. Studio Web renders the FilterBuilder from the tree; product
+validation rejects a literal filter that has only one of the two, so a
+hand-written literal without its tree fails `validate` even though the run
+would have worked (a runtime `tmpl` filter is exempt; see below). If the task asks for the filter tree as a separate review artifact, compile first and copy `configuration.essentialConfiguration.savedFilterTrees.<parameter>` verbatim, directly or under a named top-level property, never an ad hoc `{ field, operator, value }` object or only the CEQL string; retain numeric `groupOperator` and `filters`.
 
-If the task also asks for the filter tree as a separate review artifact,
-compile first and copy the emitted
-`configuration.essentialConfiguration.savedFilterTrees.<parameter>` value
-verbatim into that file (directly or under a named top-level property). Do not
-replace it with an ad hoc `{ field, operator, value }` object or only the CEQL
-string. The serialized tree must retain its numeric `groupOperator` and
-`filters` array.
-
-Supported: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`,
-`Like`, their `Not` forms, and `Is Null` / `Is Not Null`. Combine with `AND` or
-`OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND`
-and `OR` at one level is refused rather than guessed, because a tree carries one
-operator per level.
+Supported operators: `=` `!=` `<` `<=` `>` `>=`, `Contains`, `Starts With`, `Ends With`, `Like`, their `Not` forms, and `Is Null` / `Is Not Null`; combine with `AND` or `OR`, and parenthesise to nest — `(a = 1 OR b = 2) AND c = 'x'`. Mixing `AND` and `OR` at one level is refused.
 
 Three spellings are compile errors here rather than a tenant-side
 `[102003] Integration Services bad request`:
@@ -268,68 +153,29 @@ Three spellings are compile errors here rather than a tenant-side
 | `accountNumber = "ACC123"` | double quotes mark a COLUMN reference | `accountNumber = 'ACC123'` |
 | `status eq 'Open'` | `eq`/`ne`/`gt`/`ge`/`lt`/`le` are OData | `status = 'Open'` |
 
-**A filter built from a runtime value keeps the runtime half only.** The tree
-holds literals, so a `js` template in `where` emits the query and no tree — which
-`validate` rejects. Where the filter must vary per run, filter server-side on
-what is constant and narrow the rest downstream, or accept the design-time gap
-deliberately.
+**A filter built from a runtime value has no filter tree, and that is valid.**
+The tree holds literals only, so a runtime-expression (`tmpl`) filter in `where`
+(for example ``tmpl`displayName = '${input('name')}'` ``) emits the query with no tree.
+`validate` accepts it, and the runtime resolves the whole value. The only cost is
+at design time: the Studio Web filter widget shows no tree for that step. If the
+widget must show the constant terms, put them in a literal filter and narrow the
+rest downstream.
 
 ## Schema-dynamic operations: the parent-field loop
 
-The discovery-first gate the author-first loop replaced still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
-Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import: the lookups choose values but do not create that cache.
-After compiling, inspect the emitted connector configuration.
-`flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
+For `loadByDefault`, dependent dropdowns, and `customFieldsRequestDetails`, the static descriptor is insufficient. Run the prepare named by `check`, including every `-f NAME=VALUE`; it creates schema-replay metadata. Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import (lookups do not create that cache), nor `rawNode`, emitted-flow edits, or hand-written `connectors-local/` overlays; each produces a node the platform cannot run. After compile, inspect connector configuration: completion requires non-null `customFieldsRequestDetails` whose parent values match runtime inputs, even though `flow validate` may accept a missing cache.
 
-A connection alone does not resolve these operations. Their real field set is a
-function of the **values** of a few *parent* fields, so the same operation on the
-same connection has many different shapes. Measured on one live Jira tenant,
-`create-issue`:
-
-| parent values | fields |
-| --- | --- |
-| none | **2** — just the parents themselves |
-| project `IN` + issue type `Task` | **19** |
-| project `IN` + issue type `Epic` | **22**, a different set |
-| project `AP` + issue type `Task` | **15** |
-
-Both dimensions matter independently, and `fields.summary` — *required* — appears
-in none of the snapshot's static inputs.
-
-**The parents are themselves lookups, and the id `--resolve` records is the
-very value `-f` wants.** Do not run one prepare to resolve them and retype the
-ids into a second command: pass both flags together —
+Field sets depend on parent **values**, not merely connection, and `fields.summary` — *required* — appears in none of Jira `create-issue`'s static inputs. Parent ids recorded by `--resolve` are exactly the values `-f` needs; combine them:
 
 ```bash
-uip maestro registry prepare uipath-atlassian-jira create-issue \
+uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
 
-— or run the resolve-only prepare and paste the re-run it prints: when every
-parent has a recorded resolution, its closing note carries the exact
-`-f NAME=VALUE` command with the resolved ids filled in.
+If all parents were resolved separately, paste the exact `-f NAME=VALUE` re-run printed by prepare. Missing parents are refused (`No api-type ObjectAction matched for fields [fields.project.key]`); a value absent from the connection passes the describe silently and yields only parent fields, so treat "I passed `-f` and still got only the parents" as a wrong value, never as "this operation has no other inputs". `prepare` fails in both cases rather than writing the overlay.
 
-**Two ways to get this wrong, and only one of them is loud.**
-
-*Naming too few parents is refused*, clearly:
-
-```
-Result:  Failure
-Message: No api-type ObjectAction matched for fields [fields.project.key]
-         on operation 'Create'
-```
-
-*Naming them all but passing a value the connection does not have is not.* The
-shape is accepted, the describe succeeds, and it resolves to exactly the parent
-fields again — the same 2-field answer as passing no `-f` at all, with no error.
-Treat "I passed `-f` and still got only the parents" as a wrong value, never as
-"this operation has no other inputs." `registry prepare` fails on both cases
-rather than writing the overlay.
-
-**1. Find the parents.** Describe with no values and read the reference block of
-each input. A parent is any input whose `Reference.Path` contains a
-`{placeholder}` naming another field:
+**1. Find parents.** Describe with no values and inspect each input's reference. A parent has `Reference.Path` containing a `{placeholder}` naming another field; resolve the field a placeholder names first (`fields.project.key` before `fields.issuetype.id`):
 
 ```bash
 uip is resources describe <connector-key> <object> \
@@ -342,38 +188,19 @@ uip is resources describe <connector-key> <object> \
                  "Path": "/project/{fields.project.key}/issuetypes" } }
 ```
 
-That placeholder is also the **ordering**: resolve `fields.project.key` before
-you can resolve `fields.issuetype.id`.
-
-**A second declaration shape has no placeholder.** Data Service
-(`uipath-uipath-dataservice`) operations such as `create-entity-record`,
-`update-entity-record` and the file-record-field operations declare their parent
-through the registry's schema action (`GenerateSchema` over `entityName`), not
-through a reference path. Their describe with no values returns only the static
-inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
-`compile` refuses `title`, `description`, … as unknown. `prepare` names the
-parent when you omit it; the fix is always the entity name:
+Data Service (`uipath-uipath-dataservice`) actions such as `create-entity-record`, `update-entity-record`, and file-record-field operations instead use `GenerateSchema` over `entityName`; no-value describe returns only the static inputs (`entityName`, `expansionLevel`), so `compile` refuses the entity's fields (`title`, …) as unknown; the fix is always the entity name:
 
 ```bash
-uip maestro registry prepare uipath-uipath-dataservice create-entity-record \
+uip maestro registry prepare uipath-uipath-dataservice --action create-entity-record \
   -f entityName=FlowCodeEvalEntity
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
 
-Do not work around the refusal — not with `rawNode`, not by editing the emitted
-`.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node
-the platform cannot run.
+Do not work around the refusal — not with `rawNode`, not by editing the emitted `.flow`, not by hand-writing a `connectors-local/` overlay. Each produces a node the platform cannot run.
 
-Parent-field names are operation-specific. Copy each `Name` exactly from this
-operation's describe response; do not reuse the dotted names from the
-`create-issue` example for another action (for example, Jira `get-issue` uses
-`project` and `issuetype`).
+Copy parent names exactly from this operation's describe; they are operation-specific (Jira `get-issue` uses `project` and `issuetype`).
 
-**2. Resolve a value for each, outermost first.** Match the collection on
-`Reference.Path`, *not* on `Reference.ObjectName` — `ObjectName` is often the
-root resource shared by several fields (both Jira parents above report
-`project`), and the sub-collection the path names may not be a listable object at
-all. When it is not, find the object whose own path covers it:
+**2. Resolve each value outermost first.** Match `Reference.Path`, not `Reference.ObjectName`; find the object whose path covers it when the subcollection is not listable:
 
 ```bash
 uip is resources list <connector-key> --connection-id <connection-id> --output json   # find the object
@@ -382,38 +209,26 @@ uip is resources run list <connector-key> <object> --connection-id <connection-i
   --query "<path-param>=<value-from-the-previous-parent>" --output json
 ```
 
-For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuses`
-(`/project/{projectIdOrKey}/statuses`) covers it and returns the ids.
+For Jira, `/project/{key}/issuetypes` is covered by `project_statuses` (`/project/{projectIdOrKey}/statuses`).
 
-**3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
+**3. Prepare with every parent.**
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
+uip maestro registry prepare <connector-key> --action <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
-`prepare` quotes the service's rejection, and separately fails when the
-values were accepted but resolved to nothing beyond the parents — so both
-mistakes surface here rather than as a puzzling compile error later.
+Prepare separately reports service rejection and accepted values that resolve only to parents. Values are parent-scoped (Jira `Task` is `10620` in `IN`, `10005` in `AP`): never copy ids between projects, connections, or tasks; resolve against the connection bound by the flow. Standard `summary` and `description` are portable; custom fields such as `fields.storyPointEstimate_Customfield10016` may not be.
 
-**Values are parent-scoped and non-portable.** A Jira issue-type id is valid only
-inside its project (`Task` is `10620` in `IN` and `10005` in `AP`), so ids cannot
-be copied between projects, connections, or tasks — resolve them against the
-connection the flow actually binds. The materialized field set is likewise
-tenant-specific: custom fields captured from one connection
-(`fields.storyPointEstimate_Customfield10016`) may not exist on another at deploy.
-Standard fields (`summary`, `description`) are portable.
+Use the generated descriptor import and `connector(...)` call; it carries connection-resolved operation/object identity even when action ids differ. `connectors-local/` is authoring input; emitted Flow is self-contained. Prefer curated operations. For a raw call the curated surface lacks, use the managed HTTP node (`core.action.http.v2`) with the connector's connection and `targetConnector: '<connector-key>'` ([http.md](http.md)); the library has no per-connector `*-http-request` operation.
 
-The command prints the generated descriptor import and `connector(...)` call.
-Use that descriptor directly: it carries the connection-resolved operation and
-object identity even when the live action id differs from the baked catalog.
-The `connectors-local/` overlay is authoring input; emitted Flow is self-contained.
-Prefer curated operations for their stable contract. Use the connector's raw
-`*-http-request` operation only for raw/generic needs the curated surface lacks.
+Preparation needs a live connection. For explicitly offline/validate-only evidence without connection-specific fields, use the baked descriptor and published static inputs; do not invent fields or use placeholder discovery. If the published list is empty, pass `{}`; offline evidence then proves operation identity/control-flow routing, not provider payload/dispatch.
 
-File uploads are multipart Flow inputs. If the static catalog omits an upload
-field, prepare the operation against its connection, then pass the upstream file
-like any other connector input:
+[`bindings.json`](bindings.md) defines symbolic connection/folder bindings and compile-time resolution; populate resource keys from live connection/folder listings. A plausible GUID is not evidence of existence or tenant membership; resource refresh and product debug are the evidence.
+
+### File uploads are multipart Flow inputs
+
+If the catalog omits an upload field, prepare against its connection and pass the upstream file as a connector input:
 
 ```ts
 .step('upload', connector(SendFileToChannel, {
@@ -423,14 +238,7 @@ like any other connector input:
 }, { connection: 'slack', folder: 'shared' }))
 ```
 
-The compiler emits the product's `multipartParameters` envelope. This is a Flow
-artifact transport; the separate `uip is resources run` command does not expose
-a multipart flag and is not the execution surface for this wiring.
-
-Only a **file** part is an input. A string-typed part (Teams `body`, Gmail
-`body`, GenAI `RagRequest`) is the container the runtime composes from the
-operation's body fields — write those (`'body.content'`, `Body`, `prompt`), never
-the part itself; the compiler lists the part without a value, as the designer does.
+The compiler emits `multipartParameters`; `uip is resources run` has no multipart flag and is not the execution surface. Only a **file** part is an input. String-typed parts (Teams `body`, Gmail `body`, GenAI `RagRequest`) are containers; pass body fields (`'body.content'`, `Body`, `prompt`), never the part itself.
 
 ```ts
 .step('notify', connector(SendChannelMessage, {
@@ -440,155 +248,55 @@ the part itself; the compiler lists the part without a value, as the designer do
 }, { connection: 'teams', folder: 'shared' }))
 ```
 
-Preparation requires a working live connection. When a task explicitly uses
-offline/validate-only evidence and does not require connection-specific fields,
-use the baked descriptor with its published static inputs; do not run discovery
-with a placeholder connection or invent fields that were not measured. If the
-published input list is empty, pass `{}`; offline evidence then proves operation
-identity and control-flow routing, not the provider payload or dispatch.
-
-[`bindings.json`](bindings.md) names symbolic connection/folder bindings used by
-the source. Its reference defines the schema, compile-time resolution rules,
-and boundary with emitted-artifact bindings. Populate its resource keys from
-the live connection and folder listings. A plausible GUID is not proof that a
-resource exists or belongs to the intended tenant; resource refresh and product
-debug are the evidence.
-
 ## Resolving connection-scoped reference values
 
-Fields such as Slack channels and mailbox folders store ids, not display names.
-
-**If a field is marked LOOKUP, do not guess it and do not resolve it by hand.**
-Author the field's helper call and keep going:
+Lookup fields store ids, not display names. If marked LOOKUP, author its helper and do not guess or manually resolve it:
 
 ```ts
-channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
+channel: lookup(SendMessageToUser, 'channel').byRealName('Ada Lovelace')
 ```
 
-`.byEmail` is an **alias**, and aliases are generated onto the descriptor.
-`lookup()` takes two forms, and only one of them carries them:
+Slack omits `profile.email` unless the connection's app may read emails, so `.byEmail(…)` can match no one; prefer `.byRealName(…)` or `.byId(…)`. When prepare says `none carries '<field>'` (an SDK with builder-sdk#2096), the value is not wrong: search by a field the message lists after `Search by`. A real name need not be unique; prepare takes the first exact match without warning, so use `.byId(…)` when two users may share it.
 
 | form | when | helpers |
-| --- | --- | --- |
-| `lookup(SendMessageToUser, 'channel')` | you imported the descriptor `prepare` generated | `.byEmail(v)`, `.byRealName(v)`, … plus `.by(name, v)` |
-| `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | Generic CRUD, or no descriptor in hand | `.by(name, v)` only |
+|---|---|---|
+| `lookup(SendMessageToUser, 'channel')` | prepared descriptor | `.byEmail(v)`, `.byRealName(v)`, … (as the descriptor's `LOOKUP:` header lists them) and `.by(name, v)` |
+| `lookup('uipath-salesforce-slack', 'send-message-to-user', 'channel')` | generic CRUD/no descriptor | `.by(name, v)` only |
 
-Do not carry an alias from the first row into the second.
-There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
-Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+Never use an alias (`.byEmail`, `.byRealName`, generated onto the descriptor) in the second form; it throws. Use `.by('profile.real_name', …)` there. Searchable names are in the descriptor `LOOKUP:` header and `check` diagnostics.
 
-When the flow is written, `check` reports each token still unresolved
-(`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
-and it is the only tenant call the whole loop needs:
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top or one level below; deeper paths start at the root picker's top entry, not drive root:
+
+```ts
+referenceID: lookup(DownloadFile, 'referenceID').by('FullName', 'OneDrive/<folder>/<file>')
+```
+
+Expect a walk to take four to six minutes; a wrong first segment fails quickly, but a wrong file name fails only after the walk, naming its stopping segment. So confirm the name first with:
 
 ```bash
-uip maestro registry prepare uipath-salesforce-slack send-message-to-user \
-  --resolve channel:profile.email=dustin@example.com
+uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json
 ```
 
-**You do not need to find the connection first.** `prepare` discovers it from
-`uip is connections list` — your own folder first, the tenant second — and writes
-both the connection id AND its folder key into `bindings.json`. So one command
-covers the lookup, the connection binding and the folder binding. Pass
-`--connection <name>` only when several connections match the same connector;
-it reports the candidates rather than guessing, because connections for one
-connector are not interchangeable.
+Drop `parentReference` at top level. When source contains unresolved tokens, run the one prepare command `check` prints; it records every lookup and writes connection and folder to `bindings.json`; it is the only tenant call the loop needs:
 
-**And you do not need to find the RIGHT connection first either.** A value can
-exist on one connection and not another — a project in a team's Jira but not in
-your personal workspace — so when a `--resolve` reads a collection to the end
-without a match, `prepare` tries the other enabled connections for that
-connector before failing, and re-runs itself against the one that resolves
-everything:
-
-```
-fields.project.key: not on this connection; trying 1 other uipath-atlassian-jira connection(s)
-connection: is-sandboxes-test@…-sandbox-380 (uipath-maestro-flow) resolves fields.project.key;
-  re-running against it (--connection-id f5273a4d-…)
+```bash
+uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
+  --resolve 'channel:profile.real_name=Ada Lovelace'
 ```
 
-`bindings.json` ends up naming the connection that was actually used. Three
-things it will not do: it does not retry a connection you PINNED with
-`--connection-id` / `--connection` (your choice stands, and the message names
-the alternatives so you can re-run), it does not retry a transport or permission
-failure (that says nothing about whether the value exists), and it does not pick
-between two connections that both resolve — the ids they return differ per
-connection, so that is reported for you to choose.
+Do not find the connection first: prepare searches `uip is connections list` (own folder then tenant), writes connection id and folder key, and accepts `--connection <name>` only to disambiguate candidates. If a value is absent, it tries other enabled connections and re-runs itself against the one that resolves (which `bindings.json` then names), unless `--connection-id` or `--connection` pinned one; it does not retry transport/permission failures or choose between two resolving connections. When one was pinned or two resolve, the message names alternatives; choose and re-run with the printed `--connection-id`.
 
-**So do not go crawling Integration Service when a lookup fails.** The failure
-message names the connection it read and, once every candidate has been tried,
-the one command that shows what the collection holds. Tenant discovery is still
-not a phase of this loop. When the candidates share a name, pick one
-by the `--connection-id <id>` each candidate line prints; `bindings.json` is
-written on that route too. The entries are named after the `connection:` and
-`folder:` labels your source already uses for this connector (for example
-`is-sandboxes`); a source that uses none gets `<connector's last segment>`
-(`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
-A label `prepare` cannot read without running the source (a computed value, or
-a step whose connector it cannot trace) is never guessed: `prepare` prints a
-`bindings:` line naming that step, and binds the one label it did read for the
-connector, or the default when it read none.
-`prepare` refuses, before it writes anything, a source that gives one connector
-several labels, or gives two connectors the same connection label (one label
-binds one connection). The `next:` line prints the names it bound. `compile`
-refuses a label that a `bindings.json` with entries does not declare
-(`BINDING_UNDECLARED`), and warns `CONNECTION_STUB` when a declared one does not
-resolve to a tenant id.
+Do not crawl Integration Service after lookup failure: the message names the connection read and, once every candidate is tried, the one command that shows what the collection holds. When the candidates share a name or several resolve, choose as [bindings.md](bindings.md#where-both-values-come-from) says, and pass the `--connection-id <id>` its candidate line prints. `bindings.json` entries take the source's `connection:` and `folder:` labels, which [must differ](bindings.md#where-both-values-come-from); a source with none gets the connector's last segment (for example `slack`) and `shared`; `--bind-connection` / `--bind-folder` override. If a label cannot be traced from source, prepare prints `bindings:` and binds the readable label or default. It refuses multiple labels for one connector or one connection label shared by two connectors, and prints bound names on `next:`. `compile` refuses a label that a `bindings.json` with entries does not declare (`BINDING_UNDECLARED`) and warns unresolved declared entries (`CONNECTION_STUB`).
 
-`check` names the exact command when a lookup is unresolved, and warns when a
-lookup field is given a literal id. It also speaks up when a lookup field is
-bound to a runtime expression (`LOOKUP_RUNTIME_VALUE`): a warning that states
-the id the field sends (`reporter.accountId`, not a name), and an error when
-the expression reads an e-mail field into a lookup that neither sends nor
-searches by e-mail — there an address is never that id, and the provider
-refuses it only once the flow runs. (A field that sends an e-mail, such as
-SendGrid's `from`, takes one silently.) A required lookup field you have no
-value for is resolved with its helper, not filled from a look-alike input. Run
-`check` before compiling: it finds everything else that is wrong first, so the
-one expensive call is spent last.
+`check` reports unresolved lookups as `LOOKUP_UNRESOLVED`, warns on literal ids, and warns runtime expressions as `LOOKUP_RUNTIME_VALUE` with the sent id (for example `reporter.accountId`); it errors when an e-mail expression feeds a lookup that neither sends nor searches by e-mail. Resolve a required lookup field you have no value for with its helper, never from a look-alike input. Run `check` before compile so the one expensive prepare call is last.
 
-**When the task names nobody for a person-shaped required field** (`reporter`,
-`requester`, `owner`), the value is the connection's own user: take the account
-from `uip login status` and resolve by **display name**. Search only by the
-names the field's "matches on" list declares — do not improvise queries against
-raw collections. Jira in particular hides e-mail addresses from user search, so
-an `emailAddress=` query returns nothing for a user that plainly exists, while
-`displayName=` finds them; the field's spec (`matches on displayName |
-accountId`) already told you e-mail was not searchable.
+<!--skill-flavor:connection-user:start-->
+**When the task names nobody for a person-shaped required field** (`reporter`, `requester`, `owner`), use the connection's own user: take the account from `uip login status` and resolve by **display name**. Search only names declared by the field's "matches on" list; do not query raw collections. Jira user search hides e-mail addresses, so `emailAddress=` returns nothing while `displayName=` finds the user; the spec (`matches on displayName | accountId`) excludes e-mail.
+<!--skill-flavor:connection-user:end-->
 
-Each operation's markdown page lists its lookup fields, the helper for each, and
-what it can be searched by. The generated descriptor carries the same facts as a
-comment above the `export const`, so `grep -B6 'export const SendMessageToUser'`
-answers it too.
+Operation pages and generated-descriptor comments list lookup helpers and searchable fields; `grep -B6 'export const SendMessageToUser'` finds the latter. Plain strings are correct for enumerated legal values and tenant-invariant collections (country lists, timezones) when the page says so and supplies the accepted-value command.
 
-Two cases have **no** helper on purpose, and for them a plain string is correct:
-a field whose `reference` merely enumerates legal values (what you send back is
-what you searched for), and a collection that is the same in every tenant
-(country lists, timezones). Their pages say so and print the command that shows
-the accepted values.
-
-The rest of this section is the manual route — needed only when a field carries
-no lookup, or when you are inspecting a collection rather than resolving a value.
-Resolve against the same connection the flow binds, never by copying an id from
-another connection or session:
-
-**Choose the collection from the prepared action definition before the first
-`resources run list` call.** Run `registry prepare` first and find the target
-input's `reference` block in its generated `.flow-sdk/connectors-local/*.v1def.json`.
-`reference.path` is the contract — it names the exact collection, and any
-`{placeholder}` in it names a field whose value must be resolved first.
-`reference.objectName` is only a starting point: it is frequently the shared root
-resource (several Jira inputs report `project` while their paths differ), so it
-cannot by itself identify the collection.
-
-Use `objectName` as `<object-name>` below **only when** `uip is resources
-describe <connector-key> <objectName>` reports a `Path` matching
-`reference.path`. When it does not — a sub-collection often has no listable
-object of its own — find the object whose declared `Path` covers
-`reference.path` and use that, passing the placeholder as a `--query` parameter.
-Do not substitute a similar generic collection on name resemblance alone: two
-collections can return the same records while only the one on `reference.path`
-is the action's contract.
+Use this manual route only when a field carries no lookup, or to inspect a collection; resolve against the same bound connection, never by copying an id from another connection or session. Prepare first, then read the target input's `reference` in `.flow-sdk/connectors-local/*.v1def.json`: `reference.path` identifies the exact collection and placeholders; `reference.objectName` is only a starting point. Use `objectName` only when `uip is resources describe <connector-key> <objectName>` reports a matching `Path`; otherwise find the object whose `Path` covers it and pass placeholders as query parameters. Never substitute a similar collection.
 
 ```bash
 uip is resources run list <connector-key> <object-name> \
@@ -597,14 +305,7 @@ uip is resources run list <connector-key> <object-name> \
   --output json
 ```
 
-`--output-filter` selects from `Data`; list responses place both `items` and
-`Pagination` there. Replace `Id` and `Name` with the exact id/display fields in
-the prepared reference contract. Keep the page fields in the same projection
-so a match read does not need a second `cat`/`jq` pass.
-
-When `Data.Pagination.HasMore` is `"true"`, keep the operation and connection
-unchanged and pass `Data.Pagination.NextPageToken` as `nextPage` on the next
-call:
+`--output-filter` selects from `Data`; replace `Id` and `Name` with exact prepared-reference fields and retain pagination fields. When `Data.Pagination.HasMore` is `"true"`, keep operation/connection and pass the token as `nextPage`:
 
 ```bash
 uip is resources run list <connector-key> <object-name> \
@@ -614,18 +315,17 @@ uip is resources run list <connector-key> <object-name> \
   --output json
 ```
 
-Stop early when the target record appears. Otherwise continue until
-`Data.Pagination.HasMore` is `"false"`; a first-page miss is not evidence that
-the record does not exist. The parameter name is `nextPage`, not
-`nextPageToken`.
+Stop when the target appears; otherwise continue until `Data.Pagination.HasMore` is `"false"`. A first-page miss proves nothing; the parameter is `nextPage`, not `nextPageToken`.
 
 ## Response judgments
 
-A get-by-id not-found is a service error. Add `.onError(...)` when the scenario
-wants a not-found answer; otherwise failing loud can be intentional.
+A get-by-id not-found is a service error. Add `.onError(...)` when the scenario wants a not-found answer; otherwise failing loud may be intentional.
 
-For a response with no declared fields, read the whole output into a script
-local before inspecting service-specific properties:
+<!--skill-flavor:output-names:start-->
+Output field names are case-sensitive and `check` does not verify them: `out('upload', 'WebUrl')` compiles but reads `null` when the field is `webUrl`. Copy names from the operation's `## Outputs` in `uip maestro registry describe <nodeType>`.
+<!--skill-flavor:output-names:end-->
+
+For responses without declared fields, read the whole output into a script local before inspecting service properties:
 
 ```ts
 .step('report', script({ code: `
@@ -634,19 +334,10 @@ local before inspecting service-specific properties:
 ` }))
 ```
 
-Every measured list operation has returned the bare array, so prefer that shape
-for an unmeasured list too, while allowing live evidence to disprove it. Add a
-new measurement to the list-envelope ledger when product debug shows a genuine
-wrapper. One call is one page; use the operation's filtering/paging inputs when
-the business operation needs a narrower or later page.
+Measured list operations return bare arrays; prefer that for unmeasured lists while allowing live evidence to disprove it. Add genuine wrappers found in product debug to the list-envelope ledger. One call is one page; use operation filtering/paging for narrower or later pages.
 
 ## Scenario and evidence boundary
 
-Include every input named by the scenario even when the provider schema marks
-it optional. Replay proves values are threaded. Integration Service live mode
-proves the connector dispatch and service response. Only product Flow debug
-proves the deployed runtime can resolve the emitted bindings and execute the
-whole graph.
+Include every scenario-named input even when provider schema marks it optional; replay proves threading. Integration Service live mode proves dispatch and service response. Only product Flow debug proves deployed bindings and whole-graph execution.
 
-Generated descriptors provide a typed alternative: `connector(CreateIssue, inputs, opts)`.
-Use `opts.object` to disambiguate a generic operation covering several objects.
+Generated descriptors provide the typed alternative: `connector(CreateIssue, inputs, opts)`. Use `opts.object` to disambiguate a generic operation covering several objects.

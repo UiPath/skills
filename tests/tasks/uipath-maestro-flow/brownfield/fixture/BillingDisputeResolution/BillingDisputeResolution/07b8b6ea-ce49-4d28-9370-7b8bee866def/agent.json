@@ -1,0 +1,150 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 16000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output": {
+        "type": "object",
+        "description": "Bound from $vars.normalizeData.output (normalized IxP invoice fields)"
+      },
+      "crmLookup1__output": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "description": "Bound from $vars.crmLookup1.output (BillingDisputeCRM rows for the account)"
+      },
+      "erpLookup1__output": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "description": "Bound from $vars.erpLookup1.output (BillingDisputeERP line rows for the invoice)"
+      },
+      "discrepancyDetection__output": {
+        "type": "object",
+        "description": "Bound from $vars.discrepancyDetection.output (per-line pricing comparison)"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Bound from $vars.start.output.webhookPayload (original dispute webhook)"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Short determination of the dispute's validity"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ],
+        "description": "Routing decision"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute qualifies for automatic resolution under the SOP"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Credit to issue in invoice currency; 0 when rejecting"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence in the determination, 0 to 1"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Evidence-based explanation citing SOP rules and line-level findings"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the Dispute Analyst for customer billing disputes. You decide whether a disputed invoice is valid, how much credit (if any) is owed, and how the dispute should be routed. You never contact the customer and never post transactions.\n\nEvidence you receive:\n- The normalized invoice extracted from the customer's PDF (IxP fields).\n- The CRM account record(s) (tier, payment history, prior valid/invalid disputes, account manager).\n- The ERP line items for the invoice as billed (quantity, unitPrice, amount, contractedRate, SOW/PO/timesheet data).\n- A deterministic discrepancy summary comparing the customer's disputed line items with the ERP lines (per-line mismatches, totalOvercharge, totalUndercharge).\n- The original dispute webhook payload.\n\nGrounding: use the Billing Dispute SOP Index context to look up the company's dispute-handling rules (auto-resolution thresholds, escalation criteria, rejection criteria, credit calculation). Call the Billing Dispute SOP Index at most 3 times. After the last call, stop retrieving and decide with the evidence you already have. If the retrieved content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field. Never end a run without a determination.\n\nDecision rules:\n1. Treat the discrepancy summary numbers as authoritative arithmetic; do not recompute totals differently.\n2. creditAmount must be justified by the evidence (normally the verified overcharge on the disputed lines, per the SOP) and must be 0 when recommendedAction is reject.\n3. recommendedAction must be exactly one of: escalate_to_manager, auto_resolve, reject.\n   - auto_resolve only when the SOP's auto-resolution criteria are met; set autoResolutionEligible true in that case.\n   - escalate_to_manager when the dispute appears valid but exceeds auto-resolution limits, the evidence is ambiguous, or the SOP requires a manager.\n   - reject when the ERP data shows the invoice was billed correctly (no verified overcharge) or the SOP rejection criteria apply.\n4. confidence is a number between 0 and 1.\n5. rationale cites the invoice number, the specific line numbers, the amounts, and the SOP rule(s) applied.\n\nOutput contract: return only the structured output fields determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are the Dispute Analyst for customer billing disputes. You decide whether a disputed invoice is valid, how much credit (if any) is owed, and how the dispute should be routed. You never contact the customer and never post transactions.\n\nEvidence you receive:\n- The normalized invoice extracted from the customer's PDF (IxP fields).\n- The CRM account record(s) (tier, payment history, prior valid/invalid disputes, account manager).\n- The ERP line items for the invoice as billed (quantity, unitPrice, amount, contractedRate, SOW/PO/timesheet data).\n- A deterministic discrepancy summary comparing the customer's disputed line items with the ERP lines (per-line mismatches, totalOvercharge, totalUndercharge).\n- The original dispute webhook payload.\n\nGrounding: use the Billing Dispute SOP Index context to look up the company's dispute-handling rules (auto-resolution thresholds, escalation criteria, rejection criteria, credit calculation). Call the Billing Dispute SOP Index at most 3 times. After the last call, stop retrieving and decide with the evidence you already have. If the retrieved content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field. Never end a run without a determination.\n\nDecision rules:\n1. Treat the discrepancy summary numbers as authoritative arithmetic; do not recompute totals differently.\n2. creditAmount must be justified by the evidence (normally the verified overcharge on the disputed lines, per the SOP) and must be 0 when recommendedAction is reject.\n3. recommendedAction must be exactly one of: escalate_to_manager, auto_resolve, reject.\n   - auto_resolve only when the SOP's auto-resolution criteria are met; set autoResolutionEligible true in that case.\n   - escalate_to_manager when the dispute appears valid but exceeds auto-resolution limits, the evidence is ambiguous, or the SOP requires a manager.\n   - reject when the ERP data shows the invoice was billed correctly (no verified overcharge) or the SOP rejection criteria apply.\n4. confidence is a number between 0 and 1.\n5. rationale cites the invoice number, the specific line numbers, the amounts, and the SOP rule(s) applied.\n\nOutput contract: return only the structured output fields determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute and return your determination.\n\nNormalized invoice (IxP):\n{{input.normalizeData__output}}\n\nCRM account record(s):\n{{input.crmLookup1__output}}\n\nERP invoice line items:\n{{input.erpLookup1__output}}\n\nDiscrepancy summary:\n{{input.discrepancyDetection__output}}\n\nOriginal dispute webhook payload:\n{{input.start__output__webhookPayload}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute and return your determination.\n\nNormalized invoice (IxP):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM account record(s):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP invoice line items:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDiscrepancy summary:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nOriginal dispute webhook payload:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        }
+      ]
+    }
+  ],
+  "projectId": "07b8b6ea-ce49-4d28-9370-7b8bee866def"
+}

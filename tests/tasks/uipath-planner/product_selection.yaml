@@ -1,4 +1,4 @@
-task_id: skill-sdd-integration-product-selection
+task_id: skill-planner-design-product-selection
 description: >
   Skill-guided evaluation: agent uses the uipath-planner skill to
   analyze a PDD with clear AI agent signals. Tests whether the product
@@ -6,7 +6,7 @@ description: >
   instead of defaulting to RPA Process.
 tags: [uipath-planner, integration, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any gap-filling questions about the agent, use these defaults:
@@ -19,7 +19,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Customer Support Agent
+  # Process Definition Document: Customer Support Agent
 
   ## Process Overview
   - **Process Name:** Customer Support Agent
@@ -106,7 +106,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 2 item 3)"
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-writing-guide.md Step 2 item 3)"
     path: "customer-support-agent-sdd.md"
     includes:
       - "Decisions Made"
@@ -115,7 +115,7 @@ success_criteria:
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
+  # Full `design` SDD authoring runs in one unbroken autonomous turn (read PDD +
   # guides, select scope, generate §1–§18). The experiment default caps the
   # whole task at task_timeout: 1200s — that fires before the SDD lands no
   # matter how high turn_timeout is. Raise BOTH: task_timeout for the

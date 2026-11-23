@@ -1,16 +1,16 @@
 task_id: skill-case-e2e-expense-runnable
 description: >
-  END-TO-END EXECUTION — the bug-bash "Employee Expense Reimbursement" scenario,
-  adapted to run headlessly on the coder-eval tenant with existing generic
-  resources only. A fully-automated 7-stage sdd.md (connector transport re-typed
-  to api-workflow/process; the two human reviews and the finance stage-selection
-  replaced by automated transitions so no HITL blocks debug; escalation timers in
-  seconds; expense_requests event trigger preserved) is staged into the sandbox.
-  The skill builds the case-management solution, validates the caseplan, and the
-  harness runs uip maestro case debug to prove the case executes to
-  finalStatus=Completed across the Submission -> Manager Approval -> Finance
-  Approval -> Payment -> Approved happy path, binding real deployed resources
-  (WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup, CaseTest).
+  END-TO-END EXECUTION, asked the way a Studio Web user would ask it: build the
+  "Employee Expense Reimbursement" case from the team's design document
+  (fixtures/sdd.md, a fully automated 7-stage variant bound to generic deployed
+  resources: WeatherAPI, CountLetters, ProcurementProcess, HelpDeskLookup and
+  the Maestro Case child case). Graded by validate (plain and --strict --sdd
+  against the same document), the structural expense topology, and one
+  harness-run `uip maestro case debug` that must run until the Approved stage completes,
+  having run Submission -> Manager Approval -> Finance Approval -> Payment ->
+  Approved to Completed, with the Rejected and Withdrawn lanes not run and no
+  element failed. The agent's own test run is advisory. Text between the
+  helper markers is lower-tier guidance (experiments/use-case-tiers.yaml).
 tags:
   - uipath-maestro-case
   - e2e
@@ -22,6 +22,8 @@ tags:
   - feature:case-exit
   - feature:trigger
   - feature:registry
+  - path-to-ga
+  - outcome-graded
 
 agent:
   type: claude-code
@@ -29,7 +31,7 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
 
 run_limits:
-  task_timeout: 4800
+  task_timeout: 8400  # turn 4800 + criteria 3420 + margin 180
   max_turns: 500
   turn_timeout: 4800
 
@@ -41,88 +43,91 @@ sandbox:
     - type: template_dir
       path: ../_setup
       mount_point: _setup
+
+# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
+pre_run:
+  - command: "python3 _setup/localize_tenant_ids.py"
+    timeout: 300
+  # Marks the task start for the post_run debug-instance cancel.
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
+
 reference:
   directory: ..
 
 initial_prompt: |
-  I have an approved SDD for our ExpenseReimbursementRunnable case-management
-  solution — it's saved as `sdd.md` in this folder. Build a UiPath Case
-  Management solution named "ExpenseReimbursementRunnable" containing a project
-  also named "ExpenseReimbursementRunnable" from this SDD.
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0, do
-  not re-interview me, and do not redesign the process. The SDD already carries
-  resolved resource identities and folders — bind them as written; do not change
-  task types or swap resources.
+  Build our employee expense reimbursement case, named
+  "ExpenseReimbursementRunnable". The design the team agreed on is in `sdd.md`
+  in this folder: an expense goes from submission through manager approval and
+  finance approval to payment, with a child route tracking the payment, if
+  Approved; Rejected and Withdrawn are the other outcomes. Build it as the
+  document describes, with the stages, tasks, rules and timings it lists, and
+  connect each task to the resource it names. Those resources are already
+  deployed on this tenant.
 
-  Important:
-  - The `uip` CLI is already available and authenticated in the environment.
-  - For each non-connector resource, `bindings_v2.json` metadata may contain
-    only `subType` (or be empty). Do not add `bindingsVersion` or
-    `solutionsSupport`: those fields make `uip solution resources refresh` fail
-    with "Node already added to the graph" in this eval environment.
-  - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
-    deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
-    `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `HelpDeskLookup`
-    → `HelpDeskLookup`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
-    alias for a deployed name. The alias on the left is NOT a resource key: keep
-    every `resourceKey` — and the matching `bindings_v2.json` `key` — as the
-    composite `<folderPath>.<deployed name>` (e.g.
-    `Shared/uipath-agents/WeatherAPI.WeatherAPI`).
-  - Treat all hard stops after the SDD as pre-approved, including the Phase 2
-    publish-for-review and Phase 6 debug. Choose the continue / skip-publish
-    path and keep going.
-  - Do NOT call AskUserQuestion — it is not available in this harness.
-  - Do NOT run `uip maestro case debug` yourself — the harness runs it.
-  - The task is NOT complete until
-    `uip maestro case validate <case plan file in ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/> --output json`
-    passes.
+  <!-- helper:start -->
+  The document calls the child case `CaseTest`; it is deployed as `Maestro Case`.
+  Every other resource name in the document is its deployed name.
+  <!-- helper:end -->
 
-  Before starting, load the uipath-maestro-case skill and follow its workflow.
+  Build and test the automation.
 
 success_criteria:
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
   - type: command_executed
-    description: "Agent ran uip maestro case validate on the built case (advisory — outcome graded below)"
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan\.(json|case)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
     min_count: 1
     weight: 1.0
-    pass_threshold: 0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "p=$(ls ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.case ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import existing_caseplan, find_caseplan; print(existing_caseplan(sys.argv[2]) or find_caseplan())' \"$REFERENCE_DIR\" ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
+    description: "the case plan is complete against the design document under validate --strict --sdd: every stage, task, type, condition row, SLA, trigger and variable it lists"
     command: >-
-      p=$(ls ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.case ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
-      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
+      p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import existing_caseplan, find_caseplan; print(existing_caseplan(sys.argv[2]) or find_caseplan())' "$REFERENCE_DIR" ExpenseReimbursementRunnable/ExpenseReimbursementRunnable/caseplan.json);
+      uip maestro case validate "$p" --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan encodes the 7-stage expense topology: Submission -> Manager Approval -> Finance Approval -> Payment -> Approved happy path, Rejected/Withdrawn terminal lanes, expense_requests event trigger, the automated task-type mix (api-workflow/agent/process/rpa/wait-for-timer), and the Payment Tracking child case"
+    description: "the case plan encodes the 7-stage expense topology: Submission -> Manager Approval -> Finance Approval -> Payment -> Approved happy path, Rejected/Withdrawn terminal lanes, the automated task-type mix (api-workflow/agent/process/rpa/wait-for-timer), the Payment Tracking child case, and bindings to the deployed resource names"
     command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_structure.py"
     timeout: 120
     expected_exit_code: 0
-    weight: 5.0
+    weight: 4.0
     pass_threshold: 1.0
 
+  # Worst case: refresh (180 s), two debug calls (2 x 720 s) and the retry sleep
+  # (15 s), then following the instance (900 s) plus one poll (20 s) and one last
+  # read (420 s).
   - type: run_command
-    description: "case executes end-to-end: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed across the automated happy path"
-    command: "python3 $REFERENCE_DIR/_shared/check_expense_runnable_debug.py"
-    timeout: 900
+    description: "Effects: one harness-run uip maestro case debug runs until the Approved stage completes, Submission, Manager Approval, Finance Approval, Payment and Approved each ran to Completed, the Rejected and Withdrawn lanes did not run, and no element failed"
+    command: "python3 $REFERENCE_DIR/e2e_expense_runnable/check_expense_runnable_run.py"
+    timeout: 3180
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

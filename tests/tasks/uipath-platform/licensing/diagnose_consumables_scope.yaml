@@ -125,10 +125,35 @@ success_criteria:
       Score 0.0 only if the verdict treats the gap as a miscalculation or
       data loss, or does not address it.
 
-  - type: run_command
-    description: "Verdict concludes reporting is NOT broken. Needs a negative-polarity statement (hedges like 'not shown to be broken' count); bare 'correct'/'expected'/'by design' are too weak — they appear in wrong verdicts too."
-    command: "grep -Eiq 'not( (shown|demonstrated|proven|actually|really|truly|clearly|evidently|apparently|to|be))* broken|is ?n.?t broken|no evidence (of|that)[^.]{0,60}(broken|defect|bug)|(is|are) working as (designed|intended|documented|specified)|works? as (designed|intended|documented|specified)|not a (bug|defect)' verdict.md"
-    timeout: 10
-    expected_exit_code: 0
+  # Semantic too: a regex rejected correct verdicts that negate the verb
+  # instead of "broken", and cannot tell a negation about some other object,
+  # or one a later sentence overturns, from the real conclusion. Grade the
+  # final conclusion on the artifact only.
+  - type: llm_judge
+    description: "Verdict concludes consumption reporting is NOT broken"
     weight: 1.0
     pass_threshold: 1.0
+    include_dialog: false
+    include_agent_output: false
+    include_reference: false
+    files:
+      - verdict.md
+    prompt: |
+      Read the attached verdict.md. Grade ONLY its final conclusion about
+      whether AI Units consumption reporting is broken.
+
+      Score 1.0 if the verdict concludes that reporting is not broken, is
+      working as designed or documented, or that the observations do not
+      show it to be broken. Hedged forms count. Wording and formatting are
+      irrelevant. Caveats about the evidence do not change this: saying the
+      live tenant's own figures could not be checked here, or naming a next
+      check for a mismatch that might remain, still scores 1.0 when the
+      verdict states that conclusion for both observations.
+
+      Score 0.0 if the verdict concludes that reporting is broken (including
+      when a later sentence overturns an earlier "not broken"), declines to
+      decide (for example "not confirmed", "inconclusive", "cannot say"),
+      says the evidence is insufficient to decide whether either observation
+      is a defect, leaves the conclusion as an unfilled placeholder, or only
+      says that some component other than consumption reporting is not
+      broken.

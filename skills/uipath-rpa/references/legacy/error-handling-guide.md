@@ -156,7 +156,7 @@ Use `Throw` to signal a business rule violation or intentional failure:
 ```
 
 **Rules:**
-1. **Use short-form class names** — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`
+1. **Use short-form class names** — `BusinessRuleException` not `UiPath.Core.BusinessRuleException`
 2. **Build complex messages in a variable first** — avoids VB.NET compiler issues with `&quot;` in `Throw.Exception`
 3. **Include context in the message** — "Invoice INV-12345 amount -500.00 is negative" not "Invalid amount"
 

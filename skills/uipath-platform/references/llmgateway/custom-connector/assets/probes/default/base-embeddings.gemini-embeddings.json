@@ -1,0 +1,30 @@
+{
+  "id": "base-embeddings",
+  "description": "The basic embeddings probe every product runs on an embeddings flavor.",
+  "source": "BaseEmbeddingsCompatibilityProbe",
+  "apiFlavor": "GeminiEmbeddings",
+  "order": 90,
+  "path": "/models/{{model}}:predict",
+  "body": {
+    "instances": [
+      {
+        "content": "{\"input\": \"AI is awesome\"}"
+      }
+    ],
+    "parameters": {
+      "autoTruncate": true
+    }
+  },
+  "checks": [
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "predictions holds exactly one item",
+      "jq": "(.predictions | type) == \"array\" and (.predictions | length) == 1"
+    },
+    {
+      "reason": "MALFORMED_RESPONSE",
+      "says": "the embedding values are a non-empty array",
+      "jq": "(.predictions[0].embeddings.values | type) == \"array\" and (.predictions[0].embeddings.values | length) > 0"
+    }
+  ]
+}

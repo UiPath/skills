@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = (
     ROOT
+    / "classic"
     / "skills"
     / "uipath-maestro-bpmn"
     / "validator"

@@ -1,0 +1,22 @@
+{
+ "Result": "Success",
+ "Code": "TenantList",
+ "Data": [
+  {
+   "TenantName": "DefaultTenant",
+   "TenantId": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90"
+  },
+  {
+   "TenantName": "Development",
+   "TenantId": "b3e81f06-2c4d-4a97-8e15-6d9a0c7f2b43"
+  },
+  {
+   "TenantName": "QAEnvironment",
+   "TenantId": "71d4c9a2-5e08-4b6f-93c1-a2f6e8d04b17"
+  },
+  {
+   "TenantName": "testtenant",
+   "TenantId": "e9a27b5c-4f13-4d80-b6a9-3c5e1f7d8a02"
+  }
+ ]
+}

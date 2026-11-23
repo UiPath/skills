@@ -373,32 +373,6 @@ uip rpa packages inspect --package-name CsvHelper --package-version 33.0.1
 uip rpa packages inspect --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
 ```
 
-### Finding the Latest Stable Version
-
-When you don't know the version of a UiPath package, query the UiPath Official NuGet feed to find the latest stable (non-preview) version:
-
-```bash
-UIPATH_FEED="https://uipath.pkgs.visualstudio.com/5b98d55c-1b14-4a03-893f-7a59746f1246/_packaging/1c781268-d43d-45ab-9dfc-0151a1c740b7/nuget/v3/flat2" && bun -e "const p=process.argv[1];const r=await fetch(p+'/index.json');const d=await r.json();console.log(d.versions.find(v=>v.indexOf('preview')<0))" "$UIPATH_FEED/<package-name-lowercase>"
-```
-
-Replace `<package-name-lowercase>` with the package ID in lowercase (e.g. `uipath.microsoftoffice365.activities`).
-
-**Examples:**
-```bash
-# Latest stable UiPath.MicrosoftOffice365.Activities → 3.6.10
-... "$UIPATH_FEED/uipath.microsoftoffice365.activities"
-
-# Latest stable UiPath.System.Activities → 25.12.2
-... "$UIPATH_FEED/uipath.system.activities"
-```
-
-**Notes:**
-- The feed returns versions in descending order (newest first); the one-liner picks the first non-preview entry
-- Package names in the URL **must be lowercase**
-- This feed is public for version listing but requires authentication for package downloads (Studio handles this automatically when restoring dependencies)
-
----
-
 ### When to Use
 
 - **First**, check for pre-generated coded API docs at `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` — these contain service API signatures and usage for coded workflows. Use `packages inspect` only when these docs are missing or insufficient.
@@ -431,7 +405,7 @@ When a user needs functionality that **no UiPath built-in activity provides** (e
 1. **Consider whether a built-in activity or plain .NET is the better fit** — prefer activities for Orchestrator integration, UI automation, and document handling; prefer .NET for data transforms, HTTP to external APIs, parsing, etc.
 2. **If no built-in activity fits** — search for a well-known .NET NuGet package that provides the capability
 3. **Inspect the package** — run the `uip rpa packages inspect` command with the appropriate flags in order to get exact API signatures before writing code
-4. **Install it** — run `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json`. Omit `,version=<VERSION>` to resolve the latest compatible. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command.**
+4. **Install it** — run `uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json`, with the version chosen per SKILL.md § Resolving Packages & Activity Docs, Step 1. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command.**
 5. **Write C# code using the package** — use the package's API directly in the `Execute` method (no service proxy needed — just `using` + direct API calls)
 
 ### How Third-Party Packages Differ from UiPath Activity Packages

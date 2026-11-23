@@ -4,9 +4,9 @@
 Grades that the published Agent Builder invocation is a bpmn:serviceTask carrying
 the registry Orchestrator.StartAgentJob wrapper (not StartJob / not an IS
 execution wrapper), binds a request input, and captures the agent response into a
-declared process variable. Type/input/output are matched by uipath subtree search
-so the check is robust to both wrapper styles the registry template and the skill
-rules permit. Reuses the shared uipath-maestro-bpmn check helpers (stdlib ET).
+declared process variable. The type must be a ``uipath:type`` child inside
+``bpmn:extensionElements``; input/output are matched by uipath subtree search.
+Reuses the shared uipath-maestro-bpmn check helpers (stdlib ET).
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
     has_type,
+    has_typed_uipath_extension,
     parse_bpmn,
     require_di_for_visible_elements,
     require_no_private_connector_values,
@@ -28,6 +29,7 @@ from _shared.bpmn_check import (  # noqa: E402
 
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 TYPE_TOKEN = "Orchestrator.StartAgentJob"
+TYPE_VERSION = "v2"
 
 
 def uipath_children(task: ET.Element, local: str) -> list[ET.Element]:
@@ -43,6 +45,14 @@ def variable_ids(root: ET.Element) -> set[str]:
     return ids
 
 
+def start_agent_jobs(root: ET.Element) -> list[ET.Element]:
+    return [
+        t
+        for t in elements(root, "serviceTask")
+        if has_typed_uipath_extension(t, "activity", TYPE_TOKEN, version=TYPE_VERSION)
+    ]
+
+
 def main() -> None:
     path, root = parse_bpmn("ApproverCountAgent")
 
@@ -51,9 +61,12 @@ def main() -> None:
     if not elements(root, "endEvent"):
         fail("no end event")
 
-    agent_tasks = [t for t in elements(root, "serviceTask") if has_type(t, TYPE_TOKEN)]
+    agent_tasks = start_agent_jobs(root)
     if not agent_tasks:
-        fail(f"missing bpmn:serviceTask with {TYPE_TOKEN} wrapper")
+        fail(
+            f"missing bpmn:serviceTask with a {TYPE_TOKEN} uipath:type "
+            f"version {TYPE_VERSION} in extensionElements"
+        )
     task = agent_tasks[0]
 
     # The flow port's discipline: a low-code agent must not be modeled as a plain

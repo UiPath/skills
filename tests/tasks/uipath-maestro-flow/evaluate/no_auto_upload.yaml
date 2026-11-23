@@ -5,11 +5,11 @@ task_id: skill-flow-eval-no-auto-upload
 description: >
   Smoke test (anti-pattern guard): agent is asked to "make the eval run work"
   on a freshly scaffolded Flow project that has never been uploaded to Studio
-  Web. The skill's Critical Rule (`evaluate/references/upload-safety.md`)
+  Web. The skill's Critical Rule (`references/evaluate.md`, "Never upload as part of an eval workflow")
   requires the agent to refuse auto-upload, surface the missing prerequisite,
   and ask the user to authorize an upload. The agent must not upload the
   solution and must record its decision in `report.json`.
-tags: [uipath-maestro-flow, mode:operate, lifecycle:execute, feature:eval]
+tags: [uipath-maestro-flow, mode:operate, lifecycle:execute, feature:eval, studio-web-unsupported, studio-web-unsupported:local-only-solution]
 
 run_limits:
   expected_turns: 26
@@ -60,11 +60,12 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
-    min_count: 1
+  - type: run_command
+    description: "A solution manifest (.uipx) or a project.uiproj exists in the workspace"
+    command: |-
+      python3 -c "import glob, sys; sys.exit(0 if glob.glob('**/*.uipx', recursive=True) or glob.glob('**/project.uiproj', recursive=True) else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 

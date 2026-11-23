@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "mcp-user-connections set --help",
+      "file": "help_user_connections_set.txt"
+    },
+    {
+      "match": "mcp-user-connections list --help",
+      "file": "help_user_connections_list.txt"
+    },
+    {
+      "match": "mcp-user-connections delete --help",
+      "file": "help_user_connections_delete.txt"
+    },
+    {
+      "match": "mcp-user-connections --help",
+      "file": "help_user_connections.txt"
+    },
+    {
+      "match": "--help",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list",
+      "file": "or_folders_list.json"
+    },
+    {
+      "match": "is connections list",
+      "file": "is_connections_list.json"
+    },
+    {
+      "match": "is connections ping 7a1b2c3d-0000-4000-8000-0000000000aa",
+      "file": "is_connections_ping_expired.json",
+      "exit_code": 1
+    },
+    {
+      "match": "is connections ping 7a1b2c3d-0000-4000-8000-000000000001",
+      "file": "is_connections_ping_enabled.json"
+    },
+    {
+      "match": "admin users list",
+      "file": "admin_users_list.json"
+    },
+    {
+      "match": "agenthub mcp list",
+      "file": "agenthub_mcp_list.json"
+    },
+    {
+      "match": "agenthub mcp get vendor-mcp",
+      "file": "mcp_get.json"
+    },
+    {
+      "match": "agenthub mcp-user-connections list",
+      "file": "user_connections_list.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

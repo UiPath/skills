@@ -1,0 +1,178 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "processBatch",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.items",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "analyzeItem",
+   "type": "uipath.agent.autonomous",
+   "parentId": "processBatch",
+   "inputs": {
+    "source": "40aa2ed9-86fe-4757-a11f-6b3dc760d79f",
+    "agentInputVariables": [
+     {
+      "id": "processBatch__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.processBatch.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "decision",
+      "type": "string"
+     },
+     {
+      "id": "confidence",
+      "type": "number"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "lowConfidence",
+   "type": "core.logic.decision",
+   "parentId": "processBatch",
+   "inputs": {
+    "trueLabel": "True",
+    "falseLabel": "False",
+    "expression": "$vars.analyzeItem.output.confidence < 0.8"
+   }
+  },
+  {
+   "id": "reviewDecision",
+   "type": "uipath.human-in-the-loop.quick-form",
+   "parentId": "processBatch",
+   "inputs": {
+    "title": "Review",
+    "priority": "Low",
+    "recipient": {
+     "channels": [
+      "Email",
+      "ActionCenter"
+     ],
+     "connections": {},
+     "assignee": {
+      "type": "group"
+     }
+    },
+    "schema": {
+     "schemaId": "9e81109f-170c-513f-9d68-63b45f3c593b",
+     "fields": [
+      {
+       "id": "decision",
+       "label": "Decision",
+       "type": "string",
+       "direction": "input",
+       "binding": "vars.analyzeItem.output.decision"
+      }
+     ],
+     "outcomes": [
+      {
+       "id": "approve",
+       "name": "Approve",
+       "type": "string",
+       "isPrimary": true,
+       "action": "Continue"
+      },
+      {
+       "id": "reject",
+       "name": "Reject",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "applyDecision",
+   "type": "core.logic.mock",
+   "parentId": "processBatch",
+   "inputs": {}
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "processBatch",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "start",
+   "targetNodeId": "analyzeItem",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "analyzeItem",
+   "sourcePort": "error",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "analyzeItem",
+   "sourcePort": "success",
+   "targetNodeId": "lowConfidence",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "lowConfidence",
+   "sourcePort": "true",
+   "targetNodeId": "reviewDecision",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reviewDecision",
+   "sourcePort": "outcome-reject",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "lowConfidence",
+   "sourcePort": "false",
+   "targetNodeId": "applyDecision",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "applyDecision",
+   "sourcePort": "output",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reviewDecision",
+   "sourcePort": "outcome-approve",
+   "targetNodeId": "applyDecision",
+   "targetPort": "input"
+  }
+ ]
+}

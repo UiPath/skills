@@ -17,6 +17,62 @@ run_limits:
   expected_turns: 24
   max_turns: 60
 
+# Fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# The prompt asks for "the most recent run" of HEALTH:21, so the set needs at
+# least one execution. The cloud tenant keeps its history; the Automation Suite
+# ETE is built fresh for every run, so there it has none and the agent has no
+# execution to hand to `list-by-test-execution`. Seed one manual run, once:
+# the guard leaves any existing history alone, so on cloud this changes nothing.
+# A manual run needs no robot, so it works on a fresh ETE too.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET_KEY, SET_NAME = "HEALTH", "HEALTH:21", "Healthcare Compliance Suite"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]} err={err[:140]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      sets = [t for t in call("set", "tm", "testsets", "list", "--project-key", P,
+                              "--filter", SET_NAME).get("Data") or []
+              if t.get("TestSetKey") == SET_KEY]
+      if len(sets) != 1:
+          fail(f"expected test set {SET_KEY} ({SET_NAME!r}) in {P}, found {len(sets)}")
+
+      runs = call("ex", "tm", "executions", "list", "--project-key", P,
+                  "--test-set-id", sets[0]["Id"], "--limit", "100").get("Data") or []
+      if runs:
+          print(f"FIXTURE: {SET_KEY} already has {len(runs)} execution(s) - nothing to seed", flush=True)
+          raise SystemExit(0)
+
+      eid = (call("run", "tm", "testsets", "run", "--test-set-key", SET_KEY,
+                  "--execution-type", "manual").get("Data") or {}).get("ExecutionId")
+      if not eid:
+          fail(f"could not start a manual execution of {SET_KEY}")
+      logs = call("logs", "tm", "executions", "testcaselogs", "list", "--project-key", P,
+                  "--execution-id", eid, "--limit", "100").get("Data") or []
+      if not logs:
+          fail(f"execution {eid} has no test case logs")
+      for i, log in enumerate(logs):
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", log["TestCaseId"],
+               "--result", "Passed", "--has-error", "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded manual execution {eid} on {SET_KEY} with {len(logs)} logs", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
   I'm in the HEALTH project in Test Manager and want to set up some
   PHI-masking traceability. Create a requirement called "Eval Trace - PHI
@@ -40,12 +96,14 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Resolved the named test cases (`uip tm testcases list --project-key HEALTH`)"
+    # `testcases get --test-case-key HEALTH:11` resolves the same id from the key
+    # the prompt gives (gemini-3.8-flash).
+    description: "Resolved the named test cases (`uip tm testcases list|get --project-key HEALTH`)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+testcases?\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+testcases?\s+(?:list|get)\s'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

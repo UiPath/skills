@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -37,7 +38,6 @@ AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip()
 # fails a skill whose recall.yes drops more than DROP_PP below its baseline.
 # Re-baseline (at max_turns: 1) after a fresh full activation run.
 BASELINES_PCT: dict[str, int] = {
-    "uipath-automation-discovery": 100,
     "uipath-troubleshoot": 100,
     "uipath-feedback": 100,
     "uipath-governance": 100,
@@ -79,7 +79,26 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 95,
     "uipath-api-workflow": 100,
     "uipath-functions": 100,
-    "uipath-genome": 90,
+    # uipath-genome: measured under this name on its 11 rows: 8/11 (actions/runs/42999979392) and 7/11
+    # (43022865492). The gate lists plugin skills by name only at its context size; on the misses (002, 003,
+    # 005, 008: "implement", "execute", "run the migration") the agent reads the genome first instead of
+    # invoking the skill. At full context Claude Code routes all 11 rows to it. 60 is the nearest 5% below.
+    "uipath-genome": 60,
+    # Measured 2026-11-18 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two runs that agree:
+    # actions/runs/44360294111 and 44360301335. Nightly 2026-11-18_04-18-55 (sampled, multi-turn) also has all six at 100%.
+    "uipath-activity-migrator": 100,  # 40/40
+    "uipath-bundles": 95,  # 36/37 (97.3%), nearest 5% below
+    "uipath-connector-builder": 100,  # 52/52
+    "uipath-insights": 100,  # 61/61
+    "uipath-process-mining": 100,  # 19/19
+    "uipath-rules": 100,  # 30/30
+    # uipath-ontology: measured 52/52 under this name (actions/runs/44284706628, 44293074603), with the planner's ontology
+    # redirect in place. Its rows include 25 SDD/PDD/design-document prompts the planner also claims, so this gate is
+    # what keeps them reaching it.
+    "uipath-ontology": 100,
+    # Measured 2026-11-19 on claude-opus-5-5 with this gate (max_turns: 1, full positive set), two runs:
+    # actions/runs/44524900995 and 44524919210. Each run missed a different row (020, then 031).
+    "uipath-vertical-solutions": 95,  # 31/32 (96.9%) both runs, nearest 5% below
 }
 
 DROP_PP = 10
@@ -179,6 +198,14 @@ def main() -> int:
                 f"(per-task failures expected; deferring to threshold check)",
                 file=sys.stderr,
             )
+
+        # ACTIVATION_GATE_KEEP_DIR keeps each row's task.json (the agent's transcript) after the temp dir goes.
+        keep = os.environ.get("ACTIVATION_GATE_KEEP_DIR")
+        if keep and run_dir.is_dir():
+            for task_json in run_dir.rglob("task.json"):
+                target = Path(keep) / skill / task_json.relative_to(run_dir)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(task_json, target)
 
         suite_json = run_dir / "default" / f"skill-activation-gate-{skill}" / "suite.json"
         if not suite_json.is_file():

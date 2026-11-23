@@ -1,13 +1,12 @@
 /**
- * CAPABILITY: a standalone HTTP call followed by a delay.
+ * CAPABILITY: an HTTP call followed by a delay.
  *
- * `managed: false` emits the plain HTTP node, where response status and body
- * remain ordinary outputs. A delay publishes nothing; the next step reads the
- * HTTP result, not the timer.
+ * A delay publishes nothing; the next step reads the HTTP result, not the
+ * timer.
  *
  * Generic scenario: read a lighthouse signal and pause before recording it.
  */
-import { flow, http, delay, script, input, out, tmpl, types } from '@uipath/maestro-builder-sdk';
+import { flow, http, delay, script, input, out, tmpl, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('lighthouse-signal')
   .name('LighthouseSignal')
@@ -17,14 +16,14 @@ export default flow('lighthouse-signal')
   .step('readSignal', http({
     method: 'GET',
     url: tmpl`https://signals.example.com/stations/${input('station')}`,
-    managed: false,
+    managed: true,
     returns: { signal: 'string' },
   }))
   .step('cooldown', delay({ duration: 'PT2S' }))
-  .step('recordSignal', script({
-    code:
-      'return "station " + $vars.start.output.station + ": "'
-      + ' + String($vars.readSignal.output.body.signal || "unknown");',
-  }))
+  .step('recordSignal', script(recordSignal))
   .return({ report: out('recordSignal') })
   .build();
+
+function recordSignal($vars: FlowVars) {
+  return "station " + $vars.start.output.station + ": " + String($vars.readSignal.output.body.signal || "unknown");
+}

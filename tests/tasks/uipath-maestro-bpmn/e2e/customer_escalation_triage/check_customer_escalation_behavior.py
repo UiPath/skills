@@ -3,8 +3,11 @@
 
 Outcome-based, tenant-confirmed (mirrors the flow suite's
 escalation_jira_ticket, adapted to the BPMN CLI surface):
-  1. The submitted BPMN declares the three public outputs and one Jira
-     Create-Issue plus one Slack Send connector activity.
+  1. The submitted BPMN (found wherever the agent put it; Studio Web names it
+     Process.bpmn) declares the three public outputs, has a Jira step and a
+     Slack step (found by connector key alone, whatever the operation, element
+     type or id), and names all three severities, so it encodes the rule
+     rather than returning the one answer the seeded case expects.
   2. LIVE: the exact submitted project (sha256-pinned through solution
      import) runs the seeded Sev1 case via `uip maestro bpmn debug` inside an
      ephemeral solution under the sandbox CWD — kept there so the repo's
@@ -29,48 +32,45 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "_setup"))  # local escalation_is (which also wires up _shared)
+sys.path.insert(0, os.path.join(HERE, "..", "..", "_setup"))  # escalation_is (which also wires up _shared)
 import escalation_is  # noqa: E402
-from _shared import bpmn_live  # noqa: E402
+from _shared import bpmn_check, bpmn_live  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
     CheckFailure,
+    assert_rule_encoded,
     connector_response_values,
     element_output_records,
     exact_type,
     get_ci,
+    import_exact,
     incident_records,
     index_runtime_connectors,
-    parse_json_output,
     payload_data,
     q,
     resolve_runtime_key,
     root_scope,
     run_cli,
     run_debug,
-    sha256,
-    tail_log,
     UIPATH_NS,
 )
 
-# The prompt states this exact layout, so the pinned path is a stated
-# requirement — not the unstated-solution-name trap the flow suite's
-# discovery helper exists for.
-PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
-BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
+NAME = "CustomerEscalationTriage"
 # Ephemeral solution home, under the sandbox CWD (see module docstring).
 LIVE_RUN_DIR = Path("customer-escalation-live")
 DEBUG_TIMEOUT_SECONDS = bpmn_live.DEBUG_BUDGET_DEFAULT_TIMEOUT
-SOLUTION_INIT_TIMEOUT = 90
-SOLUTION_IMPORT_TIMEOUT = 180
-VARIABLES_ALL_TIMEOUT = 120
-INCIDENTS_TIMEOUT = 120
+SOLUTION_INIT_TIMEOUT = bpmn_live.SOLUTION_INIT_TIMEOUT
+SOLUTION_IMPORT_TIMEOUT = bpmn_live.SOLUTION_IMPORT_TIMEOUT
+VARIABLES_ALL_TIMEOUT = bpmn_live.VARIABLES_ALL_TIMEOUT
+INCIDENTS_TIMEOUT = bpmn_live.INCIDENTS_TIMEOUT
 
 # Every live CLI call on the worst-case path, this module's plus escalation_is'.
 # The behavior criterion's `timeout:` must cover the sum; test_behavior_checker
@@ -82,33 +82,23 @@ STEP_TIMEOUTS = (
     VARIABLES_ALL_TIMEOUT,
     INCIDENTS_TIMEOUT,
 ) + escalation_is.STEP_TIMEOUTS
+# owned_jira_targets reads each created key once, on top of the assertion read.
+MAX_OWNED_KEY_READS = 2
+WORST_CASE_PATH_TIMEOUT = (
+    sum(STEP_TIMEOUTS) + MAX_OWNED_KEY_READS * escalation_is.JIRA_READ_TIMEOUT
+)
 OUTPUT_TYPES = {
     "severity": "string",
     "caseKey": "string",
     "jiraIssueKey": "string",
 }
-# Connector activities are matched by connectorKey plus a substring of the
-# registry path or object name: the registry may emit versioned or templated
-# paths, and the runtime correlates on the element id either way.
-#
-# Accept every Jira object that carries a curated Create-Issue marker.
-# Four objects create an issue on this connector and all four behave
-# identically (verified live: same body, same {self, key, id}, same ticket),
-# but `create_issue` carries no `curated` block, so it is the generic
-# operation the prompt rules out. Among the curated three, `uip is resources
-# describe` cannot rank: its summary maps `curated` to the display name and
-# drops the `curated.isHidden` flag that marks the live one
-# (integrationservice-sdk metadata/resource-metadata.ts), printing
-# `Curated: "Create Issue"` for two of them. Pinning one spelling therefore
-# fails a process that creates the right ticket.
-JIRA_CREATE = (
-    escalation_is.JIRA_CONNECTOR,
-    ("curated_create_issue", "curated-issue-create", "curated_issue"),
-)
-GENERIC_REST_PREFIX = "/rest/api"
+# Connector steps are matched by connectorKey alone. Several Jira objects
+# create the same ticket (verified live: same body, same {self, key, id}), and
+# the Studio Web builder emits the generic `issue` object (run
+# adhoc-2026-11-14_08-01-54); the runtime evidence and the tenant reread prove
+# the ticket, whichever operation made it.
 SLACK_SEND_AS = "user"
-SLACK_SEND = (escalation_is.SLACK_CONNECTOR, ("send_message_to_channel",))
-COMPLETED_STATUSES = {"Completed", "Successful"}
+COMPLETED_STATUSES = bpmn_live.COMPLETED_STATUSES
 
 
 @dataclass(frozen=True)
@@ -123,11 +113,13 @@ class Contract:
     output_ids: dict[str, str]
     jira_create_ids: tuple[str, ...]
     slack_send_ids: tuple[str, ...]
-    classifier_ids: tuple[str, ...]
+    output_owners: dict[str, str] = field(default_factory=dict)
 
 
-def resolve_contract(path: Path = BPMN_FILE) -> Contract:
-    root = ET.parse(path).getroot()
+def resolve_contract(path: Path) -> Contract:
+    text = path.read_text(encoding="utf-8")
+    assert_rule_encoded(text)
+    root = ET.fromstring(text.encode("utf-8"))
     process = root.find(q(BPMN_NS, "process"))
     if process is None:
         raise CheckFailure("BPMN must contain one root process")
@@ -138,6 +130,7 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
     if variables is None:
         raise CheckFailure("root process is missing uipath:variables")
     output_ids: dict[str, str] = {}
+    output_owners: dict[str, str] = {}
     for variable in variables:
         name = variable.attrib.get("name")
         identifier = variable.attrib.get("id")
@@ -154,86 +147,117 @@ def resolve_contract(path: Path = BPMN_FILE) -> Contract:
                 "runtime value cannot be addressed"
             )
         output_ids[name] = identifier
+        if variable.attrib.get("elementId"):
+            output_owners[name] = variable.attrib["elementId"]
     missing = sorted(set(OUTPUT_TYPES) - set(output_ids))
     if missing:
         raise CheckFailure(f"public outputs not declared: {missing}")
 
-    # Every scriptTask that could be the classifier. The flow suite binds
-    # severity to the executed Script whose own output carries it; without an
-    # equivalent, a process that exposes a literal "Sev1" -- computing nothing
-    # -- satisfies every other criterion, because the seed declares the one
-    # expected severity.
-    classifier_ids = tuple(
-        element.attrib["id"]
-        for element in process.iter(q(BPMN_NS, "scriptTask"))
-        if element.attrib.get("id")
-    )
-    if not classifier_ids:
-        raise CheckFailure(
-            "no bpmn:scriptTask to classify severity; the value would be a "
-            "literal rather than computed"
-        )
-
     connectors = index_runtime_connectors(process)
 
-    def ids_for(connector_key: str, needles: tuple[str, ...]) -> tuple[str, ...]:
+    def ids_for(connector_key: str) -> tuple[str, ...]:
         found = tuple(
-            element_id
-            for (key, path, object_name), element_ids in connectors.items()
-            if key == connector_key
-            # A curated object name never rescues a raw REST path: a node
-            # carrying both calls the provider's API directly whatever its
-            # objectName claims, and the prompt forbids that outright.
-            and not path.startswith(GENERIC_REST_PREFIX)
-            and any(
-                needle in path or needle in object_name for needle in needles
-            )
-            for element_id in element_ids
-        )
-        if not found:
-            generic = sorted(
+            sorted(
                 element_id
-                for (key, path, _), element_ids in connectors.items()
-                if key == connector_key and path.startswith(GENERIC_REST_PREFIX)
+                for (key, _path, _object_name), element_ids in connectors.items()
+                if key == connector_key
                 for element_id in element_ids
             )
-            if generic:
-                raise CheckFailure(
-                    f"{connector_key} node(s) {generic} call the provider's "
-                    f"raw REST API; the task requires the curated activity "
-                    f"(one of {list(needles)})"
-                )
-            raise CheckFailure(
-                f"no {connector_key} activity whose registry path or object "
-                f"name contains one of {list(needles)}"
-            )
+        )
+        if not found:
+            raise CheckFailure(f"the process has no {connector_key} step")
         return found
 
     # Send identity, as the flow suite grades it: a node that posts as the
     # default bot instead of the prompt-required user has an indistinguishable
     # runtime response, so it can only be caught on the authored artifact.
-    slack_ids = set(ids_for(*SLACK_SEND))
+    slack_ids = set(ids_for(escalation_is.SLACK_CONNECTOR))
     for element in process.iter():
         if element.attrib.get("id") not in slack_ids:
             continue
-        sends_as = [
-            item.attrib.get("value")
-            for item in element.iter(q(UIPATH_NS, "input"))
-            if item.attrib.get("name") == "send_as"
-        ]
+        sends_as = bpmn_check.query_values(element, "send_as")
         if sends_as != [SLACK_SEND_AS]:
             raise CheckFailure(
                 f"Slack node {element.attrib.get('id')!r} must carry exactly "
-                f"one send_as input with value {SLACK_SEND_AS!r}, found "
+                f"one send_as query parameter with value {SLACK_SEND_AS!r}, found "
                 f"{sends_as!r}"
             )
 
     return Contract(
         output_ids=output_ids,
-        jira_create_ids=ids_for(*JIRA_CREATE),
-        slack_send_ids=ids_for(*SLACK_SEND),
-        classifier_ids=classifier_ids,
+        jira_create_ids=ids_for(escalation_is.JIRA_CONNECTOR),
+        slack_send_ids=ids_for(escalation_is.SLACK_CONNECTOR),
+        output_owners=output_owners,
     )
+
+
+def public_output(
+    contract: Contract, variables_data: object, globals_map: dict, name: str
+) -> object:
+    """The output's Globals value, else the owning element's Outputs (root
+    outputs can read null while the end event still carries the value)."""
+    try:
+        value = resolve_runtime_key(globals_map, contract.output_ids[name], name)
+    except CheckFailure:
+        value = None
+    owner = contract.output_owners.get(name)
+    if value is not None or not owner:
+        return value
+    for record in element_output_records(variables_data, owner):
+        found = get_ci(record, name)
+        if found is not None:
+            return found
+    return None
+
+
+def _step_values(
+    variables_data: object, element_id: str, field: str
+) -> set[str]:
+    return {
+        value
+        for value in connector_response_values(
+            element_output_records(variables_data, element_id), field
+        )
+        if isinstance(value, str) and value
+    }
+
+
+def steps_returning(
+    variables_data: object, element_ids: tuple[str, ...], field: str
+) -> tuple[str, ...]:
+    """The steps among `element_ids` whose own response carries `field`: the
+    Jira step that created the issue (`key`) or the Slack step that posted
+    (`ts`), not a search, comment or lookup on the same connector."""
+
+    return tuple(
+        element_id
+        for element_id in element_ids
+        if _step_values(variables_data, element_id, field)
+    )
+
+
+def distinct_returns(
+    variables_data: object,
+    element_ids: tuple[str, ...],
+    field: str,
+    executed_ids: list,
+) -> int:
+    """Distinct `field` values the steps returned, a step run twice counting
+    twice: a create plus a get-issue of the same key is one issue."""
+
+    runs: dict[str, int] = {}
+    for element_id in steps_returning(variables_data, element_ids, field):
+        for value in _step_values(variables_data, element_id, field):
+            runs[value] = max(runs.get(value, 0), executed_ids.count(element_id))
+    return sum(runs.values())
+
+
+def _distinct(values: list) -> list:
+    unique: list = []
+    for value in values:
+        if value not in unique:
+            unique.append(value)
+    return unique
 
 
 def harvest_side_effects(
@@ -246,18 +270,27 @@ def harvest_side_effects(
     """
 
     jira_outputs = element_output_records(
-        variables_data, contract.jira_create_ids
+        variables_data,
+        steps_returning(variables_data, contract.jira_create_ids, "key"),
     )
-    jira_keys = [
+    jira_keys = _distinct([
         value
         for value in connector_response_values(jira_outputs, "key")
         if isinstance(value, str)
-    ]
-    jira_ids = [
+    ])
+    jira_ids = _distinct([
         value
         for value in connector_response_values(jira_outputs, "id")
         if isinstance(value, str)
-    ]
+    ])
+    jira_targets = {}
+    for output in jira_outputs:
+        response = get_ci(output, "response")
+        key = get_ci(response, "key")
+        if not isinstance(key, str):
+            continue
+        identifier = get_ci(response, "id")
+        jira_targets.setdefault(key, identifier if isinstance(identifier, str) else key)
     slack_outputs = element_output_records(
         variables_data, contract.slack_send_ids
     )
@@ -272,8 +305,35 @@ def harvest_side_effects(
         "jira_keys": jira_keys,
         # Deletion targets prefer the numeric id; the key still works.
         "jira_issues": jira_ids or jira_keys,
-        "slack_messages": slack_messages,
+        "jira_targets": jira_targets,
+        "slack_messages": _distinct(slack_messages),
     }
+
+
+def _capped_keys(keys: list[str]) -> list[str]:
+    skipped = keys[MAX_OWNED_KEY_READS:]
+    if skipped:
+        print(f"NOTE: not journaled, over the {MAX_OWNED_KEY_READS}-read cap: {skipped}")
+    return keys[:MAX_OWNED_KEY_READS]
+
+
+def owned_jira_targets(
+    effects: dict[str, list], jira_connection_id: str, correlation: str
+) -> list[str]:
+    """Deletion targets of the issues whose tenant summary carries this run's
+    correlationId; a step that merely read an existing ticket is not owned."""
+
+    owned = []
+    targets = effects["jira_targets"]
+    for key in _capped_keys(list(targets)):
+        target = targets[key]
+        try:
+            fields = escalation_is.get_issue_fields(jira_connection_id, key)
+        except (CheckFailure, subprocess.TimeoutExpired):
+            continue
+        if correlation in str(get_ci(fields, "summary", "")):
+            owned.append(target)
+    return owned
 
 
 def assert_outcome(
@@ -314,20 +374,22 @@ def assert_outcome(
     if incidents:
         raise CheckFailure(f"unexpected incidents: {incidents}")
 
-    # Execution evidence: each connector activity ran exactly once. Counts sum
-    # across every element id bound to the same operation.
+    # Execution evidence: one issue created and one message posted. Counts are
+    # distinct keys / ts values the connector's steps returned, so a search,
+    # comment or lookup on the same connector is not counted.
     executions = get_ci(debug_data, "ElementExecutions", [])
     executed_ids = [
         get_ci(item, "ElementId") for item in executions if isinstance(item, dict)
     ]
-    for label, element_ids in (
-        ("Jira create", contract.jira_create_ids),
-        ("Slack send", contract.slack_send_ids),
+    for label, element_ids, field in (
+        ("Jira create", contract.jira_create_ids, "key"),
+        ("Slack send", contract.slack_send_ids, "ts"),
     ):
-        count = sum(executed_ids.count(element_id) for element_id in element_ids)
+        count = distinct_returns(variables_data, element_ids, field, executed_ids)
         if count != 1:
             raise CheckFailure(
-                f"{label} {list(element_ids)} expected 1 execution, got {count}"
+                f"{label} {list(element_ids)} expected 1 execution that "
+                f"returned a {field!r}, got {count}"
             )
 
     # Public outputs, addressed by id in the root scope's globals.
@@ -335,8 +397,8 @@ def assert_outcome(
     if not isinstance(globals_map, dict):
         raise CheckFailure(f"root scope Globals is not a map: {globals_map!r}")
     actual = {
-        name: resolve_runtime_key(globals_map, identifier, name)
-        for name, identifier in contract.output_ids.items()
+        name: public_output(contract, variables_data, globals_map, name)
+        for name in contract.output_ids
     }
     for name, declared_type in OUTPUT_TYPES.items():
         if not exact_type(actual[name], declared_type):
@@ -349,37 +411,6 @@ def assert_outcome(
             raise CheckFailure(
                 f"output {name} expected {expected!r}, got {actual.get(name)!r}"
             )
-
-    # Severity must be COMPUTED, not exposed as a literal. Bind it to the
-    # executed scriptTask whose own runtime output carries it -- the flow
-    # suite's classification binding. The seed declares the one expected
-    # severity, so without this a process that computes nothing and returns
-    # "Sev1" satisfies every other criterion here.
-    severity = actual.get("severity")
-    classifier_outputs = element_output_records(
-        variables_data, contract.classifier_ids
-    )
-    if not classifier_outputs:
-        raise CheckFailure(
-            f"no executed scriptTask among {list(contract.classifier_ids)} "
-            "produced runtime output; severity was not computed"
-        )
-
-    def carries(record: object) -> bool:
-        """The severity appears in this node's own response, scalar or field."""
-
-        response = get_ci(record, "response")
-        if response == severity:
-            return True
-        if isinstance(response, dict):
-            return severity in response.values()
-        return False
-
-    if not any(carries(record) for record in classifier_outputs):
-        raise CheckFailure(
-            f"severity {severity!r} is not in any executed scriptTask's own "
-            "output; it was not computed by the classification node"
-        )
 
     # The exposed jiraIssueKey must be the executed Create-Issue node's OWN
     # response key — harvesting some other key cannot satisfy this.
@@ -456,63 +487,78 @@ def assert_jira_issue_on_tenant(
 
 
 
+def journal_partial_log(
+    seed: dict, log_file: Path, jira_connection_id: str, debug_data: object = None
+) -> None:
+    """Journal the Jira keys in an interrupted run's log, and in its debug
+    response when the debug finished, whose summary carries this run's
+    correlationId."""
+
+    partial = log_file.read_text(encoding="utf-8") if log_file.is_file() else ""
+    if debug_data is not None:
+        partial += "\n" + json.dumps(debug_data, default=str)
+    project_key = seed["inputs"]["jiraProjectKey"]
+    found = list(dict.fromkeys(re.findall(rf"\b{re.escape(project_key)}-\d+\b", partial)))
+    for key in _capped_keys(found):
+        try:
+            fields = escalation_is.get_issue_fields(jira_connection_id, key)
+        except (CheckFailure, subprocess.TimeoutExpired):
+            continue
+        if seed["correlationId"] in str(get_ci(fields, "summary", "")):
+            escalation_is.record_created_id("jira_issue", key)
+
+
+def run_and_read(
+    seed: dict, imported_project: Path, jira_connection_id: str
+) -> tuple[object, str, object]:
+    """Debug the seeded case and read its variables; return (debug_data,
+    instance_id, variables_data). When either step fails after the run may
+    have created records, journal them from the partial log before re-raising."""
+
+    log_file = LIVE_RUN_DIR / "debug.log"
+    debug_data = None
+    try:
+        debug_data, instance_id = run_debug(imported_project, seed["inputs"], log_file)
+        print(f"OK: debug completed (instance {instance_id})")
+
+        variables = run_cli(
+            ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+            timeout=VARIABLES_ALL_TIMEOUT,
+        )
+        _payload, variables_data = payload_data(variables, "variables-all")
+    except (CheckFailure, subprocess.TimeoutExpired):
+        try:
+            journal_partial_log(seed, log_file, jira_connection_id, debug_data)
+        except (CheckFailure, subprocess.TimeoutExpired, OSError):
+            pass
+        raise
+    return debug_data, instance_id, variables_data
+
 
 def main() -> None:
     seed = json.loads(Path("seed.json").read_text(encoding="utf-8"))
-    if not BPMN_FILE.is_file():
-        raise CheckFailure(f"missing {BPMN_FILE}")
-    contract = resolve_contract()
-    original_hash = sha256(BPMN_FILE)
+    bpmn_file = bpmn_check.locate_bpmn(f"{NAME}.bpmn", [LIVE_RUN_DIR])
+    project = bpmn_file.parent
+    contract = resolve_contract(bpmn_file)
     escalation_is.assert_live_target()
     connections = escalation_is.connection_ids()
 
-    LIVE_RUN_DIR.mkdir(parents=True, exist_ok=True)
-    solution_dir = LIVE_RUN_DIR / "CustomerEscalationLiveEval"
-    initialized = run_cli(
-        ["uip", "solution", "init", str(solution_dir)],
-        timeout=SOLUTION_INIT_TIMEOUT,
+    imported_project = import_exact(
+        bpmn_file, project, LIVE_RUN_DIR / "CustomerEscalationLiveEval"
     )
-    payload_data(initialized, "initialize ephemeral solution")
-    solution_files = sorted(solution_dir.glob("*.uipx"))
-    if len(solution_files) != 1:
-        raise CheckFailure(
-            f"solution init produced {len(solution_files)} .uipx files in "
-            f"{solution_dir}, expected exactly one"
-        )
-    solution_file = solution_files[0]
-    imported = run_cli(
-        [
-            "uip",
-            "solution",
-            "projects",
-            "import",
-            str(PROJECT.resolve()),
-            "--solutionFile",
-            str(solution_file),
-        ],
-        timeout=SOLUTION_IMPORT_TIMEOUT,
-    )
-    payload_data(imported, "import exact BPMN project")
-    imported_project = solution_dir / PROJECT.name
-    if sha256(imported_project / BPMN_FILE.name) != original_hash:
-        raise CheckFailure("solution import changed the submitted BPMN bytes")
-    print(f"OK: imported exact artifact (sha256={original_hash})")
 
-    debug_data, instance_id = run_debug(
-        imported_project, seed["inputs"], LIVE_RUN_DIR / "debug.log"
+    debug_data, instance_id, variables_data = run_and_read(
+        seed, imported_project, connections[escalation_is.JIRA_CONNECTOR]
     )
-    print(f"OK: debug completed (instance {instance_id})")
 
     # Runtime evidence. Journal every created id BEFORE asserting anything —
     # the records exist regardless of the verdict, and post_run replays the
     # journal even if this process is killed mid-assertion.
-    variables = run_cli(
-        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
-        timeout=VARIABLES_ALL_TIMEOUT,
-    )
-    _payload, variables_data = payload_data(variables, "variables-all")
     effects = harvest_side_effects(contract, variables_data)
-    for issue in effects["jira_issues"]:
+    owned_issues = owned_jira_targets(
+        effects, connections[escalation_is.JIRA_CONNECTOR], seed["correlationId"]
+    )
+    for issue in owned_issues:
         escalation_is.record_created_id("jira_issue", issue)
     for message in effects["slack_messages"]:
         escalation_is.record_created_id("slack_message", message)
@@ -537,7 +583,7 @@ def main() -> None:
     # Best-effort in-band cleanup; post_run replays the journal for anything
     # this leaves behind (it re-deletes idempotently — deletion is only
     # confirmed on success or an issue-specific not-found).
-    for issue in effects["jira_issues"]:
+    for issue in owned_issues:
         if not escalation_is.delete_jira_issue(
             connections[escalation_is.JIRA_CONNECTOR], issue
         ):

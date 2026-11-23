@@ -15,10 +15,13 @@ Checks performed:
 
 from __future__ import annotations
 
-import glob
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 FLOW_GLOB = "**/DriveToSlackTest*.flow"
 DRIVE_KEY = "uipath-google-drive"
@@ -30,10 +33,7 @@ def _fail(msg: str) -> None:
 
 
 def _flow_path() -> str:
-    flows = glob.glob(FLOW_GLOB, recursive=True)
-    if not flows:
-        _fail(f"No flow file matching {FLOW_GLOB}")
-    return flows[0]
+    return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
 
 
 def main() -> None:

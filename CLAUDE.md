@@ -50,6 +50,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `skills.sh.json` | Display grouping for the repo's skills.sh page. Every `skills/<name>/` appears in exactly one grouping. Edit it in the same PR that adds, renames, or removes a skill folder — validate with `python3 scripts/check-skills-sh.py`. |
 | `assets/skill-status.json` | Lifecycle status (`stable` / `preview` / `in-development`) for every skill — the single source of truth. Edit in the same PR as the skill folder; regenerate the README table with `python3 scripts/check-skill-status.py --write-readme`. |
 | `docs/REQUIRED-CHECKS.md` | The required-status-check set, plus the rules that keep a context reportable. Machine-read: `scripts/parse-required-checks.py` is its only parser, shared by `scripts/apply-required-checks.sh` and the contract guard. Edit § Current target set in the same PR that renames a required job or changes its trigger. |
+| `.skill-lint.yaml` | Severities and options of the `skill-lint` PR check (`.github/workflows/skill-lint.yml`). Read from the base branch, so an edit applies once merged. See CONTRIBUTING.md § skill-lint PR check. |
 | `hooks/*.mjs` | Non-telemetry session hooks are single Node.js (>= 20) scripts, spawned by the polyglot commands in `hooks/hooks.json`. Telemetry has no script — its `hooks.json` entries pipe the raw payload to `uip track --hook`. Everything is never-fail by contract (exit 0); the polyglot guards for a missing `node`/`uip` and silently no-ops. |
 
 ## When Reviewing or Editing Skills

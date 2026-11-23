@@ -2,17 +2,19 @@ task_id: skill-platform-orchestrator-jobs-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list Orchestrator jobs
   scoped to a folder via `uip or jobs list --folder-(key|path) ... --output
-  json`. Prompt passes a placeholder folder key — the CLI returning Auth/404
-  is an acceptable outcome; the goal is correct command shape, not tenant
-  state.
+  json`. The prompt asks for live job records, so the agent must read them
+  from Orchestrator, not from Insights (historical aggregates). Prompt passes
+  a placeholder folder key — the CLI returning Auth/400/404 is an acceptable
+  outcome; the goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  List the recently faulted jobs in the Orchestrator folder with key
-  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
+  List the jobs that are currently in Faulted state in the Orchestrator
+  folder with key `11111111-2222-3333-4444-555566667777` in the current
+  UiPath tenant.
 
 success_criteria:
   - type: command_executed
@@ -36,5 +38,13 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+(or|orchestrator)\s+jobs\s+list.*--state\s+Faulted'
     min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not query Insights (historical aggregates) for live job records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\b'
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0

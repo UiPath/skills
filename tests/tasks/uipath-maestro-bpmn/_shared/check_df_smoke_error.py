@@ -9,13 +9,16 @@ parallel branch] is not parsed -- the prompt-driven shape plus entity split
 already blocks the common wrong-reason paths"), translated from a JSON
 node/`inputs.detail` walk to an XML walk over the registry-driven
 ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4).
 
 BPMN has no fixed home for `entityName` (BATCH1-ADDENDUM.md "Where connector
 node values live in BPMN" and its "CI run 35488848026" section on the two
 valid activity shapes). A node names its entity when any one of these
 equals it: the generic-form `objectName`, any input's value (path, query,
-body or untargeted), or a `/`-separated segment of the context `path` field.
+body or untargeted), a value in a V2 element's `pathParameters` JSON input,
+an entity-naming key of its `queryParameters` (a `*_V3` object's
+`tenantEntityName` / `folderEntityName`),
+or a `/`-separated segment of the context `path` field.
 
 Assertion map (Flow -> BPMN):
   F check_smoke_error.py:29-31  entity_of(node) == NonExistentEntity on a
@@ -31,7 +34,8 @@ Assertion map (Flow -> BPMN):
   I                             parse each .bpmn                          -> ET.parse()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
-                                 input value on any target, an exact
+                                 input value on any target, a V2
+                                 `pathParameters` value, an exact
                                  context `path` segment, or the value of an
                                  entity-naming body key (either body form)
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
@@ -62,6 +66,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
     _project_files,
+    is_scratch_bpmn,
     body_object,
     entry_point_files,
     NS,
@@ -70,6 +75,10 @@ from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
     has_typed_uipath_extension,
+    path_parameters,
+    query_parameters,
+    resolved_values,
+    root_bindings,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -83,7 +92,9 @@ _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 
-def mentions_entity(task: ET.Element, entity: str) -> bool:
+def mentions_entity(
+    task: ET.Element, entity: str, bindings: dict[str, dict[str, str]] | None = None
+) -> bool:
     if is_generic_entity_object(context_value(task, "objectName"), entity):
         return True
     if entity in context_value(task, "path").strip().split("/"):
@@ -91,6 +102,17 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
     if any(
         (inp.attrib.get("value") or inp.text or "").strip() == entity
         for inp in context_inputs(task)
+    ):
+        return True
+    if entity in path_parameters(task).values():
+        return True
+    # A *_V3 object names the entity in a query parameter instead
+    # (`tenantEntityName`, or `folderEntityName` for a picked folder entity,
+    # whose value is a `=bindings.<id>` read of the root binding).
+    if any(
+        key.lower() in _ENTITY_KEYS
+        and entity in resolved_values(value, bindings or {}, fold_case=False)
+        for key, value in query_parameters(task).items()
     ):
         return True
     # The entity may be a field of the request body rather than a flat input
@@ -101,7 +123,7 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
     return entity in _entity_values(body_object(task))
 
 
-_ENTITY_KEYS = {"entityname", "entity"}
+_ENTITY_KEYS = {"entityname", "entity", "tenantentityname", "folderentityname"}
 
 
 def _entity_values(value: object) -> list[str]:
@@ -152,9 +174,6 @@ def is_query_node(task: ET.Element, object_name: str, entity: str) -> bool:
     return bool(_LIST_OP_RE.match(operation)) or method == "GET"
 
 
-SKIP_PARTS = {"node_modules", ".npm-prefix", ".venv"}
-
-
 def candidate_files() -> tuple[list[Path], list[Path]]:
     """(graded, skipped): the ``.bpmn`` files this grader may pass on, and
     the project files it deliberately ignores.
@@ -170,8 +189,9 @@ def candidate_files() -> tuple[list[Path], list[Path]]:
     ``DataFabricSmokeError_error.bpmn`` beside an empty scaffold that was the
     project's only entry point; that project must fail.
     """
+    cwd = Path.cwd()
     every = sorted(
-        p for p in Path.cwd().rglob("*.bpmn") if not (SKIP_PARTS & set(p.parts))
+        p for p in cwd.rglob("*.bpmn") if not is_scratch_bpmn(p.relative_to(cwd))
     )
     # As find_bpmn_file: the project guard disambiguates when a project
     # exists; a bare .bpmn with no project.uiproj anywhere (batch-10 run
@@ -191,11 +211,12 @@ def candidate_files() -> tuple[list[Path], list[Path]]:
 def shape_of(root: ET.Element) -> tuple[int, int]:
     error_creates = 0
     good_queries = 0
+    bindings = root_bindings(root)
     for task in connector_nodes(root):
         object_name = context_value(task, "objectName")
-        if is_create_node(task, object_name, CREATE_ENTITY) and mentions_entity(task, CREATE_ENTITY):
+        if is_create_node(task, object_name, CREATE_ENTITY) and mentions_entity(task, CREATE_ENTITY, bindings):
             error_creates += 1
-        if is_query_node(task, object_name, QUERY_ENTITY) and mentions_entity(task, QUERY_ENTITY):
+        if is_query_node(task, object_name, QUERY_ENTITY) and mentions_entity(task, QUERY_ENTITY, bindings):
             good_queries += 1
     return error_creates, good_queries
 

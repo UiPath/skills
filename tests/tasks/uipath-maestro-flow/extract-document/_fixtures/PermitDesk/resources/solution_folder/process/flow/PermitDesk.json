@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PermitDesk",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "35121fbb-faca-4c20-a5f2-dac0546f8e05",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "PermitDesk"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "PermitDesk",
+      "package": {
+        "key": "ec294366-52b9-41f1-b95a-f334fb93c53f"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "31ad1548-9503-45a2-91cd-acc246db54a7",
+    "files": []
+  }
+}

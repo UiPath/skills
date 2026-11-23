@@ -5,10 +5,16 @@ description: >
   `langgraph.json` entry-point config, and that the agent ran locally
   for two turns. Lazy-LLM-init invariant (Critical Rule C4) still
   applies.
-tags: [uipath-agents, smoke, mode:build, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
+tags: [uipath-agents, smoke, mode:build, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 20
+  # Smoke caps tasks at 40 turns (experiments/smoke.yaml). Codex counts each
+  # reasoning message as a turn, so the ~20 commands this flow needs (scaffold,
+  # init, re-init after setting isConversational, two local runs) reach 40 while
+  # the second chat turn is still in progress — 3 of 4 luna smoke runs on
+  # 2026-11-06 stopped there with every other criterion passing.
+  max_turns: 60
 
 reference:
   directory: ../..

@@ -79,7 +79,7 @@
   "notes": {
     "Return only the declared JSON fields.": "Decided fire: 'declared' makes the same claim as 'typed JSON contract', and the v1 prompt 'Return only the typed JSON contract' packed its body on 2026-09-23.",
     "Do not invent facts, return ONLY a JSON object.": "A comma ends the clause, so the negation before it does not cover the directive.",
-    "Return the payload as a JSON string.": "Decided fire: a string field meant to hold JSON text. The fix is to declare the field 'object'; --no-check is the escape.",
+    "Return the payload as a JSON string.": "Decided fire: a string field meant to hold JSON text. The fix is to declare the field 'object'; otherwise ignore the finding: compile does not run check and still writes the flow.",
     "Do not invent facts and return ONLY a JSON object.": "Decided miss: a negation anywhere earlier in the same clause skips the match. This costs a directive joined by 'and'; it buys never refusing 'Do not wrap the answer in JSON'.",
     "Write only JSON.": "Decided miss: 'write' is not an answer verb ('You help users write JSON' is a topic).",
     "Answer the question using details in the JSON record.": "The VIA form allows at most two free words before as/in/with.",

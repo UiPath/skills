@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 24 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 30 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.
@@ -43,10 +43,11 @@ Early stop: every criterion carries a `stop_early: {on_pass: stop}` block (coder
 1. Create `<new-skill>.jsonl` with positive prompts (one JSON object per line, fields: `id`, `prompt`).
 2. Optional: add must-not-fire prompts that touch your skill's domain to `negative.jsonl` as adversarial negatives.
 3. Edit `activation.yaml`: add the new file to `dataset.paths` and append a new `skill_triggered` criterion with `skill_name: uipath-<new-skill>` **and `stop_early: {on_pass: stop}`**. The `stop_early` block is not optional: validation only requires that *some* criterion is armed, so omitting it raises no error — but the new skill's positive rows would then have no pass-armed criterion to defer for, and the 23 existing criteria (all armed fail-stop distractors on those rows) would end the row on the first touch of any other skill, silently deflating the new skill's recall.
+4. Add the skill to `BASELINES_PCT` in `tests/scripts/activation_gate.py`. Without an entry the `Skill activation gate` prints `SKIP: no baseline` and passes, so description changes to the skill are never checked. Measure the way the gate does (its own workflow, `claude-opus-5-5`, `max_turns: 1`, the full positive set), round down to the nearest 5%, and cite the runs in a comment.
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1309 rows total (1252 positives + 57 negatives). The agent runs ONCE per row regardless of criteria count, and the 23 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$65–130**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1710 rows total (1631 positives + 79 negatives). The agent runs ONCE per row regardless of criteria count, and the 30 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$85–170**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 
@@ -58,12 +59,17 @@ Document Understanding / AI Center vs `uipath-ixp`, a CNCF Serverless Workflow
 spec vs `uipath-api-workflow`, a Claude Desktop / FastMCP server vs
 `uipath-mcp-servers`) — these exercise cross-skill precision, not just recall.
 
+`uipath-vertical-solutions` positives were not mined: they were written from the skill's
+`SKILL.md` and `references/`, then checked against real questions in the
+product's Slack help channels, Confluence and GitHub (read-only) for phrasing
+and missing intents. Prompts with no sign of a real user asking were dropped.
+
 ## Coverage
 
-Covers 23 of the 24 skills in the repo (`uipath-connector-builder` has no
-dataset yet). Skill positives target user **intent** (the
+Covers 30 of the 32 skills in the repo (`uipath-aops` and
+`uipath-automationhub` have no dataset yet). Skill positives target user **intent** (the
 task a prompt is asking for), not exact CLI surface, so coverage stays valid
 while a Preview skill's commands are still in flux. Narrower-scope skills hold
 fewer rows than 50 without padding (e.g. `uipath-ixp` at 30,
-`uipath-automation-discovery` at 32, `uipath-feedback` at 26, `uipath-tasks` at
+`uipath-feedback` at 26, `uipath-tasks` at
 34) — the file stops at the highest count quality sustains.

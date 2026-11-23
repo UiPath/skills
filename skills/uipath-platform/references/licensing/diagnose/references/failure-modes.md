@@ -105,7 +105,7 @@ All investigation commands are read-only. Never run a `set` while diagnosing.
      --start-date "<YYYY-MM-DD>" --end-date "<YYYY-MM-DD>" --output json
    ```
 2. Compare scoped against unscoped — run once with `--tenant` and once without, and attribute the difference to suppression rather than to missing consumption
-3. For a per-day view, all four flags are required: `--mode daily --tenant <T> --unit <CODE> --start-date <D> --end-date <D>`
+3. For a per-day view, all four flags are required: `--mode daily --tenant <T> --unit <CODE> --start-date <D> --end-date <D+1>`. `--end-date` is exclusive; same date for both is rejected
 4. Confirm the unit is a consumable at all — runtime codes (`UNATT`, `RU`, `TEU`) are allocated, not consumed; `PLTU` appears on both axes and is a common source of confusion
 5. For `folders` mode, sum the children yourself before comparing to a tenant total
 

@@ -1,8 +1,10 @@
 task_id: skill-admin-smtp-configure-e2e
 description: >
-  End-to-end test: agent configures SMTP settings following the
-  recommended test-first-then-save workflow. Tests the settings,
-  saves them, and verifies they were applied.
+  End-to-end test: agent configures SMTP settings for the organization.
+  Graded on a successful `smtp update` plus the settings read back from the
+  platform (every field the prompt names), not the command's flags. Pre-run
+  deletes the organization's SMTP settings, so the agent starts from the
+  inherited defaults.
 tags: [uipath-admin, e2e, mode:build, lifecycle:setup]
 
 run_limits:
@@ -13,20 +15,35 @@ run_limits:
 reference:
   directory: ..
 
+# Host and port must differ from the inherited defaults (smtp.example.com:587
+# on the eval environments), or the read-back cannot tell the agent's write
+# from the baseline. The values also live in identity/check_smtp_settings.py
+# (EXPECTED) and identity/_setup/setup_smtp_reset.py (TARGET_HOST).
+# The host is not reachable, so the prompt says to save even if a test fails;
+# the skill saves only after a passing test unless the user says otherwise.
 initial_prompt: |
   Configure SMTP email settings for my organization: host
-  smtp.example.com, port 587, SSL enabled, sender address
+  smtp-e2e.example.com, port 2525, SSL enabled, sender address
   noreply@example.com, display name "UiPath E2E Test".
+
+  The mail server is not reachable from here yet, so a test send will fail;
+  save the settings anyway. You are done when the organization's SMTP settings
+  show these values.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # A successful update during this run. Admin tasks share one organization
+  # across concurrent agents, so the read-back alone could pass on a peer's
+  # write. The pattern names no flags: which fields need sending depends on
+  # the settings the agent finds.
   - type: command_executed
-    description: "Agent saved SMTP settings via update"
+    description: "Agent saved SMTP settings with a successful smtp update"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+smtp\s+update\s+.*--host'
+    command_pattern: 'uip\s+admin\s+smtp\s+update\b'
+    require_success: true
     min_count: 1
-    weight: 2.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -38,9 +55,9 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "SMTP settings were applied (host is non-empty)"
+    description: "SMTP settings read back match the prompt (host, port, SSL, sender address, display name)"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''check_smtp_settings.py''))"'
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -53,6 +70,10 @@ sandbox:
     - type: template_dir
       path: ../_setup
       mount_point: _setup
-post_run:
-  - command: 'python3 _setup/cleanup_smtp.py'
-    timeout: 30
+
+# No post_run delete: concurrent runs share the organization, and a delete when
+# one run finishes would wipe the settings a slower run is about to read back.
+# The next run's pre_run resets them instead.
+pre_run:
+  - command: 'python3 _setup/setup_smtp_reset.py'
+    timeout: 60

@@ -6,7 +6,7 @@
  *
  * Generic scenario: let a studio coordinator approve a pottery kiln firing.
  */
-import { flow, hitl, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, hitl, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('kiln-review')
   .name('KilnReview')
@@ -28,11 +28,13 @@ export default flow('kiln-review')
     },
     outcomes: ['Fire', 'Hold'],
   }))
-  .step('recordDecision', script({
-    code: `const action = $vars.reviewFiring.output.Action;
-return action === 'Fire'
-  ? 'scheduled:' + $vars.start.output.pieceName
-  : 'held:' + $vars.start.output.pieceName;`,
-  }))
+  .step('recordDecision', script(recordDecision))
   .return({ decision: out('recordDecision') })
   .build();
+
+function recordDecision($vars: FlowVars) {
+  const action = $vars.reviewFiring.output.Action;
+  return action === 'Fire'
+    ? 'scheduled:' + $vars.start.output.pieceName
+    : 'held:' + $vars.start.output.pieceName;
+}

@@ -4,12 +4,13 @@
 
 Run a published robotic process and wait for its output arguments.
 
-Signature: `rpaWorkflow({ key, name, folderPath?, location?, projectId?, inputs?, returns? })`.
+Signature: `rpaWorkflow({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns? })`.
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
+For a published process, leave `key` out: `check` prints the `registry prepare --kind Process` command that records it, and `compile` fills it in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.
+Keep `returns` for every output you read: Orchestrator usually leaves an RPA process's `ArgumentsV2` blank, so `prepare` prints `Arguments not recorded` and `compile` does not fill `returns`. Without it a read of the output is `RPA_READ_WITHOUT_RETURNS`.
 
 ```ts
-.step('title', rpaWorkflow({ key: releaseKey,
-  name: 'RPA Workflow', folderPath: 'Shared',
+.step('title', rpaWorkflow({ name: 'RPA Workflow', folderPath: 'Shared',
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
@@ -33,8 +34,14 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
-- **Where the two ids come from.** Register the sibling and refresh resources
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `rpaWorkflow({ location: 'in-solution', project: '<RpaProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
+- **Where the two ids come from.**
+<!--skill-flavor:rpa-sibling-register:start-->
+  Register the sibling and refresh resources
   (`uip solution projects add`, then `uip solution resources refresh`), then
+<!--skill-flavor:rpa-sibling-register:end-->
   run `uip maestro flow registry list --local --output json` from the Flow
   project directory. The generated
   `resources/solution_folder/process/process/<RpaProject>.json` carries the
@@ -47,11 +54,15 @@ deployed process), set `location: 'in-solution'` and `projectId`, and omit
   sibling may list no arguments, so write the names and casing the RPA
   project's own arguments use.
 
-`check` refuses the wrong shapes: `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`),
+`check` warns on `RPA_LOCAL_NO_PROJECT_ID` (no `projectId`; the call resolves by
+`key`, so a decompiled step without one is fine as is) and refuses
 `RPA_LOCAL_PROJECT_ID_NOT_GUID` (`projectId` is not the project GUID — often
 the key or the name pasted by mistake), `RPA_LOCAL_HAS_FOLDER` (`folderPath`
 set as well; drop it, or drop `location` to call the published copy).
-`RPA_NO_FOLDER` applies to published steps only.
+`RPA_NO_FOLDER` applies to published steps only. If `check` reports `RPA_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+add `projectId` from `resource.projectKey`.
+Still set `projectId` on a step you author: Studio Web's Run node reads it
+to deploy the sibling first.
 
 ## Tenant contract
 
@@ -60,9 +71,32 @@ Inputs and returns are that process's own argument names and exact casing; the
 offline SDK cannot discover their truth. Inspect the registry/process listing
 and the deployed contract rather than copying values from a different folder.
 
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
+
+## Where the job runs
+
+The step starts an Orchestrator job on a robot of the process's folder, and the
+project's target framework, fixed when the project is created, decides which
+robots can take it: a serverless cloud robot runs only background,
+cross-platform processes
+([Serverless robots](https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/executing-unattended-automations-with-serverless-robots)).
+So create a process a Flow starts as cross-platform unless the folder's robots
+are known to be Windows. A process meant to be edited in Studio Web beside the
+Flow is also XAML with VB expressions: Studio Web opens no project holding coded
+workflows or C# expressions, and lists such a process with errors `20042` and
+`20021` instead.
+
 ## Evidence boundary
 
 Replay proves the graph with synthesized job output. Live evidence should show
 a real Orchestrator job, the intended input arguments, completion, and the
 returned values. Whether the robot performed the right UI/business work is a
 separate assertion from job completion.
+
+A headless `flow debug` cannot give that evidence: it starts the step as a debug
+job of the solution's own project, not the deployed process, and that job fails
+at start with exit code `0x33` (`Signalr agent missing protocol versions`) when
+no Studio Web debugger attaches. Run the deployed flow
+([operate.md](operate.md#trigger-a-deployed-process)) to prove the step.

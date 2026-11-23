@@ -9,7 +9,7 @@ Everything else in this skill applies. Read and edit the app's files directly �
 
 The CLI host's steps below do not apply here, with these replacements:
 
-- **Critical Rules 3 and 20, the Two lifecycles callout and the Completion Output's next steps** describe the CLI host (`npm run build`, `create-vite`, `uip codedapp init`, `npm run dev`). Scaffold by writing files instead, and check them against [web-app-template.md](assets/templates/web-app-template.md) § Build checklist before handing the app over.
+- **Critical Rules 3 and 20, the Two lifecycles callout and the Completion Output's next steps** describe the CLI host's scaffold, install, build and dev-server commands. Scaffold by writing files instead, and check them against [web-app-template.md](assets/templates/web-app-template.md) § Build checklist before handing the app over.
 - **Critical Rule 19:** no `node_modules` exists here. When the host can fetch URLs, read a service's types from the published package at `https://unpkg.com/@uipath/uipath-typescript@<VERSION>/dist/<SUBPATH>/index.d.ts`, with `<VERSION>` from `package.json`. Otherwise use only the calls the template and `references/sdk/*.md` show, and tell the user which SDK calls you could not verify.
 - **`npm install <package>` in any step:** add the package to `package.json` instead. Keep the version the step pins (`<package>@x.y.z` or `--save-exact`); otherwise use `"latest"`.
 

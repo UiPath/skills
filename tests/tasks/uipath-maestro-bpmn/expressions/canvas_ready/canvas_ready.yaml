@@ -1,0 +1,51 @@
+task_id: skill-bpmn-expr-canvas-ready
+description: >
+  Expression-authoring eval from the 2026-11-17 Autopilot dogfood (issue 7):
+  every expression authored in a small checkout process is `=js:` (the designer
+  opens a plain `=` expression in its C# editor). compile and validate accept
+  plain `=`, so the grader checks the compiled XML. Authoring only, no cloud
+  effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Can you build me a little BPMN process for checkout? When it starts it gets the
+  order total and the customer's loyalty tier. Gold customers get 10% off,
+  everyone else gets 2%. It should hand back the final price and how much the
+  customer saved.
+
+  Make it a local project called CheckoutDiscount and validate it. Don't upload,
+  publish or run anything, and don't stop to ask me questions.
+
+success_criteria:
+  - type: run_command
+    description: "BPMN source was authored"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py CheckoutDiscount"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Emitted BPMN validates"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every authored expression is =js: (a plain = opens in the C# editor)"
+    command: "python3 $REFERENCE_DIR/expressions/canvas_ready/check_canvas_ready.py CheckoutDiscount.bpmn --check js"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

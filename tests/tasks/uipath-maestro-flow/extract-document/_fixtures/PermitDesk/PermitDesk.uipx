@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "34cb5f4f-cbd8-4f92-9b13-ccd6a0a3efe5",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "PermitDesk/project.uiproj",
+      "Id": "35121fbb-faca-4c20-a5f2-dac0546f8e05"
+    }
+  ]
+}

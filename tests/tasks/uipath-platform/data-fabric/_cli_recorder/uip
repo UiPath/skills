@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Pass-through recorder for `uip`, PATH-prepended via `mock_path_dirs`.
+
+Runs the real `uip` unchanged and, for `uip df records ...` calls only (so
+`login` and other argv are never written), appends one JSON line to
+`uip-calls.jsonl` beside this file: argv, exit code, and, for
+`records query/insert/update/delete`, the body the CLI read from `--file` or from
+stdin (`--file -` or `--body -`). A criterion can then check what was actually
+sent to Data Fabric, whether the agent typed the command in Bash or ran it from
+a script it wrote.
+
+Recording is best-effort: a logging failure never changes the command's
+result.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+LOG_PATH = os.path.join(HERE, "uip-calls.jsonl")
+MAX_BODY_CHARS = 200_000
+
+
+def find_real_uip():
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry or os.path.realpath(entry) == HERE:
+            continue
+        candidate = os.path.join(entry, "uip")
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+BODY_VERBS = ("query", "insert", "update", "delete")
+
+
+def is_records_call(args):
+    return any(args[i:i + 2] == ["df", "records"] for i in range(len(args) - 1))
+
+
+def takes_body(args):
+    return any(args[i:i + 2] == ["df", "records"] and args[i + 2] in BODY_VERBS
+               for i in range(len(args) - 2))
+
+
+def option_value(args, short, long):
+    """Value of the last `short`/`long` option, as a separate token or `--long=value`."""
+    value = None
+    for i, arg in enumerate(args):
+        if arg in (short, long) and i + 1 < len(args):
+            value = args[i + 1]
+        elif arg.startswith(long + "="):
+            value = arg.split("=", 1)[1]
+    return value
+
+
+def record(entry):
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=True) + "\n")
+    except OSError as exc:
+        sys.stderr.write(f"uip recorder: log write failed: {exc!r}\n")
+
+
+def main():
+    args = sys.argv[1:]
+    real = find_real_uip()
+    if not is_records_call(args):
+        if real is None:
+            sys.stderr.write("uip: command not found\n")
+            return 127
+        return subprocess.run([real, *args]).returncode
+    entry = {"ts": round(time.time(), 3), "argv": args}
+    stdin_data = None
+    if takes_body(args):
+        path = option_value(args, "-f", "--file")
+        # The CLI reads stdin when either --file or --body is "-".
+        if path == "-" or option_value(args, None, "--body") == "-":
+            stdin_data = sys.stdin.buffer.read()
+            entry["stdin_body"] = stdin_data.decode("utf-8", "replace")[:MAX_BODY_CHARS]
+        if path and path != "-":
+            try:
+                with open(path, encoding="utf-8", errors="replace") as handle:
+                    entry["file_body"] = handle.read(MAX_BODY_CHARS)
+            except OSError:
+                pass
+
+    if real is None:
+        entry["exit"] = 127
+        record(entry)
+        sys.stderr.write("uip: command not found\n")
+        return 127
+    exit_code = subprocess.run([real, *args], input=stdin_data).returncode
+    entry["exit"] = exit_code
+    record(entry)
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

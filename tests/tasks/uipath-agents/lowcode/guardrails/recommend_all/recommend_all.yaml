@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+guardrails\s+catalog'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -38,7 +38,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the guardrails list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -46,7 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed the project to regenerate derived files"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+refresh'
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+refresh'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -54,7 +54,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the agent"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+validate'
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -69,6 +69,6 @@ success_criteria:
 
 run_limits:
   expected_turns: 19
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 1200
   task_timeout: 1800

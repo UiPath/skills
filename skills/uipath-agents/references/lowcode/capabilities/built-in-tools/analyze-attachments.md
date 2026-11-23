@@ -9,13 +9,15 @@ For the built-in-tools capability overview, see [built-in-tools.md](built-in-too
 - Agent has a `job-attachment` input field (or receives attachments inside a tool call) and must read contents
 - Agent must summarize, classify, or extract from PDFs, images, documents passed at runtime
 
+Not for researching answers across long or multiple documents, or when the answers must cite their sources: use Deep RAG (`deep-rag`, [deeprag/planning.md](deeprag/planning.md)) instead.
+
 ## Pairing Pattern
 
 Typical low-code shape: one `job-attachment` input field on the agent + one `analyze-attachments` tool resource. The user message references the attachment metadata with `{{input.<field>}}`; the agent calls `analyze-attachments`, passing the same attachment in `attachments[]` along with an `analysisTask`.
 
 ## Resource Shape
 
-**Path:** `<AgentName>/resources/AnalyzeFiles/resource.json`
+**Path:** `<AgentName>/resources/Analyze Files/resource.json` — **the folder name must exactly match the `name` field** (case- and whitespace-sensitive, space included) or the validator fails with `folder must be named after the resource name`.
 
 ```jsonc
 {
@@ -82,7 +84,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 ## Walkthrough
 
 1. **Add a file input field on the agent.** See [../../agent-definition.md](../../agent-definition.md) § Add a File Input Field. Mirror in `entry-points.json`.
-2. **Author the tool resource** at `resources/AnalyzeFiles/resource.json` using the shape above. Generate a fresh UUID for `id`.
+2. **Author the tool resource** at `resources/Analyze Files/resource.json` (folder = `name`, space included) using the shape above. Generate a fresh UUID for `id`.
 3. **Reference the attachment in the user message** so the agent sees its metadata:
 
    ```jsonc
@@ -98,7 +100,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 
 4. **Refresh** with `uip agent refresh "<AGENT_NAME>" --output json`. Regenerates `entry-points.json` and `bindings_v2.json`.
 5. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only). Confirm `Validated`.
-6. **Bundle and upload** with `uip solution bundle` then `uip solution upload --output json` (with user consent).
+6. **Upload** with `uip solution upload . --output json` from the solution directory (with user consent). It bundles the solution itself.
 7. **Test** with a local file bound to the input field (with user consent — debug re-uploads the enclosing solution and executes the agent, so step 6 is optional on this path):
 
    ```bash
@@ -110,7 +112,8 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 - `properties.toolType` MUST be exactly `"analyze-attachments"` (kebab-lowercase). Anything else is silently ignored.
 - The `definitions.job-attachment` block belongs inside the tool's `inputSchema`, not at the agent root. Each schema (agent input, agent output, tool input) carries its own copy.
 - `{{input.<field>}}` only surfaces metadata; without this tool the agent has no way to read file contents. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 17.
-- Agents can return a `job-attachment` from `outputSchema` (e.g. a generated file), but `analyze-attachments` itself only reads — it does not produce attachments.
+- Agents can return a `job-attachment` from `outputSchema` (e.g. a generated file), but `analyze-attachments` itself only reads — it does not produce attachments (see [create-file.md](create-file.md)).
+- Guardrails on this tool: a built-in validator with `selector: { "scopes": ["Tool"], "matchNames": ["Analyze Files"] }` and `detectionScope: "Files"` evaluates the `attachments[]` files at PreExecution and only the prose `analysis` at PostExecution. Keep it in the agent.json root `guardrails[]`; `guardrail.policies` here stays `[]`. See [../guardrails/files-guide.md](../guardrails/files-guide.md) § Recipe 2.
 
 ## References
 

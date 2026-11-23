@@ -28,7 +28,7 @@ uip admin organizations get --full --output json
 
 `--full` returns a **nested `{Organization, Tenants, Logos}` envelope — NOT the flat org record** (it has no top-level `Id`). For "show / save the organization record" requests, use the plain compact `organizations get` above and save that `Data` object (name + top-level `Id`).
 
-Run this to discover regions for `tenants create`, and use returned region names directly with `--region` on `tenants create`:
+Run this to discover regions for `tenants create`, and use returned region names directly with `--region` on `tenants create`. Automation Suite has no region list: [use the organization's `Region`](organizations-commands.md#regions-list):
 
 ```bash
 uip admin organizations regions list --output json

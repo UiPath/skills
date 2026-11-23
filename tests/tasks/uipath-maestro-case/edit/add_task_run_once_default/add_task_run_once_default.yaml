@@ -55,9 +55,10 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # The new task is graded `!= true` — whether the skill writes the falsy default or omits it is
-  # serialization (checked advisory below); not being run-once is the behavior. The two existing
-  # tasks are graded on their exact stored values, since an edit must not rewrite them at all.
+  # The new task is graded `!= true`: an omitted `shouldRunOnlyOnce` and an explicit `false` are the
+  # same task in the product (the case converter maps both to `runOnlyOnce: false` in the rules it
+  # emits), so the grade is the behavior, not the serialization. The two existing tasks are graded
+  # on their exact stored values, since an edit must not rewrite them at all.
   - type: json_check
     description: "The new task is not run-once, both existing Review tasks keep their original flags, and no other task was flipped to run-once"
     path: "LinearThreeStages/LinearThreeStages/caseplan.[cj][as][so][en]"
@@ -82,14 +83,3 @@ success_criteria:
         expected: 1
     weight: 3.0
     pass_threshold: 1.0
-
-  # Advisory — see the note above; implementation.md says to write the default, not omit it.
-  - type: json_check
-    description: "Advisory: the newly added task emits shouldRunOnlyOnce explicitly instead of omitting it"
-    path: "LinearThreeStages/LinearThreeStages/caseplan.[cj][as][so][en]"
-    assertions:
-      - expression: "nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder'] | [0].shouldRunOnlyOnce"
-        operator: equals
-        expected: false
-    weight: 1.0
-    pass_threshold: 0

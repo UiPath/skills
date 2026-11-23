@@ -1,0 +1,135 @@
+name: Refresh uip browser command surface
+
+# Vendors what the browser bundle Studio Web embeds can run into
+# assets/uip-browser-commands-snapshot.json, the input of
+# tests/scripts/studioweb-browser-commands.test.mjs. Same shape and cadence as
+# refresh-uip-catalog.yml, but read from the CLI repo instead of a walk of an
+# installed CLI: the published bundle manifest does not say which commands are
+# declared unavailable (cli#5399), and the tools' browser.json files do.
+#
+# Not auto-merged. A surface change moves which studioweb mentions count as
+# runnable: ceilings that drop are lowered here, but a command that left the
+# bundle raises a count, and that failure is for a human to read.
+
+on:
+  schedule:
+    - cron: '30 4 * * *' # daily at 04:30 UTC, after the catalog refresh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: uipath-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Check for existing open refresh PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --state open \
+            --limit 1000 \
+            --json number,url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/refresh-uip-browser-catalog"))] | .[0] // empty')
+
+          if [ -n "$EXISTING" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Existing refresh PR still open: $(echo "$EXISTING" | jq -r '.url')"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # UiPath/cli is private; GH_PAT must have read access to it. Not
+      # persisted: nothing fetches from .cli after this, and the token would
+      # otherwise sit in .cli/.git/config for the rest of the job.
+      - name: Check out the CLI's browser surface
+        if: steps.check.outputs.exists != 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          repository: UiPath/cli
+          ref: main
+          path: .cli
+          token: ${{ secrets.GH_PAT }}
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            packages/cli-browser/browser-commands.snapshot.json
+            packages/*/browser.json
+            packages/*/package.json
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        if: steps.check.outputs.exists != 'true'
+        with:
+          node-version: '22.x'
+
+      - name: Rebuild the browser surface and lower ceilings
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          node scripts/build-uip-browser-catalog.mjs --cli-root .cli
+          node scripts/studioweb-browser-commands.mjs --lower-ceiling
+
+      - name: Check for diff
+        if: steps.check.outputs.exists != 'true'
+        id: diff
+        run: |
+          FILES="assets/uip-browser-commands-snapshot.json tests/scripts/studioweb-browser-commands.json"
+          if git diff --quiet -- $FILES; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Browser surface already current."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- $FILES
+          fi
+
+      - name: Open PR with updated surface
+        if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        # PAT, not GITHUB_TOKEN, so the PR triggers its `pull_request:` checks.
+        # See refresh-uip-catalog.yml for why GH_PAT is safe to use here.
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+
+          RAW_COMMIT=$(node -p "require('./assets/uip-browser-commands-snapshot.json').cli_commit")
+          CLI_COMMIT="${RAW_COMMIT//[^a-f0-9]/_}"
+          SHORT="${CLI_COMMIT:0:9}"
+          BRANCH="auto/refresh-uip-browser-catalog-${SHORT}-$(date -u +%Y%m%d)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add assets/uip-browser-commands-snapshot.json tests/scripts/studioweb-browser-commands.json
+          git commit -m "chore: refresh uip browser command surface (cli $SHORT)"
+          git push -u origin "$BRANCH"
+
+          # Delete the pushed branch unless a PR ends up owning it — same
+          # orphan guard as refresh-uip-catalog.yml.
+          PR_CREATED=false
+          cleanup_branch() {
+            if [ "$PR_CREATED" != "true" ]; then
+              echo "::warning::PR creation did not complete — deleting pushed branch $BRANCH"
+              git push origin --delete "$BRANCH" || true
+            fi
+          }
+          trap cleanup_branch EXIT
+
+          gh label create automated \
+            --color cccccc \
+            --description "Bot-generated automated PR" \
+            --force \
+            || echo "::warning::gh label create failed — continuing to PR creation"
+
+          gh pr create \
+            --title "chore: refresh uip browser command surface (cli $SHORT)" \
+            --body "Automated refresh of what the browser bundle runs, from \`UiPath/cli@$CLI_COMMIT\`: \`packages/cli-browser/browser-commands.snapshot.json\` and each tool's \`browser.json\` \`unavailable\` declarations. Ceilings in \`tests/scripts/studioweb-browser-commands.json\` that dropped are lowered.
+
+          Not auto-merged. If \`studioweb-browser-commands.test.mjs\` fails, a command the studioweb flavor mentions has left the bundle or become unavailable: fix the guidance, or allowlist the mention if it is deliberate." \
+            --label "automated"
+
+          PR_CREATED=true

@@ -18,17 +18,17 @@
         "uipath-human-in-the-loop",
         "uipath-ixp",
         "uipath-connector-builder",
-        "uipath-functions"
+        "uipath-functions",
+        "uipath-ontology"
       ]
     },
     {
       "title": "Solution & Planning",
-      "description": "Turn a process design into an implementation-ready solution, document existing automations as genome blueprints, then package, review, and discover automation opportunities.",
+      "description": "Turn a process design into an implementation-ready solution, document existing automations as genome blueprints, then package and review it.",
       "skills": [
         "uipath-planner",
         "uipath-solution",
         "uipath-review",
-        "uipath-automation-discovery",
         "uipath-genome"
       ]
     },
@@ -37,7 +37,7 @@
       "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, source control and CI/CD pipelines, governance, testing, tasks, analytics, and MCP servers.",
       "skills": [
         "uipath-platform",
-        "uipath-knowledge-bundles",
+        "uipath-bundles",
         "uipath-admin",
         "uipath-aops",
         "uipath-test",
@@ -46,7 +46,8 @@
         "uipath-process-mining",
         "uipath-tasks",
         "uipath-mcp-servers",
-        "uipath-automationhub"
+        "uipath-automationhub",
+        "uipath-vertical-solutions"
       ]
     },
     {

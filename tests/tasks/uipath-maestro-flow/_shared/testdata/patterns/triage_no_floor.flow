@@ -1,0 +1,239 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "classify",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "38a8a229-7655-45a1-9942-5825e4fa3b6d",
+    "agentInputVariables": [
+     {
+      "id": "start__output__subject",
+      "type": "string",
+      "binding": "=js:$vars.start.output.subject"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "category",
+      "type": "string"
+     },
+     {
+      "id": "confidence",
+      "type": "number"
+     }
+    ]
+   }
+  },
+  {
+   "id": "route",
+   "type": "core.logic.switch",
+   "inputs": {
+    "cases": [
+     {
+      "id": "case_1",
+      "label": "Case \"Billing\"",
+      "expression": "$vars.category === \"Billing\""
+     },
+     {
+      "id": "case_2",
+      "label": "Case \"Technical\"",
+      "expression": "$vars.category === \"Technical\""
+     },
+     {
+      "id": "case_3",
+      "label": "Case \"Account\"",
+      "expression": "$vars.category === \"Account\""
+     }
+    ],
+    "hasDefault": true
+   }
+  },
+  {
+   "id": "hBilling",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "hTech",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end2",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "hAcct",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "end3",
+   "type": "core.control.end",
+   "inputs": {}
+  },
+  {
+   "id": "pick",
+   "type": "uipath.human-in-the-loop",
+   "inputs": {
+    "type": "quick",
+    "title": "Pick",
+    "priority": "Low",
+    "recipient": {
+     "channels": [
+      "Email",
+      "ActionCenter"
+     ],
+     "connections": {},
+     "assignee": {
+      "type": "group"
+     }
+    },
+    "schema": {
+     "schemaId": "da237f0d-48c3-5b0a-8058-b9dba6e0e4d0",
+     "fields": [
+      {
+       "id": "subject",
+       "label": "subject",
+       "type": "string",
+       "direction": "input",
+       "binding": "vars.start.output.subject"
+      }
+     ],
+     "outcomes": [
+      {
+       "id": "billing",
+       "name": "Billing",
+       "type": "string",
+       "isPrimary": true,
+       "action": "Continue"
+      },
+      {
+       "id": "technical",
+       "name": "Technical",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      },
+      {
+       "id": "account",
+       "name": "Account",
+       "type": "string",
+       "isPrimary": false,
+       "action": "Continue"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "classify",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "classify",
+   "sourcePort": "success",
+   "targetNodeId": "route",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "route",
+   "sourcePort": "case-case_1",
+   "targetNodeId": "hBilling",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "hBilling",
+   "sourcePort": "output",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "route",
+   "sourcePort": "case-case_2",
+   "targetNodeId": "hTech",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "hTech",
+   "sourcePort": "output",
+   "targetNodeId": "end2",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "route",
+   "sourcePort": "case-case_3",
+   "targetNodeId": "hAcct",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "hAcct",
+   "sourcePort": "output",
+   "targetNodeId": "end3",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "route",
+   "sourcePort": "default",
+   "targetNodeId": "pick",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pick",
+   "sourcePort": "outcome-billing",
+   "targetNodeId": "route",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pick",
+   "sourcePort": "outcome-technical",
+   "targetNodeId": "route",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "pick",
+   "sourcePort": "outcome-account",
+   "targetNodeId": "route",
+   "targetPort": "input"
+  }
+ ],
+ "variables": {
+  "variableUpdates": {
+   "classify": [
+    {
+     "variableId": "category",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "$vars.classify.output.category",
+      "fieldType": "string"
+     }
+    }
+   ],
+   "pick": [
+    {
+     "variableId": "category",
+     "expression": {
+      "type": "jsExpression",
+      "expression": "$vars.pick.output.Action",
+      "fieldType": "string"
+     }
+    }
+   ]
+  }
+ }
+}

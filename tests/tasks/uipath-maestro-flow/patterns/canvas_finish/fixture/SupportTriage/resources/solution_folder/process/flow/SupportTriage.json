@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SupportTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "97745a96-e4a9-4d16-8bdf-bcbadf13e865",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SupportTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "SupportTriage",
+      "package": {
+        "key": "953fde91-8bc1-4c22-8f92-ca9bc2a1584a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5d1e2053-d752-47d9-9603-c940756d382c",
+    "files": []
+  }
+}

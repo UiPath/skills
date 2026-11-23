@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "bc0999ac-2621-46bc-820c-e8e1e6a695fe",
+  "Projects": [
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "APMailboxInvoiceBot/project.uiproj",
+      "Id": "abd4b2e0-4817-41c3-8d9e-894bb9b8700e"
+    },
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "InvoiceValidationAgent/project.uiproj",
+      "Id": "0b7b5585-e974-4305-b7c2-05900e28a3c3"
+    }
+  ]
+}

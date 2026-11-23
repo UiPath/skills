@@ -65,14 +65,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN has a diagram, an event-based gateway, and both event definitions"
-    path: "PaymentRace.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "eventBasedGateway"
-      - "messageEventDefinition"
-      - "timerEventDefinition"
+    command: 'python3 $REFERENCE_DIR/_shared/check_bpmn_present.py PaymentRace --contains bpmndi:BPMNDiagram --contains eventBasedGateway --contains messageEventDefinition --contains timerEventDefinition'
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

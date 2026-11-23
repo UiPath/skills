@@ -4,6 +4,8 @@
 Grades against spans.json — raw `uip traces spans get` output — not against any
 prose the agent wrote. failing_span.txt must name a span ID that actually exists
 in that payload and that carries fault evidence, so a guessed or invented ID fails.
+Every span must belong to the job named in incident.json, so spans from another
+job (a re-run, or a different faulted job) cannot stand in for the incident's.
 """
 import json
 import re
@@ -66,6 +68,17 @@ def is_faulting(span):
             return True
     return False
 
+
+try:
+    job_key = str(json.loads(load("incident.json").read_text()).get("job_key") or "").lower()
+except (json.JSONDecodeError, AttributeError):
+    sys.exit("FAIL: incident.json is not a JSON object with job_key")
+if not job_key:
+    sys.exit("FAIL: incident.json carries no job_key")
+foreign = sorted({str(s.get("JobKey")) if isinstance(s, dict) else repr(s) for s in spans
+                  if not isinstance(s, dict) or str(s.get("JobKey") or "").lower() != job_key})
+if foreign:
+    sys.exit(f"FAIL: spans.json holds spans whose JobKey is not the incident's job {job_key}: {foreign}")
 
 by_id = {str(s["Id"]): s for s in spans if isinstance(s, dict) and s.get("Id")}
 if not by_id:

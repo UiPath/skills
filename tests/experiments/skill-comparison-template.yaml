@@ -28,7 +28,6 @@ defaults:
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
     permission_mode: bypassPermissions
-    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Work only inside your current working directory.
       Do NOT read, list, or access any files outside your working directory.

@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-// ensure-migrator.mjs — locate, download, and verify the UiPath Activity Migrator (UiPath.Upgrade.exe).
+// ensure-migrator.mjs — locate and verify the UiPath Activity Migrator (UiPath.Upgrade.exe); install it only when asked.
 //
-// Usage: node ensure-migrator.mjs [--check-only] [--force]
-//   --check-only  report what is cached without downloading; exit 3 with status "missing" when nothing is
-//   --force       re-download and re-extract even when cached
+// Usage: node ensure-migrator.mjs [--install] [--force]
+//   (no flag)  locate a cached tool, verify it, and report whether UiPath published a newer archive; never download.
+//              Exit 3 with status "missing" when nothing is cached: the caller asks the user before installing.
+//   --install  download and extract when nothing is cached; replace the cache when the archive changed
+//   --force    re-download and re-extract even when cached (implies --install)
 // Env:   UIPATH_ACTIVITY_MIGRATOR_DIR      install/cache root (default %LOCALAPPDATA%\UiPath\ActivityMigrator)
 //        UIPATH_ACTIVITY_MIGRATOR_URL      archive URL (default https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip)
-//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network
+//        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network; wins over --install and --force
 //        UIPATH_TELEMETRY_DISABLED         read only: a value other than true/false that crashes the tool is reported
 // Output: the last stdout line is one JSON object; see references/acquisition-guide.md § Script output contract.
-// Exit:  0 ok, 1 error, 3 missing (check-only). No dependencies. Node 18+.
+// Exit:  0 ok, 1 error, 3 missing. No dependencies. Node 18+.
 //
 // Node runs the whole flow so no .ps1 or .sh file is executed: script execution policies and hosts that gate
 // PowerShell script invocations never apply. Network and archive work is delegated to the Windows tools that
@@ -23,8 +25,10 @@ const DEFAULT_URL = 'https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip'
 const ARCHIVE_URL = process.env.UIPATH_ACTIVITY_MIGRATOR_URL || DEFAULT_URL;
 const OFFLINE = process.env.UIPATH_ACTIVITY_MIGRATOR_OFFLINE === '1';
 const args = process.argv.slice(2);
-const CHECK_ONLY = args.includes('--check-only');
-const FORCE = args.includes('--force');
+// Downloading an executable is opt-in: the flag comes from a caller that holds the user's consent. Offline wins over
+// it; nothing else makes the script touch the archive.
+const FORCE = args.includes('--force') && !OFFLINE;
+const INSTALL = !OFFLINE && (FORCE || args.includes('--install'));
 
 const emit = (obj, code) => {
   process.stdout.write(JSON.stringify(obj) + '\n');
@@ -61,7 +65,7 @@ const head = (s, n) => s.replace(/\s+/g, ' ').trim().slice(0, n);
 
 // --- 1. Windows only -------------------------------------------------------
 if (process.platform !== 'win32') {
-  fail('not-windows', 'The Activity Migrator is a Windows-only .NET 8 desktop tool. Run this skill from a Windows machine that holds the project.');
+  fail('not-windows', 'The Activity Migrator is a Windows-only .NET desktop tool. Run this skill from a Windows machine that holds the project.');
 }
 
 // --- 2. Resolve install root and any existing exe --------------------------
@@ -81,17 +85,17 @@ if (isFile(join(root, 'UiPath.Upgrade.exe'))) exe = join(root, 'UiPath.Upgrade.e
 else if (isFile(join(current, 'UiPath.Upgrade.exe'))) exe = join(current, 'UiPath.Upgrade.exe');
 if (!source) source = 'cached';
 
-if (!exe && CHECK_ONLY) emit({ status: 'missing', dir: root }, 3);
 if (!exe && OFFLINE) {
   fail('offline-missing', `UIPATH_ACTIVITY_MIGRATOR_OFFLINE=1 and no tool found under ${root}. Place the extracted archive there; see references/acquisition-guide.md § Manual placement.`);
 }
+// Nothing cached and nobody consented to a download: report, so the caller can ask the user.
+if (!exe && !INSTALL) emit({ status: 'missing', dir: root, url: ARCHIVE_URL }, 3);
 
 // --- 3. Decide whether to download ----------------------------------------
-let needDownload = false;
+let needDownload = !exe || FORCE;
 let isUpdate = false;
-if (!exe || FORCE) {
-  needDownload = true;
-} else if (source !== 'env' && !OFFLINE && !CHECK_ONLY) {
+let updateAvailable = false;
+if (!needDownload && source !== 'env' && !OFFLINE) {
   const head = run('curl', ['-sSIL', '--max-time', '20', ARCHIVE_URL], { timeout: 30000 });
   let remoteLm = head.ok ? lastModified(head.out) : '';
   // Behind a system proxy curl's HEAD fails every time; without this retry the cache would never update and nothing would say so.
@@ -105,9 +109,14 @@ if (!exe || FORCE) {
   }
   // A stamp written by hand may carry a UTF-8 BOM; strip it or every run looks like an update.
   const localLm = existsSync(stamp) ? readFileSync(stamp, 'utf8').replace(/^\uFEFF/, '').replace(/[\r\n]/g, '').trim() : '';
+  // A changed archive is replaced only on an install run; a plain run reports it and keeps the cached tool.
   if (remoteLm && localLm && remoteLm !== localLm) {
-    needDownload = true;
-    isUpdate = true;
+    if (INSTALL) {
+      needDownload = true;
+      isUpdate = true;
+    } else {
+      updateAvailable = true;
+    }
   }
   if (remoteLm && !localLm) writeFileSync(stamp, remoteLm, 'ascii');
 }
@@ -182,42 +191,50 @@ if (needDownload) {
   source = isUpdate ? 'updated' : 'downloaded';
 }
 
-// --- 5. .NET Desktop Runtime 8 ---------------------------------------------
-// Check the one place the migrator's launcher loads its runtime from: a set DOTNET_ROOT_X64 or DOTNET_ROOT, with no
-// fallback; otherwise the location the .NET installer registers (32-bit registry view), else %ProgramFiles%\dotnet.
-// The launcher never looks at PATH, so a dotnet on PATH says nothing about what the tool will load.
-let dotnetRootVar = '';
-if (process.env.DOTNET_ROOT_X64) dotnetRootVar = 'DOTNET_ROOT_X64';
-else if (process.env.DOTNET_ROOT) dotnetRootVar = 'DOTNET_ROOT';
-const registeredDotnet = () => {
-  const reg = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
-  const q = run(reg, ['query', 'HKLM\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64', '/v', 'InstallLocation', '/reg:32']);
-  const m = q.ok ? /InstallLocation\s+REG_SZ\s+(.+)/i.exec(q.out) : null;
-  return m ? m[1].trim() : '';
-};
-const dotnetDir = dotnetRootVar
-  ? process.env[dotnetRootVar]
-  : registeredDotnet() || join(process.env.ProgramFiles || 'C:\\Program Files', 'dotnet');
-const dotnetExe = join(dotnetDir, 'dotnet.exe');
-const list = isFile(dotnetExe) ? run(dotnetExe, ['--list-runtimes']) : null;
-let runtime = '';
-for (const line of list?.ok ? list.out.split(/\r?\n/) : []) {
-  const parts = line.trim().split(/\s+/);
-  if (parts[0] === 'Microsoft.WindowsDesktop.App' && /^8\./.test(parts[1] || '')) runtime = parts[1];
-}
-if (!runtime) {
-  const fix = dotnetRootVar
-    ? `, the only place the migrator loads its runtime from while ${dotnetRootVar} is set. Unset ${dotnetRootVar}, or install the runtime there, and rerun.`
-    : ', where the migrator loads its runtime from. Install the .NET Desktop Runtime 8 (x64) from https://dotnet.microsoft.com/download/dotnet/8.0 and rerun.';
-  fail('runtime-missing', `Microsoft.WindowsDesktop.App 8.x not found in ${dotnetDir}` + fix);
-}
-
-// --- 6. Verify the tool answers --------------------------------------------
-// The tool's own stderr names why it could not start, such as a runtime it cannot resolve; a re-download never fixes
-// that. .NET launch errors lead with the cause and end with links, so the start of the text is kept.
+// --- 5. Verify the tool answers --------------------------------------------
+// Starting the tool is the only check of its .NET runtime. Which runtime a build needs, where the launcher looks for it
+// and what a roll-forward setting lets it accept are the launcher's rules; a copy of them here would name the wrong
+// runtime for a build that targets another .NET, and refuse a tool that starts.
 const ver = run(exe, ['version'], { timeout: 60000 });
 const lastLine = (s) => s.split(/\r?\n/).map((l) => l.trim()).findLast(Boolean) || '';
 const version = lastLine(ver.out);
+
+// .NET's launcher exits with these codes before any tool code runs. FRAMEWORK_MISSING: it found a .NET install without
+// the runtime this build needs. HOST_MISSING: it found no .NET install; a broken install exits the same way, so there
+// the launcher's text decides, and anything else stays a verify failure that relays the text.
+const FRAMEWORK_MISSING = 0x80008096;
+const HOST_MISSING = 0x80008083;
+if (ver.status === FRAMEWORK_MISSING || (ver.status === HOST_MISSING && /You must install \.NET to run this application/i.test(ver.err))) {
+  const hostLine = (re) => (re.exec(ver.err) || [])[1]?.trim() || '';
+  // The build's runtimeconfig, next to the exe, names the .NET it targets. It only words the fix; unreadable, the
+  // launcher's text is relayed instead. The launcher's first missing framework is the base runtime, and its download
+  // link installs that one alone, so the fix names the Desktop Runtime, which holds both frameworks the tool loads.
+  let major = '';
+  try {
+    const opts = JSON.parse(readFileSync(exe.replace(/\.exe$/i, '.runtimeconfig.json'), 'utf8')).runtimeOptions;
+    const frameworks = opts.frameworks || [opts.framework];
+    const target = frameworks.find((f) => f.name === 'Microsoft.WindowsDesktop.App') || frameworks.find((f) => f.name === 'Microsoft.NETCore.App');
+    major = /^(\d+)\./.exec(target.version)[1];
+  } catch { /* no major: the launcher's text names the version */ }
+  const arch = hostLine(/^Architecture:\s*(\S+)/m) || 'x64';
+  const runtimeName = major ? `the .NET Desktop Runtime ${major} (${arch})` : `a .NET Desktop Runtime (${arch})`;
+  const page = 'https://dotnet.microsoft.com/download/dotnet' + (major ? `/${major}.0` : '');
+  const reported = major ? '' : ` The launcher names the version: ${head(ver.err, 400)}`;
+  // The launcher lists what it found of the framework it missed: the reason an installed .NET did not count.
+  const found = [...ver.err.matchAll(/^[ \t]+(\d+\.\d+\.\S+) at \[/gm)].map((m) => m[1]);
+  const others = found.length ? ` Versions found there, none of which this build accepts: ${found.join(', ')}.` : '';
+  // The launcher takes the first of DOTNET_ROOT_<ARCH> and DOTNET_ROOT that names an existing folder and looks nowhere
+  // else, so an install into the default location would change nothing. A variable that names no folder is skipped;
+  // with neither left, the launcher uses the default location, reported below.
+  const rootVar = [`DOTNET_ROOT_${arch.toUpperCase()}`, 'DOTNET_ROOT'].find((name) => process.env[name] && isDir(process.env[name]));
+  if (rootVar) {
+    fail('runtime-missing', `${exe} needs ${runtimeName}, which is not in ${process.env[rootVar]}, the only place the migrator loads its runtime from while ${rootVar} is set.${others} Unset ${rootVar}, or install the runtime there, and rerun.${reported}`);
+  }
+  const where = hostLine(/^\.NET location:[ \t]*(\S.*)$/m);
+  const place = where && !/^not found$/i.test(where) ? ` in ${where}, where the migrator loads its runtime from.` : ': no .NET install was found on this machine.';
+  fail('runtime-missing', `${exe} needs ${runtimeName}, which is not installed${place}${others} Install ${runtimeName} from ${page} and rerun.${reported}`);
+}
+
 // The 25.10 builds parse UIPATH_TELEMETRY_DISABLED with bool.Parse and crash at startup on any value but true or
 // false, such as the documented 1. Prove it with a retry under the strict spelling of the user's choice; never unset
 // the variable, which would turn the user's telemetry back on.
@@ -229,9 +246,13 @@ if ((!ver.ok || !version) && telemetry !== undefined && !/^\s*(true|false)\s*$/i
     emit({ status: 'error', code: 'telemetry-flag', env: `UIPATH_TELEMETRY_DISABLED=${strict}`, message: `${exe} crashes at startup while UIPATH_TELEMETRY_DISABLED is ${JSON.stringify(telemetry)}: this build accepts only true or false. It starts with UIPATH_TELEMETRY_DISABLED=${strict}, the same choice. Prefix this script and every UiPath.Upgrade.exe command with it; never unset the variable.` }, 1);
   }
 }
+// Any other failure: the tool's own stderr names why it could not start. .NET launch errors lead with the cause and end
+// with links, so the start of the text is kept.
 if (!ver.ok || !version) {
   const detail = head(ver.err, 400) || (ver.status == null ? 'no output' : `exit code ${ver.status}, no output`);
   fail('verify-failed', `${exe} did not print a version (${detail}). When that names a missing runtime or framework, fix it as it says; otherwise the install may be incomplete: rerun with --force.`);
 }
 
-emit({ status: 'ok', exe, version, source, runtime }, 0);
+const result = { status: 'ok', exe, version, source };
+if (updateAvailable) result.update = true;
+emit(result, 0);

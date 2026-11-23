@@ -11,11 +11,17 @@ B. agent.json declares inputSchema.definitions["job-attachment"] (object),
    or an array whose items use that reference, and every such input is
    referenced as {{input.<name>}} in messages[].content.
 
-C. Some message content references the Analyze Files tool as
-   `@{tools.<Name>}` and that message's contentTokens carries a matching
-   `{type: "expression", rawString: "tools.<Name>"}` token. `<Name>` is the
-   tool resource's `name`; the runtime resolves the reference by `name`,
-   case-insensitively, and renders an unresolved reference as raw text.
+C. (Advisory, `--tool-reference` only.) Some message content references the
+   Analyze Files tool as `@{tools.<Name>}` and that message's contentTokens
+   carries a matching `{type: "expression", rawString: "tools.<Name>"}` token.
+   `<Name>` is the tool resource's `name`; the runtime resolves the reference by
+   `name`, case-insensitively, and renders an unresolved reference as raw text.
+   Not gating: the agent sees its available tools at runtime, so naming the
+   tool in prose works as well as an `@{tools.<Name>}` reference.
+
+Usage: check_builtin_tool.py [--tool-reference]
+  default            run A and B (gating)
+  --tool-reference   run A and C (advisory criterion)
 """
 
 import json
@@ -293,8 +299,10 @@ def assert_prompt_references_tool(agent: dict, tool_name: str) -> None:
 def main() -> None:
     tool_name = assert_builtin_tool_enabled()
     agent = load(AGENT_JSON)
+    if "--tool-reference" in sys.argv[1:]:
+        assert_prompt_references_tool(agent, tool_name)
+        return
     assert_job_attachment_input(agent)
-    assert_prompt_references_tool(agent, tool_name)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ description: >
   Targets --tenant, not --folder: `codedagent deploy --folder` matches
   folder-scoped package feeds by name, and the run tenant's Shared folder
   has no dedicated feed, so a folder deploy always fails at feed lookup.
-tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy]
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:deploy, feature:deploy, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 15
@@ -31,7 +31,7 @@ reference:
 
 pre_run:
   - command: "bash -c 'cd acme-echo && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
-    timeout: 120
+    timeout: 300
 
 initial_prompt: |
   I've updated my `acme-echo` agent and need to redeploy it to the

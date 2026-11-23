@@ -1,0 +1,48 @@
+                             uip or folders explore                             
+Explore another user's Personal Workspace, as its Explore action in Orchestrator does. You get the Personal Workspace Administrator role on it and see everything in it; Orchestrator audits this and notifies the owner. Integration Service is then told to re-read your access, so the workspace's connections show up for you right away. Needs a user login (not an external application or a personal access token) and Folders.Edit, Users.View and Roles.View on the tenant. Run 'folders stop-exploring' when done. Name the workspace, or its owner with --owner.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or folders explore [options] [workspace-key-or-name]                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ workspace-key-or-name   Personal Workspace key (GUID) or name — use 'folders │
+│                         list --all --type personal' to find. Or pass --owner │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --owner <user>                 The workspace's owner instead of the          │
+│                                workspace: their user name (usually their     │
+│                                email) or user key (GUID)                     │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ <table|json|yaml|plain|markd                                                 │
+│ own>                                                                         │
+│ --output-filter <expression>   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: warn)           │
+│ <debug|info|warn|error>                                                      │
+│ --log-file <path>              Write logs to file instead of stderr          │
+│ --profile <name>               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Explore another user's Personal Workspace by name                            │
+│                                                                              │
+│   $ uip or folders explore "jane.doe@example.com's workspace"                │
+│                                                                              │
+│   Key        a1b2c3d4-0000-0000-0000-000000000020                            │
+│   Name       jane.doe@example.com's workspace                                │
+│   OwnerName  jane.doe@example.com                                            │
+│   Status     Exploring                                                       │
+│                                                                              │
+│ Explore the Personal Workspace a user owns, by their email                   │
+│                                                                              │
+│   $ uip or folders explore --owner jane.doe@example.com                      │
+│                                                                              │
+│   Key        a1b2c3d4-0000-0000-0000-000000000020                            │
+│   Name       jane.doe@example.com's workspace                                │
+│   OwnerName  jane.doe@example.com                                            │
+│   Status     Exploring                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘

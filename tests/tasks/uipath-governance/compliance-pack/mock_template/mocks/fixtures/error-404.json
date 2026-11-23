@@ -1,0 +1,10 @@
+{
+ "Result": "Failure",
+ "Message": "HTTP 404: Received HTML instead of the expected JSON response.",
+ "Instructions": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 502 means the Aops state could not be fetched.",
+ "Context": {
+  "HttpStatus": 404
+ },
+ "ErrorCode": "not_found",
+ "Retry": "RetryWillNotFix"
+}

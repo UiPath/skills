@@ -115,7 +115,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 |---|---|---|
 | Variables follow PascalCase/camelCase | Warning | Workflow Analyzer rule ST-NMG-001 (default regex: `^([A-Z]\|[a-z])+([0-9])*$`; the `dt_` prefix convention is ST-NMG-009, not part of ST-NMG-001) |
 | DataTable variables prefixed with `dt_` | Info | Workflow Analyzer rule ST-NMG-009 |
-| Arguments use directional prefixes (`in_`, `out_`, `io_`) | Warning | Workflow Analyzer rule ST-NMG-002 |
+| Arguments use directional prefixes (`in_`, `out_`, `io_`), except: a library's public workflows (those `project.json` → `designOptions.libraryOptions.privateWorkflows` does not list), whose arguments become activity properties; the Global Exception Handler's `errorInfo` and `result`, which the runtime requires as written; test-data arguments, bound to their data by name | Warning | Workflow Analyzer rule ST-NMG-002; its warnings on those exceptions are not findings |
 | No variable-argument name conflicts (shadowing) | Warning | Workflow Analyzer rules ST-NMG-005, ST-NMG-006 |
 | Activity display names are descriptive | Warning | Workflow Analyzer rule ST-MRD-002 |
 | Workflow file names use Verb + Object (PascalCase) | Info | Manual check (e.g., `GetTransactionData.xaml`, `ProcessInvoice.xaml`) |
@@ -171,6 +171,7 @@ Selectors are ranked by attribute stability. When reviewing, assess which tier t
 | `SecureString` used for all password variables | Critical | Workflow Analyzer rule ST-SEC-007, ST-SEC-008 |
 | No `SecureString` converted to plain `String` | Warning | Workflow Analyzer rule ST-SEC-009 |
 | Credentials retrieved from Orchestrator assets or Credential Store (not hardcoded) | Critical | Grep for `Get Credential` vs hardcoded strings |
+| Third-party systems reached through an IS connection, not a hand-built authenticated call | Warning | Grep `HttpClient` / `HTTP Request` to vendor hosts with a key or bearer header. A `Credential` asset does not clear this. **Critical** if a catalog connector exists (`uip is connectors list`); else `uip is connectors builder` for REST+JSON |
 | No sensitive data in Log Messages | Warning | Check log message content |
 | No PII in queue item specific data (or encrypted) | Warning | Check queue item creation patterns |
 

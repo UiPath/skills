@@ -12,7 +12,7 @@
  *
  * Generic scenario: convert a tide height between measurement systems.
  */
-import { flow, publishedFunction, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, publishedFunction, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('tide-table-converter')
   .name('TideTableConverter')
@@ -26,10 +26,10 @@ export default flow('tide-table-converter')
     inputs: { feet: input('heightFeet') },
     returns: { metres: 'number' },
   }))
-  .step('formatReading', script({
-    code:
-      'return String($vars.start.output.heightFeet) + " ft = "'
-      + ' + String($vars.toMetres.output.metres) + " m";',
-  }))
+  .step('formatReading', script(formatReading))
   .return({ reading: out('formatReading') })
   .build();
+
+function formatReading($vars: FlowVars) {
+  return String($vars.start.output.heightFeet) + " ft = " + String($vars.toMetres.output.metres) + " m";
+}

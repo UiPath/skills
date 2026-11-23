@@ -7,7 +7,9 @@ as its own resource. `publishedFunction()` invokes one as a single step
 (`uipath.core.function.<key>`, dispatched as
 `Orchestrator.ExecuteFunctionAsync`).
 
-Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
+Signature: `publishedFunction({ key, name, folderPath, inputs?, inputSchema?, returns? })`, or
+`publishedFunction({ key, name, location: 'in-solution', projectId, inputs?, inputSchema?, returns? })`
+for a coded function in the same solution (see [In the same solution](#in-the-same-solution)).
 
 ```ts
 .step('echo', publishedFunction({
@@ -41,8 +43,9 @@ Three fields, none of them derivable:
 
 - **`key`** — the function's GUID; it becomes the node type's suffix, so a wrong
   one emits a node the tenant cannot resolve. Find it with
-  `uip maestro flow registry search "uipath.core.function"` (after
-  `registry pull --force`, since registry reads are cached).
+  `uip maestro flow registry search "uipath.core.function"`. Registry reads are
+  cached for 30 minutes: if the function is missing, run `registry pull --force`
+  once and search again.
 - **`name`** — the function's own name in Orchestrator.
 - **`folderPath`** — the folder it is deployed in. **A function is usually
   deployed into a folder of its OWN name** (`'Shared/acme-echo'`, not
@@ -52,6 +55,64 @@ Three fields, none of them derivable:
 Two steps on the same function share ONE binding pair, exactly as the other
 published families do.
 
+## In the same solution
+
+A coded function that is a sibling project of the Flow, in the same solution,
+is not published yet, so it has no folder. Write it with
+`location: 'in-solution'` and `projectId` instead of `folderPath`:
+
+```ts
+.step('math', publishedFunction({
+  key: localResourceKey,
+  name: '<FunctionProject>',
+  location: 'in-solution',
+  projectId: localProjectKey,
+  inputs: { invoice_amount: input('invoice_amount') },
+  returns: { variance_pct: 'number', summary: 'string' },
+}))
+```
+
+- **Or name the sibling by project** (`@uipath/maestro-builder-sdk` 6.108.0 or later): `publishedFunction({ location: 'in-solution', project: '<FunctionProject>', inputs, returns })`. See
+  [agent.md](agent.md#name-an-in-solution-sibling-by-project) for what it
+  fills in, what it refuses, and when to fall back to the ids below.
+- **Where the two ids come from.**
+<!--skill-flavor:function-sibling-register:start-->
+  Register the sibling and refresh resources
+  (`uip solution projects add`, then `uip solution resources refresh`), then
+<!--skill-flavor:function-sibling-register:end-->
+  run `uip maestro flow registry list --local --output json` from the Flow
+  project directory. The generated
+  `resources/solution_folder/process/function/<FunctionProject>.json` carries
+  the same pair: `resource.key` → `key`, `resource.projectKey` → `projectId`.
+  Never invent either; the full recipe is in
+  [agent.md](agent.md#task-created-in-solution-coded-agent).
+- **A coded agent can land under `process/function/` too** (see
+  [agent.md](agent.md#task-created-in-solution-coded-agent)). Check the
+  sibling's own `entry-points.json`: `entryPoints[0].type` is `"function"` for
+  a coded function. If it is `"agent"`, use
+  `agent({ location: 'in-solution', flavour: 'coded', … })`, not
+  `publishedFunction()`: the wrong factory validates and dispatches the wrong
+  service type.
+- **`returns`** comes from the same `entry-points.json`:
+  `entryPoints[0].output.properties`, each field's `type`. The resource file's
+  `spec.entryPoints`
+  holds the same schema as a JSON string. The rule in
+  [Declaring what it returns](#declaring-what-it-returns) still applies.
+- `check` warns on an in-solution step with no `projectId`
+  (`FUNCTION_LOCAL_NO_PROJECT_ID`; the call resolves by `key`, so a decompiled
+  step without one is fine as is), and refuses a `projectId` that is not a GUID
+  (`FUNCTION_LOCAL_PROJECT_ID_NOT_GUID`) and a `folderPath` beside
+  `location: 'in-solution'` (`FUNCTION_LOCAL_HAS_FOLDER`): the in-solution
+  binding's folder is `''`, filled in at deploy.
+  If `check` reports `FUNCTION_LOCAL_NO_PROJECT_ID` as an error (an older SDK),
+  add `projectId` from `resource.projectKey`.
+  Still set `projectId` on a step you author: Studio Web's Run node reads it
+  to deploy the sibling first.
+
+Needs `@uipath/maestro-builder-sdk` 6.59.0 or later; an older SDK
+has no `location` on `publishedFunction()` and refuses the step as having no
+`folderPath` (`FUNCTION_NO_FOLDER`).
+
 ## Declaring what it returns
 
 `returns` is required if anything reads the step's output. The function's real
@@ -59,6 +120,10 @@ output arguments live on the tenant and authoring is offline, so an undeclared
 read is rejected (`FUNCTION_READ_WITHOUT_RETURNS`) — nothing here could tell a
 real field from a typo. `registry get uipath.core.function.<key>` shows what the
 platform synthesizes for a deployed one.
+
+To type an argument differently from its value (for example an object filled
+from an expression), add `inputSchema`; keep one a decompiled step carries. See
+[Orchestrator Processes](or-processes.md#argument-types-inputschema).
 
 ## Which family to reach for
 

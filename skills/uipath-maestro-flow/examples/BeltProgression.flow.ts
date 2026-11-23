@@ -25,29 +25,45 @@ export default flow('belt-progression')
         value: 'white',
         body: (b) =>
           b
-            .step('whiteNext', script({ code: 'return "yellow: 8 basic forms";' }))
+            .step('whiteNext', script(whiteNext))
             .return({ nextGrading: out('whiteNext') }),
       },
       {
         value: 'yellow',
         body: (b) =>
           b
-            .step('yellowNext', script({ code: 'return "green: 12 forms plus one spar";' }))
+            .step('yellowNext', script(yellowNext))
             .return({ nextGrading: out('yellowNext') }),
       },
       {
         value: 'green',
         body: (b) =>
           b
-            .step('greenNext', script({ code: 'return "brown: 20 forms plus board break";' }))
+            .step('greenNext', script(greenNext))
             .return({ nextGrading: out('greenNext') }),
       },
     ],
     // Default arm — any rank not listed above.
     (other) =>
       other
-        .step('unknownRank', script({ code: 'return "see the head instructor";' }))
+        .step('unknownRank', script(unknownRank))
         .return({ nextGrading: out('unknownRank') }),
   )
 
   .build();
+
+function whiteNext() {
+  return "yellow: 8 basic forms";
+}
+
+function yellowNext() {
+  return "green: 12 forms plus one spar";
+}
+
+function greenNext() {
+  return "brown: 20 forms plus board break";
+}
+
+function unknownRank() {
+  return "see the head instructor";
+}

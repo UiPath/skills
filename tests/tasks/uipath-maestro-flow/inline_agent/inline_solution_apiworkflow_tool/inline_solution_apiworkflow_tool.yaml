@@ -16,6 +16,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inlin
 run_limits:
   expected_turns: 70
   turn_timeout: 1200
+  task_timeout: 1500
 
 sandbox:
   template_sources:
@@ -91,9 +92,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "ShippingFlowSol/ShippingFlow/ShippingFlow.flow"
+    # Studio Web names the main file new.flow; the Node CLI names it after the project.
+    command: "test -f ShippingFlowSol/ShippingFlow/ShippingFlow.flow || test -f ShippingFlowSol/ShippingFlow/new.flow"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

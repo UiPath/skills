@@ -72,16 +72,24 @@ def first_value(obj, *keys):
     return None
 
 
+def find_entity(entities):
+    return next((e for e in entities
+                 if first_value(e, "Name", "name", "DisplayName", "displayName") == ENTITY), None)
+
+
 def main():
-    entities = run("df", "entities", "list", "--include-folders").get("Data") or []
-    entity = next((e for e in entities
-                   if first_value(e, "Name", "name", "DisplayName", "displayName") == ENTITY), None)
+    # A tenant entity takes no --folder-key: Automation Suite answers 404 to one, and
+    # `--include-folders` reports a folderId for tenant entities too.
+    entity = find_entity(run("df", "entities", "list").get("Data") or [])
+    folder_key = None
+    if not entity:
+        entity = find_entity(run("df", "entities", "list", "--include-folders").get("Data") or [])
+        folder_key = first_value(entity or {}, "FolderId", "folderId")
     if not entity:
         print(f"FAIL: entity {ENTITY!r} was not found after ensure_entity", file=sys.stderr)
         return 1
 
     entity_id = first_value(entity, "Id", "ID", "id")
-    folder_key = first_value(entity, "FolderId", "folderId")
     args = ["df", "records", "list", entity_id, "--limit", "100"]
     if folder_key:
         args += ["--folder-key", folder_key]

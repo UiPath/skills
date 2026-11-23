@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Checks for a genome execution (Execute mode) run, from the sandbox root.
+"""Checks for a genome build (uipath-genome) run, from the sandbox root.
 
 Usage:
-  execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)
+  execute_check.py build [--all]               the one RPA project built from the genome compiles (uip rpa build);
+                                               --all: every RPA project compiles
+  execute_check.py projects --expect NAME …    the RPA projects are exactly the named ones, each by its folder
+                                               name or its project.json name
   execute_check.py settings --expect NAME …    that project reads every named setting as an Orchestrator asset:
                                                each name is an asset read's asset name, or a cell of a
                                                configuration workbook's Assets sheet
   execute_check.py open-items --expect TOKEN … [--sections]   a Markdown file outside every project, under any
                                                name, headed '# Open items' and naming every expected token;
                                                --sections also requires the always-present section headings
+  execute_check.py handoff [--open-items]      a '<slug>-handoff' folder outside every project whose README.md
+                                               has the completion report's Status and Configuration answers
+                                               sections; --open-items also requires the open items inside it
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
 
 Cross-platform on purpose: coder-eval runs run_command through cmd.exe on Windows, so criteria call this
@@ -53,12 +59,36 @@ def one_project() -> Path:
     return projects[0]
 
 
-def cmd_build(_: argparse.Namespace) -> int:
-    project = one_project()
+def cmd_build(a: argparse.Namespace) -> int:
+    projects = rpa_projects(Path(".")) if a.all else [one_project()]
+    if not projects:
+        sys.exit("FAIL: no RPA project found")
     uip = shutil.which("uip") or "uip"
-    code = subprocess.call([uip, "rpa", "build", str(project), "--output", "json"])
-    print(("OK" if code == 0 else "FAIL") + f": uip rpa build {project} exited {code}")
-    return 0 if code == 0 else 1
+    failed = 0
+    for project in projects:
+        code = subprocess.call([uip, "rpa", "build", str(project), "--output", "json"])
+        print(("OK" if code == 0 else "FAIL") + f": uip rpa build {project} exited {code}")
+        failed += code != 0
+    return 0 if not failed else 1
+
+
+def project_name(project: Path) -> str:
+    try:
+        return json.loads((project / "project.json").read_text(encoding="utf-8-sig")).get("name") or ""
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def cmd_projects(a: argparse.Namespace) -> int:
+    projects = rpa_projects(Path("."))
+    names = [{p.name, project_name(p)} for p in projects]
+    missing = [n for n in a.expect if not any(n in found for found in names)]
+    extra = [str(p) for p, found in zip(projects, names) if not found & set(a.expect)]
+    if missing or extra:
+        print(f"FAIL: missing {missing or 'none'}; unexpected projects {extra or 'none'}")
+        return 1
+    print(f"OK: projects {', '.join(a.expect)}")
+    return 0
 
 
 XAML_ASSET_READ = re.compile(r"<(\w+:)?(GetRobotAsset|GetRobotCredential|GetAsset|GetCredential)\b(?:[^>]*?/>|.*?</(?:\w+:)?\2>)", re.S)
@@ -198,6 +228,38 @@ def cmd_open_items(a: argparse.Namespace) -> int:
     return 0
 
 
+HANDOFF_SECTIONS = ["## Status", "## Configuration answers"]
+
+
+def cmd_handoff(a: argparse.Namespace) -> int:
+    """The engineer's hand-off: a folder named '<slug>-handoff' outside every project, whose README.md is the
+    completion report with its Status and Configuration answers sections, as the execution guide's template
+    has them. --open-items also requires a file headed '# Open items' inside that folder."""
+    projects = rpa_projects(Path("."))
+    folders = []
+    for dirpath, dirnames, _ in os.walk("."):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
+        folders += [Path(dirpath, d).resolve() for d in dirnames if d.lower().endswith("-handoff")]
+    inside = [f for f in folders if any(p == f or p in f.parents for p in projects)]
+    folders = [f for f in folders if f not in inside]
+    if not folders:
+        print(f"FAIL: no '<slug>-handoff' folder outside the project{' (found inside: ' + ', '.join(map(str, inside)) + ')' if inside else ''}")
+        return 1
+    for folder in folders:
+        readme = folder / "README.md"
+        lines = {l.strip() for l in readme.read_text(encoding="utf-8", errors="ignore").splitlines()} if readme.is_file() else set()
+        missing = [s for s in HANDOFF_SECTIONS if s not in lines]
+        if not readme.is_file() or missing:
+            print(f"FAIL: {folder.name}/README.md {'is missing' if not readme.is_file() else 'lacks ' + ', '.join(missing)}")
+            continue
+        if a.open_items and not any(OPEN_ITEMS_HEADING.search(p.read_text(encoding="utf-8", errors="ignore")) for p in folder.rglob("*.md")):
+            print(f"FAIL: {folder.name} holds no file headed '# Open items'")
+            continue
+        print(f"OK: hand-off in {folder.name}")
+        return 0
+    return 1
+
+
 def cmd_genome_unchanged(a: argparse.Namespace) -> int:
     same = Path(a.genome).is_file() and filecmp.cmp(a.genome, a.reference, shallow=False)
     print(("OK" if same else "FAIL") + f": {a.genome} {'matches' if same else 'differs from'} the reference")
@@ -207,7 +269,12 @@ def cmd_genome_unchanged(a: argparse.Namespace) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("build").set_defaults(func=cmd_build)
+    p = sub.add_parser("build")
+    p.add_argument("--all", action="store_true", help="build every RPA project, not exactly one")
+    p.set_defaults(func=cmd_build)
+    p = sub.add_parser("projects")
+    p.add_argument("--expect", nargs="+", required=True)
+    p.set_defaults(func=cmd_projects)
     p = sub.add_parser("settings")
     p.add_argument("--expect", nargs="*", default=[])
     p.set_defaults(func=cmd_settings)
@@ -215,6 +282,9 @@ def main() -> int:
     p.add_argument("--expect", nargs="*", default=[])
     p.add_argument("--sections", action="store_true", help="also require the always-present section headings")
     p.set_defaults(func=cmd_open_items)
+    p = sub.add_parser("handoff")
+    p.add_argument("--open-items", action="store_true", help="also require the open items inside the hand-off folder")
+    p.set_defaults(func=cmd_handoff)
     p = sub.add_parser("genome-unchanged")
     p.add_argument("genome")
     p.add_argument("reference")

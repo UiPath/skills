@@ -20,13 +20,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import registry_audit_entries  # noqa: E402
+from _shared.case_check import read_registry_cache, registry_audit_entries  # noqa: E402
 
 NAME = "API Workflow"
 TASK = "Record Outcome"
 STAGE = "Resolve Resources"
 TARGET_FOLDER = "Shared/uipath-maestro-case/NameToAgeFixed"
-CACHE = Path.home() / ".uip" / "case-resources" / "api-index.json"
 
 
 def ci(obj, *names):
@@ -48,7 +47,7 @@ def folder_of(resource):
 
 
 # --- environment preconditions: failing these is a tenant gap, not a skill bug ---
-cache = json.loads(CACHE.read_text(encoding="utf-8"))
+cache = read_registry_cache("api-index.json")
 exact = [r for r in cache if str(ci(r, "name") or "").strip().casefold() == NAME.casefold()]
 assert len(exact) >= 2, (
     f"test precondition failed: {len(exact)} live '{NAME}' resource(s) — nothing is ambiguous"

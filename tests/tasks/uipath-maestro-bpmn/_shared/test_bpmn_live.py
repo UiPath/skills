@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import glob
 import os
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -169,3 +170,183 @@ def test_graders_unpack_the_full_connector_key(script: str) -> None:
     tree = ast.parse(Path(script).read_text(encoding="utf-8"))
     bad = [line for line, arity in _connector_unpacks(tree) if arity != 3]
     assert not bad, f"{os.path.basename(script)} unpacks index_runtime_connectors keys at lines {bad}"
+
+
+# Verbatim from skill-bpmn-jira-get-issue 2026-10-09 (debug.log).
+_POLL_504 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Failed during poll-instance-status: 504 Gateway Timeout on GET '
+    '/api/v1/debug-instances/6f191201-0305-4665-974e-41c09fd36288/element-executions",\n'
+    '  "Instructions": "Check authentication and parameters",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+_COMPLETED = '{"Result": "Success", "Data": {"InstanceId": "i-1", "finalStatus": "Completed"}}'
+_BAD_INPUT = '{"Result": "Failure", "ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'
+
+
+def _stub_debug(monkeypatch, outputs: list[tuple[int, str]]) -> dict:
+    calls = {"n": 0}
+
+    def fake_run_cli(arguments, *, timeout, log_file=None):
+        code, out = outputs[calls["n"]]
+        calls["n"] += 1
+        return subprocess.CompletedProcess(arguments, code, out, "")
+
+    monkeypatch.setattr(bpmn_live, "run_cli", fake_run_cli)
+    monkeypatch.setattr(bpmn_live.time, "sleep", lambda _seconds: None)
+    return calls
+
+
+def test_run_debug_retries_a_poll_5xx_when_asked(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    _, instance_id = bpmn_live.run_debug(
+        tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT
+    )
+    assert instance_id == "i-1"
+    assert calls["n"] == 2
+
+
+def test_run_debug_is_single_shot_by_default(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None)
+    assert calls["n"] == 1
+
+
+def test_run_debug_does_not_retry_a_real_failure(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _BAD_INPUT), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure):
+        bpmn_live.run_debug(tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 1
+
+
+def test_run_debug_stops_retrying_when_the_deadline_cannot_fund_another(
+    monkeypatch, tmp_path
+) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None, timeout=30, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 1
+
+
+def test_run_debug_caps_retries_on_a_persistent_poll_5xx(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504)] * 5)
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 2
+
+
+def test_import_exact_imports_from_the_solution_dir_without_flags(
+    monkeypatch, tmp_path
+) -> None:
+    project = tmp_path / "Proj"
+    project.mkdir()
+    bpmn = project / "p.bpmn"
+    bpmn.write_text("<x/>")
+    solution = tmp_path / "Sol"
+    calls = []
+
+    def fake_run_cli(arguments, *, timeout, log_file=None, cwd=None):
+        calls.append((arguments, cwd))
+        if arguments[2] == "init":
+            solution.mkdir()
+            (solution / "Sol.uipx").write_text("{}")
+        if arguments[3:4] == ["import"]:
+            (solution / "Proj").mkdir()
+            (solution / "Proj" / "p.bpmn").write_text("<x/>")
+        return subprocess.CompletedProcess(arguments, 0, '{"Result": "Success", "Data": {}}', "")
+
+    monkeypatch.setattr(bpmn_live, "run_cli", fake_run_cli)
+    bpmn_live.import_exact(bpmn, project, solution)
+
+    arguments, cwd = calls[-1]
+    assert arguments[-1] == str(project.resolve())
+    assert "--solution-file" not in arguments
+    assert cwd == solution
+
+
+def _rule_process(*, task_name: str = "Rate", script: str, documentation: str = "") -> str:
+    return f"""<bpmn:definitions xmlns:bpmn="{bpmn_live.BPMN_NS}" xmlns:uipath="{bpmn_live.UIPATH_NS}">
+  <bpmn:process id="Process_1">
+    <bpmn:scriptTask id="Task_1" name="{task_name}">
+      <bpmn:documentation>{documentation}</bpmn:documentation>
+      <bpmn:script><![CDATA[{script}]]></bpmn:script>
+    </bpmn:scriptTask>
+  </bpmn:process>
+</bpmn:definitions>"""
+
+
+CLASSIFYING_SCRIPT = 'return vars.down ? (vars.workaround ? "Sev2" : "Sev1") : "Sev3";'
+
+
+def test_assert_rule_encoded_accepts_a_script_that_names_every_severity() -> None:
+    bpmn_live.assert_rule_encoded(_rule_process(script=CLASSIFYING_SCRIPT))
+
+
+def test_assert_rule_encoded_matches_severities_case_insensitively() -> None:
+    bpmn_live.assert_rule_encoded(_rule_process(script='return vars.a ? "sev1" : vars.b ? "SEV2" : "sev3";'))
+
+
+def test_assert_rule_encoded_accepts_severities_in_uipath_values() -> None:
+    text = f"""<bpmn:definitions xmlns:bpmn="{bpmn_live.BPMN_NS}" xmlns:uipath="{bpmn_live.UIPATH_NS}">
+  <bpmn:process id="Process_1">
+    <bpmn:task id="Task_1"><bpmn:extensionElements><uipath:mapping version="v1">
+      <uipath:output name="severity" var="v" source='=vars.down ? "Sev2" : "Sev3"' />
+      <uipath:input name="level" value="Sev1" />
+    </uipath:mapping></bpmn:extensionElements></bpmn:task>
+  </bpmn:process>
+</bpmn:definitions>"""
+    bpmn_live.assert_rule_encoded(text)
+
+
+def test_assert_rule_encoded_ignores_names_and_documentation() -> None:
+    text = _rule_process(
+        task_name="Rate Sev1 or Sev2 or Sev3",
+        script='return "Sev1";',
+        documentation="Sev1, Sev2 and Sev3",
+    )
+    with pytest.raises(bpmn_live.CheckFailure, match="never names"):
+        bpmn_live.assert_rule_encoded(text)
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        '// Sev2 Sev3\nreturn {severity: "Sev1"};',
+        '/* Sev2 Sev3 */ return {severity: "Sev1"};',
+        'return "Sev1"; // Sev2\n/* Sev3 */',
+    ],
+)
+def test_assert_rule_encoded_ignores_names_in_comments(script: str) -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match="never names"):
+        bpmn_live.assert_rule_encoded(_rule_process(script=script))
+
+
+def test_assert_rule_encoded_keeps_comment_markers_inside_strings() -> None:
+    script = 'var u = "http://x"; return vars.down ? (vars.workaround ? "Sev2" : "Sev1") : "Sev3"; // done'
+    bpmn_live.assert_rule_encoded(_rule_process(script=script))
+    bpmn_live.assert_rule_encoded(_rule_process(script='var a = "//"; var b = "/*"; return ["Sev1", "Sev2", "Sev3"];'))
+
+
+def test_assert_rule_encoded_reports_the_missing_severities() -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match=r"\['Sev2', 'Sev3'\]"):
+        bpmn_live.assert_rule_encoded(_rule_process(script='return "Sev1";'))
+
+
+def test_assert_rule_encoded_rejects_malformed_xml() -> None:
+    with pytest.raises(bpmn_live.CheckFailure, match="not well-formed"):
+        bpmn_live.assert_rule_encoded("<bpmn:definitions")
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [("Yes", True), (" TRUE ", True), ("no", False), ("False", False), (True, True), (False, False)],
+)
+def test_norm_value_reads_boolean_words(value, expected) -> None:
+    assert bpmn_live.norm_value(value) is expected
+
+
+@pytest.mark.parametrize("number", [0, 1, 1.0, 0.0])
+@pytest.mark.parametrize("boolean", [True, False])
+def test_norm_value_keeps_numbers_apart_from_booleans(number, boolean) -> None:
+    assert bpmn_live.norm_value(number) != bpmn_live.norm_value(boolean)

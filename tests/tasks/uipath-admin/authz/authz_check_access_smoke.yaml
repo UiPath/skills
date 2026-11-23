@@ -50,7 +50,12 @@ success_criteria:
               for v in o.values(): yield from dicts(v)
           elif isinstance(o, list):
               for v in o: yield from dicts(v)
-      services = {(x.get('ServiceName') or '').lower() for x in dicts(d) if 'ServiceName' in x and 'ServiceType' in x}
+      low = [{str(k).lower(): v for k, v in x.items()} for x in dicts(d)]
+      svc = {(str(x.get('servicename') or '').lower(), str(x.get('servicetype') or '').lower()) for x in low if 'servicename' in x and 'servicetype' in x}
+      # A tenant-wide role (e.g. Tenant Administrator) is also reported as the
+      # CentralizedAccess umbrella; allow it only next to the Orchestrator entry.
+      if ('orchestrator', 'orchestrator') in svc: svc.discard(('centralizedaccess', 'identity'))
+      services = {n for n, t in svc}
       assert services <= {'orchestrator'}, f'decision was not restricted to Orchestrator; granted services: {sorted(services)}'
       print('OK: effective-access decision retrieved; granted services=' + str(sorted(services)))
       "

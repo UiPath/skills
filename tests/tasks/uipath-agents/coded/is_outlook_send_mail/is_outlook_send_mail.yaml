@@ -13,7 +13,7 @@ description: >
   Tenant prerequisite: a `uipath-microsoft-outlook365` connection in
   folder `Shared/uipath-agents` named `outlook-coded-eval`. The mailbox
   behind it must accept self-sends.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, feature:multipart, uipath-microsoft-outlook365, connector]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, feature:multipart, uipath-microsoft-outlook365, connector, studio-web-unsupported, studio-web-unsupported:coded-agent]
 skip: true
 sandbox:
   template_sources:

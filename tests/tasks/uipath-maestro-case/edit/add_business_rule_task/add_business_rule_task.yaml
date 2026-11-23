@@ -6,9 +6,7 @@ description: >
   the v3 task version and decision-keyed result (`output` from `=result`,
   with `riskBand` extracted from `RiskDecision`), the bindings sidecar, and `validate`.
   Offline, no debug.
-# Out of smoke while it fails on main too (the recipe says =result.<decision>.<column>,
-# which case validate rejects). #3893 fixes the recipe and moves this back to smoke.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate]
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
 max_iterations: 1
 
 run_limits:
@@ -69,7 +67,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=result.RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
+    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
     command: "python3 $REFERENCE_DIR/edit/add_business_rule_task/check_add_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0

@@ -151,6 +151,19 @@ def test_a_trigger_envelope_key_is_not_graded_as_a_contract_field():
     assert chk.FAILURES == []
 
 
+def test_a_compiled_trigger_filter_is_not_graded_as_a_request_field():
+    """The filter envelope carries `expression`, which no contract declares."""
+    body = {"filters": {"expression": "(contains(Title,'x'))"}}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert chk.FAILURES == []
+
+
+def test_a_filter_operand_written_as_a_request_field_is_reported():
+    body = {"filters": {"expression": "(contains(Title,'x'))"}, "Title": "x"}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert "input key 'Title' matches no field" in only()
+
+
 def test_a_request_that_wrote_nothing_is_reported():
     chk.check_inputs("T", block(inputs=[{"body": {}}]), ["message.subject"])
     assert "no request field was written at all" in only()
@@ -301,9 +314,21 @@ def roots() -> list:
     return [binding("b1", "ConnectionId"), binding("b2", "folderKey")]
 
 
-def test_a_task_that_copies_root_bindings_onto_itself_is_reported():
+def test_a_task_that_copies_its_connection_binding_onto_itself_is_reported():
     chk.check_bindings("T", block(bindings=[{"id": "b1"}]), roots())
-    assert "data.bindings must be empty or omitted" in only()
+    assert "must not copy the connection or folder binding" in only()
+
+
+def test_a_copied_connection_row_under_another_id_is_reported():
+    chk.check_bindings("T", block(bindings=[{"id": "bX", "resource": "Connection"}]), roots())
+    assert "must not copy the connection or folder binding" in only()
+
+
+def test_the_picker_rows_splice_lists_on_the_task_are_allowed():
+    picker = [{"id": "bE1", "resource": "entity", "propertyAttribute": "name"},
+              {"id": "bE2", "resource": "entity", "propertyAttribute": "folderKey"}]
+    chk.check_bindings("T", block(bindings=picker), roots())
+    assert chk.FAILURES == []
 
 
 def test_an_empty_data_bindings_array_is_allowed():
@@ -521,7 +546,8 @@ def test_two_nodes_that_both_fail_to_fetch_exit_one_and_still_print_the_infra_li
     nodes = [graded_node("A", "aaaaaaaa-0000-0000-0000-000000000001"),
              graded_node("B", "bbbbbbbb-0000-0000-0000-000000000002")]
     monkeypatch.setattr(sys, "argv", ["check", plan_file(tmp_path, nodes)])
-    monkeypatch.setattr(chk.subprocess, "run", run_returning("not json"))
+    # The grader's own catalog pull succeeds; only the two contract fetches fail.
+    _uip(monkeypatch, {"pull": json.dumps({"Result": "Success"}), "spec": "not json"})
     assert chk.main() == 1
     out = capsys.readouterr().out
     assert out.count("INFRA:") == 2
@@ -550,3 +576,57 @@ def test_the_default_path_also_finds_a_plan_saved_as_caseplan_case(tmp_path, mon
     out = capsys.readouterr().out
     assert "not found" not in out
     assert "expected 2 connector tasks" in out
+
+
+# -- the grader's own catalog pull and its lookup diagnostics -------------------
+
+class _Done:
+    def __init__(self, stdout: str) -> None:
+        self.stdout = stdout
+
+
+def _uip(monkeypatch, replies: dict[str, str]) -> list[list[str]]:
+    """Answer `uip maestro case <verb>` from `replies` and record each call."""
+    calls: list[list[str]] = []
+
+    def run(argv, **_kwargs):
+        calls.append(argv)
+        return _Done(replies["pull" if "pull" in argv else "spec"])
+
+    monkeypatch.setattr(chk.subprocess, "run", run)
+    monkeypatch.setattr(chk, "INFRA", [])
+    return calls
+
+
+def test_the_grader_pulls_the_catalog_itself(monkeypatch):
+    calls = _uip(monkeypatch, {"pull": json.dumps({"Result": "Success"})})
+
+    chk.pull_registry()
+
+    assert calls == [["uip", "maestro", "case", "registry", "pull", "--output", "json"]]
+    assert chk.INFRA == []
+
+
+def test_a_failed_pull_is_reported_as_infra(monkeypatch):
+    _uip(monkeypatch, {"pull": json.dumps({"Result": "Failure", "Message": "Not logged in"})})
+
+    chk.pull_registry()
+
+    assert chk.INFRA == ["case registry pull failed: Not logged in — the connector catalog may be missing"]
+
+
+def test_a_failed_spec_reports_the_cli_instructions(monkeypatch):
+    _uip(monkeypatch, {"spec": json.dumps({
+        "Result": "Failure",
+        "Message": "Error fetching connector task spec for typeId t1",
+        "Instructions": "No resource index found. Run registry pull first.",
+    })})
+
+    assert chk.spec("activity", "t1", "c1") == {}
+    assert chk.INFRA == [
+        (
+            "case spec --type activity t1 failed: Error fetching connector task spec for typeId t1 "
+            "(No resource index found. Run registry pull first.) — naming was NOT graded"
+        )
+    ]
+

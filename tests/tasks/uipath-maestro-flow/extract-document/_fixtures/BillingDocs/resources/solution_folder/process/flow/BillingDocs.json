@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDocs",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7083d3d8-7617-45c7-a84f-9fc95d15b06b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BillingDocs"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "BillingDocs",
+      "package": {
+        "key": "a2b08b90-6826-411d-b630-9a5c3becb7f9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "e05bc27b-742d-4c61-a1ea-9ee75ed1e311",
+    "files": []
+  }
+}

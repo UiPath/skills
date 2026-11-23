@@ -14,15 +14,19 @@ Complete reference for all `uip codedapp` subcommands.
 
 Push local source code to Studio Web. Uploads the build output directory and optionally imports referenced resources.
 
-If no project ID is provided, the command **interactively prompts** to create a new Coded App project. The newly created `UIPATH_PROJECT_ID` is saved to `.env`.
+If no project ID is provided, the command prompts to create a new Studio Web solution with a Coded App project inside it, or to use an existing solution. For a new solution it asks for the solution name and the project name, both defaulting to the current folder name. Pass `--solution-name` and `--project-name` to create the solution without prompts, which you must do when you cannot answer prompts. The new `UIPATH_PROJECT_ID` is saved to `.env`.
+
+The two name flags only apply when no project ID is set. If one is set by `--project-id`, `UIPATH_PROJECT_ID`, or `.env`, push fails instead of pushing into that project.
 
 ```bash
-uip codedapp push [project-id] [options]
+uip codedapp push [options]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
+| `--project-id <id>` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var or `.env` |
+| `--solution-name <name>` | Name of the Studio Web solution to create when no project ID is set | Prompted |
+| `--project-name <name>` | Name of the Coded App project to create when no project ID is set | Prompted |
 | `--build-dir <dir>` | Build output directory | `dist` |
 | `--ignore-resources` | Skip importing referenced resources | `false` |
 | `--base-url <url>` | UiPath base URL | From `uip login` session |
@@ -37,20 +41,24 @@ uip codedapp push [project-id] [options]
 uip codedapp push
 
 # Push with explicit project ID
-uip codedapp push my-project-id
+uip codedapp push --project-id <project-id>
 
 # Push a custom build directory
-uip codedapp push my-project-id --build-dir build
+uip codedapp push --project-id <project-id> --build-dir build
 
 # Push without importing resources
 uip codedapp push --ignore-resources
+
+# First push: create a named solution and project without prompts
+uip codedapp push --solution-name "Product Announcements" --project-name "Announcements Portal"
 ```
 
 **Auto-create project flow:**
 ```
-? No project ID found. Create a new Coded App project? (Y/n)
-? Enter a name for the new Coded App: my-webapp
-✔ Created coded app project "my-webapp" with ID: abc-123-def
+? No project ID found. Would you like to create a new solution or use an existing one? Create a new solution
+? Enter a name for the new solution (the Studio Web container for your app and its resources): Product Announcements
+? Enter a name for the new Coded App (the app end users open): Announcements Portal
+✔ Created solution "Product Announcements" with coded app project "Announcements Portal" (ID: abc-123-def)
   Saved UIPATH_PROJECT_ID to .env
 ```
 
@@ -65,12 +73,12 @@ uip codedapp push --ignore-resources
 Pull project files from Studio Web to your local machine.
 
 ```bash
-uip codedapp pull [project-id] [options]
+uip codedapp pull [options]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
+| `--project-id <id>` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var or `.env` |
 | `--overwrite` | Allow overwriting existing local files without prompting | `false` |
 | `--target-dir <dir>` | Local directory to write pulled files | Current directory |
 | `--base-url <url>` | UiPath base URL | From `uip login` session |
@@ -85,10 +93,10 @@ uip codedapp pull [project-id] [options]
 uip codedapp pull
 
 # Pull with explicit project ID
-uip codedapp pull my-project-id
+uip codedapp pull --project-id <project-id>
 
 # Pull to a specific directory
-uip codedapp pull my-project-id --target-dir ./my-app
+uip codedapp pull --project-id <project-id> --target-dir ./my-app
 
 # Pull and overwrite without prompting
 uip codedapp pull --overwrite
@@ -111,16 +119,12 @@ uip codedapp pack <dist> [options]
 | `<dist>` | Path to build output directory | **Required** |
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
-| `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
+| `--output-dir <dir>` | Output directory for `.nupkg` | `./.uipath` |
 | `--author <author>` | Package author | `UiPath Developer` |
 | `--description <text>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
-| `--base-url <url>` | UiPath base URL | From `uip login` session |
-| `--org-id <id>` | Organization ID | From `uip login` session |
-| `--tenant-id <id>` | Tenant ID | From `uip login` session |
-| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -132,13 +136,13 @@ uip codedapp pack dist
 uip codedapp pack dist -n my-webapp --version 2.0.0
 
 # Pack to a custom output directory
-uip codedapp pack dist -o ./packages
+uip codedapp pack dist --output-dir ./packages
 
 # Preview packaging without creating the file
 uip codedapp pack dist --dry-run
 
 # Pack with all options
-uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app" --main-file app.html
+uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --description "Production app" --main-file app.html
 ```
 
 **Output:**
@@ -238,6 +242,7 @@ uip codedapp deploy [options]
 | `--org-id <id>` | Organization ID | From `uip login` session |
 | `--org-name <name>` | Organization name (used for app URL) | From `uip login` session |
 | `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--folder-path <path>` | Folder path (`Shared`, `Finance/Invoicing`) or a unique folder display name, resolved to the folder key by the CLI. Mutually exclusive with `--folder-key` | none |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
 | `--access-token <token>` | Access token | From `uip login` session |
 
@@ -250,14 +255,17 @@ uip codedapp deploy
 # Deploy with explicit app name
 uip codedapp deploy -n my-webapp
 
+# Deploy into a folder named by path (no key lookup needed)
+uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing"
+
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
 
-# Same deploy, key via env var — skips the --folder-key pre-check (incomplete folder lookup on accounts with very many folders)
+# Same deploy, key via env var
 UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 ```
 
-> `--folder-key` pre-checks the key against one unpaged copy of the account's folder list, which is incomplete on accounts with very many folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
+> On `uip` older than 1.204.0 only, `--folder-key` pre-checked the key against an incomplete copy of the account's folder list and could report an existing folder as `not found among folders accessible to your account`. Current CLIs do not — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 
 **Fresh deploy output:**
 ```

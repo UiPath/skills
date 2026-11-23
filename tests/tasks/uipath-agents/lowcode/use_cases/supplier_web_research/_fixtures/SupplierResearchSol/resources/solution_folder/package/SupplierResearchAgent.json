@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SupplierResearchAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fb744ebc-846b-4511-b498-9ebb10dba7ca",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SupplierResearchAgent"
+    },
+    "locks": [],
+    "key": "25315e70-00bf-4d74-a7ab-7ba1f786f825",
+    "files": []
+  }
+}

@@ -46,7 +46,7 @@ Capability index for diagnosing AOps product-policy and Access tool-use-policy f
 | Investigate access policy not blocking | [failure modes → Access policy not blocking](failure-modes.md#access-policy-not-blocking) |
 | Diagnose empty deployed-policy result | [failure modes → Deployed policy returns empty](failure-modes.md#deployed-policy-returns-empty) |
 | Troubleshoot policy create/update rejection | [failure modes → Policy create/update rejected](failure-modes.md#policy-createupdate-rejected) |
-| Evaluate access-policy rules against test inputs | [troubleshooting guide → Step 4](troubleshooting-guide.md#step-4-for-access-evaluate-with-test-inputs) |
+| Evaluate access-policy rules against test inputs | [troubleshooting guide → Step 4](troubleshooting-guide.md#step-4-for-access--evaluate-with-test-inputs) |
 
 ## Anti-patterns
 

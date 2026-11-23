@@ -1,55 +1,83 @@
 task_id: skill-hitl-e2e-invoice-approval-greenfield
-# NOTE: "e2e" here means authoring end-to-end (greenfield JSON flow authoring).
-# This test does NOT deploy or execute the flow — it only validates the authored
-# .flow file JSON and the skill's ability to design and wire HITL nodes.
 description: >
-  Authoring E2E golden scenario (green field): agent builds a complete invoice
-  approval flow from scratch — detecting a write-back + approval gate signal,
-  designing the HITL schema, wiring every outcome port, and wiring downstream
-  access to the HITL output. Extraction and posting are mocked as Script nodes
-  so the test exercises HITL authoring and wiring, not live connector
-  discovery. Does not deploy or run the flow.
-tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga]
+  E2E golden scenario (green field), asked the way a Studio Web user would ask
+  it: build an invoice approval flow in which finance signs off in Action
+  Center before an invoice is posted to SAP (the posting is a stand-in step).
+  Graded on a real run: the grader debugs the flow with a fresh invoice
+  number, finds the Action Center task that run created, checks it shows the
+  invoice number, vendor, amount and currency, approves it as the finance
+  manager, and checks the run then completed down the Approve path only, with
+  status=posted and sapDocumentNumber=SAP-<invoice>; then a second run is
+  rejected and must complete with nothing on the Approve path run,
+  status=rejected and an empty sapDocumentNumber. Structural checks accept any outcome layout.
+  Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
+tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back, path-to-ga, outcome-graded]
 
 run_limits:
   expected_turns: 34
   max_turns: 50
   # task_timeout must be >= turn_timeout or it silently becomes the binding
-  # cap regardless of the larger per-turn budget below — nightly experiment
-  # default is task_timeout 1200 / turn_timeout 900 (tests/experiments/
-  # nightly.yaml). This test previously extracted via a real SharePoint
-  # connector and posted via a real SAP connector, which drove the agent
-  # into live connector/registry/IXP-taxonomy discovery and blew through
-  # 1200s (#3196), then 2400s (2026-09-11 run 2026-09-11_04-17-20, "Agent
-  # turn timed out after 2400s", 119 assistant turns of real but tangential
-  # discovery work). Scaled the scenario down to mock both integration
-  # points as Script nodes instead of raising the timeout again — the test
-  # exists to exercise HITL schema design and outcome-port wiring, not
-  # connector discovery. 1200/1200 matches the sibling e2e brownfield tasks
-  # (e2e_02, e2e_04, e2e_05), which mock their upstream/downstream the same
-  # way. Confirmed locally (coder-eval 0.12.0, claude-sonnet-4-6): SUCCESS,
-  # score 1.000, 7/7 criteria, 482.7s, 34 assistant turns.
-  task_timeout: 1200
+  # cap (nightly default task_timeout 1200 / turn_timeout 900). The posting
+  # stays a stand-in so the test exercises the human task, not SAP. The
+  # task budget covers one agent turn plus grading: validate (180s) and two
+  # live runs that wait on the task (up to 1800s).
+  task_timeout: 3600
   turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../uipath-maestro-flow/_setup
+      mount_point: _setup
 
 reference:
   directory: ../uipath-maestro-flow
 
+pre_run:
+  - command: python3 _setup/cleanup_hitl_runs.py mark
+    timeout: 30
+
+post_run:
+  - command: python3 _setup/cleanup_hitl_runs.py clean
+    timeout: 300
+  - command: python3 _setup/cleanup_solutions.py
+    timeout: 90
+
 initial_prompt: |
-  Build a UiPath Flow named "InvoiceApproval" that extracts invoice data and
-  posts approved invoices to SAP. Finance needs to review and approve each
-  invoice before it is posted — we cannot write to SAP without human sign-off.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Mock the invoice extraction and the SAP posting as Script nodes — no real
-  connector needed for either. The fields matter, not the transport.
+  Build an automation called "InvoiceApproval". Our invoices arrive already
+  extracted, each with an invoiceNumber, vendorName, totalAmount and currency.
+  Finance has to approve every invoice before it is posted to SAP; we cannot
+  write to SAP without a human sign-off.
 
-  Show the finance manager the relevant invoice fields, give them Approve and
-  Reject outcomes, and wire both outcomes onward — Approve to the downstream
-  SAP posting step, Reject to wherever the flow should end. Every outcome
-  needs its own wired port.
+  Send the finance manager a task in Action Center that shows the invoice
+  number, vendor, total amount and currency, and lets them Approve or Reject
+  it with an optional comment. Nobody on the finance team is set up yet to
+  process these tasks.
 
-  Validate the flow when you're done.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  - If they approve, post the invoice to SAP. The SAP connection isn't ready,
+    so for now, instead of posting, return the SAP document number "SAP-"
+    followed by the invoice number.
+  - If they reject, post nothing.
+
+  Outputs: status ("posted" or "rejected") and sapDocumentNumber (empty when
+  rejected).
+
+  <!-- helper:start -->
+  Inputs: invoiceNumber (string), vendorName (string), totalAmount (number),
+  currency (string).
+  Outputs: status (string), sapDocumentNumber (string). status is "posted" or
+  "rejected". When approved, sapDocumentNumber is "SAP-" followed by the
+  invoiceNumber, like "SAP-INV-1". When rejected it is empty text.
+  <!-- helper:end -->
+
+  Build and test the automation.
 
 success_criteria:
   - type: run_command
@@ -61,49 +89,52 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow contains the inline HITL node type"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow exposes Approve and Reject outcomes"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval 'Approve' 'Reject'"
+    description: "Advisory: Flow contains the inline HITL node type"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval --regex '\"type\":\\s*\"uipath\\.human-in-the-loop(\\.quick-form)?\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "Every outcome on the HITL node has its own wired port, none on the outcome-completed placeholder"
+    description: "Advisory: Flow exposes Approve and Reject outcomes"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Advisory: Every outcome on the HITL node has its own wired port, none on the outcome-completed placeholder"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
-    description: "Downstream step references $vars.<hitl-node-id>.output"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceApproval --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran flow validate during the session"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "uip flow validate passes against the authored .flow file"
+    description: "uip maestro flow validate passes against the authored .flow file"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: Studio Web agents may test with the RunProject proxy tool, which
+  # the eval testbench stubs; and a run of this flow waits on a person.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instance)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Effects: a real run created an Action Center task showing the run's invoice number, Northwind Office Supplies, 4870.25 and EUR; after the grader approved it the run completed, a step reachable only from Approve ran when there is one and none reachable only from Reject did, and the outputs are status=posted and sapDocumentNumber=SAP-<invoice>; a second run the grader rejected completed with no step reachable only from Approve run, status=rejected and sapDocumentNumber empty"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_invoice_approval_run.py"
+    # Two runs, each with a 600s deadline that bounds every uip call, then a cancel.
+    timeout: 1800
+    expected_exit_code: 0
+    weight: 6.0
     pass_threshold: 1.0

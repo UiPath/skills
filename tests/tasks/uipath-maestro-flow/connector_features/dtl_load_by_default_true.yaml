@@ -46,7 +46,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has a Jira Get Issue connector node referencing uipath-atlassian-jira"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-atlassian-jira' in content, 'Jira connector key not found'; f=json.load(open(flows[0])); assert any(n.get('type','').startswith('uipath.connector.uipath-atlassian-jira.get-issue') for n in f['nodes']), 'No Jira Get Issue node'; print('OK: Jira get-issue node present')\""
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True) or glob.glob('**/DTLLoadByDefaultTrueTest*/new.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-atlassian-jira' in content, 'Jira connector key not found'; f=json.load(open(flows[0])); assert any(n.get('type','').startswith('uipath.connector.uipath-atlassian-jira.get-issue') for n in f['nodes']), 'No Jira Get Issue node'; print('OK: Jira get-issue node present')\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

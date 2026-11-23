@@ -48,11 +48,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent scaffolded the new ParentAgent project with uip agent init"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
+  - type: run_command
+    description: "The workspace has a new Agent project beyond the 1 the template stages (project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 2 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -65,12 +66,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   # Informational discovery criteria: the agent may use file reads instead of
   # CLI discovery. pass_threshold:0 means these never block the run.
   - type: command_executed
-    description: "Agent discovered the existing ToolAgent via solution resources list (informational)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    description: "Agent discovered the existing ToolAgent via solution resources list or ManageSolutionResources (informational)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+list\b.*--source\s+local|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"source":\s*"local)'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -80,9 +84,8 @@ success_criteria:
   # discovery above is the enforced signal; `get` is an acceptable-but-optional
   # follow-up.
   - type: command_executed
-    description: "Agent fetched the ToolAgent configuration with uip solution resources get (informational)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    description: "Agent fetched the ToolAgent configuration with uip solution resources get or ManageSolutionResources (informational)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0

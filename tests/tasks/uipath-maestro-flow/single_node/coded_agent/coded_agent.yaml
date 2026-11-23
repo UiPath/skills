@@ -1,6 +1,14 @@
 task_id: skill-flow-coded-agent
 description: |
-  Create a UiPath Flow that uses an ApproverCount coded agent to count, from a free-text sentence describing each reviewer's stance, how many people approved a proposal and return that integer. The sentence is deliberately withheld from the prompt and injected by the check script at debug time via --inputs, so the agent cannot hardcode the answer or fit a regex to known text — a deterministic Function is not a viable design. The prompt explicitly asks for a coded agent on a natural-language task, so the resulting flow node must be uipath.core.agent (an Agent project), not uipath.core.function — verifying the skill honors an explicit agent request instead of substituting a deterministic Function. Exercises agent resource node discovery and wiring for coded (vs low-code) agents.
+  Build a Flow that uses a coded agent named ApproverCount to count, from a
+  free-text sentence describing each reviewer's stance, how many people
+  approved a proposal, asked the way a Studio Web user would ask it. The
+  sentence is withheld from the prompt and passed only at debug time, so the
+  answer cannot be hardcoded or regexed from known text. The graded debug run
+  checks what the flow did: its agent node (uipath.core.agent, the node a coded
+  Agent project gets; a coded Function is uipath.core.function) completed and
+  the named output approvedCount is 3. Coded agents are not available in
+  Studio Web (studio-web-unsupported), so this runs on the CLI harnesses only.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -9,6 +17,9 @@ tags:
   - shape:single-node
   - resource
   - path-to-ga
+  - outcome-graded
+  - studio-web-unsupported
+  - studio-web-unsupported:coded-agent
 sandbox:
   template_sources:
     - type: template_dir
@@ -23,26 +34,27 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  Create a UiPath Flow project named "ApproverCountAgent" that uses a coded
-  agent named "ApproverCount" to analyze a sentence describing the outcome of
-  a proposal review round. The flow takes the sentence as a string input
-  variable. The agent must identify each person mentioned, determine whether
-  they approved, requested changes, or recused themselves, and return the
-  number of people who approved as an integer flow output.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Validate the flow.
+  Build an automation called "ApproverCountAgent" that reads a text describing
+  the outcome of a new proposal review round within our company and tells me
+  how many people approved. Use a coded agent named "ApproverCount" for the
+  analysis: it must find each person mentioned and decide whether they
+  approved, requested changes, or recused themselves.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  The automation takes the text as an input and returns the number of
+  approvers as approvedCount.
+
+  <!-- helper:start -->
+  Build a Flow in this Flow project that calls the coded agent.
+  Input: text (string). Output: approvedCount (number).
+  <!-- helper:end -->
+
+  Build and test the automation.
 success_criteria:
   - type: run_command
     description: uip maestro flow validate passes on the flow file
@@ -51,13 +63,26 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
-    description: Flow has an agent node and debug returns the approver count
-    command: python3 $REFERENCE_DIR/_shared/check_coded_agent_flow.py
+    description: 'Effects: one debug run on a sentence the prompt never shows (Dana, Priya and Sam signed off; Marco asked for changes; Lena recused herself) in which the uipath.core.agent node completed and approvedCount = 3'
+    command: python3 $REFERENCE_DIR/single_node/coded_agent/check_coded_agent.py
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+  - type: skill_triggered
+    description: "Advisory: agent engaged the uipath-maestro-flow skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 0.0
+    pass_threshold: 0.0
 post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 120

@@ -15,14 +15,14 @@
  * child that phrases one line. No `.input`: variable defaults keep it
  * self-contained.
  */
-import { flow, script, subflow, v, out, input, types } from '@uipath/maestro-builder-sdk';
+import { flow, script, subflow, v, out, input, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 /** A leaf child: scale one quantity. Declared ABOVE the flows that run it. */
 const scaleIngredient = flow('scale-ingredient')
   .name('ScaleIngredient')
   .input({ grams: types.number, factor: types.number })
   .output({ scaled: types.number })
-  .step('scale', script({ code: 'return Math.round($vars.start.output.grams * $vars.start.output.factor);' }))
+  .step('scale', script(scale))
   .return({ scaled: out('scale') });
 
 /** A child that itself runs a subflow — the nesting case. */
@@ -31,9 +31,7 @@ const describeBatch = flow('describe-batch')
   .input({ grams: types.number, factor: types.number, label: types.string })
   .output({ line: types.string })
   .step('scaleLabelled', subflow(scaleIngredient, { grams: input('grams'), factor: input('factor') }))
-  .step('phrase', script({
-    code: 'return $vars.start.output.label + ": " + $vars.scaleLabelled.output.scaled + " g";',
-  }))
+  .step('phrase', script(phrase))
   .return({ line: out('phrase') });
 
 export default flow('recipe-scaler')
@@ -60,3 +58,11 @@ export default flow('recipe-scaler')
   })
 
   .build();
+
+function scale($vars: FlowVars) {
+  return Math.round($vars.start.output.grams * $vars.start.output.factor);
+}
+
+function phrase($vars: FlowVars) {
+  return $vars.start.output.label + ": " + $vars.scaleLabelled.output.scaled + " g";
+}

@@ -7,7 +7,7 @@ description: >
   connector node is modeled as a bpmn:sendTask carrying the registry
   Intsvc.ActivityExecution wrapper instead of a Flow connector node, and the
   request body is graded as the one JSON target="body" input the runtime
-  consumes (registry-workflow.md §3 "Body shape").
+  consumes (the runtime's request-body contract).
   Validate-only, matching Flow's own scope — the Flow source never called
   `flow debug` either, only `flow validate`.
 tags:
@@ -55,10 +55,13 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 success_criteria:
+  # Accepts `uip is connections list` or Studio Web's ManageSolutionResources host
+  # tool (recorded as a ProxyTool call whose JSON params carry toolName/action/kind).
+  # The \A(?!\{) guard keeps the CLI alternative off other tools' JSON params (it also
+  # holds on the shell-normalized form, where the quotes are gone).
   - type: command_executed
-    description: "Advisory: live-v1 agent listed connections before choosing one"
-    tool_name: "Bash"
-    command_pattern: "(uip|\\$UIP)\\s+is\\s+connections\\s+list"
+    description: "Advisory: agent listed tenant connections before choosing one (uip is connections list, or ManageSolutionResources list with source all/remote)"
+    command_pattern: '\A(?!\{)[\s\S]*?(?:uip|\$UIP)\s+is\s+connections\s+list|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Connection")(?=[^{}]*"params":\s*\{[^{}]*"source":\s*"(?:all|remote)")'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0

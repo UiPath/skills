@@ -68,3 +68,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every rule carries an annotation naming its case"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py names"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

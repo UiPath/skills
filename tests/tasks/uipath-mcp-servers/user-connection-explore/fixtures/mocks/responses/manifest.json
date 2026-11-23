@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "mcp-user-connections set --help",
+      "file": "help_user_connections_set.txt"
+    },
+    {
+      "match": "mcp-user-connections list --help",
+      "file": "help_user_connections_list.txt"
+    },
+    {
+      "match": "mcp-user-connections delete --help",
+      "file": "help_user_connections_delete.txt"
+    },
+    {
+      "match": "mcp-user-connections --help",
+      "file": "help_user_connections.txt"
+    },
+    {
+      "match": "or folders explore --help",
+      "file": "help_folders_explore.txt"
+    },
+    {
+      "match": "or folders stop-exploring --help",
+      "file": "help_folders_stop_exploring.txt"
+    },
+    {
+      "match": "--help",
+      "passthrough": true
+    },
+    {
+      "match": "--type personal",
+      "file": "or_folders_list_personal.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "or_folders_list.json"
+    },
+    {
+      "match": "or folders stop-exploring",
+      "file": "folders_stop_exploring.json"
+    },
+    {
+      "match": "or folders explore",
+      "file": "folders_explore.json"
+    },
+    {
+      "match": "is connections list",
+      "after": "folders_explore.json",
+      "file": "is_connections_list.json"
+    },
+    {
+      "match": "is connections list",
+      "file": "is_connections_list_before_explore.json"
+    },
+    {
+      "match": "is connections ping 7a1b2c3d-0000-4000-8000-0000000000aa",
+      "after": "folders_explore.json",
+      "file": "is_connections_ping_enabled.json"
+    },
+    {
+      "match": "admin users list",
+      "file": "admin_users_list.json"
+    },
+    {
+      "match": "agenthub mcp list",
+      "file": "agenthub_mcp_list.json"
+    },
+    {
+      "match": "agenthub mcp get vendor-mcp",
+      "file": "mcp_get.json"
+    },
+    {
+      "match": "--dry-run",
+      "after": "folders_explore.json",
+      "file": "user_connections_set_dryrun.json"
+    },
+    {
+      "match": "--dry-run",
+      "file": "user_connections_set_not_visible.json",
+      "exit_code": 1
+    },
+    {
+      "match": "agenthub mcp-user-connections set",
+      "after": "folders_explore.json",
+      "file": "user_connections_set.json"
+    },
+    {
+      "match": "agenthub mcp-user-connections set",
+      "file": "user_connections_set_not_visible.json",
+      "exit_code": 1
+    },
+    {
+      "match": "agenthub mcp-user-connections list",
+      "after": "user_connections_set.json",
+      "file": "user_connections_list_after_set.json"
+    },
+    {
+      "match": "agenthub mcp-user-connections list",
+      "file": "user_connections_list.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

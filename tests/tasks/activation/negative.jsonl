@@ -72,3 +72,8 @@
 {"id": "negative-073", "prompt": "Write a Drools DRL rule file that flags transactions over 10000 for review", "expected_skill": ""}
 {"id": "negative-074", "prompt": "Add an ESLint rule that forbids default exports in this TypeScript repo", "expected_skill": ""}
 {"id": "negative-075", "prompt": "Implement a decision table in plain Python with pandas for our discount tiers", "expected_skill": ""}
+{"id": "negative-076", "prompt": "Write a SKILL.md for a new Claude Code skill that formats SQL in this repo", "expected_skill": ""}
+{"id": "negative-077", "prompt": "Bundle my JavaScript with esbuild and tag the release v2.1.0 in git", "expected_skill": ""}
+{"id": "negative-078", "prompt": "Install the anthropic skills plugin into my Claude Code setup", "expected_skill": ""}
+{"id": "negative-083", "prompt": "Explain how a loan QA/QC review works in mortgage lending and what a post-closing audit checks", "expected_skill": ""}
+{"id": "negative-084", "prompt": "Deploy our loan origination web app to the staging Kubernetes cluster with Helm", "expected_skill": ""}

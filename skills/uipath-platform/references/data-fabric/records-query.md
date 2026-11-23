@@ -222,6 +222,10 @@ Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }
 
 Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
 
+One call takes at most 1,000 records. A larger array fails whole ("Number of items provided 1500 exceeds limit 1000") and inserts nothing, so send larger loads in chunks of up to 1,000.
+
+An insert never matches stored rows: a re-run of a seeding step inserts every row again, unless an `isUnique` field rejects the repeats into `FailureRecords`. Before seeding, count the stored records with the [aggregate `COUNT`](#aggregates-server-side) — `TotalCount` briefly counts rejected inserts too — and if the count is non-zero, tell the user and ask before inserting.
+
 ### Writing Choice-Set and Relationship Values
 
 | Field type | Value | Resolve via |

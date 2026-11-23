@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bpmn_assertions import assert_generated_project_scaffold  # noqa: E402
+from _shared.bpmn_assertions import assert_generated_project_scaffold, load_bpmn  # noqa: E402
 
 
 class GeneratedProjectScaffoldTests(unittest.TestCase):
@@ -162,6 +162,40 @@ class GeneratedProjectScaffoldTests(unittest.TestCase):
             expected_resource_count=0,
             expected_entry_points=2,
         )
+
+
+_BPMN = '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"/>'
+
+
+class LoadBpmnTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.cwd = os.getcwd()
+        os.chdir(self.temp_dir.name)
+
+    def tearDown(self) -> None:
+        os.chdir(self.cwd)
+        self.temp_dir.cleanup()
+
+    def _write(self, relative: str) -> None:
+        path = Path(relative)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_BPMN, encoding="utf-8")
+
+    def test_finds_the_file_in_a_studio_web_solution(self) -> None:
+        self._write("DiceRoller/DiceRoller/DiceRoller.bpmn")
+        self._write("DiceRoller/DiceRoller/Process.bpmn")
+
+        self.assertTrue(load_bpmn("DiceRoller/DiceRoller.bpmn").tag.endswith("definitions"))
+
+    def test_finds_studio_web_process_bpmn_by_project_name(self) -> None:
+        self._write("Batch/Batch/Process.bpmn")
+
+        self.assertTrue(load_bpmn("Batch/Batch.bpmn").tag.endswith("definitions"))
+
+    def test_fails_when_no_bpmn_exists(self) -> None:
+        with self.assertRaises(SystemExit):
+            load_bpmn("Missing/Missing.bpmn")
 
 
 if __name__ == "__main__":

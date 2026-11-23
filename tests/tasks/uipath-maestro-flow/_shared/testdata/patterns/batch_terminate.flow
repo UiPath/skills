@@ -1,0 +1,113 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "eachInvoice",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.invoices",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "enrich",
+   "type": "uipath.agent.autonomous",
+   "parentId": "eachInvoice",
+   "inputs": {
+    "source": "5ab413b3-e109-4003-b5e6-9dc3015450b3",
+    "agentInputVariables": [
+     {
+      "id": "eachInvoice__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.eachInvoice.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "note",
+      "type": "string"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "item_failed",
+   "type": "core.logic.terminate",
+   "parentId": "eachInvoice",
+   "inputs": {}
+  },
+  {
+   "id": "summarize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "3c175231-c06e-4a7b-b20b-a5e99b07bc1f",
+    "agentInputVariables": [
+     {
+      "id": "eachInvoice__output",
+      "type": "string",
+      "binding": "=js:$vars.eachInvoice.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "summary",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "start",
+   "targetNodeId": "enrich",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "enrich",
+   "sourcePort": "error",
+   "targetNodeId": "item_failed",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "enrich",
+   "sourcePort": "success",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "success",
+   "targetNodeId": "summarize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "summarize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

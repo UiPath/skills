@@ -12,11 +12,12 @@ from pathlib import Path
 import jira_is
 
 tag = secrets.token_hex(4)
-conn = jira_is.connection_id()
+conn = jira_is.require_connection()
 keys = [jira_is.create_issue(conn, f"coder-eval jira search-triage {tag} #{n}") for n in (1, 2)]
 seed = {
     "tag": tag,
     "project_key": jira_is.PROJECT_KEY,
+    "connection_name": jira_is.CONNECTION_NAME,
     "jql": f'project = {jira_is.PROJECT_KEY} AND summary ~ "{tag}"',
     "processed_comment": f"TRIAGED {tag}",
     "issue_keys": keys,

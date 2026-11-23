@@ -64,10 +64,10 @@ def main():
     check("Error" in sources, f"output Error missing, outputs are {sorted(sources)}")
     check(
         any(
-            o.get("var") == "riskBand" and o.get("source") == "=result.RiskDecision.riskBand" and o.get("type") == "string"
+            o.get("var") == "riskBand" and o.get("source") == "=RiskDecision.riskBand" and o.get("type") == "string"
             for o in outputs
         ),
-        f"no string output writes =result.RiskDecision.riskBand into riskBand, outputs are {sources}",
+        f"no string output writes =RiskDecision.riskBand into riskBand, outputs are {sources}",
     )
 
     sidecar = json.loads((PROJECT / "bindings_v2.json").read_text())

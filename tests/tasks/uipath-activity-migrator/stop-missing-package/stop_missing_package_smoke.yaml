@@ -10,7 +10,7 @@ description: >
   SARIF mode and was summarized, upgrade never ran, no output folder exists,
   missing dependencies were never ignored, nothing was built or run, and the
   source is untouched outside the tool's .upgrade and .local folders. Windows
-  only (the migrator is a .NET 8 desktop tool); no build, so no Helm.
+  only (the migrator is a .NET desktop tool); no build, so no Helm.
 tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:discover, windows]
 
 run_limits:
@@ -30,7 +30,8 @@ reference:
 
 initial_prompt: |
   Migrate the UiPath project in ./VendorFeedSync with the Activity Migrator.
-  Do not run the migrated project.
+  Do not run the migrated project. Download the Activity Migrator if it is not
+  installed.
 
   The `uip` CLI is available and authenticated in this sandbox.
 
@@ -64,7 +65,7 @@ success_criteria:
   # lookahead inside this one command; `--help` invocations are exempt.
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -110,7 +111,7 @@ success_criteria:
   # Step 3 stop table: RESTORE-MISSING-PACKAGE stops the migration before upgrade.
   - type: command_not_executed
     description: "Agent never ran upgrade after the restore failure"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade\b'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade\b'
     weight: 2.0
     pass_threshold: 1.0
 

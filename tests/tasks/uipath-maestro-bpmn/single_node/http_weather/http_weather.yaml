@@ -40,18 +40,19 @@ initial_prompt: |
     and do not pause for approval or confirmation.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "BPMN source was created"
-    path: "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py OpenMeteoWeatherHttp"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN uses the HTTP-execution wrapper and the public Open-Meteo host"
-    path: "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn"
-    includes:
-      - "Intsvc.HttpExecution"
-      - "open-meteo"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py OpenMeteoWeatherHttp --contains 'Intsvc.HttpExecution' --contains 'open-meteo'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

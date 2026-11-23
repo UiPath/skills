@@ -1,0 +1,15 @@
+[project]
+name = "contract-intake-coded-agent"
+version = "0.0.1"
+description = "Contract intake coded agent for testing file guardrails"
+authors = [{ name = "Test User", email = "test@example.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "uipath-langchain>=0.18.53",
+    "uipath>2.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "uipath-dev",
+]

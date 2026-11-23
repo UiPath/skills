@@ -14,7 +14,7 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 
-from _shared.bpmn_check import resolve_project  # noqa: E402
+from _shared.bpmn_check import resolve_bpmn_file  # noqa: E402
 
 BPMN_NAME = "InvoiceExceptionTriage.bpmn"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
@@ -38,8 +38,8 @@ def load_json(path: Path) -> object:
 
 
 def main() -> int:
-    project = resolve_project(BPMN_NAME)
-    bpmn = project / BPMN_NAME
+    bpmn = resolve_bpmn_file(BPMN_NAME)
+    project = bpmn.parent
 
     required_files = [
         "project.uiproj",
@@ -93,16 +93,16 @@ def main() -> int:
 
     entry_points = load_json(project / "entry-points.json")
     entry_text = json.dumps(entry_points)
-    if "InvoiceExceptionTriage.bpmn" not in entry_text:
-        fail("entry-points.json must reference InvoiceExceptionTriage.bpmn")
+    if bpmn.name not in entry_text:
+        fail(f"entry-points.json must reference {bpmn.name}")
 
     operate = load_json(project / "operate.json")
-    if "InvoiceExceptionTriage.bpmn" not in json.dumps(operate):
-        fail("operate.json must reference InvoiceExceptionTriage.bpmn")
+    if bpmn.name not in json.dumps(operate):
+        fail(f"operate.json must reference {bpmn.name}")
 
     package_descriptor = load_json(project / "package-descriptor.json")
     package_text = json.dumps(package_descriptor)
-    for name in ["InvoiceExceptionTriage.bpmn", "entry-points.json", "operate.json"]:
+    for name in [bpmn.name, "entry-points.json", "operate.json"]:
         if name not in package_text:
             fail(f"package-descriptor.json must include {name}")
 

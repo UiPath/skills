@@ -1,18 +1,54 @@
 /**
- * CAPABILITY: classify a document, then extract fields against an INLINE schema.
+ * CAPABILITY: classify a document, then extract fields against an INLINE taxonomy.
  *
  * `documentClassify` (`uipath.document.classify`) names the document's type.
- * `dynamicExtract` (`uipath.ixp.extract-document-builder`) is the other half of
- * the pair: it carries its own `schema` instead of a published IxP project's
- * trained fields, which is what makes it "dynamic".
+ * `dynamicExtract` (`uipath.ixp.extract-document-builder`, the Extract document
+ * node) extracts against the taxonomy it carries instead of a published IxP
+ * project's trained fields.
  *
- * Dynamic Extract still needs a model DEPLOYMENT identity. `modelName` and
- * `folderKey` below are placeholders in the shape the tenant serves — copy the
- * real pair from the tenant; never construct them.
+ * It takes no `model` argument: compile gives the step its IDP processor, named after the
+ * step's label, and writes the processor's resource file into the solution
+ * (references/document-pipeline.md). The taxonomy carries no ids: compile
+ * gives every field group and field its stable id.
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
-import { flow, documentClassify, dynamicExtract, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, documentClassify, dynamicExtract, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
+
+const sowingTaxonomy = {
+  prompt: 'Extract the sowing details printed on the seed packet. Values are on the packet; do not infer missing ones.',
+  outputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['Sowing Details'],
+    properties: {
+      'Sowing Details': {
+        type: ['object', 'null'],
+        description: 'The sowing table printed on the back of the packet.',
+        additionalProperties: false,
+        required: ['Variety', 'Sow Depth Mm', 'Days To Germinate'],
+        properties: {
+          'Variety': {
+            $ref: '#/$defs/ft-exact-text',
+            description: 'The variety name as printed on the front.',
+          },
+          'Sow Depth Mm': {
+            $ref: '#/$defs/ft-number',
+            description: 'The sowing depth in millimetres.',
+          },
+          'Days To Germinate': {
+            $ref: '#/$defs/ft-number',
+            description: 'How many days germination takes; the upper bound where a range is printed.',
+          },
+        },
+      },
+    },
+    $defs: {
+      'ft-exact-text': { title: 'Exact Text', type: ['string', 'null'], format: 'verbatim' },
+      'ft-number': { title: 'Number', type: ['string', 'null'], format: 'decimal' },
+    },
+  },
+};
 
 export default flow('seed-packet-reader')
   .name('SeedPacketReader')
@@ -25,25 +61,14 @@ export default flow('seed-packet-reader')
   }))
   .step('extractSowing', dynamicExtract({
     fileRef: out('start', 'packetScan'),
-    schema: {
-      type: 'object',
-      properties: {
-        variety: { type: 'string' },
-        sowDepthMm: { type: 'string' },
-        daysToGerminate: { type: 'string' },
-      },
-    },
-    model: {
-      modelName: 'seedpackets-9c41e7b2-ixp',
-      folderKey: '4c9d1f70-6b2e-4a58-9f13-2ad5c8e0b741',
-    },
-  }))
-  .step('summarize', script({
-    code:
-      'const sowing = $vars.extractSowing.output || {};\n'
-      + 'return "type:" + ($vars.classifyPacket.output.DocumentTypeName || "?")\n'
-      + '  + " variety:" + (sowing.variety || "-")\n'
-      + '  + " depth:" + (sowing.sowDepthMm || "-");',
-  }))
+    schema: sowingTaxonomy,
+  }), { label: 'Extract sowing details' })
+  .step('summarize', script(summarize))
   .return({ summary: out('summarize') })
   .build();
+
+function summarize($vars: FlowVars) {
+  const extracted = $vars.extractSowing.output;
+  return "type:" + String($vars.classifyPacket.output.ClassificationResult ?? "?")
+    + " extracted:" + Object.keys(extracted ?? {}).length;
+}

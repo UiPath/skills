@@ -41,7 +41,8 @@ initial_prompt: |
   The Decision node condition MUST reference the extracted total amount
   via the canonical IxP runtime path —
   `$vars.<ixpNodeId>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName>')?.Values?.[0]`
-  — per references/plugins/ixp/impl.md ("Accessing Output").
+  — the result layout references/ixp.md describes
+  (`ExtractionResult.ResultsDocument.Fields[]`, each with `FieldName` and `Values`).
 
   Validate the completed flow.
 

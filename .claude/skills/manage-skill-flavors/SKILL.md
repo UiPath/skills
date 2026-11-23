@@ -108,8 +108,19 @@ host cannot run yet, so no set of sparse overrides can make it correct there.
 - Keep the previous tree at `classic/skills/<skill>/` (same layout as `skills/`, no symlinks). It is not in the root npm package or any plugin catalog.
 - Add `skill-flavors/<flavor>/<skill>/.canonical` containing exactly `classic`. That flavor then composes `<skill>` from the classic tree, and its overrides for that skill target classic paths and markers.
 - A pin may only swap the source of a skill `skills/` already ships. `npm run skills:validate` fails on a pin to an unknown skill, a pin to a missing classic tree, and a `classic/skills/<skill>` that no flavor pins. Delete the classic tree when its last pin goes.
+- Exception: keep an unpinned classic tree when something outside the packages still reads it, such as task graders. Add `classic/skills/<skill>/.retained` with one line that says what reads the tree and when to delete it; validation rejects a blank marker. A retained tree still ships in no package. Delete the tree and its marker together when the last reader goes.
 - A link from another skill into a pinned skill must resolve in both trees; `npm run skills:check-links` checks the file and its anchor in each. When the two generations cover the topic in different files, wrap the pointer in a flavor block: the canonical text links the current generation's file, and the pinning flavor's override links the classic file. The checker then asks each tree only for the link it composes.
 - Name the skill (`/uipath:<skill>`) instead of a file only when both generations hold the content the sentence promises. When the current generation has no equivalent, state the rule inline or drop the pointer. A skill name with nothing behind it is a pointer no check can catch.
+
+## Prepare a Preview Skill's Flavor Before Promotion
+
+Use this when a skill in `preview/skills/` will replace a canonical skill and a host must run it on the day it moves.
+
+- Put the markers in the preview files. The marker rules are the same as for canonical files.
+- Put the overrides in `preview/skill-flavors/<flavor>/<skill>/`, with paths that mirror `preview/skills/<skill>/`. The flavor must also exist in `skill-flavors/`. A preview flavor cannot hold a `.canonical` pin.
+- `npm run skills:validate` checks each preview flavor against `preview/skills/`. `npm run skills:build` writes it to `build/preview/<flavor>/`. `npm run skills:pack` never ships it.
+- The preview plugin ships `preview/skills/` as it is, so its users see the marker comments. Keep the blocks few.
+- At promotion, move the skill and its overrides in one change: `preview/skills/<skill>` to `skills/<skill>`, and `preview/skill-flavors/<flavor>/<skill>` to `skill-flavors/<flavor>/<skill>` in place of the old overrides. A promoted skill can stay in `preview/skills/` as a link to `skills/<skill>`. The composer skips that link.
 
 ## Preserve Generic Discovery and Package Naming
 
@@ -156,6 +167,7 @@ Inspect the final package contract, not only sparse sources:
 
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
 - Each custom package contains every canonical skill and its flavor replacements.
+- Each custom package carries `assets/skill-status.json` byte-identical to the source, and no other file from `assets/`.
 - Every staged manifest uses the root version and the derived package name.
 - Custom manifests contain no repository lifecycle scripts or `package.json.repository` field. They pin both `publishConfig.registry` and `publishConfig["@uipath:registry"]` to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs configuration from winning. The publisher still validates the effective scoped registry and supplies the reviewed `dev` or `preview` tag. Do not set an access value during normal publishing because the existing Internal visibility must remain unchanged.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.

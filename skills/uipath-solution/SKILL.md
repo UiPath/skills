@@ -1,7 +1,7 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init/restore/pack/publish/deploy/activate/upgrade/upload, projects add|import|remove, resources refresh|add|remove|edit, feeds list, `--feed` / `--personal-workspace`. DIAGNOSE lifecycle failures: pack/publish/deploy/activate errors, stale or missing bindings, unimported or unresolved resources, deploy error codes, publish name+version/processKey collisions, redeploy blocked by an existing deployment (`deploy upgrade`), feed 'not an available publish location', package missing from `packages list`, 'unknown command' after the new→init rename. Bundles RPA/Flow/Case/Agents/API Workflow/AppV2 coded and coded-action projects into one `.uipx`. Routing: PDD→SDD design & task derivation→uipath-planner; non-solution Orchestrator/IS/resources/auth/traces→uipath-platform; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py agents→uipath-agents; standalone coded-app deploy→uipath-coded-apps."
-when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution', 'upgrade a deployment to another version', 'change the deployed version without losing my configuration', 'publish/deploy to a folder feed or Personal Workspace', 'which feeds can I publish to'. Also fires to DIAGNOSE solution problems: 'why did my solution pack/publish/deploy fail', 'pack ships stale/old bindings', 'my resource edit didn't take effect', 'refresh imported 0 bindings', deploy fails '[1009] Invalid argument Value', publish 'name+version / processKey collision', 'uip solution new: unknown command', 'coded app missing from the .uipx / not packed'. (Solution build-time/CLI faults belong here; faulted Orchestrator JOBS at runtime → uipath-troubleshoot.) Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
+description: "Always invoke for `.uipx` files. UiPath Solution via `uip solution`: init/download/restore/pack/publish/deploy/activate/upgrade/upload;projects add/import/remove;resources refresh/add/remove/edit;feeds list;`--feed`/`--personal-workspace`. Bundles RPA/Flow/Case/Agents/API Workflow/AppV2 in one `.uipx`. PDD→SDD design/task derivation→uipath-planner; non-solution Orchestrator/IS/resources/auth/traces→uipath-platform;`.xaml`/`.cs`→uipath-rpa;`.flow`→uipath-maestro-flow;`.bpmn`→uipath-maestro-bpmn;`agent.json`/`.py` agents→uipath-agents;standalone coded-app deploy→uipath-coded-apps."
+when_to_use: "`.uipx`/`uip solution`; 'pack/publish/deploy/activate the solution';multi-project;Solution scope/Folder;Studio Web download/export;existing solution;migrate org/tenant;create solution;add project/resource/queue/asset/bucket/connection;import cloud queue/asset;edit/remove resource;change queue/asset field/value;upgrade/change deployed version keeping configuration;folder feed/Personal Workspace publish/deploy;list feeds. Diagnose: pack/publish/deploy failures;`--acknowledge-permanent-deletion`;redeploy blocked (`deploy upgrade`);feed 'not an available publish location';package not in `packages list`;stale/old bindings;resource edit no effect;refresh imports 0 bindings;deploy '[1009] Invalid argument Value';publish name+version/processKey collision;'unknown command' after `new`→`init`;coded app not packed in `.uipx`. CLI/build faults here;faulted Orchestrator JOBS runtime→uipath-troubleshoot. Architect→deploy: uipath-planner→here."
 ---
 
 # UiPath Solution — `uip solution` lifecycle
@@ -20,6 +20,9 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 <!--skill-flavor:when-to-use-create:start-->
 - User wants to create a new solution (`uip solution init`), add or remove projects, or refresh solution resources
 <!--skill-flavor:when-to-use-create:end-->
+<!--skill-flavor:when-to-use-existing:start-->
+- User wants to work on a solution that already exists in Studio Web, recover the source of a deployed solution, or move one to another org or tenant — start with `uip solution download` ([Start From an Existing Solution](#start-from-an-existing-solution))
+<!--skill-flavor:when-to-use-existing:end-->
 - User asks to set up a CI/CD pipeline that builds, publishes, and deploys a UiPath solution
 - User mentions deploy configs, environment promotion, or activating a deployed solution
 <!--skill-flavor:when-to-use-detected-uipx:start-->
@@ -75,7 +78,9 @@ All other `solution` subcommands (`pack`, `publish`, `deploy activate/status/uni
 <!--skill-flavor:appv2-registration-rule:end-->
 8. **Verify the artifact after every CLI mutation.** Read `project.json`, `.uipx`, or `uip solution deploy status` output — exit codes lie. Verification is additional; it does not replace requested read-only list commands. If the user asks to show or list registered projects, solution resources, packages, deployments, or statuses, run the matching `uip solution ... list/status --output json` command and then inspect files only as a secondary sanity check.
 9. **A deployment in `Draft` is a failed deploy, not a pending one.** Validation rejected a resource and the install never completed; it never advances on its own and cannot be activated. Read the reasons — `Validation:` / `Conflicts:` land in the failure's `Instructions` on every feed, since each deploy waits for its run — fix them with `deploy config set` / `link`, and rerun `deploy run --config-file <file>` with the **same** `--name` and `--package-version`. While the draft exists it owns the deployment: any other version is refused, `deploy upgrade` included, until the draft is finished that way or discarded (`deploy upgrade <draft-key> --discard-draft`, or Delete draft in Orchestrator). To look at it, run `deploy list` **with the same feed flag**, which is tenant-scoped without one and shows no Personal Workspace or folder-feed row at all. See [A deploy that stops in `Draft`](references/pack-and-deploy.md#a-deploy-that-stops-in-draft).
-10. **For multi-environment promotion, switch tenants with `uip login tenant set <tenant>` and pass a per-environment deploy config via `--config-file <path>`.** The same packed `.uipx` deploys to dev/staging/prod — the environment differs by the target tenant and the config file (generated with `deploy config get`, edited with `config set` / `config link`), not by a different package. There is no `-c <CONFIG_KEY>` flag.
+10. **A deploy that would permanently delete resources needs explicit consent.** When a `deploy upgrade`, or a `deploy run --config-file` onto an existing deployment, unlinks a queue or bucket that no other folder uses, Orchestrator deletes it with its data, so newer servers ask first. Older servers ask instead when a link replaces a copy the deployment already installed. Newer CLI builds then stop with `Deploying '<name>' will permanently delete <n> resource(s) along with their data: <kind> '<name>', …` (`Upgrading …` for `deploy upgrade`; `ErrorCode: invalid_argument`, the resources also in `Data.PermanentDeletionResources`). Nothing was installed and the attempt is kept as a pending draft. This is not a config error to fix: confirm only if the user wants those resources and their data gone, then re-run the **same** command with `--acknowledge-permanent-deletion`. On `deploy upgrade` never add `--discard-draft`, which drops the very configuration being confirmed. To keep them, keep them linked (`deploy config link`) or share them into another folder first and re-run (`deploy run`), or run `deploy upgrade <draft-key> --discard-draft` (`deploy upgrade`). On newer servers a link over an installed copy asks nothing: the link decides. `deploy config link` keeps the copy by default; only `--delete-installed-copy` deletes it with its data. A server that cannot keep it refuses a keeping link (`…this server does not support keeping the installed copy…`), even with `--acknowledge-permanent-deletion`: set `--delete-installed-copy` and confirm, or unlink to keep the copy. `--yes` is not this consent. See [When a deploy would permanently delete resources](references/pack-and-deploy.md#when-a-deploy-would-permanently-delete-resources).
+11. **Never pass `--force` to `deploy uninstall` on your own.** It sends `forceUninstall: true`, which abandons uncompleted jobs and permanently deletes installed resources that were replaced by links, with their data (it also stands in for `--yes`). When an uninstall fails with `Message` "…this deployment has uncompleted jobs; --force uninstalls anyway" or "…permanently deletes these resources and their data: <kind> '<name>', …" (`Data.JobsNotInFinalState`, `Data.PermanentDeletionResources`, `Retry: RetryWillNotFix`), show the user the cause and add `--force` only when they explicitly accept it. Never add it to get past "…errors that --force cannot get past" (`Retry: RetryLater`): resolve that in Orchestrator and re-run without `--force`. See [When the uninstall is refused](references/activate-and-manage.md#when-the-uninstall-is-refused).
+12. **For multi-environment promotion, switch tenants with `uip login tenant set <tenant>` and pass a per-environment deploy config via `--config-file <path>`.** The same packed `.uipx` deploys to dev/staging/prod — the environment differs by the target tenant and the config file (generated with `deploy config get`, edited with `config set` / `config link`), not by a different package. There is no `-c <CONFIG_KEY>` flag.
 
 ## Workflow
 
@@ -106,6 +111,36 @@ Authentication is a prerequisite. Check `uip login status --output json` before 
 
 This skill is the terminal step of an SDD-driven build: after `uipath-planner` produces the SDD and derives the task list, and implementation specialists build the projects, the `.uipx` is packed and shipped here.
 
+<!--skill-flavor:existing-solution:start-->
+## Start From an Existing Solution
+
+When the solution already exists in Studio Web, download its source instead of recreating it:
+
+```bash
+uip solution download <solution-id> --destination <dir> --extract --output json
+```
+
+- `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it. A project key, process key, deployment key or package name is not a solution ID: the export answers `ErrorCode: not_found` (older CLIs: `Studio Web API returned 404`).
+- Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none. Extract into a new or empty folder: `--extract` writes over existing files, so re-running it on a copy you have edited loses those edits. Confirm with the user first.
+- The extracted `.uipx` keeps the Studio Web `SolutionId`, and `uip solution upload` overwrites the solution that has that id in the org you are logged into, or imports a new one when there is none ([Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)). Studio Web solutions belong to the organization, not to a tenant: every tenant of the org sees the same solutions, so an upload after `uip login tenant set` to another tenant of the same org still overwrites the original. To copy the solution to another org, log in there and `upload` it. For a separate copy in the same org (for example a dev copy next to a demo), replace the `SolutionId` in the `.uipx` with a fresh GUID before the upload. To run the solution in another tenant, `pack` → `publish` → `deploy run` there.
+
+### A solution known only by its deployment
+
+When the user points at a deployed solution (an Orchestrator folder, a deployment, a process) rather than a Studio Web solution, find its source through the package it was deployed from:
+
+```bash
+uip solution deploy list --folder-path <parent-folder> --output json
+uip solution packages download <PackageName> <PackageVersion> --destination <dir> --output json
+uip solution download <SolutionId> --destination <dir> --extract --output json
+```
+
+1. `deploy list` reports each deployment's `PackageName` and `PackageVersion`. `--folder-path` is the folder the solution folder sits in, not the solution folder itself.
+2. `packages download` writes the published package `.zip`. On CLIs that report it, `Data.SolutionId` is the solution the package was packed from.
+3. When that solution is in Studio Web (built there, or uploaded with `uip solution upload`), `solution download <SolutionId> --extract` gives the editable source.
+
+When the download answers `not_found`, the solution is not in Studio Web, and the package `.zip` is the only copy the tenant holds. The same holds when the CLI reports `Data.SolutionId` for other packages but not this one. A CLI that predates the field never reports it: ask the user for the Studio Web solution ID. Tell the user before rebuilding anything from the `.zip`. Do not hand a project key or deployment key to `solution download`.
+<!--skill-flavor:existing-solution:end-->
+
 ## Reference Navigation
 
 | File | Purpose |
@@ -115,8 +150,9 @@ This skill is the terminal step of an SDD-driven build: after `uipath-planner` p
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resources refresh / resources add / resources remove / resources edit`; field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 | [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run / feeds list`, targeting a non-tenant feed (`--feed` / `--personal-workspace`), deploy configs, CI/CD pipeline patterns |
+| [Folder Runtime Check](references/deploy-folder-runtimes.md) | The `Data.Warnings` a deploy or upgrade gives when the folder has no runtime for a process's unattended jobs, and the `uip or machines assign` fix |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / upgrade / uninstall / delete`, in-place version upgrades, environment management |
-| [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
+| [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions, solutions that carry an ontology |
 
 ## Anti-patterns
 

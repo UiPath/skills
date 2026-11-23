@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/mcp/folder-mock-shared/mock-connected-mcp/refresh-tools"
+        }
+      ],
+      "ParentType": "remote"
+    }
+  }
+}

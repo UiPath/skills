@@ -1,0 +1,172 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.conversation",
+   "inputs": {
+    "entryPointId": "start"
+   }
+  },
+  {
+   "id": "waitForMessage",
+   "type": "uipath.conversational.wait-for-message",
+   "inputs": {
+    "conversationId": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.conversationId",
+     "fieldType": "string"
+    },
+    "from": "User",
+    "numExchanges": 20
+   }
+  },
+  {
+   "id": "gatherRequest",
+   "type": "uipath.agent.conversational",
+   "inputs": {
+    "source": "90a1b362-2a66-4e66-b6ea-f1e289dcbc16",
+    "conversationalAgentSettings": {
+     "mode": "simple",
+     "context": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext",
+      "fieldType": "object"
+     },
+     "conversationId": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.conversationId",
+      "fieldType": "string"
+     },
+     "exchangeId": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.latestExchangeId",
+      "fieldType": "string"
+     },
+     "messages": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.messages",
+      "fieldType": "array"
+     },
+     "userSettings": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.userSettings",
+      "fieldType": "object"
+     }
+    }
+   }
+  },
+  {
+   "id": "checkIntake",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "5278c956-1549-4ee6-a1f5-427aca754d82",
+    "agentInputVariables": [
+     {
+      "id": "waitForMessage__output__conversationContext__messages",
+      "type": "string",
+      "binding": "=js:$vars.waitForMessage.output.conversationContext.messages"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "readyToSubmit",
+      "type": "boolean"
+     },
+     {
+      "id": "requestSummary",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "intakeComplete",
+   "type": "core.logic.decision",
+   "inputs": {
+    "trueLabel": "Keep gathering",
+    "falseLabel": "False",
+    "expression": "$vars.checkIntake.output.readyToSubmit !== true"
+   }
+  },
+  {
+   "id": "startProcess",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "reportBack",
+   "type": "uipath.conversational.send-message",
+   "inputs": {
+    "conversationId": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.conversationId",
+     "fieldType": "string"
+    },
+    "exchangeId": {
+     "type": "jsExpression",
+     "expression": "$vars.waitForMessage.output.conversationContext.latestExchangeId",
+     "fieldType": "string"
+    },
+    "endExchange": false,
+    "role": "assistant",
+    "content": "Submitted.",
+    "mimeType": "text/markdown"
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "waitForMessage",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "waitForMessage",
+   "sourcePort": "output",
+   "targetNodeId": "gatherRequest",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "gatherRequest",
+   "sourcePort": "success",
+   "targetNodeId": "checkIntake",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "checkIntake",
+   "sourcePort": "success",
+   "targetNodeId": "intakeComplete",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "intakeComplete",
+   "sourcePort": "false",
+   "targetNodeId": "startProcess",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "startProcess",
+   "sourcePort": "output",
+   "targetNodeId": "reportBack",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reportBack",
+   "sourcePort": "output",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "intakeComplete",
+   "sourcePort": "true",
+   "targetNodeId": "waitForMessage",
+   "targetPort": "input"
+  }
+ ]
+}

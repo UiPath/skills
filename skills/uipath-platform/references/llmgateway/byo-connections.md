@@ -37,6 +37,8 @@ Six verbs under `uip llm-configuration byo-connections`:
 | `OpenAiV1Compatible` | OpenAI-compatible vendors | `uipath-openai-openaiv1compliant` | `OpenAiChatCompletions`, `OpenAiResponses`, `OpenAiEmbeddings` |
 | `GoogleVertex` | Google Vertex AI | `uipath-google-vertex` | `GeminiGenerateContent`, `GeminiEmbeddings` |
 
+`--connector-type Custom` takes a connector built for an endpoint none of these covers (an in-house LLM gateway, custom auth, its own body format). Building, testing and publishing that connector, and saving its configuration, is in [custom-connector/custom-connector-guide.md](custom-connector/custom-connector-guide.md).
+
 Always confirm the exact key on the target tenant before creating a connection — connector keys can vary by environment. Verify with:
 
 ```bash

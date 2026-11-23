@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Message": "Connection '6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01' is not enabled (status: Expired).",
+  "Instructions": "Run 'uip is connections edit 6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01' to re-authenticate the expired connection.",
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}

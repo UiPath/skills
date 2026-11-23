@@ -1,0 +1,168 @@
+task_id: skill-test-perf-scenario-cleanup-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to delete one performance
+  (load-test) scenario by name and to read the tenant's remaining
+  virtual-user units with `uip tm perf-scenario licenses get`. pre_run seeds
+  two per-run scenarios in the shared CLAIM project,
+  EVFX-PERF-<STAMP>-OLD (to delete; its name is in old-scenario.txt) and
+  EVFX-PERF-<STAMP>-KEEP (must survive); post_run deletes whatever is left.
+  Graded on the tenant, not the reply: OLD is gone and KEEP is still there,
+  and the number the agent writes to units.txt equals the live
+  RemainingVirtualUserUnits.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 20
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract. Two model variants share CLAIM, so each run stamps its own
+# scenario names and writes them to old-scenario.txt / keep-scenario.txt; the
+# graders and post_run read those files, never a name prefix match.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      P, PREFIX = "CLAIM", "EVFX-PERF-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {}
+
+      # Orphan sweep: a run that died before post_run strands its scenarios.
+      # Only delete ones stamped more than 6 hours ago, so a concurrent run
+      # keeps its own.
+      listed = call("tm", "perf-scenario", "list", "--project-key", P, "--search", PREFIX, "--limit", "200")
+      for s in (listed.get("Data") or {}).get("Scenarios") or []:
+          name, key = s.get("Name") or "", s.get("ScenarioKey")
+          if not key or not name.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "perf-scenario", "delete", "--scenario-key", key, "--yes")
+
+      # Six different letters, no l/i/o: a hex suffix like 86c777 or c5858f is
+      # easy to miscopy, and a miscopied name means the agent deletes nothing.
+      tag = "".join(secrets.SystemRandom().sample("abcdefghjkmnpqrstuvwxyz", 6))
+      run = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{tag}"
+      for role, path in (("OLD", "old-scenario.txt"), ("KEEP", "keep-scenario.txt")):
+          name = f"{run}-{role}"
+          out = call("tm", "perf-scenario", "create", "--project-key", P, "--name", name)
+          if out.get("Result") != "Success":
+              # A 403 on create and on list means this login cannot use
+              # performance testing at all (no Test Cloud licence resolved, or
+              # the feature is off): an environment failure, which the
+              # smoke pass-rate gate drops instead of scoring.
+              if out.get("ErrorCode") == "permission_denied" and listed.get("ErrorCode") == "permission_denied":
+                  print(f"TENANT NOT READY — environment failure, not an agent failure: this login "
+                        f"cannot use performance testing in {P} (perf-scenario create and list return 403).",
+                        file=sys.stderr)
+                  sys.exit(1)
+              print(f"SEED FAILED: could not create scenario {name} in {P}: {out}")
+              sys.exit(1)
+          with open(path, "w") as f:
+              f.write(name + "\n")
+      print(f"SEEDED {run}-OLD and {run}-KEEP in {P}")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {}
+      for path in ("old-scenario.txt", "keep-scenario.txt"):
+          if not os.path.exists(path):
+              continue
+          name = open(path).read().strip()
+          out = call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name)
+          for s in (out.get("Data") or {}).get("Scenarios") or []:
+              if s.get("Name") == name and s.get("ScenarioKey"):
+                  call("tm", "perf-scenario", "delete", "--scenario-key", s["ScenarioKey"], "--yes")
+      PYEOF
+    timeout: 120
+
+initial_prompt: |
+  In my Test Manager project CLAIM there's an old load-test scenario I don't
+  need any more. Its exact name is the one line in old-scenario.txt. Delete
+  that scenario, I approve that. Don't touch any other scenario.
+
+  Also, how many virtual-user units does our performance testing licence have
+  left? Write just the number to units.txt.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1; advisory convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent deleted with `perf-scenario delete --scenario-key … --yes`"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--scenario-key\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(?:--yes|-y)\b)uip\s+tm\s+perf-scenario\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "This run's OLD scenario is gone and its KEEP scenario is still in CLAIM"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      old = open("old-scenario.txt").read().strip()
+      keep = open("keep-scenario.txt").read().strip()
+      run = old[:-len("-OLD")]
+      r = subprocess.run(["uip", "tm", "perf-scenario", "list", "--project-key", "CLAIM",
+                          "--search", run, "--output", "json"], capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      if out.get("Result") != "Success":
+          print("list failed:", out); sys.exit(1)
+      names = [s.get("Name") for s in (out.get("Data") or {}).get("Scenarios") or []]
+      print("this run's scenarios left:", names)
+      sys.exit(0 if old not in names and keep in names else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the units with `perf-scenario licenses get`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+licenses\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "units.txt holds the live RemainingVirtualUserUnits"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      got = re.sub(r"[,\s]", "", open("units.txt").read())
+      r = subprocess.run(["uip", "tm", "perf-scenario", "licenses", "get", "--project-key", "CLAIM",
+                          "--output", "json"], capture_output=True, text=True)
+      want = (json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1]).get("Data") or {}).get("RemainingVirtualUserUnits")
+      print("units.txt:", got, "live:", want)
+      sys.exit(0 if want is not None and got == str(want) else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

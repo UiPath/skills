@@ -2,10 +2,11 @@
 """Flow Integration Pattern 2 (Published coded agent) shape check.
 
 Asserts:
-  1. A `.flow` file exists somewhere under a `triage-flow` project that
-     is NOT colocated with the coded agent (no
-     `resources/solution_folder/process/agent/<name>.json` sibling — that
-     would indicate Pattern 1, not Pattern 2).
+  1. A `.flow` file exists somewhere under a `triage-flow` project, and the
+     agent is NOT registered in that solution (Pattern 1): no `.uipx` lists a
+     non-flow project, and any `resources/solution_folder/process/agent/*.json`
+     is the imported published process (`uip solution resources refresh`),
+     not a project-backed manifest. See `assert_not_in_solution_sibling`.
   2. The flow file contains at least one node of type
      `uipath.core.agent.<resourceKey>`.
   3. The agent node's `definitions[]` entry carries the Pattern 2 marker:
@@ -101,27 +102,103 @@ def assert_pattern_2_not_pattern_1(flow_path: Path) -> dict:
     return doc
 
 
-def assert_not_in_solution_sibling() -> None:
-    # Pattern 1 places the resource manifest at
-    # `<Solution>/resources/solution_folder/process/agent/<name>.json`.
-    # Pattern 2 should NOT have one — the agent is a tenant-level resource,
-    # not a solution-local one.
-    matches = list(CWD.rglob("resources/solution_folder/process/agent/*.json"))
-    if matches:
-        fail(
-            "found in-solution resource manifest(s) at "
-            + ", ".join(str(p.relative_to(CWD)) for p in matches)
-            + " — these indicate Pattern 1 (in-solution), not Pattern 2 (published). "
-            "The coded agent must NOT be registered as a sibling of the flow."
+def _agent_node_keys(doc: dict) -> set[str]:
+    prefix = "uipath.core.agent."
+    return {
+        # GUIDs are case-insensitive; the flow node and the imported manifest
+        # spell the same key in different cases.
+        str(dfn.get("nodeType"))[len(prefix):].lower()
+        for dfn in doc.get("definitions", [])
+        if isinstance(dfn, dict) and str(dfn.get("nodeType", "")).startswith(prefix)
+    }
+
+
+def _flow_solution_root(flow_path: Path) -> Path:
+    """Nearest ancestor of the flow file that holds a `.uipx`, else CWD.
+
+    Scopes the Pattern 1 scan to the flow's own solution: a separate solution
+    wrapping the agent (a legitimate way to publish it) is not graded here.
+    """
+    for parent in flow_path.parents:
+        if any(parent.glob("*.uipx")):
+            return parent
+        if parent == CWD:
+            break
+    return CWD
+
+
+def assert_not_in_solution_sibling(doc: dict, flow_path: Path) -> None:
+    """The agent is not registered as an in-solution project (Pattern 1).
+
+    A file under `resources/solution_folder/process/agent/` is NOT by itself a
+    Pattern 1 signal. `uip solution resources refresh` (recommended by the
+    `flow init` NextSteps) imports the published tenant process there too.
+    The two shapes differ:
+
+    * Pattern 1 (project-backed): the solution's `.uipx` lists an Agent project,
+      and the manifest carries `resource.projectKey` = that project's `Id`;
+      `spec.package` is only `{key: <local GUID>}`.
+    * Pattern 2 import: no `projectKey`, `spec.package` names the tenant-feed
+      package (`{name, key: "<name>:<version>"}`), and `resource.key` equals the
+      flow node's `uipath.core.agent.<GUID>`.
+    """
+    root = _flow_solution_root(flow_path)
+    for uipx in root.rglob("*.uipx"):
+        if ".venv" in uipx.parts or "node_modules" in uipx.parts:
+            continue
+        try:
+            projects = json.loads(uipx.read_text(encoding="utf-8")).get("Projects") or []
+        except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
+            fail(f"{uipx.relative_to(CWD)} is not a valid solution manifest")
+        others = [
+            p for p in projects
+            if isinstance(p, dict) and str(p.get("Type", "")).lower() != "flow"
+        ]
+        if others:
+            fail(
+                f"{uipx.relative_to(CWD)} registers non-flow project(s) "
+                + ", ".join(f"{p.get('Type')}:{p.get('ProjectRelativePath')}" for p in others)
+                + " — the agent is an in-solution sibling of the flow (Pattern 1), "
+                "not a published resource (Pattern 2)."
+            )
+
+    node_keys = _agent_node_keys(doc)
+    manifests = list(root.rglob("resources/solution_folder/process/agent/*.json"))
+    for path in manifests:
+        rel = path.relative_to(CWD)
+        try:
+            resource = json.loads(path.read_text(encoding="utf-8")).get("resource") or {}
+        except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
+            fail(f"{rel} is not a valid resource manifest")
+        package = (resource.get("spec") or {}).get("package") or {}
+        if resource.get("projectKey"):
+            fail(
+                f"{rel} is project-backed (projectKey={resource.get('projectKey')!r}) — "
+                "the agent is registered in the solution (Pattern 1), not consumed as a "
+                "published resource (Pattern 2)."
+            )
+        if not package.get("name"):
+            fail(
+                f"{rel} has no tenant-feed `spec.package.name` (spec.package={package!r}) — "
+                "it is not an imported published process, so it indicates Pattern 1."
+            )
+        if str(resource.get("key") or "").lower() not in node_keys:
+            fail(
+                f"{rel} key {resource.get('key')!r} matches no flow agent node "
+                f"({sorted(node_keys)!r}) — an agent manifest the flow does not consume."
+            )
+        print(
+            f"OK: {rel} is the imported published process "
+            f"(package {package.get('key')!r}, key matches the flow node) — expected for Pattern 2"
         )
-    print("OK: no in-solution resource manifest exists (correctly publishes as Pattern 2)")
+    print("OK: agent is not registered as an in-solution project (Pattern 2)")
 
 
 def main() -> None:
     flow_path = discover_flow_file()
     print(f"OK: discovered flow file {flow_path.relative_to(CWD)}")
-    assert_pattern_2_not_pattern_1(flow_path)
-    assert_not_in_solution_sibling()
+    doc = assert_pattern_2_not_pattern_1(flow_path)
+    assert_not_in_solution_sibling(doc, flow_path)
 
     agent_marker = next(CWD.rglob(f"{AGENT_PROJECT_HINT}/langgraph.json"), None)
     if agent_marker is None:

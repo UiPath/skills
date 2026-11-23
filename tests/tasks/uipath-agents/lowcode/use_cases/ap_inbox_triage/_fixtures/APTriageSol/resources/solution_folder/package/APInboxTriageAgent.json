@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "APInboxTriageAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "da98e437-b806-4505-abdb-733c466c4f86",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "APInboxTriageAgent"
+    },
+    "locks": [],
+    "key": "650b2fdc-7f9a-45ff-8a73-a6717732de69",
+    "files": []
+  }
+}

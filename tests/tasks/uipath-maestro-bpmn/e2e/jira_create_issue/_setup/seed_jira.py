@@ -11,14 +11,12 @@ import jira_is
 
 tag = secrets.token_hex(4)
 summary = f"coder-eval jira flow e2e {tag}"
+conn = jira_is.require_connection()
 seed = {
     "tag": tag,
     "summary": summary,
     "project_key": jira_is.PROJECT_KEY,
-    "issuetype_id": jira_is.ISSUETYPE_ID,
-    # Jira's design-time schema marks fields.reporter.id as required for this
-    # project/issue type; pin it so agents never have to guess or ask.
-    "reporter_id": jira_is.myself(jira_is.connection_id()),
+    "issuetype_id": jira_is.issuetype_id(conn),
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2))
 print(f"OK: wrote seed targets (summary={summary!r}, project={jira_is.PROJECT_KEY})")

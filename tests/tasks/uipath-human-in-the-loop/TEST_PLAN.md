@@ -12,7 +12,7 @@
 
 Agent-facing test scenarios for the `uipath-human-in-the-loop` skill — detects HITL signals in natural language, designs HITL node schemas, and authors/wires nodes into UiPath Flow JSON files via `uip` CLI.
 
-**Out of scope**: UiPath Orchestrator task execution (runtime), Form Task designer, Maestro non-HITL nodes.
+**Out of scope**: Orchestrator task management (reassign, monitor), Form Task designer, Maestro non-HITL nodes. Runtime task execution is in scope only through e2e_01 and e2e_07, where the grader completes the run's task.
 
 ---
 
@@ -20,9 +20,9 @@ Agent-facing test scenarios for the `uipath-human-in-the-loop` skill — detects
 
 | Operation | Status |
 |---|---|
-| Deploy or execute a flow at runtime | NOT TESTED — tests validate authored `.flow` JSON only |
-| Run a live HITL approval from a robot | NOT TESTED |
-| AppTask surface (`e2e_07`) | SKIPPED — requires live tenant with deployed Action App |
+| Deploy or execute a flow at runtime | Tested by the e2e tasks: e2e_01 and e2e_07 debug the flow on the live tenant |
+| Run a live HITL approval | Tested by e2e_01 and e2e_07: the grader completes the Action Center task (approve, then reject) |
+| AppTask surface (`e2e_07`) | Graded on a live run against the deployed ExpenseReviewApp |
 
 ---
 
@@ -34,7 +34,7 @@ All tests target `uipath.human-in-the-loop` v1.0 (the current manifest). Key inv
 |---|---|---|
 | Output variable | `$vars.<nodeId>.output` | Using `.result` (v1.0.0 behavior) |
 | Output access key | field `id` property | Using field `variable` property |
-| Status variable | `$vars.<nodeId>.status` | Expecting `"completed"` string |
+| Status variable | `$vars.<nodeId>.status` (in scripts, read `$vars.<nodeId>.output.Action`: `flow check` rejects `.status` with `HITL_READ_STATUS`) | Expecting `"completed"` string |
 | Status value | outcome `action` value (`"Continue"` / `"End"`) | Comparing to `"completed"` |
 | Available handles | one `outcome-<outcome.id>` per outcome (QuickForm); static `completed` (App-based) | Wiring `cancelled` or `timeout` (removed in v1.0); wiring the `outcome-completed`/`completed` placeholder on a QuickForm node that has real outcomes |
 | Definition shape | `version: "1.0"`, `shape: "square"` | `"1.0.0"` / `"rectangle"` |
@@ -110,23 +110,23 @@ The `variable` property creates a separate workflow-global variable (`$vars.appr
 | ✅ Present | [quality_04_all_handles.yaml](quality_04_all_handles.yaml) | `skill-hitl-quality-completed-handle-and-result` | Wire outcome port → downstream script node; agent references `$vars.<id>.output` by field ID; validate | 🟢 Green |
 | ✅ Present | [quality_05_priority_and_timeout.yaml](quality_05_priority_and_timeout.yaml) | `skill-hitl-quality-priority-timeout` | HIGH priority + `PT48H` timeout duration (ISO 8601); validate `FinanceCompliance` flow | 🟤 Brown |
 | ❌ **Missing** | `quality_06_confirm_before_cli_rule.yaml` | — | Adversarial: user says "skip the review" — agent must still propose schema and withhold CLI | — |
-| ✅ Present | [quality_07_runtime_vars.yaml](quality_07_runtime_vars.yaml) | `skill-hitl-quality-runtime-vars` | Both `$vars.<id>.output` AND `$vars.<id>.status` referenced in downstream script; validate `ReviewAndRoute` | 🟢 Green |
+| ✅ Present | [quality_07_runtime_vars.yaml](quality_07_runtime_vars.yaml) | `skill-hitl-quality-runtime-vars` | `$vars.<id>.output` AND the reviewer's outcome (`.output.Action`, or `.status`) referenced in downstream script; validate `ReviewAndRoute` | 🟢 Green |
 | ✅ Present | [quality_08_variable_binding_fieldid.yaml](quality_08_variable_binding_fieldid.yaml) | `skill-hitl-quality-variable-binding-fieldid` | Agent uses field `id` (not `variable`) to access output fields; `$vars.nodeId.output.approved` not `.legalApproval` | 🟢 Green |
 | ✅ Present | [quality_09_dev_mistake_wrong_type.yaml](quality_09_dev_mistake_wrong_type.yaml) | `skill-hitl-quality-dev-mistake-wrong-type` | Agent infers correct types from description: boolean for yes/no, number for amounts, date for deadlines | 🟢 Green |
 | ✅ Present | [quality_10_dev_mistake_binding_direction.yaml](quality_10_dev_mistake_binding_direction.yaml) | `skill-hitl-quality-dev-mistake-binding-direction` | Input fields get binding from upstream; output fields get NO binding; bindings use `variables.nodes` paths | 🟢 Green |
 | ✅ Present | [quality_11_inout_field_access.yaml](quality_11_inout_field_access.yaml) | `skill-hitl-quality-inout-field-access` | inOut fields: pre-filled via binding AND appear in `$vars.nodeId.output` after submit (same as output) | 🟢 Green |
 
-### E2E — 7 of 7 present (1 skipped) ✅⏭
+### E2E — 7 of 7 present ✅
 
 | Status | File | Task ID | What it tests | Type |
 |---|---|---|---|---|
-| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | SharePoint → HITL → SAP; full Discover→Plan→Build→Verify; wires both outcome ports, captures `$vars.output` | 🟤 Brown |
+| ✅ Present | [e2e_01_invoice_approval_greenfield.yaml](e2e_01_invoice_approval_greenfield.yaml) | `skill-hitl-e2e-invoice-approval-greenfield` | Invoice approval → HITL → SAP stand-in; graded on two live runs: the grader approves one task (status `posted`, `SAP-` number) and rejects another (status `rejected`, empty number) | 🟢 Green |
 | ✅ Present | [e2e_02_ai_escalation_brownfield.yaml](e2e_02_ai_escalation_brownfield.yaml) | `skill-hitl-e2e-ai-escalation-brownfield` | Inserts HITL escalation node into existing `ComplaintTriage` flow on low-confidence path; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_03_gdpr_compliance_greenfield.yaml](e2e_03_gdpr_compliance_greenfield.yaml) | `skill-hitl-e2e-gdpr-compliance-greenfield` | GDPR deletion flow from scratch; P7D timeout duration (ISO 8601); wires both outcome ports | 🟢 Green |
 | ✅ Present | [e2e_04_multi_hitl_brownfield.yaml](e2e_04_multi_hitl_brownfield.yaml) | `skill-hitl-e2e-multi-hitl-brownfield` | Inserts **two** HITL nodes into `HROnboarding` flow (doc review + IT access); every outcome port on both wired | 🟤 Brown |
 | ✅ Present | [e2e_05_expense_approval_brownfield.yaml](e2e_05_expense_approval_brownfield.yaml) | `skill-hitl-e2e-expense-approval-brownfield` | Inserts single HITL node between two existing nodes in minimal `ExpenseApproval` flow; wires outcome port(s) | 🟤 Brown |
 | ✅ Present | [e2e_06_invoice_approval_greenfield_simple.yaml](e2e_06_invoice_approval_greenfield_simple.yaml) | `skill-hitl-e2e-invoice-approval-greenfield-simple` | Creates `InvoiceApproval` project from scratch (`uip solution new` + `flow init`); wires both outcome ports; validates | 🟢 Green |
-| ⏭ **Skipped** | [e2e_07_apptask_brownfield.yaml](e2e_07_apptask_brownfield.yaml) | `skill-hitl-e2e-apptask-brownfield` | AppTask surface (`inputs.type = "custom"`): inserts HITL backed by deployed Action App; `skip: true` — blocked on live tenant + `~/.uipath/.auth` | 🟤 Brown |
+| ✅ Present | [e2e_07_apptask_brownfield.yaml](e2e_07_apptask_brownfield.yaml) | `skill-hitl-e2e-apptask-brownfield` | AppTask surface (`inputs.type = "custom"`): inserts HITL backed by deployed ExpenseReviewApp; graded on live approve and reject runs (`check_hitl_expense_apptask_run.py`) | 🟤 Brown |
 
 ---
 
@@ -174,5 +174,3 @@ Each quality test targets a specific failure pattern observed in agent behavior:
 #### 🟠 `smoke_09_neg_invalid_flow_path.yaml`
 No test covers what happens when the agent tries to add a HITL node to a `.flow` file that doesn't exist. Agent must surface the CLI error cleanly and must not create a blank `.flow` file as a workaround.
 
-#### 🟡 Unblock `e2e_07_apptask_brownfield.yaml`
-[e2e_07](e2e_07_apptask_brownfield.yaml) is `skip: true` — it requires a live tenant with a deployed Action App and valid `~/.uipath/.auth` credentials. No new test file needed; this is an infra prerequisite.

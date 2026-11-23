@@ -8,7 +8,8 @@ script with that dir as cwd, the way coder-eval runs it. Covered:
   an unwitnessed (location, folderPath) pair, a wrong binding folder and a
   missing binding fail.
 - `inline_wiring.assert_inline_agent_definition`: an `agent.json` with no
-  system prompt fails.
+  system prompt fails; `projectId` matching the directory passes without `id`;
+  a missing or mismatched `projectId` fails.
 - `check_inline_is_connector_tool.assert_connection_binding`: a real
   connection UUID passes; a placeholder, the SDK stub and a missing binding
   fail.
@@ -153,6 +154,27 @@ def test_agent_json_without_system_prompt_fails(tmp_path):
     assert "no non-empty 'system' message" in result.stderr
 
 
+def test_agent_json_project_id_without_id_passes(tmp_path):
+    agent = copy.deepcopy(AGENT_JSON)
+    del agent["id"]
+    build_rpa_solution(tmp_path, location="solution", folder_path="", agent_json=agent)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("project_id", [None, TOOL_ID], ids=["missing", "mismatched"])
+def test_agent_json_bad_project_id_fails(tmp_path, project_id):
+    agent = copy.deepcopy(AGENT_JSON)
+    agent.pop("projectId")
+    if project_id:
+        agent["projectId"] = project_id
+    build_rpa_solution(tmp_path, location="solution", folder_path="", agent_json=agent)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode != 0
+    assert "projectId" in result.stderr
+    assert "does not match its directory" in result.stderr
+
+
 def test_agent_json_missing_fails(tmp_path):
     build_rpa_solution(tmp_path, location="solution", folder_path="")
     (tmp_path / "FibonacciFlowSol" / "FibonacciFlow" / AGENT_ID / "agent.json").unlink()
@@ -164,7 +186,13 @@ def test_agent_json_missing_fails(tmp_path):
 CONNECTOR = "uipath-uipath-airdk"
 
 
-def build_is_solution(root: Path, connection_id: object, *, with_binding: bool = True) -> Path:
+def build_is_solution(
+    root: Path,
+    connection_id: object,
+    *,
+    with_binding: bool = True,
+    keys: tuple[str, str, str] = ("connector", "connectionId", "defaultValue"),
+) -> Path:
     project = root / "ResearchFlowSol" / "ResearchFlow"
     flow = {
         "nodes": [
@@ -186,16 +214,25 @@ def build_is_solution(root: Path, connection_id: object, *, with_binding: bool =
         resources.append(
             {
                 "resource": "connection",
-                "metadata": {"Connector": CONNECTOR},
-                "value": {"ConnectionId": {"defaultValue": connection_id}},
+                "metadata": {keys[0]: CONNECTOR},
+                "value": {keys[1]: {keys[2]: connection_id}},
             }
         )
     write_json(project / "bindings_v2.json", {"version": "2.0", "resources": resources})
     return root
 
 
-def test_is_connector_real_connection_passes(tmp_path):
-    build_is_solution(tmp_path, CONNECTION_ID)
+@pytest.mark.parametrize(
+    "keys",
+    [
+        ("connector", "connectionId", "defaultValue"),
+        ("Connector", "ConnectionId", "DefaultValue"),
+        ("cOnNeCtOr", "CONNECTIONID", "defaultvalue"),
+    ],
+    ids=["compile-camel", "pascal", "mixed"],
+)
+def test_is_connector_real_connection_passes(tmp_path, keys):
+    build_is_solution(tmp_path, CONNECTION_ID, keys=keys)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -216,3 +253,33 @@ def test_is_connector_missing_binding_fails(tmp_path):
     build_is_solution(tmp_path, CONNECTION_ID, with_binding=False)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode != 0
+
+
+def _load_inline_wiring():
+    """The module itself, loaded by path: `_shared` names a package in several task trees."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("inline_wiring", Path(__file__).with_name("inline_wiring.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+inline_wiring = _load_inline_wiring()
+
+
+def test_main_flow_path_takes_studio_webs_new_flow_when_the_named_file_is_absent(tmp_path):
+    project = tmp_path / "Sol" / "OrchestratorFlow"
+    project.mkdir(parents=True)
+    (project / "new.flow").write_text("{}", encoding="utf-8")
+
+    assert inline_wiring.main_flow_path(project / "OrchestratorFlow.flow") == project / "new.flow"
+
+
+def test_main_flow_path_keeps_the_named_file_when_it_exists(tmp_path):
+    project = tmp_path / "Sol" / "OrchestratorFlow"
+    project.mkdir(parents=True)
+    (project / "OrchestratorFlow.flow").write_text("{}", encoding="utf-8")
+    (project / "new.flow").write_text("{}", encoding="utf-8")
+
+    assert inline_wiring.main_flow_path(project / "OrchestratorFlow.flow") == project / "OrchestratorFlow.flow"

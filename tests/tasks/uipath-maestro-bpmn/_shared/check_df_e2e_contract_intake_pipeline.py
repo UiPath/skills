@@ -7,7 +7,7 @@ Ported from Flow
 ``_shared/check_connector_node_shape.py`` (connector-shape criterion),
 translated from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.ActivityExecution`` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Node
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4). Node
 classification helpers are copied from the passing sibling port
 ``connector_features/datafabric_connector/contractregistry_crud_filters/``'s
 ``check_df_contractregistry_crud_filters.py`` for this batch's consistency.
@@ -138,6 +138,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -270,11 +271,7 @@ def named_inputs(task: ET.Element) -> list[tuple[str, str]]:
 
 
 def query_inputs(task: ET.Element) -> list[tuple[str, str]]:
-    return [
-        ((inp.attrib.get("name") or "").strip().lower(), (inp.attrib.get("value") or inp.text or "").strip())
-        for inp in node_inputs(task)
-        if inp.attrib.get("target") == "query"
-    ]
+    return [(name.strip().lower(), value) for name, value in query_parameters(task).items()]
 
 
 def sent_body(task: ET.Element) -> dict:

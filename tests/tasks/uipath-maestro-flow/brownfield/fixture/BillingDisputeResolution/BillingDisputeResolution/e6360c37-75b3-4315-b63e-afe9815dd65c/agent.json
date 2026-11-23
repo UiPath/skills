@@ -1,0 +1,134 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 16000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.normalizeData.output.invoiceNumber"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.disputeAnalyst.output.creditAmount (approved credit)"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "Bound from $vars.disputeAnalyst.output.determination"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "Bound from $vars.disputeAnalyst.output.rationale"
+      },
+      "crmLookup1__output": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "description": "Bound from $vars.crmLookup1.output (customer account)"
+      },
+      "discrepancyDetection__output": {
+        "type": "object",
+        "description": "Bound from $vars.discrepancyDetection.output"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Plain-text email body"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the Resolution Writer for the billing team. You draft (but never send) a customer-facing email that communicates the resolution of an approved billing dispute. The credit has already been approved and posted to the financial system.\n\nRequirements:\n- The body MUST state the invoice number exactly as provided and the approved credit amount exactly as provided (format as currency with two decimals, e.g. $1,234.00). Do not change, round differently, or recompute the credit amount.\n- Address the customer by account name when available from the CRM record; otherwise use \"Valued Customer\".\n- Briefly explain which line items were corrected and why, using the determination, rationale, and discrepancy summary. Do not mention internal SOPs, confidence scores, agents, or internal routing.\n- Professional, concise, empathetic tone; under 250 words; plain text, no markdown.\n- Sign off as \"Billing Operations Team\".\n- The subject must include the invoice number.\n\nYou have no tools. Respond in a single step with the structured output fields subject and body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are the Resolution Writer for the billing team. You draft (but never send) a customer-facing email that communicates the resolution of an approved billing dispute. The credit has already been approved and posted to the financial system.\n\nRequirements:\n- The body MUST state the invoice number exactly as provided and the approved credit amount exactly as provided (format as currency with two decimals, e.g. $1,234.00). Do not change, round differently, or recompute the credit amount.\n- Address the customer by account name when available from the CRM record; otherwise use \"Valued Customer\".\n- Briefly explain which line items were corrected and why, using the determination, rationale, and discrepancy summary. Do not mention internal SOPs, confidence scores, agents, or internal routing.\n- Professional, concise, empathetic tone; under 250 words; plain text, no markdown.\n- Sign off as \"Billing Operations Team\".\n- The subject must include the invoice number.\n\nYou have no tools. Respond in a single step with the structured output fields subject and body."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft the dispute resolution email.\n\nInvoice number: {{input.normalizeData__output__invoiceNumber}}\nApproved credit amount: {{input.disputeAnalyst__output__creditAmount}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nRationale: {{input.disputeAnalyst__output__rationale}}\nCustomer account record(s): {{input.crmLookup1__output}}\nDiscrepancy summary: {{input.discrepancyDetection__output}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft the dispute resolution email.\n\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer account record(s): "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDiscrepancy summary: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output"
+        }
+      ]
+    }
+  ],
+  "projectId": "e6360c37-75b3-4315-b63e-afe9815dd65c"
+}

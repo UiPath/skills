@@ -26,7 +26,7 @@ uip tm wait              → block until terminal
 uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 ```
 
-Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. See [/uipath:uipath-rpa § cli-reference.md § Pack & Publish to Orchestrator](../../uipath-rpa/references/cli-reference.md#pack--publish-to-orchestrator) for full pack flags. Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
+Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. For the other flags, run the command with `--help` (the `uipath-rpa` skill covers packing). Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
 
 ## Step 2 — Upload to Orchestrator
 
@@ -103,19 +103,21 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> --execution-type automated --o
 
 Capture the returned `ExecutionId`.
 
-## Step 7 — Wait for terminal status
+## Step 7 — Wait for terminal status (only when asked)
+
+A request to trigger or start a run is done once `ExecutionId` is returned: report it and stop. Wait only when the user asked for the run's result, and keep `--timeout <SECONDS>` below your shell's command time limit so the call returns:
 
 ```bash
-uip tm wait --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --timeout 900 --output json
+uip tm wait --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --timeout <SECONDS> --output json
 ```
 
-`--timeout 0` means no timeout. The output `Status` is `Passed` / `Failed` / `Cancelled` when the call returns.
+An automated run stays `Pending` until a robot serving the folder picks it up, so `wait` can use its whole `--timeout`. Exit 2 (`Timed out after <N>s`) means report the run as not finished (SKILL.md Rule 10 (b)). `--timeout 0` means no timeout; never pass it from an agent shell. The output `Status` is `Passed` / `Failed` / `Cancelled` when the call returns.
 
 For result download, attachment download, and report generation: see [/uipath:uipath-test SKILL.md § Result, Attachment, Report Commands](../SKILL.md).
 
 ## Common pitfalls
 
-- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `list-steps`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
+- **`--test-case-id` (UUID) vs `--test-case-key` (`PROJECT_KEY:NUMBER`) vs `--test-case-keys` (plural, comma-separated).** Use `--test-case-key` for `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Use `--test-case-id` for `run`, `steps list`, `list-result-history`. Use `--test-case-keys` (plural) for the bulk-association verbs `testcases add` / `testcases remove`. They are NOT interchangeable.
 - **Wrong folder identifier.** `link-automation` requires the UUID. A folder name or path passed in `--folder-key` fails silently with "folder not found" or links to the wrong folder.
 - **Re-uploading the same package version.** Orchestrator rejects duplicates. Bump `--package-version` (or `project.json` `projectVersion`) on every change.
 - **Linking before upload.** `link-automation` does not validate the package exists on Orchestrator at link time — it only validates at run time. A stale `--package-name` value silently links to nothing and the next run fails with `package not found`. Always discover via `list-automations` (Step 4) before linking.

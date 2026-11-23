@@ -9,7 +9,7 @@ configure`); the BPMN CLI has no node-authoring verb (see
 `uip maestro bpmn --help` -- only `init`/`format`/`validate`/`registry`/
 `refresh`), so this scaffold builds the project with `uip maestro bpmn init`
 and then hand-edits the generated XML the way
-`skills/uipath-maestro-bpmn/references/registry-workflow.md` teaches an
+`classic/skills/uipath-maestro-bpmn/references/registry-workflow.md` teaches an
 agent to: fill a registry `xmlTemplate` shape and enrich a connector node
 via `uip maestro bpmn registry get Intsvc.ActivityExecution --connection-id
 <id> --object-name <object>`. The node shape and process-level bindings

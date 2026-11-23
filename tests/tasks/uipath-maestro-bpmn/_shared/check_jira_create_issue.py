@@ -7,7 +7,7 @@ Atlassian Jira "Create Issue" connector activity using seeded field values,
 then exposes the new issue's key), translated from a JSON node walk + inline
 `flow debug` payload to an XML walk over the registry-driven
 `Intsvc.ActivityExecution` connector shell (see
-skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
+classic/skills/uipath-maestro-bpmn/references/registry-workflow.md §3-4) plus the
 BPMN live-debug surface (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's
 canonical pattern: ephemeral solution import, `bpmn debug`, `debug-instance
 variables-all`/`incidents`).
@@ -32,14 +32,14 @@ Assertion map (Flow -> BPMN):
                                        classify as Create Issue
   ADDED (T)        not gated by Flow's own create script (which relies solely on the
                     tenant re-read below); translates the PROMPT requirement shared by
-                    both suites ("use project_key/issuetype_id/summary/reporter_id
+                    both suites ("use project_key/issuetype_id/summary
                     exactly as given") using the same literal-value technique as sibling
                     script check_jira_get_issue.py's F-tagged `issue_key not in raw`
                     check (its line 48) -- fails fast on an invented value before
                     spending the live-debug budget, without narrowing anything Flow's
                     own create script accepts (the tenant re-read below still gates)
                                     -> each of seed["project_key"], seed["issuetype_id"],
-                                       seed["summary"], seed["reporter_id"] found
+                                       seed["summary"] found
                                        literally, anywhere in the raw .bpmn text
   F check_jira_create_issue.py:53  run_debug(timeout=480) implicitly requires
                                     finalStatus == "Completed" (flow_check.run_debug
@@ -119,7 +119,7 @@ GENERIC_OBJECT = "issue"
 GENERIC_CREATE_METHODS = {"POST"}
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 NAME_HINT = "JiraCreateIssue"
-SEED_LITERAL_FIELDS = ("project_key", "issuetype_id", "summary", "reporter_id")
+SEED_LITERAL_FIELDS = ("project_key", "issuetype_id", "summary")
 
 LIVE_RUN_DIR = Path("jira-create-issue-live")
 JOURNAL = Path(".created_keys")
@@ -143,7 +143,7 @@ def _import_jira_is():
     seed.json/bpmn checks above, rather than an ImportError traceback here.
 
     This checker lives in `_shared/`, not the task dir, so `jira_is` is not a
-    sibling module (unlike escalation_is.py, imported from the task's own
+    sibling module (unlike escalation_is.py, imported from the shared
     `_setup/`). Grading runs with CWD at the sandbox root, where the task's
     `_setup/jira_is.py` is mounted -- the same file pre_run/post_run use.
     """
@@ -233,7 +233,7 @@ def main() -> None:
             f"{', '.join(f'{field}={seed[field]!r}' for field in missing)} "
             "(agent must use seed.json values verbatim, not invented ones)"
         )
-    print("OK: bpmn references the seeded project_key/issuetype_id/summary/reporter_id")
+    print("OK: bpmn references the seeded project_key/issuetype_id/summary")
 
     project_dir = resolve_project(os.path.basename(bpmn_path))
     imported_project = import_exact(

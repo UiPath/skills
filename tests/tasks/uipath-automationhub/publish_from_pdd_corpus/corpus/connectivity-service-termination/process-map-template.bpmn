@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Termination" targetNamespace="https://uipath.com/business-analysis/termination">
+<bpmn:process id="Process_Termination" name="Customer Termination {{RUN_TOKEN}}" isExecutable="false">
+<bpmn:startEvent id="Start_Request" name="Request received"/>
+<bpmn:serviceTask id="Task_Intake" name="Capture and validate request"/>
+<bpmn:exclusiveGateway id="Gateway_Complete" name="Complete?"/>
+<bpmn:userTask id="Task_Resolve" name="Resolve missing information"/>
+<bpmn:userTask id="Task_Approvals" name="Retention and approvals"/>
+<bpmn:parallelGateway id="Gateway_Split" name="Launch closure work"/>
+<bpmn:serviceTask id="Task_Admin" name="Coordinate administration"/>
+<bpmn:userTask id="Task_Dismantle" name="Execute dismantle"/>
+<bpmn:parallelGateway id="Gateway_Join" name="Both complete"/>
+<bpmn:endEvent id="End_Complete" name="Termination completed"/>
+<bpmn:sequenceFlow id="F1" sourceRef="Start_Request" targetRef="Task_Intake"/><bpmn:sequenceFlow id="F2" sourceRef="Task_Intake" targetRef="Gateway_Complete"/><bpmn:sequenceFlow id="F3" sourceRef="Gateway_Complete" targetRef="Task_Resolve" name="No"/><bpmn:sequenceFlow id="F4" sourceRef="Task_Resolve" targetRef="Task_Intake"/><bpmn:sequenceFlow id="F5" sourceRef="Gateway_Complete" targetRef="Task_Approvals" name="Yes"/><bpmn:sequenceFlow id="F6" sourceRef="Task_Approvals" targetRef="Gateway_Split"/><bpmn:sequenceFlow id="F7" sourceRef="Gateway_Split" targetRef="Task_Admin"/><bpmn:sequenceFlow id="F8" sourceRef="Gateway_Split" targetRef="Task_Dismantle"/><bpmn:sequenceFlow id="F9" sourceRef="Task_Admin" targetRef="Gateway_Join"/><bpmn:sequenceFlow id="F10" sourceRef="Task_Dismantle" targetRef="Gateway_Join"/><bpmn:sequenceFlow id="F11" sourceRef="Gateway_Join" targetRef="End_Complete"/>
+</bpmn:process></bpmn:definitions>

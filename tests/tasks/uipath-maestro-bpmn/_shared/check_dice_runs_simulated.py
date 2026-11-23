@@ -10,7 +10,7 @@ Ported from Flow `_shared/check_dice_runs_simulated.py`, translated the same
 way `_shared/check_jira_get_issue.py` already translates a Flow live check: a JSON node-type scan + inline `flow
 debug` payload becomes an XML scan for a `bpmn:scriptTask` element (the
 `BPMN.ScriptTask` registry construct -- see
-skills/uipath-maestro-bpmn/references/structural-bpmn.md "Script tasks --
+classic/skills/uipath-maestro-bpmn/references/structural-bpmn.md "Script tasks --
 Jint authoring contract") plus the BPMN live-debug surface
 (`_shared/bpmn_live.py`, per LIVE-ADDENDUM's canonical pattern: ephemeral
 solution import, `bpmn debug`, `debug-instance variables-all`/`incidents`).

@@ -1,0 +1,100 @@
+{
+ "AITrustLayer": {
+  "Name": "AITrustLayer",
+  "Label": "AI Trust Layer",
+  "IsRestricted": false,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Assistant": {
+  "Name": "Assistant",
+  "Label": "Assistant",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "AssistantWeb": {
+  "Name": "AssistantWeb",
+  "Label": "Assistant Web",
+  "IsRestricted": false,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Automate": {
+  "Name": "Automate",
+  "Label": "Automate",
+  "IsRestricted": true,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Autopilot": {
+  "Name": "Autopilot",
+  "Label": "Autopilot",
+  "IsRestricted": false,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Business": {
+  "Name": "Business",
+  "Label": "StudioX",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "CloudProductTest": {
+  "Name": "CloudProductTest",
+  "Label": "Cloud Product Test",
+  "IsRestricted": false,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Delegate": {
+  "Name": "Delegate",
+  "Label": "Delegate",
+  "IsRestricted": true,
+  "IsCloud": true,
+  "IsRemote": false
+ },
+ "Development": {
+  "Name": "Development",
+  "Label": "Studio",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "E2E": {
+  "Name": "E2E",
+  "Label": "E2E",
+  "IsRestricted": true,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "PerformanceTestProduct": {
+  "Name": "PerformanceTestProduct",
+  "Label": "PerformanceTestProduct",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "Robot": {
+  "Name": "Robot",
+  "Label": "Robot",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "StudioPro": {
+  "Name": "StudioPro",
+  "Label": "Studio Pro",
+  "IsRestricted": false,
+  "IsCloud": false,
+  "IsRemote": false
+ },
+ "StudioWeb": {
+  "Name": "StudioWeb",
+  "Label": "Studio Web",
+  "IsRestricted": false,
+  "IsCloud": true,
+  "IsRemote": false
+ }
+}

@@ -24,13 +24,36 @@ import sys
 import time
 from datetime import datetime, timezone
 
-OUTLOOK_CONN = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
-JIRA_CONN = "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+TENANT_ID_MAP = os.path.join("_setup", ".tenant-ids.map.json")
+
+
+def _live_id(cloud_id: str) -> str:
+    """The running tenant's ID for a pinned cloud ID.
+
+    `localize_tenant_ids.py` rewrites the sandbox copy of this file, but the graders import
+    the reference copy, so they read the map it wrote into the sandbox instead."""
+    try:
+        with open(TENANT_ID_MAP, encoding="utf-8") as fh:
+            return str(json.load(fh).get(cloud_id, cloud_id))
+    except (OSError, ValueError):
+        return cloud_id
+
+
+OUTLOOK_CONN = _live_id("dd657127-91f5-4568-a3a3-c024bc03fb0f")
+JIRA_CONN = _live_id("f5273a4d-d492-4bcd-a106-5a20bf89a3ef")
 JIRA_PROJECT = "SJP"
 MAILBOX_FOLDER = "Inbox"
+# The connection's mailbox is not the approver's: a sent message never lands in
+# its Inbox, so the send is read from Sent Items.
+SENT_FOLDER = "SentItems"
+APPROVER = "is-sandboxes-test@uipathsandboxes.onmicrosoft.com"
 
 DEBUG_RESULT = "debug_result.json"
 DEBUG_LOCK = "debug_result.lock"
+# The incident WARN line is among the last lines `case debug` writes to stderr.
+STDERR_TAIL_CHARS = 4000
+
+CLOCK_SKEW_S = 2
 
 # Two independent sources of lag, so the budget is generous (~10 min):
 #   1. Graph is not immediately consistent — a delivered message can take minutes
@@ -55,9 +78,6 @@ PEER_WAIT_SECONDS = 900
 # timeout, so the `finally` that releases the lock never runs). Must exceed the
 # worst honest debug duration: 600s CLI poll + INSTANCE_WAIT_SECONDS.
 STALE_LOCK_SECONDS = 1500
-
-# Clock-skew tolerance when comparing a third-party timestamp to our debug start.
-SKEW_SECONDS = 30
 
 
 def precondition_failed(msg: str) -> None:
@@ -110,13 +130,17 @@ def run_token() -> str:
 
 
 def _uip_json(args: list[str], timeout: int = 180) -> dict:
+    return _uip_json_and_stderr(args, timeout)[0]
+
+
+def _uip_json_and_stderr(args: list[str], timeout: int = 180) -> tuple[dict, str]:
     r = subprocess.run(["uip", *args, "--output", "json"],
                        capture_output=True, text=True, timeout=timeout)
     try:
-        return json.loads(r.stdout)
+        return json.loads(r.stdout), r.stderr or ""
     except Exception:
-        return {"Result": "ParseError", "raw": (r.stdout or "")[-1500:],
-                "err": (r.stderr or "")[-800:]}
+        return ({"Result": "ParseError", "raw": (r.stdout or "")[-1500:],
+                 "err": (r.stderr or "")[-800:]}, r.stderr or "")
 
 
 def _items(payload: dict) -> list:
@@ -251,22 +275,35 @@ def _await_instance(since_iso: str) -> dict:
 
 
 def _do_debug(since: str) -> dict:
-    solution_dir = _find_dir("**/*.uipx")
-    project_dir = _find_dir("**/project.uiproj")
+    # Studio Web: no local .uipx, so glob-based discovery fails.
+    # Branch on host FIRST, then locate artifacts by the right method.
+    in_studio_web = os.path.isdir("/solution")
 
-    # Resource refresh is mandatory: without it the connector resources are not
-    # resolvable at runtime and debug reports "Resource is not configured".
-    r = _uip_json(["solution", "resources", "refresh",
-                   "--solution-folder", solution_dir])
-    if r.get("Result") != "Success":
-        blob = json.dumps(r)
-        # Refresh is not idempotent — re-running it over its own output fails.
-        # When the agent already refreshed, the resource docs are on disk and
-        # debug can proceed; only that exact failure is tolerated.
-        if "Node already added to the graph" not in blob:
-            fail(f"solution resources refresh failed: {blob[:600]}")
+    if in_studio_web:
+        project_dir = _find_dir("/solution/**/project.uiproj")
+        solution_dir = "/solution"
+    else:
+        solution_dir = _find_dir("**/*.uipx")
+        project_dir = _find_dir("**/project.uiproj")
 
-    payload = _uip_json(["maestro", "case", "debug", project_dir], timeout=1500)
+    if not in_studio_web:
+        # Resource refresh is mandatory: without it the connector resources are
+        # not resolvable at runtime and debug reports "Resource is not configured".
+        r = _uip_json(["solution", "resources", "refresh",
+                       "--solution-folder", solution_dir])
+        if r.get("Result") != "Success":
+            blob = json.dumps(r)
+            # Refresh is not idempotent — re-running it over its own output
+            # fails.  When the agent already refreshed, the resource docs are
+            # on disk and debug can proceed; only that exact failure is
+            # tolerated.
+            if "Node already added to the graph" not in blob:
+                fail(f"solution resources refresh failed: {blob[:600]}")
+
+    # stderr is kept: on a fault the CLI names the incident only there
+    # (UiPath/cli#5519), and check_case_ran.py prints it from debug_result.json.
+    payload, stderr = _uip_json_and_stderr(["maestro", "case", "debug", project_dir],
+                                           timeout=1500)
     data = payload.get("Data") if isinstance(payload, dict) else None
     data = data if isinstance(data, dict) else {}
 
@@ -275,6 +312,7 @@ def _do_debug(since: str) -> dict:
 
     return {"envelope": {k: v for k, v in payload.items() if k != "Data"},
             "data": data,
+            "stderr_tail": stderr[-STDERR_TAIL_CHARS:],
             # Attribution floor for the outcome probes: only effects at or after
             # this instant can have come from the case the harness just ran.
             "debug_started_at": since + "+00:00"}
@@ -425,10 +463,9 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     kept, dropped = [], []
     for hit in hits:
         when = _to_epoch(hit.get(stamp_key))
-        # Small negative skew only: measured Graph/Atlassian stamps agreed with
-        # ours to the second, and a wide window would let an execution that ran
-        # just BEFORE the floor (e.g. an agent that ran debug itself) slip in.
-        if when is None or when >= floor - SKEW_SECONDS:
+        # The agent's own test run writes token-bearing records seconds before
+        # the floor, so the allowance stays at a second or two.
+        if when is None or when >= floor - CLOCK_SKEW_S:
             kept.append(hit)
         else:
             dropped.append(hit)
@@ -438,8 +475,15 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     return kept
 
 
+def _recipients(message: dict) -> set[str]:
+    return {
+        str(((r or {}).get("emailAddress") or {}).get("address") or "").lower()
+        for r in message.get("toRecipients") or []
+    }
+
+
 def probe_email(token: str) -> list:
-    """Messages in the shared sandbox mailbox whose subject carries the token.
+    """Sent, non-draft messages to the approver whose subject carries the token.
 
     Pages recent messages and matches CLIENT-SIDE. A server-side
     ``contains(subject,…)`` filter is available but is backed by an index that
@@ -449,19 +493,38 @@ def probe_email(token: str) -> list:
         "is", "resources", "run", "list",
         "uipath-microsoft-outlook365", "ListEmails",
         "--connection-id", OUTLOOK_CONN,
-        "--query", f"parentFolderId={MAILBOX_FOLDER}&limit=100",
+        "--query", f"parentFolderId={SENT_FOLDER}&limit=100",
     ])
     if payload.get("Result") != "Success":
         blob = json.dumps(payload)
         if any(s in blob for s in ("Unauthorized", "invalid_grant", "401", "403")):
             precondition_failed(f"cannot read the sandbox mailbox: {blob[:400]}")
         return []
+    matching = [m for m in _items(payload) if token in (m.get("subject") or "")]
+    drafts = [m for m in matching if m.get("isDraft")]
+    sent = [m for m in matching if not m.get("isDraft")]
+    elsewhere = [m for m in sent if APPROVER not in _recipients(m)]
     hits = [
-        {"subject": m.get("subject"), "received": m.get("receivedDateTime")}
-        for m in _items(payload)
-        if token in (m.get("subject") or "")
+        {"subject": m.get("subject"), "received": m.get("sentDateTime") or m.get("receivedDateTime")}
+        for m in sent
+        if APPROVER in _recipients(m)
     ]
-    return _only_after(hits, "received", "email")
+    kept = _only_after(hits, "received", "email")
+    counts = (
+        (len(drafts), "token-matching message(s) left as drafts"),
+        (len(elsewhere), f"sent message(s) not addressed to {APPROVER}"),
+        (len(hits) - len(kept), "message(s) predating the case run"),
+    )
+    EMAIL_MISSES[:] = [f"{count} {what}" for count, what in counts if count]
+    return kept
+
+
+EMAIL_MISSES: list[str] = []
+
+
+def email_miss_reason() -> str:
+    """Why the last ``probe_email`` found no qualifying message, else empty."""
+    return "; ".join(EMAIL_MISSES)
 
 
 def probe_issue(token: str) -> list:

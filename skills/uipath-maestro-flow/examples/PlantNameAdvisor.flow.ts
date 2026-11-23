@@ -6,7 +6,7 @@
  *
  * Generic scenario: ask a botany advisor for a plant's common name.
  */
-import { flow, agent, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, agent, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('plant-name-advisor')
   .name('PlantNameAdvisor')
@@ -21,8 +21,10 @@ export default flow('plant-name-advisor')
     inputs: { description: input('description') },
     returns: { commonName: 'string' },
   }))
-  .step('recordName', script({
-    code: 'return "plant: " + String($vars.identifyPlant.output.commonName);',
-  }))
+  .step('recordName', script(recordName))
   .return({ answer: out('recordName') })
   .build();
+
+function recordName($vars: FlowVars) {
+  return "plant: " + String($vars.identifyPlant.output.commonName);
+}

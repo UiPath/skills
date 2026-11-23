@@ -7,10 +7,11 @@ description: >
   peer versions (`react >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`),
   wire `<ValidationStation>` with the required props, implement
   the `onSubmit` and `onReportException` callbacks (the widget
-  surfaces NO error UI — host owns all callbacks), copy `du-assets/`
-  post-build via a Vite plugin (missing this silently breaks PDF rendering
-  and translations in production), and exclude the web-component from Vite
-  `optimizeDeps`. Deploys into a fresh per-run Orchestrator folder so
+  surfaces NO error UI — host owns all callbacks), and stage the widget's
+  web-component bundle so the build ships it whole at `dist/du-vs-wc/`
+  (a missing or partial bundle renders a blank widget or 404s at runtime
+  while the build stays green). Deploys into a fresh per-run Orchestrator
+  folder so
   `post_run` can clean it up. Tests the most complex coded-apps surface:
   widget integration, not just CLI flow.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
@@ -168,9 +169,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Graded by outcome since widget 1.1.0 (#3017): the skill stages the bundle
+  # into public/du-vs-wc/ with scripts/stage-du-wc.mjs and leaves vite.config
+  # widget-free, so the old vite.config grep for du-assets failed every run.
+  # The file list is validation-station.md's own build check.
   - type: run_command
-    description: "vite.config.{ts,js} copies the du-assets/ folder post-build (missing this silently breaks PDF + translations)"
-    command: "find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -exec grep -lE '(du-assets|du_assets)' {} + | grep -q ."
+    description: "Build output ships the whole Validation Station bundle where the widget loader reads it: some dist/du-vs-wc/ holds main.js, polyfills.js, styles.css, fonts.css and a non-empty du-assets/ (a missing or partial bundle renders a blank widget or 404s at runtime; the build stays green)"
+    command: "find . -path '*/node_modules' -prune -o -type d -path '*/dist/du-vs-wc' -print | while IFS= read -r D; do test -f \"$D/main.js\" && test -f \"$D/polyfills.js\" && test -f \"$D/styles.css\" && test -f \"$D/fonts.css\" && test -n \"$(ls -A \"$D/du-assets\" 2>/dev/null)\" && echo \"$D\"; done | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 2.5

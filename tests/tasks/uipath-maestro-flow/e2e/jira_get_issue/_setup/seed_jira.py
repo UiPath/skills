@@ -11,14 +11,14 @@ import jira_is
 
 tag = secrets.token_hex(4)
 summary = f"coder-eval jira flow e2e {tag}"
-conn = jira_is.connection_id()
+conn = jira_is.require_connection()
 key = jira_is.create_issue(conn, summary)
 seed = {
     "tag": tag,
     "summary": summary,
     "issue_key": key,
     "project_key": jira_is.PROJECT_KEY,
-    "issuetype_id": jira_is.ISSUETYPE_ID,
+    "issuetype_id": jira_is.issuetype_id(conn),
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2))
 Path(".created_keys").write_text(key + "\n")

@@ -14,9 +14,9 @@ process must be:
 
 `bpmn debug` is intentionally NOT run -- the task only requires the process to
 build and validate. Every assertion here is static, read from the `.bpmn`
-source (see skills/uipath-maestro-bpmn/references/registry-workflow.md on
+source (see classic/skills/uipath-maestro-bpmn/references/registry-workflow.md on
 `Intsvc.WaitForEvent` / connector-wait enrichment, and its "Wait for connector
-event" xmlTemplate in skills/uipath-maestro-bpmn/validator/bpmn-spec.json).
+event" xmlTemplate in classic/skills/uipath-maestro-bpmn/validator/bpmn-spec.json).
 
 Assertion map (Flow -> BPMN):
   F check_outlook_waitfor_email.py:107      start trigger preserved (core.trigger.*)            -> manual_start_events()

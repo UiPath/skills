@@ -1,4 +1,4 @@
-task_id: skill-case-reject-route
+task_id: skill-planner-case-finalize-reject-route
 description: >
   Regression: deterministic rejection is routed from the decision fact, not from
   `user-selected-stage`. A small GrantReview draft is staged whose Application
@@ -19,8 +19,8 @@ run_limits:
   max_turns: 60
   turn_timeout: 3600
 
-# Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Inherit agent from the experiment; override only allowed_tools. The case
+# SDD Conformance Checklist runs its 37-item walk in ONE subagent when the
 # Agent tool is present. Run 35267119510 scored this task 0.882 FAILURE with
 # time to spare (770s of a 3600s wall) on the one criterion that reads the
 # gate's own stamp: `Template validation: passed` was absent. The gate was
@@ -48,9 +48,8 @@ initial_prompt: |
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
   Management SDD template shape; finalize the draft into `sdd.md` in this
-  folder. Use the direct draft-finalization fast path: read the draft and the
-  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
-  run tenant discovery, or derive implementation tasks.
+  folder. Write the finalized `sdd.md`; do not run tenant discovery or derive
+  implementation tasks.
 
 success_criteria:
   # No validator archaeology before the write. The § Validation gate is a checklist the
@@ -66,8 +65,8 @@ success_criteria:
   # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
   # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
   # The Grep and Glob rows close the tool surface rather than a measured escape: no run had
-  # yet reached the validator through them, but nothing stopped it, and Grep is this lane's
-  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # yet reached the validator through them, but nothing stopped it, and Grep is this verb's
+  # heaviest reader (10 calls in the original skill-planner-case-finalize-draft failure,
   # all aimed at the guides and template rather than the validator).
   - type: command_not_executed
     description: "Advisory: no gate script is read — the § Validation gate is a checklist, not a file"

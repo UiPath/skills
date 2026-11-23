@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorInquiryAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d0be05c3-8a43-487f-b63b-aea1eb4815dd",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "VendorInquiryAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "VendorInquiryAgent",
+      "package": {
+        "key": "86a4ef8f-59ed-4d9e-9db3-e2ec9bb5845e"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "13e5c690-884b-41e5-8a1d-85874bd6055b",
+    "files": []
+  }
+}

@@ -669,6 +669,18 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
         flow_check.assert_no_flow_files()
 
 
+def test_find_project_ignores_the_clis_investigation_copies(tmp_path, monkeypatch):
+    """Round 11 codex: the CLI downloaded the cloud project under
+    .local/investigations/cloud/<id>/, which made two Flow projects match."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ApproverCountAgent").mkdir()
+    _make_proj(tmp_path / "ApproverCountAgent", "ApproverCountAgent", "Flow")
+    copy = tmp_path / ".local" / "investigations" / "cloud" / "a31f9733"
+    copy.mkdir(parents=True)
+    _make_proj(copy, "ApproverCountAgent", "Flow")
+    assert _find_project("**/project.uiproj") == os.path.join("ApproverCountAgent", "ApproverCountAgent")
+
+
 def test_find_project_fails_when_no_candidates(tmp_path, monkeypatch):
     """No project.uiproj at all — original failure message preserved."""
     monkeypatch.chdir(tmp_path)
@@ -859,6 +871,17 @@ _POLL_TIMEOUT = (
     'is accessible, and Studio Web debug is available, then retry.",\n'
     '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
 )
+# Trimmed from skill-flow-lowcode-agent 2026-10-09: the agent job's LLM call
+# 500'd; the envelope says RetryWillNotFix and carries no HttpStatus.
+_LLM_PROVIDER_500 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Debug session Faulted. [170002] Failure in the Orchestrator Job (element countRs)",\n'
+    '  "Context": {"ErrorCode": "170002"},\n'
+    '  "Data": {"finalStatus": "Faulted", "incidents": [{"errorCode": "170002",\n'
+    '    "errorDetails": "LLM provider returned HTTP 500",\n'
+    '    "dependentFaultCode": "AGENT_RUNTIME.HTTP_ERROR"}]},\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
 
 
 # Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
@@ -951,6 +974,16 @@ def test_run_debug_retries_transient_504_then_completes(monkeypatch):
     assert flow_check._get_ci(payload, "finalStatus") == "Completed"
 
 
+def test_run_debug_keeps_every_attempts_stdout(monkeypatch):
+    _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504), _cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_TRANSIENT_504, _COMPLETED]
+
+    _stub_debug(monkeypatch, [_cp(0, _COMPLETED)])
+    run_debug(inputs={"x": 1})
+    assert flow_check.get_debug_attempt_raws() == [_COMPLETED]
+
+
 def test_run_debug_does_not_retry_real_fault(monkeypatch):
     """A run that returns exit 0 but did not complete is a real flow fault —
     fail immediately, no retry."""
@@ -1018,6 +1051,20 @@ def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     assert calls["n"] == 1
 
 
+@pytest.mark.parametrize(
+    "agent_fault,attempts",
+    [(flow_check.AgentFaultRetry.NONE, 1), (flow_check.AgentFaultRetry.RETRY, 2)],
+)
+def test_run_debug_retries_agent_5xx_only_when_opted_in(monkeypatch, agent_fault, attempts):
+    calls = _stub_debug(monkeypatch, [_cp(1, _LLM_PROVIDER_500), _cp(0, _COMPLETED)])
+    if attempts == 1:
+        with pytest.raises(SystemExit):
+            run_debug(agent_fault=agent_fault)
+    else:
+        run_debug(agent_fault=agent_fault)
+    assert calls["n"] == attempts
+
+
 def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3)
     with pytest.raises(SystemExit):
@@ -1036,10 +1083,23 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
         (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
+        (_cp(1, _LLM_PROVIDER_500), False),                            # agent 5xx: opt-in only
     ],
 )
 def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _LLM_PROVIDER_500), True),
+        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
+    ],
+)
+def test_agent_fault_retry_opts_into_llm_5xx(cp, expected):
+    retry = flow_check.AgentFaultRetry.RETRY
+    assert flow_check._is_transient_debug_error(cp, retry) is expected
 
 
 # ── run_debug: a faulted run carries the backend's incident details ──────────

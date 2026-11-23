@@ -39,25 +39,36 @@ Use a script for local fixed data, never in place of a capability the request ne
 decided. It is NOT the way to carry a node the SDK has no factory for: it
 compiles to `core.logic.mock`, so the original type is gone.
 
-For that, use `rawNode({ nodeType, version, manifest, inputs?, outputs? })`. It carries
+For that, use `rawNode({ nodeType, version, inputs?, outputs? })`. It carries
 the definition the platform serves for that `nodeType@version`, so the node
 keeps its identity and its inputs:
 
 ```ts
 .step('exotic', rawNode({
   nodeType: 'uipath.exotic.thing', version: '2.1',
-  manifest: exoticManifest,        // verbatim from `registry get`
   inputs: { where: input('scope') },
 }))
 ```
 
-Two rules. **The manifest must be real** — an exact copy of what
-`uip maestro flow registry get <nodeType>` returns (after
-`registry pull --force`, since registry reads are cached). A hand-written
-manifest validates locally and fails on the tenant, which resolves the node
-against its own catalog. **Prefer a typed factory** whenever one exists: it
-carries the family's check rules, its defaults and its output contract, none of
-which a raw node can know.
+When authoring, omit `manifest`. `check` and `compile` read it from the local
+registry cache by `nodeType` + `version`. When the cache lacks it they report
+`RAW_NODE_MANIFEST_NOT_CACHED` and name the commands to run
+(`uip maestro flow registry pull`, then `registry get <nodeType>` to see the
+versions the tenant serves). Use the version `registry get` shows. If the
+resource was redeployed with a changed schema, the cache still holds the old
+definition: run `uip maestro flow registry pull --force` first.
+
+Needs `@uipath/maestro-builder-sdk` 6.100.0 or later. An older SDK requires
+`manifest`, so leaving it out is a type error: on an older SDK, pass the
+`Data.Node` that `uip maestro flow registry get <nodeType> --output json`
+prints, unchanged.
+
+Never hand-write a `manifest`: it validates locally and fails on the tenant,
+which resolves the node against its own catalog. A `manifest` that `decompile`
+emitted stays as written; it wins over the cache.
+
+**Prefer a typed factory** whenever one exists: it carries the family's check
+rules, its defaults and its output contract, none of which a raw node can know.
 
 **Never for a connector.** A `uipath.connector.*` node type is refused by
 `check` (`RAW_NODE_CONNECTOR`) and by `compile`. A raw node keeps its inputs
@@ -67,7 +78,7 @@ configured") and the run can never reach Integration Service. Measured on the
 eval archive, every Data Fabric flow authored this way failed its checker. The
 situation that tempts it — `compile` refusing a body field as `unknown input`
 because the static library does not carry it — is what
-`uip maestro registry prepare <key> <action>` exists for (add
+`uip maestro registry prepare <key> --action <action>` exists for (add
 `-f entityName=<Entity>` for a Data Service operation); see the
 [parent-field loop](connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 

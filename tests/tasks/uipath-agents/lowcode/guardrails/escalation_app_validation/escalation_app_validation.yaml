@@ -40,31 +40,34 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did NOT re-initialize the pre-existing ValidationSol solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
+    command_pattern: '(?:uip|\$UIP)\s+solution\s+init'
     exclude_pattern: '--help'
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent scaffolded the agent project"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
+  - type: run_command
+    description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
+  # The resource lookups below accept the `uip solution resources` CLI call or
+  # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
+  # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
+  # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
     description: "Agent looked up the escalation app"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list'
+    command_pattern: '\A(?!\{")[\s\S]*?(?:uip|\$UIP)\s+solution\s+resources\s+list|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the action schema via uip solution resources get"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    description: "Agent fetched the action schema via uip solution resources get (or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?(?:uip|\$UIP)\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 4.0
     pass_threshold: 1.0

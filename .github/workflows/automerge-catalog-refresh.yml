@@ -65,9 +65,10 @@ jobs:
           # Gate on the branch's REQUIRED status checks only — the same
           # contexts GitHub enforces via the ruleset — not the full rollup.
           # Advisory / non-required checks (CLI Verb Gate, Claude review,
-          # Socket, ...) must NOT block a refresh: a refresh only changes the
-          # catalog snapshot, so any verb-gate drift it surfaces is
-          # pre-existing doc-debt swept separately. Fetched dynamically so a
+          # Socket, ...) must NOT block a refresh: a refresh changes no skill
+          # doc, so any verb-gate drift it surfaces is pre-existing doc-debt
+          # swept separately. The one extra is the studioweb ratchet check,
+          # added below, because the refresh rewrites that ratchet. Fetched dynamically so a
           # renamed/added required check needs no edit here.
           # `| unique` dedupes contexts declared by more than one ruleset —
           # without it REQ_COUNT inflates while GREEN (also unique'd) can't
@@ -76,6 +77,14 @@ jobs:
             --jq '[.[] | select(.type=="required_status_checks")
                         | .parameters.required_status_checks[].context] | unique' \
             || echo '[]')
+          # Fail closed on an empty ruleset (below) BEFORE adding extras, so
+          # the extra can't make a missing required set look non-empty.
+          if [ "$(echo "$REQUIRED" | jq 'length')" -gt 0 ]; then
+            # A refresh also rewrites the studioweb ratchet, whose test runs
+            # in this check. The live ruleset does not require it, and #4589
+            # auto-merged with it red, leaving main failing.
+            REQUIRED=$(echo "$REQUIRED" | jq -c '. + ["Build and inspect every skill package"] | unique')
+          fi
           REQ_COUNT=$(echo "$REQUIRED" | jq 'length')
           echo "Required status checks ($REQ_COUNT): $(echo "$REQUIRED" | jq -c .)"
 

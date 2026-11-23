@@ -1,0 +1,97 @@
+# case-exit-conditions — Implementation (Direct JSON Write)
+
+> **Phase split.** Phase 2 writes the condition. A `wait-for-connector` rule gets the canonical stub; Phase 3 Step 10.5 upgrades only its `uipath` when resolved. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
+Write the Phase 2 case-exit condition directly into `metadata.caseExitRules[]` in `caseplan.case`; this initial write needs no CLI call. Step 10.5 handles the separate connector-rule upgrade.
+
+> **Destination + field name.** Array key is `caseExitRules`, lives under `metadata.caseExitRules` (top-level `metadata`). Plugin folder name `case-exit-conditions` follows the *concept*; the on-disk field is `caseExitRules`. Do NOT place at the JSON top level.
+
+## Condition JSON Shape
+
+> **ID format.** Condition `id` is `Condition_` + 6 random chars. Rule `id` is `Rule_` + 6 random chars.
+
+```json
+{
+  "id": "Condition_xC1XyX",
+  "displayName": "Case resolved",
+  "marksCaseComplete": true,
+  "rules": [
+    [
+      { "id": "Rule_jdBFrJ", "rule": "required-stages-completed" }
+    ]
+  ]
+}
+```
+
+Rules use DNF — outer array is OR, inner array is AND.
+
+## Procedure
+
+1. Generate condition ID: `Condition_` + 6 alphanumeric chars
+2. Generate rule ID: `Rule_` + 6 alphanumeric chars
+3. Read `caseplan.case`. Locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
+4. Read the rule type and marks-case-complete flag from the SDD's Case Exit Conditions row; pick the recipe below
+5. Set `displayName`: use the SDD row's `Display Name` if present; else default by `marks-case-complete`: `true` → `Completion rule {N}`, `false` → `Exit rule {N}`. FE keeps the two kinds on independent counters, but each counts **case-wide**, not within `metadata.caseExitRules[]` alone: scan the whole `caseplan.case` for that kind's pattern across `metadata.caseExitRules[]` and every stage's `data.exitConditions[]`, then `N` = highest + 1 (`1` when none). Case-exit rules share the pool with stage exits; `validate` reports a collision here as `[nodes[root]]` — [case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness). Never emit a blank or omitted `displayName`.
+6. Append the condition object to `metadata.caseExitRules[]`
+
+## Rule Types
+
+### required-stages-completed — preferred completion
+
+```json
+"rules": [[ { "id": "Rule_xxxxxx", "rule": "required-stages-completed" } ]]
+```
+
+Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isRequired: true` has completed.
+
+### selected-stage-completed / selected-stage-exited — non-completing exit
+
+```json
+"rules": [[
+  {
+    "id": "Rule_xxxxxx",
+    "rule": "selected-stage-completed",
+    "selectedStageIds": ["Stage_aB3kL9"]
+  }
+]]
+```
+
+Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for exit-without-completion semantics.
+
+### Choosing `marksCaseComplete`
+
+**Decide by whether the work was done, not by whether the case ended.** Every case-exit rule ends the case; the flag records whether it ended *successfully*.
+
+| Outcome the SDD describes | `marksCaseComplete` |
+|---|---|
+| The work finished — approved, fulfilled, paid, resolved | `true` |
+| The case stopped without the work being done — rejected, withdrawn, cancelled, abandoned, timed out | `false` |
+| The case was handed off, escalated out, or closed by exception | `false` |
+
+**A word like "closed", "ends", or "complete" in the SDD is not the signal — whether the objective was met is.** An SDD naming an outcome *separately from* normal completion, or saying it is *not the same as* completing, is describing a non-completing exit however it phrases the ending: "closed as escalated" ends the case and does not complete it. Write `false` there and keep the positive completion rule alongside it. These are not rare — any case with a rejection or escalation path has one.
+
+### wait-for-connector — bind a connector event
+
+In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; keep this root-scoped rule's `elementId = root-<ruleId>` on BOTH final `uipath.inputs[]` and `uipath.outputs[]`. Valid for both `marksCaseComplete: true` and `false`; `conditionExpression` is preserved.
+
+**Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `root-<ruleId>`.
+
+## Rule-Type × marksCaseComplete Matrix
+
+| `marksCaseComplete` | `rule` | Required extra field |
+|---|---|---|
+| `true` | `required-stages-completed` | — |
+| `true` | `wait-for-connector` | `uipath` connector configuration |
+| `false` | `selected-stage-completed` | `selectedStageIds` (array, even for one stage) |
+| `false` | `selected-stage-exited` | `selectedStageIds` (array, even for one stage) |
+| `false` | `wait-for-connector` | `uipath` connector configuration |
+
+`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim). Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+
+## Post-Write Verification
+
+Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Completion rule {N}` / `Exit rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
+
+For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
+
+<!-- END: impl-json.md -->

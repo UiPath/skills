@@ -1,0 +1,97 @@
+task_id: skill-case-single-http-request
+description: >
+  Build a single-task Case that posts an invoice number to the public echo
+  service postman-echo.com, asked the way a Studio Web user would ask it. The
+  grader runs the case once under `uip maestro case debug` and reads the debug
+  instance back (`uip maestro case instance variables-all`): the task that
+  called the service completed, and the case variable the prompt names,
+  echoResponse, holds the echo of the invoice number, the probe value and the
+  `source` query, with the fields only the service fills in (`args`, `url`),
+  which proves the request really went out as asked. It also refuses a
+  credential header, in the plan or among the headers the service received. That the agent ran its own test run is advisory.
+  The endpoint is third-party: an outage there fails the run check, not the
+  build checks.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, path-to-ga, outcome-graded]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 5700  # turn 1500 + criteria 4050 + margin
+  max_turns: 120
+  turn_timeout: 1500
+
+# Marks the task start for the post_run debug-instance cancel.
+pre_run:
+  - command: "python3 _setup/case_run.py --mark-task-start"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
+
+  Build a case called "HttpRequestSingleCase" that, once someone starts it by
+  hand, sends invoice number INV-1042 to our echo service and keeps what the
+  service sends back.
+
+  - The echo service takes a POST to https://postman-echo.com/post with the
+    query parameter source=skills-case-eval, the header Accept:
+    application/json and the JSON body
+    {"invoiceNumber": "INV-1042", "probe": "skills-case-http-7f3a"}. It needs
+    no login.
+  - Keep the response body it returns in a case variable called echoResponse.
+  - The case is done once the call has finished.
+
+  Build and do a test run of the automation.
+success_criteria:
+  # The plan is found wherever the agent put it (any solution or project name).
+  - type: run_command
+    description: "uip maestro case validate passes on the case plan the agent built"
+    command: "p=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from _shared.case_check import find_caseplan; print(find_caseplan())' \"$REFERENCE_DIR\") && uip maestro case validate \"$p\" --output json"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # run_debug's worst case: two debug starts (the retry after a Cancelled run),
+  # each with one transient-fault retry (4 x 840 s), plus refresh (2 x 120 s),
+  # the retry sleeps (3 x 15 s) and the instance list and variables-all reads
+  # (2 x 180 s).
+  - type: run_command
+    description: "Effects: one debug run in which the task that called postman-echo.com/post completed, and echoResponse holds the echo of INV-1042, the probe and source=skills-case-eval"
+    command: "python3 $REFERENCE_DIR/single_node/http_request/check_http_request_run.py"
+    timeout: 4050
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/case_run.py --cancel-debug-instances"
+    timeout: 300
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

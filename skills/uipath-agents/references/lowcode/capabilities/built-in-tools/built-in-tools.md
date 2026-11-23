@@ -6,8 +6,11 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 ## When to Use
 
-- Agent needs file content analysis at runtime → pair a `job-attachment` input field with `analyze-attachments`
+- Agent must research answers across long or multiple documents it receives at run time, with citations (questionnaires, policies, reports) → pair a `job-attachment` array input with `deep-rag` ([deeprag/planning.md](deeprag/planning.md))
+- Agent needs a one-shot summary, classification or extraction from a short file at run time → pair a `job-attachment` input field with `analyze-attachments`
 - Agent needs a platform capability that ships pre-built and does not require deployment
+
+When the documents are long, numerous, or the answers must cite where they came from, use `deep-rag`, not `analyze-attachments`: it handles larger files and returns citations, while `analyze-attachments` is a single synthesis pass with lower page limits. Enable only one of the two for the same documents.
 
 ## Critical Rules
 
@@ -60,6 +63,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 | Tool | `toolType` | Walkthrough |
 |---|---|---|
 | Analyze Files | `analyze-attachments` | [analyze-attachments.md](analyze-attachments.md) |
+| Create File | `create-file` | [create-file.md](create-file.md) |
 | Deep RAG | `deep-rag` | [deeprag/impl-json.md](deeprag/impl-json.md) |
 | Batch Transform | `batch-transform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
 

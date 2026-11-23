@@ -1,0 +1,18 @@
+NORTHWIND INDUSTRIAL SUPPLY
+1200 Harbor Road, Tacoma WA
+
+INVOICE
+Invoice number: NIS-2026-04471
+Invoice date: 2026-09-14
+PO reference: PO-77812
+Bill to: Acme Manufacturing, Accounts Payable
+
+Line  SKU          Description                     Qty   Unit price   Amount
+1     NW-BRG-6204  Deep groove ball bearing 6204   200   4.10         820.00
+2     NW-SEAL-35   Oil seal 35x52x7                150   1.85         277.50
+
+Subtotal                                                              1,097.50
+Tax 8%                                                                   87.80
+Total due (USD)                                                       1,185.30
+
+Payment terms: Net 30. Due date: 2026-10-14

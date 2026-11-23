@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Billing Dispute SOP",
+    "kind": "bucket",
+    "type": "orchestratorBucket",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Orchestrator",
+      "name": "Billing Dispute SOP",
+      "description": "SOP grounding for Dispute Analyst agent",
+      "tags": []
+    },
+    "locks": [],
+    "key": "b5360d78-ae3e-4479-bb28-2ef8b72d083f",
+    "files": []
+  }
+}

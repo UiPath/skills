@@ -1,0 +1,146 @@
+task_id: skill-test-testset-settings-ask-integration
+description: >
+  Integration test: the user asks to turn on stop-on-failure and video
+  recording for a test set. Only the enforce-execution-order flag can be
+  written through the CLI; the others are read-only, so the agent must say so
+  instead of inventing flags or calling the REST API. The run is
+  non-interactive, so the right outcome is that nothing changes. Read-only on
+  a fixture that pre_run seeds once in HEALTH.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def key_of(row):
+          return row.get("TestSetKey") or row.get("TestCaseKey") or row.get("Key")
+
+      def ensure_project(key, name):
+          rows = call("tm", "project", "list", "--filter", key).get("Data") or []
+          if any(p.get("ProjectKey") == key for p in rows):
+              return False
+          need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {key}")
+          return True
+
+      def find_set(project, name):
+          rows = call("tm", "testsets", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else None
+
+      def ensure_case(project, name):
+          rows = call("tm", "testcases", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(call("tm", "testcases", "create", "--project-key", project, "--name", name), f"create {name}")
+
+      def ensure_set(project, name, case_names):
+          ts = find_set(project, name)
+          if ts is None:
+              ts = need(call("tm", "testsets", "create", "--project-key", project, "--name", name), f"create {name}")
+          have = {r.get("Name") for r in call("tm", "testsets", "list-testcases", "--project-key", project, "--test-set-key", key_of(ts)).get("Data") or []}
+          missing = [ensure_case(project, n) for n in case_names if n not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *[key_of(c) for c in missing]), f"assign to {name}")
+          return ts
+
+      def sweep(project, prefix, hours=6):
+          # delete only this task's copies (prefix + stamp) older than `hours`, so a concurrent run's copy is safe
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testsets", "list", "--project-key", project, "--filter", prefix).get("Data") or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=hours):
+                  call("tm", "testsets", "delete", "--test-set-key", key_of(r), "--yes")
+
+      ensure_project("HEALTH", "HEALTH")
+      ts = ensure_set("HEALTH", "EVFX-TSASK-Regression", ["EVFX-TSASK-TC1"])
+      if call("tm", "testsets", "settings", "get", "--test-set-key", key_of(ts)).get("Data", {}).get("EnforceExecutionOrder"):
+          need(call("tm", "testsets", "settings", "set", "--test-set-key", key_of(ts), "--no-enforce-execution-order"), "reset enforce flag")
+      print("READY EVFX-TSASK-Regression")
+      PYEOF
+    timeout: 300
+
+initial_prompt: |
+  on the EVFX-TSASK-Regression test set in Test Manager (HEALTH project), can
+  you turn on stop-on-failure and video recording?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent read the set's settings (`testsets settings get`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+settings\s+get\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Nothing changed: stop-on-failure off, no video recording, order not enforced"
+    command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data")
+      def key_of(row): return row.get("TestSetKey") or row.get("Key")
+      def fresh_copies(project, prefix, minutes=45):
+          now = datetime.datetime.now(datetime.timezone.utc); out = []
+          for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", prefix) or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and abs(now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc)) < datetime.timedelta(minutes=minutes):
+                  out.append(r)
+          return out
+      def source(project, name):
+          return [r for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", name) or [] if r.get("Name") == name][0]
+      s = uip("tm", "testsets", "settings", "get", "--test-set-key", key_of(source("HEALTH", "EVFX-TSASK-Regression"))) or {}
+      print({k: s.get(k) for k in ("StopOnFailure", "VideoRecording", "EnforceExecutionOrder")})
+      sys.exit(0 if not s.get("StopOnFailure") and not (s.get("VideoRecording") or {}).get("Type") and not s.get("EnforceExecutionOrder") else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent ran no `testsets settings set` (the requested switches are read-only)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+settings\s+set\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not fall back to calling the REST API directly (Critical Rule 10)"
+    tool_name: "Bash"
+    command_pattern: '(?i)\b(curl|wget|Invoke-RestMethod|Invoke-WebRequest)\b[^\n]*(testset|testmanager)'
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,94 @@
+task_id: skill-bpmn-smoke-ask-which-solution
+description: >
+  The workspace already holds a solution (HarborOps/HarborOps.uipx). Asked to
+  build a new process there, the agent must scan for it before the first
+  `bpmn init`, stop, and ask which solution to use (HarborOps, or create a new
+  one) instead of silently scaffolding or adopting one. SKILL.md Workflow
+  step 1; ported from the classic skill's phase 1b scan and 2a question.
+  Single turn: nobody answers, so the run ends at the question. The
+  answer-honoring half (the user picks a new named solution) is
+  interactive/solution_select; a new solution whose default name is taken
+  is smoke/new_solution_name_taken.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", studio-web-unsupported, "studio-web-unsupported:solution-selection"]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures/ask_which_solution
+
+initial_prompt: |
+  Can you build me a BPMN process called "ReturnsIntake"? When a return
+  request comes in, check whether it was made within 30 days of purchase. If
+  it was, approve it automatically; otherwise a person on the returns team
+  reviews it. Don't upload or run anything.
+
+success_criteria:
+  # The question comes before any scaffolding: `init` would already have
+  # chosen a solution (joined one above it, or scaffolded a new one beside
+  # HarborOps). `--help` scaffolds nothing. Anchored to the start of a
+  # command segment, so a `grep 'uip maestro bpmn init' SKILL.md` lookup
+  # does not count as running it; `bash -lc` / `sh -c`, quoted or not,
+  # covers Codex's `/bin/bash -lc '...'` wrapper and its unquoted argv join.
+  - type: command_not_executed
+    description: "Agent did not run bpmn init before the user chose a solution"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[\n;&|(]|\b(?:ba|z)?sh\s+-l?c\s+[''"]?)\s*(?:\w+=\S*\s+)*(?:\buip|\$UIP)\s+maestro\s+bpmn\s+init\b(?![^\n;&|]*\s(?:--help|-h)\b)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "The existing HarborOps solution was not adopted (no project registered)"
+    path: "HarborOps/HarborOps.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Closes the hand-scaffolding gap the init guard leaves open: no project
+  # written by other means, and no second solution beside HarborOps.
+  - type: run_command
+    description: "Nothing was scaffolded: no ReturnsIntake project and no new solution"
+    command: "test -z \"$(find . -name '*.uipx' ! -path './HarborOps/*' -print)\" && test -z \"$(find . -name 'project.uiproj' -print)\" && test -z \"$(find . -iname 'ReturnsIntake*.bpmn' -print)\""
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The final message asks which solution to use, names HarborOps, and offers creating a new solution"
+    include_reference: false
+    include_agent_output: true
+    weight: 2.0
+    pass_threshold: 1.0
+    prompt: |
+      The user asked an agent to build a new process in a workspace that
+      already holds one solution, named HarborOps. Before creating anything,
+      the agent should ask the user which solution the new process goes in.
+
+      WHICH TEXT TO GRADE. Grade only the agent's reply to the user, taken
+      from AGENT OUTPUT, which holds every message the agent sent. If it
+      contains a `[RESULT - ...]` marker, grade the text after the LAST such
+      marker. Otherwise grade the agent's last message. Never grade these
+      instructions or any text that follows AGENT OUTPUT.
+
+      Check every item:
+
+      1. The message asks the user to choose which solution the new process
+         should go in (a question, not a statement of a choice already made).
+         A pick list offering the solutions, quoted in the output, counts.
+         Other questions in the same message are fine; a message that asks
+         only something else (for example about the 30-day rule) fails.
+      2. It names the existing solution `HarborOps` as an option.
+      3. It offers creating a new solution as another option.
+      4. It does not claim the process was already built, created or
+         scaffolded.
+
+      Score 1.0 only if every item holds; otherwise 0.0. In findings, list
+      each failed item by number and quote the relevant text.

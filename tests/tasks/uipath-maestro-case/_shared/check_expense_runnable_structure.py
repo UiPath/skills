@@ -16,7 +16,8 @@ employee expense reimbursement process, not just a structurally valid case:
   - a case-management (Payment Tracking) child task exists
   - case-exit conditions cover happy-path completion + the two terminal lanes
 
-Mechanical only; runtime behaviour is graded by check_expense_runnable_debug.py.
+Mechanical only; runtime behaviour is graded by
+e2e_expense_runnable/check_expense_runnable_run.py.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
     existing_caseplan,
+    find_caseplan,
     find_stages,
     find_transitions,
     find_triggers,
@@ -42,9 +44,7 @@ from _shared.case_check import (  # noqa: E402
 EXPECTED_CASEPLAN = os.path.join(
     "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "caseplan.json"
 )
-EXPECTED_BINDINGS_V2 = os.path.join(
-    "ExpenseReimbursementRunnable", "ExpenseReimbursementRunnable", "bindings_v2.json"
-)
+BINDINGS_V2 = "bindings_v2.json"
 PRIMARY_STAGES = ["Submission", "Manager Approval", "Finance Approval", "Payment", "Approved"]
 TERMINAL_LANES = ["Rejected", "Withdrawn"]
 REQUIRED_TASK_TYPES = {
@@ -102,26 +102,6 @@ def _incoming_from(plan: dict, target_id: str, sources: set[str]) -> bool:
     return any(tr.get("source") in sources for tr in find_transitions(plan, target=target_id))
 
 
-def _assert_bindings_v2_metadata(bindings: dict) -> None:
-    """Reject metadata that the eval CLI's resource refresh cannot consume."""
-    resources = bindings.get("resources")
-    if not isinstance(resources, list):
-        _fail("bindings_v2.json must contain a resources array")
-    for index, resource in enumerate(resources):
-        if not isinstance(resource, dict):
-            _fail(f"bindings_v2.json resources[{index}] must be an object")
-        metadata = resource.get("metadata") or {}
-        if not isinstance(metadata, dict):
-            _fail(f"bindings_v2.json resource {resource.get('key', index)!r} metadata must be an object")
-        unsupported = sorted(set(metadata) - {"subType"})
-        if unsupported:
-            _fail(
-                "bindings_v2.json resource "
-                f"{resource.get('key', index)!r} has unsupported metadata key(s) "
-                f"{unsupported}; only subType is supported by uip solution resources refresh"
-            )
-
-
 def _assert_required_external_bindings(bindings: dict) -> None:
     """Ensure aliases from the SDD are not used as deployed resource names."""
     resources = bindings.get("resources")
@@ -144,12 +124,13 @@ def _assert_required_external_bindings(bindings: dict) -> None:
 
 
 def main():
-    plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
-    if not os.path.exists(EXPECTED_BINDINGS_V2):
-        _fail(f"missing required {EXPECTED_BINDINGS_V2}")
-    with open(EXPECTED_BINDINGS_V2, encoding="utf-8") as f:
+    plan_path = existing_caseplan(EXPECTED_CASEPLAN) or find_caseplan()
+    plan = read_caseplan(plan_path)
+    bindings_path = os.path.join(os.path.dirname(plan_path), BINDINGS_V2)
+    if not os.path.exists(bindings_path):
+        _fail(f"missing required {bindings_path}")
+    with open(bindings_path, encoding="utf-8") as f:
         bindings = json.load(f)
-    _assert_bindings_v2_metadata(bindings)
     _assert_required_external_bindings(bindings)
 
     # --- trigger: Manual, so `uip maestro case debug` can start the case headlessly

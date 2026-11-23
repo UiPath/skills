@@ -15,6 +15,15 @@ Findings:
              Suggest the canonical replacement.
   - Info   — pattern is too dynamic to analyse (contains `.`, `[`, `\\w`, etc).
              Skipped — no claim made about it.
+  - Info   — (axis `unbounded-dot-repeat`) a `command_executed` pattern has a
+             `.*`-like repeat between the `uip` verb and another required
+             literal. It crosses `;`, `&&` and `|`, so an operand named in a
+             different command of the same Bash call still counts. Advisory.
+  - Info   — (axis `negative-guard-coverage`) for a `command_not_executed`
+             guard on a catalog verb group (e.g. `login`), lists which of the
+             group's subcommands and `--help` the guard forbids. Advisory.
+
+Info findings never change the exit code.
 
 Output formats:
   - Default: human-readable, one finding per line.
@@ -258,6 +267,163 @@ def classify(verb_paths, catalog, renames):
     return "unknown", {"unmatched": verb_paths}
 
 
+# Characters a "crosses commands" repeat matches: a body that matches all
+# three is as unconstrained as `.` for the purpose of tying an operand to one
+# simple command.
+COMMAND_SEPARATORS = (";", "&", "|")
+UIP_LITERAL = re.compile(r"(?:^|[^\w$])\$?uip\b", re.IGNORECASE)
+
+
+def _in_matches(items, ch):
+    """Evaluate an sre_parse IN item list against one character."""
+    negate = False
+    hit = False
+    for op, arg in items:
+        if op == sre_parse.NEGATE:
+            negate = True
+        elif op == sre_parse.LITERAL:
+            hit |= ord(ch) == arg
+        elif op == sre_parse.RANGE:
+            hit |= arg[0] <= ord(ch) <= arg[1]
+        elif op == sre_parse.CATEGORY:
+            hit |= {
+                sre_parse.CATEGORY_SPACE: ch.isspace(),
+                sre_parse.CATEGORY_NOT_SPACE: not ch.isspace(),
+                sre_parse.CATEGORY_WORD: ch.isalnum() or ch == "_",
+                sre_parse.CATEGORY_NOT_WORD: not (ch.isalnum() or ch == "_"),
+                sre_parse.CATEGORY_DIGIT: ch.isdigit(),
+                sre_parse.CATEGORY_NOT_DIGIT: not ch.isdigit(),
+            }.get(arg, False)
+    return hit != negate
+
+
+def _crosses_commands(body):
+    """True when a repeat body matches `;`, `&` and `|` like `.` does."""
+    if len(body) != 1:
+        return False  # a guarded body such as `(?:(?!x)[\s\S])` is constrained
+    op, arg = body[0]
+    if op == sre_parse.ANY:
+        return True
+    if op == sre_parse.NOT_LITERAL:
+        return chr(arg) not in COMMAND_SEPARATORS
+    if op == sre_parse.IN:
+        return all(_in_matches(arg, c) for c in COMMAND_SEPARATORS)
+    if op == sre_parse.BRANCH:
+        return any(_crosses_commands(list(alt)) for alt in arg[1])
+    if op == sre_parse.SUBPATTERN:
+        return _crosses_commands(list(arg[3]))
+    return False
+
+
+def _literal_text(items):
+    """Literal text an item run spells, with a space for anything dynamic."""
+    out = []
+    for op, arg in items:
+        if op == sre_parse.LITERAL:
+            out.append(chr(arg))
+        elif op in (sre_parse.SUBPATTERN, sre_parse.BRANCH):
+            sub = [(op, arg)] if op == sre_parse.BRANCH else list(arg[3])
+            paths = enumerate_paths(sub, allow_partial=False)
+            out.append(" ".join(paths) if paths else " ")
+        else:
+            out.append(" ")
+    return "".join(out)
+
+
+def _has_required_literal(items):
+    for op, arg in items:
+        if op in (sre_parse.LITERAL, sre_parse.SUBPATTERN, sre_parse.BRANCH):
+            return True
+        if op in (sre_parse.MAX_REPEAT, sre_parse.MIN_REPEAT,
+                  sre_parse.POSSESSIVE_REPEAT) and arg[0] >= 1 \
+                and _has_required_literal(list(arg[2])):
+            return True
+    return False
+
+
+def _unbounded_dot_hit(seq, before="", literal_before=False, literal_after=False):
+    """True when a `.`-like repeat sits between `uip` and a required literal.
+
+    `before` is the literal text preceding ``seq`` in its parent sequence;
+    the flags say whether a required literal precedes / follows ``seq``.
+    """
+    for i, (op, arg) in enumerate(seq):
+        head, tail = seq[:i], seq[i + 1:]
+        if op in (sre_parse.MAX_REPEAT, sre_parse.MIN_REPEAT,
+                  sre_parse.POSSESSIVE_REPEAT) and arg[1] > 1 \
+                and _crosses_commands(list(arg[2])):
+            text_before = before + _literal_text(head)
+            text_after = _literal_text(tail)
+            uip_before = bool(UIP_LITERAL.search(text_before))
+            uip_after = bool(UIP_LITERAL.search(text_after))
+            req_before = literal_before or _has_required_literal(head)
+            req_after = literal_after or _has_required_literal(tail)
+            if (uip_before and req_after) or (uip_after and req_before):
+                return True
+        nested = []
+        if op == sre_parse.BRANCH:
+            nested = [list(alt) for alt in arg[1]]
+        elif op == sre_parse.SUBPATTERN:
+            nested = [list(arg[3])]
+        for sub in nested:
+            if _unbounded_dot_hit(
+                    sub, before + _literal_text(head),
+                    literal_before or _has_required_literal(head),
+                    literal_after or _has_required_literal(tail)):
+                return True
+    return False
+
+
+def has_unbounded_dot(pattern):
+    """True when ``pattern`` has a `.*`-like repeat between `uip` and a literal."""
+    try:
+        parsed = list(sre_parse.parse(pattern))
+    except re.error:
+        return False
+    return _unbounded_dot_hit(parsed)
+
+
+def guard_coverage(pattern, catalog):
+    """Which subcommands of the verb groups a negative guard names it forbids.
+
+    A group qualifies when it has subcommands in the catalog, every token of it
+    appears as a word in the pattern source, and the guard forbids the bare
+    ``uip <group>``. Returns ``(forbidden, allowed)`` probe lists, or ``None``
+    when no group qualifies or the pattern does not compile.
+    """
+    try:
+        rx = re.compile(pattern, re.DOTALL)
+    except re.error:
+        return None
+    words = set(re.findall(r"[A-Za-z][\w-]*", pattern))
+    parents = {v.rsplit(" ", 1)[0] for v in catalog if " " in v}
+    groups = sorted(
+        g for g in parents
+        if all(t in words for t in g.split()) and rx.search(f"uip {g}")
+    )
+    roots = [g for g in groups if not any(g.startswith(r + " ") for r in groups)]
+    if not roots:
+        return None
+    probes = []
+    for g in roots:
+        leaves = sorted(v for v in catalog if v.startswith(g + " ") and v not in parents)
+        probes += [f"uip {v}" for v in leaves] + [f"uip {g} --help"]
+    forbidden = [c for c in probes if rx.search(c)]
+    allowed = [c for c in probes if not rx.search(c)]
+    return forbidden, allowed
+
+
+def iter_negative_patterns(spec):
+    for idx, crit in enumerate(spec.get("success_criteria") or []):
+        if not isinstance(crit, dict) or crit.get("type") != "command_not_executed":
+            continue
+        if crit.get("tool_name", "Bash") != "Bash":
+            continue
+        pattern = crit.get("command_pattern")
+        if isinstance(pattern, str):
+            yield idx, pattern, crit.get("description", "")
+
+
 def iter_command_patterns(spec, path):
     for idx, crit in enumerate(spec.get("success_criteria") or []):
         if not isinstance(crit, dict):
@@ -290,6 +456,20 @@ def lint_file(path, catalog, renames):
         return []
     findings = []
     for idx, pattern, desc in iter_command_patterns(spec, path):
+        if has_unbounded_dot(pattern):
+            findings.append({
+                "path": str(path), "severity": "Info",
+                "axis": "unbounded-dot-repeat",
+                "criterion_index": idx,
+                "command_pattern": pattern,
+                "description": desc,
+                "message": "Unbounded `.` repeat between the `uip` verb and a "
+                           "required literal: `.*` crosses `;`, `&&` and `|` on "
+                           "every coder-eval version, and newlines/heredocs on "
+                           "1.x (re.DOTALL), so an operand named in another "
+                           "command of the same Bash call still counts. Tie the "
+                           "operand to the same simple command with `[^;&|\\n]*`.",
+            })
         verbs = extract_verb_paths(pattern)
         if verbs is None:
             findings.append({
@@ -326,6 +506,26 @@ def lint_file(path, catalog, renames):
                 "message": "No verb in pattern matches uip catalog "
                            f"(unmatched: {details['unmatched']}).",
             })
+    for idx, pattern, desc in iter_negative_patterns(spec):
+        coverage = guard_coverage(pattern, catalog)
+        if coverage is None:
+            continue
+        forbidden, allowed = coverage
+        findings.append({
+            "path": str(path), "severity": "Info",
+            "axis": "negative-guard-coverage",
+            "criterion_index": idx,
+            "command_pattern": pattern,
+            "description": desc,
+            "forbidden": forbidden,
+            "allowed": allowed,
+            "message": "Guard forbids: "
+                       + (", ".join(f"`{c}`" for c in forbidden) or "none")
+                       + "; allows: "
+                       + (", ".join(f"`{c}`" for c in allowed) or "none")
+                       + ". Confirm each forbidden one is what the criterion "
+                         "description rules out.",
+        })
     return findings
 
 
@@ -335,6 +535,11 @@ def write_report(findings, catalog_size, version, output_path):
     files_with = {sev: sorted({f["path"] for f in findings
                                if f["severity"] == sev})
                   for sev in ("High", "Medium", "Info")}
+    dynamic = [f for f in findings if f["severity"] == "Info"
+               and f.get("axis", "cli-verb-reachability") == "cli-verb-reachability"]
+    by_axis = collections.Counter(f.get("axis") for f in findings)
+    files_by_axis = {a: len({f["path"] for f in findings if f.get("axis") == a})
+                     for a in ("unbounded-dot-repeat", "negative-guard-coverage")}
     unmatched = collections.Counter()
     for f in findings:
         if f["severity"] != "High":
@@ -367,7 +572,13 @@ def write_report(findings, catalog_size, version, output_path):
         f"| **Medium** (verb retired per `cli-renames.md`) | "
         f"{by_sev.get('Medium', 0)} | {len(files_with['Medium'])} |",
         f"| **Info** (pattern too dynamic to verify) | "
-        f"{by_sev.get('Info', 0)} | {len(files_with['Info'])} |\n",
+        f"{len(dynamic)} | {len({f['path'] for f in dynamic})} |",
+        f"| **Info** (unbounded `.` repeat crosses commands) | "
+        f"{by_axis.get('unbounded-dot-repeat', 0)} | "
+        f"{files_by_axis['unbounded-dot-repeat']} |",
+        f"| **Info** (negative-guard coverage report) | "
+        f"{by_axis.get('negative-guard-coverage', 0)} | "
+        f"{files_by_axis['negative-guard-coverage']} |\n",
     ]
     if unmatched:
         out.append("## High findings — verbs not in catalog\n")
@@ -391,7 +602,7 @@ def write_report(findings, catalog_size, version, output_path):
             out.append(f"  {f['message']}")
         out.append("")
     out.append("## Info findings — patterns skipped\n")
-    out.append(f"{by_sev.get('Info', 0)} patterns could not be statically "
+    out.append(f"{len(dynamic)} patterns could not be statically "
                "enumerated (contain `.*`, character classes, or unbounded "
                "quantifiers). Skipped without a verdict.\n")
     out.append("## Reproducing\n")

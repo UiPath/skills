@@ -49,14 +49,17 @@ Record order is invocation order. Fields:
   flags take values. Both are interpretation, and belong in the criterion.
 - `exit` — the mock's exit status; `null` in the live wrapper, which `execv`s the
   real CLI and so never observes it.
+- `files` — present only when a `--<name>-file <path>` flag was passed: each
+  readable file's content, keyed by path. The flat line also carries the content
+  right after the path, so a criterion matching the JSON payload passes whether
+  the agent inlined it or passed a file.
 
 **Standard input is not recorded**, and there is no field for it. Reading stdin
 in the offline mock would block whenever the sandbox leaves it attached to an
 open pipe, hanging the task until its timeout; in the live wrapper it would
 consume the payload the real CLI needs. Nothing reads stdin today — the skill
-passes payloads as flag VALUES (`--updates "$(cat f.json)"`), which `argv`
-captures in full. Add the field when something needs it; a new key breaks no
-existing criterion.
+passes payloads as files (`--updates-file f.json`). Add the field when
+something needs it; a new key breaks no existing criterion.
 
 Grade CLI behavior from a log, not from regexes over agent-authored Bash text,
 which can false-match commands merely quoted in heredocs, comments, or prose.

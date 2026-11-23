@@ -7,8 +7,8 @@ description: >
   rules, and (c) produce a completion report that distinguishes skeleton
   vs resolved tasks and lists the external resources the user must
   register before the skeleton can be upgraded. Greenfield generation
-  path (Rule 7 regenerate-from-scratch); in-place brownfield edits are a
-  separate journey (see references/brownfield.md).
+  path (regenerate from scratch); in-place brownfield edits are a
+  separate journey (decompile, edit, recompile).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
 initial_prompt: |
   Create a UiPath Case Management project named "ContractReviewCase" with
@@ -26,8 +26,8 @@ initial_prompt: |
 
   This test environment has no live tenant — the action-app for the
   reviewer step is intentionally unlikely to resolve. When that happens
-  the skill REQUIRES you to write a skeleton action task per
-  references/skeleton-tasks.md:
+  the skill REQUIRES you to write a skeleton (placeholder) action task
+  for the unresolved resource, with this shape:
   - `type: "action"`
   - `displayName` set
   - `id`, `elementId`, `isRequired`, `shouldRunOnlyOnce` set
@@ -254,7 +254,7 @@ success_criteria:
                   for t in lane:
                       if t.get('type') == 'action':
                           d = t.get('data') or {}
-                          # Skeleton: data must be {} (or have only action-only extras per skeleton-tasks.md, never taskTypeId)
+                          # Skeleton: data must be {} (or have only action-only extras, never taskTypeId)
                           ctx = d.get('context') or {}
                           if ctx.get('taskTypeId'):
                               print('FAIL: skeleton action task has taskTypeId set'); sys.exit(1)

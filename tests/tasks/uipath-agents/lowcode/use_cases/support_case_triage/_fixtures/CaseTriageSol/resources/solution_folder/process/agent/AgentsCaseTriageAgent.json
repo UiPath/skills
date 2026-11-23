@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AgentsCaseTriageAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9fa1bd71-0541-4485-b1ff-080716b1984f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "AgentsCaseTriageAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "AgentsCaseTriageAgent",
+      "package": {
+        "key": "94df4ad1-ad0e-47c3-8d04-0845e8bce4e3"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f77377cb-b437-46c0-90fa-d4b4f78aa05a",
+    "files": []
+  }
+}

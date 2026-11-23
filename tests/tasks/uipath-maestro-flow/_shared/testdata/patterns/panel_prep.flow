@@ -1,0 +1,189 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "extractClauses",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "d1044282-dee6-4962-ace7-806a759d0fda",
+    "agentInputVariables": [
+     {
+      "id": "start__output__contractText",
+      "type": "string",
+      "binding": "=js:$vars.start.output.contractText"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "clauses",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "legal",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "63fc59ee-62f8-44fc-bd22-ee329394cdac",
+    "agentInputVariables": [
+     {
+      "id": "extractClauses__output__clauses",
+      "type": "string",
+      "binding": "=js:$vars.extractClauses.output.clauses"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "finance",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "6ce9e959-e031-4c4b-9c0d-25e95bd8548f",
+    "agentInputVariables": [
+     {
+      "id": "extractClauses__output__clauses",
+      "type": "string",
+      "binding": "=js:$vars.extractClauses.output.clauses"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "ops",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "1509f0eb-5ee8-4045-90fa-26e74b7e2afd",
+    "agentInputVariables": [
+     {
+      "id": "extractClauses__output__clauses",
+      "type": "string",
+      "binding": "=js:$vars.extractClauses.output.clauses"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "findings",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "join",
+   "type": "core.logic.merge",
+   "inputs": {}
+  },
+  {
+   "id": "synthesize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "7f0ea807-f67b-4bc7-86ec-77dfcb489a17",
+    "agentInputVariables": [
+     {
+      "id": "legal__output",
+      "type": "string",
+      "binding": "=js:$vars.legal.output"
+     },
+     {
+      "id": "finance__output",
+      "type": "string",
+      "binding": "=js:$vars.finance.output"
+     },
+     {
+      "id": "ops__output",
+      "type": "string",
+      "binding": "=js:$vars.ops.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "recommendation",
+      "type": "string"
+     },
+     {
+      "id": "disagreements",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "extractClauses",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "extractClauses",
+   "sourcePort": "success",
+   "targetNodeId": "legal",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "extractClauses",
+   "sourcePort": "success",
+   "targetNodeId": "finance",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "extractClauses",
+   "sourcePort": "success",
+   "targetNodeId": "ops",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "legal",
+   "sourcePort": "success",
+   "targetNodeId": "join",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "finance",
+   "sourcePort": "success",
+   "targetNodeId": "join",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "ops",
+   "sourcePort": "success",
+   "targetNodeId": "join",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "join",
+   "sourcePort": "output",
+   "targetNodeId": "synthesize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "synthesize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

@@ -1,0 +1,70 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "/content/agent.json",
+            "uniqueId": "3b9d6e21-7c4a-4f0b-8e5d-1a2b3c4d5e6f",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "contractFile": {
+                        "$ref": "#/definitions/job-attachment",
+                        "description": "The uploaded contract to review (PDF or text)"
+                    },
+                    "requesterNotes": {
+                        "type": "string",
+                        "description": "Free-text notes from the requester about the contract"
+                    }
+                },
+                "required": [
+                    "contractFile"
+                ],
+                "definitions": {
+                    "job-attachment": {
+                        "type": "object",
+                        "properties": {
+                            "ID": {
+                                "type": "string",
+                                "description": "Orchestrator attachment key"
+                            },
+                            "FullName": {
+                                "type": "string",
+                                "description": "File name"
+                            },
+                            "MimeType": {
+                                "type": "string",
+                                "description": "MIME type, e.g. \"application/pdf\", \"image/png\""
+                            },
+                            "Metadata": {
+                                "type": "object",
+                                "description": "Dictionary<string, string> of metadata",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "required": [
+                            "ID"
+                        ],
+                        "x-uipath-resource-kind": "JobAttachment"
+                    }
+                }
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "summary": {
+                        "type": "string",
+                        "description": "Plain-language summary of the contract"
+                    },
+                    "riskLevel": {
+                        "type": "string",
+                        "description": "Low, Medium or High"
+                    }
+                }
+            }
+        }
+    ]
+}

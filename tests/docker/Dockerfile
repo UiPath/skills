@@ -57,6 +57,12 @@ ARG FLOW_SDK_PKG_NAME=@uipath/maestro-builder-sdk
 # misses are tolerated — but a collapse below this floor (feed outage, wrong
 # dist-tag) fails the build loudly instead of silently scoring agents 0.
 ARG MIN_TOOLS=25
+# Tools allowed to lag the CLI's line. A brand-new tool publishes its first builds on the
+# line it was branched from: @uipath/explorer-engine-tool appeared on 2026-11-09 at 1.206.x
+# while the CLI was on 1.207.x, and no task in this image calls it yet. Such a tool is
+# skipped with a warning instead of failing the build; remove it here once it ships on the
+# CLI's line.
+ARG LAGGING_TOOLS_OK="@uipath/explorer-engine-tool"
 
 # Turn OFF the CLI's startup version-sync inside the eval container. On a `-dev`
 # CLI, sync would try to re-align tools through the release-channel path (which
@@ -143,6 +149,16 @@ RUN --mount=type=secret,id=npm_auth_token \
         printf '%s\n' "$resolved_sdk_version" > "$PREVIEW_FLOW_SDK_ROOT/flow-sdk.version"; \
         printf '%s\n' available > "$PREVIEW_FLOW_SDK_ASSETS_ROOT/sdk-install.status"; \
         echo "Installed ${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
+        # Also install that exact build globally. The Flow skill tells agents the SDK
+        # is installed with `npm install -g` and checks `npm ls -g`; with only the
+        # prefix copy, 94 Flow/BPMN tasks in the 2026-11-12 nightly spent a
+        # turn installing `@latest` themselves, which also let the version drift
+        # from the one this image smoke-checks. No --userconfig here: with -g, npm
+        # already loads "$npmrc" as the global config and refuses to load it twice.
+        # A failure here fails the build: the prefix install just reached the same
+        # feed, so a warning would only hide a broken command.
+        npm install -g --no-audit --no-fund \
+          "${FLOW_SDK_PKG_NAME}@${resolved_sdk_version}"; \
       else \
         echo "WARN: ${FLOW_SDK_PKG_NAME}@${FLOW_SDK_VERSION} installed incompletely; Flow tasks will fail at runtime"; \
       fi; \
@@ -174,8 +190,11 @@ RUN --mount=type=secret,id=npm_auth_token \
              { echo "Error: ${tool}@${tool_version} failed to install"; exit 1; }; \
            installed=$((installed + 1)) ;; \
         3) echo "WARN: ${tool} has nothing to install on the @${tool_tag} train at or below ${cli_line}x — skipping" ;; \
-        4) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet"; \
-           lagging="${lagging} ${tool}" ;; \
+        4) case " ${LAGGING_TOOLS_OK} " in \
+             *" ${tool} "*) echo "WARN: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet — allowed to lag, skipping" ;; \
+             *) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet"; \
+                lagging="${lagging} ${tool}" ;; \
+           esac ;; \
         *) echo "Error: could not look up ${tool} (tool-line.mjs pick exit ${pick_rc})"; exit 1 ;; \
       esac; \
     done && \
@@ -198,16 +217,23 @@ RUN --mount=type=secret,id=npm_auth_token \
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion
 # with `spawn dotnet ENOENT`. libicu is a runtime dependency of the SDK.
+# The SDK install is best-effort: when dot.net is unreachable after retries the
+# image builds without dotnet, so only the tasks that need it fail, not the run.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         jq \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
-    && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
-    && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
-    && ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
-    && rm /tmp/dotnet-install.sh \
-    && dotnet --version
+    && if curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
+            https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+        && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \
+        && bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
+        && /usr/share/dotnet/dotnet --version; then \
+         ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet; \
+       else \
+         echo "WARNING: .NET SDK install failed; this image has no dotnet, so RPA build and Helm tasks will fail." >&2; \
+         rm -rf /usr/share/dotnet; \
+       fi \
+    && rm -f /tmp/dotnet-install.sh
 
 ENV DOTNET_ROOT=/usr/share/dotnet \
     DOTNET_NOLOGO=1 \
@@ -273,7 +299,7 @@ RUN set -euo pipefail && \
     if [ "$sdk_status" = available ]; then \
       registry_status=failed; \
       if registry_output="$(cd "$PREVIEW_FLOW_SDK_ROOT" && \
-        uip maestro registry pull --force ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
+        uip maestro registry pull ${connectors_library_url:+--url "$connectors_library_url"} --output json 2>&1)"; then \
         printf '%s\n' "$registry_output"; \
         registry_snapshot=''; \
         if [ -f "$UIP_MAESTRO_REGISTRY_HOME/current.json" ]; then \
@@ -331,6 +357,18 @@ RUN set -euo pipefail && \
       '{sdk: {requestedVersion: $requestedVersion, resolvedVersion: (if $resolvedVersion == "" then null else $resolvedVersion end), status: $sdkStatus}, registry: {requestedVersion: $connectorsLibraryVersion, libraryHash: (if $libraryHash == "" then null else $libraryHash end), status: $registryStatus}, sourceCheck: {status: $sourceCheckStatus}}' \
       > "$FLOW_SDK_SETUP_STATUS" && \
     cat "$FLOW_SDK_SETUP_STATUS"
+
+# Declare the versions this image bakes in, as a flat JSON object of name to
+# string. coder-eval 1.x records it with each run (the Evalboard run header
+# shows it); coder-eval 0.12 does not read it. An unresolved value is left out.
+# The connectors library is reported only when its registry snapshot is
+# available: `connectors-library` is the pinned build (absent for `latest`),
+# `connectors-library-sha` the content hash of the snapshot actually installed.
+RUN mkdir -p /etc/coder-eval && \
+    jq --arg cli "$(uip --version | tail -n 1)" \
+      '(.registry.status == "available") as $registry | {"uip-cli": $cli, "flow-sdk": .sdk.resolvedVersion, "connectors-library": (if $registry and .registry.requestedVersion != "latest" then .registry.requestedVersion else null end), "connectors-library-sha": (if $registry then .registry.libraryHash else null end)} | with_entries(select(.value != null and .value != ""))' \
+      "$FLOW_SDK_SETUP_STATUS" > /etc/coder-eval/image-versions.json && \
+    cat /etc/coder-eval/image-versions.json
 
 # Persist the built-with name into the image. `ARG` is build-time only, and
 # `stage-preview-sdk-workspace.sh` reads this at TASK time — without it a

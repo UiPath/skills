@@ -131,6 +131,126 @@ def test_entity_named_only_in_the_body_json_counts(tmp_path):
     assert rc == 0, out
 
 
+def _v2_node(object_name: str, entity: str) -> str:
+    return (
+        f'<bpmn:sendTask id="T_{object_name}_{entity}"><bpmn:extensionElements>'
+        '<uipath:activity><uipath:type value="Intsvc.ActivityExecution"/><uipath:context>'
+        '<uipath:input name="connectorKey" value="uipath-uipath-dataservice"/>'
+        f'<uipath:input name="objectName" value="{object_name}"/>'
+        '<uipath:input name="method" value="POST"/>'
+        '<uipath:input name="path" value="/v2/{entityName}/CreateEntityRecord"/>'
+        '<uipath:input name="activityConfigurationVersion" value="v2"/>'
+        "</uipath:context>"
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        f'{{"entityName":"{entity}"}}]]></uipath:input>'
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"title":"T"}]]></uipath:input>'
+        "</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def test_entity_named_in_a_v2_path_parameters_input_counts(tmp_path):
+    """Smoke run 39467144622: `registry get --input-details` writes the
+    entity into one `target="pathParameters"` JSON input."""
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + _v2_node("CreateEntityRecordCurated", "NonExistentEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
+def test_a_v3_create_naming_the_tenant_entity_in_its_query_counts(tmp_path):
+    """Agent loop 6: CreateEntityRecord_V3 names a tenant entity in its
+    `queryParameters` (`entityScope` tenant, `tenantEntityName`)."""
+    create = _v2_node("CreateEntityRecord_V3", "unused").replace(
+        '{"entityName":"unused"}', "{}"
+    ).replace(
+        '<uipath:input name="body"',
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope":"tenant","tenantEntityName":"NonExistentEntity"}]]></uipath:input>'
+        '<uipath:input name="body"',
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + create
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
+def test_a_v3_create_naming_the_entity_in_another_case_does_not_count(tmp_path):
+    """Data Fabric entity names that differ only in case are different
+    entities, so a query value is matched as exactly as a path value."""
+    create = _v2_node("CreateEntityRecord_V3", "unused").replace(
+        '{"entityName":"unused"}', "{}"
+    ).replace(
+        '<uipath:input name="body"',
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope":"tenant","tenantEntityName":"nonexistententity"}]]></uipath:input>'
+        '<uipath:input name="body"',
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + create
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc != 0
+    assert "no Create Entity Record node targeting 'NonExistentEntity'" in out, out
+
+
+def test_a_folder_entity_query_picked_through_a_binding_counts(tmp_path):
+    """A picked folder entity reads as `=bindings.<id>`; the name is the
+    root binding's default."""
+    query = _v2_node("QueryEntityRecords_V3", "unused").replace(
+        '{"entityName":"unused"}', "{}"
+    ).replace(
+        '<uipath:input name="body"',
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope":"folder","folderEntityName":"=bindings.bEnt"}]]></uipath:input>'
+        '<uipath:input name="body"',
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        '<bpmn:extensionElements><uipath:bindings>'
+        '<uipath:binding id="bEnt" name="Entity" type="string" resource="entity" '
+        'propertyAttribute="name" default="FlowCodeEvalEntity" resourceKey="k-1"/>'
+        "</uipath:bindings></bpmn:extensionElements>"
+        + _v2_node("CreateEntityRecordCurated", "NonExistentEntity")
+        + query
+        + query.replace('id="T_QueryEntityRecords_V3_unused"', 'id="T_Q2"')
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
+def test_a_v2_create_on_the_real_entity_is_not_the_error_path(tmp_path):
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + _v2_node("CreateEntityRecordCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 1, out
+    assert "no Create Entity Record node targeting 'NonExistentEntity'" in out
+
+
 def test_entity_name_in_a_non_entity_body_field_does_not_count(tmp_path):
     """A Create on the real entity whose title merely equals the missing
     entity's name is not the error-path Create (review nit)."""

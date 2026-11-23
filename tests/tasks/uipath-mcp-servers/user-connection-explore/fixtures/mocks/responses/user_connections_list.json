@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpUserConnectionsList",
+  "Data": {
+    "Items": [
+      {
+        "UserId": "8b9c0d1e-2f3a-4b5c-9d6e-7f8091a2b3c4",
+        "UserName": "bob.smith@example.com",
+        "ConnectionId": "7a1b2c3d-0000-4000-8000-0000000000bb",
+        "ConnectionName": "Vendor MCP (Bob)",
+        "Status": "Active"
+      }
+    ],
+    "Total": 1,
+    "Count": 1
+  }
+}

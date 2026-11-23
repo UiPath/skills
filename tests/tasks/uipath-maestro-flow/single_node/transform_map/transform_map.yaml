@@ -12,6 +12,7 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 
 run_limits:
   turn_timeout: 1200
+  task_timeout: 1500
 
 reference:
   directory: ../..
@@ -38,8 +39,6 @@ initial_prompt: |
       `transformation: "uppercase"`.
     - The node `outputs.output.source` must be `=result.response` and
       `outputs.error.source` must be `=Error`.
-    - Set the node's `typeVersion` from the authoritative definition for
-      `core.action.transform.map`.
 
   Validate the flow.
 

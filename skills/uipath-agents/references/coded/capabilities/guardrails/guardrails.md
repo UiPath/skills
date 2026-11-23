@@ -13,16 +13,34 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 **Do this FIRST — before reading any files, running any commands, or taking any other action.** Call `WebFetch` twice to retrieve current guardrail documentation:
 
 1. **`https://uipath.github.io/uipath-python/langchain/guardrails/`**
-   Extract: middleware classes, their supported scopes, stage support, extra parameters, and correct import paths.
+   Extract: middleware classes, their supported scopes, stage support, extra parameters (including `detection_scope` for files), and correct import paths.
 
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
+
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Extract only what this task needs in two greps, then write the code:
+>
+> 1. **Index grep.** You do not know the exact class names yet — list the page's headings and class declarations to learn their spellings:
+>
+>    ```bash
+>    grep -n -E '^#+ |^class ' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> 2. **Targeted grep.** Pull the sections for the symbols this task needs (the middleware, validator, and action class names, plus the entity enum). Match case-insensitively on the validator's name stem so a catalog id like `pii_detection` still hits the class name whatever its casing:
+>
+>    ```bash
+>    grep -in -A12 -E '<SYMBOL_OR_STEM_1>|<SYMBOL_OR_STEM_2>' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> Grep again only for a symbol these two did not return. If the saved file is raw HTML rather than markdown (the index grep returns nothing), grep the class-name stems case-insensitively anyway — do not fall back to paging through the file.
 
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
 - Which scopes or stages a guardrail supports
 - Entity type names or their allowed values
 - Import paths
+
+> **File inspection is the one exception.** For `detection_scope`, [files-guide.md](files-guide.md) and the validator's entry in [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) are the authority. A fetched summary that omits `detection_scope`, or says a validator has no file support, is not a reason to leave it out.
 
 **And it is complete — do not go digging for more.** Never grep the installed CLI or SDK (`/usr/lib/node_modules/@uipath/**`, `site-packages/uipath*`), read minified `dist/*.js` bundles, or run ad-hoc Python import probes to reverse-engineer class names, signatures, or schemas. The fetched docs plus this reference cover everything needed to write the guardrail; write the code first, then verify. The only permitted runtime probes are the two wiring checks in [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails) — run those AFTER editing the agent file, not before.
 
@@ -48,10 +66,14 @@ HITL guardrail escalation — never invent the class, import path, or arguments 
 For built-in AI validators (PII, harmful content, user prompt attacks, IP, LLM as Judge), confirm the validator is enabled on this tenant **before authoring** — run:
 
 ```bash
-uip agent guardrails list --output json
+uip agent guardrails list --output json --output-filter "[?Validator=='<VALIDATOR_ID>' && !IsByo].{Validator: Validator, Status: Status, AllowedScopes: AllowedScopes, GuardrailStages: GuardrailStages, Parameters: Parameters[].Id}"
 ```
 
+`<VALIDATOR_ID>` is the catalog id: `pii_detection`, `harmful_content`, `user_prompt_attacks`, `intellectual_property`, or `llm_as_judge`. Run it once per validator you add; do not truncate the output.
+
 If the requested validator has `Status != "Available"` → tell the user and stop. Actually adding one that is not entitled produces a guardrail that always fails.
+
+The same entry decides file inspection: offer `detection_scope` only when its `Parameters` lists `detectionScope` — see [files-guide.md](files-guide.md).
 
 **Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
 
@@ -77,6 +99,8 @@ A validator can be fulfilled by a tenant-registered **external** provider (a "BY
 |---|---|---|---|
 | `UiPathByoGuardrailMiddleware` | middleware | `uipath_langchain.guardrails` **only** | LangChain/LangGraph agents only — there is no framework-agnostic middleware. |
 | `ByoValidator` | decorator | `uipath.platform.guardrails` (**core**), re-exported by `uipath_langchain.guardrails` | Framework-agnostic class, so BYO is **not** LangChain-only. |
+
+> **No file support for BYO guardrails.** Both constructs accept `detection_scope`, but BYO guardrails evaluate text only — never set it on them.
 
 > **BYO is not LangChain-only** — a common wrong inference, because the core SDK docs page historically omitted `ByoValidator`. The class is in core. What *is* LangChain-only is the middleware.
 >
@@ -162,6 +186,7 @@ Use `Glob` / `Grep` to find the main Python file (look for `create_agent`, `Stat
 - Which `@tool` functions exist (needed for Tool-scoped guardrails)
 - Whether a separate LLM factory function exists (needed for LLM-scope decorator guardrails)
 - Which guardrails are already present (avoid duplicating)
+- Whether `Input` / `Output` declare `Attachment` fields, tools take or return files, or the agent is conversational (`runtimeOptions.isConversational: true` in `uipath.json`; users attach files to chat messages) — these decide `detection_scope` ([files-guide.md](files-guide.md))
 
 ---
 
@@ -269,7 +294,7 @@ Pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]`. No `tools=`.
 
 Middleware classes for the **fixed-stage** validators take no `stage` argument: `UiPathUserPromptAttacksMiddleware`, `UiPathPromptInjectionMiddleware` (both PRE-only) and `UiPathIntellectualPropertyMiddleware` (POST-only). Passing `stage=` to those raises `TypeError` — their stage is a property of the validator, not a choice.
 
-> Validators whose stage genuinely varies **do** accept `stage=` on the middleware (defaulting to `PRE_AND_POST`) — PII, harmful content, LLM-as-judge, deterministic, and BYO. Confirm against the fetched `langchain/guardrails/` page for the validator you're wiring rather than assuming either way.
+> Validators whose stage genuinely varies **do** accept `stage=` on the middleware (defaulting to `PRE_AND_POST`) — PII, harmful content, LLM-as-judge, and BYO. `UiPathDeterministicGuardrailMiddleware` requires `stage` (no default). Confirm against the fetched `langchain/guardrails/` page for the validator you're wiring rather than assuming either way.
 
 For BYO middleware specifically, see [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
 
@@ -363,6 +388,19 @@ If `create_agent()` is called directly at module level (not in a function), wrap
 
 ---
 
+## Files and attachments (`detection_scope`)
+
+Built-in guardrails take an optional `detection_scope=DetectionScope.TEXT | FILES | BOTH` that decides whether they evaluate the text, the run's files, or both.
+
+1. Pass it on `@guardrail(...)` or the middleware constructor, never on the validator, and only when the validator's `uip agent guardrails list` entry offers `detectionScope`.
+2. The default is always text only. Scopes and stages do not change.
+3. Middleware and LLM-scope guardrails see a typed `Attachment` input only once it is rendered into the user message with `render_attachments_block`. A `@guardrail` on a graph or agent factory also reads it as a key of the graph's input.
+4. BYO guardrails read no files; deterministic middleware and `CustomValidator` have no file support.
+
+What each check reads, the recipes for uploaded and produced files, and how to test with a real file: [files-guide.md](files-guide.md).
+
+---
+
 ## Escalation action (human-in-the-loop)
 
 `EscalateAction` is a third action (beside `LogAction` / `BlockAction`) that turns a violation into a **human
@@ -375,7 +413,7 @@ like `BlockAction`). Get the exact parameters / supported scopes / stages from t
 **The same `EscalateAction` works in both styles** — pass it as the `action`:
 
 ```python
-# Middleware (no stage= — fixed by the validator)
+# Middleware
 *UiPathPIIDetectionMiddleware(
     name="PII escalation",
     scopes=[GuardrailScope.AGENT],
@@ -495,3 +533,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).
 18. **BYO: pass the validator name and nothing else, and get that name from discovery — never from memory.** `ByoValidatorName` comes from `uip agent guardrails list --byo`; there is **no connection-id argument** in either construct (the platform resolves the connection server-side from the configuration). Pick the construct by style, not by framework: `UiPathByoGuardrailMiddleware` is LangChain-only, while `ByoValidator` is a **core** class (`uipath.platform.guardrails`) re-exported by `uipath_langchain.guardrails` — so **BYO is not LangChain-only**, and a subagent or stale doc claiming otherwise is wrong. Import per Rule 8 regardless. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
 19. **`uip codedagent review` does NOT validate guardrail scope or stage placement.** A `PASS` / `A+` verdict from `uip codedagent review --checks guardrails` is not evidence a guardrail is correctly scoped — the review checks structure and presence, not placement. A misplaced guardrail (e.g. LLM-only `user_prompt_attacks` decorating a `@tool` function) passes review and still never fires where intended. Scope/stage correctness comes only from the fetched SDK docs and the `AllowedScopes` in `uip agent guardrails list --output json`; to diagnose an existing guardrail, follow [guardrails-recommend.md § Validate Mode](guardrails-recommend.md#validate-mode).
+20. **Files are opt-in per guardrail.** Set `detection_scope` on `@guardrail(...)` or the middleware (never the validator), only when the validator's `uip agent guardrails list` entry offers `detectionScope`, never on BYO / deterministic / `CustomValidator` guardrails; render a typed `Attachment` input into the user message so middleware and LLM-scope guardrails can see it. See [files-guide.md](files-guide.md).

@@ -1,0 +1,3 @@
+<!--skill-flavor:task-retry-runtime:start-->
+Task-level retry runs only on an executor that supports `catch.retry`; Studio Web shows the **Retry** section on HTTP Request and Try/Catch only where the tenant's executor does. Confirm with the user that the Retry section is visible on those activities before relying on `catch.retry`. Without it, the try block may run once, and a `#Retry` wrapper (no `catch.do`) may then complete with the error object as its output; report the gap and, for GET calls, offer `httpRetryConfig`. After explicit consent, verify retries through `RunProject`: the run panel pages through each attempt, and the trace view lists one span per attempt.
+<!--skill-flavor:task-retry-runtime:end-->

@@ -20,7 +20,7 @@
 
 > **Any key of the deployment reaches it.** `uip solution deploy upgrade <key>` resolves the key through the Pipelines by-key lookup to the deployment's current generation, so the `Key` from `uip solution deploy list` and a stored `InstallDeploymentKey` both work; store `InstallDeploymentKey`, the one that never changes across upgrades. `uip solution deploy status <key>` answers `Superseded: true` and names the current key when the one you hold is stale.
 
-> **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. Read `ActivationStatus` when it is anything else: `NeedsSetupToActivate` means a resource needs "Setup activation" in Orchestrator first and `deploy activate` is refused with `4007` until then (the run is still a success; `PendingResources` names the resource and why); `ReadyToActivate` or a failed activation means fix the cause and run `uip solution deploy activate <name>`. The deployment exists either way — never redeploy. Check state with `uip solution deploy status` / `deploy list`.
+> **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. Read `ActivationStatus` when it is anything else: `NeedsSetupToActivate` means a resource needs activation setup in Orchestrator first (click **Activate deployment** on the deployment) and `deploy activate` is refused with `4007` until then (the run is still a success; `PendingResources` names the resource and why); `ReadyToActivate` or a failed activation means fix the cause and run `uip solution deploy activate <name>`. The deployment exists either way — never redeploy. Check state with `uip solution deploy status` / `deploy list`.
 <!--skill-flavor:solution-lifecycle-steps:end-->
 
 <!--skill-flavor:when-to-use-uipx:start-->
@@ -49,9 +49,15 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 <!--skill-flavor:probe-rule:end-->
 
 <!--skill-flavor:appv2-registration-rule:start-->
-7. **AppV2 coded apps are created in the open solution with the `CreateProjects` tool.** Studio Web has no `uip codedapp` and no `create-vite`: create the project with `CreateProjects` (`AppV2` with `projectSubType` `Coded` or `CodedAction`). The host writes `project.uiproj` + `webAppManifest.json` and registers the app under `resources/solution_folder/app/{Coded,CodedAction}/`; the app's sources go under `source/`. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+7. **AppV2 coded apps are created in the open solution with the `CreateProjects` tool.** Studio Web has no coded-app CLI tool and no `create-vite`: create the project with `CreateProjects` (`AppV2` with `projectSubType` `Coded` or `CodedAction`). The host writes `project.uiproj` + `webAppManifest.json` and registers the app under `resources/solution_folder/app/{Coded,CodedAction}/`; the app's sources go under `source/`. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 <!--skill-flavor:appv2-registration-rule:end-->
 
 <!--skill-flavor:develop-solution-row:start-->
 | [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa — and coded apps with the `CreateProjects` tool; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
+
+<!--skill-flavor:when-to-use-existing:start-->
+<!--skill-flavor:when-to-use-existing:end-->
+
+<!--skill-flavor:existing-solution:start-->
+<!--skill-flavor:existing-solution:end-->

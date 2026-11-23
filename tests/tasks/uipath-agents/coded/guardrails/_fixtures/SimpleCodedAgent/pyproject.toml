@@ -5,7 +5,7 @@ description = "Simple coded agent for testing guardrail addition"
 authors = [{ name = "Test User", email = "test@example.com" }]
 requires-python = ">=3.11"
 dependencies = [
-    "uipath-langchain>=0.9.26",
+    "uipath-langchain>=0.18.53",
     "uipath>2.7.0",
 ]
 

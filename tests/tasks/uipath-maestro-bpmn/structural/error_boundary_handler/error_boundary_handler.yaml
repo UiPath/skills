@@ -64,13 +64,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "BPMN has a diagram, an error boundary, and an interrupting cancelActivity"
-    path: "InvoiceServiceRecovery.bpmn"
-    includes:
-      - "bpmndi:BPMNDiagram"
-      - "boundaryEvent"
-      - 'cancelActivity="true"'
+    command: 'python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceServiceRecovery --contains bpmndi:BPMNDiagram --contains boundaryEvent --contains ''cancelActivity="true"'''
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

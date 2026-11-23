@@ -1,0 +1,175 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.conversation",
+   "inputs": {
+    "entryPointId": "start"
+   }
+  },
+  {
+   "id": "turns",
+   "type": "core.logic.dowhile",
+   "inputs": {
+    "condition": "$vars.checkIntake.output.readyToSubmit !== true",
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "waitForMessage",
+   "type": "uipath.conversational.wait-for-message",
+   "parentId": "turns",
+   "inputs": {
+    "conversationId": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.conversationId",
+     "fieldType": "string"
+    },
+    "from": "User",
+    "numExchanges": 20
+   }
+  },
+  {
+   "id": "gatherRequest",
+   "type": "uipath.agent.conversational",
+   "parentId": "turns",
+   "inputs": {
+    "source": "3467207b-a275-4c23-8c92-fcf3e1a8f013",
+    "conversationalAgentSettings": {
+     "mode": "simple",
+     "context": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext",
+      "fieldType": "object"
+     },
+     "conversationId": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.conversationId",
+      "fieldType": "string"
+     },
+     "exchangeId": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.latestExchangeId",
+      "fieldType": "string"
+     },
+     "messages": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.messages",
+      "fieldType": "array"
+     },
+     "userSettings": {
+      "type": "jsExpression",
+      "expression": "$vars.waitForMessage.output.conversationContext.userSettings",
+      "fieldType": "object"
+     }
+    }
+   }
+  },
+  {
+   "id": "checkIntake",
+   "type": "uipath.agent.autonomous",
+   "parentId": "turns",
+   "inputs": {
+    "source": "0ec12107-e535-4b63-83fd-ec731e5b7c9f",
+    "agentInputVariables": [
+     {
+      "id": "waitForMessage__output__conversationContext__messages",
+      "type": "string",
+      "binding": "=js:$vars.waitForMessage.output.conversationContext.messages"
+     },
+     {
+      "id": "gatherRequest__output",
+      "type": "string",
+      "binding": "=js:$vars.gatherRequest.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "readyToSubmit",
+      "type": "boolean"
+     }
+    ]
+   }
+  },
+  {
+   "id": "startProcess",
+   "type": "core.logic.mock",
+   "inputs": {}
+  },
+  {
+   "id": "reportBack",
+   "type": "uipath.conversational.send-message",
+   "inputs": {
+    "conversationId": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.conversationId",
+     "fieldType": "string"
+    },
+    "exchangeId": {
+     "type": "jsExpression",
+     "expression": "$vars.waitForMessage.output.conversationContext.latestExchangeId",
+     "fieldType": "string"
+    },
+    "endExchange": false,
+    "role": "assistant",
+    "content": "Submitted.",
+    "mimeType": "text/markdown"
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "turns",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "turns",
+   "sourcePort": "start",
+   "targetNodeId": "waitForMessage",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "waitForMessage",
+   "sourcePort": "output",
+   "targetNodeId": "gatherRequest",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "gatherRequest",
+   "sourcePort": "success",
+   "targetNodeId": "checkIntake",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "checkIntake",
+   "sourcePort": "success",
+   "targetNodeId": "turns",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "turns",
+   "sourcePort": "success",
+   "targetNodeId": "startProcess",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "startProcess",
+   "sourcePort": "output",
+   "targetNodeId": "reportBack",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "reportBack",
+   "sourcePort": "output",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

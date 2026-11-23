@@ -1,0 +1,58 @@
+task_id: skill-platform-traces-decisions-smoke
+description: >
+  Smoke test: agent uses the uipath-platform skill to record a reviewer decision
+  on a trace and read it back. Verifies it calls `uip traces decisions create`
+  with --trace-id and --folder-key, supplies the decision through either
+  --outcome (flag form) or --input (file form), and then queries the trace with
+  `uip traces decisions list`. `uip` is an offline `record_cli` mock that answers
+  every call with a 404 envelope; the graded behavior is the argv each call
+  received.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, decisions]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Reviewer `jane@example.com` approved the invoice on trace
+  `4bf92f3577b34da6a3ce929d0e0e4736` after correcting the `povalue` field to
+  `1065`. Record that decision against the trace (folder key
+  `11111111-2222-3333-4444-555566667777`), then list the decisions on the trace
+  to confirm it is there.
+
+  Use `--output json` on all uip commands. The commands may fail in this
+  environment; run each once and report what it returns.
+
+success_criteria:
+  - type: cli_called
+    description: "Agent wrote the decision with uip traces decisions create for the given trace"
+    tool: uip
+    verb: "traces decisions create"
+    flags:
+      trace-id: "4bf92f3577b34da6a3ce929d0e0e4736"
+      outcome: {present: true, aliases: [input]}
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent passed the folder key on the write"
+    tool: uip
+    verb: "traces decisions create"
+    flags:
+      folder-key: "11111111-2222-3333-4444-555566667777"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Agent read the trace's decisions back with uip traces decisions list"
+    tool: uip
+    verb: "traces decisions list"
+    flags:
+      trace-id: "4bf92f3577b34da6a3ce929d0e0e4736"
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,11 +1,14 @@
-"""Regression tests for the two gates in scripts/check-task-driver.py.
+"""Regression tests for the gates in scripts/check-task-driver.py.
 
 Gate 1 (no `sandbox.driver: tempdir`) predates these tests and was unguarded.
 Gate 2 (single-line experiment hooks) exists because of the 2026-09-04 outage:
 a multi-line POSIX pre_run in nightly.yaml (skills #2756, 80c757e03) left the
 Windows split at 7/7 status=ERROR. #3116 fixed it; nothing caught it.
+Gate 4 (no catastrophic backtracking) exists because #4574 shipped a clone
+pattern that did not finish a failing search in 120s at 20 quoted words.
 """
 
+import importlib.util
 import subprocess
 import textwrap
 from pathlib import Path
@@ -257,9 +260,110 @@ class TestStagedSkillGate:
         assert "stage a skill directory" not in out
 
 
+# The testcase_clone_smoke criterion as #4574 shipped it: `'` is in both the
+# quoted-word branch and the catch-all, so each quoted word parses two ways.
+PR_4574_CLONE = (
+    r"(uip|\$UIP)\s+tm\s+testcases\s+clone\b(?:\x27[^\x27\n]*\x27|\\\n|(?!\s\||\s(?:uip|\$UIP)\s)"
+    r"[^\n;&])*?--include(?:[\s\\=]+[\"\x27]?[a-z]+[\"\x27]?)*?[\s\\=]+[\"\x27]?labels\b"
+)
+# The fix: `'` only opens a quoted word at a word start and is out of the catch-all.
+FIXED_CLONE = (
+    r"(uip|\$UIP)\s+tm\s+testcases\s+clone\b(?:(?<=[\s=($\x22])\x27[^\x27\n]*\x27|\\\n|"
+    r"(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&\x27])*?--include(?:[\s\\=]+[\"\x27]?[a-z]+[\"\x27]?)*?"
+    r"[\s\\=]+[\"\x27]?labels\b"
+)
+
+
+def _load_gate():
+    spec = importlib.util.spec_from_file_location("check_task_driver_gate4", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestBacktrackingGate:
+    """Gate 4 — a command_pattern exponential on a failing search hangs grading."""
+
+    def _write(self, tmp_path: Path, pattern: str, description: str = "graded command") -> Path:
+        path = tmp_path / "task.yaml"
+        path.write_text(
+            yaml.safe_dump(
+                {
+                    "task_id": "fixture-task",
+                    "description": "fixture",
+                    "initial_prompt": "do a thing",
+                    "success_criteria": [
+                        {"type": "command_executed", "description": description,
+                         "tool_name": "Bash", "command_pattern": pattern, "weight": 1.0}
+                    ],
+                },
+                sort_keys=False,
+            )
+        )
+        return path
+
+    def test_would_have_caught_the_4574_clone_pattern(self, tmp_path):
+        rc, out = _run(self._write(tmp_path, PR_4574_CLONE))
+        assert rc == 1, out
+        assert "backtrack catastrophically" in out
+        assert "success_criteria[0]" in out
+
+    def test_the_shipped_fix_passes(self, tmp_path):
+        rc, out = _run(self._write(tmp_path, FIXED_CLONE))
+        assert rc == 0, out
+        assert "finish pumped probes" in out
+
+    def test_line_continuation_overlap_is_caught(self, tmp_path):
+        """`\\\\.` also matches `\\\\\\n` under DOTALL: the shape of every allowlisted entry."""
+        pattern = r"(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+\S)uip\s+or\s+folders\s+list\b"
+        rc, out = _run(self._write(tmp_path, pattern))
+        assert rc == 1, out
+        assert "backtrack catastrophically" in out
+
+    def test_command_not_executed_is_probed_too(self, tmp_path):
+        path = self._write(tmp_path, PR_4574_CLONE)
+        path.write_text(path.read_text().replace("type: command_executed", "type: command_not_executed"))
+        rc, out = _run(path)
+        assert rc == 1, out
+
+    def test_invalid_pattern_is_left_to_coder_eval(self, tmp_path):
+        rc, out = _run(self._write(tmp_path, "uip (unclosed"))
+        assert rc == 0, out
+
+    def test_witness_reaches_the_pumped_loop(self):
+        """The probe pumps right after the literal lead, where the clone loop starts."""
+        leads = {probe.split("'a' ")[0] for probe in _load_gate()._probe_inputs(PR_4574_CLONE) if "'a' " in probe}
+        assert "uip tm testcases clone" in leads
+
+    def test_stale_allowlist_entry_fails(self, tmp_path, capsys):
+        gate = _load_gate()
+        path = self._write(tmp_path, FIXED_CLONE, description="now fixed")
+        gate.SLOW_PATTERN_ALLOWLIST = frozenset({(gate._rel(path), "now fixed")})
+        rc = gate.main([str(path)])
+        out = capsys.readouterr().out
+        assert rc == 1, out
+        assert "now pass; remove them" in out
+
+    def test_allowlisted_offender_passes(self, tmp_path, capsys):
+        gate = _load_gate()
+        path = self._write(tmp_path, PR_4574_CLONE, description="known slow")
+        gate.SLOW_PATTERN_ALLOWLIST = frozenset({(gate._rel(path), "known slow")})
+        rc = gate.main([str(path)])
+        assert rc == 0, capsys.readouterr().out
+
+    def test_every_allowlist_entry_names_a_live_criterion(self):
+        """A renamed description or moved task must not leave a dead entry behind."""
+        gate = _load_gate()
+        for rel, description in gate.SLOW_PATTERN_ALLOWLIST:
+            doc = yaml.safe_load((REPO_ROOT / rel).read_text())
+            descriptions = [c.get("description") for c in doc.get("success_criteria", [])]
+            assert descriptions.count(description) == 1, (rel, description)
+
+
 def test_live_corpus_passes_every_gate():
     rc, out = _run(REPO_ROOT / "tests" / "tasks", REPO_ROOT / "tests" / "experiments")
     assert rc == 0, out
     assert "no task pins `sandbox.driver: tempdir`" in out
     assert "Windows-reachable hook command(s) are single-line" in out
     assert "stage a skill directory" not in out
+    assert "finish pumped probes" in out

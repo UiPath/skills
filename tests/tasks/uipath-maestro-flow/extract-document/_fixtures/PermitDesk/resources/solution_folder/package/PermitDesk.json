@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PermitDesk",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "35121fbb-faca-4c20-a5f2-dac0546f8e05",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "PermitDesk"
+    },
+    "locks": [],
+    "key": "ec294366-52b9-41f1-b95a-f334fb93c53f",
+    "files": []
+  }
+}

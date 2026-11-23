@@ -185,7 +185,8 @@ initial_prompt: |
   - Treat any generated plan as pre-approved — do not block on any HARD STOP
     / AskUserQuestion approval step.
   - If the action-app or the process resource is unresolved, write a
-    skeleton task per the skeleton-tasks reference.
+    skeleton (placeholder) task for it, as the skill's unresolved-resource
+    rule says.
   - Do NOT run `uip maestro case debug`.
 
 success_criteria:

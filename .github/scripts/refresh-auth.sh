@@ -7,7 +7,8 @@
 # Vendored into this repo so run-coder-eval.yml doesn't depend on coder_eval's
 # internal script layout (it formerly ran coder_eval/dashboard/scripts/ci/
 # refresh-auth.sh, which moved out of coder_eval). Mirrors the VM cron's ROPC
-# flow; keep in sync if the upstream token request changes.
+# flow; keep in sync if the upstream token request changes. It also sends Studio
+# Web's RefreshGovernance after the mint.
 #
 # Required env (provide via the workflow's `env:` block or `set -a && source`):
 #   UIPATH_URL UIPATH_ORGANIZATION_NAME UIPATH_ORGANIZATION_ID
@@ -30,7 +31,7 @@ set -euo pipefail
 : "${AUTH_FILE:=${HOME}/.uipath/.auth}"
 mkdir -p "$(dirname "$AUTH_FILE")"
 
-SCOPES="openid profile email offline_access Orchestrator OrchestratorApiUserAccess StudioWebBackend StudioWebTypeCacheService ProcessMining ConnectionService ConnectionServiceUser DataService DataServiceApiUserAccess DocumentUnderstanding Du.AiProxy Du.Classification.Api Du.DataDeletion.Api Du.Digitization.Api Du.Extraction.Api Du.Metering Du.Storage.PresignedUrl Du.Training.Service Du.Validation.Api EnterpriseContextService Directory IdentityServerApi JamJamApi LLMGateway LLMOps OMS RCS.FolderAuthorization RCS.TagsManagement Insights Insights.Integrations Insights.RealTimeData Audit.Read AITL.Audit.Export AutomationSolutions AutopilotForEveryone Academy AiFabric ASPortalBackend.Client BusinessUserPortalProxyApi ConversationalAgents CustomerPortal GlobalClientManagement.Internal ManageLicense PIMS PerfService ReferenceToken Reinfer Relay.Service Robot.Local SCP.Jobs.Read SCP.Runtimes SCP.Runtimes.Read SRS.Events SRS.Recommendations TaskMining TestmanagerApiUserAccess TM.Attachments TM.CustomFieldDefinitions TM.CustomFieldValues TM.ObjectLabels TM.PerformanceScenarioExecutions TM.PerformanceScenarios TM.Projects TM.Requirements TM.TestCases TM.TestExecutions TM.TestSets Traces.Api AT.TrackOperations Docs.Service Docs.GPT.Search"
+SCOPES="openid profile email offline_access Orchestrator OrchestratorApiUserAccess StudioWebBackend StudioWebTypeCacheService ProcessMining ConnectionService ConnectionServiceUser DataService DataServiceApiUserAccess DocumentUnderstanding Du.AiProxy Du.Classification.Api Du.DataDeletion.Api Du.Digitization.Api Du.Extraction.Api Du.Metering Du.Storage.PresignedUrl Du.Training.Service Du.Validation.Api EnterpriseContextService Directory IdentityServerApi JamJamApi LLMGateway LLMOps OMS RCS.FolderAuthorization RCS.TagsManagement Insights Insights.Integrations Insights.RealTimeData Audit Audit.Read AITL.Audit.Export AutomationSolutions AutopilotForEveryone Academy AiFabric ASPortalBackend.Client BusinessUserPortalProxyApi ConversationalAgents CustomerPortal GlobalClientManagement.Internal ManageLicense PIMS PerfService ReferenceToken Reinfer Relay.Service Robot.Local SCP.Jobs.Read SCP.Runtimes SCP.Runtimes.Read SRS.Events SRS.Recommendations TaskMining TestmanagerApiUserAccess TM.Attachments TM.CustomFieldDefinitions TM.CustomFieldValues TM.ObjectLabels TM.PerformanceScenarioExecutions TM.PerformanceScenarios TM.Projects TM.Requirements TM.TestCases TM.TestExecutions TM.TestSets Traces.Api AT.TrackOperations Docs.Service Docs.GPT.Search"
 
 echo "Fetching token for ${CE_USERNAME} against ${UIPATH_URL} (org ${UIPATH_ORGANIZATION_ID})"
 
@@ -84,5 +85,22 @@ UIPATH_TENANT_NAME=${UIPATH_TENANT_NAME}
 UIPATH_TENANT_ID=${UIPATH_TENANT_ID}
 EOF
 mv -f "$tmp" "$AUTH_FILE"
+
+# Studio Web reloads a user's Automation Ops policy only on this call (sent after browser login).
+# The reload is queued, so a run right after a policy change can still see the old catalog.
+for service in backend typecache; do
+    status=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 -X PUT \
+        "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/studio_/${service}/api/Settings/RefreshGovernance" \
+        -H "Authorization: Bearer ${access_token}" \
+        -H "X-Uipath-Tenantid: ${UIPATH_TENANT_ID}" \
+        -H "Content-Length: 0") || status="curl failed"
+    case "$status" in
+        2??) ;;
+        *)
+            msg="Studio Web ${service} RefreshGovernance returned ${status}; the bot's Automation Ops policy may be stale"
+            if [ -n "${GITHUB_ACTIONS:-}" ]; then echo "::warning::${msg}"; else echo "WARN: ${msg}" >&2; fi
+            ;;
+    esac
+done
 
 echo "Done. Token written to $AUTH_FILE"

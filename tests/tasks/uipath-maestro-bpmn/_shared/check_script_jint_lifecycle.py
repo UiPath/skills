@@ -20,14 +20,17 @@ from _shared.bpmn_assertions import (  # noqa: E402
     one_element,
     variable_ids,
 )
+from _shared.bpmn_check import find_bpmn_file  # noqa: E402
 
-PROJECT = Path("ScriptNormalizer/ScriptNormalizer")
 BPMN_NAME = "ScriptNormalizer.bpmn"
 FORBIDDEN_JS = ("require(", "fetch(", "XMLHttpRequest", "window.", "document.", "process.", "fs.")
 
 
 def main() -> None:
-    root = load_bpmn(str(PROJECT / BPMN_NAME))
+    # The graded file, wherever the project lives: Studio Web's is Process.bpmn.
+    bpmn = Path(find_bpmn_file(Path(BPMN_NAME).stem))
+    project, bpmn_name = bpmn.parent, bpmn.name
+    root = load_bpmn(str(bpmn))
     task = one_element(root, "scriptTask")
 
     if task.attrib.get("scriptFormat") != "JavaScript":
@@ -67,9 +70,9 @@ def main() -> None:
     if entry_point is None or not entry_point.attrib.get("value"):
         fail("manual start must declare uipath:entryPointId")
     assert_generated_project_scaffold(
-        PROJECT,
+        project,
         "ScriptNormalizer",
-        BPMN_NAME,
+        bpmn_name,
         start.attrib["id"],
         entry_point_id=entry_point.attrib["value"],
         expected_resource_count=0,

@@ -22,6 +22,7 @@ sys.path.insert(0, _d)
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     attr,
+    bpmn_file_is_named,
     elements,
     fail,
     one_or_more,
@@ -55,13 +56,13 @@ def load_json(project: Path, name: str):
 def main() -> None:
     path, root = parse_bpmn("WikiPageviews")
     bpmn_path = Path(path)
-    if bpmn_path.name != BPMN_NAME:
+    if not bpmn_file_is_named(bpmn_path, BPMN_NAME):
         fail(f"expected BPMN file named {BPMN_NAME}, found {bpmn_path}")
 
     project = bpmn_path.parent
     for name in REQUIRED_FILES:
         if not (project / name).is_file():
-            fail(f"{name} is missing beside {BPMN_NAME}")
+            fail(f"{name} is missing beside {bpmn_path}")
 
     process = one_or_more(root, "process")[0]
 
@@ -107,8 +108,8 @@ def main() -> None:
     require_no_private_connector_values(root)
 
     for name in ("entry-points.json", "operate.json", "package-descriptor.json"):
-        if BPMN_NAME not in json.dumps(load_json(project, name)):
-            fail(f"{name} must reference {BPMN_NAME}")
+        if bpmn_path.name not in json.dumps(load_json(project, name)):
+            fail(f"{name} must reference {bpmn_path.name}")
 
     print(f"OK: {path} fetches, routes failure, filters, aggregates, and ships consistent package metadata")
 

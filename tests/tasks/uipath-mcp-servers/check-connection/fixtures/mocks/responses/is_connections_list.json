@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01",
+      "Name": "Mock MCP OAuth",
+      "ConnectorKey": "uipath-uipath-mcp",
+      "ConnectorName": "UiPath MCP",
+      "State": "Enabled",
+      "Owner": "mock.user@example.com",
+      "IsDefault": "No",
+      "ByoaConnection": "No",
+      "ElementInstanceId": 100002,
+      "Folder": "Shared",
+      "FolderKey": "folder-mock-shared",
+      "Created": "2026-03-02T09:00:00.000Z",
+      "Updated": "2026-04-11T09:00:00.000Z"
+    }
+  ]
+}

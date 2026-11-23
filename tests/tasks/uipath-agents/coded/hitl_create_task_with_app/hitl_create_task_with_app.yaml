@@ -15,7 +15,7 @@ description: >
   carries the reviewer's comment forward. Do NOT reword it to require
   acting on the approve/reject outcome — that would need
   CreateEscalation semantics and push agents to the wrong pattern.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded, studio-web-unsupported, studio-web-unsupported:coded-agent]
 max_iterations: 1
 
 reference:

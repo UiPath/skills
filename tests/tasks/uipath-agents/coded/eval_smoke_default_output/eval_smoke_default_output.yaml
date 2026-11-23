@@ -8,7 +8,7 @@ description: >
   NOT scaffold a trajectory or tool-call evaluator — those score against
   emitted trace spans / AgentRunHistory and return 0.0 on an agent with no
   meaningful trajectory, which is the trap this default avoids.
-tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval, studio-web-unsupported, studio-web-unsupported:coded-agent]
 
 run_limits:
   expected_turns: 22

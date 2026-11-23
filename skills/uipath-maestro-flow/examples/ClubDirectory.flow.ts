@@ -17,7 +17,7 @@
  *
  * Generic scenario: build a community board of the org's interest groups.
  */
-import { flow, connector, out, script, js, types } from '@uipath/maestro-builder-sdk';
+import { flow, connector, out, script, js, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 const DIRECTORY = { connection: 'entra', folder: 'shared' } as const;
 
@@ -33,20 +33,13 @@ export default flow('club-directory')
   ))
 
   // An ELEMENT's field and the collection's LENGTH, in one expression site.
-  .step('headline', script({
-    code: `
-      return { text: $vars.groups.output.length + ' clubs; first up: '
-                   + $vars.groups.output[0].displayName };
-    `,
-  }))
+  .step('headline', script(headline))
 
   // Iterate the collection — `currentItem` is typed from what it holds, so the
   // body's field reads are CHECKED. A loop runs for effect: its results are not
   // readable after it, so what gates the read below is `check`.
   .loop('eachClub', out('groups'), (body) =>
-    body.step('poster', script({
-      code: 'return { line: "This week: " + $vars.eachClub.currentItem.displayName };',
-    })),
+    body.step('poster', script(poster)),
   )
 
   .return({
@@ -54,3 +47,12 @@ export default flow('club-directory')
     firstContact: js`$vars.groups.output[0].mail`,
   })
   .build();
+
+function headline($vars: FlowVars) {
+  return { text: $vars.groups.output.length + ' clubs; first up: '
+               + $vars.groups.output[0].displayName };
+}
+
+function poster($vars: FlowVars) {
+  return { line: "This week: " + $vars.eachClub.currentItem.displayName };
+}

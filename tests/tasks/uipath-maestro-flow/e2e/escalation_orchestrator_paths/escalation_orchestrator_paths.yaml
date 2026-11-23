@@ -1,19 +1,26 @@
 task_id: skill-flow-e2e-escalation-orchestrator-paths
 description: >
-  End-to-end, outcome-based test of the customer-escalation orchestration, driven
-  down each branch by seeded inputs. The agent builds a manual-trigger orchestrator
-  (the Outlook email-received trigger is not reliably debug-testable — see
-  outlook_trigger_inbox / customer_escalation notes) whose branching is input-driven
-  so the grader can steer any path via `flow debug --inputs`. The grader runs seven
-  seeded cases — Sev1/Sev2/Sev3 escalations and all four triage reasons
-  (missing_domain / unknown_customer / multiple_matches / duplicate), all
-  deterministic from the inputs — and for each verifies the OUTCOME: the run completes on the expected path
-  with the expected severity/engineering/responseMode, preserves the correlationId,
-  and a real Slack message was posted (escalation alert on the escalation path, triage
-  notice on the triage paths) — confirmed independently by deleting the posted message
-  by its timestamp. Salesforce is not called (match status is an input), so no
-  Salesforce connection is required; the Slack node is a real connector with an error
-  port so a Slack hiccup cannot fault the run.
+  End-to-end, outcome-based test of the customer-escalation orchestration,
+  asked the way a Studio Web user would ask it (a business prompt
+  with the eval tenant's Slack channel) and driven down each path by seeded
+  inputs. The prompt names no variables, so the grader maps seven seeded
+  cases onto the inputs the agent declared, by meaning (the customer-match
+  input in the vocabulary the flow compares against), and runs each under
+  `uip maestro flow debug --inputs`: Sev1/Sev2/Sev3 escalations whose
+  severity ignores the tier, and the four triage paths, each triage case also
+  meeting every later condition so the prompt's order decides the path. For
+  each it finds among the declared outputs, by value, the path, the severity
+  ("informational" off the escalation path), whether engineering is needed,
+  the response mode ("Draft" or "None"; either for Sev3, which the prompt
+  leaves open) and the case reference unchanged; checks that exactly one
+  Slack message was posted (the alert or the notice, never both, no send run
+  twice); and that a
+  returned Slack ts is the one that send got back, in #coding-agent-testing,
+  with the case reference and the path in the message. The same output must
+  hold each result in every case. No layout is pinned. The "if Slack fails,
+  still finish" rule is not exercised, since failing the shared connection is
+  not safe. The Outlook email-received trigger is not reliably
+  debug-testable (see outlook_trigger_inbox), hence the manual start.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation, path-to-ga, outcome-graded]
 sandbox:
   template_sources:
@@ -39,86 +46,86 @@ reference:
 post_run:
   - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
+  - command: "python3 _setup/teardown_slack_posts.py"
+    timeout: 300
 
 initial_prompt: |
-  Build a UiPath Maestro Flow named "CustomerEscalationOrchestrator" (inside a
-  solution of the same name) with a MANUAL trigger. It triages a customer
-  escalation and its routing is driven entirely by the flow inputs so it can be
-  exercised deterministically.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  Flow inputs (declare as `in` variables on the manual trigger):
-  senderEmail, senderDomain, subject, body, customerTier, productionDown (boolean),
-  workaroundAvailable (boolean), hasAttachments (boolean),
-  customerMatchStatus ("single" | "none" | "multiple"), isDuplicate (boolean),
-  correlationId.
+  Build an automation called "CustomerEscalationOrchestrator" that decides
+  whether an incoming customer email is a real escalation or needs triage, and
+  notifies the team in the #coding-agent-testing Slack channel either way.
 
-  Keep the flow small. Put ALL routing logic in ONE Script node, then use a single
-  Decision plus two Slack nodes — do not build a large graph of switches and
-  per-reason handler nodes.
+  For each email, it must receive:
+  - the sender's email address and domain
+  - the subject and body
+  - the customer's tier
+  - whether production is down, and whether there's a workaround
+  - whether there are attachments
+  - whether the sender matched one customer, none or several
+  - whether it's a duplicate
+  - a case reference ID
 
-  1. A single Script node "classify" reads the inputs and returns:
-     - escalationPath:
-         senderDomain empty                      -> "missing_domain"
-         else customerMatchStatus == "none"      -> "unknown_customer"
-         else customerMatchStatus == "multiple"  -> "multiple_matches"
-         else isDuplicate is true                -> "duplicate"
-         else                                    -> "escalation"
-     - severity: only for "escalation" classify Sev1/Sev2/Sev3 —
-         Sev1 = productionDown AND NOT workaroundAvailable;
-         Sev2 = productionDown AND workaroundAvailable;
-         Sev3 = NOT productionDown.
-       For every non-"escalation" (triage) path, severity = "informational".
-     - engineeringNeeded: true for Sev1/Sev2, otherwise false.
-     - responseMode: "Draft" when escalationPath == "escalation", else "None".
-  2. A Decision routes on whether escalationPath == "escalation".
-  3. escalation branch -> post a Slack "Send Message to channel" alert.
-     other (triage) branch -> post a Slack "Send Message to channel" triage notice.
-     For both, use the Slack connection named "is-sandboxes", channel
-     "coding-agent-testing", send as `user`, and include escalationPath +
-     correlationId in the message. Wire each Slack node's error port to a small
-     handler so a Slack failure degrades gracefully.
-  4. Use TWO End nodes — one the escalation branch reaches, one the triage branch
-     reaches. On EACH End, map `slackMessageId` from THAT branch's own Slack node's
-     output (escalation End ← escalation Slack node; triage End ← triage Slack node),
-     so slackMessageId is never empty regardless of which branch runs. Map the rest
-     on both Ends:
-     - escalationPath   (from the classify script)
-     - severity
-     - engineeringNeeded (boolean)
-     - responseMode
-     - caseKey          = the incoming correlationId
-     - slackMessageId   = the id/ts of the Slack message posted on this branch
+  There are multiple paths to assert, in this order:
+  - no sender domain → "missing_domain"
+  - no matching customer → "unknown_customer"
+  - several matching customers → "multiple_matches"
+  - a duplicate → "duplicate"
+  - otherwise → "escalation"
 
-  Salesforce/Jira/Drive are NOT part of this task — the match status is an input.
+  For escalations, the severity is Sev1 when production is down with no
+  workaround, Sev2 when production is down but there's a workaround, and Sev3
+  when production isn't down. Engineering is needed for Sev1 and Sev2, and
+  we'll draft a response. Anything that isn't an escalation is
+  "informational": no engineering and no response.
 
-  Validate the flow. Do NOT run or debug the flow — the grader executes it with
-  seeded inputs. Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  Post an escalation alert or a triage notice in the #coding-agent-testing
+  Slack channel, including the path and the case reference ID.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
+  When it finishes, return:
+  - the path, as one of the five values above
+  - the severity, as "Sev1", "Sev2", "Sev3" or "informational"
+  - whether engineering is needed, as true or false
+  - the response mode, as "Draft" or "None"
+  - the case reference, unchanged
+  - the ID of the Slack message
+
+  <!-- helper:start -->
+  Inputs: senderEmail (string), senderDomain (string), subject (string), body
+  (string), customerTier (string), productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean), customerMatchStatus
+  (string), isDuplicate (boolean), caseReference (string).
+  Outputs: escalationPath (string), severity (string), engineeringNeeded
+  (boolean), responseMode (string), caseKey (string), slackMessageId (string).
+  escalationPath is "escalation", "duplicate", "unknown_customer",
+  "missing_domain" or "multiple_matches". severity is "Sev1", "Sev2", "Sev3" or
+  "informational". responseMode is "Draft" or "None". customerMatchStatus is
+  "one", "none" or "several".
+  Post one message per run. It includes the caseReference and the escalationPath.
+  The "is-sandboxes" Slack connection is in the Shared/uipath-maestro-flow
+  folder. The channel coding-agent-testing has the id C0B2FDZD1M3.
+  <!-- helper:end -->
+
+  Build and test the automation.
 success_criteria:
+  # ── Advisory: the agent validated the flow (CLI commands are not graded) ─
   - type: command_executed
-    description: "Agent validated the generated Flow"
+    description: "Advisory: the agent validated the generated Flow"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   # ── The delivered flow validates ────────────────────────────────────────
   # Discovered, not hardcoded: the SDK loop scaffolds `<Name>Sol/<Name>/<Name>.flow`
   # (its SKILL.md says `uip solution init <Name>Sol`), so a fixed
-  # `<Name>/<Name>/<Name>.flow` path failed "File not found" on flows that were
-  # otherwise green (adhoc 2026-08-31 22:43 v2: seeded paths passed, validate 0.0).
+  # `<Name>/<Name>/<Name>.flow` path fails "File not found" on flows that are
+  # otherwise green.
   - type: run_command
     description: "Generated CustomerEscalationOrchestrator Flow validates without errors, independent of solution layout"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
@@ -127,8 +134,28 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Advisory: structure is not graded. The effects check below also fails when
+  # more than one .flow makes the graded flow ambiguous.
   - type: run_command
-    description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
+    description: "Advisory: the project holds one .flow, with the flow built in it"
+    command: "python3 $REFERENCE_DIR/_shared/check_single_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
+
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Effects: for each of the seven seeded cases, fed to the agent's inputs by meaning, the debug run returns among its declared outputs the path in the prompt's order, the severity (tier ignored; informational off the escalation path), whether engineering is needed, the response mode and the case reference unchanged, the same outputs in every case; exactly one Slack message was posted (counted by completed sends and by distinct ts), and a returned Slack ts is the one it got back, in #coding-agent-testing, with the case reference and the path in the message"
     command: "python3 $REFERENCE_DIR/e2e/escalation_orchestrator_paths/check_escalation_orchestrator_paths.py"
     timeout: 3000  # budget-guard: manual x7. 7 x debug_budget(300, retries=1) = 2100 + margin
     expected_exit_code: 0

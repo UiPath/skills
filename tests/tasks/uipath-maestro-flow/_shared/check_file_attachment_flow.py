@@ -12,8 +12,8 @@ end. An agent that hardcodes a filename literal cannot pass.
 Node-shape agnostic on purpose. The feature under test is the ``--attachment``
 binding and ``file``-variable hydration, not any particular node: the skill
 documents reading a hydrated ``file`` variable BOTH in a Script node body and
-directly in an End node's ``outputs.<varId>.source`` via ``=js:`` (see
-``references/shared/node-output-wiring.md`` — End nodes). Both surface
+directly in an End node's ``outputs.<varId>.source`` via ``=js:`` (the v1
+Flow skill's End-node output-wiring guide, retired with the v2 promotion). Both surface
 ``.FullName``, so pinning ``core.action.script`` rejected a correct two-node
 ``trigger -> End`` flow that the skill itself steers agents toward.
 

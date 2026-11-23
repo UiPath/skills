@@ -13,8 +13,9 @@ description: >
 
 tags: [uipath-troubleshoot, smoke, fixture-validation]
 
+# Skill stays on the list: coder-eval 1.0.0 refuses a task that stages the plugin without it.
 agent:
-  allowed_tools: ["Bash"]
+  allowed_tools: ["Bash", "Skill"]
 
 run_limits:
   expected_turns: 1

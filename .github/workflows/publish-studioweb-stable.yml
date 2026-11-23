@@ -1,0 +1,48 @@
+name: Publish Studio Web stable to GitHub Packages
+
+# Publishes @uipath/skills-studioweb@<version> under the `stable` dist-tag on
+# GitHub Packages, built from one explicit commit on main. The Autopilot
+# sprint cut runs it with the commit behind the dev build Autopilot alpha
+# validated:
+#
+#   gh workflow run publish-studioweb-stable.yml --ref main \
+#     -f commit=<full sha> -f version=<base>-stable.<sprint>
+#
+# A re-cut in the same sprint appends a counter: <base>-stable.<sprint>.1.
+# Never reaches npmjs. Skipped unless ENABLE_SKILL_FLAVOR_PUBLISH is true,
+# like the dev and preview flavor publishes in publish.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Full git sha on main to build"
+        required: true
+        type: string
+      version:
+        description: "Exact version to publish, <base>-stable.<sprint> or <base>-stable.<sprint>.<n> for a re-cut"
+        required: true
+        type: string
+
+concurrency:
+  group: publish-studioweb-stable
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish-studioweb-stable:
+    name: Publish Studio Web stable to GitHub Packages
+    # main only: a dispatch from a branch would run that branch's copy of the
+    # publisher, checks included, and could publish under a name Autopilot pins.
+    if: github.repository == 'UiPath/skills' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-skill-flavor.yml
+    with:
+      flavor: studioweb
+      channel: stable
+      commit: ${{ inputs.commit }}
+      version: ${{ inputs.version }}

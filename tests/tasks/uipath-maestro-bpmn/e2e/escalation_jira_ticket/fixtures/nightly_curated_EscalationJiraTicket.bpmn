@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="Process_1" name="EscalationJiraTicket" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="senderEmail" name="senderEmail" type="string" elementId="Event_start" />
+        <uipath:input id="senderDomain" name="senderDomain" type="string" elementId="Event_start" />
+        <uipath:input id="subject" name="subject" type="string" elementId="Event_start" />
+        <uipath:input id="body" name="body" type="string" elementId="Event_start" />
+        <uipath:input id="customerTier" name="customerTier" type="string" elementId="Event_start" />
+        <uipath:input id="productionDown" name="productionDown" type="boolean" elementId="Event_start" />
+        <uipath:input id="workaroundAvailable" name="workaroundAvailable" type="boolean" elementId="Event_start" />
+        <uipath:input id="hasAttachments" name="hasAttachments" type="boolean" elementId="Event_start" />
+        <uipath:input id="customerMatchStatus" name="customerMatchStatus" type="string" elementId="Event_start" />
+        <uipath:input id="isDuplicate" name="isDuplicate" type="boolean" elementId="Event_start" />
+        <uipath:input id="correlationId" name="correlationId" type="string" elementId="Event_start" />
+        <uipath:inputOutput id="severityValue" name="severityValue" type="string" elementId="Process_1" />
+        <uipath:inputOutput id="engineeringNeeded" name="engineeringNeeded" type="boolean" elementId="Process_1" />
+        <uipath:inputOutput id="createIssue_response" name="createIssue_response" type="json" elementId="createIssue" />
+        <uipath:inputOutput id="createIssue_Error" name="createIssue_Error" type="json" elementId="createIssue" />
+        <uipath:output id="severity" name="severity" type="string" elementId="done" />
+        <uipath:output id="caseKey" name="caseKey" type="string" elementId="done" />
+        <uipath:output id="jiraIssueKey" name="jiraIssueKey" type="string" elementId="done" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="jira" name="jira" type="string" default="00000000-0000-0000-0000-00000000a001" resource="Connection" resourceKey="00000000-0000-0000-0000-00000000a001" propertyAttribute="ConnectionId" />
+        <uipath:binding id="jiraFolder" name="jiraFolder" type="string" default="5da18ec0-7de1-4e57-aaf1-ddc8a369c199" resource="Connection" resourceKey="00000000-0000-0000-0000-00000000a001" propertyAttribute="folderKey" />
+      </uipath:bindings>
+      <uipath:migrationVersion version="21" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Escalation received">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a9b2a9e6-14e8-4cf0-a829-319fe6d7f6ae" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Event_start_classifySeverity</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="classifySeverity" name="Classify severity" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema">{"type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}}}</uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="severityValue" type="string" source="=result.response.severity" var="severityValue" />
+          <uipath:output name="engineeringNeeded" type="boolean" source="=result.response.engineeringNeeded" var="engineeringNeeded" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Event_start_classifySeverity</bpmn:incoming>
+      <bpmn:outgoing>Flow_classifySeverity_createIssue</bpmn:outgoing>
+      <bpmn:script>var prodDown = vars.productionDown === true;
+var workaround = vars.workaroundAvailable === true;
+var sev;
+if (vars.customerTier === "Enterprise" &amp;&amp; prodDown &amp;&amp; !workaround) { sev = "Sev1"; }
+else if (prodDown &amp;&amp; workaround) { sev = "Sev2"; }
+else { sev = "Sev3"; }
+return { severity: sev, engineeringNeeded: sev === "Sev1" || sev === "Sev2" };</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:sendTask id="createIssue" name="Create Jira issue">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-atlassian-jira" />
+            <uipath:input name="connection" type="string" value="=bindings.jira" />
+            <uipath:input name="resourceKey" type="string" value="00000000-0000-0000-0000-00000000a001" />
+            <uipath:input name="folderKey" type="string" value="=bindings.jiraFolder" />
+            <uipath:input name="objectName" type="string" value="curated_create_issue" />
+            <uipath:input name="method" type="string" value="POST" />
+            <uipath:input name="path" type="string" value="/curated_create_issue" />
+            <uipath:input name="metadata" type="json"><![CDATA[{"activityPropertyConfiguration":{"configuration":"=jsonString:{\"essentialConfiguration\":{\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"fields_sub_issuetype_sub_id\",\"11457\"],[\"fields_sub_project_sub_key\",\"CE\"]]},\"executionType\":null,\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"unifiedTypesCompatible\":true,\"savedFilterTrees\":null,\"objectName\":\"curated_create_issue\",\"httpMethod\":\"POST\",\"instanceParameters\":{\"connectorKey\":\"uipath-atlassian-jira\",\"objectName\":\"curated_create_issue\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"path\":\"/curated_create_issue\"}}","uiPathActivityTypeId":"f90a75ba-d728-34b6-a84a-fb1f995b784b","errorState":{"issues":[]}},"activityMetadata":{"activity":{"displayName":"Create Issue","description":"Create a new issue in Jira.","category":"","configuration":"{\"connectorKey\":\"uipath-atlassian-jira\",\"objectName\":\"curated_create_issue\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}","uiPathActivityTypeId":"f90a75ba-d728-34b6-a84a-fb1f995b784b","isEnabled":true}},"inputMetadata":{},"telemetryData":{"connectorKey":"uipath-atlassian-jira","connectorName":"","objectName":"curated_create_issue","objectDisplayName":"Create Issue"}}]]></uipath:input>
+            <uipath:input name="activityConfigurationVersion" type="string" value="v2" />
+          </uipath:context>
+          <uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{}]]></uipath:input>
+          <uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{}]]></uipath:input>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"fields":{"project":{"key":"CE"},"issuetype":{"id":"11457"},"summary":"=js:\"[\" + vars.severityValue + \"] \" + vars.correlationId + \" \" + vars.subject","description":"=js:\"Correlation ID: \" + vars.correlationId + \"\\nSeverity: \" + vars.severityValue + \"\\nEngineering needed: \" + vars.engineeringNeeded + \"\\nCustomer tier: \" + vars.customerTier + \"\\nSender: \" + vars.senderEmail + \"\\n\\n\" + vars.body"}}]]></uipath:input>
+          <uipath:output name="response" type="jsonSchema" source="=response" var="createIssue_response">{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"fields.issuetype.name":{"title":"Issue type","type":"string"},"id":{"title":"Issue ID","type":"string"},"key":{"title":"Issue key","type":"string"}}}</uipath:output>
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="createIssue_Error">{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}</uipath:output>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_classifySeverity_createIssue</bpmn:incoming>
+      <bpmn:outgoing>Flow_createIssue_done</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="done" name="Ticket created">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="severity" type="string" source="=vars.severityValue" var="severity" />
+          <uipath:output name="caseKey" type="string" source="=vars.correlationId" var="caseKey" />
+          <uipath:output name="jiraIssueKey" type="string" source="=vars.createIssue_response.key" var="jiraIssueKey" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_createIssue_done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Event_start_classifySeverity" sourceRef="Event_start" targetRef="classifySeverity" />
+    <bpmn:sequenceFlow id="Flow_classifySeverity_createIssue" sourceRef="classifySeverity" targetRef="createIssue" />
+    <bpmn:sequenceFlow id="Flow_createIssue_done" sourceRef="createIssue" targetRef="done" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_classifySeverity" bpmnElement="classifySeverity"><dc:Bounds x="338" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_createIssue" bpmnElement="createIssue"><dc:Bounds x="488" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_done" bpmnElement="done"><dc:Bounds x="638" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start"><dc:Bounds x="252" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_classifySeverity_createIssue" bpmnElement="Flow_classifySeverity_createIssue"><di:waypoint x="438" y="232" /><di:waypoint x="488" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_createIssue_done" bpmnElement="Flow_createIssue_done"><di:waypoint x="588" y="232" /><di:waypoint x="638" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Event_start_classifySeverity" bpmnElement="Flow_Event_start_classifySeverity"><di:waypoint x="288" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

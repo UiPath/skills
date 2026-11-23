@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILL = ROOT / "skills" / "uipath-maestro-bpmn"
+SKILL = ROOT / "classic" / "skills" / "uipath-maestro-bpmn"
 
 
 def _full_documents() -> list[tuple[str, str]]:

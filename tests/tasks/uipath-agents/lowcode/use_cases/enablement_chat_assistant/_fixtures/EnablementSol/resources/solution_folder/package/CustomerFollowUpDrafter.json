@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerFollowUpDrafter",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "992071dc-efa5-4f30-a25f-3682f08a1482",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "CustomerFollowUpDrafter",
+      "description": null
+    },
+    "locks": [],
+    "key": "0f325f50-fcc5-4e36-9fb3-3d8a46f04b50"
+  }
+}

@@ -61,9 +61,10 @@ uip platform licenses consumables get --output json
 # Scope to one tenant
 uip platform licenses consumables get --tenant "<TENANT_NAME>" --output json
 
-# Override every consumable's window with a custom date range
+# Override every consumable's window with a custom date range.
+# End date is exclusive: all of April = end on the first day of May.
 uip platform licenses consumables get \
-  --start-date 2026-04-01 --end-date 2026-04-30 --output json
+  --start-date 2026-04-01 --end-date 2026-05-01 --output json
 ```
 
 ```json
@@ -114,8 +115,15 @@ uip platform licenses consumables get \
   --tenant "<TENANT_NAME>" \
   --unit AIU \
   --start-date 2026-04-01 \
-  --end-date 2026-04-30 \
+  --end-date 2026-05-01 \
   --output json
+```
+
+One day: `--end-date` = next day. Same date for both flags is rejected.
+
+```bash
+uip platform licenses consumables get --mode daily --tenant "<TENANT_NAME>" --unit AIU \
+  --start-date <DAY> --end-date <NEXT_DAY> --output json
 ```
 
 ```json
@@ -146,7 +154,7 @@ uip platform licenses consumables get \
   --tenant "<TENANT_NAME>" \
   --unit AIU \
   --start-date 2026-04-01 \
-  --end-date 2026-04-30 \
+  --end-date 2026-05-01 \
   --output json
 ```
 
@@ -189,12 +197,14 @@ Aggregate descendants client-side if needed — the API returns per-folder rows 
 | `--tenant <name>` | `daily`, `folders` | All tenants | Matched by exact tenant name |
 | `--unit <code>` | `daily`, `folders` | All consumables | Case-insensitive product code (`AIU`, `aiu`, `Aiu` all match) |
 | `--start-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601 (e.g., `2026-04-01` or `2026-04-01T00:00:00Z`) |
-| `--end-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601, must be strictly after `--start-date` |
+| `--end-date <iso>` | `daily`, `folders` | Bundle window | ISO 8601. **Exclusive.** Window stops at 00:00 UTC on this date, so that day is not reported. Must be strictly after `--start-date` |
 
 Date range rules:
 - `--start-date` and `--end-date` must be passed together; passing only one is rejected
 - Both must parse as valid ISO 8601
-- `startDate >= endDate` is rejected
+- Dates are UTC; a date without a time means 00:00 UTC
+- `--end-date` is exclusive. Last day wanted → pass the day after it. One day → pass the next day as `--end-date`
+- `--start-date` equal to or after `--end-date` is rejected, same date for both included
 - In `summary` mode, the range overrides each consumable's own bundle window
 - In `daily` / `folders` modes, the range is required
 
@@ -208,7 +218,7 @@ Date range rules:
 | `--mode daily requires: --tenant, --unit, --start-date, --end-date.` | Missing required flag(s) for the mode | Pass all four |
 | `--start-date and --end-date must be provided together.` | Only one of the pair was supplied | Pass both, or omit both |
 | `Invalid --start-date: '<value>'.` | Date doesn't parse as ISO 8601 | Use `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SSZ` |
-| `--start-date must be strictly before --end-date.` | Range is empty or inverted | Provide a non-empty forward range |
+| `--start-date must be strictly before --end-date.` | Range is empty or inverted. Same date for both flags is empty because `--end-date` is exclusive | Pass the day after the last wanted day as `--end-date`. One day: `--start-date <DAY> --end-date <NEXT_DAY>` |
 | `Tenant '<name>' not found in the current organization.` | No tenant with that exact name | Check spelling against `uip login tenant list`; available tenants are listed in the error |
 | `Unit '<code>' is not an active consumable in this organization.` | Code is not a consumable, or its bundle window is not currently active | Error lists available codes; pick one of those |
 
@@ -217,6 +227,7 @@ Date range rules:
 ## Gotchas
 
 - **`summary` reports every active consumable.** It is potentially heavy on large accounts — scope with `--tenant` or `--unit` when iterating.
+- **`--end-date` is exclusive.** `--end-date <D>` excludes day `<D>`; April ends at `--end-date` on the first day of May, not on 30 April. Passing 30 April silently drops that day, so the total reads low.
 - **Bundle window vs override.** With no `--start-date`/`--end-date`, every consumable in the summary uses its own window — rows can have different date ranges. The override applies the same range to all rows.
 - **`consumedFromOrgWithoutTenant` is zero under `--tenant`.** The CLI suppresses cross-tenant pool numbers when scoped to a single tenant; only `consumedFromTenantPool` and `consumedFromOrgPool` are populated.
 - **`consumedAmount` and `consumedBySelf` are point-in-time totals over the requested range** — not running totals. Re-running the same query later returns the same value once the window has closed.

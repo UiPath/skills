@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "ca3822e5-780b-4342-ae5e-1a4e9cd355b2",
+  "Projects": [
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "HelpdeskTriageAgent/project.uiproj",
+      "Id": "c6afd89a-9714-4060-b3f9-9a66078f1275"
+    }
+  ]
+}

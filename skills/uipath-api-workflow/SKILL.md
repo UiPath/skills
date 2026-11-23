@@ -45,7 +45,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 2. **WorkflowStart.** It is first in the root sequence, hydrates variable defaults into `$context.variables`, forwards inputs to `$input`, and must not be removed, renamed, or modified. Only it uses `isTransparent: true`.
 
-3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, and `#Body`.
+3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, `#Body`, and `#Retry`.
 
 4. **Exports.** Every activity except Log Message should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
@@ -71,7 +71,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 14. **JavaScript.** Scripts read `$context`, `$workflow`, and `$input` as globals and must return a value. Keep standard Studio Web `run.script.arguments` scaffolding: `"${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"`; runtime ignores it. For logging, use Log Message, never `console.*` in a script; its code is exactly `console.log|warn|error(<message>)` with no `return`, `export`, or trailing `;`. See [references/task-types.md](references/task-types.md#4-log-message-logmessage).
 
-15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent.
+15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent. Never combine them: `${{ { ... } }}` passes `validate` but fails at run time with `Unexpected token '{'`.
 <!--skill-flavor:response-roundtrip-validation:start-->
     - **On-disk is authoritative.** After Studio Web saves, treat disk as authoritative and rerun `uip api-workflow run --no-auth` after reapplying needed workarounds.
 <!--skill-flavor:response-roundtrip-validation:end-->
@@ -84,10 +84,11 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
    - After every stub, check required fields using resource description or stub inputs, then re-stub with `--inputs` if needed.
    - Connector parameters use flat dotted keys and bare literals; do not use `${'literal'}`.
    - Do not use `UiPath.Http` with a vendor connection UUID. IntSvc results are wrapped; read `$context.outputs.<ExportBucketKey>.content.<field>`.
+   - IntSvc list and search activities that take a `nextPage` parameter return one page per call. When the stub's `with.method` is `GET` and `.content` is an array, add `"maximumRecordsReturned": -1` (or a positive cap) to the stub's `with` and write no loop: the runtime fetches the pages, up to the cap, into one `.content` list. Add it by hand as a literal number; the stub omits it, `--inputs` drops it, and an expression there is not evaluated. For another method, or when each page needs its own processing, loop on the activity's `.page` output and stop when `.page` is absent or `.page.hasMorePages` is false. Never decide on the raw `elements-next-page-token` header: it is present on every page, including the last. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md#paging-list-and-search-results).
 <!--skill-flavor:connector-solution-registration:start-->
    - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resources refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
 <!--skill-flavor:connector-solution-registration:end-->
-   - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for the discovery flow, field-shape rules, and multipart.
+   - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for the discovery flow, field-shape rules, paging, and multipart.
 
 16a. **A connector-event trigger is a separate catalog, a separate activity shape, and a second artifact.** When the workflow must start from an event (Slack button clicked, new Outlook calendar entry), run `uip api-workflow registry resolve "<keyword>" --kind trigger` then `registry stub` — never hand-author. Place the stub in exactly one slot: the root Sequence's `do` array, directly after `WorkflowStart` (`do[0].Sequence_1.do[1]`) — never inside an If / ForEach / TryCatch, never after another activity, never a second trigger. `validate` rejects a misplaced or second trigger. A `GenericTrigger` needs `--object-name`. Full flow, filter syntax, anti-patterns: [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md).
 <!--skill-flavor:trigger-binding-registration:start-->
@@ -106,7 +107,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 <!--skill-flavor:project-creation:start-->
 19. **Project creation and publishing.** Scaffold with `uip api-workflow init <name>`; do not hand-assemble project files. Project commands include `build <projectDir>` and `pack <projectDir> <outputDir>`. Use `uip solution pack` and `uip solution publish`; there is no `uip api-workflow publish`. Solution type is `"Api"`.
 
-19a. **Init shape and registration.** Run `uip api-workflow init <name> --output json` inside the solution directory. It creates `project.uiproj`, `Workflow.json`, `entry-points.json`, and `bindings_v2.json`, and registers the project in the nearest `.uipx`. Use `--skip-solution-registration` only when explicitly requested for a standalone CLI/local project. Always create a full project, never a lone workflow file. Do not use solution projects add/remove or change existing project IDs. For legacy `project.json`, initialize a fresh sibling and move content into its `Workflow.json`, or convert in place; see [references/troubleshooting.md](references/troubleshooting.md). Runtime success does not prove Studio Web compatibility; init-produced shape does.
+19a. **Init shape and registration.** Run `uip api-workflow init <name> --output json` inside the solution directory. It creates `project.uiproj`, `Workflow.json`, `entry-points.json`, and `bindings_v2.json`, and registers the project in the nearest `.uipx`. Use `--skip-solution-registration` only when explicitly requested for a standalone CLI/local project. Always create a full project, never a lone workflow file. Build throwaway probe workflows, such as one that only inspects connector data, outside the project and solution folders (for example under `/tmp`), and delete them before finishing; never leave extra projects in the solution. Do not use solution projects add/remove or change existing project IDs. For legacy `project.json`, initialize a fresh sibling and move content into its `Workflow.json`, or convert in place; see [references/troubleshooting.md](references/troubleshooting.md). Runtime success does not prove Studio Web compatibility; init-produced shape does.
 <!--skill-flavor:project-creation:end-->
 
 20. **Static validation.** Run `uip api-workflow validate <Workflow.json> --output json` as the last autonomous command in every author/edit cycle. On `Result: "Failure"`, read `Instructions`, fix the activity at its JSON path, and repeat until `Data.Status: "Valid"`. Prioritize semantic-tail errors over duplicate `oneOf` noise.
@@ -131,6 +132,8 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
     `uip api-workflow run --no-auth` refuses such a workflow up front; run it signed in (`uip login`, no `--no-auth`) — it still needs the rule-21 "yes". Pass local files with `--input-file <name>=<path>` (uploaded, arriving as `$workflow.input.<name>`), collect returned files with `--output-dir <dir>` (each reference in the output gains a `LocalPath`), and `--folder-key <guid>` if the tenant's Attachments API requires a folder. In the printed output the CLI PascalCases keys (`ID` → `Id`).
 <!--skill-flavor:file-run-cli:end-->
     Shapes, worked examples, and pitfalls: [references/files-and-base64.md](references/files-and-base64.md).
+
+24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Some `validate` releases reject a string `retry.when` and the wrapper; before treating those errors as real, read [references/http-retry-config.md](references/http-retry-config.md#validation-gap), which also holds the shapes and defaults.
 
 ## Workflow Phases
 
@@ -205,10 +208,10 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | File | Use |
 |---|---|
 | [references/workflow-file-format.md](references/workflow-file-format.md) | JSON skeleton, schemas, variables, `WorkflowStart`, Studio Web structure |
-| [references/http-retry-config.md](references/http-retry-config.md) | Workflow-level HTTP retry/backoff |
+| [references/http-retry-config.md](references/http-retry-config.md) | Retries: task-level `catch.retry` (Try/Catch and HTTP Request `#Retry`), workflow-level `httpRetryConfig`, precedence, backoff |
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
-| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, multipart |
+| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, paging, multipart |
 | [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md) | Connector-event triggers: `registry resolve --kind trigger` + `stub`, `UiPath.IntSvcEvent` shape, mandatory `EventTrigger` binding, JMESPath filters, polling vs webhooks |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Expressions, context, inputs, scripts, exports, strict mode |
 | [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
@@ -234,6 +237,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->
+- [assets/templates/retry-http-request-example.json](assets/templates/retry-http-request-example.json) — HTTP Request retried by a Try/Catch with `catch.retry` (Studio Web defaults, no status filter), recording the final status in `catch.do` (rule 24).
 - [assets/templates/vendor-curated-call-example.json](assets/templates/vendor-curated-call-example.json) — IntSvc activity; replace its connection sentinel before writing.
 <!--skill-flavor:solution-resource-template:start-->
 - [assets/templates/solution-connection-resource-template.json](assets/templates/solution-connection-resource-template.json) — Solutions-mode IntSvc connection resource.
@@ -247,6 +251,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - Do not read later workflow inputs from `$input.<name>`.
 - **Do NOT** treat a file input or a File to Base64 result as a string — both are `JobAttachment` references. Inline a file's content only with `<ref>.serializeData()` inside an HTTP body / Response, never in an Assign or script — and inside a JSON body field only on the File to Base64 output (`$workflow.input.document.serializeData()` nested in a body fails with "Raw bytes cannot be embedded in JSON"). See rule 23.
 - **Do NOT** write `$helpers.fileToBase64(...)` / `$helpers.base64ToFile(...)` — the helpers live under `$helpers.file.`; `validate` rejects the task and the runtime says `is not a function`. See rule 23.
+- **Do NOT** wrap an HTTP Request JSON body in `JSON.stringify` — the activity encodes `body` itself; pass the object. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md#http-kind).
 <!--skill-flavor:runtime-execution-antipattern:start-->
 - Do not run autonomously or authenticated vendor calls without consent.
 <!--skill-flavor:runtime-execution-antipattern:end-->

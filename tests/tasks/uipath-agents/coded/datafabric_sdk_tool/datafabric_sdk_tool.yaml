@@ -3,7 +3,7 @@ description: >
   Coded-agent Data Fabric integration via direct SDK. Agent discovers
   entities from the tenant, selects the right one, and builds a
   deterministic @tool-wrapped query with lazy init and correct imports.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:entities, studio-web-unsupported, studio-web-unsupported:coded-agent]
 sandbox:
   template_sources:
     - type: template_dir
@@ -36,7 +36,7 @@ initial_prompt: |
   mean, fetch that customer's open orders (that query is always the
   same shape), and summarize the results conversationally.
 
-  Scaffold and init only — don't run or deploy.
+  Implement it and initialize the project, but don't run or deploy it.
 post_run:
   - command: "$(command -v python3.13 || command -v python3) _setup/cleanup_entities_by_name.py --name-prefix CE_CodedOrderSdk --include-folders"
     timeout: 60

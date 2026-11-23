@@ -9,7 +9,7 @@ description: >
   resume payload available for a downstream node. Either wait class is
   accepted; the choice is not graded. Distinct from `CreateTask` /
   `CreateEscalation` (those make a new task).
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded, studio-web-unsupported, studio-web-unsupported:coded-agent]
 max_iterations: 1
 
 reference:

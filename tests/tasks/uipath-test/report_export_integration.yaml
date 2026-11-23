@@ -1,0 +1,206 @@
+task_id: skill-test-report-export-integration
+description: >
+  Integration test: agent uses the uipath-test skill to save the PDF report of
+  the last run of a test set. It has to find the run (`executions list`), export
+  its report with `report export --execution-id --format pdf` and write the
+  file, without starting a new run. pre_run seeds `EVFX-FXRPT-Set` once with two
+  cases and exactly one finished manual run (one Passed, one Failed) and writes
+  that run's id and the set's id to this run's seed.json for the graders.
+  Graded on the written PDF and on the set still having that one run.
+tags: [uipath-test, integration, mode:operate, lifecycle:generate, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, os, re, subprocess, sys, time, uuid
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def seed(**values):
+          # seed.json lives in this run's working directory: pre_run, the agent and the graders share it,
+          # and a concurrent run has its own, so names built from uuid8 never collide.
+          s = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+          s.setdefault("uuid8", uuid.uuid4().hex[:8])
+          s.update({k: v.format(**s) for k, v in values.items()})
+          json.dump(s, open("seed.json", "w"))
+          return s
+
+      def cases(name):
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          return sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestCaseKey"].split(":")[1]))
+
+      def delete(row):
+          call("tm", "testcases", "delete", "--project-key", "HEALTH", "--test-case-key", row["TestCaseKey"], "--yes")
+
+      def ensure_case(name, labels=(), steps=()):
+          # Seed once. Two runs seeding at the same moment can both create it, so keep the lowest key and
+          # delete the rest (with --yes) — a duplicate fixture would make the agent ask which one to use.
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          if rows:
+              return rows[0]
+          item = {"name": name, "labels": list(labels),
+                  "steps": [{"description": d, "expectedResult": e} for d, e in steps]}
+          json.dump([item], open(".seed-case.json", "w"))
+          need(call("tm", "testcases", "bulk-create", "--project-key", "HEALTH", "--file", ".seed-case.json"), f"create {name}")
+          os.remove(".seed-case.json")
+          # A run that started at the same moment may have created it too: settle, then keep the lowest key.
+          # Every racer deletes the same extras, so they all end on one survivor.
+          time.sleep(8)
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          return rows[0]
+
+      def ensure_set(name, case_rows):
+          rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+          for extra in rows[1:]:
+              call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          if not rows:
+              need(call("tm", "testsets", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+              time.sleep(8)  # settle a concurrent create, then keep the lowest key (same as ensure_case)
+              rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+              rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+              for extra in rows[1:]:
+                  call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          ts = rows[0]
+          have = {r.get("TestCaseKey") for r in call("tm", "testsets", "list-testcases", "--project-key", "HEALTH",
+                                                     "--test-set-key", ts["TestSetKey"]).get("Data") or []}
+          missing = [c["TestCaseKey"] for c in case_rows if c["TestCaseKey"] not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", ts["TestSetKey"], "--test-case-keys", *missing), f"assign to {name}")
+          return ts
+
+      def runs(set_id):
+          rows = call("tm", "executions", "list", "--project-key", "HEALTH", "--test-set-id", set_id).get("Data") or []
+          return sorted(rows, key=lambda r: r.get("Created") or "")
+
+      def ensure_run(ts, case_rows):
+          # Exactly one finished run of the set. Seed it once: start a manual run and finish one log as
+          # Passed and one as Failed, which closes the run. Two runs seeding at the same moment can both
+          # start one, so settle, keep the oldest finished run and delete the rest (with --yes).
+          set_id = need(call("tm", "testsets", "get", "--test-set-key", ts["TestSetKey"]), "get set")["Id"]
+          if not [r for r in runs(set_id) if r.get("Status") == "Finished"]:
+              run = need(call("tm", "testsets", "run", "--test-set-key", ts["TestSetKey"], "--execution-type", "manual"), "start run")
+              for row, result in zip(case_rows, ("Passed", "Failed")):
+                  need(call("tm", "testcaselog", "finish", "--project-key", "HEALTH", "--execution-id", run["ExecutionId"],
+                            "--test-case-id", row["Id"], "--result", result, "--has-error", "false",
+                            "--executed-by", "eval@uipath.com"), f"finish {row['Name']}")
+              time.sleep(8)
+          rows = runs(set_id)
+          keep = next((r for r in rows if r.get("Status") == "Finished"), None)
+          if not keep:
+              print(f"SEED FAILED: no finished run of {ts['Name']}: {rows}")
+              sys.exit(1)
+          for extra in rows:
+              if extra["Id"] != keep["Id"]:
+                  call("tm", "executions", "delete", "--project-key", "HEALTH", "--execution-id", extra["Id"], "--yes")
+          return set_id, keep
+
+      login = ensure_case("EVFX-FXRPT-Login", [], [("Sign in", "The dashboard is shown")])
+      checkout = ensure_case("EVFX-FXRPT-Checkout", [], [("Open the cart", "The cart is shown")])
+      # ensure_case returns list rows, which carry Id; refetch so both have it after a fresh create.
+      rows = [cases(n)[0] for n in ("EVFX-FXRPT-Login", "EVFX-FXRPT-Checkout")]
+      ts = ensure_set("EVFX-FXRPT-Set", rows)
+      set_id, run = ensure_run(ts, rows)
+      seed(set_id=set_id, run_id=run["Id"])
+
+      import shutil
+      shutil.rmtree("exports", ignore_errors=True)
+
+      print(f"READY {ts['TestSetKey']} with one finished run {run['Id']}")
+      PYEOF
+    timeout: 300
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      # Keep the fixture at exactly one run: delete any run the agent started on the set.
+      seed = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+      if seed.get("set_id") and seed.get("run_id"):
+          for r in call("tm", "executions", "list", "--project-key", "HEALTH", "--test-set-id", seed["set_id"]).get("Data") or []:
+              if r.get("Id") != seed["run_id"]:
+                  call("tm", "executions", "delete", "--project-key", "HEALTH", "--execution-id", r["Id"], "--yes")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  can you get me the PDF report of the last run of my EVFX-FXRPT-Set test set
+  in Test Manager (HEALTH project)? save it as exports/run-report.pdf
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent exported the run's PDF with `report export --format pdf`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+report\s+export\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--format[\s=]+pdf)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not start a new run (`--help` lookups excluded)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+(testsets|executions|testcases)\s+run\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "exports/run-report.pdf is a real PDF, and the set still has only the seeded run"
+    command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data")
+      seed = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+      path = "exports/run-report.pdf"
+      is_pdf = os.path.exists(path) and open(path, "rb").read(5) == b"%PDF-"
+      runs = [r.get("Id") for r in uip("tm", "executions", "list", "--project-key", "HEALTH", "--test-set-id", seed.get("set_id", "")) or []]
+      print("pdf" if is_pdf else "missing or not a PDF", "runs:", runs, "seeded:", seed.get("run_id"))
+      sys.exit(0 if is_pdf and runs == [seed.get("run_id")] else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

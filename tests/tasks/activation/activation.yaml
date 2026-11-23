@@ -13,7 +13,6 @@ dataset:
     - uipath-admin.jsonl
     - uipath-agents.jsonl
     - uipath-api-workflow.jsonl
-    - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
     - uipath-functions.jsonl
     - uipath-genome.jsonl
@@ -27,6 +26,7 @@ dataset:
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
     - uipath-mcp-servers.jsonl
+    - uipath-ontology.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
     - uipath-process-mining.jsonl
@@ -37,11 +37,13 @@ dataset:
     - uipath-tasks.jsonl
     - uipath-test.jsonl
     - uipath-connector-builder.jsonl
+    - uipath-bundles.jsonl
+    - uipath-vertical-solutions.jsonl
     - negative.jsonl
 
 initial_prompt: "${row.prompt}"
 
-# 27 skill_triggered criteria — one per skill. Each derives expected internally
+# 30 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -69,13 +71,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-api-workflow activation"
     skill_name: uipath-api-workflow
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-    stop_early:
-      on_pass: stop
-  - type: skill_triggered
-    description: "uipath-automation-discovery activation"
-    skill_name: uipath-automation-discovery
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
@@ -237,6 +232,27 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-genome activation"
     skill_name: uipath-genome
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-bundles activation"
+    skill_name: uipath-bundles
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-ontology activation"
+    skill_name: uipath-ontology
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-vertical-solutions activation"
+    skill_name: uipath-vertical-solutions
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:

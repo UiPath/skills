@@ -33,6 +33,7 @@ Two distinct sources with two casings:
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import hashlib
 import json
@@ -42,6 +43,7 @@ import re
 import subprocess
 import sys
 import time
+from enum import Enum
 from typing import Any, Iterable, Sequence
 
 
@@ -55,6 +57,8 @@ from typing import Any, Iterable, Sequence
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
 _LAST_DEBUG_STDERR: str | None = None
+# Stdout of every attempt of the most recent run_debug: a re-run can repeat a side effect.
+_DEBUG_ATTEMPT_RAWS: list[str] = []
 
 # Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
 # / ``--attachment``). Stashed because the runtime returns every global — `in` and
@@ -140,12 +144,27 @@ _DEBUG_RETRY_MARKERS = (
     '"errorcode": "server_error"',
     _DEBUG_POLL_TIMEOUT_MARKER,
 )
+# An agent step's own LLM call failing upstream. The CLI envelope says
+# `RetryWillNotFix` and has no HttpStatus; only the incident names the 5xx.
+# skill-flow-lowcode-agent 2026-10-09: "LLM provider returned HTTP 500".
+# The steps before the agent already ran, so a retry repeats their side effects.
+_LLM_PROVIDER_5XX = re.compile(r"llm provider returned http 5\d\d")
+
+
+class AgentFaultRetry(Enum):
+    NONE = "none"
+    RETRY = "retry"
+
+
+# `node_modules`: the preview workspace symlinks the baked SDK tree there, and
+# `glob` follows directory symlinks under `**`. `.local`: the CLI writes
+# downloaded copies of cloud projects under `.local/investigations/`.
+_PRUNED_DIRS = frozenset({"node_modules", ".local"})
 
 
 def _rglob_pruned(pattern: str) -> list[str]:
-    """``glob.glob(pattern, recursive=True)`` from the CWD, but never descending
-    into ``node_modules`` (the preview workspace symlinks the baked SDK tree
-    there, and ``glob`` follows directory symlinks under ``**``)."""
+    """``glob.glob(pattern, recursive=True)`` from the CWD, never descending into
+    ``_PRUNED_DIRS``."""
     if "**" not in pattern:
         return sorted(glob.glob(pattern, recursive=True))
     prefix, _, suffix = pattern.partition("**")
@@ -153,7 +172,7 @@ def _rglob_pruned(pattern: str) -> list[str]:
     suffix = suffix.lstrip("/")
     matches: list[str] = []
     for dirpath, dirnames, _ in os.walk(root, followlinks=True):
-        dirnames[:] = [d for d in dirnames if d != "node_modules"]
+        dirnames[:] = [d for d in dirnames if d not in _PRUNED_DIRS]
         matches.extend(glob.glob(os.path.join(glob.escape(dirpath), suffix)))
     if root == ".":
         matches = [m[2:] if m.startswith("./") else m for m in matches]
@@ -248,14 +267,20 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
     return None
 
 
-def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+def _is_transient_debug_error(
+    result: subprocess.CompletedProcess,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
+) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
     server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
     rather than a real flow fault. Case-insensitive so CLI key casing can't
     slip past."""
     if result.returncode == 0:
         return False
-    if any(marker in _output_blob(result) for marker in _DEBUG_RETRY_MARKERS):
+    blob = _output_blob(result)
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    if agent_fault is AgentFaultRetry.RETRY and _LLM_PROVIDER_5XX.search(blob):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
@@ -340,6 +365,7 @@ def run_debug(
     project_glob: str = "**/project.uiproj",
     retries: int = _DEFAULT_RETRIES,
     backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
@@ -358,7 +384,9 @@ def run_debug(
     timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` and a SIGKILLed attempt gets
     :data:`_SUBPROCESS_TIMEOUT_ATTEMPTS`, and any retry is skipped once
     the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
-    fault fails immediately without burning retries.
+    fault fails immediately without burning retries. An agent step's LLM 5xx
+    retries only with ``agent_fault=AgentFaultRetry.RETRY``, which re-runs the
+    whole flow: pass it only from a checker whose flow has no side effects.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -381,7 +409,8 @@ def run_debug(
     env = dict(os.environ)
     env.setdefault("UIP_LOG_LEVEL", _DEBUG_LOG_LEVEL)
     global _LAST_DEBUG_RAW, _LAST_DEBUG_STDERR, _LAST_DEBUG_INPUT_IDS
-    global _LAST_DEBUG_PROJECT_DIR
+    global _LAST_DEBUG_PROJECT_DIR, _DEBUG_ATTEMPT_RAWS
+    _DEBUG_ATTEMPT_RAWS = []
     # Record what we bound as input, and where the project lives, so output
     # assertions can discount echoes of our own inputs.
     _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
@@ -459,6 +488,7 @@ def run_debug(
             timeout_stdout = _as_text(exc.stdout) or timeout_stdout
             timeout_stderr = _as_text(exc.stderr) or timeout_stderr
             _LAST_DEBUG_RAW = timeout_stdout
+            _DEBUG_ATTEMPT_RAWS.append(timeout_stdout)
             _LAST_DEBUG_STDERR = timeout_stderr
             subprocess_timeouts += 1
             fundable = (
@@ -483,6 +513,7 @@ def run_debug(
                 f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
+        _DEBUG_ATTEMPT_RAWS.append(r.stdout or "")
         # Keep the CLI's stderr too: it is where `flow debug` reports what it
         # could not do (e.g. the output-variables fetch). Dropping it on a zero
         # exit is how the 2026-08-31/09-01 move-node failures lost their cause.
@@ -512,7 +543,7 @@ def run_debug(
                 flush=True,
             )
             max_attempts = max(max_attempts, attempt + 2)
-        elif not _is_transient_debug_error(r):
+        elif not _is_transient_debug_error(r, agent_fault):
             break
         elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
@@ -1037,6 +1068,10 @@ def assert_outputs_contain(
 def get_last_debug_stderr() -> str | None:
     """Return the stderr of the most recent ``run_debug`` call, or ``None``."""
     return _LAST_DEBUG_STDERR
+
+
+def get_debug_attempt_raws() -> list[str]:
+    return list(_DEBUG_ATTEMPT_RAWS)
 
 
 def get_last_debug_raw() -> str | None:
@@ -1843,6 +1878,23 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+STUDIO_WEB_FLOW_FILE = "new.flow"
+"""Studio Web names every Flow project's main file ``new.flow``; the Node CLI names it after the project."""
+
+
+def flow_file_is_named(path: str, name: str) -> bool:
+    """Whether ``path`` is the main file of the Flow called ``name``.
+
+    ``<name>.flow`` as ``uip maestro flow init`` writes it, or ``new.flow`` in a
+    ``<name>`` project as Studio Web writes it (the studio-web eval harness).
+    """
+    base = os.path.basename(path)
+    return base == f"{name}.flow" or (
+        base == STUDIO_WEB_FLOW_FILE
+        and os.path.basename(os.path.dirname(path)) == name
+    )
+
+
 def find_flow_files(
     project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
 ) -> list[str]:
@@ -1895,6 +1947,17 @@ def find_flow_files(
                 recursive=True,
             )
         )
+        # A name-shaped glob (`Billing*.flow`) also takes Studio Web's
+        # `new.flow` when the project itself carries that name.
+        studio_web_main = os.path.join(project_dir, STUDIO_WEB_FLOW_FILE)
+        stem = os.path.basename(flow_glob)[: -len(".flow")]
+        if (
+            not matches
+            and stem not in ("", "*")
+            and fnmatch.fnmatch(os.path.basename(project_dir), stem)
+            and os.path.isfile(studio_web_main)
+        ):
+            matches = [studio_web_main]
         if not matches:
             _fail(
                 f"No .flow file matching {flow_glob!r} under selected Flow "

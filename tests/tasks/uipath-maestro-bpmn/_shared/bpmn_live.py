@@ -3,9 +3,7 @@
 
 Plays the role `uipath-maestro-flow/_shared/flow_check.py` plays for the flow
 suite: the CLI-surface plumbing every live BPMN grader needs, so a task
-checker holds only its own contract. Extracted after the same helpers had been
-written three times — here, in the escalation grader, and privately inside
-`debug/live_debug_e2e/check_live_debug.py`.
+checker holds only its own contract.
 
 Cannot reuse `flow_check.py` itself: the CLI surface differs. `uip maestro
 flow debug` returns variables inline and addresses outputs by name, whereas
@@ -24,9 +22,11 @@ import json
 import math
 import re
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 from collections.abc import Collection, Iterator
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -138,9 +138,9 @@ def sha256(path: Path) -> str:
 
 # Worst-case wall clock for one `run_debug` call, mirroring
 # flow_check.debug_budget so test_criterion_budgets.py can hold both suites to
-# the same arithmetic. BPMN's run_debug makes a single attempt with no backoff,
-# so the budget is the call's own timeout; the retries/backoff parameters exist
-# to keep the two signatures interchangeable if that changes.
+# the same arithmetic. BPMN's run_debug retries within its own timeout, so the
+# budget is that timeout; the retries/backoff parameters exist to keep the two
+# signatures interchangeable.
 # Headroom a criterion needs beyond the calls it makes, for process start and
 # teardown. Mirrors flow_check.CRITERION_MARGIN_SECONDS; test_criterion_budgets
 # enforces the pair.
@@ -163,6 +163,7 @@ def run_cli(
     *,
     timeout: int,
     log_file: Path | None = None,
+    cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     effective_timeout: float = timeout
     command = [*arguments, "--output", "json"]
@@ -173,6 +174,7 @@ def run_cli(
         capture_output=True,
         text=True,
         timeout=effective_timeout,
+        cwd=cwd,
     )
 
 
@@ -267,6 +269,95 @@ def _element_output_records(
     return records
 
 
+def declarations(process: ET.Element) -> list[ET.Element]:
+    """The process's own `uipath:variables` entries (inputs, outputs, inOuts)."""
+    variables = process.find(f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'variables')}")
+    return [] if variables is None else list(variables)
+
+
+BOOLEAN_WORDS = {"true": True, "yes": True, "false": False, "no": False}
+
+
+def norm_value(value: Any) -> Any:
+    """Comparable form: strings case-folded, true/yes/false/no read as booleans,
+    numbers kept apart from booleans (1 is not True)."""
+    if isinstance(value, str):
+        text = value.strip().casefold()
+        return BOOLEAN_WORDS.get(text, text)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return ("number", value)
+    return value
+
+
+def named_values(process: ET.Element, variables_data: Any, name: str) -> list[Any]:
+    """Every non-null runtime value of the output called `name`: its declared
+    ids in Globals (the runtime may re-case them), any Globals key whose
+    GlobalDefinitions Name is `name`, and the `name` output of the element the
+    declaration belongs to (an end event; a branch that did not run reads back
+    null and is skipped)."""
+    wanted = normalized_identifier(name)
+    decls = [d for d in declarations(process) if normalized_identifier(d.attrib.get("name", "")) == wanted]
+    scope = root_scope(variables_data)
+    globals_ = get_ci(scope, "Globals", {}) or {}
+    definitions = get_ci(scope, "GlobalDefinitions", {}) or {}
+    ids = {normalized_identifier(d.attrib.get("id", "")) for d in decls} | {wanted}
+    keys = {k for k in globals_ if normalized_identifier(k) in ids}
+    keys |= {k for k, d in definitions.items() if normalized_identifier(get_ci(d, "Name", "")) == wanted}
+    values = [globals_[k] for k in sorted(keys) if globals_.get(k) is not None]
+    owners = tuple(d.attrib["elementId"] for d in decls if d.attrib.get("elementId"))
+    for record in element_output_records(variables_data, owners) if owners else []:
+        value = get_ci(record, name)
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def completed_ids(debug_data: Any) -> list[str]:
+    """Element ids whose execution completed, in run order, repeats kept."""
+    return [
+        get_ci(item, "ElementId")
+        for item in get_ci(debug_data, "ElementExecutions", []) or []
+        if isinstance(item, dict) and str(get_ci(item, "Status") or "").casefold() == "completed"
+    ]
+
+
+SEVERITIES = ("Sev1", "Sev2", "Sev3")
+_CODE_TAGS = frozenset({q(BPMN_NS, "script"), q(BPMN_NS, "conditionExpression")})
+_UIPATH_VALUE_TAGS = frozenset(q(UIPATH_NS, name) for name in ("input", "output", "expression"))
+_UIPATH_VALUE_ATTRIBUTES = ("value", "source", "expression")
+COMMENT = re.compile(r"""('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)|/\*.*?\*/|//[^\n]*""", re.S)
+KEEP_LITERAL = r"\1"
+
+
+def _encoded_text(root: ET.Element) -> str:
+    chunks: list[str] = []
+    for element in root.iter():
+        if element.tag in _CODE_TAGS:
+            chunks.append(element.text or "")
+        if element.tag not in _UIPATH_VALUE_TAGS:
+            continue
+        chunks.append(element.text or "")
+        chunks.extend(element.attrib.get(name, "") for name in _UIPATH_VALUE_ATTRIBUTES)
+    return "\n".join(COMMENT.sub(KEEP_LITERAL, chunk) for chunk in chunks)
+
+
+def assert_rule_encoded(bpmn_text: str) -> None:
+    """A single seeded case cannot tell a classifier from a constant, so the
+    scripts and uipath values must name every severity. Element names and
+    documentation do not count."""
+    try:
+        root = ET.fromstring(bpmn_text.encode("utf-8"))
+    except ET.ParseError as error:
+        raise CheckFailure(f"the BPMN is not well-formed XML: {error}") from error
+
+    encoded = _encoded_text(root)
+    folded = encoded.casefold()
+    missing = [s for s in SEVERITIES if s.casefold() not in folded]
+    if missing:
+        raise CheckFailure(
+            f"the process never names {missing}: it returns the seeded case's answer "
+            "instead of classifying by the stated rule"
+        )
 
 
 def connector_response_values(outputs: list[Any], name: str) -> list[Any]:
@@ -433,50 +524,59 @@ def _write_debug_log(log_file, text: str) -> None:
         pass
 
 
+class DebugRetry(Enum):
+    NONE = "none"
+    TRANSIENT = "transient"
+
+
+# A gateway 5xx while polling kills the CLI before it reports an instance id,
+# labelled RetryWillNotFix. skill-bpmn-jira-get-issue 2026-10-09:
+# "Failed during poll-instance-status: 504 Gateway Timeout".
+_TRANSIENT_DEBUG = re.compile(
+    r'failed during poll-instance-status: 5\d\d|"retry": "retrylater"|"errorcode": "server_error"'
+)
+DEBUG_RETRY_BACKOFF_SECONDS = 5
+_DEBUG_RETRY_ATTEMPTS = 2
+_MIN_RETRY_SECONDS = 60
+
+
+def _is_transient_debug(completed: subprocess.CompletedProcess[str]) -> bool:
+    if completed.returncode == 0:
+        return False
+    return _TRANSIENT_DEBUG.search(f"{completed.stdout}\n{completed.stderr}".lower()) is not None
+
+
 def run_debug(
     project_dir,
     inputs: dict,
     log_file,
     *,
     timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+    retry: DebugRetry = DebugRetry.NONE,
 ) -> tuple:
-    """Run one `uip maestro bpmn debug`; return (debug_data, instance_id).
+    """Run `uip maestro bpmn debug`; return (debug_data, instance_id).
 
     Lives here rather than in a task checker so test_criterion_budgets.py can
     price it, the same way flow_check.run_debug is priced in the flow suite.
+
+    `DebugRetry.TRANSIENT` re-runs the whole debug after a transient CLI
+    failure, so pass it only from a checker whose process has no side effects.
+    At most `_DEBUG_RETRY_ATTEMPTS`, all sharing the one `timeout` deadline, so
+    the budget is unchanged.
     """
 
     poll_ms = poll_interval_ms(timeout)
-    try:
-        completed = run_cli(
-            [
-                "uip",
-                "maestro",
-                "bpmn",
-                "debug",
-                str(project_dir),
-                "--poll-interval",
-                str(poll_ms),
-                "--inputs",
-                json.dumps(inputs, separators=(",", ":")),
-            ],
-            timeout=timeout,
-            # Not passed through as the CLI's own --log-file: the CLI buffers
-            # that file and a SIGKILL on timeout leaves it empty (run
-            # 35524004307). The poll log (instance id, per-poll status) is
-            # streamed to stderr instead, survives on the TimeoutExpired
-            # exception, and is written to `log_file` from here.
-            log_file=None,
-        )
-    except subprocess.TimeoutExpired as exc:
-        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
-        _write_debug_log(log_file, out + err)
-        partial = err or out
-        raise CheckFailure(
-            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
-            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
-        ) from None
-    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    deadline = time.monotonic() + timeout
+    for attempt in range(1, _DEBUG_RETRY_ATTEMPTS + 1):
+        completed = _debug_attempt(project_dir, inputs, log_file, poll_ms, timeout, deadline)
+        if retry is not DebugRetry.TRANSIENT or not _is_transient_debug(completed):
+            break
+        if attempt == _DEBUG_RETRY_ATTEMPTS:
+            break
+        if deadline - time.monotonic() - DEBUG_RETRY_BACKOFF_SECONDS < _MIN_RETRY_SECONDS:
+            break
+        time.sleep(DEBUG_RETRY_BACKOFF_SECONDS)
+
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
     if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
@@ -494,6 +594,42 @@ def run_debug(
             + f"; stderr tail: {(completed.stderr or '')[-1500:]}"
         )
     return debug_data, instance_id
+
+
+def _debug_attempt(
+    project_dir, inputs: dict, log_file, poll_ms: int, timeout: int, deadline: float
+) -> subprocess.CompletedProcess[str]:
+    try:
+        completed = run_cli(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "debug",
+                str(project_dir),
+                "--poll-interval",
+                str(poll_ms),
+                "--inputs",
+                json.dumps(inputs, separators=(",", ":")),
+            ],
+            timeout=max(1, math.floor(deadline - time.monotonic())),
+            # Not passed through as the CLI's own --log-file: the CLI buffers
+            # that file and a SIGKILL on timeout leaves it empty (run
+            # 35524004307). The poll log (instance id, per-poll status) is
+            # streamed to stderr instead, survives on the TimeoutExpired
+            # exception, and is written to `log_file` from here.
+            log_file=None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
+        _write_debug_log(log_file, out + err)
+        partial = err or out
+        raise CheckFailure(
+            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
+            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
+        ) from None
+    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    return completed
 
 
 SOLUTION_INIT_TIMEOUT = 90
@@ -529,10 +665,9 @@ def import_exact(bpmn_path: Path, project_dir: Path, solution_dir: Path) -> Path
             "projects",
             "import",
             str(project_dir.resolve()),
-            "--solutionFile",
-            str(solution_files[0]),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
+        cwd=solution_dir,
     )
     payload_data(imported, "import exact BPMN project")
 

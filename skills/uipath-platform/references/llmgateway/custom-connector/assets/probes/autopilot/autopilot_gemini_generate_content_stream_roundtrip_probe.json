@@ -1,0 +1,75 @@
+{
+  "id": "autopilot_gemini_generate_content_stream_roundtrip_probe",
+  "description": "Autopilot tool-result round trip, two streamed calls. Turn 1 must stream calls to lookup_order / lookup_customer carrying the order and customer ids drawn for this run; turn 2 sends those calls back with their results and must stream an answer that quotes the codes only the results hold.",
+  "source": "AutopilotStreamRoundTripProbeValidator, ProductDefinedProbes/Payloads/autopilot_gemini_generate_content_stream_roundtrip_probe.json (UiPath/Arima#3418)",
+  "apiFlavor": "GeminiGenerateContent",
+  "optIn": true,
+  "order": 10,
+  "roundTrip": true,
+  "path": "/models/{{model}}:streamGenerateContent?alt=sse",
+  "body": {
+    "system_instruction": {
+      "parts": [
+        {
+          "text": "You are the tool-calling test harness of an AI agent platform. Follow the user's instructions exactly."
+        }
+      ]
+    },
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Look up order {{order_id}} and customer {{customer_id}}. Call lookup_order and lookup_customer in parallel, both in this same turn, and wait for their results. When you have the results, reply in one short sentence that quotes the status_code and the tier_code exactly as returned, and do not call any tool again."
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "function_declarations": [
+          {
+            "name": "lookup_order",
+            "description": "Returns the status code of an order.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string",
+                  "description": "The order id, exactly as the user wrote it."
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "lookup_customer",
+            "description": "Returns the account tier code of a customer.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "customer_id": {
+                  "type": "string",
+                  "description": "The customer id, exactly as the user wrote it."
+                }
+              },
+              "required": [
+                "customer_id"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "tool_config": {
+      "function_calling_config": {
+        "mode": "AUTO"
+      }
+    },
+    "generationConfig": {
+      "max_output_tokens": 4096
+    }
+  }
+}

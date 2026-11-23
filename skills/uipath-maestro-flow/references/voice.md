@@ -33,7 +33,7 @@ export default flow('support-line')
 Talk to someone on a phone call. The call is identified by a `callContext`
 OBJECT — pass the whole thing, never a field inside it.
 
-Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations?, tools?, context?, escalation? })`.
 
 ```ts
 .step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('phone') }))
@@ -60,6 +60,11 @@ code and subscriber number, 7–15 digits in all. `from` must be a number provis
 telephony provider; anything else is rejected when the call is placed, not when
 the flow is validated. `endCall` reads `out('<step>', 'ended')`.
 
+When the request asks for placeholder numbers or an offline build, pass a
+placeholder E.164 string literal for each: a `+`, then 7–15 digits. Otherwise
+bind `to` to the recipient's data, and set `from` to the provisioned caller
+number; ask for it when you do not know it.
+
 ## How the agent sounds
 
 `voice` takes a VOICE model (a live/realtime one — not the text models
@@ -79,6 +84,25 @@ emits the runtime bindings and matching sidecar schema. There are no declared
 voice-dialect `<source>/agent.json` sidecar (`settings.mode: 'voice'`) beside
 the `.flow`.
 
+## Tools, context and escalations
+
+`voiceAgent` takes the same `tools`, `context` and `escalation` options as
+`inlineAgent`, written the same way ([agent-resources.md](agent-resources.md)).
+Each one becomes a resource node on the agent's `tool`, `context` or
+`escalation` handle:
+
+```ts
+.step('serviceAgent', voiceAgent({
+  systemPrompt: 'Look the caller up before you answer.',
+  callContext: out('start', 'callContext'),
+  tools: [{ kind: 'api', key: '<guid>', name: 'LookupCustomer', folderPath: 'Shared/ContactCenter' }],
+}))
+```
+
+The SDK version these options need, their `check` codes, and what decompile
+does not carry back yet:
+[agent-resources.md](agent-resources.md#voice-and-conversational-agents).
+
 ## Evidence boundary
 
 `uipath.agent.voice` is served on this tenant; the trigger and the two call
@@ -86,3 +110,20 @@ actions are `AvailableOnTenant: false` and ship bundled from the workbench
 manifests. Nothing local dials a phone: a green ladder proves the node types,
 the call-context threading and the voice settings. A real call, real audio, and
 what the caller heard are platform evidence.
+
+`uip maestro flow debug` rejects a flow that starts from `voiceTrigger()`: only
+a real call raises that trigger, so do not run it. Tell the user the test loop
+instead: pack and publish ([operate.md](operate.md#publish)), deploy with
+`uip solution deploy run` (uipath-solution skill), route an inbound-enabled
+number to the release, then call that number:
+
+```bash
+uip conversational trunks list --direction inbound --output json
+uip conversational trunks assign <PHONE_NUMBER> --process-key <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
+```
+
+`<PROCESS_KEY>` is `Key` from `uip or processes list`, not `ProcessKey`;
+`<FOLDER_KEY>` is its `FolderKey`. A number is added or inbound-enabled in
+Instance Management under Phone numbers, never from the CLI. Run `assign` only
+when the user asks: it routes live callers to the release. A bound number needs
+`--yes` and loses whatever it served, so get the user's OK for that number first.

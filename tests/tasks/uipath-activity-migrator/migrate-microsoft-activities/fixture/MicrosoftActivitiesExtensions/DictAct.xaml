@@ -1,0 +1,169 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}" sap:VirtualizedContainerService.HintSize="1340.8,3329.6" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:maes="clr-namespace:Microsoft.Activities.Extensions.Statements;assembly=Microsoft.Activities.Extensions" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:sr="clr-namespace:System.Reflection;assembly=mscorlib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="60">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.ComponentModel</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>System.Xml.Serialization</x:String>
+      <x:String>System.Activities.DynamicUpdate</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>System.Runtime.InteropServices</x:String>
+      <x:String>Microsoft.Activities.Extensions.Statements</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>UiPath.Platform.Triggers</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="44">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Reflection.Metadata</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities.Design</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>Microsoft.Activities.Extensions</AssemblyReference>
+      <AssemblyReference>Microsoft.Bcl.AsyncInterfaces</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Design</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap:VirtualizedContainerService.HintSize="499.2,3264.8" sap2010:WorkflowViewState.IdRef="Sequence_2">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sr:Assembly" Name="a" />
+      <Variable x:TypeArguments="scg:Dictionary(x:Object, x:Object)" Default="[new Dictionary(Of Object, Object)]" Name="dict" />
+      <Variable x:TypeArguments="x:Object" Name="val" />
+      <Variable x:TypeArguments="s:Guid" Name="inst" />
+      <Variable x:TypeArguments="Activity" Name="dmnAct" />
+      <Variable x:TypeArguments="x:Boolean" Name="kExists" />
+      <Variable x:TypeArguments="x:String" Name="mKey" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <maes:AddToDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Add to dictionary" sap:VirtualizedContainerService.HintSize="451.2,70.4" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_1" Key="[1]" Value="[2]">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </maes:AddToDictionary>
+    <maes:ClearDictionary x:TypeArguments="x:Object, x:Object" sap2010:Annotation.AnnotationText="annot1&#xD;&#xA;" Dictionary="[dict]" DisplayName="Clear dictionary" sap:VirtualizedContainerService.HintSize="451.2,114.4" sap2010:WorkflowViewState.IdRef="ClearDictionary`2_1">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </maes:ClearDictionary>
+    <maes:AddToDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Add to dictionary" sap:VirtualizedContainerService.HintSize="451.2,70.4" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_3" Key="[1]" Value="[2]">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </maes:AddToDictionary>
+    <maes:AddToDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Add to dictionary" sap:VirtualizedContainerService.HintSize="451.2,70.4" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_4" Key="[2]" Value="[3]">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </maes:AddToDictionary>
+    <maes:AddToDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Add to dictionary" sap:VirtualizedContainerService.HintSize="451.2,70.4" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_5" Key="[3]" Value="[5]">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </maes:AddToDictionary>
+    <ui:ForEach x:TypeArguments="scg:KeyValuePair(x:Object, x:Object)" CurrentIndex="{x:Null}" DisplayName="For Each" sap:VirtualizedContainerService.HintSize="451.2,283.2" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[dict]">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="scg:KeyValuePair(x:Object, x:Object)">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="scg:KeyValuePair(x:Object, x:Object)" Name="item" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="416,157.6" sap2010:WorkflowViewState.IdRef="Sequence_3">
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="368,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[&quot;[&quot; + item.Key.ToString + &quot;]=&quot; + item.Value.ToString]" />
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_7" Text="1" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_8" Text="2" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_9" Text="3" />
+    <maes:GetFromDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Get from dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="GetFromDictionary`2_2" Key="[3]" Value="[val]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;dict[3] is &quot; + dict(3).ToString]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_3" Text="[&quot;instance is &quot; + inst.ToString]" />
+    <maes:KeyExistsInDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Key exists in dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="KeyExistsInDictionary`2_2" Key="[5]" Result="[kExists]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_4" Text="[&quot;key 5 exists in the dictionary &quot; + kExists.ToString]" />
+    <maes:ValueExistsInDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Value exists in dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="ValueExistsInDictionary`2_3" Result="[kExists]" Value="[5]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_5" Text="[&quot;value 5 exists in the dictionary &quot; + kExists.ToString]" />
+    <maes:RemoveFromDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Remove from dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="RemoveFromDictionary`2_2" Key="[3]" Result="[kExists]" />
+    <maes:KeyExistsInDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Key exists in dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="KeyExistsInDictionary`2_3" Key="[3]" Result="[kExists]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_6" Text="[&quot;key 3 exists in the dictionary &quot; + kExists.ToString]" />
+    <maes:KeyExistsInDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Key exists in dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="KeyExistsInDictionary`2_4" Key="[10]" Result="[kExists]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_10" Text="[&quot;key 10 exists in the dictionary &quot; + kExists.ToString]" />
+    <ui:InvokeCode ContinueOnError="{x:Null}" Code="dict(key)=value" DisplayName="Invoke Code" sap:VirtualizedContainerService.HintSize="451.2,164.8" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+      <ui:InvokeCode.Arguments>
+        <InArgument x:TypeArguments="scg:IDictionary(x:Object, x:Object)" x:Key="dict">[dict]</InArgument>
+        <InArgument x:TypeArguments="x:Object" x:Key="key">[10]</InArgument>
+        <InArgument x:TypeArguments="x:Object" x:Key="value">[20]</InArgument>
+      </ui:InvokeCode.Arguments>
+    </ui:InvokeCode>
+    <maes:KeyExistsInDictionary x:TypeArguments="x:Object, x:Object" Dictionary="[dict]" DisplayName="Key exists in dictionary" sap:VirtualizedContainerService.HintSize="451.2,137.6" sap2010:WorkflowViewState.IdRef="KeyExistsInDictionary`2_5" Key="[10]" Result="[kExists]" />
+    <WriteLine DisplayName="Write Line" sap:VirtualizedContainerService.HintSize="451.2,62.4" sap2010:WorkflowViewState.IdRef="WriteLine_11" Text="[&quot;key 10 exists in the dictionary &quot; + kExists.ToString]" />
+  </Sequence>
+</Activity>

@@ -6,7 +6,7 @@
  *
  * Generic scenario: wait for the email confirming a planetarium reservation.
  */
-import { flow, waitForEvent, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, waitForEvent, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 const CONFIRMATIONS_FOLDER =
   'AQMkAGU5ZGFmM2QyLWY4OTEtNDAzNi04MGU2LWRjNzE2OWM0NTllMA==';
@@ -25,10 +25,10 @@ export default flow('planetarium-confirmation')
     connection: 'outlook',
     folder: 'shared',
   }))
-  .step('recordConfirmation', script({
-    code:
-      'return "confirmed " + $vars.start.output.reservationCode + ": "'
-      + ' + $vars.awaitConfirmation.output.subject;',
-  }))
+  .step('recordConfirmation', script(recordConfirmation))
   .return({ confirmation: out('recordConfirmation') })
   .build();
+
+function recordConfirmation($vars: FlowVars) {
+  return "confirmed " + $vars.start.output.reservationCode + ": " + $vars.awaitConfirmation.output.subject;
+}
