@@ -447,6 +447,7 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+          AUTH_REFRESH_INTERVAL_S:  "1200"
         run: |
           bash .github/scripts/refresh-auth.sh
           # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
@@ -456,6 +457,22 @@ jobs:
           # the "other" bits so the mounted .auth file (mode 600) is readable —
           # mirrors coder-eval's own grant_container_access.
           chmod -R o+rwX "$HOME/.uipath"
+          # Keep the login fresh for the whole run: the ROPC token lives ~1h and
+          # graders re-read the file per call. Silent (a background process cannot
+          # register masks); status goes to a file a later step prints. Detached
+          # from the runner's process tracking so it outlives this step.
+          cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
+          #!/usr/bin/env bash
+          while sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"; do
+            if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
+              chmod -R o+rwX "$HOME/.uipath"
+              echo "$(date -u +%H:%M:%S) refreshed" >> "$RUNNER_TEMP/auth-refresh.log"
+            else
+              echo "$(date -u +%H:%M:%S) FAILED" >> "$RUNNER_TEMP/auth-refresh.log"
+            fi
+          done
+          REFRESH
+          env RUNNER_TRACKING_ID="" setsid nohup bash "$RUNNER_TEMP/auth-refresher.sh" >/dev/null 2>&1 &
 
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
@@ -539,40 +556,21 @@ jobs:
           # override needs: to bash its `[...]` list is a character class.
           args=(-e experiments/nightly.yaml)
 
-          # Grader / pre-run auth for every agent. The ROPC token is mounted at
-          # /.uipath/.auth, but the in-container `uip` looks under its own
-          # $HOME/.uipath, so it reports "Not logged in" (exit 2). Pass the token
-          # through the CLI's env-auth instead, plus the tenant coordinates live
-          # e2e graders read (escalation_is.py configured_target). Values come
-          # from ~/.uipath/.auth. The UIPATH_CLI_* names are already in
-          # nightly.yaml's env_passthrough_extra; UIPATH_URL, UIPATH_ORGANIZATION_ID
-          # and UIPATH_TENANT_ID are added via passthrough_extra. Every agent type
-          # (claude/codex included) now sees the bot token in its env; it was
-          # already readable through the /.uipath mount. The token is a frozen
-          # copy: tasks starting after the ~1h ROPC TTL see it expired (no
-          # refresher loop here).
+          # Tenant coordinates for live e2e graders (escalation_is.py
+          # configured_target). Non-secret, read from ~/.uipath/.auth. The login
+          # itself is NOT exported: graders that need it build env-auth per
+          # subprocess from the mounted file (_shared/uip_auth.py), so no agent
+          # env, log or artifact carries a token and offline tasks stay logged out.
           passthrough_extra="UIPATH_URL,UIPATH_ORGANIZATION_ID,UIPATH_TENANT_ID"
           AUTH_FILE="$HOME/.uipath/.auth"
-          for pair in UIPATH_CLI_AUTH_TOKEN:UIPATH_ACCESS_TOKEN \
-                      UIPATH_CLI_ORGANIZATION_NAME:UIPATH_ORGANIZATION_NAME \
-                      UIPATH_CLI_ORGANIZATION_ID:UIPATH_ORGANIZATION_ID \
-                      UIPATH_CLI_TENANT_NAME:UIPATH_TENANT_NAME \
-                      UIPATH_CLI_TENANT_ID:UIPATH_TENANT_ID \
-                      UIPATH_ORGANIZATION_ID:UIPATH_ORGANIZATION_ID \
-                      UIPATH_TENANT_ID:UIPATH_TENANT_ID \
-                      UIPATH_URL:UIPATH_URL; do
-            out="${pair%%:*}"; key="${pair##*:}"
+          for key in UIPATH_URL UIPATH_ORGANIZATION_ID UIPATH_TENANT_ID; do
             val="$(sed -n "s/^$key=//p" "$AUTH_FILE")"
             if [ -z "$val" ]; then
               echo "::error::no $key in $AUTH_FILE — the ROPC login did not complete"
               exit 1
             fi
-            if [ "$out" = "UIPATH_CLI_AUTH_TOKEN" ]; then
-              echo "::add-mask::$val"
-            fi
-            env_lines+=("$out=$val")
+            env_lines+=("$key=$val")
           done
-          env_lines+=("UIPATH_CLI_ENABLE_ENV_AUTH=true")
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
@@ -678,11 +676,10 @@ jobs:
             # Live token channel: nightly.yaml bind-mounts ~/.uipath -> /.uipath,
             # and the host re-reads the first READABLE path per turn — so the
             # frozen DELEGATE_AUTH_TOKEN env copy stops mattering past the ~1h
-            # ROPC TTL, PROVIDED the file stays fresh. This workflow mints the token once
-            # (no refresher loop like the nightly's), so runs longer than ~1h can
-            # still hit token expiry on late tasks. A refresher here would need a
-            # foreground step: masks registered from a background process never
-            # reach the job log, and this repo's logs are public.
+            # ROPC TTL, PROVIDED the file stays fresh: the mint step starts a silent
+            # background refresher for that (masks registered from a background
+            # process never reach the job log, and this repo's logs are public,
+            # so it prints nothing).
             env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
             # the delegate auth/env vars to passthrough_extra, which the single
@@ -834,6 +831,11 @@ jobs:
               if redacted != text:
                   path.write_text(redacted, encoding="utf-8")
           PY
+      - name: Report auth refresher status
+        if: always()
+        run: |
+          cat "$RUNNER_TEMP/auth-refresh.log" 2>/dev/null || echo "no refresh fired (run shorter than the interval)"
+
       # ==================================================================
       # Evalboard publish. Entirely additive and entirely best-effort: every
       # step here warns and returns 0 rather than reddening a run, because a

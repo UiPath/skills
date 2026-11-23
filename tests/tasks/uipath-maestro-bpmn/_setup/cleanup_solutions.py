@@ -30,6 +30,13 @@ import os
 import subprocess
 import sys
 
+_directory = os.path.dirname(os.path.abspath(__file__))
+while _directory != os.path.dirname(_directory) and not os.path.isdir(os.path.join(_directory, "_shared")):
+    _directory = os.path.dirname(_directory)
+sys.path.insert(0, _directory)
+
+from _shared.uip_auth import grader_env  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="cleanup_solutions: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -87,6 +94,7 @@ def main() -> int:
             capture_output=True,
             text=True,
             timeout=60,
+            env=grader_env(),
         )
         if r.returncode == 0:
             logger.info("deleted %s (from %s)", sid, path)

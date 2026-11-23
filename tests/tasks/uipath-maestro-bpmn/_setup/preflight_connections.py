@@ -37,8 +37,16 @@ FAILURE scored against the skill.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+
+_directory = os.path.dirname(os.path.abspath(__file__))
+while _directory != os.path.dirname(_directory) and not os.path.isdir(os.path.join(_directory, "_shared")):
+    _directory = os.path.dirname(_directory)
+sys.path.insert(0, _directory)
+
+from _shared.uip_auth import grader_env  # noqa: E402
 
 
 def _connections(key: str) -> list[dict]:
@@ -48,6 +56,7 @@ def _connections(key: str) -> list[dict]:
             capture_output=True,
             text=True,
             timeout=90,
+            env=grader_env(),
         )
     except subprocess.TimeoutExpired as exc:
         # Fatal, unlike a ping timeout: without the candidate list there is
@@ -87,6 +96,7 @@ def _ping(connection_id: str) -> str | None:
                 capture_output=True,
                 text=True,
                 timeout=PING_TIMEOUT_S,
+                env=grader_env(),
             )
         except subprocess.TimeoutExpired:
             last = f"ping did not answer within {PING_TIMEOUT_S}s ({attempt} of {PING_ATTEMPTS} attempts)"

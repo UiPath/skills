@@ -77,6 +77,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.uip_auth import grader_env  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     NS,
     all_node_values,
@@ -154,7 +155,7 @@ def _parse_uip_stdout(args: list[str], result: subprocess.CompletedProcess) -> d
 def _uip_json(args: list[str]) -> dict:
     """Run a uip CLI command and return parsed JSON. Fails the test on
     non-zero exit or invalid JSON."""
-    return _parse_uip_stdout(args, subprocess.run(args, capture_output=True, text=True, timeout=120))
+    return _parse_uip_stdout(args, subprocess.run(args, capture_output=True, text=True, timeout=120, env=grader_env()))
 
 
 def _uip_resources_run(tail_args: list[str]) -> dict:
@@ -168,14 +169,14 @@ def _uip_resources_run(tail_args: list[str]) -> dict:
     until the sandbox PATH is fully isolated (see coder_eval companion PR).
     """
     primary = ["uip", "is", "resources", "run", *tail_args]
-    result = subprocess.run(primary, capture_output=True, text=True, timeout=120)
+    result = subprocess.run(primary, capture_output=True, text=True, timeout=120, env=grader_env())
     needs_fallback = (
         result.returncode != 0
         and "unknown command 'run'" in (result.stdout + result.stderr)
     )
     if needs_fallback:
         legacy = ["uip", "is", "resources", "execute", *tail_args]
-        result = subprocess.run(legacy, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(legacy, capture_output=True, text=True, timeout=120, env=grader_env())
         return _parse_uip_stdout(legacy, result)
     return _parse_uip_stdout(primary, result)
 
