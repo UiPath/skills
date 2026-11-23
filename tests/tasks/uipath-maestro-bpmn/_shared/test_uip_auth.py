@@ -82,3 +82,10 @@ def test_setup_copy_is_identical():
 
 def test_home_login_is_never_picked_up():
     assert not any(".uipath" in c and c != "/.uipath/.auth" for c in uip_auth._FILE_CANDIDATES)
+
+
+def test_incomplete_login_is_rejected_not_half_enabled(tmp_path):
+    f = tmp_path / ".auth"
+    f.write_text(f"UIPATH_ACCESS_TOKEN={_jwt(time.time() + 3600)}\nUIPATH_ORGANIZATION_NAME=org\n", encoding="utf-8")
+    with pytest.raises(uip_auth.AuthExpired, match="missing UIPATH_ORGANIZATION_ID"):
+        uip_auth.grader_env({"UIPATH_CLI_TENANT_ID": "inherited"}, candidates=(str(f),), sleep=lambda _s: None)

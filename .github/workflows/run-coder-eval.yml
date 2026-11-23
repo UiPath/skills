@@ -450,6 +450,10 @@ jobs:
           AUTH_REFRESH_INTERVAL_S:  "1200"
         run: |
           bash .github/scripts/refresh-auth.sh
+          # Every token this run issues, host-only (mode 600, outside /tmp/runs),
+          # so the report scrubber can remove tokens the file has since rotated out.
+          umask 077
+          grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
           # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
           # containers (reference anti-cheat), so container-root can no longer
           # read the host-owned ~/.uipath extra_mount (mounted by
@@ -463,10 +467,17 @@ jobs:
           # from the runner's process tracking so it outlives this step.
           cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
           #!/usr/bin/env bash
+          # Bounded: dies at the deadline (job timeout + margin) or when the
+          # runner temp dir is gone, so a force-killed job cannot leave it renewing.
+          umask 077
           echo $$ > "$RUNNER_TEMP/auth-refresher.pid"
-          while sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"; do
+          deadline=$(( $(date +%s) + 23400 ))
+          while [ "$(date +%s)" -lt "$deadline" ] && [ -d "$RUNNER_TEMP" ]; do
+            sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"
+            [ -d "$RUNNER_TEMP" ] || exit 0
             if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
               chmod -R o+rwX "$HOME/.uipath"
+              grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
               echo "$(date -u +%H:%M:%S) refreshed" >> "$RUNNER_TEMP/auth-refresh.log"
             else
               echo "$(date -u +%H:%M:%S) FAILED" >> "$RUNNER_TEMP/auth-refresh.log"
@@ -822,14 +833,28 @@ jobs:
                   if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
                       values.append(line.split("=", 1)[1])
 
+          # Every token issued this run (the file only holds the latest).
+          issued = pathlib.Path(os.environ["RUNNER_TEMP"]) / "issued-tokens"
+          if issued.is_file():
+              values += [
+                  line.strip()
+                  for line in issued.read_text(encoding="utf-8", errors="ignore").splitlines()
+                  if len(line.strip()) > 28
+              ]
+
           if not values:
               raise SystemExit(0)
 
-          suffixes = {".html", ".json", ".log", ".md", ".xml"}
+          # Every text file, whatever its name or extension: a workspace dump
+          # (.txt, .env, no extension) is as public as the report. Binary files
+          # fail strict decoding and are skipped.
           for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if not path.is_file() or path.suffix not in suffixes:
+              if not path.is_file() or path.is_symlink():
                   continue
-              text = path.read_text(encoding="utf-8", errors="ignore")
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except (UnicodeDecodeError, OSError):
+                  continue
               redacted = text
               for value in values:
                   redacted = redacted.replace(value, "***")

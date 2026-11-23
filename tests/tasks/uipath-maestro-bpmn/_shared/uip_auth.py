@@ -87,10 +87,11 @@ def grader_env(
             problem = "no access token in file"
         elif _expires_soon(token):
             problem = "token expired or expiring"
+        elif missing := [k for k in _MAP.values() if not login.get(k)]:
+            problem = f"incomplete login, missing {', '.join(missing)}"
         else:
             for env_key, file_key in _MAP.items():
-                if login.get(file_key):
-                    env[env_key] = login[file_key]
+                env[env_key] = login[file_key]
             if login.get("UIPATH_URL"):
                 env.setdefault("UIPATH_URL", login["UIPATH_URL"])
             env["UIPATH_CLI_ENABLE_ENV_AUTH"] = "true"

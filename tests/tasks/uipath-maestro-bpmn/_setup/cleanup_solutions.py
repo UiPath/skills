@@ -30,10 +30,6 @@ import os
 import subprocess
 import sys
 
-# Sibling copy: _setup is mounted alone into task sandboxes (no _shared next to it).
-# sys.path[0] is this directory, so a bare import resolves in every load mode.
-from uip_auth import AuthExpired, grader_env  # noqa: E402
-
 logging.basicConfig(level=logging.INFO, format="cleanup_solutions: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -61,14 +57,6 @@ def main() -> int:
     skipped: list[str] = []
     not_uploaded: list[str] = []
     failed: list[str] = []
-
-    env = None
-    if policy != "never":  # preserving needs no login
-        try:
-            env = grader_env()
-        except AuthExpired as exc:
-            logger.warning("skipping cleanup, no usable login: %s", exc)
-            return 0
 
     for path in paths:
         try:
@@ -99,7 +87,6 @@ def main() -> int:
             capture_output=True,
             text=True,
             timeout=60,
-            env=env,
         )
         if r.returncode == 0:
             logger.info("deleted %s (from %s)", sid, path)

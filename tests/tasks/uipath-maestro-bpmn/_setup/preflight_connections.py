@@ -42,7 +42,7 @@ import sys
 
 # Sibling copy: _setup is mounted alone into task sandboxes (no _shared next to it).
 # sys.path[0] is this directory, so a bare import resolves in every load mode.
-from uip_auth import AuthExpired, grader_env  # noqa: E402
+from uip_auth import grader_env  # noqa: E402
 
 
 def _connections(key: str) -> list[dict]:
