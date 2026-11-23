@@ -10,7 +10,8 @@ the diagram.
 `kept` checks the rule still holds what it held. `wired` checks the new
 decision calls the model that was already there instead of declaring a second
 one. `diagram` checks the placed shapes stayed and the new element got one.
-The freight figure itself is a call, so the engine grades it, not this.
+The freight figure itself is not graded: a call is FEEL the offline evaluator
+does not run, and no engine task covers PricingRules.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from graph_check import (  # noqa: E402
     check_knowledge_models,
     check_no_overlap,
     check_shapes_kept,
+    decisions,
     knowledge_models,
     required,
 )
@@ -60,8 +62,22 @@ def kept() -> None:
 
     check_knowledge_models(root)
     check_annotations_attached(root)
-    check_graph_cases(root, TIER_CASES)
+
+    # Only the tier decision's values are graded. The freight decision is free to be a table whose
+    # output cell calls the model — `discounted(50, tier)` — and `literal()` rightly refuses to read
+    # a call as a value. Evaluating the whole graph here would kill a correct edit on that refusal,
+    # and this task never runs the engine, so there is nothing to fall back to.
+    check_graph_cases(_tier_only(root), TIER_CASES)
     print("OK: the model, the literal expression, the note and the tier values all survived the edit")
+
+
+def _tier_only(root: ET.Element) -> ET.Element:
+    """The rule with every decision but `tier` dropped, so the case set grades only what it names."""
+    trimmed = ET.fromstring(ET.tostring(root))
+    for decision in decisions(trimmed):
+        if decision.get("name") != "tier":
+            trimmed.remove(decision)
+    return trimmed
 
 
 def wired() -> None:

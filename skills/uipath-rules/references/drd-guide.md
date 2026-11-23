@@ -113,7 +113,7 @@ A column name is never the handle on its own. Above, `risk` has one output whose
 <text>risk.riskBand</text>   ← wrong: only a decision with several outputs has fields
 ```
 
-Reach for the dotted form **only** after counting two or more `<output>` elements in the upstream table. This is the mistake a graph most often ships with, and nothing in the file looks wrong: the column name sits right there in the upstream table, and a wrong read is a valid FEEL name the engine simply cannot resolve.
+Reach for the dotted form **only** after counting two or more `<output>` elements. A wrong read is a valid FEEL name the engine cannot resolve, so nothing in the file looks wrong.
 
 ## Requirements
 
@@ -174,7 +174,7 @@ A decision answers with one value from one FEEL expression instead of a table. U
 
 - **Always set `typeRef`** on the `literalExpression`, and give the decision's `variable` the same type. Without it, `validate` reports `DMN_LITERAL_EXPRESSION_TYPE_MISSING`.
 - The expression reads the names the decision requires, by the same rules a table's input expression follows: an input argument by its name, an upstream decision as [Reading an upstream decision](#reading-an-upstream-decision) describes.
-- It answers with one value, so a reader addresses the decision itself — `fee`, never `fee.something`.
+- It answers with one value, so a reader addresses the decision itself — see [Reading an upstream decision](#reading-an-upstream-decision).
 - An empty `<text>` is `DMN_LITERAL_EXPRESSION_EMPTY`.
 - It has no rules, so it carries no `<annotation>` column and no `<annotationEntry>`.
 
@@ -238,7 +238,7 @@ A note on the diagram, tied to the element it is about. It holds no logic, gets 
 
 Use one for context a reviewer needs and the table cannot carry — where a threshold came from, when it is next reviewed. Per-row reasoning belongs in the annotation column instead, and a description of one element belongs in its `<description>`.
 
-An annotation may be tied to any element except another annotation. It is drawn 224 by 64, narrower and shorter than a decision card, so `uip rules format` places it like anything else.
+An annotation may be tied to any element except another annotation. It is drawn smaller than a decision card, and `uip rules format` places it like anything else — never write its coordinates yourself.
 
 **`sourceRef` and `targetRef` are child elements, never attributes.** The DMN schema types them as `tDMNElementReference`, so each carries the id on its own `href`. Written as attributes on `<association>` the file still parses and `validate` still passes, but the designer reads no ends and drops the connector: the annotation draws as a box floating beside the graph, tied to nothing.
 
@@ -276,11 +276,12 @@ Never write the unsupported element.
 
 ## Anti-patterns
 
-- Reading a single-output upstream decision as `name.column`; it has no fields, and `name` is the whole answer
-- Reading an upstream decision by its output column name alone, with no decision name in front of it
+- Reading an upstream decision without counting its outputs first ([Reading an upstream decision](#reading-an-upstream-decision))
 - A table that reads a name with no requirement edge to what declares it
 - Changing a decision's `id` to tidy it up, after consumers have bound to it
 - Splitting one answer across two decisions so each table is shorter
+<!--skill-flavor:graph-anti-debug:start-->
 - Reading only the last decision in the `debug` result
+<!--skill-flavor:graph-anti-debug:end-->
 - A knowledge model with no `<variable>`: `validate` passes and the engine rejects it at run time
 - A nested `if` in a literal expression where the logic is a set of cases a decision table would show

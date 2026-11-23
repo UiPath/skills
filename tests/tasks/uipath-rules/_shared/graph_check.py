@@ -163,12 +163,20 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
 
     for decision_id in by_id:
         run(decision_id, ())
+    # Flat, keyed by column name, so two decisions sharing one would overwrite each other and the
+    # last in file order would win — a correct graph could fail or a wrong one pass depending on
+    # declaration order. `decision_for_output` refuses a duplicate; this path has to as well.
     outputs: dict = {}
+    owner: dict[str, str] = {}
     for decision_id, decision in by_id.items():
         table = decision.find("dmn:decisionTable", NS)
         if table is None:
             continue
         for name in output_names(table):
+            if name in owner:
+                fail(f"decisions {owner[name]!r} and {decision.get('name')!r} both answer with an output "
+                     f"named {name!r}; a reader cannot tell them apart")
+            owner[name] = decision.get("name") or decision_id
             outputs[name] = (hits[decision_id] or {}).get(name)
     return outputs
 

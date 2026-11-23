@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Grades DiscountRules, whose tier lookup sits in a business knowledge model the decision calls.
 
-Structure only. A decision that calls a knowledge model answers with FEEL the
-offline evaluator does not run, so the discount itself is graded by the engine
-(`graph_check.py engine`) in the e2e task, not here.
+Structure only, and the discount values are graded nowhere. A call is FEEL the
+offline evaluator does not run, and no engine task covers DiscountRules —
+`graph_check.py engine` is wired to LoanRules and graph_formula_and_model_debug
+covers FeeRules. The prompt does not pin the model's signature either, so there
+are no fixed parameters to evaluate its table against. A model with the tiers
+swapped passes this task; what it grades is the structural contract.
 """
 
 from __future__ import annotations
