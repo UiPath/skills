@@ -45,8 +45,7 @@ The **action** is `nodeType`'s last segment — `create-issue` — not the label
 <!--skill-flavor:field-reference:end-->
 
 `"total": 0` is a real miss, and means either `http()` or a connector the catalog searched does not carry (see §4).
-A connector-mode `http()`'s `url` is the vendor's endpoint, never an Integration Service resource `Path`: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
-When several Integration Service resources match an `http()` request, describe each and pick the one that does what the user asked.
+A connector-mode `http()` calls the vendor's own method for the user's ask, relative to the connection's base URL, such as Slack's `/emoji.list` for "list the custom emoji". Never an Integration Service resource name or `Path` from `uip is resources list` or `describe` (those are what `.connector()` and `.activity()` take), and never an `admin.*` method (Enterprise Grid org admin, such as `admin.emoji.list`) unless the ask is org administration: [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work).
 <!--skill-flavor:library-pull:start-->
 With no library pulled the search answers from the tenant's live catalog through `uip` (`"source": "tenant"`), and its rows carry no `markdownPath`: read the page with `uip maestro registry describe <nodeType>`, which fetches it.
 A failed search gives `uip`'s reason; fix what it names: log in again for a session problem, or run the upgrade it names for an old SDK.
@@ -127,10 +126,11 @@ uip is connections ping <CONNECTION_ID> --output json                 # Data.Sta
 ```
 
 - With several Enabled matches, `prepare` refuses and lists them; re-run it with `--connection-id <CONNECTION_ID>` (or `--connection <CONNECTION_NAME>`, `--connection-folder <FOLDER>`). It never picks the default connection for you. Ask the user which one when the request does not say; when the request says nobody will answer, bind the Enabled match in the folder the process runs in, else the one with `IsDefault: Yes`, else the first one listed, skipping every connection the next bullet rules out (including the requester's own personal one), and name it on the final report's `Assumed:` line.
-- A connection is a sender's identity. Never bind, or offer on an outline, a connection that is another person's
-  (its folder is `<USER_NAME>'s workspace`, or its Name is someone else's email), and never bind one as a stand-in for a
-  mailbox, channel or account the request names (`ar@…`) that has no connection. Bind the requester's own personal connection
-  only when they say to. Otherwise leave the step unbound (§7) and name the missing connection on `Needs:`.
+- A connection is a sender's identity. Never bind, or offer on an outline, another person's personal connection (its folder is `<USER_NAME>'s workspace`).
+  A connection in a shared folder belongs to the team whoever its `Owner` is, even when its Name is an email: it is a normal candidate, chosen by the bullet above. "Use whatever exists" means nobody will answer which one.
+  Never bind any connection as a stand-in for a mailbox, channel or account the request names (`ar@…`) that has no connection.
+  Bind the requester's own personal connection only when they say to, or pick *Build it* on a draft gate that named it. When no connection is left to bind, leave the step unbound (§7; for an `http()`, the next bullet) and name the missing connection on `Needs:`.
+- Bind a connection to an `http()` only when `uip is connections base-url <CONNECTION_ID> --output json` is the host of the API the request targets. A connection on another vendor's base URL (a generic HTTP connection on `https://api.spotify.com/v1` for a Google call) is the wrong connection even when it is the only one or the user names it: say its base URL cannot reach that API, and write the manual `.http()` with the absolute URL instead, under its SDK note (`RULE:bpmn.http.manual` in [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work)). That call carries no credential, so an API that needs one rejects it (Slack answers HTTP 200 with `ok: false`): name the missing `<API_HOST>` connection on `Needs:` and say the step must be rebuilt as the connected `.http()` once it exists.
 - `prepare` refuses a connection that is not Enabled; `check`, `compile` and `refresh` do not. `validate` reports it as `MISSING_BINDING`, and `debug` faults with `[102002] Integration Services operation failed`. Never bind one: ask the user to re-authenticate it.
 - `prepare`'s JSON `Message` keeps only the last line of its explanation; read stderr for the full refusal.
 - Report the bound connection by Name and Folder, from the `connections list` row whose `Id` is `prepare`'s `Data.ConnectionId` (`Owner` is a user id, not a name).
@@ -196,6 +196,8 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 `check` holds a hand-filled task to the catalog (`INTSVC_*`), which `validate` does not; fix what it reports.
+On this `.activity()`, `path` is the operation's route under the connector, copied from `Operation.Path` of `uip is resources describe <CONNECTOR_KEY> <OBJECT_NAME> --operation <VERB> --output json`, saved or run now (`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
+Never the provider's REST route (`/rest/api/2/issue`): `validate` accepts it, and the debug run faults at the node (observed on Jira Create Issue: `102002 Integration Services operation failed`, provider 401).
 Copy the `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, `activityConfigurationVersion: 'v2'` included.
 Without `--input-details` the command returns only the extension type's V1 template (`activityConfigurationVersion` defaults to `v1` there), whose context a V2 task does not carry.
 `--input-details` takes the node's values as JSON, `'{}'` when you have none yet; `Data.V2.MissingRequired` lists the required inputs still unset.
@@ -205,7 +207,7 @@ For a generic record verb (`Create Record`, `Delete Record`), the catalog row's 
 ## 5. Data Fabric is not this
 
 Data Fabric (Data Service) records and file fields are `.dataService(id, { entity, connection, folder, op, … })`, one of eight operations.
-A folder-scoped entity is `entity: { name, folder: '<folder path>' }`, which writes the connector's `_V3` operation once `check`'s `prepare` has recorded its keys; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings).
+A folder-scoped entity is `entity: { name, folder: '<folder path>' }`, which writes the connector's `_V3` operation once `check`'s `prepare` has recorded its keys: `create`, `update`, `get` and `query` as the V2 task Studio Web saves, `delete` as a V1 task; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings) for these and the other V1 cases.
 The library ships one Data Service operation, so `.connector()` cannot author the rest, and a hand-filled `.activity()` gets `objectName`, the parameter targets and the folder binding wrong in ways `validate` does not report.
 See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `examples/ContractRegistry.bpmn.ts`.
 
