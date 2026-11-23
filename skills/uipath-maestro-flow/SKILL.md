@@ -141,7 +141,7 @@ This table is authoritative; read each node's `Reference` before writing it ([Cr
 | Node or surface | Emitted node type | Builder | Reference | Example |
 |---|---|---|---|---|
 | Manual trigger | `core.trigger.manual` | omit `.trigger(...)` | [manual-trigger.md](references/manual-trigger.md) | `examples/GreenhouseWatering.flow.ts` |
-| Entry points (multiple triggers) | one trigger per extra root | `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)`; shared var: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) | — |
+| Entry points (multiple triggers) | one trigger per extra root | `.entryPoint(id, trigger, { inputs?, version?, default? }, prefixFn?)`; shared var: input `{ type, shared: '<var>' }` | [manual-trigger.md](references/manual-trigger.md#multiple-entry-points) | — |
 | Scheduled trigger | `core.trigger.scheduled` | `scheduled(...)` | [scheduled-trigger.md](references/scheduled-trigger.md) | `examples/HerbariumDispatch.flow.ts` |
 | Connector event trigger; HTTP start | `uipath.connector.trigger.<key>.<event>` | `onEvent(...)` | [event-trigger.md](references/event-trigger.md), [HTTP call](references/event-trigger.md#started-by-an-http-call) | `examples/DoorbellLog.flow.ts` |
 | Connector event wait | `uipath.connector.event.<key>.<event>` | `waitForEvent(...)` | [event-trigger.md](references/event-trigger.md) | `examples/PlanetariumConfirmation.flow.ts` |
