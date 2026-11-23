@@ -68,14 +68,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-# `rules debug` uploads a Studio Web solution per run; delete it so runs do not accumulate on the tenant.
+# What is already on disk is not ours to delete; `solution_cleanup.py` says why.
+pre_run:
+  - command: 'python3 $REFERENCE_DIR/_shared/solution_cleanup.py record LoanRules'
+    timeout: 60
+
+# `rules debug` uploads a Studio Web solution per run; delete the ones this run created so they
+# do not accumulate on the tenant, and only those.
 post_run:
-  - command: |
-      python3 - <<'EOF' || true
-      import glob, json, subprocess
-      for path in glob.glob("**/*.uipx", recursive=True):
-          solution_id = json.load(open(path)).get("SolutionId")
-          if solution_id:
-              subprocess.run(["uip", "solution", "delete", solution_id, "--yes", "--output", "json"], timeout=120)
-      EOF
+  - command: 'python3 $REFERENCE_DIR/_shared/solution_cleanup.py delete LoanRules || true'
     timeout: 180
