@@ -32,6 +32,9 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 12. Fix every `validate` warning whose cause is in the process, in the same edit as its errors; never add a step, or change an input, default or path, only to silence one. Fix each warning once: when the next `validate` still prints it, keep it, and never edit or rerun for it again. An `[(xml)] unknown attribute` line on compiled output gets no edit and no report; report every other kept warning as the [final report](references/final-report-template.md#the-reply) says; never call one non-blocking or optional. A draft skeleton follows [its own rule](references/draft-skeleton.md#expected-findings--do-not-chase-them) until *Build it*.
 <!--skill-flavor:critical-rules-extra:start-->
 <!--skill-flavor:critical-rules-extra:end-->
+<!--skill-flavor:git-studioweb-rule:start-->
+12. **`.git-studioweb` solution folders: link before git, never `git init`.** If the solution root has a `.git-studioweb` folder and no `.git` entry, run `uip solution git-link <SOLUTION_DIR>` before any git command (CLI without `git-link`: create a `.git` file containing exactly `gitdir: .git-studioweb` — ASCII, no trailing space — only if `.git-studioweb` holds no `config`, `commondir`, `worktrees`, non-empty `hooks/` or other unexpected entry). On refusal `UnexpectedRepositoryEntries`, or such entries, stop and show the user; never delete them or bypass the refusal. Never `git init` / `git clone` in a solution folder that has `.git-studioweb`, linked or not, and never replace a `.git` folder. Full guide: `uipath-solution` skill, Git Studio Web Layout.
+<!--skill-flavor:git-studioweb-rule:end-->
 
 <!--skill-flavor:host-setup:start-->
 

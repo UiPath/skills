@@ -135,6 +135,10 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 24. **Per-activity retry lives in `catch.retry` of a `try` task, never on the activity.** A Try/Catch carries it beside `as` and `do`; Studio Web stores an HTTP Request's own Retry section as an `<id>#Retry` wrapper — preserve it and never add `catch.do`. A retrying `try` replaces `httpRetryConfig` for every call inside it. Task-level retry re-sends POST/PUT/DELETE; confirm idempotency first. Some `validate` releases reject a string `retry.when` and the wrapper; before treating those errors as real, read [references/http-retry-config.md](references/http-retry-config.md#validation-gap), which also holds the shapes and defaults.
 
+<!--skill-flavor:git-studioweb-rule:start-->
+25. **`.git-studioweb` solution folders: link before git, never `git init`.** If the solution root has a `.git-studioweb` folder and no `.git` entry, run `uip solution git-link <SOLUTION_DIR>` before any git command (CLI without `git-link`: create a `.git` file containing exactly `gitdir: .git-studioweb` — ASCII, no trailing space — only if `.git-studioweb` holds no `config`, `commondir`, `worktrees`, non-empty `hooks/` or other unexpected entry). On refusal `UnexpectedRepositoryEntries`, or such entries, stop and show the user; never delete them or bypass the refusal. Never `git init` / `git clone` in a solution folder that has `.git-studioweb`, linked or not, and never replace a `.git` folder. Full guide: `uipath-solution` skill, Git Studio Web Layout.
+<!--skill-flavor:git-studioweb-rule:end-->
+
 ## Workflow Phases
 
 ### Phase 0: Discovery

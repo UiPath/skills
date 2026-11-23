@@ -806,7 +806,13 @@
     }
   },
   "uipath-review": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/devops-readiness-checklist.md",
+        "command": "solution",
+        "reason": "Prose: `uip solution git-link` is named as the fix to report for an unlinked `.git-studioweb` folder, never run by the read-only review."
+      }
+    ],
     "ceiling": {
       "codedagent": 2,
       "codedagent eval": 1,
@@ -911,6 +917,21 @@
         "file": "references/develop-solution.md",
         "command": "login tenant set",
         "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "solution",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "codedapp push",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
+      },
+      {
+        "file": "references/git-studioweb-guide.md",
+        "command": "solution pack",
+        "reason": "Guide for the user's own machine: the Studio Web override (git-studioweb-host-extra) says the browser cannot create a `.git` entry and tells the agent to hand these terminal commands to the user, not run them."
       },
       {
         "file": "references/scenarios/ontology-solution.md",

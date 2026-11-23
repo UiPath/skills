@@ -542,6 +542,8 @@ MyAgent/generated/
 
 A pattern that would drop a project the `.uipx` lists is refused with `ErrorCode: invalid_argument` — take the project out with `uip solution projects remove` instead. `uip codedapp push` reads the same `.uipignore`; `uip solution pack` does not.
 
+A Studio Web repository folder (`.git-studioweb/`) and its `.git` pointer file are not upload content either; on a CLI that does not leave them out, list both in the solution-root `.uipignore` ([Git Studio Web Layout § Packaging and Sync](git-studioweb-guide.md#packaging-and-sync)).
+
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
 ## Step 13: Delete from Studio Web

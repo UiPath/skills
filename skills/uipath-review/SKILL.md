@@ -24,6 +24,9 @@ Use for requests to review, audit, check, evaluate, improve, quality-gate, or un
 7. Limit analysis to 30 minutes. For solutions with 10+ projects, provide a summary and deep dives for the three highest-risk projects, offering the remainder separately.
 8. **Agent projects follow [agent-review-guide.md](references/agents/agent-review-guide.md).** Once Step 1 classifies a project as Agent (Low-Code) or Agent (Coded), read that guide and run its Critical Rules and Steps 2–6 for that project; the steps below apply to it only where the guide points back to them.
 9. Put intended but unapplied rules in **Rules Skipped**, including missing tooling/files, unavailable review CLI, and `status: deferred`. Do not list non-applicable rules.
+<!--skill-flavor:git-studioweb-rule:start-->
+10. **A `.git-studioweb` folder means the solution is under version control.** With no `.git` entry beside it, git sees it only once linked. Do not link it, and never `git init` / `git clone` in a solution folder that has `.git-studioweb`, linked or not. Read with `git --no-optional-locks --git-dir=<SOLUTION_DIR>/.git-studioweb --work-tree=<SOLUTION_DIR> <COMMAND>`, read commands only (`status`, `log`, `diff`, `rev-parse`) and only when `.git-studioweb` holds no `config`, `commondir`, `worktrees`, non-empty `hooks/` or other entry Studio Web never writes (else stop and show the user), and suggest `uip solution git-link` to the user. Full guide: `uipath-solution` skill, Git Studio Web Layout.
+<!--skill-flavor:git-studioweb-rule:end-->
 
 ## Review Workflow
 

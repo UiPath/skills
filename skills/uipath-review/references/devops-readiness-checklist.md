@@ -6,7 +6,7 @@ Source control, CI/CD, and deployment governance checks. Applies to ALL project 
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Repository under version control (Git, Azure Repos, etc.) | Warning | `git rev-parse --is-inside-work-tree` should succeed |
+| Repository under version control (Git, Azure Repos, etc.) | Warning | `git rev-parse --is-inside-work-tree` should succeed. A `.git-studioweb` folder at the solution root with no `.git` entry also passes: it is a Studio Web repository git sees only once linked. Verify read-only with `git -C <SOLUTION_DIR> --no-optional-locks --git-dir=.git-studioweb --work-tree=. rev-parse --is-inside-work-tree`, which must print `true`; report `uip solution git-link` as an Info fix, never link it yourself |
 | `.gitignore` present at project / solution root | Warning | `ls .gitignore` |
 | `.gitignore` excludes Studio runtime artifacts: `.local/`, `.codedworkflows/`, `.objects/` (Object Repository binary cache), `.tmh/`, `.entities/` runtime dirs | Warning | Read `.gitignore` and verify these patterns are present |
 | `.gitignore` excludes `.nupkg` package artifacts and `bin/` / `obj/` build outputs | Warning | Verify exclusions |
