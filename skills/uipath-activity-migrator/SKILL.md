@@ -57,6 +57,8 @@ Run the acquisition script with `node`, which Steps 2 to 4 already use for their
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 ```
 
+When the user named the tool's folder, set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it on this command, from the first run on. Without it the script reads the default cache and can report a tool from a folder the user did not name.
+
 | `status` | Action |
 |---|---|
 | `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
