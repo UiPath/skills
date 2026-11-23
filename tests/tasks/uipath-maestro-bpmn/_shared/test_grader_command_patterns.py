@@ -144,8 +144,6 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
 
 
-<<<<<<< HEAD
-=======
 # --- author_validate: the same check, InvoiceApproval project ---------------------
 
 _AUTHOR = "smoke/author_validate.yaml"
@@ -212,7 +210,6 @@ def test_xml_regex_time_bound() -> None:
     subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
 
 
->>>>>>> 28f182bac (test(uipath-maestro-bpmn): accept a node XML parse and Process.bpmn in the well-formed-XML criteria (#5065))
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:
     task = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))
     prompt = task["initial_prompt"]

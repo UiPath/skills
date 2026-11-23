@@ -80,10 +80,6 @@ success_criteria:
     # (3) a `python3 - <<'PY'` heredoc whose body (or the `python3 -` arguments)
     #     names the file and calls `ET.parse(`, up to the terminator word (bounded
     #     by whitespace, so the newline-collapsed haystack stops there too).
-<<<<<<< HEAD
-    # Cases in _shared/test_grader_command_patterns.py.
-    command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1).)*ET\.parse\()(?=(?:\\.|(?!\1).)*ScheduledReportBpmn\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2).)*ET\.parse\((?:\\.|(?!\2).)*\\?\2\s+[^\s;&|]*ScheduledReportBpmn\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*ScheduledReportBpmn\.bpmn)'
-=======
     # A quoted program's characters are an escape pair (`\\.`) or one
     # non-backslash character (`[^\\]`). Keep the two alternatives disjoint: if
     # both can match a backslash, the regex backtracks exponentially.
@@ -94,7 +90,6 @@ success_criteria:
     # in place of `ET.parse(`.
     # Cases in _shared/test_grader_command_patterns.py.
     command_pattern: 'python3?\s+-c\s+\\?(["''])(?=(?:\\.|(?!\1)[^\\])*ET\.parse\()(?=(?:\\.|(?!\1)[^\\])*(?:ScheduledReportBpmn|Process)\.bpmn)|python3?\s+-c\s+\\?(["''])(?:\\.|(?!\2)[^\\])*ET\.parse\((?:\\.|(?!\2)[^\\])*\\?\2\s+[^\s;&|]*(?:ScheduledReportBpmn|Process)\.bpmn|python3?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\3)(?=(?:(?!\s\4(?:\s|$)).)*ET\.parse\()(?=(?:(?!\s\4(?:\s|$)).)*(?:ScheduledReportBpmn|Process)\.bpmn)|node(?:js)?\s+(?:-e|-p|--eval|--print)\s+\\?(["''])(?=(?:\\.|(?!\5)[^\\])*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs))(?=(?:\\.|(?!\5)[^\\])*(?:ScheduledReportBpmn|Process)\.bpmn)|node(?:js)?\s+(?:-e|-p|--eval|--print)\s+\\?(["''])(?:\\.|(?!\6)[^\\])*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs)(?:\\.|(?!\6)[^\\])*\\?\6\s+[^\s;&|]*(?:ScheduledReportBpmn|Process)\.bpmn|node(?:js)?\s+-\s(?=[^\n]*<<-?\s*(["'']?)(\w+)\7)(?=(?:(?!\s\8(?:\s|$)).)*(?:DOMParser|parseFromString|xmldom|fast-xml-parser|xml2js|XMLParser|libxmljs))(?=(?:(?!\s\8(?:\s|$)).)*(?:ScheduledReportBpmn|Process)\.bpmn)|(?:uip|\$UIP)\s+maestro\s+bpmn\s+validate\s+(?:--\S+\s+)*["\'']?[^\s;&|"\'']*(?:ScheduledReportBpmn|Process)'
->>>>>>> 28f182bac (test(uipath-maestro-bpmn): accept a node XML parse and Process.bpmn in the well-formed-XML criteria (#5065))
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
