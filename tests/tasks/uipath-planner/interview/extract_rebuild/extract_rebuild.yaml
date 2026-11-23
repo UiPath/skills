@@ -110,8 +110,9 @@ success_criteria:
       Read the agent's final message after it applied the user's answers to the genome (an automation
       blueprint). It must say which decisions are still open and who answers each (counted by role, or
       each named with its role; configuration values may be counted without a role), and offer to write
-      an SDD (solution design document) for the items whose answerer is not in the session. When no item is left open for another
-      role, saying so meets the second part.
+      an SDD (solution design document) for the items whose answerer is not in the session. When no
+      decision is left open for another role, saying so meets the second part: configuration values the
+      build asks need no role and no SDD offer.
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.0
