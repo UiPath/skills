@@ -3,10 +3,10 @@ description: >
   Smoke: the user asks for the Extract document node by name. Tests that the
   agent adds `uipath.ixp.extract-document-builder` rather than a published IXP
   model node, points its `fileRef` at a declared file input, wires an edge into
-  it, and leaves a flow that validates, without starting an IXP project. Either
-  route counts: CLI commands, or `dynamicExtract()` in `.flow-sdk/` source and
-  compile. The node comes with its processor key; inside a solution its
-  resource file is written too, and outside one pack writes it later.
+  it, and leaves a flow that validates, without starting an IXP project, by
+  the SDK route: `dynamicExtract()` in `.flow-sdk/` source and compile. The
+  node comes with its processor key; inside a solution its resource file is
+  written too, and outside one pack writes it later.
 
   Graded on the final `.flow`, so a node that a later compile from
   `.flow-sdk/` source drops counts as missing. `flow validate`

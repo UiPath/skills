@@ -9,23 +9,20 @@ description: >
   without the flag makes a second author of the same processor, and the flag
   without the key names nothing to run.
 
-  `pre_run` provisions Extract Invoice with the CLI, so the source has a real
-  key and resource file. Extract Invoice's taxonomy and every other original
-  node stay as seeded.
+  The fixture (`_fixtures/InvoiceReaderProvisioned`) is InvoiceReader with
+  Extract Invoice already provisioned: a real key and its resource file.
+  Extract Invoice and every other original node stay as seeded, and the
+  `.flow` is written by the decompile -> merge loop.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:extract-document]
 
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../_fixtures/InvoiceReader
+      path: ../_fixtures/InvoiceReaderProvisioned
       mount_point: InvoiceReader
 reference:
   directory: ../..
-
-pre_run:
-  - command: 'uip maestro flow nodes provision InvoiceReader/InvoiceReader/InvoiceReader.flow --node-id extractInvoice1 --output json'
-    timeout: 120
 
 initial_prompt: |
   In my InvoiceReader flow, add an Extract document node named "Extract
@@ -78,14 +75,22 @@ success_criteria:
     description: "Extract Invoice's taxonomy equals the seeded one"
     command: >-
       python3 $REFERENCE_DIR/_shared/check_extract_document.py --flow-name InvoiceReader --node-id extractInvoice1 unchanged
-      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader/InvoiceReader.flow
+      $REFERENCE_DIR/extract-document/_fixtures/InvoiceReaderProvisioned/InvoiceReader/InvoiceReader.flow
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every other original node, edge, variable and definition is unchanged (Extract Invoice gained its key in pre_run)"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader --changed-node extractInvoice1"
+    description: "Every original node, Extract Invoice included, and every edge, variable and definition is unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReaderProvisioned/InvoiceReader --project InvoiceReader/InvoiceReader"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile -> merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReaderProvisioned/InvoiceReader --project InvoiceReader/InvoiceReader"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

@@ -41,7 +41,6 @@ Commands that differ in Studio Web:
 | --- | --- |
 | `uip maestro flow check`, `compile`, `decompile`, `merge` | Work, inside the page. `decompile` writes no pipeline helper. Pass `merge` only `--original` and `--strict`: `--baseline-from`, `--bindings` and `--library` are rejected here. `check` refuses a compiled `.flow`: use `validate`. |
 | `uip maestro flow validate`, `format` | Work. Never `format` a merged file. |
-| `uip maestro flow nodes …`, `edges …`, `variables …` | Work: they edit the target `.flow` in place; the canvas reloads the open file. |
 | `uip maestro flow registry get`, `search`, `list`, `pull` | Work: the product node registry. |
 | `uip maestro flow extraction check` | Works: it answers whether the tenant of the session can run an Extract document node. |
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
@@ -116,7 +115,7 @@ uip maestro flow check .flow-sdk/<Name>.flow.ts --source --baseline <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```
 
-**An Extract document node** takes this round trip unless merge's in-memory baseline compile fails on it (SDK before 6.118.0); then use the direct commands ([`references/extract-document-node.md`](references/extract-document-node.md)).
+**An Extract document node** takes this round trip too: it decompiles to `dynamicExtract()`, its `processorKey` and taxonomy with it ([`references/extract-document-node.md`](references/extract-document-node.md)). It needs Studio Web's SDK at 6.119.0 or later.
 
 Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` as failures, except the reviewed shared-connection advisory and `err()` diagnostics. If an edit fails `validate`, fix the source and rerun steps 2 to 4: merge restamped it. To drop an edit: [undo](references/brownfield.md#dropping-an-edit). A refused merge writes nothing. `MERGE_ORIGINAL_CHANGED` or no stamp: [the stamp](references/brownfield.md#the-stamp-and-when-merge-refuses).
 

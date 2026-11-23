@@ -6,7 +6,7 @@ description: >
   header field, and sends the whole document back: every existing group,
   field, id, instruction and built-in field type survives the write.
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  No `flow debug`: a locally authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
@@ -90,11 +90,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes with no warnings: the taxonomy went through nodes schema set (a hand edit leaves the new fields without ids)"
+    description: "uip maestro flow validate passes with no warnings: the taxonomy went through compile (a hand edit leaves the new fields without ids) and the node has its processor"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile -> merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/extract-document/_fixtures/InvoiceReader/InvoiceReader --project InvoiceReader/InvoiceReader"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
 run_limits:

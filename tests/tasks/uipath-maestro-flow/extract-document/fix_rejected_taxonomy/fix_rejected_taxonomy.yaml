@@ -1,13 +1,14 @@
 task_id: skill-flow-extract-document-fix-rejected-taxonomy
 description: >
-  Integration: the user supplies a taxonomy file that `nodes schema set`
-  refuses with exit 3. It has a nested group whose parent is missing, a `$ref`
-  to a field type it never defines, and a field name over 64 characters, all
-  listed in `Data.Issues`. Tests that the agent fixes what the write rejects
-  and keeps the user's design: their fields, types, nesting, prompt and
-  instructions, with only the built-in field types.
+  Integration: the user supplies a taxonomy file that `uip maestro flow check`
+  refuses once it is the step's `dynamicExtract()` schema. It has a nested
+  group whose parent is missing (`EXTRACT_TAXONOMY_NESTING`), a `$ref` to a
+  field type it never defines (`EXTRACT_TAXONOMY_REF`), and an over-long field
+  name. Tests that the agent fixes what check rejects and keeps the user's
+  design: their fields, types, nesting, prompt and instructions, with only the
+  built-in field types, and writes it with the decompile -> merge loop.
 
-  No `flow debug`: a CLI-authored Extract document node extracts nothing
+  No `flow debug`: a locally authored Extract document node extracts nothing
   until the flow is saved once in Studio Web.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:extract-document]
@@ -98,11 +99,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes with no warnings: the fixed taxonomy went through nodes schema set (a hand edit leaves the fields without ids)"
+    description: "uip maestro flow validate passes with no warnings: the fixed taxonomy went through compile (a hand edit leaves the fields without ids) and the node has its processor"
     command: python3 $REFERENCE_DIR/_shared/validate_flow.py --no-warnings LicenceReader/LicenceReader/LicenceReader.flow
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile -> merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/extract-document/_fixtures/LicenceReader/LicenceReader --project LicenceReader/LicenceReader"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
 run_limits:
