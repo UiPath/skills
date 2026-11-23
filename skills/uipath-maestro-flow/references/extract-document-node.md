@@ -179,11 +179,7 @@ uip maestro flow nodes provision <file> --output json
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 
-<<<<<<< HEAD
-A second node with identical fields and model settings shares the existing node's processor rather than copying its taxonomy; supply both inputs at creation, since nothing adds them later:
-=======
 A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; never a new processor synced to the same taxonomy and model. Supply both inputs at creation, since nothing adds them later:
->>>>>>> be2035e1a (Extract document flow: route a shared model to the read-only processor mirror (#5048))
 
 ```bash
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --position <x>,<y> --output json
