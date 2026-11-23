@@ -2,6 +2,8 @@
 
 *Commands: `uip maestro flow extraction check`, `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
+Add this node to a new flow only when the user names it ([Which extraction node the user wants](#which-extraction-node-the-user-wants)). "We don't have a trained model yet" does not name it; that request goes to [ixp.md](ixp.md).
+
 An Extract document node (`uipath.ixp.extract-document-builder`) extracts named fields using taxonomy embedded in the `.flow`; it has no trained model or IXP project. Add, wire, and validate it; design taxonomy in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
