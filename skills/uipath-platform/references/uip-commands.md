@@ -51,7 +51,8 @@ iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
 | `uip login status` | Show login status, base URL, organization and tenant names and IDs, expiry |
-| `uip login refresh` | Refresh the session; with `--output json` returns `Data.AccessToken` for REST calls the CLI does not cover. Always pipe it into a variable; never run it bare or print its output |
+| `uip login refresh` | Refresh the session proactively. Not for REST calls: its JSON output includes the access token |
+| `uip api <SERVICE_PATH>` | Call a REST endpoint the CLI does not cover with the session (token never shown). See SKILL.md § Session Details and REST Authentication |
 | `uip login tenant list` | List available tenants |
 | `uip login tenant set <name>` | Set active tenant |
 | `uip logout` | End session and clear tokens |
