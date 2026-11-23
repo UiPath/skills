@@ -69,7 +69,7 @@ Use this for connectors with basic, API key, personal access token or custom aut
 | 0, `ConnectionAuthorizationPending` | The auth type needs a browser. No value was sent | Give the person `Data.AuthUrl`. |
 | 1, `not_supported` | You sent a value to an auth type that needs a browser. It was not used | Give the person `Data.AuthUrl`. |
 | 1, `not_enabled` | Not available on this tenant | Use the browser flow named in `Instructions`. |
-| 1, `rate_limited` | Too many tries | Wait for the `Retry-After` time. Do not loop. |
+| 1, `rate_limited` | Too many tries, or 5 wrong credentials in 15 minutes (`Message` says which) | Wait `Data.RetryAfterSeconds`. Do not loop. After a wrong-credential lockout, fix the credential first. |
 | 1, `timeout`, or `Instructions` say "result is unknown" (a gateway timeout, a 5xx or a lost connection) | The result is not known | Do not run the sign-in again. Run the check command in `Instructions`. |
 | 1, `execution_failed` with `Retry: RetryWillNotFix` | A pending sign-in failed | Ask the person to check every value. Then run it once more. |
 | 1, `server_error` | Vendor or platform failure | Retry once later. Give `SessionId` and `TraceId` to the person. |
@@ -78,7 +78,6 @@ Use this for connectors with basic, API key, personal access token or custom aut
 | 3, vendor text, `Data.VendorStatus` 401 or 403 | The vendor rejected the credential | Ask the person to check the credential. Do not retry with the same values. |
 | 3, vendor text, another `Data.VendorStatus` (400, 404) | The vendor rejected a value, such as a URL or host | Ask the person to check the URL and host fields first. |
 | 3, name taken | A connection with that `--name` exists | Use another `--name`, or use `Data.ExistingConnectionId`. |
-| 3, `invalid_state` | The connection is Disabled: its tenant was deleted | Do not retry. Create a new connection. |
 | 3, a message that names an option | A wrong option. Nothing was sent | Fix the option and run it again. |
 
 Check `Instructions` for "result is unknown" before you apply the `server_error` row.
