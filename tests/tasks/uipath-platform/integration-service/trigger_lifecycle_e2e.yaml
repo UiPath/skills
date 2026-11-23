@@ -3,9 +3,9 @@ description: >
   E2E test (mode:operate): agent uses the uipath-platform skill to operate a
   deployed Integration Service event trigger — fire it by creating a record
   on the watched object, confirm the job, read failed fire attempts, then
-  disable and delete it. There is no CLI verb for disable/delete on an IS
-  event trigger, so the agent must route those to Orchestrator instead of
-  misusing `uip or triggers update|delete`.
+  disable and delete it with `uip or triggers update|delete --type event`.
+  Without `--type event` those verbs reach only time, queue and HTTP API
+  triggers, so the agent must pass it.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, integration-service, connector, ipe]
 
 initial_prompt: |
@@ -50,8 +50,24 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent disabled the event trigger with update --type event --disabled"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+update\s+["'']?11111111-2222-3333-4444-555555555555(?=[^;&|\n]*--type[\s="'']+event)(?=[^;&|\n]*--disabled)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the event trigger with delete --type event --yes"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+delete\s+["'']?11111111-2222-3333-4444-555555555555(?=[^;&|\n]*--type[\s="'']+event)(?=[^;&|\n]*--yes)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
-    description: "Agent did not disable/delete the IS event trigger through the HTTP API-trigger verbs — there is no CLI path; toggle/delete it in Orchestrator"
+    description: "Agent did not call update/delete on the event trigger without --type event, which reaches only time, queue and HTTP API triggers"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+triggers\s+(update|delete)\b(?![\s\S]*--type[\s=]+event)'
     weight: 2.0
