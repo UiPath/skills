@@ -455,7 +455,7 @@ binding half, which is the same for every connector-backed node.
   .var('rows', 'array', { default: [] })
   // …
   .exclusiveGateway('nextPage')
-  .dataService('page', { ...df, op: 'query', sortBy: 'Id', ascending: true, start: '=vars.pageStart', limit: 1000 })
+  .dataService('page', { ...df, op: 'query', sortBy: 'Id', ascending: true, start: '=js:vars.pageStart', limit: 1000 })
   .task('collect', { set: { rows: '=js:vars.rows.concat(vars.page_response)', pageStart: '=js:vars.pageStart + 1000' } })
   .choose('more', [
     { when: '=js:vars.page_response.length === 1000', body: (b) => b.goto('nextPage') },
@@ -466,7 +466,7 @@ binding half, which is the same for every connector-backed node.
   Sort on a field that never changes, such as `Id`, or a page repeats or skips records. Keep the `where` the design gives on `page`. The gateway is the loop's join: without it `check` warns `FAKE_JOIN`.
   The loop is the design's one read; name it on the final report's `Assumed:` line (Critical Rule 8).
 <!--skill-flavor:sdk-df-query-paging:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.120.0 or later; an older `check` refuses `start: '=vars.pageStart'` with `TS2322`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and check again.
+  Needs `@uipath/maestro-builder-sdk` 6.120.0 or later; an older `check` refuses `start: '=js:vars.pageStart'` with `TS2322`, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and check again.
 <!--skill-flavor:sdk-df-query-paging:end-->
 
 <!-- RULE:bpmn.connector.data-service-folder-entity -->

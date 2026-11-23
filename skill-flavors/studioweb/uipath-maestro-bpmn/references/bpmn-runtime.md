@@ -7,7 +7,7 @@
 <!--skill-flavor:folder-entity-resources:end-->
 
 <!--skill-flavor:sdk-df-query-paging:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.120.0 or later. Studio Web ships its own SDK: when `check` refuses `start: '=vars.pageStart'` with `TS2322`, tell the user that this Studio Web build cannot page a Data Fabric query, so the read returns only its first 1,000 records.
+  Needs `@uipath/maestro-builder-sdk` 6.120.0 or later. Studio Web ships its own SDK: when `check` refuses `start: '=js:vars.pageStart'` with `TS2322`, tell the user that this Studio Web build cannot page a Data Fabric query, so the read returns only its first 1,000 records.
 <!--skill-flavor:sdk-df-query-paging:end-->
 
 <!--skill-flavor:sdk-df-folder-v2:start-->

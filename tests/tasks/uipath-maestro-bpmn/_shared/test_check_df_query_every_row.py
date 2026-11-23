@@ -14,7 +14,7 @@ _SPEC = importlib.util.spec_from_file_location(
 checker = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(checker)
 
-PAGED_QUERY = '{"start":"=vars.pageStart","limit":1000,"isAscending":true}'
+PAGED_QUERY = '{"start":"=js:vars.pageStart","limit":1000,"isAscending":true}'
 LOOP = [("start", "nextPage"), ("nextPage", "page"), ("page", "collect"), ("collect", "more"), ("more", "nextPage"), ("more", "done")]
 STRAIGHT = [("start", "page"), ("page", "done")]
 
@@ -42,11 +42,11 @@ def _process(query: str, flows: list[tuple[str, str]], body: str = '{"_sortField
     ("query", "flows", "paged"),
     [
         (PAGED_QUERY, LOOP, True),
-        ('{"start":"=vars.pageStart","limit":"=vars.pageSize"}', LOOP, True),
+        ('{"start":"=js:vars.pageStart","limit":"=js:vars.pageSize"}', LOOP, True),
         ('{"start":0,"limit":1000}', STRAIGHT, False),
         (PAGED_QUERY, STRAIGHT, False),
         ('{"start":0,"limit":1000}', LOOP, False),
-        ('{"start":"=vars.pageStart","limit":5000}', LOOP, False),
+        ('{"start":"=js:vars.pageStart","limit":5000}', LOOP, False),
     ],
     ids=["paged", "expression-limit", "one-query", "no-loop", "fixed-start", "over-cap"],
 )
@@ -60,7 +60,7 @@ def test_paged(query: str, flows: list[tuple[str, str]], paged: bool) -> None:
     ("body", "query", "sorted_"),
     [
         ('{"_sortFieldName":"Id"}', PAGED_QUERY, True),
-        ("{}", '{"start":"=vars.pageStart","limit":1000,"sortBy":"Id"}', True),
+        ("{}", '{"start":"=js:vars.pageStart","limit":1000,"sortBy":"Id"}', True),
         ("{}", PAGED_QUERY, False),
     ],
     ids=["body-sort", "query-sort", "unsorted"],
