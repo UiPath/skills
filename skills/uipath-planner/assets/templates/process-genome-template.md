@@ -69,7 +69,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Platform Dependencies
 
-{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
+{One table per kind of resource the process uses, in this order; leave out a kind it does not use. Added by, Worked by, Used by, Written by and Read by name components. A value the source or description does not show is classed as the genome questions guide's § Open Decisions classes a point.}
 
 ### Queues
 
@@ -122,7 +122,7 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 ## Open Decisions
 
-{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (format guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
+{Points left to a person that span components; each component's own live in its genome. Numbered once and never renumbered (genome questions guide § Open Decisions); a component's marked line names one of these as `*[Inferred: process D1]*`.}
 
 1. {The decision as a question}? ({business outcome | run behaviour | reading | material}; answered by: {role}; {builds now | recommended | reading | until answered}: {…}; instead: {the other option}) — {the components and steps it spans}
 
