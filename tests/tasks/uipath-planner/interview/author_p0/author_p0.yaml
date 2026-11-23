@@ -97,7 +97,9 @@ success_criteria:
       2. No question before writing asks only for an environment value (a mailbox, a folder, a host, an
          account) or only for what another role answers (how a robot reaches a system, asked on its own).
          A question that asks which system is used and how it is reached asks the user's part. A question
-         about a preferences file (team standing answers and development standards) is allowed.
+         about a preferences file (team standing answers and development standards) is allowed, and so
+         is where the automation runs (Automation Cloud, Automation Suite, standalone Orchestrator),
+         which decides the products it can use.
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
@@ -136,9 +138,11 @@ success_criteria:
     prompt: |
       Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
       1. It counts the genome's open decisions by the role that answers them (the process owner, the
-         system's owner …), or says that none is open. Configuration values need no role; when every
-         decision belongs to one role, saying so is the count.
-      2. It asks none of the open questions itself.
+         system's owner …), or says that none is open. Configuration values need no role, and those
+         listed beside the decisions are not part of their count; when every decision belongs to one
+         role, saying so is the count.
+      2. It asks none of the open questions itself. Ending on "Want to adjust anything?", or offering
+         the interview, an SDD or edits, is not asking an open question.
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.0

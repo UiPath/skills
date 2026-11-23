@@ -115,8 +115,8 @@ success_criteria:
     prompt: |
       Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
       it counts the genome's open decisions by the role that answers them, or says that none is open;
-      0.0 otherwise. Configuration values need no role; when every decision belongs to one role, saying
-      so is the count.
+      0.0 otherwise. Configuration values need no role, and those listed beside the decisions are not
+      part of their count; when every decision belongs to one role, saying so is the count.
     weight: 2.0
     pass_threshold: 1.0
 

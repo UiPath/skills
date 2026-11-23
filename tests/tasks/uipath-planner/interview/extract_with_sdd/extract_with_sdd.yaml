@@ -4,9 +4,9 @@ description: >
   for the SDD too, by a user who says they are the process owner. The SDD is written beside the genome.
   After the strict check the interview is offered on the SDD's items, with no roles question since the
   request names the role; the answers are written into the SDD's items and applied to the genome, and
-  the genome passes the strict check with the SDD's `Genome` row current. The closing names the genome
-  and the SDD, and the open counts by group and by role. Nothing is built. A simulated process owner
-  answers.
+  the genome passes the strict check with the SDD's `Genome` row current. The closing counts what is
+  open by role; naming the two files and the counts by group are advisory. Nothing is built. A
+  simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -99,31 +99,34 @@ success_criteria:
       1. Once the genome and the SDD are written, one question asks how the user wants to answer the open
          items, and one of its options leaves them all open for now.
       2. The agent never asks which roles the user answers for: the request already named the role.
-      3. The items then asked are the process owner's, each by its id.
+      3. The items then asked are the process owner's, each by its id. The "Defects the rebuild fixes"
+         block, which has no id, and a question about how to go on after a batch need none.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts what is open by group and by role"
+    description: "The closing counts what is open by role"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers. It must count the items still
-      open both by group (business decisions, material, configuration values …) and by the role that
-      answers them. A group shown by the items' ids or labels (CQ1–CQ10 for configuration values, the
-      preferences item) counts as named. Score 1.0 when both counts are there, 0.5 with one, 0.0 with
-      neither.
+      Read the agent's final message after it applied the user's answers. Score 1.0 when it counts the
+      items still open by the role that answers them, or says that none is open; 0.0 otherwise.
     weight: 2.0
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Advisory: the closing names both files"
+    description: "Advisory: the closing names both files and counts what is open by group"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers. Score 1.0 when it names the
-      genome file and the SDD (solution design document) file; 0.0 otherwise.
+      Read the agent's final message after it applied the user's answers. Check two things:
+      1. It names the genome file and the SDD (solution design document) file.
+      2. It counts the items still open by group (business decisions, material, configuration values …).
+         A group shown by the items' ids or labels (CQ1–CQ10 for configuration values, the preferences
+         item) counts as named.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 1.0
     pass_threshold: 0

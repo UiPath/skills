@@ -109,8 +109,9 @@ success_criteria:
       3. Before scope is confirmed, no separate round of up to five clarifying questions is asked on top
          of the interview, and no question asks only for an environment value (a mailbox, a folder, a
          host, an account) or only for what another role answers (how a robot reaches a system, asked on
-         its own). A question about a preferences file is allowed. A later round, once the SDD's sections
-         are written, is graded elsewhere: ignore it here.
+         its own). A question about a preferences file is allowed, and so is where the automation runs
+         (Automation Cloud, Automation Suite, standalone Orchestrator). A later round, once the SDD's
+         sections are written, is graded elsewhere: ignore it here.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5

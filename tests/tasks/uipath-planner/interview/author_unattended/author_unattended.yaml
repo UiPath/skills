@@ -68,7 +68,8 @@ success_criteria:
       Score 1.0 when it counts the genome's open decisions, split by who answers them (a role such as the
       process owner or the system's owner), or says that none is open; 0.0 otherwise. Decisions counted
       by tier or by group alone, with no role, are not counted by role; configuration values need no
-      role. Do not grade the genome itself.
+      role, and those listed beside the decisions are not part of their count. Do not grade the genome
+      itself.
     weight: 2.0
     pass_threshold: 1.0
 
