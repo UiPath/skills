@@ -9,9 +9,10 @@ A checked data model is an ontology that passed its check: `object-model.json` w
 1. **The file is a proposal until the Developer approves it.** Agent proposes which entities realize each class and which classes each entity carries (n:m); Developer approves (author-guide Step 8). Never present the n:m as decided.
 2. **One native per class by default**, role `owner`, every property one field. Split a class across entities (`part`), add a `junction`, or carry another class's fields (`copy`) only when the process context or the sources show it; name the evidence in the review.
 3. **A class with no source of record gets `"kind": "review"`.** Propose its fields anyway — they come out mostly the same whether it ends native or federated; the Developer settles the kind. The build refuses a `review` entity.
-4. **Never invent a length, precision or required flag.** STRING length from `sh:maxLength`, required from `sh:minCount 1`, DECIMAL precision from the sources or the process context; missing → open question, not a default.
-5. **Names the platform accepts.** Field names: letters, digits, `_`, starting with a letter; never a C# or VB keyword in any case (`event`, `virtual`, `date`, `string`) and never `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner` — rename and keep the property in `property`. Choice-set names: letters and digits. Choice value names: letters and digits starting with a letter; the code as written goes in `displayName`.
-6. **A federated entity never selects one name from two sources** — rename one (`<source><Field>`); both sides select the join field.
+4. **Never invent a length or required flag.** STRING length from `sh:maxLength`, required from `sh:minCount 1`; missing → open question, not a default.
+5. **DECIMAL precision is never asked.** Take it from the sources or the process context when they show it; otherwise `2`. List every defaulted precision in the review, where the Developer can change it.
+6. **Names the platform accepts.** Field names: letters, digits, `_`, starting with a letter; never a C# or VB keyword in any case (`event`, `virtual`, `date`, `string`) and never `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner` — rename and keep the property in `property`. Choice-set names: letters and digits. Choice value names: letters and digits starting with a letter; the code as written goes in `displayName`.
+7. **A federated entity never selects one name from two sources** — rename one (`<source><Field>`); both sides select the join field.
 
 ## Mapping from the data model
 
@@ -19,7 +20,7 @@ A checked data model is an ontology that passed its check: `object-model.json` w
 |---|---|
 | `xsd:string` + `sh:maxLength n` | `"type": "STRING", "length": n` |
 | `xsd:integer` | `"type": "DECIMAL", "precision": 0` |
-| `xsd:decimal` | `"type": "DECIMAL", "precision": <from sources>` |
+| `xsd:decimal` | `"type": "DECIMAL", "precision": <from sources, else 2>` |
 | `xsd:boolean` / `xsd:date` / `xsd:dateTime` | `BOOLEAN` / `DATE` / `DATETIME_WITH_TZ` |
 | `sh:in (…)` | a choice set (values in order) + `"type": "CHOICE_SET_SINGLE", "choiceSet": "<Class><Property>"` |
 | `sh:minCount 1` | `"required": true` |
@@ -78,5 +79,6 @@ Show the Developer, before offering edits:
 1. **Trace:** one row per class → entity, role; one row per property → entity field.
 2. **Every `review` kind** with the question "native (in UiPath) or federated (external system)?".
 3. **Every split, junction or copy** with its evidence.
+4. **Every defaulted precision** (rule 5), as one list.
 
 Wait for approval. Change the file on each answer; the genome's Data Fabric table follows the file.
