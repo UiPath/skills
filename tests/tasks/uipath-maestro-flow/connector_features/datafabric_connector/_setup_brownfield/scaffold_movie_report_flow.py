@@ -7,7 +7,7 @@ Runs from `pre_run` inside the sandbox cwd. Requires an authenticated `uip`
 session and a healthy `uipath-uipath-dataservice` connection.
 
 The flow body is a committed fixture (`movie_report_flow/`), not built with
-CLI node commands: those (`flow node add` / `node configure`) are retired.
+CLI node commands: those (`flow node add` / `node configure`) are being retired.
 The fixture is what `node add` + `node configure` + `format` wrote on
 2026-11-23 (CLI 1.206.0), with the tenant values replaced by placeholders.
 This script fills them in from the live connection, so the fixture works on
@@ -17,6 +17,15 @@ any tenant:
   __DF_FOLDER_KEY__       the connection's FolderKey
   __DF_CONNECTION_NAME__  the connection's Name (also the resource file name)
   __FLOW_ID__             the id `flow init` gave this project
+  __START_UNIQUE_ID__     the manual trigger's `uniqueId` from `flow init`
+  __ENTRY_POINT_ID__      the manual trigger's `entryPointId` from `flow init`
+
+Values are JSON-string-escaped before they are pasted into the templates.
+The fixture freezes the connector `definitions[]` and `connectorVersion` of
+the capture day; that is fine for a brownfield starting point (the checker
+compares against pre_state.flow), but it will not pick up later connector or
+registry changes on its own. Regenerate it if the task starts failing on a
+stale definition.
 
 After this script exits:
   - MovieReportSolution/MovieReportFlow/MovieReportFlow.flow exists and
@@ -30,6 +39,7 @@ The agent's job (per the prompt) is to set both, then revert to this
 state. The verifier's job is to prove the final state equals this state.
 """
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -72,8 +82,8 @@ def render(template, values):
     """Read a fixture template and fill in every placeholder."""
     text = (FIXTURE / template).read_text()
     for key, value in values.items():
-        text = text.replace(key, value)
-    if "__DF_" in text or "__FLOW_ID__" in text:
+        text = text.replace(key, json.dumps(value)[1:-1])
+    if re.search(r"__[A-Z_]+__", text):
         print(f"FAIL: unfilled placeholder in {template}", file=sys.stderr)
         sys.exit(1)
     return text
@@ -92,12 +102,18 @@ def main():
     os.chdir("MovieReportFlow")
 
     with open("MovieReportFlow.flow") as f:
-        flow_id = json.load(f)["id"]
+        inited = json.load(f)
+    start = next(n for n in inited["nodes"] if n.get("type") == "core.trigger.manual")
+    if "/" in conn["Name"] or "\\" in conn["Name"]:
+        print(f"FAIL: connection name {conn['Name']!r} cannot be a file name", file=sys.stderr)
+        sys.exit(1)
     values = {
         "__DF_CONNECTION_ID__": conn["Id"],
         "__DF_FOLDER_KEY__": conn["FolderKey"],
         "__DF_CONNECTION_NAME__": conn["Name"],
-        "__FLOW_ID__": flow_id,
+        "__FLOW_ID__": inited["id"],
+        "__START_UNIQUE_ID__": start["uniqueId"],
+        "__ENTRY_POINT_ID__": start["inputs"]["entryPointId"],
     }
     Path("MovieReportFlow.flow").write_text(
         render("MovieReportFlow.flow.template.json", values))

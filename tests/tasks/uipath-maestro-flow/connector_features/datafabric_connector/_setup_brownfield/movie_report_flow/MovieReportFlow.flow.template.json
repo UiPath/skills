@@ -5,14 +5,14 @@
   "nodes": [
     {
       "id": "start",
-      "uniqueId": "cd95ad0b-b9fa-4870-af91-cb994dfee837",
+      "uniqueId": "__START_UNIQUE_ID__",
       "type": "core.trigger.manual",
       "typeVersion": "1.0",
       "display": {
         "label": "Manual trigger"
       },
       "inputs": {
-        "entryPointId": "7fc9fb01-6c9f-474e-b5f9-d6449d7d6d9f",
+        "entryPointId": "__ENTRY_POINT_ID__",
         "isDefaultEntryPoint": true
       }
     },
