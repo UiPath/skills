@@ -539,15 +539,18 @@ jobs:
           # override needs: to bash its `[...]` list is a character class.
           args=(-e experiments/nightly.yaml)
 
-          # Grader / pre-run auth for EVERY agent. The ROPC token is mounted at
+          # Grader / pre-run auth for every agent. The ROPC token is mounted at
           # /.uipath/.auth, but the in-container `uip` looks under its own
-          # $HOME/.uipath, so it reports "Not logged in" (exit 2). Hand it the
-          # token through the CLI's env-auth instead, plus the tenant coordinates
-          # live e2e graders read (escalation_is.py configured_target). Values
-          # come from ~/.uipath/.auth; the UIPATH_CLI_* names are already in
-          # nightly.yaml's env_passthrough_extra, the UIPATH_* ones are added
-          # below. The token is a frozen copy: tasks that start after the ~1h
-          # ROPC TTL still see it expired (no refresher loop here).
+          # $HOME/.uipath, so it reports "Not logged in" (exit 2). Pass the token
+          # through the CLI's env-auth instead, plus the tenant coordinates live
+          # e2e graders read (escalation_is.py configured_target). Values come
+          # from ~/.uipath/.auth. The UIPATH_CLI_* names are already in
+          # nightly.yaml's env_passthrough_extra; UIPATH_URL, UIPATH_ORGANIZATION_ID
+          # and UIPATH_TENANT_ID are added via passthrough_extra. Every agent type
+          # (claude/codex included) now sees the bot token in its env; it was
+          # already readable through the /.uipath mount. The token is a frozen
+          # copy: tasks starting after the ~1h ROPC TTL see it expired (no
+          # refresher loop here).
           passthrough_extra="UIPATH_URL,UIPATH_ORGANIZATION_ID,UIPATH_TENANT_ID"
           AUTH_FILE="$HOME/.uipath/.auth"
           for pair in UIPATH_CLI_AUTH_TOKEN:UIPATH_ACCESS_TOKEN \
