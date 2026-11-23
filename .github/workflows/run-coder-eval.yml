@@ -966,7 +966,6 @@ jobs:
             /tmp/runs/**/task.html
             /tmp/runs/**/task.json
             /tmp/runs/**/task.log
-            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
