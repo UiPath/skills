@@ -53,12 +53,12 @@ make from syntax alone. Exact signatures remain in the generated API.
   form and do not add an app to silence it.
 
 <!-- RULE:case.action.designer-outputs -->
-- The Case Designer saves every action task with three outputs besides its
-  form fields: `Action`, the outcome the assignee picked, with the app's
-  outcomes as its `options` (`OUTCOMES` below; a coded action app's are the
-  property names under `outcomes.properties` in its `action-schema.json`);
-  `hitlTask`, the task; and `Error`. `compile` adds none of them, so declare
-  them with the form fields. On the first action task:
+- The Case Designer gives an action task that opens an app three outputs
+  besides the app's own fields: `Action`, the outcome the assignee picked,
+  with the app's outcomes as its `options` (`OUTCOMES` below; a coded action
+  app's are the property names under `outcomes.properties` in its
+  `action-schema.json`); `hitlTask`, the task; and `Error`. `compile` adds
+  none of them, so declare them on each such task you add:
 
   ```ts
   .action({ ..., outputs: [
@@ -69,12 +69,18 @@ make from syntax alone. Exact signatures remain in the generated API.
   ] })
   ```
 
-  Each action task gets its own three, numbered as the designer numbers them:
-  `action2`, `hitlTask2`, `error2` on the second, and so on. A form field may
-  write the same variable on several tasks. Set every `value`: left out,
-  `compile` writes the numbered names, but `check` declares only the first
-  task's, so it refuses `vars.action2` and suggests `vars.action`. A rule
-  routing on the second task's outcome reads `vars.action2`.
+  Each of the three writes a variable of its own: set its `value` to a name
+  no task output or case variable in the plan holds, the camelCased name or,
+  once that is taken, the first free one suffixed from `2` (`action2`,
+  `error3`), as the Designer numbers them. In an existing plan, take the
+  names in use from every `id` and `var` under its tasks' `outputs`: a
+  decompiled source omits a connector task's, whose `Error` may hold
+  `error`. A name in use makes two tasks write one variable, or `compile`
+  renames the saved output that held it. Left out, `compile` numbers the row
+  by task order, and in an existing plan can hand it a saved output's name.
+  A form field's `value` may name the same variable on several tasks.
+
+  Keep a saved task's outputs as saved: an older save may hold only `Action`.
 
 ## Action recipients and the go-live trap
 
