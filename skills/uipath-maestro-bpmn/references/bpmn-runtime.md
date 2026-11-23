@@ -449,7 +449,7 @@ binding half, which is the same for every connector-backed node.
 
 <!-- RULE:bpmn.connector.data-service-paging -->
 - A `query` returns at most `limit` records (`100` when omitted), and `limit` stops at `1000`: the connector returns the first 1,000 and nothing says the rest were dropped.
-  When the design reads every record ("every row", "all open invoices") of an entity that can hold more than 1,000, page it, never one query:
+  When the design reads every record ("every row", "all open invoices"), page it unless the design caps the entity at 1,000 records; never one query:
   ```ts
   .var('pageStart', 'integer', { default: 0 })
   .var('rows', 'array', { default: [] })
