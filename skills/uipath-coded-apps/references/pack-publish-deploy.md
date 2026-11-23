@@ -403,12 +403,12 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 
 | Delete | Command |
 |--------|---------|
-| Deployed app (one folder) | `uip codedapp delete --display-name "<DISPLAY_NAME>" --folder-key <FOLDER_KEY> --yes --output json` |
+| Deployed app (one folder) | `uip codedapp delete --display-name "<DISPLAY_NAME>" --folder-path "<FOLDER_PATH>" --yes --output json` |
 | Published package | `uip or packages delete "<PACKAGE_ID>:<VERSION>" --yes --output json` |
 
-`<PACKAGE_ID>` is the id in the `.nupkg` file name (`.uipath/<PACKAGE_ID>.<VERSION>.nupkg`). List versions with `uip or packages versions <PACKAGE_ID> --output json`. For a package published with `--personal-workspace`, add `--folder-key <PERSONAL_WORKSPACE_KEY>` to both `uip or packages` commands. `uip or` commands require the Orchestrator tool: `uip tools install @uipath/orchestrator-tool`.
+`<PACKAGE_ID>` is the id in the `.nupkg` file name (`.uipath/<PACKAGE_ID>.<VERSION>.nupkg`). List versions with `uip or packages versions <PACKAGE_ID> --output json`. For a package published with `--personal-workspace`, add `--folder-key <PERSONAL_WORKSPACE_KEY>` to both `uip or packages` commands. `uip or` commands require the Orchestrator tool (see the prerequisite under [Folder](#folder)).
 
-Deleting the package also removes the matching published app version. Existing deployments are not removed, so delete them first.
+Deleting the package also removes the matching published app version, except in PCI US and PCI Japan. Existing deployments are not removed, so delete them first.
 
 ---
 

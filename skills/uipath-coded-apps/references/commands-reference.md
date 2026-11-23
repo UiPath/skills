@@ -289,17 +289,18 @@ UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 
 ## `uip codedapp delete`
 
-Delete a **deployed** coded app from one folder. Published package and deployments in other folders are not affected. Requires codedapp tool `>= 1.202.2`.
+Delete a **deployed** coded app from one folder. Published package and deployments in other folders are not affected.
 
 ```bash
-uip codedapp delete --display-name "<DISPLAY_NAME>" --folder-key <FOLDER_KEY> --yes --output json
+uip codedapp delete --display-name "<DISPLAY_NAME>" --folder-path "<FOLDER_PATH>" --yes --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--display-name <name>` | Display name of the deployed app. Exact, case-sensitive match (required) | — |
+| `--display-name <name>` | Display name of the deployed app. Exact, case-sensitive match (required) | none |
+| `--folder-path <path>` | Folder path (`Shared`, `Finance/Invoicing`) or a unique folder display name, resolved to the folder key by the CLI. Mutually exclusive with `--folder-key` | none |
 | `--folder-key <key>` | Folder holding the deployment | From `UIPATH_FOLDER_KEY` env var |
-| `-y, --yes` | Confirm deletion (required — CLI never prompts) | — |
+| `-y, --yes` | Confirm deletion (required — CLI never prompts) | none |
 
 To delete the **published package**, see [pack-publish-deploy.md](pack-publish-deploy.md#deleting-an-app).
 
