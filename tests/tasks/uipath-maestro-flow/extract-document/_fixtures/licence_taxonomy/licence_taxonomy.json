@@ -22,7 +22,7 @@
         "properties": {
           "Ring Number": { "$ref": "#/$defs/ft-exact-text", "description": "The ring number fitted to the bird." },
           "Species": { "$ref": "#/$defs/ft-inferred-text", "description": "The species of the bird, as printed." },
-          "Year in which the bird hatched, as printed in the year of hatch box": { "$ref": "#/$defs/ft-number", "description": "The year the bird hatched." }
+          "Year in which the bird hatched, as printed in the year of hatch box on the front of the licence, or on the attached ring certificate when that box is left blank": { "$ref": "#/$defs/ft-number", "description": "The year the bird hatched." }
         }
       }
     },

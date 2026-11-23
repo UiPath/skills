@@ -2,7 +2,7 @@ task_id: skill-flow-extract-document-fix-rejected-taxonomy
 description: >
   Integration: the user supplies a taxonomy file that `nodes schema set`
   refuses with exit 3. It has a nested group whose parent is missing, a `$ref`
-  to a field type it never defines, and a field name over 64 characters, all
+  to a field type it never defines, and a field name over 128 characters, all
   listed in `Data.Issues`. Tests that the agent fixes what the write rejects
   and keeps the user's design: their fields, types, nesting, prompt and
   instructions, with only the built-in field types.
