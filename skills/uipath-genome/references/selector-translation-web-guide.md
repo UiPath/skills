@@ -4,7 +4,7 @@ The web's side of [selector-translation-guide.md](selector-translation-guide.md)
 
 ## Rule 1 — web
 
-**The browser's `app`.** A source recording only "Chrome", "Edge" or "IE" as browser choice maps to the executable the `html` attribute reference lists for it; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
+**The browser's `app`.** A source recording only "Chrome", "Edge" or "IE" as browser choice maps to the executable the `html` attribute reference lists for it, and a page the source runs in Edge's Internet Explorer mode maps to `msedge.exe`, never `iexplore.exe`, with the `html` and `webctrl` tags of any page; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
 
 **A container without a tag of its own.** `parentid`, `parentname` and `parentclass` say "inside that container" on the element's own tag (`parentclass='*infobox*'`, `parentid='p-search'`), where the container's tag would be needed only for scoping.
 
