@@ -352,9 +352,10 @@ A local stub starts from the kind's defaults: a queue has automatic retry on, `m
 
 ### `--source local` does not check the kind
 
-Only queues, assets and buckets can be virtual (created by the deploy). Processes, connections, apps, indexes and entities must already exist. `resources add --source local` does **not** enforce this: it prints `Result: Success` and writes a stub for any kind, and the deploy fails later. Catch it early:
+Only queues, assets, buckets and connections can be virtual (created by the deploy); a connection needs its `authenticationType` set ([Virtualizable vs non-virtualizable](#virtualizable-vs-non-virtualizable-resources)). Processes, apps, indexes and entities must already exist. `resources add --source local` does **not** enforce this: it prints `Result: Success` and writes a stub for any kind, and the deploy fails later. Catch it early:
 
-- Run `uip solution resources refresh --output json`. It checks, and warns per resource: `Link it before deploy: uip solution deploy config link <file> "<name>" --name <existing-name>`. That warning means the resource cannot be virtual: link it to the existing one at deploy with `deploy config link` ([Link to an Existing Orchestrator Resource](pack-and-deploy.md#link-to-an-existing-orchestrator-resource)), or import it with `--source remote`.
+- Run `uip solution resources refresh --output json`. It checks, and warns per resource: `Link it before deploy: uip solution deploy config link <file> "<name>" --name <existing-name>`. That warning means the resource cannot be virtual: link it to the existing one at deploy with `deploy config link` ([Link to an Existing Orchestrator Resource](pack-and-deploy.md#link-to-an-existing-orchestrator-resource)), or import it with `--source remote`. A connection never gets that warning: a declared connection gets `Connection <key> not found in Resource Catalog`, expected until the deploy creates it.
+- A local connection's stub has an empty `authenticationType`, which deploy refuses before install (`[CNS1055]`). Set it, with the connector, right after `add`: `uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>"}' --output json` (`<CONNECTOR_VERSION>` is `Data[0].Version` from `uip is connectors metadata <CONNECTOR_KEY> --output json`). `AuthenticateAfterDeployment`: the deploy creates the connection unauthenticated and the deployment ends `NeedsSetupToActivate` (`[CNS1072]`). `ConfigurableByUsers`: the deploy creates no connection and the deployment activates.
 - For a kind Orchestrator owns, confirm the target exists first: `uip solution resources list --source remote --kind <kind> --output json`.
 
 Adding a name that already exists locally with a different `--type` fails; it does not return the existing resource.
@@ -734,8 +735,8 @@ Adding a project does not automatically sync its resources. The refresh scans al
 
 | Virtualizable | Non-virtualizable |
 |---------------|-------------------|
-| Queue, Asset, Bucket | Process, Connection, App |
-| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator/IS/Apps resource |
+| Queue, Asset, Bucket, Connection | Process, App |
+| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator/Apps resource |
 
 If a non-virtualizable resource isn't found in cloud, refresh emits a warning and the deployment will fail until the resource is provisioned (or the binding is fixed/removed).
 
