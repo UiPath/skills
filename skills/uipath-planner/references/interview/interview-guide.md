@@ -83,7 +83,7 @@ An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](
 
 ## The Offer
 
-Before writing, one structured question, with the counts from the gap list:
+Before writing, send this question as its own message, with the counts from the gap list, and end the turn: nothing is written until it is answered, since the answer decides what is asked first.
 
 > The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
@@ -100,7 +100,7 @@ Option 1 is Recommended. Before writing, a request that asks to be interviewed h
 4. **New gaps.** An answer that opens a gap adds an entry: before writing, a P0 one is asked in turn and any other is written as an item; after writing, it is a new entry at the end of the genome's Open Decisions, with its default ([open-questions-guide.md](../shared/open-questions-guide.md) § Where Answers Go).
 5. **Unclear or partial answers.** Take the best reading, write it as the verb writes any gap (`[SME REVIEW]` in an SDD, `*[Inferred: D<n>]*` in a genome) and move on; never ask the same entry twice.
 6. **Stop** when the user says stop or accepts defaults for everything left, or when the user's roles have no entry left.
-7. **What remains.** The closing summary counts the items still open by role, and says how each reaches whoever answers it: an SDD item reaches its answerer in the SDD; with no SDD, the summary offers to write it ([edit-guide.md](../edit/edit-guide.md), "Write the SDD") whenever an open item's answerer is not in the session; the readiness file carries the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
+7. **What remains.** The closing summary is the message of [genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md), counting the items still open by role, with the file interviewed in its `interview <file>`: an SDD item reaches its answerer in the SDD, the SDD it offers is written as [edit-guide.md](../edit/edit-guide.md) "Write the SDD" states, and the readiness file carries the build's own questions. Their answers come back through `interview <file>`, the filled-in SDD, or a reply pasted into any later request.
 
 ## After Writing
 
@@ -116,8 +116,14 @@ The gap list is the document's open items: the SDD's Action Required, or, for a 
    > 4. **The defaults, with the overrides you name**
 2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
-4. **Batches** as § Asking rule 3, one question per item, its options from the item's `Options:` and a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
-5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then "Apply the answers" applies them ([edit-guide.md § Applying the Answers](../edit/edit-guide.md)), and the strict check runs after the last edit; an SDD with no genome yet takes them as § Where Answers Go states.
+4. **Batches** as § Asking rule 3, one question per item, opening with the item's id as its file names it, so each answer lands on its item:
+
+   > **D3. <the item's question>** (<its step or section>)
+   > a. <option> (built now)
+   > b. <option>
+
+   Its options come from the item's `Options:`, a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
+5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then "Apply the answers" applies them ([edit-guide.md § Applying the Answers](../edit/edit-guide.md)), and the strict check runs after the last edit; an SDD with no genome yet takes them as § Where Answers Go states. An SDD gains a new Document History row for the interview, `Interview: <n> points answered by <roles>; <n> left open`, below the rows it has.
 
 ## Where Answers Go
 
