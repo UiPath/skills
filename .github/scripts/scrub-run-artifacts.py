@@ -7,7 +7,7 @@ symlinks, binaries, archives and compressed files are withheld (a token inside a
 ZIP or gzip member survives a byte replace). In the kept files every secret this
 job forwarded, plus every UiPath token issued during the run (the mounted .auth
 only holds the latest), is replaced as raw bytes in its UTF-8, base64 and base64url (three alignments)
-forms (values under 20 characters: UTF-8 and escaped forms only); JWT characters need no JSON or URL escaping.
+forms (values under 20 characters: aligned base64 only); JWT characters need no JSON or URL escaping.
 A final verify pass re-reads every file.
 On any error the whole run directory is wiped, a fixed message is printed and the
 exit code is 1, so the workflow's publishing steps (gated on this step's success)
@@ -59,7 +59,9 @@ def _needles(values: list[str]) -> list[bytes]:
     for v in values:
         raw = v.encode("utf-8")
         out.append(raw)
-        if len(raw) < 20:  # core too short to match safely at every alignment
+        for encode in (base64.b64encode, base64.urlsafe_b64encode):  # aligned form: exact for whole 3-byte groups
+            out.append(encode(raw).decode()[: len(raw) // 3 * 4].encode())
+        if len(raw) < 20:  # core too short to match safely at the other alignments
             continue
         for encode in (base64.b64encode, base64.urlsafe_b64encode):
             for skew in range(3):  # base64 of the value at each alignment

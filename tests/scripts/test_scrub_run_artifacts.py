@@ -160,3 +160,14 @@ def test_symlink_is_withheld_and_wipe_removes_links(tmp_path, monkeypatch):
     assert scrub_mod.main(["x", str(run)]) == 0
     assert list(run.iterdir()) == []
     assert (tmp_path / "outside").is_dir()
+
+
+def test_short_env_secret_base64_is_scrubbed(tmp_path, monkeypatch):
+    import base64
+
+    run = _env(tmp_path, monkeypatch)
+    monkeypatch.setenv("E2E_PROCESS_KEY", "k3y-Secret!")
+    blob = base64.b64encode(b"k3y-Secret!").decode()
+    (run / "a.txt").write_text(f"x {blob} y", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    assert blob[:8] not in (run / "a.txt").read_text(encoding="utf-8")
