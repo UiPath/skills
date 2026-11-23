@@ -350,7 +350,7 @@ test("the studioweb BPMN skill edits a target outside /solution as a /tmp copy, 
   assert.ok(skill.includes("**An existing `.bpmn` outside a `/solution` project**"));
   assert.ok(skill.includes("Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`"));
   assert.ok(skill.includes("Never run `init` to give an existing file outside `/solution` a project."));
-  assert.ok(skill.includes("**The baseline is step 1's compile of the unedited source, never a copy of the target or the edited file.**"));
+  assert.ok(skill.includes("**The baseline is the compile of `.flow-sdk/original/<Name>.bpmn`, never a copy of the target or a compile of the edited `.flow-sdk/<Name>.bpmn.ts`.**"));
   assert.ok(skill.includes("and the target is in a project, delete that key"));
 });
 
