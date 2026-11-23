@@ -2,7 +2,7 @@
 
 A genome extracted from a UiPath source is built only to refactor that automation, and one extracted from another framework is refactored when the request asks for it instead of a migration that keeps the source's shape: every component is re-authored, never copied, on the UiPath product and project the genome's Components and Build With rows name, while the source keeps running until the switch. The genome is the behavioural contract; this guide adds to [execution-guide.md](execution-guide.md) the refactor questions, the refactor plan, the characterization tests, the run modes and the comparison, and the cutover.
 
-A genome built where its source cannot be reached, such as a catalogue entry built for a new owner, follows this guide with the genome as the source. Characterization takes its expected values and texts from the genome's rules, criteria and source values, and carry-over (§ The contract rule 5) is limited to what the genome holds. With no running automation to replace, there is no switch or rollback, and the cutover is the first deployment's open items.
+A refactor whose source cannot be reached, such as a catalogue entry built for a new owner, takes the genome as the source. Characterization takes its expected values and texts from the genome's rules, criteria and source values, and carry-over (§ The contract rule 5) is limited to what the genome holds. With no running automation to replace, there is no switch or rollback, and the cutover is the first deployment's open items.
 
 ## The contract
 

@@ -50,7 +50,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `uipath.json` with a `functions` map | Coded Function component (Python if `pyproject.toml`, JS/TS if `package.json`). |
 | `package.json` depending on `@uipath/uipath-typescript` or `@uipath/coded-action-app`, plus `webAppManifest.json` or `.uipath/app.config.json` | Coded app component. |
 
-`.uipx` fields: `Projects[].{Id, Type, ProjectRelativePath}`, `SolutionId`, `StudioMinVersion`, `AutomationHubIdeaUrl`. A coded app project that holds only its manifest is built from source elsewhere in the repository, copied in at build (`source/dist`): read the folder the repository's build script or readme names.
+`.uipx` fields: `Projects[].{Id, Type, ProjectRelativePath}`, `SolutionId`, `StudioMinVersion`, `AutomationHubIdeaUrl`. A coded app project that holds only its project files (`project.uiproj`, `webAppManifest.json`) is built from source elsewhere in the repository and copied at build into its bundle path (`webAppManifest.json` `config.bundlePath`, default `source/dist`): read the folder the repository's build script or readme names.
 
 ## Inventory and Exclusions
 
@@ -133,7 +133,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 | Assets a REFramework configuration lists | One Platform Dependencies row per asset name; Credential when the configuration's description or the consuming activity says so, otherwise Text |
 | BPMN `<uipath:context>` inputs (`folderPath`, `releaseKey`, `appId`, `connection`) | Processes, HITL apps, connections |
 | `entry-points.json` | Interface inputs and outputs per component |
-| `resources/solution_folder/<kind>/…/<name>.json` (`resource.kind`, `resource.spec`): the solution's resource records, bundled at pack and provisioned at deploy | One row per `connection`, `bucket`, `asset` or `queue` record, its `spec` fields as source values (a connection's connector and authentication type, a bucket's description); an `ixpDeployment` record as § Component Detection says; a `package`, `process` or `app` record repeats a project the `.uipx` lists |
+| `resources/solution_folder/<kind>/…/<name>.json` (`resource.kind`, `resource.spec`): the solution's resource records, bundled at pack and provisioned at deploy | One row per `connection`, `bucket`, `asset` or `queue` record, its `spec` fields as source values (a connection's connector and its deploy-time sign-in mode, `authenticationType`; a bucket's description); an `ixpDeployment` record as § Component Detection says; a `package`, `process` or `app` record repeats a project the `.uipx` lists |
 | Triggers: `.flow` scheduled/connector trigger nodes, BPMN start event types, Case trigger `serviceType`, `bindings_v2.json` `HttpTrigger` | Deployment → Entry points and triggers |
 
 ## Deployed State
@@ -189,7 +189,7 @@ No inventory script derives a process inventory or a recordset list, so a UiPath
 6. API workflow HTTP tasks: the real verb and URL are in `with.bodyParameters`, not the outer `with`.
 7. `bindings.json` and `bindings_v2.json` are different files with different consumers; a coded agent may have both.
 8. `.app/` and `*.Generated.xaml` are generated trigger plumbing for apps and Action Center — skip.
-9. The records under `resources/solution_folder/` look generated, and only the `package`, `process` and `app` records are, written with each project the solution adds: every other record is a resource the solution declares, with settings no project's bindings hold (§ Platform Resources).
+9. The records under `resources/solution_folder/` look generated, and only some are: `package`, `process` and `app` records come from the projects, and a record for each resource a project's bindings name is written from those bindings when the project is added or the resources are refreshed. A record no binding names, and a setting no binding holds (a connection's connector and deploy-time sign-in mode, a bucket's description), is the solution's own (§ Platform Resources).
 10. A `[TestCase]` `.cs` file or `Test` project beside the projects it tests is evidence, not a component (§ Component Detection).
 11. The REFramework template's sample values survive customisation: `ProcessABCQueue` in the settings sheet of a project whose item fetch reads rows, the template's own `Tests/` cases, `Exceptions_Screenshots/`. A queue is evidence only when the item fetch actually reads it ([uipath-rpa-signals-guide.md § Signals — XAML › REFramework projects](uipath-rpa-signals-guide.md)).
 12. Framework workflows look like logic and are the template: the state machine, the retry counter, the three status updates and the screenshot on exception describe the Transactional Shape, not steps — transcribing them doubles the shape in the genome.

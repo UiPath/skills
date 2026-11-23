@@ -97,7 +97,7 @@ section again from it, with every open question. See open-questions-guide.md for
 ## Table of Contents
 
 1. Agent Overview
-2. Agent Framework
+2. Agent Framework, Steps and Business Rules
 3. Tools
 4. Memory / RAG
 5. Evaluation Criteria
@@ -141,7 +141,7 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ---
 
-## 2. Agent Framework
+## 2. Agent Framework, Steps and Business Rules
 
 <!-- Framework choices per uipath-agents skill. If this was filled via gap-filling Q&A, capture the user's choice. -->
 
