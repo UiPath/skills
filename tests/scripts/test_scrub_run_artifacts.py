@@ -35,20 +35,21 @@ def _env(tmp_path, monkeypatch, issued=(TOKEN,)):
 def test_plain_and_utf16_and_extensionless_are_redacted(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
     (run / "notes.txt").write_text(f"dump {TOKEN}", encoding="utf-8")
-    (run / "envdump").write_bytes(b"\xff\xfe" + TOKEN.encode("utf-16-le"))
+    (run / "envdump").write_bytes(b"\xff\xfe" + TOKEN.encode("utf-16-le"))  # UTF-16: withheld
     (run / "bad.log").write_bytes(b"\xff" + TOKEN.encode() + b"\xff")  # not UTF-8: withheld
     assert scrub_mod.main(["x", str(run)]) == 0
-    assert sorted(p.name for p in run.iterdir()) == ["envdump", "notes.txt"]
-    assert all(TOKEN.encode() not in p.read_bytes() for p in run.iterdir())
-    assert TOKEN.encode("utf-16-le") not in (run / "envdump").read_bytes()
+    assert [p.name for p in run.iterdir()] == ["notes.txt"]
+    assert TOKEN.encode() not in (run / "notes.txt").read_bytes()
 
 
+@pytest.mark.parametrize("urlsafe", [False, True])
 @pytest.mark.parametrize("skew", [0, 1, 2])
-def test_base64_forms_are_redacted(tmp_path, monkeypatch, skew):
+def test_base64_forms_are_redacted(tmp_path, monkeypatch, skew, urlsafe):
     import base64
 
     run = _env(tmp_path, monkeypatch)
-    blob = base64.b64encode(b"a" * skew + TOKEN.encode()).decode()
+    enc = base64.urlsafe_b64encode if urlsafe else base64.b64encode
+    blob = enc(b"a" * skew + TOKEN.encode() + b"tail").decode()
     (run / "auth.txt").write_text(f"Authorization: Basic {blob}", encoding="utf-8")
     assert scrub_mod.main(["x", str(run)]) == 0
     text = (run / "auth.txt").read_text(encoding="utf-8")

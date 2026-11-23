@@ -2,12 +2,12 @@
 """Fail-closed scrub of a coder-eval run directory before anything is published.
 
 Allow-list, not deny-list: only clean text is published. A file survives only if
-it is strict UTF-8 (or BOM-marked UTF-16) with no NUL bytes and no archive magic;
+it is strict UTF-8 with no NUL bytes and no archive magic (UTF-16/32 are withheld);
 symlinks, binaries, archives and compressed files are withheld (a token inside a
 ZIP or gzip member survives a byte replace). In the kept files every secret this
 job forwarded, plus every UiPath token issued during the run (the mounted .auth
-only holds the latest), is replaced as raw bytes in its UTF-8, UTF-16-LE and
-base64 (three alignments) forms; JWT characters need no JSON or URL escaping.
+only holds the latest), is replaced as raw bytes in its UTF-8, base64 and base64url (three alignments)
+forms (values under 20 characters: UTF-8 and escaped forms only); JWT characters need no JSON or URL escaping.
 A final verify pass re-reads every file.
 On any error the whole run directory is wiped, a fixed message is printed and the
 exit code is 1, so the workflow's publishing steps (gated on this step's success)
@@ -42,15 +42,9 @@ MIN_TOKEN = 28
 
 
 def _is_text(data: bytes) -> bool:
-    """Clean text only: no archive magic, no NUL, strict UTF-8 or BOM UTF-16."""
+    """Clean text only: no archive magic, no NUL, strict UTF-8 (UTF-16/32 carry NULs: withheld)."""
     if data.startswith(_MAGIC) or data[257:262] == b"ustar":
         return False
-    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
-        try:
-            data.decode("utf-16")
-            return True
-        except UnicodeDecodeError:
-            return False
     if b"\x00" in data:
         return False
     try:
@@ -64,12 +58,14 @@ def _needles(values: list[str]) -> list[bytes]:
     out: list[bytes] = []
     for v in values:
         raw = v.encode("utf-8")
-        out += [raw, v.encode("utf-16-le")]
-        for skew in range(3):  # base64 of the value at each alignment
-            enc = base64.b64encode(b"x" * skew + raw).decode()
-            lead = (4 * skew + 2) // 3  # chars that depend on the skew bytes
-            tail = enc.rstrip("=")
-            out.append(tail[lead:-1].encode() if len(tail) - lead > 12 else tail.encode())
+        out.append(raw)
+        if len(raw) < 20:  # core too short to match safely at every alignment
+            continue
+        for encode in (base64.b64encode, base64.urlsafe_b64encode):
+            for skew in range(3):  # base64 of the value at each alignment
+                enc = encode(b"x" * skew + raw).decode().rstrip("=")
+                lead = (4 * skew + 2) // 3  # leading chars that depend on the skew bytes
+                out.append(enc[lead + 1 : -1].encode())  # drop the partial last char too
     for v in values:  # secrets with markup-significant characters (token chars need no escaping)
         for form in (json.dumps(v)[1:-1], html.escape(v), urllib.parse.quote(v), urllib.parse.quote_plus(v)):
             if form != v:
