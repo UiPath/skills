@@ -29,7 +29,7 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 | `SVC-001` | service | Every service finding is `SVC-001` on the named file. Fix the syntax it names; same loop |
 | `ENTITY_ID_IGNORED` | service | An `SVC-001` WARNING naming it; same fix as `MAP-012` |
 | `ValidationFailed` | CLI | The ERRORs are in `Data`; fix each per the rows above, then validate |
-| `ServiceValidationUnavailable` | CLI | Service validation needs `uip login`; ask for it, then validate again; stop if the service stays unreachable |
+| `ServiceValidationUnavailable` with `ErrorCode: authentication_required` | CLI | Service validation needs `uip login`; ask for it, then validate again; stop if the service stays unreachable. With `not_supported`, see the row below |
 | `ServiceValidationFailed` | CLI | The service could not validate; `Instructions` carries its answer (`Not Found` when the tenant has no validate endpoint) and `Data` the local results. Stop and tell the user; never pack as validated |
 | `ArtifactCheckFailed` | CLI | The ERRORs are in `Data.violations`; nothing was attached. Fix them, then `files add` again |
 | `ArtifactTypeUnresolved`, `InvalidArtifactFileName` | CLI | Rename the file to the `{name}-…` convention (`{name}-summary.json`, `{name}-context.json`) or pass `--type`; never name a file `ontology.json` |
@@ -52,6 +52,7 @@ Act on each violation's `rule`, `file` and `suggestion` (`Rule`, `File`, `Sugges
 | `Ambiguous match`, `No remote resource found with key` | connection import | Pass `--folder-path "<CONNECTION_FOLDER>"` to the `--kind Connection` import, or `--cloud-key` from the listed candidates |
 | `CONNECTION_NOT_FOUND`, or a federated connection missing from the solution | `uip df` | Import the connection (Stage 3), then create the federated entity again |
 | `Not logged in` on a federated `uip df entities create … --local` | `uip df` | A connector source makes that create read the connection and the source object's fields from the tenant; ask for `uip login`, then retry. A federated entity over local native sources only never needs it |
+| `ErrorCode: not_supported` on `uip ont validate`, `get` or `list` (`Code` is `ServiceValidationUnavailable`, `OntologyList` or `OntologyDetails`) | CLI | The environment has no Ontology service; Automation Suite ships none. Stop and tell the user ontologies need an Automation Cloud tenant; report the saved model, local entities and artifacts. No retry or re-login fixes it. Never pack as validated or deploy there |
 | `unknown command 'ont'` | `uip` | The installed `uip` predates the ontology tool. Stop and ask the user to update `uip`, then re-run from the saved model. Never pack, refresh or import resources instead: a package without the ontology is not the result |
 | `NAME_RESERVED` (in `Instructions`) | `uip df` | The entity is named `Order` or `Group`. Propose a domain name (`SalesOrder`), confirm it, use it in the class map, every body and the mapping, then create it |
 | `REFERENCE_TARGET_NOT_FOUND`, `CHOICE_SET_NOT_FOUND` | `uip df` | The create order is wrong or a name is misspelled: create the target entity or choice set first, then retry |
