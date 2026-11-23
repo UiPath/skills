@@ -105,9 +105,13 @@ success_criteria:
   - type: llm_judge
     description: "The closing names open items by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers to the genome (an automation
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
       blueprint). Score 1.0 when it says which decisions are still open and who answers each (counted by
       role, or each named with its role; configuration values may be counted without a role), or that
       none is; 0.0 otherwise.
@@ -117,9 +121,13 @@ success_criteria:
   - type: llm_judge
     description: "Advisory: the closing offers the SDD for absent answerers"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers to the genome (an automation
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
       blueprint). Score 1.0 when it offers to write an SDD (solution design document) for the items whose
       answerer is not in the session, or no decision is left open for another role (configuration values
       the build asks need no SDD offer); 0.0 otherwise.

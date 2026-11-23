@@ -167,9 +167,13 @@ success_criteria:
   - type: llm_judge
     description: "The closing counts the open items by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the SDD (solution design document). Score 1.0 when
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the SDD (solution design document). Score 1.0 when
       it counts the items still open, split by the role that answers them (the process owner, the
       system's owner, the environment's owners …), or says that none is open; 0.0 otherwise.
     weight: 1.0
@@ -178,9 +182,13 @@ success_criteria:
   - type: llm_judge
     description: "Advisory: the closing names `interview <SDD>`"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the SDD (solution design document). Score 1.0 when
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the SDD (solution design document). Score 1.0 when
       it names the interview command for the SDD, in the form `interview <SDD file name>`; 0.0 otherwise.
     # Advisory: the SDD's How to answer is the gated record; the closing line is recorded, not gated.
     weight: 1.0

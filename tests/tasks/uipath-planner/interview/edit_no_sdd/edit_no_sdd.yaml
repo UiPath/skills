@@ -71,10 +71,14 @@ success_criteria:
   - type: llm_judge
     description: "The closing counts the genome's open entries"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for one change to a genome (an automation blueprint): a second recipient, in copy.
-      Read the agent's final message. Score 1.0 when it says the change was made and counts the genome's
+      Read the agent's closing message. Score 1.0 when it says the change was made and counts the genome's
       questions still open (open decisions, configuration values, or the ones needed before a build).
       Score 0.5 when it reports the change and counts nothing. Score 0.0 when it does not report the change.
     weight: 1.5

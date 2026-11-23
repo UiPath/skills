@@ -107,9 +107,13 @@ success_criteria:
   - type: llm_judge
     description: "Advisory: the closing names the open counts and `interview <SDD>`"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the SDD (solution design document). It must give the
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the SDD (solution design document). It must give the
       number of items still open and name the interview command for the SDD, in the form
       `interview <SDD file name>`, as the way to answer them. Score 1.0 when both are there, 0.5 with the
       count only, 0.0 otherwise.

@@ -132,9 +132,13 @@ success_criteria:
   - type: llm_judge
     description: "The closing counts the open decisions by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Score 1.0 when
       it counts the genome's open decisions by the role that answers them, or says that none is open;
       0.0 otherwise. Configuration values need no role, and those listed beside the decisions are not
       part of their count, nor are the build's own questions (how the work is split or queued,
@@ -146,9 +150,13 @@ success_criteria:
   - type: llm_judge
     description: "Advisory: the closing offers the interview on the open items"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Score 1.0 when
       it offers the interview on the open decisions, naming `interview <genome file name>`; 0.0 otherwise.
     weight: 1.0
     pass_threshold: 0
