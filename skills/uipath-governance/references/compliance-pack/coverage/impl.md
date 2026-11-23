@@ -138,7 +138,7 @@ Coverage compares the pack against **whatever policies the tenant already has**,
 
 Evaluate IN THIS ORDER (first match wins):
 
-1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good. Render the [If you apply](#if-you-apply--if-you-enforce) block with it. When `ConflictStatus == "unavailable"`, do NOT offer to apply in this run: say `Couldn't check for conflicts with your existing policies. Retry.`
+1. **Pack NOT active** (`Data.Active == false`; a never-applied known pack returns 200 with `Active: false`, not a 404 — a 404 from `state get` means the packId itself is not usable, so re-check it against `catalog list` and stop) — the pack is not applied, whatever the coverage numbers say. Offer `'Apply <packName> settings'`, `'Apply High impact <packName> settings'`, or `'Apply only <specific area> settings'`. If coverage already shows partial or full clause coverage, that is the tenant's own policies coinciding with the standard, NOT the pack — say so plainly ("some of these settings already match what the standard recommends; applying it will manage them going forward") and still offer to apply. Never suppress the apply offer because coverage looks good. Render the [If you apply](#if-you-apply--if-you-enforce) block with it. When `ConflictStatus == "unavailable"`, do NOT offer to apply in this run: show the `CONFLICTS NOT CHECKED` banner from [Conflicts with your existing policies](#conflicts-with-your-existing-policies).
 2. **Pack active, everything covered** (`Data.Active == true` and `PartiallyDeployedCount == 0 && NotDeployedCount == 0`): render the [All settings applied](#all-settings-applied) block. Nothing to apply. If the pack is not enforced, add the [If you enforce](#if-you-apply--if-you-enforce) block and the enforce call-to-action from case 3.
 3. **Pack active, gaps remain** (`Data.Active == true`, otherwise): do NOT suggest reapplying the standard or applying a subset. Point the user at the residual settings, checking the enforce and drift cases FIRST:
    - **3·0. If the pack is not enforced** (`Mode` is `"audit"`, null or absent): render the [If you enforce](#if-you-apply--if-you-enforce) block, and offer first: `To enforce the standard, choose Enforce on the Compliance Standards page in the admin portal.` The CLI cannot set the mode yet; never run `state enable` to change it. Every ✗ setting that is in `Conflicts[]` is covered by this offer — enforcing replaces it with the standard's value. Do NOT route a conflict to restore or to the product UI.
@@ -178,6 +178,8 @@ Terminology rules:
 - **`coverage.json` is an internal session file** — save it as the raw `--output json` CLI response. Raw API values (`"in-place"`, `"new"`) are CORRECT and expected in this file. Do NOT translate status values when writing coverage.json.
 - Never say "compliance gaps" — say "settings not yet configured"
 - Never claim the tenant IS compliant
+
+**How to print it.** Output the template below as plain monospace text inside one fenced code block, filled in, in this section order — not a prose or bullet paraphrase of it. Never use HTML tags (`<details>`, `<summary>`, `<br>`, …): the CLI terminal shows them as raw text, and nothing collapses. Long sections are printed in full, never hidden. The conflict banner is always its own box on its own lines, never a bullet or a clause inside another sentence.
 
 Render this template ONLY for cases 1 and 3 above (pack not applied, or applied with gaps). For case 2 (active and fully covered) use the [All settings applied](#all-settings-applied) block instead — never reach this template with zero gaps. It follows the admin portal page: requirement counts, policy status, then the requirements under their headings.
 
@@ -278,7 +280,7 @@ Next action (state-aware — see "Next-action suggestion"):
 
 Layout rules:
 - **Do not compress the layout.** Every non-empty section (Needs configuration, Not applied, Applied) lists **every** requirement in it on its own line. Never merge requirements into "N other requirements", and never mention a requirement only inside the conflict table. The number of lines in a section must equal its count in the REQUIREMENTS row; check this before printing. Omit a section with zero entries (its count still shows in the REQUIREMENTS row).
-- Append `— waits on the conflicts above` to a requirement whose remaining gaps are all conflicts (`Clauses[].ConflictCount > 0` and no ⚙ setting). Count these from the data; never estimate.
+- Append `— waits on the conflicts above` to a requirement whose remaining gaps are all conflicts: it has no ⚙ setting, and every one of its ✗ settings is in its `Conflicts[]` (`Clauses[].ConflictCount` equals its count of `Status == "not-deployed"` controls). A requirement with conflicts *and* other ✗ settings does not get the note. Count these from the data; never estimate.
 - **POLICY STATUS is one line per product**, never a sentence: the catalog `PolicyName` verbatim (no shortening, no live-name suffix such as "(12)"), then `<ProductDisplayName> Policy`, then the badge. Two products can share a policy name (Studio and Studio Web); the subtitle tells them apart. Stable = product `in-place` or `needs-manual-config` with `DriftedControlCount == 0`; drifted = `DriftedControlCount > 0`; Cannot Be Checked = `unverifiable`. Only when a product has several entries in `Policies[]`, list each under its line as `<LicenseTypes[].DisplayName joined by ", ">: <live PolicyName>`.
 - Drift: a product with `DriftedControlCount > 0` gets its ⟳ settings listed under its POLICY STATUS line (`<ControlDisplayName>` + its `Lines[]` per the [line rules](#line-rules) + `Requirement impacted by this drift: <clauseName> (<ImpactedClauseId>)`), as well as the ⟳ rows in DETAILS.
 
@@ -292,11 +294,7 @@ IF YOU APPLY THE STANDARD                (or: IF YOU ENFORCE THE STANDARD)
   ⚙ <sum of Clauses[].ManualConfigControlCountAfterApply> settings will still need a value only you can set
   Policies: <N> will be created · <M> will be updated
 
-⚠ <ConflictCount> existing settings differ from the standard
-  <clauseName> (<ClauseId>)
-    <ControlDisplayName> — standard: <PackValueDisplay>
-      <lines per the line rules>
-Applying replaces these values with the standard's values.   (or: Enforcing replaces …)
+<CONFLICTS section — rendered exactly as in "Conflicts with your existing policies" below>
 ```
 
 - The two counts come from `StatusAfterApply` and `ManualConfigControlCountAfterApply` only — never from `ManualConfigChecks[]` entries, keys or products. If `StatusAfterApply` is absent on every control (older server), drop the two count lines rather than guess.
@@ -316,9 +314,116 @@ Applying replaces these values with the standard's values.   (or: Enforcing repl
     created = @($c.ApplyPlan | Where-Object Action -ne 'update').Count; updated = @($c.ApplyPlan | Where-Object Action -eq 'update').Count }
   ```
 - Policies line from `ApplyPlan[]` (see the field notes): count entries, not products — created + updated must equal `ApplyPlan.length`. Omit a zero part, and omit the line when `ApplyPlan` is absent.
-- Conflict part by `ConflictStatus`: `"evaluated"` with 0 → `No conflicts with your existing policies.` · `"evaluated"` with conflicts → the list above, grouped by requirement · `"unavailable"` → `Couldn't check for conflicts with your existing policies. Retry.` (and no apply offer) · `"not-applicable"` → nothing.
+- Conflict part: always the banner from [Conflicts with your existing policies](#conflicts-with-your-existing-policies) — ⚠ with the count and the per-policy blocks when there are conflicts, ✓ `0 CONFLICTS` when there are none, ⚠ `CONFLICTS NOT CHECKED` (and no apply offer) when `"unavailable"`, nothing when `"not-applicable"`.
 - `uip gov compliance-packs state enable` cannot keep an existing value yet, so applying always takes the standard's value for every conflict. Say so before any apply confirmation, and name the count. An admin who wants to keep a value should apply from the Compliance Standards page in the admin portal instead.
 - A ✗ setting that is a conflict is listed once, in the conflict list, not again with a separate explanation.
+
+### Conflicts with your existing policies
+
+A conflict is a setting that one of the tenant's **deployed** policies holds at a different value from the standard. Applying (or enforcing) the standard overwrites it, so before the admin says yes they must see, **per deployed policy**: which settings conflict, what the pack recommends, and what the policy applies today. Render this section exactly in this layout — do not restyle, merge, reorder columns or shorten it.
+
+**The conflict count always opens this section in a banner**, so the admin sees at a glance whether applying changes any of their values. Pick the banner by `ConflictStatus` — never drop it, and never shrink it to a sentence:
+
+| `ConflictStatus` / count | Banner | Then |
+|---|---|---|
+| `"evaluated"`, `ConflictCount > 0` | ⚠ `<ConflictCount> CONFLICTS` | the `DEPLOYED POLICY` blocks and the footer, below |
+| `"evaluated"`, `ConflictCount == 0`, `<D> > 0` | ✓ `0 CONFLICTS`, "None of your <D> deployed policies …" | nothing more |
+| `"evaluated"`, `ConflictCount == 0`, `<D> == 0` | ✓ `0 CONFLICTS`, "You have no deployed policies …" | nothing more |
+| `"unavailable"` | ⚠ `CONFLICTS NOT CHECKED` | no apply offer in this run |
+| `"not-applicable"` | no banner, no section | — |
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✓  0 CONFLICTS WITH YOUR DEPLOYED POLICIES                                               ┃
+┃    None of your <D> deployed policies holds a value that differs from the standard.      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✓  0 CONFLICTS WITH YOUR DEPLOYED POLICIES                                               ┃
+┃    You have no deployed policies in this standard's products.                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ⚠  CONFLICTS NOT CHECKED                                                                 ┃
+┃    Couldn't check for conflicts with your deployed policies. Retry before applying.      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+**Layout**
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ⚠  <ConflictCount> CONFLICTS WITH YOUR DEPLOYED POLICIES                                 ┃
+┃    In <C> of your <D> deployed policies, these settings differ from the standard.        ┃
+┃    Applying the standard replaces them with the pack's recommended values.               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+DEPLOYED POLICY <i> of <D> · <ProductDisplayName> · "<live PolicyName>" · <license types>
+[<On apply note — only for "copy" or "split", see rule 4>]
+┌──────────────────────────────────────────────────┬──────────────────┬────────────────────┐
+│ Conflict                                         │ Pack recommended │ Policy applied     │
+├──────────────────────────────────────────────────┼──────────────────┼────────────────────┤
+│ <ControlDisplayName>[ (×<n>)]                    │ <Recommended>    │ <Current>          │
+│   ↳ <sub-setting>                                │ <Recommended>    │ <Current>          │
+└──────────────────────────────────────────────────┴──────────────────┴────────────────────┘
+
+DEPLOYED POLICY <i> of <D> · <ProductDisplayName> · "<live PolicyName>" · <license types>
+  ✓ No conflicts
+
+  To keep any of the values your policies apply today, apply from the Compliance Standards
+  page in the admin portal — it lets you keep the current value per setting. The CLI can't yet.
+```
+
+**Worked example** — a tenant whose only deployed policy in the standard's products is one AI Trust Layer policy with 15 conflicts:
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ⚠  15 CONFLICTS WITH YOUR DEPLOYED POLICIES                                              ┃
+┃    In 1 of your 1 deployed policies, these settings differ from the standard.            ┃
+┃    Applying the standard replaces them with the pack's recommended values.               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+DEPLOYED POLICY 1 of 1 · AI Trust Layer · "aitl-23-nov-2026" · No License
+┌──────────────────────────────────────────────────┬──────────────────┬────────────────────┐
+│ Conflict                                         │ Pack recommended │ Policy applied     │
+├──────────────────────────────────────────────────┼──────────────────┼────────────────────┤
+│ Agent Guardrail — Sensitive Data Exposure (×7)   │ Enabled          │ Disabled / Not set │
+│ Agent Guardrail — Prompt Injection (×6)          │ Enabled          │ Disabled / Not set │
+│ Agent Guardrail — Sentiment Detection (×2)       │ Enabled          │ Disabled           │
+│   ↳ Execution stage                              │ Pre              │ Both               │
+│   ↳ Sentiment threshold rule                     │ Negative · 0.7 · │ Negative · 0.7 ·   │
+│                                                  │ Enabled          │ Not set            │
+│ Trace Management — Trace Data TTL                │ 7d               │ 30d                │
+│   ↳ TTL enforcement                              │ Enabled          │ Disabled           │
+│ Trace Management — Input/Output Logging          │ Enabled          │ Disabled           │
+│ Product Toggles — Enable Agents                  │ Enabled          │ Disabled           │
+│ Product Toggles — Enable Coded Agents (×2)       │ Enabled          │ Disabled / Not set │
+│ Product Toggles — Enable Autopilot for Everyone  │ Enabled          │ Disabled           │
+│ Product Toggles — Enable Apps AI Features        │ Enabled          │ Disabled           │
+│ Product Toggles — Enable Document Understanding  │ Enabled          │ Disabled           │
+│ Product Toggles — Enable Communications Mining   │ Enabled          │ Disabled           │
+│ Document Understanding — Generative Classif.     │ Enabled          │ Disabled           │
+│ Document Understanding — Generative Extraction   │ Enabled          │ Disabled           │
+│ Agent Guardrail — Output Content Filtering (×6)  │ Enabled          │ Disabled / Not set │
+│ Communications Mining — External LLM Access      │ Enabled          │ Disabled           │
+└──────────────────────────────────────────────────┴──────────────────┴────────────────────┘
+
+  To keep any of the values your policies apply today, apply from the Compliance Standards
+  page in the admin portal — it lets you keep the current value per setting. The CLI can't yet.
+```
+
+With several deployed policies (e.g. one per product), each gets its own `DEPLOYED POLICY i of D` block in the same shape — the ones without conflicts as the two-line `✓ No conflicts` block — so the admin sees every policy the standard touches, not only the conflicting ones.
+
+**Rules**
+
+1. **Deployed policies** = every entry of `DeploymentPolicies[].Policies[]` (the tenant's live policies in the standard's products and license types). `<D>` is their count; a product with an empty `Policies[]` has no deployed policy and gets no block. Order: policies with conflicts first (most conflicts first), then the rest in `DeploymentPolicies[]` order.
+2. **Block header**, one line: `DEPLOYED POLICY <i> of <D> · <ProductDisplayName> · "<live PolicyName>" · <LicenseTypes[].DisplayName joined by ", ">`. `ProductDisplayName` comes from the catalog (join on `ProductIdentifier`); the policy name is the **live** one in quotes — the admin knows their own policy by it. Never print a policy id.
+3. **Conflicts of a policy** = every `Clauses[].Conflicts[]` entry whose `Policies[]` contains that `PolicyId`, using that entry's own `Lines[]`. `<C>` is the number of policies with at least one conflict. Rows follow clause order; there is no requirement column.
+4. **On apply note**, from the `ApplyPlan[]` entry for that product and license type, printed only when it changes the meaning of "replaces": `"copy"` → `On apply: a new standard policy is created from this one for <license type>; this policy itself is not edited.` · `"split"` → `On apply: <license type> moves to a new policy; this policy stays as it is for its other license types.` `"update"` or no entry → no note.
+5. **Columns are fixed, in this order: Conflict · Pack recommended · Policy applied.** Conflict = `ControlDisplayName`; if too long, drop words from its end and mark the cut with `.` (`Generative Classif.`), never from the start (the product prefix tells the admin where to find it). Pack recommended = `Recommended`; Policy applied = `Current`.
+6. **Values** from `Lines[]` per the [line rules](#line-rules): lines with the same `Recommended` collapse into one row, with `(×<n>)` after the setting when `n > 1` and their distinct `Current` values joined with ` / `. Each other distinct change of the same conflict is a `↳` sub-row, labelled with the line's `Setting` when it has a label, else the key's last segment as plain words (`traces-ttl-enforcement` → `TTL enforcement`, `sentiment-execution-stage` → `Execution stage`). Wrap a long value onto the next line inside its cell; never truncate a value.
+7. **Count check before printing**: rows across all blocks = `Summary.ConflictCount`; every `Lines[]` entry is covered by exactly one row or sub-row; `<D>` = the number of blocks.
+8. **Banner and footer are fixed text.** The count goes in the banner's first line, in capitals with the word CONFLICTS, and the box uses the heavy border (`┏━┓ ┃ ┗━┛`) so it stands out from the light-bordered tables, and is the same width as them. Switch "Applying" to "Enforcing" for an active, not-enforced pack. Keep the footer — it is the only way to keep a value today.
 
 ## All settings applied
 
@@ -402,5 +507,6 @@ Always run fresh before presenting a posture plan. Coverage reflects live tenant
 - **Routing a conflict to restore or the product UI** — a ✗ setting in `Conflicts[]` is fixed by applying/enforcing the standard. Never say re-applying won't change it: applying takes the standard's value for every conflict.
 - **Hiding conflicts before an apply** — when `ConflictCount > 0`, the user sees the list and the "replaces these values" warning before any `y`. Never offer apply when `ConflictStatus == "unavailable"`.
 - **Counting settings left after apply from anything but `StatusAfterApply` / `ManualConfigControlCountAfterApply`** — counting `ManualConfigChecks[]` keys or products gives the wrong number.
+- **Paraphrasing the template or using HTML** — prose bullets instead of the boxes, `<details>` / `<summary>` to fold sections, or the conflict result folded into a sentence ("…updated. There are no conflicts, because …"). Print the template; the banner gets its own box.
 - **Compressing the layout** — "N other requirements", a requirement named only in the conflict list, or policies listed in a sentence. Every requirement and every policy gets its own line.
 - **Printing raw formData keys or live policy names** — follow the line rules; card titles use the catalog `PolicyName`.
