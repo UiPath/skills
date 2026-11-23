@@ -43,8 +43,11 @@ no picker and does neither. `check` reports `RESOURCE_UNRESOLVED` with the
 `uip maestro registry prepare --entity <name> --folder-path <path>` that records
 its keys; run it, then `check` again. `waitForEvent` takes `entity` the same way.
 Needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or later; an older SDK has
-no `entity` on an event (`check` reports `TS2353`), so upgrade with
-`npm install -g @uipath/maestro-builder-sdk@latest`. See
+no `entity` on an event (`check` reports `TS2353`),
+<!--skill-flavor:event-entity-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:event-entity-sdk-upgrade:end-->
+See
 [`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
 
 ## Long text: queries return a 10,000-character preview

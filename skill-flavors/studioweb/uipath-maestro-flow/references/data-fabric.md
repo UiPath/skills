@@ -13,3 +13,6 @@ That page names the connector *UiPath Data Fabric*, gives the HTTP route
 <!--skill-flavor:data-fabric-entity-ref-sdk:start-->
 so tell the user: Studio Web owns the SDK copy and the CLI.
 <!--skill-flavor:data-fabric-entity-ref-sdk:end-->
+<!--skill-flavor:event-entity-sdk-upgrade:start-->
+so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:event-entity-sdk-upgrade:end-->
