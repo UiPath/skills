@@ -35,7 +35,7 @@ fi
 
 Adjust the port if `vite.config.ts` uses a non-default `server.port`.
 
-`UIPATH_APPS_PREVIEW` means a UiPath Apps preview holds the port. Do not reuse or stop it yourself: a second browser on it disconnects the preview's point-and-edit. Ask the user to stop it (**Stop** on the debug toolbar or the Studio Desktop ribbon; closing its tab does not stop it), then rerun this step. If they keep it running, skip the reproduction. If you started a server in place of the preview, stop it when debugging ends, or the preview cannot start.
+`UIPATH_APPS_PREVIEW` means a UiPath Apps preview holds the port. Do not reuse or stop it yourself: a second browser on it disconnects the preview's point-and-edit. Ask the user to stop it (**Stop** on the debug toolbar or the Studio Desktop ribbon), then rerun this step. If they keep it running, skip the reproduction. If you started a server in place of the preview, stop it when debugging ends, or the preview cannot start.
 
 ### 0b — Check for Chrome and Playwright
 
