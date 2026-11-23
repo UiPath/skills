@@ -12,6 +12,10 @@ tags:
   - "lifecycle:generate"
   - "shape:multi-node"
   - connector
+  - uipath-uipath-dataservice
+  - "feature:records"
+  - "feature:entities"
+  - data-fabric
 
 sandbox:
   template_sources:
