@@ -64,7 +64,7 @@ jobs:
           # diff, changed-file contents, PR body and title are still ingested,
           # so this stacks on the tool allowlist below, it does not replace it.
           # Keep this list in sync with the global CODEOWNERS maintainers.
-          include_comments_by_actor: "gabrielavaduva,AlvinStanescu,marius-bughiu,RaduAna-Maria,uipreliga,dmetzgar,rockymadden,gozhang2,smflorentino,bai-uipath,akshaylive"
+          include_comments_by_actor: "gabrielavaduva,AlvinStanescu,RaduAna-Maria,uipreliga,dmetzgar,rockymadden,gozhang2,smflorentino,bai-uipath,akshaylive"
           # Drop all bot comments (dependabot, renovate, etc.). Exclusion wins
           # over the include list if an actor somehow matches both.
           exclude_comments_by_actor: "*[bot]"
