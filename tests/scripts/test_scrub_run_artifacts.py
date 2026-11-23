@@ -144,7 +144,7 @@ def test_unreadable_required_result_makes_the_run_incomplete(tmp_path, monkeypat
     assert _names(run) == []
 
 
-def test_task_count_must_match_the_expected_count(tmp_path, monkeypatch):
+def test_fewer_results_than_expected_fail_but_dataset_fan_out_passes(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
     _put_task(run, "a")
     assert scrub_mod.main(["x", str(run), "--expect-tasks", "2"]) == 1
@@ -154,7 +154,15 @@ def test_task_count_must_match_the_expected_count(tmp_path, monkeypatch):
     run = _env(second, monkeypatch)
     _put_task(run, "a")
     _put_task(run, "b")
+    _put_task(run, "c")  # one task file, three dataset rows
     assert scrub_mod.main(["x", str(run), "--expect-tasks", "2"]) == 0
+
+
+def test_bad_arguments_still_fail_with_the_fixed_message(tmp_path, monkeypatch, capsys):
+    run = _env(tmp_path, monkeypatch)
+    (run / "run.md").write_text("x", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run), "--expect-tasks", ""]) == 1
+    assert list(run.iterdir()) == [] and "withheld" in capsys.readouterr().out
 
 
 def test_incomplete_task_record_fails_closed(tmp_path, monkeypatch):

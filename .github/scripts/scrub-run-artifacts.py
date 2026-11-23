@@ -172,8 +172,8 @@ def scrub(root: pathlib.Path, needles: list[bytes], expect_tasks: int | None = N
     for html_path in root.rglob("task.html"):
         kept.append(html_path)
         html_path.write_bytes(_replace(html_path.read_bytes(), needles))
-    if expect_tasks is not None and tasks != expect_tasks:
-        raise RuntimeError("task count differs from the expected count")
+    if expect_tasks is not None and tasks < expect_tasks:  # dataset tasks fan out into several
+        raise RuntimeError("fewer task results than expected")
     for path in kept:  # verify, one read per file
         data = path.read_bytes()
         if any(n in data for n in needles):
@@ -197,9 +197,9 @@ def _wipe(root: pathlib.Path) -> None:
 
 
 def main(argv: list[str]) -> int:
-    root = pathlib.Path(argv[1])
-    expect = int(argv[argv.index("--expect-tasks") + 1]) if "--expect-tasks" in argv else None
     try:
+        root = pathlib.Path(argv[1])
+        expect = int(argv[argv.index("--expect-tasks") + 1]) if "--expect-tasks" in argv else None
         runner_temp = pathlib.Path(os.environ.get("RUNNER_TEMP", ""))
         issued = runner_temp / "issued-tokens"
         if os.environ.get("GITHUB_ACTIONS"):
@@ -210,7 +210,8 @@ def main(argv: list[str]) -> int:
         needles = _values(dict(os.environ), pathlib.Path(os.path.expanduser("~/.uipath/.auth")), issued)
         withheld = scrub(root, needles, expect)
     except BaseException:  # fixed message only: never echo a value or a path
-        _wipe(root)
+        if len(argv) > 1:
+            _wipe(pathlib.Path(argv[1]))
         print("::error::scrub failed; run files withheld from publication")
         return 1
     print(f"::notice::{withheld} file(s) outside the publication allow-list withheld")

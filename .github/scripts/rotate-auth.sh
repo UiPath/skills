@@ -43,4 +43,4 @@ mv -f "$staging" "$HOME/.uipath/.auth" || { rm -f "$staging"; exit 1; }
 # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task containers, so
 # container-root cannot read the host-owned ~/.uipath mount by capability; widen
 # it via the "other" bits (mirrors coder-eval's own grant_container_access).
-chmod -R o+rwX "$HOME/.uipath"
+chmod -R o+rwX "$HOME/.uipath" || true  # root-owned files from a container must not fail an installed rotation

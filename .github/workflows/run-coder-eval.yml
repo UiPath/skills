@@ -196,6 +196,10 @@ jobs:
           if [ "$DROPPED" -gt 0 ]; then
             echo "::warning::studio-web: dropped $DROPPED windows-tagged task(s); the desktop-RPA suite does not run under Studio Web"
           fi
+          # Overlapping globs list a file twice; the verdict compares against this count.
+          if [ "${#LINUX[@]}" -gt 0 ]; then
+            mapfile -t LINUX < <(printf '%s\n' "${LINUX[@]}" | awk '!seen[$0]++')
+          fi
           LCOUNT=${#LINUX[@]}
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
@@ -802,7 +806,10 @@ jobs:
         # publishing steps below require its success, so nothing is published.
         # The refresher stops first so the issued-tokens record is final.
         run: |
-          kill "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" 2>/dev/null || true
+          # The refresher is its own process group (setsid): kill the group so an
+          # in-flight rotation stops too.
+          pid="$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)"
+          if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; fi
           python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-tasks "$TASK_COUNT"
 
       - name: Report auth refresher status
@@ -996,8 +1003,9 @@ jobs:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
           expected = int(sys.argv[2])
-          print(f"\n{ok}/{expected} PASS (linux)")
-          sys.exit(0 if len(rows) == expected and ok == expected else 1)
+          print(f"\n{ok}/{len(rows)} PASS (linux; expected at least {expected})")
+          # >= : a dataset task fans out into one task.json per row; a missing task still fails.
+          sys.exit(0 if len(rows) >= expected and ok == len(rows) else 1)
           PY
 
   run-windows:

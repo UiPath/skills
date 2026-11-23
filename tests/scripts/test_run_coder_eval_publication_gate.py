@@ -50,12 +50,14 @@ def test_the_verdict_step_emits_a_fixed_message_when_the_scrub_failed():
     assert guard < run.index("python"), "the outcome check must precede anything that reads /tmp/runs"
     assert "withheld" in run[guard : guard + 200] and "exit 1" in run[guard : guard + 200]
     assert "expected = int(sys.argv[2])" in run  # verdict compares against the expected task count
+    assert "len(rows) >= expected" in run  # dataset fan-out passes, a missing task fails
 
 
 def test_the_scrub_stops_the_refresher_and_checks_the_task_count():
     scrub, _ = _after_scrub()
     run = scrub["run"]
     assert run.index("auth-refresher.pid") < run.index("scrub-run-artifacts.py")
+    assert 'kill -- "-$pid"' in run  # the whole refresher group, including an in-flight rotation
     assert '--expect-tasks "$TASK_COUNT"' in run
 
 
