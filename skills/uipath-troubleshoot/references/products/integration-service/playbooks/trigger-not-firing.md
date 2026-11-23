@@ -118,8 +118,9 @@ What to look for:
      --folder-path "<folder>" --output json
    ```
 
-   Fewer rows than the trace's `EventsMatched`, or a non-null `DispatchError`,
-   means dispatch failed and `DispatchErrorCode` names why. A full set with
+   Fewer rows than the trace's `EventsMatched` means dispatch failed, and
+   `DispatchErrorCode` / `DispatchError` name why — **but only once the trace is
+   older than 60 seconds**, because dispatch is asynchronous. A full set with
    `DispatchStatus: 0` means the trigger succeeded and the fault is in what it
    started — take `JobId` from there. See
    [investigation_guide.md § Step 4](../investigation_guide.md#step-4--what-the-trace-actually-started).

@@ -111,6 +111,9 @@ What to look for:
      --folder-path "<folder>" --output json
    ```
 
+   Compare the row count against the trace's `EventsMatched`, and give a trace
+   younger than 60 seconds the benefit of the doubt — dispatch is asynchronous.
+
    For a Maestro start trigger `JobId` is the **process instance external id**,
    not an Orchestrator job id — resolve it with
    `uip maestro bpmn instances list --process-key <process-key> --folder-key <folder-key>`

@@ -151,11 +151,18 @@ comparison against `uip or jobs list`: totals that agree over a window do not
 show that *this* event started *that* job, and a job near the window edge counts
 on one side and not the other.
 
-- **Row count equals the trace's `EventsMatched`, `DispatchStatus: 0`** — the
-  trigger did everything right. Any fault is in the job or instance; take
-  `JobId` and continue there.
-- **Fewer rows than `EventsMatched`, or a non-null `DispatchError`** — dispatch
+**The count is the test: `correlated rows == EventsMatched`.**
+
+- **Equal, `DispatchStatus: 0`** — the trigger did everything right. Any fault
+  is in the job or instance; take `JobId` and continue there.
+- **Fewer rows than `EventsMatched`, trace older than 60 seconds** — dispatch
   itself failed. `DispatchErrorCode` and `DispatchError` name the reason.
+- **Fewer rows, trace younger than 60 seconds** — in flight, not broken. Dispatch
+  is asynchronous: `callbackTime` lands 1–2 seconds after the trace's
+  `startTime` in practice, and 60 seconds is the buffer to apply before
+  concluding anything. **Re-check rather than reporting a failure** — an agent
+  querying a short window on a frequent trigger will otherwise call a healthy
+  mid-flight cycle broken.
 - **Empty with a `Warning`** — the trace matched nothing, so there is nothing to
   correlate. Go back to Step 2; this is not a dispatch failure.
 
