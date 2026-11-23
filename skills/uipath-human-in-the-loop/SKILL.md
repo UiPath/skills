@@ -264,19 +264,6 @@ Write the node JSON directly into `workflow.nodes`, add the definition to `workf
 
 Node JSON, definition entry, edge format, `variables.nodes` algorithm, and four worked examples: **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)**
 
-**CLI (opt-in):** When the user explicitly requests a CLI command:
-
-```bash
-uip maestro flow hitl add <path/to/file.flow> \
-  --label "<TaskLabel>" \
-  --priority <Low|Medium|High> \
-  --assignee <email-or-group> \
-  --schema '<json>' \
-  --output json
-```
-
-The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. Wire one `outcome-<outcome.id>` port per outcome after it returns.
-
 After writing, validate:
 
 ```bash

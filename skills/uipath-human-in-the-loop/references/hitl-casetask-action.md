@@ -4,9 +4,9 @@
 > **In this package, read this file only to understand a compiled Case plan.** Author Case HITL with the `uipath-maestro-case` skill: `action(...)` in `<Name>.case.ts`, then compile. Never hand-edit the compiled plan.
 
 <!--skill-flavor:case-json-reading-note:end-->
-The agent writes an `action` task into a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Direct JSON write is the primary method on the Case surface.** Unlike the Flow surface (`uip maestro flow hitl add`), the `uipath-maestro-case` skill ships no single `hitl add` CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.case` directly per the path-specific JSON shapes below.
+The agent writes an `action` task into a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Direct JSON write is the primary method on the Case surface.** There is no CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.case` directly per the path-specific JSON shapes below.
 
-> If the stage or case predates required entry/exit/completion rules (see the checklist below), `uip maestro case` does have CLI mutation commands for those (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, `task-entry-conditions` — each with an `add` subcommand). Prefer them over hand-writing that JSON when the case project already exists as a file you can pass to the CLI. If you're editing a caseplan.case given to you directly (not one you scaffolded yourself with these commands), it's simplest to just include the correct rule shapes directly per the examples below.
+> If the stage or case predates required entry/exit/completion rules (see the checklist below), write the correct rule shapes directly per the examples below. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
 
 Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
 

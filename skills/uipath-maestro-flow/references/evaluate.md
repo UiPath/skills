@@ -51,10 +51,10 @@ Most resources are addressed through their set. `--set` is required on `eval lis
 
 For `--evaluators`, use the generated evaluator id or filename, not its display name. Omitting `--evaluators` on `eval set add` links all existing evaluators.
 
-Data-point input keys must match declared flow inputs. Declare them with `.input({ … })` in source and compile before `eval add`; the command reads the compiled `.flow` and fails with `Input "<name>" is not declared as an input variable in the flow` when missing. Do not use `uip maestro flow variable add`: the next `compile -o` rewrites the `.flow`, making the edit disappear or collide with `Variable '<name>' already exists`. Inspect declarations in the `.flow`; `variable` takes no `--path`:
+Data-point input keys must match declared flow inputs. Declare them with `.input({ … })` in source and compile before `eval add`; the command reads the compiled `.flow` and fails with `Input "<name>" is not declared as an input variable in the flow` when missing. Never edit inputs into the compiled `.flow`: the next `compile -o` rewrites it. The input ids are the keys of `.input({ … })` in `.flow-sdk/<Name>.flow.ts`. With no source (a brownfield `.flow`), read them from the compiled file:
 
 ```bash
-uip maestro flow variable list ./MySolution/MyFlow/MyFlow.flow --output json
+node -e 'const f = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); for (const v of f.variables.globals) if (v.direction === "in") console.log(v.id)' ./MySolution/MyFlow/MyFlow.flow
 ```
 
 Build expected outputs from real records; invented keys match no record and score a fault instead of an answer.

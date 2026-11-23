@@ -75,7 +75,7 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
 
 For non-CRUD operations there is no objects step — use the trigger activity's **ObjectName** field directly.
 
-> Generic CRUD triggers (e.g. Salesforce `record-created`) carry no objectName in their flow-node manifest — pass the resolved `Name` as `objectName` when configuring the trigger node (Maestro Flow: `node configure --detail.objectName`).
+> Generic CRUD triggers (e.g. Salesforce `record-created`) carry no objectName in their flow-node manifest — pass the resolved `Name` as `objectName` when configuring the trigger node (Maestro Flow: `uip maestro registry prepare <connector> --action <event> --object <Name>`; compile then writes it to `inputs.detail.objectName`).
 
 ---
 
@@ -166,7 +166,7 @@ One entry per configure-time input field (repo, channel, shared mailbox). **Not 
 | `description` | Field hint (often suitable to surface verbatim when asking the user) |
 | `reference` | Present → field is a lookup ID. Resolve via `uip is resources run list "<connector-key>" "<reference.objectName>" --connection-id "<id>"` before configure (IDs are connection-scoped). |
 | `design.position` | `"primary"` → top-level input shown in the trigger card. Other positions are layout hints — ignore for configure. |
-| `type` | Bucket selector for `node configure --detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, otherwise → `eventParameters`. Each bucket is a JSON object keyed by `name`. |
+| `type` | Bucket selector for the node's `inputs.detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, otherwise → `eventParameters`. Each bucket is a JSON object keyed by `name`. |
 
 ### Trigger Metadata (from `triggers describe`)
 

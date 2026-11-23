@@ -34,7 +34,7 @@ node `dim(288, 96)` and each container at least `dim(560, 320)`;
 or upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:compile-layout-sdk-upgrade:end-->
 
-`nodes create` without `--position`, or a hand edit adding nodes, leaves new nodes at `layout.nodes[<id>].position` 0,0. After such an edit to a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and pass `--position <x>,<y>` to every `nodes create`.
+A hand edit adding nodes leaves new nodes at `layout.nodes[<id>].position` 0,0. After such an edit to a file without an author-chosen layout, run `format` and confirm every `layout.nodes` entry has a distinct position. With an author-chosen layout, skip `format` and place the nodes in source with `.layout()` (below).
 
 ### Lay out from source instead: `.layout()`, `at()`, `dim()`
 

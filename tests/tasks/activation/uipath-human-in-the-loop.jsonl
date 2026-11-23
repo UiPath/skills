@@ -14,7 +14,7 @@
 {"id": "uipath-human-in-the-loop-014", "prompt": "Stick a manual approval node in here so a person can approve/decline before the next step runs", "expected_skill": "uipath-human-in-the-loop"}
 {"id": "uipath-human-in-the-loop-015", "prompt": "Add a quickform with a comment textarea, a date picker for due date, and approve/reject outcomes", "expected_skill": "uipath-human-in-the-loop"}
 {"id": "uipath-human-in-the-loop-016", "prompt": "Create a HITL step that shows the extracted PO data and lets the reviewer edit any field before submission", "expected_skill": "uipath-human-in-the-loop"}
-{"id": "uipath-human-in-the-loop-017", "prompt": "Use uip maestro flow hitl add to insert an approval node into my flow file", "expected_skill": "uipath-human-in-the-loop"}
+{"id": "uipath-human-in-the-loop-017", "prompt": "Insert a human-in-the-loop approval node into my flow file", "expected_skill": "uipath-human-in-the-loop"}
 {"id": "uipath-human-in-the-loop-018", "prompt": "Add a coded action app for the review step \u2014 scaffold a new React app inside my solution", "expected_skill": "uipath-human-in-the-loop"}
 {"id": "uipath-human-in-the-loop-019", "prompt": "Add a price override approval \u2014 only managers can approve discounts over 15%", "expected_skill": "uipath-human-in-the-loop"}
 {"id": "uipath-human-in-the-loop-020", "prompt": "Insert a CSR approval gate before the Stripe refund node in my refund flow", "expected_skill": "uipath-human-in-the-loop"}
