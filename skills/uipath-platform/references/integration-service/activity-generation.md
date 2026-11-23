@@ -150,7 +150,8 @@ and routing all work.
 ### 4. Write the main script, then test it
 
 Save it as `$WORK/<scriptRef>.js`: the file's base name **is** the `scriptRef`
-the min.json declares in step 5, and each script is found by that name alone. A lookup script from step 3 follows the same rule.
+the min.json declares in step 5, and `flow node add --scripts $WORK` finds each
+script by that name alone. A lookup script from step 3 follows the same rule.
 
 **Decide first whether the operation has side effects.** Reads may be run
 immediately; writes may not be run at all until the user chooses to. Do not
