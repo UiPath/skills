@@ -685,7 +685,8 @@ jobs:
             # reach the job log, and this repo's logs are public.
             env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
-            # the delegate auth/env vars to nightly.yaml's own list (MergeField
+            # the delegate auth/env vars to passthrough_extra, which the single
+            # -D below appends to nightly.yaml's own list (MergeField
             # append-semantics). Same list as run.py in coder_eval_uipath, less
             # DELEGATE_BACKEND_URL (unused here).
             # USER_ID is included for parity — the delegate host reads it when
