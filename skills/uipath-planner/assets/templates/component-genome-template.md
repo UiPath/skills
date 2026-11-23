@@ -68,6 +68,8 @@
 | Entity | Fields | Written by | Read by |
 |--------|--------|------------|---------|
 
+{Entity schema: <GENOME_SLUG>.entities.json — only when the entities come from a data model}
+
 ### Triggers
 
 | Trigger | Starts | Kind | When | Runners |

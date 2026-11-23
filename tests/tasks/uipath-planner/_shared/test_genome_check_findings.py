@@ -970,3 +970,49 @@ def test_a_process_mark_naming_a_missing_process_entry_fails_strict(process_tree
     rc, out = check_process(profile="strict")
     assert rc == 1
     assert "*[Inferred: process D9]* names entry 9, which the process genome's Open Decisions does not have" in out
+
+
+# --- entity schema file (Data Fabric entities from a data model) ----------------------------------
+
+ENTITY_SCHEMA = {"version": 1, "entities": {
+    "req_requisition": {"kind": "native", "realizes": [{"class": "Requisition", "role": "owner"}],
+                        "fields": {"number": {"type": "STRING", "length": 20, "required": True, "property": "Requisition.number"}}}}}
+
+
+def with_entities(tmp_path, entities=("req_requisition",), schema=ENTITY_SCHEMA, line="Entity schema: `sample-genome.entities.json`"):
+    if schema is not None:
+        (tmp_path / "sample-genome.entities.json").write_text(json.dumps(schema), encoding="utf-8")
+    rows = "".join(f"| `{e}` | number: STRING | Dispatcher | Performer |\n" for e in entities)
+    table = f"### Data Fabric entities\n\n| Entity | Fields | Written by | Read by |\n|--------|--------|------------|---------|\n{rows}\n{line}\n\n"
+    return COMPONENT.replace("### Triggers", table + "### Triggers", 1)
+
+
+def test_entity_schema_matching_the_table_passes_strict(check, tmp_path):
+    assert check(with_entities(tmp_path), profile="strict")[0] == 0
+
+
+def test_entity_schema_that_does_not_exist_fails_strict_only(check, tmp_path):
+    text = with_entities(tmp_path, schema=None)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "entity schema sample-genome.entities.json does not exist beside the genome" in out
+
+
+def test_entity_schema_and_table_naming_different_entities_fails_strict(check, tmp_path):
+    rc, out = check(with_entities(tmp_path, entities=("req_requisition", "req_supplier")), profile="strict")
+    assert rc == 1
+    assert "['req_supplier'] are not in sample-genome.entities.json" in out
+
+
+def test_entity_schema_with_a_review_kind_fails_strict(check, tmp_path):
+    schema = json.loads(json.dumps(ENTITY_SCHEMA))
+    schema["entities"]["req_requisition"]["kind"] = "review"
+    rc, out = check(with_entities(tmp_path, schema=schema), profile="strict")
+    assert rc == 1
+    assert "still kind \"review\"" in out
+
+
+def test_template_placeholder_entity_schema_line_is_not_checked(check, tmp_path):
+    text = with_entities(tmp_path, schema=None, line="{Entity schema: <GENOME_SLUG>.entities.json — only when the entities come from a data model}")
+    assert check(text, profile="strict")[0] == 0

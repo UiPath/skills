@@ -39,7 +39,7 @@ The README is the completion report. It is written for a reader who has this fol
 <!--skill-flavor:report-gate:end-->
 - UI targets: <screens>/<elements> (<high/medium/low>), <created>/<reused>/<parametrised>; <n> verified, <n> shape-verified on <instance>, <n> offline-unverified; <n> live checks open (`live-checks/`); <n> placeholders.
 - Tests: per test case, `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` (`parity/`).
-- Test data and Data Fabric: <n> seed records, <variation files> filled from source rows, <n> credential assets declared; <entity, …> <created and loaded | created | open items> | none.
+- Test data and Data Fabric: <n> seed records, <variation files> filled from source rows, <n> credential assets declared; <entity, …> <created and loaded | created | open items>; with an entity schema file, the set's outcome per entity (created and read back, or the failed step and the platform's message) | none.
 - Refactor: <the line of refactor-guide.md § Done> | not a refactor.
 - Before the first run: <n> setup steps (`open-items.md`).
 

@@ -30,7 +30,8 @@
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
-//           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
+//           in the kinds' order, an `Entity schema:` file under the Data Fabric table that exists beside the genome,
+//           parses, holds exactly the table's entities and none still of kind `review`, and a process genome's Deployment with its four bullets; no H2 heading twice; no
 //           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
@@ -458,7 +459,7 @@ function checkWrittenSdd(path, text, level, r) {
 
 /** strict: Platform Dependencies holds the stub or a table per kind in the kinds' order, another service's after
  * them; a process genome's Deployment holds its bullets. */
-function checkPlatformDependencies(text, level, r) {
+function checkPlatformDependencies(text, level, r, path = null) {
   const body = sectionBody(text, "Platform Dependencies");
   const tables = [...body.matchAll(/^### (.+)$/gm)].map((m) => m[1].trim());
   if (!tables.length && !body.includes(NO_DEPENDENCIES)) r.strict(`Platform Dependencies: neither a table per kind nor the stub line '${NO_DEPENDENCIES}.'`);
@@ -470,9 +471,34 @@ function checkPlatformDependencies(text, level, r) {
     else if (kind < last) r.strict(`Platform Dependencies: '### ${h}' out of the kinds' order ${repr(DEPENDENCY_KINDS)}`);
     last = Math.max(last, kind);
   }
+  if (path) checkEntitySchema(path, body, r);
   if (level !== "process") return;
   const missing = DEPLOYMENT_LABELS.filter((l) => !new RegExp(`^- \\*\\*${esc(l)}:\\*\\*`, "m").test(sectionBody(text, "Deployment")));
   if (missing.length) r.strict(`Deployment: no bullet for ${repr(missing)}`);
+}
+
+const ENTITY_SCHEMA = /^\{?Entity schema:\s*`?([^`\s}]+)`?/m;
+
+/** strict: an `Entity schema:` line under the Data Fabric table names a file beside the genome that parses, holds
+ * exactly the table's entities, and has no entity whose kind is still `review`. */
+function checkEntitySchema(path, body, r) {
+  const block = body.split(/^### /m).find((b) => b.startsWith("Data Fabric entities")) ?? "";
+  const m = ENTITY_SCHEMA.exec(block);
+  if (!m || m[1].startsWith("<")) return;
+  const file = resolvePath(dirname(path), m[1]);
+  let schema;
+  try { schema = JSON.parse(readFileSync(file, "utf8")); } catch (err) {
+    r.strict(`Platform Dependencies: entity schema ${m[1]} ${existsSync(file) ? `does not parse (${err.message})` : "does not exist beside the genome"}`);
+    return;
+  }
+  const inFile = new Set(Object.keys(schema?.entities ?? {}));
+  const inTable = new Set(tableRows(block, "| Entity").map((row) => row[0].replace(/[`*]/g, "").trim()).filter(Boolean));
+  const onlyTable = [...inTable].filter((e) => !inFile.has(e));
+  const onlyFile = [...inFile].filter((e) => !inTable.has(e));
+  if (onlyTable.length) r.strict(`Platform Dependencies: Data Fabric entities ${repr(onlyTable)} are not in ${m[1]}`);
+  if (onlyFile.length) r.strict(`Platform Dependencies: ${m[1]} defines ${repr(onlyFile)}, missing from the Data Fabric table`);
+  const review = [...inFile].filter((e) => schema.entities[e]?.kind === "review");
+  if (review.length) r.strict(`Platform Dependencies: ${m[1]}: ${repr(review)} still kind "review"; the Developer settles native or federated`);
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -648,7 +674,7 @@ function checkComponent(path, a, partOf, shape = true, library = false, processE
   if (!cq.trim()) r.core("Configuration Questions section is empty");
   else if (!questions.length && !cq.includes("no configuration needed")) r.strict("Configuration Questions: neither a numbered list of questions nor the stub line");
   checkOpenDecisions(text, r, processEntries);
-  checkPlatformDependencies(text, "component", r);
+  checkPlatformDependencies(text, "component", r, path);
   if (a.sourceMap.length) {
     const sm = sectionBody(text, "Source Map");
     if (!sm.trim()) r.core("missing or empty '## Source Map' section");
@@ -691,7 +717,7 @@ function checkProcess(path, a) {
     try { for (const n of namedEntries(read(target), true)) namedByComponents.add(n); } catch (e) { if (!(e instanceof InputError)) throw e; }
   }
   checkOpenDecisions(text, r, null, namedByComponents);
-  checkPlatformDependencies(text, "process", r);
+  checkPlatformDependencies(text, "process", r, path);
   const processEntries = openDecisions(text);
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
