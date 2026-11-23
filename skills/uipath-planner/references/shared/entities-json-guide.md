@@ -13,6 +13,7 @@ A checked data model is an ontology that passed its check: `object-model.json` w
 5. **DECIMAL precision is never asked.** Take it from the sources or the process context when they show it; otherwise `2`. List every defaulted precision in the review, where the Developer can change it.
 6. **Names the platform accepts.** Field names: letters, digits, `_`, starting with a letter; never a C# or VB keyword in any case (`event`, `virtual`, `date`, `string`) and never `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner` — rename and keep the property in `property`. Choice-set names: letters and digits. Choice value names: letters and digits starting with a letter; the code as written goes in `displayName`.
 7. **A federated entity never selects one name from two sources** — rename one (`<source><Field>`); both sides select the join field.
+8. **Creating the entities is never a Build With step.** The entities sit under Platform Dependencies; the build creates them from this file through its Data Fabric question. `uipath-platform` is operate-only and never appears in Build With.
 
 ## Mapping from the data model
 
