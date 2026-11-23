@@ -30,10 +30,10 @@ uip gov compliance-packs state settings --output json
 With modes on, standards are turned off together: `state disable` on an active standard answers `disable_all_required`. Say so plainly — the user asked to turn off one standard, and this turns off **every** active one on the tenant.
 
 ```bash
-uip gov compliance-packs state disable-all tenant $TENANT_ID --preview --output json
+uip gov compliance-packs state disable-all $TENANT_ID --dry-run --output json
 ```
 
-The preview writes nothing. Show it:
+The `--dry-run` preview writes nothing. Show it:
 
 ```
 Turning off <packName> turns off every active standard on <tenantName>:
@@ -56,7 +56,7 @@ Turn off all <N> standards? (y/n)
 Require `y`. Halt on anything else. Then:
 
 ```bash
-uip gov compliance-packs state disable-all tenant $TENANT_ID --output json
+uip gov compliance-packs state disable-all $TENANT_ID --output json
 ```
 
 Report from this response (it reads the tenant again, so it can differ from the preview): "Turned off <names> on `<tenantName>`." plus the same policy lines. On 409 another operation is running — wait ~10 seconds and retry, up to 3 times. On `disable_all_not_enabled` (404) modes are off: use the section below.
