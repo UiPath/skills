@@ -15,6 +15,6 @@ Write `, run` only when this turn ran the process with the user's consent.
 <!--skill-flavor:final-status-rule:end-->
 
 <!--skill-flavor:final-path-rule:start-->
-The path line belongs to this final message: write the target path here even if you named it earlier in the turn, bare: no link, no backticks.
+The path line belongs to this final message: write the target path here even if you named it earlier in the turn, bare (no link, no backticks) and flush-left: first character is `/`, no leading space or indent.
 
 <!--skill-flavor:final-path-rule:end-->
