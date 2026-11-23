@@ -421,3 +421,52 @@ class TestModelCalls:
     def test_a_nested_call_keeps_its_whole_argument_list(self):
         probe = decision_xml('<literalExpression><text>discounted(sum(1, 2), tier)</text></literalExpression>')
         assert gc.model_calls(probe, "discounted") == ["sum(1, 2), tier"]
+
+
+class TestCallsAreNotSourceText:
+    """A call is what the engine invokes, not every occurrence of the name."""
+
+    def test_a_call_inside_a_string_is_not_a_call(self):
+        probe = decision_xml('<decisionTable><rule><outputEntry><text>"discounted(50, tier)"</text>'
+                             '</outputEntry></rule></decisionTable>')
+        assert gc.model_calls(probe, "discounted") == []
+
+    def test_whitespace_before_the_parenthesis_is_still_a_call(self):
+        # FEEL allows it, so refusing it failed a correct submission on spacing alone.
+        probe = decision_xml('<literalExpression><text>discounted (50, tier)</text></literalExpression>')
+        assert gc.model_calls(probe, "discounted") == ["50, tier"]
+
+    def test_a_parenthesis_inside_a_string_argument_does_not_end_the_call(self):
+        probe = decision_xml('<literalExpression><text>discounted("a)b", tier)</text></literalExpression>')
+        assert gc.model_calls(probe, "discounted") == ['"a)b", tier']
+
+
+class TestUnevaluatedDecisions:
+    """What the offline evaluator cannot run is absent, never a FEEL null."""
+
+    @staticmethod
+    def graph() -> ET.Element:
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        return ET.fromstring(f'''<definitions {model}>
+          <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
+          <decision id="d_lit" name="lit"><variable name="lit" typeRef="number"/>
+            <informationRequirement><requiredInput href="#in_a"/></informationRequirement>
+            <literalExpression typeRef="number"><text>a * 10</text></literalExpression></decision>
+          <decision id="d_band" name="band"><variable name="band" typeRef="number"/>
+            <informationRequirement><requiredDecision href="#d_lit"/></informationRequirement>
+            <decisionTable hitPolicy="FIRST">
+              <input><inputExpression typeRef="number"><text>lit</text></inputExpression></input>
+              <output name="flag" typeRef="number"/>
+              <rule><inputEntry><text>&gt; 5</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+              <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>0</text></outputEntry></rule>
+            </decisionTable></decision>
+        </definitions>''')
+
+    def test_a_table_fed_by_a_literal_expression_publishes_nothing(self):
+        # It used to read the unevaluated literal as null, fall through to the `-` row and answer
+        # 0 — a value nothing computed, which a case expecting 0 accepted.
+        assert "flag" not in gc.evaluate_graph(self.graph(), {"a": 1})
+
+    def test_a_case_naming_an_unevaluated_output_fails_loudly(self):
+        with pytest.raises(SystemExit):
+            gc.check_graph_cases(self.graph(), [({"a": 1}, {"flag": 0})])

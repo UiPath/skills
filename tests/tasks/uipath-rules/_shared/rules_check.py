@@ -282,6 +282,9 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
     """
     names = names or {}
     columns = input_columns(table)
+    policy = table.get("hitPolicy", "UNIQUE")
+    if policy not in ("FIRST", "UNIQUE", "ANY"):
+        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
     hits = []
     for rule in table.findall("dmn:rule", NS):
         cells = [(e.findtext("dmn:text", default="", namespaces=NS) or "") for e in rule.findall("dmn:inputEntry", NS)]
@@ -294,13 +297,15 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
                 found, read = read_name(names, value)
                 resolved.append(read if found else literal(value))
             hits.append(dict(zip(output_names(table), resolved)))
-    policy = table.get("hitPolicy", "UNIQUE")
+            # FIRST answers with this row, so the rows below it are never evaluated. Reading them
+            # anyway means a later fallback row holding a call or a formula aborts grading on
+            # `literal()`'s refusal, though the engine would never have looked at it.
+            if policy == "FIRST":
+                break
     if policy == "UNIQUE" and len(hits) > 1:
         fail(f"{inputs} matches {len(hits)} rows of a UNIQUE table")
     if policy == "ANY" and any(hit != hits[0] for hit in hits):
         fail(f"{inputs} matches rows of an ANY table with different outputs")
-    if policy not in ("FIRST", "UNIQUE", "ANY"):
-        fail(f"hit policy {policy} is outside the single-result policies this check evaluates")
     return hits[0] if hits else None
 
 

@@ -305,3 +305,18 @@ class TestProject:
         _, root = rc.load_rule(project)
         with pytest.raises(SystemExit):
             rc.check_named_rules(rc.table_of(root))
+
+
+def test_first_stops_at_its_first_match():
+    """A FIRST table never evaluates the rows below the one that answers."""
+    # With `literal()` refusing a call, reading every matching row let an unused fallback row
+    # abort grading on an expression the engine would never have looked at.
+    model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+    table = ET.fromstring(f'''<decisionTable {model} hitPolicy="FIRST">
+      <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
+      <output name="fee" typeRef="number"/>
+      <rule><inputEntry><text>&gt; 5</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+      <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>scoreModel(amount)</text></outputEntry></rule>
+    </decisionTable>''')
+
+    assert rc.evaluate(table, {"amount": 10}) == {"fee": 1}

@@ -133,11 +133,15 @@ def wired() -> None:
     arguments = [argument.strip() for argument in calls[0].split(",")]
     if len(arguments) != 2 or arguments[0] != "50":
         fail(f"the freight decision calls discounted({calls[0]}); the prompt discounts 50 by the tier")
-    # One output, so the taught form is the decision's own name; `tier.tierPct` is valid FEEL too.
+    # The tier decision has one output, so its result is that value and a reader addresses the
+    # decision itself. `tier.tierPct` reads a field of a number and is what Critical Rule 3
+    # exists to prevent; allowing it here would have graded an invalid call as correct, and this
+    # task never runs the engine to catch it.
     tier = reference_name(decision_for_output(root, "tierPct"))
-    if arguments[1] not in (tier, f"{tier}.tierPct"):
+    if arguments[1] != tier:
         fail(f"the freight discount is taken at {arguments[1]!r}, not at {tier!r}, "
-             f"the tier percentage the rule already computes")
+             f"the tier percentage the rule already computes; {tier!r} has one output, so a "
+             f"reader names the decision and never a field of it")
     print(f"OK: {len(callers)} decisions call 'discounted', and freight discounts 50 by the tier")
 
 

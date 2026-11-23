@@ -13,6 +13,7 @@ project; `graph_check.py names` checks every table's rule annotations;
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -122,19 +123,46 @@ def executable_text(decision: ET.Element) -> str:
     return "\n".join(parts)
 
 
+def outside_strings(text: str) -> str:
+    """`text` with every FEEL string literal blanked, its length unchanged.
+
+    A cell may hold `"discounted(50, tier)"` as data, which the engine never calls, and a string
+    may hold an unbalanced parenthesis. Blanking rather than deleting keeps every later offset
+    where it was, so a scan over the result still indexes the original text.
+    """
+    out, quote, escaped = [], "", False
+    for char in text:
+        if quote:
+            out.append(" ")
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+        elif char in ('"', "'"):
+            quote, _ = char, out.append(" ")
+        else:
+            out.append(char)
+    return "".join(out)
+
+
 def model_calls(decision: ET.Element, model: str) -> list[str]:
-    """The argument text of each `model(...)` call in what `decision` runs, outermost commas split."""
-    calls = []
+    """The argument text of each `model(...)` call in what `decision` runs.
+
+    Whitespace between the name and the parenthesis is a call — FEEL allows it — and a name
+    ending in the model's is not: `netDiscounted(` is not a call to `discounted`.
+    """
     text = executable_text(decision)
-    for start in (match for match in range(len(text)) if text.startswith(f"{model}(", match)):
-        if start and (text[start - 1].isalnum() or text[start - 1] in "._"):
-            continue  # `netDiscounted(` is not a call to `discounted`
-        depth, cursor = 0, start + len(model)
-        for cursor in range(start + len(model), len(text)):
-            depth += (text[cursor] == "(") - (text[cursor] == ")")
+    scan = outside_strings(text)
+    calls = []
+    for match in re.finditer(rf"(?<![A-Za-z0-9_.]){re.escape(model)}\s*\(", scan):
+        depth, cursor = 0, match.end() - 1
+        for cursor in range(match.end() - 1, len(scan)):
+            depth += (scan[cursor] == "(") - (scan[cursor] == ")")
             if depth == 0:
                 break
-        calls.append(text[start + len(model) + 1:cursor])
+        calls.append(text[match.end():cursor])
     return calls
 
 
@@ -162,6 +190,12 @@ def resolve(context: dict, path: str) -> tuple[bool, object]:
     return True, value
 
 
+# A decision the offline evaluator cannot run — a literal expression, or a table whose cells call
+# a knowledge model. Distinct from `None`, which is a table that matched no rule and so really
+# does answer nothing.
+UNEVALUATED = object()
+
+
 def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
     """Every decision's outputs by output name, each table reading only what its decision requires."""
     by_id = {d.get("id"): d for d in decisions(root)}
@@ -181,14 +215,21 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             if input_id not in input_names:
                 fail(f"decision {decision.get('name')!r} requires input {input_id}, which the file does not hold")
             context[input_names[input_id]] = inputs.get(input_names[input_id])
+        unevaluated = False
         for upstream_id in required(decision, "requiredDecision"):
             run(upstream_id, path + (decision_id,))
             hit = hits[upstream_id]
+            if hit is UNEVALUATED:
+                # Passing the missing value on as a FEEL null would let this table fall through to
+                # its `-` row and answer plausibly, so a case could be graded against a value that
+                # was never computed. The decision is unevaluated too, and says so below.
+                unevaluated = True
+                continue
             single = hit is not None and len(hit) == 1
             context[reference_name(by_id[upstream_id])] = next(iter(hit.values())) if single else hit
         table = decision.find("dmn:decisionTable", NS)
-        if table is None:
-            hits[decision_id] = None
+        if table is None or unevaluated:
+            hits[decision_id] = UNEVALUATED
             return
         values = {}
         for column in input_columns(table):
@@ -207,7 +248,10 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
     owner: dict[str, str] = {}
     for decision_id, decision in by_id.items():
         table = decision.find("dmn:decisionTable", NS)
-        if table is None:
+        # An unevaluated decision publishes no output, so a case that names one fails on the
+        # "no decision table returns an output named ..." branch rather than on a value the
+        # evaluator never worked out.
+        if table is None or hits[decision_id] is UNEVALUATED:
             continue
         for name in output_names(table):
             if name in owner:
