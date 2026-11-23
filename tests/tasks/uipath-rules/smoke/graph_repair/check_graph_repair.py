@@ -34,6 +34,8 @@ if __name__ == "__main__":
         if decision_for_output(root, output).get("id") != decision_id:
             fail(f"the decision returning {output} is no longer {decision_id}; consumers bound to it would break")
     check_graph_cases(root, LOAN_CASES)
-    check_shapes_kept(ET.parse(FIXTURE / "Business rule.dmn").getroot(), root)
+    # A repair may legitimately delete what the hand edit left behind, so only the shapes that
+    # remain are held to their old positions.
+    check_shapes_kept(ET.parse(FIXTURE / "Business rule.dmn").getroot(), root, elements_may_go=True)
     check_entry_points_kept(project, FIXTURE)
     print(f"OK: the graph is acyclic and complete, all {len(LOAN_CASES)} cases hold, and the diagram and entry points are kept")

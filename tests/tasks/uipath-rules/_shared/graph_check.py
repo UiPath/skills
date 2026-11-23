@@ -36,18 +36,9 @@ from rules_check import (
 DMNDI_NS = "https://www.omg.org/spec/DMN/20230324/DMNDI/"
 DC_NS = "http://www.omg.org/spec/DMN/20180521/DC/"
 # The size the designer draws each card, whatever width and height the file holds, from
-# PO.Frontend DrdLayout.ts on main.
-#
-# These are deliberately ahead of the CLI. `uip rules format` lays a diagram out with the
-# @uipath/dmn-editor-utils the CLI pins, and 0.1272.1 predates PO.Frontend#8458 by two hours:
-# it draws inputData at nodeWidth * 0.75 = 216 and has no knowledge-model width at all, so a
-# model gets the full 288. A file `format` wrote therefore carries 216 and 288, and is correct
-# for the layout it was written by.
-#
-# Grading against the designer's numbers is the stricter read, and the one that matters: a user
-# sees the designer. A diagram clear at 216 but colliding at 240 is a collision they would see.
-# Nothing `format` produces today is packed tightly enough for the two to disagree — its stride
-# is 336 — and the gap closes when the CLI next bumps the library.
+# PO.Frontend DrdLayout.ts. Graded against the designer rather than against whatever layout
+# library the CLI pins, because a user sees the designer: a diagram that is clear at the pinned
+# width and collides at the designer's is a collision they would see.
 DRAWN_SIZE = {"decision": (288, 96), "inputData": (240, 96),
               "businessKnowledgeModel": (224, 96), "textAnnotation": (224, 64)}
 
@@ -113,6 +104,52 @@ def decision_for_output(root: ET.Element, output: str) -> ET.Element:
     if len(found) != 1:
         fail(f"{len(found)} decisions return an output named {output}, expected exactly one")
     return found[0]
+
+
+def executable_text(decision: ET.Element) -> str:
+    """Only the FEEL a decision runs: its literal expression, and its table's cells.
+
+    Deliberately not `itertext()`. A rule's annotation column, a `<description>` and a
+    `<textAnnotation>` are prose the engine never evaluates, so a search over all descendant text
+    let a decision that inlined the work it was told to delegate pass by merely naming the model
+    in a note beside it.
+    """
+    parts = [decision.findtext("dmn:literalExpression/dmn:text", default="", namespaces=NS) or ""]
+    for cells in ("dmn:decisionTable/dmn:input/dmn:inputExpression/dmn:text",
+                  "dmn:decisionTable/dmn:rule/dmn:inputEntry/dmn:text",
+                  "dmn:decisionTable/dmn:rule/dmn:outputEntry/dmn:text"):
+        parts += [element.text or "" for element in decision.findall(cells, NS)]
+    return "\n".join(parts)
+
+
+def model_calls(decision: ET.Element, model: str) -> list[str]:
+    """The argument text of each `model(...)` call in what `decision` runs, outermost commas split."""
+    calls = []
+    text = executable_text(decision)
+    for start in (match for match in range(len(text)) if text.startswith(f"{model}(", match)):
+        if start and (text[start - 1].isalnum() or text[start - 1] in "._"):
+            continue  # `netDiscounted(` is not a call to `discounted`
+        depth, cursor = 0, start + len(model)
+        for cursor in range(start + len(model), len(text)):
+            depth += (text[cursor] == "(") - (text[cursor] == ")")
+            if depth == 0:
+                break
+        calls.append(text[start + len(model) + 1:cursor])
+    return calls
+
+
+def check_model_called(root: ET.Element, decision: ET.Element, model: str) -> list[str]:
+    """`decision` both requires the named knowledge model and calls it in the FEEL it runs."""
+    models = {m.get("name"): m.get("id") for m in knowledge_models(root)}
+    if model not in models:
+        fail(f"the rule declares no knowledge model named {model!r}; it holds {sorted(models) or 'none'}")
+    if models[model] not in required(decision, "requiredKnowledge"):
+        fail(f"decision {decision.get('name')!r} does not require the knowledge model {model!r}")
+    calls = model_calls(decision, model)
+    if not calls:
+        fail(f"decision {decision.get('name')!r} requires {model!r} but never calls {model}(...) in its logic; "
+             f"a mention in an annotation is not a call")
+    return calls
 
 
 def resolve(context: dict, path: str) -> tuple[bool, object]:
@@ -181,6 +218,20 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
     return outputs
 
 
+def same_value(actual: object, expected: object) -> bool:
+    """FEEL equality, not Python's.
+
+    Python holds `True == 1` and `False == 0`, so a decision declaring a number where the task
+    asked for a boolean passed every case. FEEL keeps the two apart, and keeps `5` and `5.0`
+    together: it has one number type, and the engine answers with whichever JSON carries.
+    """
+    if isinstance(actual, bool) != isinstance(expected, bool):
+        return False
+    if not isinstance(actual, bool) and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+        return float(actual) == float(expected)
+    return actual == expected
+
+
 def check_graph_cases(root: ET.Element, cases: list) -> None:
     for inputs, expected in cases:
         actual = evaluate_graph(root, inputs)
@@ -188,7 +239,7 @@ def check_graph_cases(root: ET.Element, cases: list) -> None:
             if name not in actual:
                 fail(f"no decision table returns an output named {name}; a literal expression or a "
                      f"knowledge model is graded by the engine (graph_check.py engine), not here")
-            if actual[name] != value:
+            if not same_value(actual[name], value):
                 fail(f"{inputs} returned {name}={actual[name]!r}, expected {value!r}")
 
 
@@ -248,12 +299,22 @@ def shapes(root: ET.Element) -> dict[str, tuple[float, float]]:
     return placed
 
 
-def check_shapes_kept(before: ET.Element, after: ET.Element) -> None:
-    """Every shape the fixture placed, for an element the edit kept, is where the user left it."""
-    kept = {e.get("id") for e in after}
+def check_shapes_kept(before: ET.Element, after: ET.Element, *, elements_may_go: bool = False) -> None:
+    """Every element the fixture placed is still placed, and where the user left it.
+
+    Deliberately not narrowed to the ids the edit kept. An edit can give an element a new id,
+    repoint its references and move the card; the old id then leaves the file, and narrowing reads
+    that as nothing to check. A task that tells the agent to leave the diagram alone is asking for
+    the shape to survive, so a missing id fails like a moved one.
+
+    `elements_may_go` for a task whose edit may legitimately delete an element — a repair of a
+    file someone broke by hand. There the shapes that remain still have to be where they were.
+    """
+    kept = {e.get("id") for e in after} if elements_may_go else None
     now = shapes(after)
-    moved = [f"{element} {position} -> {now.get(element)}" for element, position in shapes(before).items()
-             if element in kept and now.get(element) != position]
+    moved = [f"{element} {position} -> {now.get(element)}"
+             for element, position in shapes(before).items()
+             if (kept is None or element in kept) and now.get(element) != position]
     if moved:
         fail(f"the edit moved or dropped shapes the user had placed: {moved}")
 
@@ -360,7 +421,14 @@ ENGINE_CASES = [case for case in LOAN_CASES if case[0]["loanAmount"] != 99999
 
 
 def engine_outputs(project: Path, inputs: dict) -> dict:
-    """What `uip rules debug` returns for `inputs`: every decision's outputs by output name."""
+    """What `uip rules debug` returns for `inputs`, by output name.
+
+    A decision table answers with a context keyed by its output columns; a literal expression
+    answers with the one value, keyed by the decision's name. Two decisions answering under one
+    name are refused rather than merged: `dict.update` let whichever came last in the response
+    overwrite the first, so a wrong value from the decision a case names passed whenever another
+    decision happened to answer under that name. `evaluate_graph` refuses the same way offline.
+    """
     completed = subprocess.run(
         ["uip", "rules", "debug", str(project), "--inputs", json.dumps(inputs), "--output", "json"],
         capture_output=True, text=True, timeout=180,
@@ -369,9 +437,16 @@ def engine_outputs(project: Path, inputs: dict) -> dict:
         fail(f"rules debug exited {completed.returncode} for {inputs}: {(completed.stdout or completed.stderr)[-1500:]}")
     result = (json.loads(completed.stdout).get("Data") or {}).get("result") or {}
     outputs: dict = {}
+    owner: dict[str, str] = {}
     for decision in result.get("decisions") or []:
+        name = decision.get("decisionName")
         value = decision.get("outputs")
-        outputs.update(value if isinstance(value, dict) else {decision.get("decisionName"): value})
+        for key, item in (value if isinstance(value, dict) else {name: value}).items():
+            if key in owner:
+                fail(f"the engine returned an output named {key!r} for both {owner[key]!r} and {name!r}; "
+                     f"a case naming it cannot say which decision it grades")
+            owner[key] = name
+            outputs[key] = item
     return outputs
 
 
@@ -380,7 +455,7 @@ def grade_engine() -> None:
     for inputs, expected in ENGINE_CASES:
         actual = engine_outputs(project, inputs)
         for name, value in expected.items():
-            if actual.get(name) != value:
+            if not same_value(actual.get(name), value):
                 fail(f"the engine returned {name}={actual.get(name)!r} for {inputs}, expected {value!r}; it returned {actual}")
     print(f"OK: the engine returns the expected risk band and interest rate for all {len(ENGINE_CASES)} cases")
 

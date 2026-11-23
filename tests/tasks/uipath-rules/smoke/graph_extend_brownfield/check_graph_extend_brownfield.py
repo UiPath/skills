@@ -30,8 +30,11 @@ from graph_check import (  # noqa: E402
     check_knowledge_models,
     check_no_overlap,
     check_shapes_kept,
+    decision_for_output,
     decisions,
     knowledge_models,
+    model_calls,
+    reference_name,
     required,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
@@ -52,9 +55,14 @@ def kept() -> None:
     if len(models) > 1:
         fail(f"a second knowledge model appeared ({sorted(models)}); the freight discount reuses 'discounted'")
 
-    literal = {d.get("name") for d in root.findall("dmn:decision", NS) if d.find("dmn:literalExpression", NS) is not None}
-    if "netUnitPrice" not in literal:
-        fail("the netUnitPrice decision is gone or is no longer a literal expression")
+    # Still a literal expression is not still the same literal expression: replacing its body
+    # with `0` keeps the name, the kind of node, the wiring and the entry point, and the only
+    # values graded below are the tier decision's. The fixture's own text is the contract.
+    _same_text(root, "dmn:decision[@id='decision_netUnitPrice']/dmn:literalExpression/dmn:text",
+               "the netUnitPrice formula")
+    _same_text(root, "dmn:businessKnowledgeModel[@id='bkm_discounted']/dmn:encapsulatedLogic"
+                     "/dmn:literalExpression/dmn:text", "the body of the 'discounted' model")
+    _same_parameters(root)
 
     notes = [n for n in root.findall("dmn:textAnnotation", NS) if "whole numbers" in (n.findtext("dmn:text", default="", namespaces=NS) or "")]
     if not notes:
@@ -69,6 +77,27 @@ def kept() -> None:
     # and this task never runs the engine, so there is nothing to fall back to.
     check_graph_cases(_tier_only(root), TIER_CASES)
     print("OK: the model, the literal expression, the note and the tier values all survived the edit")
+
+
+def _same_text(root: ET.Element, path: str, what: str) -> None:
+    """`path` holds the text the fixture left there, whitespace aside."""
+    fixture = ET.parse(FIXTURE / "Business rule.dmn").getroot()
+    before = (fixture.findtext(path, default="", namespaces=NS) or "").strip()
+    after = (root.findtext(path, default="", namespaces=NS) or "").strip()
+    if not before:
+        fail(f"the fixture has no {what}; the grader is out of step with it")
+    if after != before:
+        fail(f"{what} changed from {before!r} to {after!r}; the edit was to add a decision, not rewrite one")
+
+
+def _same_parameters(root: ET.Element) -> None:
+    """The 'discounted' model still takes the parameters its callers pass, in order."""
+    def names(tree: ET.Element) -> list[tuple[str | None, str | None]]:
+        return [(p.get("name"), p.get("typeRef")) for p in tree.findall(
+            "dmn:businessKnowledgeModel[@id='bkm_discounted']/dmn:encapsulatedLogic/dmn:formalParameter", NS)]
+    before, after = names(ET.parse(FIXTURE / "Business rule.dmn").getroot()), names(root)
+    if after != before:
+        fail(f"the 'discounted' model now takes {after}, not {before}; its callers pass the old signature")
 
 
 def _tier_only(root: ET.Element) -> ET.Element:
@@ -92,11 +121,24 @@ def wired() -> None:
     if len(callers) < 2:
         fail(f"only {sorted(names)} requires 'discounted'; the freight decision should call it too")
 
-    freight = [d for d in callers if d.get("name") != "netUnitPrice"]
-    for decision in freight:
-        if not any("discounted(" in text for text in decision.itertext() if text):
-            fail(f"decision {decision.get('name')!r} requires 'discounted' but its logic never calls it")
-    print(f"OK: {len(callers)} decisions call 'discounted', each with its own arguments")
+    # The prompt asks for freight of 50 discounted by the customer's tier. Any second caller used
+    # to satisfy this, so `shipping` calling `discounted(500, tier)` graded as correct.
+    freight = decision_for_output(root, "freight")
+    if freight.get("name") == "netUnitPrice":
+        fail("netUnitPrice answers under 'freight'; the freight discount belongs in its own decision")
+    calls = model_calls(freight, "discounted")
+    if not calls:
+        fail(f"decision {freight.get('name')!r} requires 'discounted' but its logic never calls it; "
+             f"a mention in an annotation is not a call")
+    arguments = [argument.strip() for argument in calls[0].split(",")]
+    if len(arguments) != 2 or arguments[0] != "50":
+        fail(f"the freight decision calls discounted({calls[0]}); the prompt discounts 50 by the tier")
+    # One output, so the taught form is the decision's own name; `tier.tierPct` is valid FEEL too.
+    tier = reference_name(decision_for_output(root, "tierPct"))
+    if arguments[1] not in (tier, f"{tier}.tierPct"):
+        fail(f"the freight discount is taken at {arguments[1]!r}, not at {tier!r}, "
+             f"the tier percentage the rule already computes")
+    print(f"OK: {len(callers)} decisions call 'discounted', and freight discounts 50 by the tier")
 
 
 def diagram() -> None:

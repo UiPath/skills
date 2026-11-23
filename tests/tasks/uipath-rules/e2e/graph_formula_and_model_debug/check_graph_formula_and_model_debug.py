@@ -13,7 +13,14 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
-from graph_check import check_knowledge_models, engine_outputs, knowledge_models  # noqa: E402
+from graph_check import (  # noqa: E402
+    check_knowledge_models,
+    check_model_called,
+    decision_for_output,
+    engine_outputs,
+    knowledge_models,
+    same_value,
+)
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
 PROJECT = "FeeRules"
@@ -30,18 +37,19 @@ def main() -> None:
     root = load_graph(project)[1]
     check_knowledge_models(root)
 
-    # Declared and wired is not called. An agent can carry the knowledgeRequirement and still
-    # inline the arithmetic, and the engine returns the right fee either way — so the engine
-    # grade alone would pass a rule in which the model never runs.
-    called = {text for decision in root.findall("dmn:decision", NS) for text in decision.itertext() if text}
+    # Declared and wired is not called, and the engine returns the right fee either way — so the
+    # engine grade alone would pass a rule whose model never runs. Graded on the decision the
+    # prompt names, through the FEEL it actually evaluates: a rule may inline the rates and put
+    # the model's name in an annotation beside them, which reads as a call to a text search.
+    fee = decision_for_output(root, "fee")
+    if fee.find("dmn:literalExpression", NS) is None:
+        fail("the fee decision's logic is not a literalExpression; the fee was asked for as a formula")
     for model in knowledge_models(root):
-        name = model.get("name")
-        if not any(f"{name}(" in text for text in called):
-            fail(f"no decision's logic calls {name}(...), so the model is wired but never runs")
+        check_model_called(root, fee, model.get("name") or "")
     for inputs, expected in CASES:
         actual = engine_outputs(project, inputs)
         for name, value in expected.items():
-            if actual.get(name) != value:
+            if not same_value(actual.get(name), value):
                 fail(f"the engine returned {name}={actual.get(name)!r} for {inputs}, "
                      f"expected {value!r}; it returned {actual}")
     print(f"OK: the engine returns the expected band and fee for all {len(CASES)} cases")

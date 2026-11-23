@@ -2,7 +2,7 @@
 
 A rule holds one `.dmn`, and that file may hold more than one decision. Decisions linked by `informationRequirement` form a decision graph: the engine evaluates what a decision needs before the decision itself, and returns every decision's outputs in one run.
 
-Read this when a request needs more than one answer, or when one answer feeds another. A single decision needs nothing here — author its table and stop.
+Read this when a request needs more than one answer, or when one answer feeds another. One answer still needs the right shape: a set of cases is a decision table and needs nothing here, one formula is a [literal expression](#literal-expressions), a calculation run over different arguments in more than one place is a [knowledge model](#knowledge-models), and a note for a reader is a [text annotation](#text-annotations).
 
 ## When to split
 
@@ -172,10 +172,10 @@ A decision answers with one value from one FEEL expression instead of a table. U
 </decision>
 ```
 
-- **Always set `typeRef`** on the `literalExpression`, and give the decision's `variable` the same type. Without it, `validate` reports `DMN_LITERAL_EXPRESSION_TYPE_MISSING`.
+- **Always set `typeRef`** on the `literalExpression`, and give the decision's `variable` the same type. In a rule of one decision `validate` reports `DMN_LITERAL_EXPRESSION_TYPE_MISSING` without it; in a graph nothing reports it, and the engine fails at run time instead.
 - The expression reads the names the decision requires, by the same rules a table's input expression follows: an input argument by its name, an upstream decision as [Reading an upstream decision](#reading-an-upstream-decision) describes.
 - It answers with one value, so a reader addresses the decision itself — see [Reading an upstream decision](#reading-an-upstream-decision).
-- An empty `<text>` is `DMN_LITERAL_EXPRESSION_EMPTY`.
+- An empty `<text>` is `DMN_LITERAL_EXPRESSION_EMPTY` — again only in a rule of one decision, so in a graph an empty formula passes `validate` and answers nothing.
 - It has no rules, so it carries no `<annotation>` column and no `<annotationEntry>`.
 
 Prefer a decision table whenever the logic is a set of cases. A table shows its cases to a reviewer; a nested `if` in one cell does not.
@@ -250,7 +250,17 @@ uip rules refresh <PROJECT_DIR> --output json
 uip rules validate <PROJECT_DIR> --output json
 ```
 
-`refresh` publishes one entry point per decision, `/<file>.dmn#<decisionId>`, named by the decision's `label`, plus one for the whole file carrying every input and every decision's outputs. `validate` checks every decision of a graph and names the decision in each diagnostic.
+`refresh` publishes one entry point per decision, `/<file>.dmn#<decisionId>`, named by the decision's `label`, plus one for the whole file carrying every input and every decision's outputs.
+
+`validate` names the decision in each diagnostic, but it checks **less of a graph than of a single decision**. Across a graph it checks every decision's name, that each decision carries logic at all, the input-data names, and the item definitions. Beyond that:
+
+| In a graph | Checked by `validate` |
+|---|---|
+| A decision table's rules, columns and cells | Only in a file that also holds a knowledge model |
+| A literal expression | Never — neither its `typeRef` nor its text |
+| What any decision returns | Never |
+
+So a clean `validate` on a graph is not a working rule. Run it, then prove the values below.
 
 <!--skill-flavor:graph-verify:start-->
 Then run the whole rule:

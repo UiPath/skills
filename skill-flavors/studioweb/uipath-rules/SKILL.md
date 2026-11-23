@@ -1,5 +1,5 @@
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Create with the `CreateProjects` host tool; after every edit, `refresh` then `validate`.** Never run `uip rules init` or `uip rules debug` here: `init` creates a folder that never becomes a Studio Web project, and `debug` is unavailable. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the seeded `.dmn` file and its root element.
+6. **Create with the `CreateProjects` host tool; after every edit, `format`, `refresh` then `validate`.** Never run `uip rules init` or `uip rules debug` here: `init` creates a folder that never becomes a Studio Web project, and `debug` is unavailable. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the seeded `.dmn` file and its root element.
 7. **A rule is done when `validate` passes and the `RunProject` host tool returns what the reviewed design expects, from every decision and not only the last.** Stop after 3 fix rounds and show the user the tables and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 <!--skill-flavor:scaffold:start-->

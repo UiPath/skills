@@ -99,6 +99,15 @@ class TestChain:
             gc.decision_for_output(fixture_root(), "approved")
 
 
+def _without_loan_amount() -> ET.Element:
+    """The fixture with the loanAmount input and its shape both gone, as a deletion leaves it."""
+    root = fixture_root()
+    root.remove(next(e for e in root if e.get("id") == "inputData_loanAmount"))
+    diagram = next(root.iter(f"{{{gc.DMNDI_NS}}}DMNDiagram"))
+    diagram.remove(next(s for s in diagram if s.get("dmnElementRef") == "inputData_loanAmount"))
+    return root
+
+
 class TestDiagram:
     def test_shapes_are_read_by_element_id(self):
         assert gc.shapes(fixture_root())["decision_risk"] == (208.0, 304.0)
@@ -124,12 +133,15 @@ class TestDiagram:
         with pytest.raises(SystemExit):
             gc.check_shapes_kept(fixture_root(), root)
 
-    def test_shape_of_a_removed_element_may_go(self):
-        root = fixture_root()
-        root.remove(next(e for e in root if e.get("id") == "inputData_loanAmount"))
-        diagram = next(root.iter(f"{{{gc.DMNDI_NS}}}DMNDiagram"))
-        diagram.remove(next(s for s in diagram if s.get("dmnElementRef") == "inputData_loanAmount"))
-        gc.check_shapes_kept(fixture_root(), root)
+    def test_shape_of_a_removed_element_may_go_for_a_repair(self):
+        root = _without_loan_amount()
+        gc.check_shapes_kept(fixture_root(), root, elements_may_go=True)
+
+    def test_a_removed_element_fails_a_task_that_keeps_the_diagram(self):
+        # The default reading, which an id rename also has to fail: the old id leaves the file
+        # exactly as a deletion does, and narrowing to surviving ids graded both as clean.
+        with pytest.raises(SystemExit):
+            gc.check_shapes_kept(fixture_root(), _without_loan_amount())
 
     def test_fixture_has_no_overlap(self):
         gc.check_no_overlap(fixture_root())
@@ -350,3 +362,62 @@ class TestProject:
         dmn_file, _ = rc.load_graph(project)
         with pytest.raises(SystemExit):
             gc.check_whole_file_contract(project, dmn_file, gc.LOAN_INPUTS, {"approved": "boolean"})
+
+
+MODEL_NS = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+
+
+def decision_xml(body: str) -> ET.Element:
+    return ET.fromstring(f'<decision {MODEL_NS} name="probe">{body}</decision>')
+
+
+class TestFeelEquality:
+    """FEEL keeps booleans and numbers apart; Python does not."""
+
+    def test_a_number_does_not_satisfy_a_boolean(self):
+        # SupplierRules asks for a boolean `approved`. `1 == True` in Python, so a decision
+        # returning 1 passed every case of a contract it does not meet.
+        assert not gc.same_value(1, True)
+        assert not gc.same_value(0, False)
+        assert not gc.same_value(True, 1)
+
+    def test_a_boolean_satisfies_the_same_boolean(self):
+        assert gc.same_value(True, True)
+        assert gc.same_value(False, False)
+
+    def test_an_integer_satisfies_a_fractional_number(self):
+        # FEEL has one number type, so the engine answering 5 for an expected 5.0 is a match.
+        assert gc.same_value(5, 5.0)
+        assert gc.same_value(12.5, 12.5)
+
+    def test_unequal_numbers_still_fail(self):
+        assert not gc.same_value(8, 9)
+
+
+class TestModelCalls:
+    """A call is FEEL the engine runs, not any text that mentions the model."""
+
+    def test_a_literal_expression_call_is_found(self):
+        probe = decision_xml('<literalExpression><text>discounted(50, tier) + 1</text></literalExpression>')
+        assert gc.model_calls(probe, "discounted") == ["50, tier"]
+
+    def test_an_output_cell_call_is_found(self):
+        probe = decision_xml('<decisionTable><rule><outputEntry><text>discounted(500, tier)</text>'
+                             '</outputEntry></rule></decisionTable>')
+        assert gc.model_calls(probe, "discounted") == ["500, tier"]
+
+    def test_a_rule_annotation_is_not_a_call(self):
+        # The flaw this replaces: a table can inline the rates and name the model in its
+        # annotation column, and a search over all descendant text reads that as a call.
+        probe = decision_xml('<decisionTable><rule><outputEntry><text>42</text></outputEntry>'
+                             '<annotationEntry><text>discounted(50, tier) by hand</text></annotationEntry>'
+                             '</rule></decisionTable>')
+        assert gc.model_calls(probe, "discounted") == []
+
+    def test_a_longer_name_ending_in_the_model_is_not_a_call(self):
+        probe = decision_xml('<literalExpression><text>netDiscounted(1)</text></literalExpression>')
+        assert gc.model_calls(probe, "discounted") == []
+
+    def test_a_nested_call_keeps_its_whole_argument_list(self):
+        probe = decision_xml('<literalExpression><text>discounted(sum(1, 2), tier)</text></literalExpression>')
+        assert gc.model_calls(probe, "discounted") == ["sum(1, 2), tier"]

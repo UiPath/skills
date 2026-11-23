@@ -21,6 +21,7 @@ from graph_check import (  # noqa: E402
     check_knowledge_models,
     check_no_overlap,
     knowledge_models,
+    model_calls,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
@@ -38,9 +39,10 @@ def main() -> None:
     if not callers:
         fail(f"no decision calls {sorted(models)}; the lookup was asked for as a knowledge model")
 
-    called = {text for d in callers for text in d.itertext() if text}
+    # Read from the FEEL each caller runs, not from all of its descendant text: a decision can
+    # inline the lookup and name the model in a rule annotation, which a text search reads as a call.
     for name in models:
-        if not any(f"{name}(" in text for text in called):
+        if not any(model_calls(caller, name or "") for caller in callers):
             fail(f"no decision's logic calls {name}(...), so the model is wired but never used")
 
     check_annotations_attached(root)
