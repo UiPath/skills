@@ -117,7 +117,7 @@ export function usePolling<T>({
 }
 ```
 
-SDK usage:
+### Usage with SDK services
 
 ```typescript
 import { useMemo, useCallback } from 'react';
@@ -143,7 +143,12 @@ function InstanceMonitor({ instanceId, folderKey }: { instanceId: string; folder
 }
 ```
 
-`deps` is **CRITICAL for master-detail UIs**: pass identity values such as `[instanceId]`; changing one clears stale `data`, sets `isLoading` true, and refetches immediately. Without it, switching items shows stale data without a loading indicator. Tie `enabled` to need (such as `!!selectedInstance`); use `immediate: false` when another effect loaded initial data. The default `interval` is 5000ms; increase it for less-critical data to reduce API load. For Data Fabric entities, use the interval and rules in [sdk/data-fabric.md](sdk/data-fabric.md) trap 10.
+### Key options
+
+- `deps` — **CRITICAL for master-detail UIs.** Pass identity values such as `[instanceId]`; changing one clears stale `data`, sets `isLoading` true, and refetches immediately. Without it, switching items shows stale data without a loading indicator.
+- `enabled` — tie to need (such as `!!selectedInstance`).
+- `immediate: false` — skip the first fetch when another effect loaded initial data.
+- `interval` — default 5000ms; increase it for less-critical data to reduce API load. For Data Fabric entities, use the interval and rules in [sdk/data-fabric.md](sdk/data-fabric.md) trap 10.
 
 ### Master-detail pattern — MANDATORY for list + detail layouts
 
@@ -178,9 +183,13 @@ const { data, isLoading, isActive } = usePolling({
 
 Polling must NEVER cause visible UI flicker. Follow ALL three rules:
 
-1. **No per-cycle state changes in the hook.** Never add `setIsPolling(true)`/`setIsPolling(false)` or `setIsLoading(true)`/`setIsLoading(false)` around each fetch: this creates two renders per cycle. `isLoading` only goes `true → false` after the first fetch and returns to `true` only on identity reset — NEVER set it back to `true` yourself; `isActive` changes only when polling starts/stops and drives the Live indicator. Use functional `setError` updates.
+#### Rule 1: No per-cycle state changes in the hook
 
-2. **Accumulate and sort rows. THIS IS THE MOST IMPORTANT RULE.** Never render `getVariables()` arrays directly: `getVariables()` returns different subsets of variables across polls, in non-deterministic order. Accumulate observed variables in `Map<string, GlobalVariableMetaData>` by `v.id`, and elements in a map by `elementId`; latest values win. Store only elements with nonempty inputs or outputs, sort variables by `name` and elements by `elementId`, and reset maps when `instanceId` changes:
+Never add `setIsPolling(true)`/`setIsPolling(false)` or `setIsLoading(true)`/`setIsLoading(false)` around each fetch: this creates two renders per cycle. `isLoading` only goes `true → false` after the first fetch and returns to `true` only on identity reset — NEVER set it back to `true` yourself; `isActive` changes only when polling starts/stops and drives the Live indicator. Use functional `setError` updates.
+
+#### Rule 2: Accumulate variables and sort for stable rows
+
+**THIS IS THE MOST IMPORTANT RULE.** Never render `getVariables()` arrays directly: `getVariables()` returns different subsets of variables across polls, in non-deterministic order. Accumulate observed variables in `Map<string, GlobalVariableMetaData>` by `v.id`, and elements in a map by `elementId`; latest values win. Store only elements with nonempty inputs or outputs, sort variables by `name` and elements by `elementId`, and reset maps when `instanceId` changes:
 
 ```typescript
 import type { GlobalVariableMetaData, ElementMetaData } from '@uipath/uipath-typescript/maestro-processes';
@@ -213,7 +222,9 @@ const displayElements = [...accumulatedElementsRef.current.values()]
 
 Old rows remain, repeated variables get the latest value, order is stable, and instance changes cannot show stale data.
 
-3. **Never tear down the data UI.** Preserve raw data in a ref, reset it on identity change, and show loading only without preserved data:
+#### Rule 3: Components must NEVER tear down the data UI
+
+Preserve raw data in a ref, reset it on identity change, and show loading only without preserved data:
 
 ```typescript
 const lastDataRef = useRef<InstanceData | null>(null);
@@ -338,7 +349,9 @@ function InstanceDataPanel({ instanceId, folderKey }: Props) {
 
 ## BPMN Diagram Rendering
 
-Install the viewer by running:
+Visualize Maestro process diagrams with `bpmn-js` and the XML from `ProcessInstances.getBpmn()`.
+
+### Setup
 
 ```bash
 npm install bpmn-js
@@ -352,7 +365,9 @@ Import in `src/index.css` (or the component) and hide the watermark:
 .bjs-powered-by { display: none !important; }
 ```
 
-Use `BpmnViewer` with XML from `ProcessInstances.getBpmn()`, import it in an effect, fit the canvas, and destroy it on cleanup:
+### BPMN Viewer component
+
+Import the XML in an effect, fit the canvas, and destroy the viewer on cleanup:
 
 ```typescript
 import { useEffect, useRef } from 'react';
@@ -373,6 +388,8 @@ export const BpmnDiagram = ({ bpmnXml }: { bpmnXml: string }) => {
 };
 ```
 
+### Fetching BPMN XML
+
 ```typescript
 // Via service method
 const bpmnXml = await processInstances.getBpmn(instanceId, folderKey);
@@ -386,9 +403,12 @@ Then render: `<BpmnDiagram bpmnXml={bpmnXml} />`
 
 ## Rendering Process Instance Data (Variables & Elements)
 
-Never dump `getVariables()` or raw JSON. Render structured UI: global variables as a key-value table and elements as collapsible cards with inputs and outputs. Use `GlobalVariableMetaData`, `ElementMetaData`, and type badges; skip zero-item sections and empty elements; poll while the process is running. Values are sometimes double-serialized JSON strings (e.g., `"{\"key\": \"value\"}"`); always try `JSON.parse()` on string values that start with `{` or `[`.
+Never dump `getVariables()` output as raw JSON. Render global variables as a key-value table (`GlobalVariableMetaData`) and elements as collapsible cards with inputs and outputs (`ElementMetaData`). See [Rules for rendering process data](#rules-for-rendering-process-data).
 
-For a single domain-specific process use a meaningful label such as **"Loan Details"**, **"Application Data"**, or **"Extraction Results"**. For generic multi-process monitoring use **"Process Data"**, not "Variables" (a developer term meaningless to end users); use **"Activity Details"** for element data when appropriate.
+### Naming convention
+
+- **Single specific process:** use a domain label such as **"Loan Details"**, **"Application Data"**, or **"Extraction Results"**.
+- **Generic multi-process monitor:** use **"Process Data"**, not "Variables" (a developer term meaningless to end users); use **"Activity Details"** for element data when appropriate.
 
 ### Rendering `globalVariables`
 
@@ -590,11 +610,35 @@ function formatKey(key: string): string {
 
 `KeyValueRenderer` renders arrays with `#1`, `#2`, etc. and a left border, and objects as a key/value `<dl>`; recurse and use readable labels. Global tables include Name, Value, Type, and Source, keyed by `v.id`. Element cards show `element.elementId`, a Marker badge when `element.isMarker`, and collapsible Inputs/Outputs sections; use `useState(false)` so they are collapsed by default and skip empty elements.
 
-The complete detail-panel pattern ("Complete flicker-free component pattern" above) combines `usePolling`, `deps: [instanceId]`, `lastDataRef`, identity reset, map accumulation, stable sorting, an error message, loading state, pure CSS `Live`, `ProcessDataTable globalVariables={displayVars}`, and `ElementCard key={element.elementId}`. Never render raw polled arrays. This also applies to HITL panels. Follow Flicker-free updates Rules 2 and 3.
+### Complete usage — Process Instance detail panel
+
+Use the [Complete flicker-free component pattern](#complete-flicker-free-component-pattern) above: `usePolling`, `lastDataRef` preservation, `Map` accumulation, stable sort, and instance-switch reset. The same applies to HITL panels.
+
+### Rules for rendering process data
+
+1. **NEVER render raw JSON.** Parse objects and render structured UI (tables, key-value grids, collapsible cards).
+2. **Handle double-serialized JSON strings.** Values are sometimes JSON-serialized strings (e.g., `"{\"key\": \"value\"}"`). Always try `JSON.parse()` on string values that start with `{` or `[`.
+3. **Format keys for readability.** Convert `camelCase` and `snake_case` to title-cased words with spaces.
+4. **Skip empty data.** Don't show elements with empty inputs AND empty outputs, or sections with zero items.
+5. **Use appropriate labels.** See [Naming convention](#naming-convention).
+6. **Show type badges** on global variables.
+7. **Make element cards collapsible** — inputs/outputs can be large and nested; don't expand all by default.
+8. **Poll for updates** while the process is running — variables change during execution.
+9. **NEVER render raw `getVariables()` arrays directly in polled components.** Accumulate into `Map` refs, sort, reset on instance switch, and preserve raw data in `lastDataRef`. See Flicker-free updates [Rule 2](#rule-2-accumulate-variables-and-sort-for-stable-rows) and [Rule 3](#rule-3-components-must-never-tear-down-the-data-ui).
 
 ## HITL Detection (Human-in-the-Loop)
 
-Use `getVariables()` plus `getBpmn()`, not `getExecutionHistory()`: the last `variables.elements` item is the active BPMN element; find its type in BPMN XML; `<bpmn:userTask>` means the process awaits a human task. **IMPORTANT:** `latestRunStatus` on the instance is NOT useful for HITL detection — a process waiting on a human task still shows as `"Running"`.
+Detect whether a running instance waits on a human task with `getVariables()` + `getBpmn()`, not `getExecutionHistory()`.
+
+### How it works
+
+1. **`getVariables()`** returns an `elements` array — the last element is the currently active BPMN element.
+2. **`getBpmn()`** returns the BPMN XML. Parse it to find the element type for that `elementId`.
+3. If the BPMN element is `<bpmn:userTask>`, the instance is pending on a human task.
+
+**IMPORTANT:** `latestRunStatus` on the instance is NOT useful for HITL detection — a process waiting on a human task still shows as `"Running"`.
+
+### HITL detection helper
 
 ```typescript
 import { ProcessInstances } from '@uipath/uipath-typescript/maestro-processes';
@@ -690,12 +734,32 @@ function InstancePanel({ instanceId, folderKey }: { instanceId: string; folderKe
 }
 ```
 
-Render `data.hitl.isUserTask` as **"Waiting on Human Review"** / **"This instance requires human input to continue"**; otherwise **"Automated Process"** and `data.hitl.activityType`. Render `data.bpmnXml` in `BpmnDiagram` and `displayVars` in the stable process-data table. When `displayData` is absent, render loading.
+### Getting the task for the instance
 
-Render HITL status:
+When HITL is detected, you may also want to open the task in Action Center: find it with the `CreatorJobKey` OData filter; `instanceId` **is** the `CreatorJobKey`:
+
+```typescript
+import { Tasks } from '@uipath/uipath-typescript/tasks';
+import { buildTaskUrl, getEmbedTaskUrl } from '../utils/formatters';
+
+const result = await tasks.getAll({
+  filter: `CreatorJobKey eq ${instanceId}`,
+  pageSize: 10,
+});
+const pendingTask = result.items.find(t => !t.isCompleted) ?? null;
+if (pendingTask) {
+  const taskLink = buildTaskUrl(pendingTask.id);
+  const embedUrl = getEmbedTaskUrl(taskLink);
+  // Open in iframe (TaskEmbed below)...
+}
+```
+
+### Rendering HITL status in the UI
+
+Render `displayData.hitl.isUserTask` as **"Waiting on Human Review"** / **"This instance requires human input to continue"**; otherwise **"Automated Process"** and `displayData.hitl.activityType`. Render `displayData.bpmnXml` in `BpmnDiagram` and `displayVars` in the stable process-data table. When `displayData` is absent, render loading.
 
 ```tsx
-{data?.hitl.isUserTask ? (
+{displayData.hitl.isUserTask ? (
   <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
     <div className="p-2 bg-amber-100 rounded-lg">
       <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -717,35 +781,19 @@ Render HITL status:
     </div>
     <div>
       <h4 className="font-semibold text-gray-900">Automated Process</h4>
-      <p className="text-sm text-gray-600">Current step: {data?.hitl.activityType}</p>
+      <p className="text-sm text-gray-600">Current step: {displayData.hitl.activityType}</p>
     </div>
   </div>
 )}
 ```
 
-### Getting the task for the instance
-
-When HITL is detected, you may also want to open the task in Action Center: find it with the `CreatorJobKey` OData filter; `instanceId` **is** the `CreatorJobKey`:
-
-```typescript
-import { Tasks } from '@uipath/uipath-typescript/tasks';
-import { buildTaskUrl, getEmbedTaskUrl } from '../utils/formatters';
-
-const result = await tasks.getAll({
-  filter: `CreatorJobKey eq ${instanceId}`,
-  pageSize: 10,
-});
-const pendingTask = result.items.find(t => !t.isCompleted) ?? null;
-if (pendingTask) {
-  const taskLink = buildTaskUrl(pendingTask.id);
-  const embedUrl = getEmbedTaskUrl(taskLink);
-  // Open in iframe (TaskEmbed below)...
-}
-```
-
 ## Embedding Action Center Tasks (HITL)
 
-Embed a human-in-the-loop task, action app, or escalation in an iframe. Standard URL:
+Embed a human-in-the-loop task, action app, or escalation in an iframe.
+
+### Embed URL format
+
+Standard URL:
 
 ```text
 https://cloud.uipath.com/{orgName}/{tenantName}/actions_/current-task/tasks/{taskId}
@@ -809,7 +857,11 @@ export function buildTaskUrl(taskId: number | string): string {
 }
 ```
 
-Find tasks with ``tasks.getAll({ filter: `CreatorJobKey eq ${instanceId}`, pageSize: 10 })``, select `result.items.find(t => !t.isCompleted) ?? null`, then use `buildTaskUrl(pendingTask.id)` and `getEmbedTaskUrl(taskLink)`. **Do NOT construct URLs manually.** Use `apiToCloudUrl()` and `buildTaskUrl()` for all environments.
+### Getting the task link
+
+Find the task as in [Getting the task for the instance](#getting-the-task-for-the-instance), then call `buildTaskUrl(pendingTask.id)` and `getEmbedTaskUrl(taskLink)`. **Do NOT construct URLs manually.** Use `apiToCloudUrl()` and `buildTaskUrl()` for all environments.
+
+### iframe component
 
 Render the embed in a closeable modal overlay:
 
@@ -829,7 +881,13 @@ export const TaskEmbed = ({ taskLink, onClose }: { taskLink: string; onClose: ()
 );
 ```
 
-No extra auth is needed: the iframe shares the UiPath browser session. The `embed_/` prefix is required; without it the page renders full navigation chrome. Detect HITL with `getVariables()` + `getBpmn()`, never `latestRunStatus`. Use a modal overlay so the user can close it and return to the app.
+### Key points
+
+- **No extra auth needed:** the iframe shares the user's UiPath browser session.
+- **`embed_/` prefix is required:** without it the page renders full navigation chrome.
+- **HITL detection:** use `getVariables()` + `getBpmn()` (see [HITL Detection](#hitl-detection-human-in-the-loop)); never rely on `latestRunStatus`.
+- **Use `apiToCloudUrl()`:** never convert API URLs to cloud URLs with string replacement.
+- **Use a modal overlay** so the user can close it and return to the app.
 
 ## Tabular Data: Don't Dump Every Row in One Scroll
 
