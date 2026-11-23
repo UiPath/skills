@@ -90,7 +90,7 @@ Before writing, one structured question, with the counts from the gap list:
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
 > 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
 
-Option 1 is Recommended. A request that asks to be interviewed has chosen it: the offer's text is stated without its question and options, so the user knows what waits until after writing, and the first batch follows. After writing, the offer is § After Writing's first question.
+Option 1 is Recommended. Before writing, a request that asks to be interviewed has chosen it: the offer's text is stated without its question and options, so the user knows what waits until after writing, and the first batch follows. After writing, the offer is § After Writing's first question, which a request to be interviewed does not answer.
 
 ## Asking
 
