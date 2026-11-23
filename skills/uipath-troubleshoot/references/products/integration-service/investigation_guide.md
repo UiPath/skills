@@ -120,20 +120,43 @@ with what the user sees.
 uip traces spans get <trace-id> --output json
 ```
 
-Every trace carries two spans, named `Data - <n>` / `UserFilters - <n>` for a polling
-trigger and `Webhook Data` / `Webhook User Filters` for a webhook one. The second is
-usually the answer:
+Every trace carries two spans: the data the connector received, and the filter that was
+evaluated over it. **Their names and their attribute keys differ by trigger kind, so
+find them by shape rather than by path** — a connector added later may use different
+names again.
 
-- **`DataFilters.input.filter`** — the filter expression the trigger actually evaluated
-- **`DataFilters.output.matched`** — the records that survived it
+Span `Attributes` arrive as a **JSON string**; parse before reading anything.
 
-A Wait-For-Event filter correlates to one specific record, e.g.
-`(Id == 'F9BAC415-…' && Name == 'TriggersReliability_Updated')`. An instance waits for
-**that** record and no other, so an update to a different record of the same type
-produces a trace that fetched data and matched nothing. Quote the expression and the id
-back to the user — it is the fastest way to end a "but I did update it" disagreement.
+| | Polling trigger | Webhook trigger |
+|---|---|---|
+| Span names | `Data - <n>` / `UserFilters - <n>` | `Webhook Data` / `Webhook User Filters` |
+| Data payload | `request` (the query sent) + `response[]` | `Data.payload` |
+| Filter expression | `result.filter` | `DataFilters.input.filter` |
+| Records that matched | `result.matches[]` | `DataFilters.output.matched[]` |
+| Records rejected | `result.nonMatches[]` | *(not reported)* |
 
-Span `Attributes` arrive as a JSON string; parse before reading fields.
+**Locate them generically.** Parse each span's `Attributes`, then:
+
+- the **filter span** is the one whose attributes contain a `filter` string at any depth —
+  under `result` for polling, under `DataFilters.input` for webhooks
+- the **matched records** sit beside it, as `matches` or `matched`
+- the **data span** is the other one: `response[]` for polling, `Data.payload` for webhooks
+
+Do not conclude "no filter data" because one set of keys is absent. An absent
+`DataFilters` on a polling trigger means you are reading the wrong shape, not that the
+trigger recorded nothing.
+
+**What to do with it.** A Wait-For-Event filter correlates to one specific record —
+`contains(id, '<record-id>')` on an Outlook message, `(Id == '…' && Name == '…')` on a
+Data Fabric record. The instance waits for **that** record and no other, so an update to
+a different record of the same type produces a trace that fetched data and matched
+nothing. Quote the expression and the id back to the user; it is the fastest way to end
+a "but I did update it" disagreement.
+
+On a polling trigger, **`result.nonMatches[]` is the better evidence**: it names the
+records that were fetched and rejected. A cycle reading `fetched 4, matched 1` with
+three entries in `nonMatches` tells you precisely which records the filter turned away,
+which the webhook shape cannot.
 
 ### Step 4 — what the trace actually started
 

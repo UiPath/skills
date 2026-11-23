@@ -98,9 +98,14 @@ What to look for:
    uip traces spans get <trace-id> --output json
    ```
 
-   The `Data` span holds the payload the connector received — confirm the user's event
-   is in it. The `UserFilters` span holds `DataFilters.input.filter` and
-   `DataFilters.output.matched`. Quote the expression and name the field that failed.
+   The data span holds what the connector received — `response[]` on a polling trigger,
+   `Data.payload` on a webhook one — so confirm the user's event is in it. The filter
+   span holds the expression and the matches: `result.filter` / `result.matches`
+   (polling) or `DataFilters.input.filter` / `DataFilters.output.matched` (webhook). See
+   [investigation_guide.md § Step 3](../../integration-service/investigation_guide.md#step-3--spans-carry-the-filter-and-the-payload).
+
+   For a mail trigger the polling shape is the useful one: `result.nonMatches` lists the
+   messages that were fetched and rejected, which answers "but I sent it" directly.
 
 6. **Matched but no instance (CA004).** Correlate the trace first; counting
    instances in a window cannot show that a specific event started a specific

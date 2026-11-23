@@ -106,9 +106,12 @@ What to look for:
    uip traces spans get <trace-id> --output json
    ```
 
-   The `UserFilters` / `Webhook User Filters` span carries
-   `DataFilters.input.filter` and `DataFilters.output.matched`. For CA003, quote the
-   expression and show which field of the payload failed it.
+   The filter span carries the expression and the records that survived it — under
+   `result.filter` / `result.matches` on a polling trigger, `DataFilters.input.filter` /
+   `DataFilters.output.matched` on a webhook one. Read it by shape, not by path; see
+   [investigation_guide.md § Step 3](../investigation_guide.md#step-3--spans-carry-the-filter-and-the-payload).
+   For CA003, quote the expression and show which field of the payload failed it —
+   on a polling trigger `result.nonMatches` names the rejected records outright.
 
 6. **Matched but no execution (CA004).** Correlate the trace before blaming
    anything downstream — this says whether the dispatch produced a job at all.

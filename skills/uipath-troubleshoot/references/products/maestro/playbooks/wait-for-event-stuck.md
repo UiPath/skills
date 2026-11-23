@@ -116,10 +116,14 @@ What to look for:
    uip traces spans get <trace-id> --output json
    ```
 
-   The `Webhook User Filters` span carries `DataFilters.input.filter`, e.g.
+   The filter span carries the correlation expression — `result.filter` on a polling
+   trigger, `DataFilters.input.filter` on a webhook one (see
+   [investigation_guide.md § Step 3](../../integration-service/investigation_guide.md#step-3--spans-carry-the-filter-and-the-payload)).
+   It names one specific record, e.g.
 
    ```
-   (Id == 'F9BAC415-3BE3-F111-91F2-7C1E521F9806' && Name == 'TriggersReliability_Updated')
+   (Id == 'F9BAC415-…' && Name == 'TriggersReliability_Updated')   # Data Fabric, webhook
+   contains(id, 'AAMkAGNiNDVjZmJm…')                                # Outlook, polling
    ```
 
    That id is the only record this instance will resume for. Compare it against what
