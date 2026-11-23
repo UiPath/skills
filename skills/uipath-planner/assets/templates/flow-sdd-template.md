@@ -90,7 +90,7 @@ section again from it, with every open question. See open-questions-guide.md for
 - **Until answered:** the SDD stays `draft` and no genome is written
 - **Answer (by <ROLE>):**
 
-> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item about something the build needs to exist first (a connection, a deployed component) names it as a prerequisite of the build. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 
@@ -159,38 +159,36 @@ flowchart LR
 
 ## 3. Nodes Inventory
 
-<!-- List every node in execution order. Node types include:
-     - Trigger (manual, scheduled, event)
-     - Logic (if, loop, switch)
-     - RPA invocation (calls a Studio process)
-     - Agent invocation (calls a UiPath Agent)
-     - API Workflow invocation (calls an API Workflow)
-     - Connector (Integration Service)
-     - Coded App (launches or receives from a coded app)
-     - Transform (data map, filter, group-by)
-     - HITL (QuickForm or AppTask)
-     - Subflow (calls a subflow) -->
+<!-- List every step in execution order: one row per step, one kind of work per row. Step Kind says what the step does; the Flow node that performs it is uipath-maestro-flow's choice, never named here. A step that does two kinds of work is two rows with two keys.
+     - Start (one row per way the flow starts: manual, scheduled, event)
+     - Decide (routes on a condition and produces nothing: a value a later step needs is produced by a Compute row before it)
+     - Repeat (works a list item by item; Notes names the steps it repeats)
+     - Compute (derives, converts, ranks or assembles values the flow already holds)
+     - Call (invokes one component of §7 — a process, agent, API workflow, connector operation, rules project, function or extraction model — and names it)
+     - Human (a person decides, corrects or supplies data; the flow waits for them)
+     - Subflow call (runs one subflow of §5)
+     - End (returns the flow's outputs and nothing else: closing a record or sending a result is a Call row before it) -->
 
-| # | Node Key | Node Type | Description | Inputs | Outputs | Notes |
+| # | Node Key | Step Kind | Description | Inputs | Outputs | Notes |
 |---|---|---|---|---|---|---|
-| 1 | `start` | Trigger | <DESCRIPTION> | — | — | Trigger type: <MANUAL/SCHEDULED/EVENT> |
-| 2 | `<NODE_KEY>` | <NODE_TYPE> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <NOTES_INCLUDING_HITL_FLAGS> |
+| 1 | `start` | Start | <DESCRIPTION> | — | — | Starts on: <MANUAL/SCHEDULED/EVENT> |
+| 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <NOTES> |
 
 ---
 
 ## 4. Variables
 
-<!-- Flow variables are declared at flow scope with in/inout/out direction. -->
+<!-- Every value the flow holds. Role is one of: input (given when the flow starts), output (returned when it ends), working (used in between); a value is never two roles — one that comes in and goes out changed is an input and an output under two names. Type is the business type: text, number, yes/no, date, list of <what>, record of <what>. Set By and Read By name §3 node keys. -->
 
-| Name | Direction | Type | Default | Description |
-|---|---|---|---|---|
-| <VAR_NAME> | <IN / INOUT / OUT> | <TYPE> | <DEFAULT_VALUE> | <DESCRIPTION> |
+| Name | Role | Type | Set By | Read By | Description |
+|---|---|---|---|---|---|
+| <VAR_NAME> | <input / output / working> | <TYPE> | `<NODE_KEY>` | `<NODE_KEYS>` | <DESCRIPTION> |
 
 ---
 
 ## 5. Subflows
 
-<!-- Only include if the flow uses subflows. Subflows have isolated scope. -->
+<!-- Only include if the flow uses subflows. A subflow takes inputs and returns outputs: it never routes the flow that calls it, so where the work goes next is a Decide row after the Subflow call row in §3. Called From Nodes names those Subflow call rows, one per place it runs. -->
 
 | Subflow Name | Purpose | Inputs | Outputs | Called From Nodes |
 |---|---|---|---|---|
@@ -238,7 +236,7 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). A connection must exist before the parts that use it are built: a connection not yet provisioned is an `[SME REVIEW]` item that names it as a prerequisite. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -246,27 +244,35 @@ flowchart LR
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction of fields from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. Document Types: the business documents the source names, each with the format it arrives in (PDF, scan, spreadsheet, email body). Purpose: the fields to extract. Sorting documents by kind, and bringing a document from where it arrives to where the model reads it, are nodes of their own in §3, never part of this row. The model extracts fields; it is never the step that sorts documents by kind. Two Build Assumptions rows go with every model: that it reads each format listed here (one row per format that is not a PDF or a scan, with the conversion step the design falls back on), and that each document reaches it in the form it takes from the node that received it. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
-| Model / Project | Called From Node | Document Types | Purpose |
+| Model / Project | Called From Node | Document Types (format) | Purpose |
 |---|---|---|---|
-| `<IXP_PROJECT_NAME>` | `<NODE_KEY>` | <DOCUMENT_TYPES> | <PURPOSE> |
+| `<IXP_PROJECT_NAME>` | `<NODE_KEY>` | <DOCUMENT_TYPES_AND_FORMATS> | <FIELDS_TO_EXTRACT> |
 
 ### Coded Functions
 
-<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
+<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. One row per function; how functions are grouped into projects is decided at build. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
 
 | Function | Called From Node | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|
 | `<FUNCTION_NAME>` | `<NODE_KEY>` | `<INPUT_MODEL>` → `<OUTPUT_MODEL>` | <PURPOSE_AND_DEPENDENCIES> |
 
+### Business Rules Projects
+
+<!-- One row per decision table the flow evaluates: each table is a Business Rules project of its own, built by uipath-rules and deployed BEFORE the flow, and a row of Solution / Project Breakdown. That a flow node can call one is a Build Assumptions row, with the Coded Function it falls back on. OPTIONAL subsection — omit entirely when no decision table is in scope (exempt from the template-superset check). -->
+
+| Rules Project | Decision Table | Called From Node |
+|---|---|---|
+| `<RULES_PROJECT_NAME>` | <DECISION_TABLE_NAME> | `<NODE_KEY>` |
+
 ### HITL Touchpoints
 
-<!-- One row per HITL node. -->
+<!-- One row per HITL node. Business intent only: who acts, every decision they can take and the node the flow continues at after each, what they are shown and what they enter. A decision that stops the work names where it stops. A decision that leaves the work waiting names what ends the wait and the node it resumes at. The form, its fields and how each decision is wired are uipath-human-in-the-loop's. A step that needs a purpose-built app instead of a form names that app, which is then a row of Coded Apps Referenced. -->
 
-| Node Key | HITL Type | Purpose | Approval Criteria |
-|---|---|---|---|
-| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
+| Node Key | Who Acts | Decisions → Next Node | Shown / Entered | Custom App |
+|---|---|---|---|---|
+| `<NODE_KEY>` | <ROLE> | <DECISION_1> → `<NODE_KEY>`; <DECISION_2> → `<NODE_KEY>` | <DATA_SHOWN> / <DATA_ENTERED> | <`APP_NAME` \| none> |
 
 ### Coded Apps Referenced
 
@@ -274,38 +280,42 @@ flowchart LR
 |---|---|---|
 | `<APP_NAME>` | `<NODE_KEY>` | <HITL_FORM / DASHBOARD / ACTION_CENTER_TASK> |
 
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the nodes that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | `<NODE_KEYS>` | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
+
 ---
 
 ## 8. Error Handling
 
-| Scope | Error Type | Trigger | Action |
+<!-- Behavioural wording: what the business needs when a step fails — how many attempts are worth making and how far apart, and what happens when they run out ("three attempts a minute apart, then the instance fails and support is alerted"). Never a product setting: uipath-maestro-flow decides how the attempts and the alert are built. A failure a person resolves is a Human row of §3, not a row here. Every row names one §3 step: a flow has no handler that covers all steps, so a step with no row here simply fails the instance. An alert or a record of the failure is a Call row of §3 that the failing step leads to, named in What Must Happen. Attempts are a number and a wait, or the row has none: never "the platform's policy" or a default. -->
+
+| Scope | Failure | Trigger | What Must Happen |
 |---|---|---|---|
-| Flow-level | Unhandled exception | Any node fails | <FAIL_FLOW / NOTIFY / RETRY> |
-| Node-level | <SPECIFIC_ERROR> | <CONDITION> | <RETRY_POLICY> |
+| `<NODE_KEY>` | <SPECIFIC_FAILURE> | <CONDITION> | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
 
 ---
 
 ## 9. Project Structure
 
-```text
-<FLOW_PROJECT_NAME>/
-├── project.json
-├── flow_files/
-│   └── <FLOW_NAME>.flow
-├── entry-points.json
-├── bindings_v2.json
-└── content/
-    └── <FLOW_NAME>.bpmn  (auto-generated)
-```
+<!-- The flow project is scaffolded by uipath-maestro-flow, which owns its files and folders: never draw a file tree here. This section records what the solution is made of and where it is deployed. -->
+
+**Flow project:** `<FLOW_PROJECT_NAME>` — built by `uipath-maestro-flow`.
 
 ### Orchestrator Deployment Target
+
+<!-- Where the finished automation runs. `SDD scope: single-product` counts products, not packages: how the flow is wrapped and published is uipath-maestro-flow's and uipath-solution's, never stated here. -->
 
 - [ ] Development workspace (default — the specialist's own authoring/publish surface)
 - [ ] Orchestrator (`.uipx`-wrapped solution → `uipath-solution`; non-solution single package → `uipath-platform`)
 
 ### Solution / Project Breakdown
 
-<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+<!-- Every part the build creates: its product, source repo, Orchestrator folder, and run mode. One row per part (single row for a single-project solution); Coded Functions are one row each. How parts are grouped into projects, and which are packed into the solution or deployed on their own, is decided at build by their owning skills: never state it here. -->
 
 | Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
 |---|---|---|---|---|
@@ -335,10 +345,10 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
+| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace; personal data: the fields that hold it, by name, and where each may be shown or stored; that run history and logs leave it out is a Build Assumptions row, never a promise> |
 | **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
 | **Scalability** | <expected concurrent instances; per-node fan-out limits; peak-window sizing> |
-| **Availability / Resilience** | <restart / retry behavior on node failure; idempotency of invoked components; graceful degradation> |
+| **Availability / Resilience** | <what a failed instance leaves behind and how it is run again; which steps are safe to run twice; graceful degradation> |
 | **Logging & Monitoring** | <log level and sinks; alerting on instance failure; Maestro / Insights dashboards> |
 | **Compliance** | <REGULATION_OR_—> |
 

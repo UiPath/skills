@@ -378,6 +378,14 @@ public enum <EnumName>
 |---|---|---|---|
 | `<IXP_PROJECT_NAME>` | `<WORKFLOW_OR_STEP>` | <DOCUMENT_TYPES> | <PURPOSE> |
 
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
+
 ---
 
 ## 10. Master Project Architecture
@@ -486,75 +494,23 @@ Sub-type reference:
 
 ### Recommended Structure
 
-> **Choose the layout matching the project's framework.** REFramework projects use the REF folder structure. Sequence projects use a simple flat structure.
-
-#### REFramework layout (for Performer projects)
+<!-- The scaffold is uipath-rpa's: the framework's own files, the configuration file, the folders and how the entry point reaches the business workflows come from the framework §11 Project Type names. Never draw them. List only the files this design adds. -->
 
 ```text
 <PROJECT_NAME>/
-├── project.json
-├── Main.xaml
-├── Framework/
-│   ├── InitAllSettings.xaml
-│   ├── InitAllApplications.xaml
-│   ├── GetTransactionData.xaml
-│   ├── Process.xaml
-│   ├── SetTransactionStatus.xaml
-│   ├── CloseAllApplications.xaml
-│   └── KillAllProcesses.xaml
-├── Process/
-│   ├── <WORKFLOW_FILE>
-│   └── ...
-├── Data/
-│   ├── Config.xlsx
-│   └── ...
-└── Tests/
-    └── ...
+├── <WORKFLOW_FILE>        (one line per §Workflow Inventory row)
+└── ...
 ```
-
-#### Sequence layout (for a Dispatcher or a simple project)
-
-```text
-<PROJECT_NAME>/
-├── project.json
-├── Main.xaml
-├── Process/
-│   ├── <WORKFLOW_FILE>
-│   └── ...
-├── Data/
-│   ├── Config.xlsx
-│   └── ...
-└── Tests/
-    └── ...
-```
-
-#### Coded layout (for Coded C# projects — §13)
-
-<!-- The uipath-rpa skill owns the scaffold — this layout sets the SDD's structural expectation only. -->
-
-```text
-<PROJECT_NAME>/
-├── project.json          (coded entry points registered here)
-├── Main.cs               (entry-point coded workflow)
-├── Workflows/
-│   ├── <WorkflowName>.cs
-│   └── ...
-├── Objects/              (typed DTOs / records / enums)
-├── Data/
-│   └── Config.xlsx
-└── Tests/
-    └── <CodedTestCase>.cs
-```
-
-> **Hybrid:** use the XAML layout (REFramework or Sequence) plus a `Workflows/` folder of coded `.cs` workflows invoked via Invoke Workflow File. Do NOT emit an XAML `Main.xaml` tree for a pure Coded C# project.
 
 ### Workflow Inventory
 
 > **For Master Project:** one workflow inventory table per sub-project. **For Single Project:** one workflow inventory table total.
 
-| # | Workflow File | Responsibility | PDD Steps | Inputs | Outputs |
-|---|---|---|---|---|---|
-| 1 | `<FILENAME>` | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
+<!-- Runs says when the workflow runs, one of: `once, before the items` (reads or prepares the whole set), `per item` (the work on one transaction item, and nothing that needs the other items), `once, after the items` (grouping, totals, reconciliation, publishing), `own entry point` (started by its own trigger). A workflow that waits for a person or an outside event is a Build Assumptions row: where a wait may sit is uipath-rpa's. -->
+
+| # | Workflow File | Runs | Responsibility | PDD Steps | Inputs | Outputs |
+|---|---|---|---|---|---|---|
+| 1 | `<FILENAME>` | <once, before the items / per item / once, after the items / own entry point> | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
 
 ### UI Element Groups (selector inventory)
 
@@ -566,11 +522,11 @@ Sub-type reference:
 
 ### Workflow Dependencies
 
-```text
-<MAIN_WORKFLOW>
-├── calls <WORKFLOW_1>
-└── calls <WORKFLOW_2>
-```
+<!-- Which business workflow of the inventory calls which. How the framework's entry point reaches them is uipath-rpa's: no entry-point or framework file appears here. `None.` when no business workflow calls another. -->
+
+| Workflow | Calls |
+|---|---|
+| `<WORKFLOW_FILE>` | `<WORKFLOW_FILE>`, … |
 
 ---
 

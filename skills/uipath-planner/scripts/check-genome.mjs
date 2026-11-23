@@ -438,6 +438,29 @@ function checkDesignedIn(path, text, r) {
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
   if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  checkBuildAssumptions(path, text, sdd, m[1], r);
+}
+
+/** strict: every Build Assumptions row of the linked SDD is an open Open Decisions entry of this genome or one of its component genomes. */
+function checkBuildAssumptions(path, text, sdd, sddName, r) {
+  // a component of a process is covered by the process genome's check, which reads every component beside it
+  if (/^>\s*Part of:/m.test(text)) return;
+  let design;
+  try { design = readFileSync(sdd, "utf8"); } catch { return; }
+  const start = design.search(/^#{2,4} Build Assumptions\s*$/m);
+  if (start < 0) return;
+  const rest = design.slice(start).split("\n").slice(1);
+  const end = rest.findIndex((line) => /^#{1,4} /.test(line));
+  const rows = (end < 0 ? rest : rest.slice(0, end)).map((line) => line.match(/^\|\s*(A\d+)\s*\|/)?.[1]).filter(Boolean);
+  if (!rows.length) return;
+  const folder = path.replace(/\.md$/, "");
+  let genomes = text;
+  if (existsSync(folder) && statSync(folder).isDirectory()) {
+    for (const name of readdirSync(folder)) if (name.endsWith(".md")) genomes += readFileSync(resolvePath(folder, name), "utf8");
+  }
+  for (const id of rows) {
+    if (!new RegExp(`^\\d+\\. [^\\n]*answered by: [^\\n]*SDD Build Assumption ${id}\\b`, "m").test(genomes)) r.strict(`Build Assumption ${id} of ${sddName} has no Open Decisions entry: write one ending '— SDD Build Assumption ${id}' in the genome of the component whose skill confirms it, and mark the steps that rely on it '*[Inferred: D<n>]*'`);
+  }
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;

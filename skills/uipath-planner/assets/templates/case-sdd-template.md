@@ -470,6 +470,14 @@ Rule: case-data-and-time-guide.md § Layer 3 (External names). -->
 |---|---|---|---|
 | <IXP_PROJECT_NAME> | <TASK_NAME> | <DOCUMENT_TYPES> | <PURPOSE> |
 
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
+
 ### Coded Functions
 
 <!-- Optional. Include only when an extracted TypeScript / JavaScript / Python function is justified. The genome makes each function a component built through `uipath-functions` before its consumer. -->

@@ -99,7 +99,7 @@ The note carries NO `## Planner Handoff` header and NO `planner-handoff:v1` mark
 >
 > - judgment / reasoning not expressible as fixed rules, or dynamic tool planning → **Agents**
 > - a fixed generative step inside a known path → **LLM activity in the host workflow**, not an Agent
-> - fixed document classification / extraction → **IXP / Document Understanding** (a component via the placement table; standalone IXP project only when extraction is the entire deliverable)
+> - field extraction from documents of a known kind → **IXP / Document Understanding** (a component via the placement table; standalone IXP project only when extraction is the entire deliverable)
 > - a user-facing screen as the deliverable → **Coded Apps**
 > - headless system-to-system integration, no UI, no bot → **API Workflows**
 > - a staged case lifecycle with SLA / approvals (potentially ad-hoc tasks) → **Case Management**

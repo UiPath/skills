@@ -56,7 +56,7 @@ Cells (FEEL unary-test subset):
 - **Traceable.** Every row cites its BR in `Rule`; a row that only completes the table cites `[DEFAULT]` or `[SME REVIEW]` instead. Every decision BR appears in at least one row.
 - **Independent test cases.** Write one test case per row in the Testing Strategy (RPA §17; BPMN §13 Gateway / Branch Coverage). Take its inputs and expected output from a PDD example or an SME-confirmed value, never from the row itself: a case derived from the row passes even when the row is wrong. When neither source gives one, write the case with `[SME REVIEW]` in place of the expected output.
 - **Proof.** The genome component that hosts the decision (the BPMN or RPA component) carries its test cases as acceptance criteria, and the build proves the table with tools. For a `.dmn` business rule: `uip rules validate <PROJECT_DIR> --output json`, then `uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json` once per test case. For coded logic in an RPA process: one unit test per test case. A failing case is a defect in the row or in the test case's source; resolve it with the SME, never by editing the expected output to match.
-- **Runs in.** BPMN: the `businessRuleTask` node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Component Placement Guide → Per-task component placement](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step).
+- **Runs in.** BPMN: the Rule step's node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Component Placement Guide → Per-task component placement](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step).
 - **No decision rules:** write `None. No rule decides an outcome.`
 
 ## 3. Rules that need reasoning
@@ -71,7 +71,7 @@ List every `Reasoning` rule. Example:
 ```
 
 - **Applied by an agent:** give its output as a typed value. In `Where it runs`, name the path to a person when the agent can't decide.
-- **Applied by a person:** in `Where it runs`, name the task and the role. In BPMN the task is a `userTask`, also listed in §9 HITL Touchpoints.
+- **Applied by a person:** in `Where it runs`, name the task and the role. In BPMN the task is a Human step, also listed in §9 HITL Touchpoints.
 - **No reasoning rules:** write `None. Every rule is deterministic.` Don't leave the section out.
 
 ## 4. Coverage

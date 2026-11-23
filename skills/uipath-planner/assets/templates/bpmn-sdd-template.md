@@ -90,7 +90,7 @@ section again from it, with every open question. See open-questions-guide.md for
 - **Until answered:** the SDD stays `draft` and no genome is written
 - **Answer (by <ROLE>):**
 
-> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item about something the build needs to exist first (a connection, a deployed component) names it as a prerequisite of the build. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 
@@ -164,28 +164,31 @@ flowchart LR
 
 ## 3. Pools & Lanes
 
-<!-- Participant pools and the lanes/roles that own activities. One row per lane. -->
+<!-- Who owns which activities: one row per role, each §4 node under exactly one role. Whether roles are drawn as pools or lanes is uipath-maestro-bpmn's choice, never stated here. -->
 
-| Pool | Lane | Role / Participant | Owns Activities (node keys) | Notes |
-|---|---|---|---|---|
-| <POOL_NAME> | <LANE_NAME> | <ROLE> | <NODE_KEYS_FROM_§4> | <NOTES> |
+| Role / Participant | Owns Activities (node keys) | Notes |
+|---|---|---|
+| <ROLE> | <NODE_KEYS_FROM_§4> | <NOTES> |
 
 ---
 
 ## 4. Activities Inventory
 
-<!-- List every activity in execution order. The planner (`author`) builds the genome's components and steps from this section.
-     BPMN Element Type column — XML element only: startEvent, serviceTask, scriptTask, businessRuleTask, userTask,
-     sendTask, callActivity (separate Maestro / agentic / case instance), subProcess (embedded grouping), endEvent.
-     Integrated Component column — the UiPath implementation the element hosts: RPA job, Agent, API Workflow,
-     connector, HITL. The owning skill's registry maps implementation → host element (e.g. start RPA/agent job →
-     serviceTask, create queue item → sendTask, start agentic/case process → callActivity, HITL → userTask) —
-     do not put implementation names in the element-type column. userTask/HITL → also flag in §9 HITL Touchpoints. -->
+<!-- List every activity in execution order: one row per step, one kind of work per row. The planner (`author`) builds the genome's components and steps from this section.
+     Step Kind says what the step does; the BPMN element that performs it is uipath-maestro-bpmn's choice, never named here.
+     - Start (one row per way the process starts: manual, scheduled, message)
+     - Compute (derives, converts, groups, ranks or assembles values the process already holds)
+     - Call (invokes one component of §9 — a process, agent, API workflow, connector operation, function or extraction model — and names it in Integrated Component)
+     - Rule (evaluates one decision table of §5; its rules project is a row of §9 Business Rules Projects)
+     - Human (a person decides, corrects or supplies data; the run waits for them, so a path that must not wait for people holds none; also a row of §9 HITL Touchpoints)
+     - Subprocess (groups the steps §8 lists, once or per item)
+     - Call process (starts a separate process instance, §8 Call Activities)
+     - End (one row per way the process ends; it does no work: a record written or a notice sent is a Call row before it) -->
 
-| # | Node Key | BPMN Element Type | Description | Inputs | Outputs | Integrated Component | Notes |
+| # | Node Key | Step Kind | Description | Inputs | Outputs | Integrated Component | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | `start` | startEvent | <DESCRIPTION> | — | — | — | Trigger type: <MANUAL/TIMER/MESSAGE> |
-| 2 | `<NODE_KEY>` | <ELEMENT_TYPE> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <RPA/AGENT/API/CONNECTOR/HITL/—> | <NOTES> |
+| 1 | `start` | Start | <DESCRIPTION> | — | — | — | Starts on: <MANUAL/SCHEDULED/MESSAGE> |
+| 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <RPA/AGENT/API/CONNECTOR/HITL/—> | <NOTES> |
 
 ---
 
@@ -193,7 +196,7 @@ flowchart LR
 
 ### Gateways
 
-<!-- exclusive (XOR), parallel (AND fork/join), inclusive (OR), event-based (race). -->
+<!-- exclusive (XOR), parallel (AND fork/join), inclusive (OR), event-based (race). The default branch carries no condition. -->
 
 | Gateway Key | Type | Incoming | Outgoing | Default Flow | Purpose |
 |---|---|---|---|---|---|
@@ -201,19 +204,21 @@ flowchart LR
 
 ### Sequence Flows
 
-| Flow Key | Source | Target | Condition Expression | Notes |
+<!-- Condition: in words, on a §7 value or a decision table output named as that table names it; only on a flow leaving a gateway. A flow into or out of a per-item subprocess carries none: the subprocess is left when every item is done. -->
+
+| Flow Key | Source | Target | Condition | Notes |
 |---|---|---|---|---|
-| `<FLOW_KEY>` | `<SOURCE_NODE>` | `<TARGET_NODE>` | <EXPRESSION_OR_—> | <NOTES> |
+| `<FLOW_KEY>` | `<SOURCE_NODE>` | `<TARGET_NODE>` | <CONDITION_OR_—> | <NOTES> |
 
 ### Decision Tables
 
-<!-- references/design/business-rules-guide.md → Decision tables. Each decision runs in a businessRuleTask (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
+<!-- references/design/business-rules-guide.md → Decision tables. Each decision runs in a Rule step (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
 
 #### DT1 — <DECISION_NAME>
 **Hit policy:** <UNIQUE / FIRST / COLLECT>
 **Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
 **Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
-**Runs in:** `<BUSINESS_RULE_TASK_NODE_KEY>`
+**Runs in:** `<RULE_STEP_NODE_KEY>`
 
 | # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
 |---|---|---|---|---|
@@ -221,7 +226,7 @@ flowchart LR
 
 ### Rules That Need Reasoning
 
-<!-- references/design/business-rules-guide.md → Rules that need reasoning. Agent: a serviceTask hosting the agent. Person: a userTask, also in §9 HITL Touchpoints. Empty: `None. Every rule is deterministic.` -->
+<!-- references/design/business-rules-guide.md → Rules that need reasoning. Agent: a Call step naming the agent. Person: a Human step, also in §9 HITL Touchpoints. Empty: `None. Every rule is deterministic.` -->
 
 | ID | Rule | Applied by | Inputs → Output | Where it runs |
 |---|---|---|---|---|
@@ -243,11 +248,11 @@ flowchart LR
 
 ## 7. Data Objects & Variables
 
-<!-- Process variables and data objects passed between nodes. A validation business rule (regex / range / type / allowed values) goes in Description, prefixed with its BR ID. -->
+<!-- Every value the process carries between nodes. Role: `given at start` (whatever starts the run supplies it; a scheduled start supplies nothing), `working` (a node sets it, later nodes read it) or `result` (what the run leaves when it ends; it may be read on the way). Type is the kind of value — text, number, yes/no, date-time, list, record — never a product type. Set By is the one node that writes it; a value two nodes write is two values. Where a value lives is the build's: state no scope. A validation business rule (regex / range / type / allowed values) goes in Description, prefixed with its BR ID. -->
 
-| Name | Direction | Type | Scope | Default | Description |
+| Name | Role | Type | Set By | Read By | Description |
 |---|---|---|---|---|---|
-| <VAR_NAME> | <IN / INOUT / OUT> | <TYPE> | <process / subprocess> | <DEFAULT_VALUE> | <DESCRIPTION> |
+| <VAR_NAME> | <given at start / working / result> | <KIND_OF_VALUE> | `<NODE_KEY_OR_—>` | `<NODE_KEYS>` | <DESCRIPTION> |
 
 ---
 
@@ -257,9 +262,11 @@ flowchart LR
 
 ### Subprocesses
 
-| Subprocess Key | Kind | Nested Scope Summary | Scoped Variables | Multi-instance? |
-|---|---|---|---|---|
-| `<SUBPROCESS_KEY>` | <embedded / event / expanded> | <SUMMARY> | <VARS> | <yes: sequential/parallel — no> |
+<!-- Nodes Inside: every §4 node key and §5 gateway key the subprocess holds. A multi-instance subprocess repeats exactly these per item; a step that must run per item and is not listed here runs once. Items are worked one after another unless the source needs them worked at the same time. Result Kept In: where each item's result stays until the step that reads them all — a record per item, named in §7; that items worked at the same time can each add to one shared list is a Build Assumptions row, never assumed. -->
+
+| Subprocess Key | Nodes Inside | Multi-instance? | Result Kept In |
+|---|---|---|---|
+| `<SUBPROCESS_KEY>` | <NODE_AND_GATEWAY_KEYS> | <yes: sequential/parallel over <COLLECTION> — no> | <RECORD_OR_VARIABLE_OR_—> |
 
 ### Call Activities
 
@@ -299,7 +306,7 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). A connection must exist before the parts that use it are built: a connection not yet provisioned is an `[SME REVIEW]` item that names it as a prerequisite. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -307,7 +314,7 @@ flowchart LR
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. The model extracts fields; it is never the step that sorts documents by kind. Two Build Assumptions rows go with every model: that it reads each format listed here (one row per format that is not a PDF or a scan, with the conversion step the design falls back on), and that each document reaches it in the form it takes from the node that received it. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
 | Model / Project | Called From Node | Document Types | Purpose |
 |---|---|---|---|
@@ -321,6 +328,14 @@ flowchart LR
 |---|---|---|---|
 | `<FUNCTION_NAME>` | `<NODE_KEY>` | `<INPUT_MODEL>` → `<OUTPUT_MODEL>` | <PURPOSE_AND_DEPENDENCIES> |
 
+### Business Rules Projects
+
+<!-- One row per decision table of §5 that a Rule step evaluates. One Rule step evaluates one table. Each table is a Business Rules project of its own, built by uipath-rules and deployed BEFORE the process; it is also a row of §12 Solution / Project Breakdown. OPTIONAL subsection — omit entirely when §5 has no decision table (exempt from the template-superset check). -->
+
+| Rules Project | Decision Table | Called From Node |
+|---|---|---|
+| `<RULES_PROJECT_NAME>` | <DT_ID_AND_NAME> | `<RULE_STEP_NODE_KEY>` |
+
 ### HITL Touchpoints
 
 <!--skill-flavor:bpmn-hitl-touchpoints:start-->
@@ -329,28 +344,40 @@ flowchart LR
      (who approves, what criteria); the BPMN specialist owns the task schema. -->
 <!--skill-flavor:bpmn-hitl-touchpoints:end-->
 
-| Node Key | HITL Type | Purpose | Approval Criteria |
+<!-- Every decision names the node the process continues at. A decision that leaves the work waiting names what ends the wait and the node it resumes at. -->
+
+| Node Key | Who Acts | Decisions → Next Node | Shown / Entered |
 |---|---|---|---|
-| `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
+| `<NODE_KEY>` | <ROLE> | <DECISION_1> → `<NODE_KEY>`; <DECISION_2> → `<NODE_KEY>` | <DATA_SHOWN> / <DATA_ENTERED> |
+
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the nodes that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | `<NODE_KEYS>` | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
 
 ---
 
 ## 10. Error Handling & Retry
 
-| Scope | Mechanism | Trigger | Retry Policy | Action |
+<!-- One row per failure the design answers; each row names one §4 node. Attempts belong to that node: the process as a whole is never retried. A failure the run carries on from is caught by a §6 boundary error event on that node, or on the subprocess that holds it, and Then names the node that event leads to (the alert, the record written, the end event reached). That event is interrupting. A failure of one item inside a per-item loop that the other items carry on from is caught inside the loop: the event sits on the failing node, and Then is a node inside the same loop. `—` in Caught By means nothing catches it: the run ends as failed, and Then says exactly `run ends as failed`. A failure of the node named in Then is a row of its own. -->
+
+| Failing Node | Trigger | Attempts | Caught By | Then |
 |---|---|---|---|---|
-| Process-level | Unhandled exception | Any activity fails | <RETRY_OR_—> | <FAIL / NOTIFY / COMPENSATE> |
-| Activity-level | <boundary error event / retry / error-mapping> | <CONDITION> | <RETRY_COUNT_AND_BACKOFF> | <ACTION> |
+| `<NODE_KEY>` | <CONDITION> | <NUMBER_OR_—> | `<BOUNDARY_EVENT_KEY>` | `<NEXT_NODE_KEY>` |
+| `<NODE_KEY>` | <CONDITION> | <NUMBER_OR_—> | — | run ends as failed |
 
 ---
 
 ## 11. Triggers
 
-<!-- How the process instance starts. -->
+<!-- How the process instance starts, in the business's words: the time, the time zone, the days. How a schedule is expressed is the build's; a calendar it depends on (business days, holidays) is a Build Assumptions row with its fallback. -->
 
-| Trigger Type | Configuration | Notes |
+| Trigger Type | When | Notes |
 |---|---|---|
-| <MANUAL / TIMER START / MESSAGE START> | <CRON_OR_MESSAGE_SPEC> | <NOTES> |
+| <MANUAL / SCHEDULED / MESSAGE> | <WHEN_IN_WORDS_OR_MESSAGE> | <NOTES> |
 
 ---
 
@@ -374,11 +401,11 @@ flowchart LR
 ### Orchestrator Deployment Target
 
 - [ ] Development workspace (default — the specialist's own authoring/publish surface)
-- [ ] Orchestrator (`.uipx`-wrapped solution → `uipath-solution`; standalone package → `uipath-maestro-bpmn` packages, uploads, and deploys itself via `uip maestro bpmn`)
+- [ ] Orchestrator (deployed as a solution → `uipath-solution`)
 
 ### Solution / Project Breakdown
 
-<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. One row per project (single row for a single-project solution). -->
+<!-- Every part the build creates: its product, source repo, Orchestrator folder, and run mode. One row per part (single row for a single-project solution); Coded Functions are one row each. How parts are grouped into projects, and which are packed into the solution or deployed on their own, is decided at build by their owning skills: never state it here. -->
 
 | Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
 |---|---|---|---|---|
@@ -408,7 +435,7 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
+| **Security** | <personal data: the fields that hold it, by name, and where each may be shown or stored — that run history and logs leave it out is a Build Assumptions row, never a promise; credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
 | **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
 | **Scalability** | <expected concurrent process instances; multi-instance subprocess fan-out; peak-window sizing> |
 | **Availability / Resilience** | <boundary-timeout / retry behavior; idempotency of invoked components; graceful degradation> |
