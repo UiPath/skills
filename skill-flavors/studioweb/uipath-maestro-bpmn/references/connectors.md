@@ -14,3 +14,7 @@ With no session library (Automation Suite), `check` and `compile` fetch a missin
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs a connection on the tenant (you are already signed in). Run it when `check` asks for it, not speculatively.
 <!--skill-flavor:prepare-live:end-->
+
+<!--skill-flavor:sdk-event-entity:start-->
+  Needs builder SDK 6.123.0 or later. Studio Web ships its own SDK: when `check` reports `TS2353` on `entity`, tell the user that this Studio Web build cannot write the entity picker on a Data Fabric trigger yet. Never fall back to the literal `filter`.
+<!--skill-flavor:sdk-event-entity:end-->
