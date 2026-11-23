@@ -122,11 +122,7 @@ success_criteria:
          `: ` and the step's resource status (a resource name, a
          which-of-two question, `none yet, create it or name one`, `not
          checked`, or `no resource needed`), in one short clause under about
-<<<<<<< HEAD
-         200 characters. There is no line for a start event,
-=======
          200 characters, except that a which-of-two status written exactly `<A> in <folder> or <B> in <folder>, which one? Build it takes the first` (a row with no folder drops ` in <folder>`) may exceed that length: it is one status. Any text after `takes the first`, or a which-of-two in another form, counts toward the limit. There is no line for a start event,
->>>>>>> 7cec36e8f (test(uipath-maestro-bpmn): follow-up review fixes for #5059, #5064, #5065 (#5081))
          timer, gateway, branch, or end event.
       4. Next is exactly the line `Is this the process you want?`.
       5. Then exactly three numbered options, in this order: `1.` Build it,

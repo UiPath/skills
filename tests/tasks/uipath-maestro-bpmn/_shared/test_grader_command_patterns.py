@@ -98,8 +98,6 @@ TIMER_PARSES = [
     "p = next(pathlib.Path('.').rglob('ScheduledReportBpmn.bpmn'))\nr = ET.parse(p).getroot()\nPY",
     "python3 - ScheduledReportBpmn/ScheduledReportBpmn.bpmn <<'EOF'\n"
     "import sys, xml.etree.ElementTree as ET\nET.parse(sys.argv[1])\nEOF",
-<<<<<<< HEAD
-=======
     # Studio Web: validate loads the XML and reports XML_NOT_WELL_FORMED.
     "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
     "uip maestro bpmn validate --output json ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
@@ -109,14 +107,10 @@ TIMER_PARSES = [
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('./Process.bpmn')\"",
     # Studio Web: the main file is Process.bpmn, and there is no python3.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/ScheduledReportBpmn/Process.bpmn')\"",
->>>>>>> 7cec36e8f (test(uipath-maestro-bpmn): follow-up review fixes for #5059, #5064, #5065 (#5081))
 ]
 
 TIMER_NOT_PARSES = [
     # No parse at all.
-<<<<<<< HEAD
-    "uip maestro bpmn validate ScheduledReportBpmn/ScheduledReportBpmn.bpmn --output json",
-=======
     "uip maestro bpmn check ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     "uip maestro bpmn validate OtherProject --output json",
     # validate takes the file: a project folder is rejected before any XML is read.
@@ -126,7 +120,6 @@ TIMER_NOT_PARSES = [
     "uip maestro bpmn validate ScheduledReportBpmnOld/Process.bpmn",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('/solution/Other/Process.bpmn')\"",
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('SubProcess.bpmn')\"",
->>>>>>> 7cec36e8f (test(uipath-maestro-bpmn): follow-up review fixes for #5059, #5064, #5065 (#5081))
     "xmllint --noout ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     # A parse of something else; the name only in a LATER, unrelated command.
     "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('other.bpmn')\"; "
@@ -137,14 +130,11 @@ TIMER_NOT_PARSES = [
     "ls ScheduledReportBpmn/ScheduledReportBpmn.bpmn",
     # The name in the program, but no ET.parse anywhere in it.
     "python3 -c \"print(open('ScheduledReportBpmn/ScheduledReportBpmn.bpmn').read()[:200])\"",
-<<<<<<< HEAD
-=======
     # node: a read, a regex or a hand-rolled tokenizer is not a parse, whatever it mentions.
     "node -e \"/* DOMParser not available */ console.log(require('fs').readFileSync('Process.bpmn','utf8').length)\"",
     "node -e \"console.log(require('fs').readFileSync('Process.bpmn','utf8').length)\"",
     "node -e \"/<bpmn:process/.test(require('fs').readFileSync('Process.bpmn','utf8'))\"",
     "grep -c 'bpmn:process' ScheduledReportBpmn/Process.bpmn",
->>>>>>> 7cec36e8f (test(uipath-maestro-bpmn): follow-up review fixes for #5059, #5064, #5065 (#5081))
 ]
 
 
@@ -158,8 +148,6 @@ def test_timer_xml_check_ignores_anything_else(command: str) -> None:
     assert not _hits(_pattern(_TIMER, "well-formed-XML"), command), command
 
 
-<<<<<<< HEAD
-=======
 # --- author_validate: the same check, InvoiceApproval project ---------------------
 
 _AUTHOR = "smoke/author_validate.yaml"
@@ -230,7 +218,6 @@ def test_xml_regex_time_bound() -> None:
     subprocess.run([sys.executable, "-I", "-c", probe, pattern], check=True, timeout=10)
 
 
->>>>>>> 7cec36e8f (test(uipath-maestro-bpmn): follow-up review fixes for #5059, #5064, #5065 (#5081))
 def test_timer_prompt_no_longer_spells_out_the_command() -> None:
     task = yaml.safe_load((_SUITE / _TIMER).read_text(encoding="utf-8"))
     prompt = task["initial_prompt"]
@@ -942,3 +929,85 @@ def test_after_gate_counts_an_upload_or_a_studio_web_target_write(command: str) 
 @pytest.mark.parametrize("command", NOT_SHOWN)
 def test_after_gate_ignores_scratch_and_cli_target_writes(command: str) -> None:
     assert not _hits(_pattern(_AFTER_GATE, "At least two uploads"), command), command
+
+
+# --- Advisory criteria that docked correct 2026-11-20_09-23-26 Studio Web runs ---------
+# Accepted cases include the call from that run (enum, datafabric-smoke-error, the three
+# eval tasks); some are synthetic. The "not" cases are the shapes the criterion
+# still has to refuse.
+
+_ADVISORY = [
+    (
+        "connector_features/enum/enum.yaml",
+        "listed tenant connections",
+        [
+            "uip is connections list uipath-google-gmail --all-folders --output json",
+            '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Connection", "source": "all"}}',
+        ],
+        [
+            "uip maestro registry search 'gmail send mail' --limit 10 --output json",
+            '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Process", "source": "all"}}',
+            '{"toolName": "ManageSolutionResources", "method": "execute", "params": {"action": "list", "kind": "Connection", "source": "local"}}',
+            '{"file_path": "/x/notes.md", "new_content": "run uip is connections list first"}',
+        ],
+    ),
+    (
+        "connector_features/datafabric_connector/smoke_error/smoke_error.yaml",
+        "Create Entity Record",
+        [
+            "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name CreateEntityRecordCurated --output json",
+            "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/edited/Process.bpmn",
+        ],
+        [
+            "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
+            "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name SomethingElse",
+            "uip maestro bpmn check .flow-sdk/Process.bpmn.ts --source",
+            "uip maestro bpmn compile --help",
+            "uip maestro bpmn compile -o b.bpmn /tmp/X/Process.baseline.bpmn.ts",
+        ],
+    ),
+    (
+        "connector_features/datafabric_connector/smoke_error/smoke_error.yaml",
+        "follow-up Query Entity Records",
+        [
+            "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name QueryEntityRecordsCurated --output json",
+            "uip maestro bpmn compile .flow-sdk/Process.bpmn.ts -o /tmp/edited/Process.bpmn",
+        ],
+        [
+            "uip maestro bpmn compile --help",
+            "uip maestro bpmn compile /tmp/bpmn-draft/X/Process.baseline.bpmn.ts -o /tmp/bpmn-draft/X/baseline/Process.bpmn",
+            "uip maestro bpmn registry get Intsvc.ActivityExecution --object-name CreateEntityRecordCurated",
+        ],
+    ),
+    (
+        "evaluate/local_crud.yaml",
+        "created a solution",
+        ["uip solution init Foo", "uip maestro bpmn init SmokeEval"],
+        ["uip maestro bpmn initialize", "uip maestro bpmn init --help", "uip maestro bpmn init && ls", "uip maestro bpmn check Process.bpmn"],
+    ),
+    (
+        "evaluate/evaluator_type_choice.yaml",
+        "created the solution",
+        ["uip solution init Bar", "uip maestro bpmn init EvalTypeChoice"],
+        ["uip maestro bpmn eval evaluators create x --type exact-match"],
+    ),
+    (
+        "evaluate/simulation/simulation_crud.yaml",
+        "Solution-creation telemetry",
+        ["uip solution init Foo", "uip maestro bpmn init SimEval"],
+        ["uip maestro bpmn eval simulation add a --set s"],
+    ),
+]
+
+
+# `_counts` ignores tool_name/require_success and shell-normalizes every call.
+@pytest.mark.parametrize(
+    ("task", "part", "counts", "refused"), _ADVISORY, ids=[f"{t.split('/')[-1]}:{p}" for t, p, _, _ in _ADVISORY]
+)
+def test_advisory_pattern_accepts_the_correct_route_and_refuses_the_rest(
+    task: str, part: str, counts: list[str], refused: list[str]
+) -> None:
+    for command in counts:
+        assert _counts(task, part, command), command
+    for command in refused:
+        assert not _counts(task, part, command), command
