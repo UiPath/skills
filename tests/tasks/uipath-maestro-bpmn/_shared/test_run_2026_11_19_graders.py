@@ -280,6 +280,43 @@ def test_find_bpmn_file_prefers_the_project_over_a_shallower_draft(
     assert bpmn_check.find_bpmn_file("Foo") == "Sol/Foo/Foo.bpmn"
 
 
+def test_find_bpmn_file_equal_depth_prefers_the_folder_named_for_the_hint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # As strings `Foo-work/` sorts before `Foo/` ('-' < '/'): a sibling copy must not win.
+    _project(tmp_path, "Foo-work", "Foo.bpmn")
+    _project(tmp_path, "Foo", "Foo.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "Foo/Foo.bpmn"
+
+
+def test_find_bpmn_file_equal_depth_hint_folder_beats_an_alphabetically_earlier_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _project(tmp_path, "Aaa", "Foo.bpmn")
+    _project(tmp_path, "Foo", "Foo.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "Foo/Foo.bpmn"
+
+
+def test_find_bpmn_file_equal_depth_studio_web_prefers_the_named_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _project(tmp_path, "Foo-work", "Process.bpmn")
+    _project(tmp_path, "Foo", "Process.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "Foo/Process.bpmn"
+
+
+def test_find_bpmn_file_equal_depth_without_a_named_folder_falls_back_to_path_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _project(tmp_path, "z", "Foo.bpmn")
+    _project(tmp_path, "b", "Foo.bpmn")
+    monkeypatch.chdir(tmp_path)
+    assert bpmn_check.find_bpmn_file("Foo") == "b/Foo.bpmn"
+
+
 def test_find_bpmn_file_takes_the_shallowest_of_several_projects(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
