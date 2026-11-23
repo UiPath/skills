@@ -64,7 +64,7 @@ The `.nupkg` includes auto-generated UiPath metadata files:
 |------|---------|
 | `operate.json` | Runtime configuration and app settings |
 | `bindings.json` | Resource bindings for connections, assets |
-| `bindings_v2.json` | V2 resource bindings format |
+| `bindings_v2.json` | V2 resource bindings, derived from `uipath_resources.ts` declarations — never hand-written |
 | `entry-points.json` | API entry point definitions |
 | `package-descriptor.json` | Package file mapping and manifest |
 
