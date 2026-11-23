@@ -371,7 +371,7 @@ flowchart LR
 
 ## 11. Build Specification
 
-<!-- For the build: the BPMN wiring that carries §2's steps, read by uipath-maestro-bpmn and by the SDD table check. Every key here is a §2 step, a gateway or an event of this chapter. -->
+<!-- For the build: the BPMN wiring that carries §2's steps, read by uipath-maestro-bpmn. Every key here is a §2 step, a gateway or an event of this chapter. -->
 
 ### Gateways
 

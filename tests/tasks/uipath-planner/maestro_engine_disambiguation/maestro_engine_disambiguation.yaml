@@ -120,7 +120,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Integrated Components reference the two published components from the PDD"
+    description: "Systems and Integrations reference the two published components from the PDD"
     path: "vendor-onboarding-orchestration-sdd.md"
     includes:
       - "SanctionsCheck"

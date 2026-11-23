@@ -71,7 +71,7 @@ List every `Reasoning` rule. Example:
 ```
 
 - **Applied by an agent:** give its output as a typed value. In `Where it runs`, name the path to a person when the agent can't decide.
-- **Applied by a person:** in `Where it runs`, name the task and the role. In BPMN the task is a Human step, also listed in §9 HITL Touchpoints.
+- **Applied by a person:** in `Where it runs`, name the task and the role. In BPMN the task is a Human step, also listed in §5 Human Tasks.
 - **No reasoning rules:** write `None. Every rule is deterministic.` Don't leave the section out.
 
 ## 4. Coverage
