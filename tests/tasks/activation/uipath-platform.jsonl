@@ -151,3 +151,4 @@
 {"id": "uipath-platform-065", "prompt": "Bring our own LLM that is not OpenAI-compatible to UiPath Autopilot through a custom connector", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-066", "prompt": "Turn off the Integration Service event trigger on my Salesforce flow so it stops starting jobs for now", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-067", "prompt": "Delete the Outlook email-received event trigger from my deployed process, we don't need it anymore", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-051", "prompt": "Create a Data Fabric entity named Vendor with name and country fields on my tenant", "expected_skill": "uipath-platform"}

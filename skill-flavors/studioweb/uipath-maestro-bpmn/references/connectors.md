@@ -1,5 +1,5 @@
 <!--skill-flavor:field-reference:start-->
-Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` rather than guessing input names.
+Studio Web has no `markdownPath` file to read. Get the operation's field reference with `uip maestro registry describe <nodeType> --output plain` (add `--object <OBJECT>` for a generic operation such as `get-record`) rather than guessing input names.
 <!--skill-flavor:field-reference:end-->
 
 <!--skill-flavor:library-pull:start-->
@@ -14,3 +14,7 @@ With no session library (Automation Suite), `check` and `compile` fetch a missin
 <!--skill-flavor:prepare-live:start-->
 **`prepare` is a live call.** It reads through a real connection, so it needs a connection on the tenant (you are already signed in). Run it when `check` asks for it, not speculatively.
 <!--skill-flavor:prepare-live:end-->
+
+<!--skill-flavor:sdk-event-entity:start-->
+  Studio Web ships its own SDK. When `check` reports `TS2353` on `entity`, this build predates it: run `uip maestro bpmn registry get Intsvc.EventTrigger --object-name EntityTriggers_V3 --operation <OPERATION> --connection-id <CONNECTION_ID> --input-details '{"queryParameters":{"entityScope":"folder","folderEntityName":"<ENTITY_NAME>"}}' --solution-folder <SOLUTION_DIR> --output json`, then author `.activity(<ID>, 'Intsvc.EventTrigger', { contextRows, inputs, outputRows, contextVerbatim: true })` from the `<uipath:context>`, input and output rows of `Data.V2.ElementXml`, and one `.binding(<BINDING_ID>, { resource, propertyAttribute, resourceKey, value })` per `Data.V2.RootBindings` row. Follow `Data.V2.Instructions` for the `{{VAR_ID}}` tokens. `examples/InvoiceApproval.bpmn.ts` (`Event_CiykXe`) shows the node's shape. `<OPERATION>` is `UPDATED_V3` or `CREATED_V3`. If `registry get` fails too, tell the user that this build cannot write the picker. Never the literal `filter`.
+<!--skill-flavor:sdk-event-entity:end-->

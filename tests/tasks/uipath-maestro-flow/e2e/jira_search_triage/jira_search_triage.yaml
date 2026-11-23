@@ -45,9 +45,10 @@ initial_prompt: |
     2. Loops over the returned issues and adds a comment to each whose body is
        `processed_comment` (pass it verbatim), using the "Add Comment" activity.
 
-  Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
-  folder. If the Atlassian Jira connector isn't available in your registry, stop
-  rather than falling back to a generic HTTP request.
+  Use the Atlassian Jira connection `connection_name` from `seed.json`, in the
+  `Shared/uipath-maestro-flow` folder. If the Atlassian Jira connector isn't
+  available in your registry, stop rather than falling back to a generic HTTP
+  request.
 
   Validate the final flow file.
 

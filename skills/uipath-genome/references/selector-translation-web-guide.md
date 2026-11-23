@@ -1,90 +1,32 @@
 # Selector Translation — the web
 
-The web's side of [selector-translation-guide.md](selector-translation-guide.md): the `html` and `webctrl` tags, and what each rule adds for pages driven through the browser driver — browsers, SAP Fiori, Web GUI and Ariba, web views. Read whole with that guide when the target catalog holds web controls; its tiers, roles and matching semantics hold here, and rule numbers are its own.
+The web's side of [selector-translation-guide.md](selector-translation-guide.md): what each rule adds for pages driven through the browser driver — browsers, SAP Fiori, Web GUI and Ariba, web views. Read whole with that guide when the target catalog holds web controls, together with the `html` and `webctrl` attribute references and reliability rankings of the UI Automation package's Selector Reference (that guide names where it is read): what each attribute holds, how the web extension computes it, how a search visits the page, and which values to keep, wildcard or drop. Rule numbers are that guide's.
 
-## `html` — browser tab
+## Rule 1 — web
 
-| Attribute | Meaning | Tier / role |
-|---|---|---|
-| `app` | browser executable — selects browser driver at run time | critical — never drop: empty or missing `app` is treated as Internet Explorer |
-| `url` | page URL | very reliable — wildcard path, keep host: `url='https://host/*'` |
-| `title` | page title | alright — wildcard; use `url` to tell tabs apart |
-| `htmlwindowname` | `window.name` | alright |
-| `mobiledata` | mobile device binding | critical when present — never drop |
-| `sapweb-ses-screen`, `sapweb-ses-transaction`, `sapweb-ses-client`, `sapweb-ses-user`, `sapweb-ses-program` | SAP Web GUI session context | session |
-| `ui5-ses-technicalName`, `ui5-ses-appId` | UI5 application context | session |
-| `idx` | | position |
-| `pid`, `tid`, `gid`, `bsid`, `excludehwnd`, `isremoteapp`, `useBrowserExtension` | runtime | never |
+**The browser's `app`.** A source recording only "Chrome", "Edge" or "IE" as browser choice maps to the executable the `html` attribute reference lists for it; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
 
-`app` values the driver recognises (anything else is treated as a custom Chromium browser only when it equals `custom_browser`):
+**A container without a tag of its own.** `parentid`, `parentname` and `parentclass` say "inside that container" on the element's own tag (`parentclass='*infobox*'`, `parentid='p-search'`), where the container's tag would be needed only for scoping.
 
-| Browser | `app` |
-|---|---|
-| Google Chrome | `chrome.exe` |
-| Microsoft Edge (Chromium) | `msedge.exe` |
-| Microsoft Edge WebView2 (embedded in desktop app) | `msedgewebview2.exe` |
-| Microsoft Edge (legacy, UWP) | `ApplicationFrameHost.exe` |
-| Mozilla Firefox | `firefox.exe` |
-| Internet Explorer | `iexplore.exe` — also default when `app` is empty or missing |
-| Brave, Vivaldi | `brave.exe`, `vivaldi.exe` |
-| Custom Chromium-based browser (with UiPath extension) | `custom_browser` |
-| Safari (macOS) | `Safari` |
+## Rule 2 — web
 
-A source recording only "Chrome", "Edge" or "IE" as browser choice maps to these executables; a source recording nothing gets a Configuration Question ("Which browser runs the automation?", default Chrome → `chrome.exe`). Never leave `app` for the run time to default.
-
-## `webctrl` — HTML element (open schema)
-
-| Tier | Attributes |
-|---|---|
-| very reliable | `tag`, `aria-label`, `aria-labelledby`, `aria-role`, `aria-describedby`, `shadowhostid`; author-controlled `data-*` identifiers (`data-testid`, `data-automation-id`, `data-cy`) |
-| alright | `id`, `parentid`, `name`, `parentname`, `type`, `isleaf`, `uipath-visible`, `aaname`, `visibleinnertext`, `innertext` |
-| table | `tableCol`, `tableRow`, `colName`, `rowName` |
-| last resort | `action`, `alt`, `href`, `src`, `tabindex`, `placeholder`, `uipath-html-title` (element's `title` attribute), `css-selector`, `class`, `parentclass`, `aria-pressed` |
-| last resort — framework-generated | `ng-reflect-*`, `ng-version`, `_ngcontent-*`, `_nghost-*`, `data-reactid`, `__reactProps$*`, `v-*`, `data-v-*` |
-| SAP Fiori / UI5 | very reliable `ui5-label`, `ui5-tooltip`, `ui5-role`, `ui5-type`, `ui5-view-local-id`; alright `ui5-class`; tables `ui5-tableCol`, `ui5-tableRow`, `ui5-colLabel`, `ui5-isEmpty`; trees `ui5-path` |
-| SAP Web GUI | very reliable `sapweb-id` (scripting id), `sapweb-type`; alright `sapweb-lsclass`, `sapweb-text`, `sapweb-itemid`; tables `sapweb-tablerow`, `sapweb-tablecol`, `sapweb-colname`, `sapweb-coltooltip`; trees `sapweb-path`; avoid `sapweb-lsid` |
-| SAP Ariba | very reliable `aw-name`, `aw-label`, `aw-type`; tables `aw-tablerow`, `aw-tabledetailrow`, `aw-tablerowtype`, `aw-tablecol`, `aw-collabel`; avoid `id` (session hash) |
-
-Hard rules for `webctrl`: a tag whose node sits inside a shadow root, or may sit in one, must carry `shadowhostid` (its row in the table below); `frame`/`iframe` tags are never removed; `class` keeps only the semantic core (`class='*search-input*'`), never utility tokens or build hashes; ids with three or more dot-separated structural segments are wildcarded to the last semantic segments; hash-suffixed custom tag names are wildcarded (`tag='MACROPONENT-*'`); a `DIV`/`SPAN` without a semantic attribute is not a target on its own.
-
-How the browser driver computes the attributes a translation leans on (web extension's attribute getters):
-
-| Attribute | Computed as | Consequence for translation |
-|---|---|---|
-| `tag` | DOM tag name, upper-case for HTML elements | matched case-insensitively |
-| `aaname` | legacy MSAA-style name, **not** the ARIA accessible name. For `A`, `INPUT`, `IMG`, `BUTTON`, `TEXTAREA`, `AREA`, `SELECT`, `TABLE`: buttons `title` → text/value; images `title` → `alt` → `<label for>` (→ enclosing `A`); tables `title` → caption → header cells; other form elements and links `<label for>` text → own text/value → `title` → `alt`. For **every other element**: element's **own direct text nodes only**. Text is taken as the node holds it — not trimmed, inner whitespace kept (a link indented in the markup reads `'      Travel      '`), while its `visibleinnertext` reads `'Travel'` | never reads `aria-label`, `aria-labelledby`, `placeholder` or a wrapping `<label>`; a container's `aaname` is not inherited from descendants, so `aaname` on a bare `DIV`/`SPAN`/`LABEL` caption is an exact, non-inherited pin; an input's `aaname` is its `<label for>` text when the input has an `id` |
-| `value` | the HTML `value` **attribute**, read raw — not the live `.value` property: typing into a field or assigning `.value` from script leaves it as the page served it (empty when the markup has none), only `setAttribute` changes it; on an `INPUT` of type submit, button or reset, assigning `.value` writes the attribute, so it always holds the caption; on a `SELECT` it is empty unless the markup sets it, and never holds the selection | a source predicate on the `value` attribute (XPath `@value`, CSS `[value=…]`) carries over as `value` with its criteria — the same attribute — never as `aaname`, which on a button with a `title` is that title; on a typed-into field `value` is the data the page was served with, and the current content is `text` (rule 4) |
-| `innertext` | `textContent` — all descendants, hidden ones included; newlines become spaces; no trim, no whitespace collapsing | inherited by every ancestor (rule 5) |
-| `visibleinnertext` | the browser's `innerText`, returned as is — the rendered text, hidden descendants excluded, a line break between blocks and between table rows, a tab between table cells; the driver neither trims nor collapses it | inherited by every ancestor; the one to use for visible captions. A table row carries the tabs of its empty cells (`"\t\tSystem\t\t   "`), so a caption not seen live is compared as [selector-translation-guide.md](selector-translation-guide.md) rule 2 gives for whitespace. A line break in a verbatim value is `&#10;`; a literal one becomes a space when the definition file is read |
-| `outertext` | identical to `innertext` | never adds information |
-| long text values | truncated at 512 characters with trailing `*` | translation of a long caption must do the same |
-| `title` | the **document** title | element's `title` attribute is `uipath-html-title` |
-| `aria-role`, `aria-label`, `aria-labelledby`, `type`, `placeholder`, `href`, `src`, `alt`, `data-*` | raw DOM attribute, as the page wrote it, padding included — `aria-role` only a written `role`, never an element's implicit one; `aria-labelledby` the ids it points to, not their text | `role` on `webctrl` is a constant `element` — never use it, use `aria-role` |
-| `labeledby` | the element's `aria-label` as the page wrote it, else the trimmed text of a `LABEL` in the page's document, hidden text included — the one its `aria-labelledby` names when that is a single id, or the one whose `for` names its `id`. Never a `<label>` around the element, a label inside a shadow root, an `aria-labelledby` of several ids or naming another element, or the `title` | a field's name; empty for a field named only in those ways, so a field inside a shadow root has one only from its `aria-label`. Attribute listings leave it out; selectors match it |
-| `parentid`, `parentname`, `parentclass` | **nearest ancestor** with non-empty `id`/`name`/`class` (crosses shadow roots) | not the direct parent; the one-tag way to say "inside {container}" (`parentclass='*infobox*'`, `parentid='p-search'`) when the container's own tag would otherwise be needed only for scoping |
-| `isleaf` | `1` when element has no element children (text-only counts as leaf) | pins innermost node of a text |
-| `uipath-visible` | `1` when the element is rendered — not `display: none`, visibility `visible`, not clipped to nothing, a box with width and height above 0 unless it is `display: contents` — else `0` | the one criterion that leaves hidden elements out of a match (§ Rule 17 — web) |
-| `tableRow`, `tableCol`, `colName`, `rowName` | real `TABLE`/`TR`/`TD`/`TH` markup only, 1-based, header rows counted (under one header row the first data row is `tableRow` 2); `colName` is the **full text** of the header cell at the same column position — including visually hidden text the header carries, such as a sort caption (`Document CategorySort and filter column`); `rowName` is the text of the row's header cell as the driver reports it — a multi-line header concatenates without separators (`Capitaland largest city`), so a source rule of "header contains X" is carried as `rowName='*X*'`, never as the exact caption; both are the header cell's text as the markup holds it, untrimmed — indented markup pads them (`'                     Sub-Total:                 '` for a cell that renders `Sub-Total:`), compact markup does not — so an exact caption goes on them as rule 2's whitespace row gives, `\s*` at both ends | absent on div-based grids (`role='grid'`), present on the many enterprise grids that still render `TABLE` (Workday's current grids do); choosing and cell shapes: rule 8 |
-| `css-selector` | generated as a tag-name-only chain from `body` (`body>div>span>a`), no ids or classes; matched as a CSS selector on the candidate element (the browser's `Element.matches`), so any selector the browser accepts is a criterion, positions included | weak as generated — it names a depth, not an element; last resort; a source's positional path: § Rule 7 — web |
-| `shadowhostid` | `id` of the shadow host of the element's root, empty when the host has no `id` and for an element outside any shadow root; host also gets its own tag in the chain | mandatory on every tag whose node lives in a shadow root — a tag without it never matches a node inside one. `'*'` matches under any host and outside shadow roots alike; `''` matches outside shadow roots and under a host that has no `id`. Write `'*'`, and the host's `id` only where it is authored (not a counter) and tells two matches apart |
-| frames | one `<webctrl tag='IFRAME' … />` (`FRAME`, `EMBED`) per frame level, carrying `id`, `name`, `src` (never `class`); nested frames give one tag per level | there is **no** `frame` attribute; SAP web frames are the exception and get no frame tag |
-| `idx` | 1-based, document order, counted over all same-tag elements **in the subtree of the parent tag's element** that match the tag's other attributes — not siblings | omitted when match is unique |
-
-Driver's own attribute preference when generating a selector, in order (stage one always emitted, later stages added only while they lower the index): `shadowhostid` (shadow DOM), `tag`, `tableRow`, `id`; `type`; `aria-role`; `aria-label`; `aria-labelledby`; Salesforce `sfl-*`; Ariba `aw-*`; Oracle ADF `adf-*`; `name`; `src` (frames); `parentid`; `parentname`; `class`; `aaname`; `isleaf`; `tabindex`; `tableCol`; `href`; `src`; `css-selector`. Volatility filters: an `id`, `parentid` or `aria-labelledby` containing a letter after a digit (`_oj146_smart-filter`, `input-45f6g7h8`) is rejected as auto-generated; a `class` with several tokens is never used at all (take one semantic token, wildcarded); `aaname` is offered only for `a`, `label`, `img`, `input`, `button`, `textarea`, `area`, `select`, `table`, `th`, for a `div`/`span` whose text is 32 characters or shorter, or under such an ancestor — and the offer depends on the activity type as well: a Click default may prefer a positional index over a multi-word caption that a `None` default keeps. SAP Fiori and Web GUI elements bypass this table and use their own families.
+Which `webctrl` attributes hold their text padded, or with tabs and line breaks, is the `webctrl` attribute reference's. Two take rule 2's whitespace row even for an exact caption: a table row's `visibleinnertext`, which carries the tabs of its empty cells, for a caption not seen live; and `rowName` / `colName`, which indented markup pads, with `\s*` at both ends. A recorded text that holds line breaks keeps them, each written `&#10;`: an equals stays an equals (rule 2), never a prefix with a wildcard in their place.
 
 ## Rule 4 — web
 
 `aaname` on a form-ish element that has a programmatic label (`<label for>`, `title`, `alt`) is the *label* — an identity, and it stays: the driver's own default Type Into target avoids `aaname` (for most inputs it is content) and, on a form with several fields of one widget type, falls back to structural fragments (`id='*input*'`, a label-id fragment) that match every input of that type, so a migrated target keeps `aaname='<label>'` where the label is programmatic: it is unique where the driver's default is not. Live, the test is one read of the attribute list: `aaname` equal to the label text is identity; an element with no label falls back to its value or own text, and then `aaname` is content. Offline, keep `aaname` on a typed-into control only when the source recorded a label for it (the value is then the label), never when the source recorded only its text.
 
+A source predicate on the `value` attribute (XPath `@value`, CSS `[value=…]`) carries over as `value` with its criteria — the same attribute — never as `aaname`, which on a button with a `title` is that title. On a typed-into field `value` is the data the page was served with, and the current content is `text`.
+
 ## Rule 5 — web
 
-**The mechanical test for `aaname`.** Before writing `aaname` on a `webctrl`, decide which of three cases the node is in — the answer is forced, not a judgement call:
+**The mechanical test for `aaname`.** Before writing `aaname` on a `webctrl`, decide which of the three cases of the `webctrl` attribute reference (which nodes carry `aaname`) the node is in — the answer is forced, not a judgement call:
 
-| Node | Does it carry `aaname`? |
+| Node | `aaname` on its tag |
 |---|---|
-| Form-ish tag — `A`, `INPUT`, `BUTTON`, `TEXTAREA`, `SELECT`, `IMG`, `AREA`, `TABLE` | Yes, **synthesised**: the driver builds it from `<label for>`, `title`, `alt`, text or value (§ attribute-getter table). An `INPUT`'s `aaname` is its label text — which is why a labelled field is targetable by its caption while its wrapper is not |
-| Leaf that owns its text — a `DIV`/`SPAN`/`LI`/`LABEL`/`TH` with `isleaf='1'` and its own text node | Yes, an exact, non-inherited pin. Pair it with `isleaf='1'` so the match cannot drift to an ancestor, and with its `tag`: a labelled form control carries its label's text as its own `aaname`, so `aaname` + `isleaf` alone also matches the input a `LABEL` names (a hidden radio beside its caption) |
-| Container — a `DIV`/`SPAN`/`SECTION`/`LI`/`UL`/`TR`… wrapping other elements (`isleaf='0'`) | **No** — the split is near-total, not a tendency: on enterprise SPA pages essentially no visible interactive container carries a non-blank `aaname` (whitespace-only values occur and are not names) while almost every text leaf does. `aaname` written on a wrapper was observed on one of its descendants and belongs on that descendant (rule 14); the wrapper's own identity is `aria-label` or `aria-labelledby` when it has any |
+| Form-ish tag | Yes: the name the driver synthesises, which on a labelled `INPUT` is its label text — a labelled field is targetable by its caption while its wrapper is not |
+| Leaf that owns its text | Yes, an exact, non-inherited pin. Pair it with `isleaf='1'` so the match cannot drift to an ancestor, and with its `tag`: a labelled form control carries its label's text as its own `aaname`, so `aaname` + `isleaf` alone also matches the input a `LABEL` names (a hidden radio beside its caption) |
+| Container wrapping other elements | **No.** `aaname` written on a wrapper was observed on one of its descendants and belongs on that descendant (rule 14); the wrapper's own identity is `aria-label` or `aria-labelledby` when it has any |
 
 `aaname` is neither over- nor under-used as a category — it is *node-dependent*. `<webctrl tag='DIV' data-automation-id='promptOption' aaname='My Organizations' />` is correct, because that option label is a leaf owning its text. `<webctrl tag='DIV' aaname='Save' />` for a command button is not: the button is a `BUTTON`, and the `DIV` that wraps it has no name. Neither the caption nor the tag can be chosen without knowing which node is which.
 
@@ -94,11 +36,13 @@ Driver's own attribute preference when generating a selector, in order (stage on
 
 ## Rule 8 — web
 
-The column comes from the header caption: `colName` on web (`ui5-colLabel`, `sapweb-colname`, `aw-collabel` for the SAP web families). Whether a web grid exposes the table attributes at all is a property of its markup, not of the application: read one cell's attribute list live before choosing. When they are present, `colName` is the header's *full* text (wildcard the tail: `colName='Status*'`), `rowName` is the row's first cell text, and the row-by-content cell is `<webctrl tag='TD' rowName='<key text>' colName='<caption>*' />`. The trailing wildcard is load-bearing, not tidiness: a sortable header's full text usually carries a screen-reader caption after the visible one (`colName='PlacementSort and filter column'`), so the bare caption matches nothing while `'Placement*'` matches — confirmed on a live grid, both ways round. `rowName` is the row header cell's text as the driver reports it, which concatenates a multi-line header without separators (`Capitaland largest city`): a source key that equals the visible caption is carried as `rowName='<key text>'` when the header is one line, as `rowName='*<key text>*'` when the source matched by containment or the header may carry more than the key; when the key text is not unique in its column, pin the row container by the discriminating value instead. When they are absent, the row is a container pinned by exact text and the cell is its descendant. A row found by a descendant filter takes its key as `rowName` on the cell, or is pinned by `visibleinnertext`, which includes the descendant's text.
+The column comes from the header caption: `colName` on web (`ui5-colLabel`, `sapweb-colname`, `aw-collabel` for the SAP web families). Whether a web grid exposes the table attributes at all is a property of its markup, not of the application: read one cell's attribute list live before choosing. When they are present, what `colName` and `rowName` hold is the `webctrl` attribute reference's, and the row-by-content cell is `<webctrl tag='TD' rowName='<key text>' colName='<caption>*' />`. The trailing wildcard on `colName` is load-bearing, not tidiness: a sortable header's full text usually carries a screen-reader caption after the visible one, so the bare caption matches nothing while `'Placement*'` matches. A source key that equals the visible caption is carried as `rowName='<key text>'` when the header is one line, as `rowName='*<key text>*'` when the source matched by containment or the header may carry more than the key; when the key text is not unique in its column, pin the row container by the discriminating value instead. When they are absent, the row is a container pinned by exact text and the cell is its descendant. A row found by a descendant filter takes its key as `rowName` on the cell, or is pinned by `visibleinnertext`, which includes the descendant's text.
 
 ## Rule 9 — web
 
-`url` keeps the host and wildcards the path — a host the source reads from configuration (an environment switch) is a selector variable in the screen's scope, bound to that setting's scheme, host and port by an argument of every workflow whose card attaches to the screen, never the value the setting held at build, which stops every attach once the setting points elsewhere.
+`url` keeps the host and wildcards the path — a host the source reads from configuration (an environment switch) is a selector variable in the screen's scope, never the value the setting held at build, which stops every attach once the setting points elsewhere. A workflow whose card opens the application, or attaches by the screen's selector, binds the variable to that setting's scheme, host and port through an argument. A workflow given the application's handle takes no argument for the host and binds the variable to the scheme, host and port of the handle's `url` attribute.
+
+**A browser card works in one tab** (the UI Automation package's Target System doc, § Window Selector), so each tab the automation works in takes a card of its own: attached by the tab's screen selector once the tab is open, or given that tab's handle. A source that switches tabs, or acts in a tab a click opened, switches cards there.
 
 On a single-page web application, one scope for its tab (rule 9) is the difference between one scope and thirty: the page title changes with every task, so titles derived per screen fragment into `'*App*'`, `'*App *'`, `'*App_Common*'`, `'Create Thing - App'` … each a separate object with its own failure mode, while the host never changed. The title's stable part there is the application's word, which every page's title shows, so the tab's one scope carries it. `html`'s `title` is the tab's page title, not the browser window's caption: a window caption the source recorded ends with the browser's name (` - Google Chrome`), which the scope drops.
 
@@ -107,17 +51,19 @@ On a single-page web application, one scope for its tab (rule 9) is the differen
 | Web | `url` — host kept, path wildcarded — plus the title's stable part | `<html app='chrome.exe' title='*App*' url='https://host.example.com/*' />` |
 | Web, two tabs of the **same** host open at once | the same, with the title fragment that tells the tabs apart | `title='*Fragment*'` in place of the application's word |
 
-**`url` values are case-sensitive** (only `app`, and `tag` on `webctrl`, are not), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape.
+**`url` values are case-sensitive** (the `html` attribute reference), so `url='*Site*'` and `url='*site*'` are different selectors and at most one of them matches. The driver's own default for a browser tab is `<html app='chrome.exe' title='*<App>*' url='https://<host>/<tenant path>*' />` — host plus the first path segment, title reduced to the application's word; take that shape.
+
+**One browser window can hold two scopes.** A page's scope is the tab's `html` tag alone, whatever the source attached by — a window title, a window class: a `wnd` tag before an `html` narrows nothing (the Selector Reference's tags per technology). An element the source recorded through UI Automation in the same browser window — the tab strip, a toolbar button, a dialog the browser draws, page content read through UI Automation — is a `uia` target under the browser's `wnd` scope, on a screen of the browser's own application, not the page host's ([ui-target-migration-guide.md § Object Repository identity](ui-target-migration-guide.md) rule 2).
 
 ## Rule 10 — web
 
-SAP's web frameworks build their ids from the screen, not from a hash, so rule 10 keeps more of them than their look suggests:
+SAP's web frameworks build their ids from the screen, not from a hash, so rule 10 keeps more of them than their look suggests. What each id encodes: the `webctrl` attribute reference, SAP web identifiers.
 
-| Id | What it is | On `webctrl` |
-|---|---|---|
-| SAP Web GUI DOM `id`, which `sapweb-lsid` repeats on every element that is one of the page's controls (an element that is not has no `sapweb-lsid`): a field's `M0:46:::1:34`, a toolbar button's `M0:50::btn[8]` | on a transaction screen's fields, labels and toolbar buttons, the control's place on its screen — window (`M0` the main window, `M1` the first pop-up), area, then a field's row and column or a button's function code; the window and trees have ids of other forms (`webguiPage0`, `tree#C105#1#1#1#i`) | a field's: `id` as recorded, medium confidence, when nothing better was recorded — the same screen gives the same id on every system, a different layout of it other ids; the live pass replaces it with `sapweb-id`. A toolbar button's: `sapweb-id='wnd[0]/tbar[*]/btn[8]'` — the window and the function code carry over, the toolbar number does not |
-| SAP Web GUI `sapweb-id`: `wnd[0]/usr/ctxtMS_MATNR-LOW` | the SAP GUI scripting id — window, area, any subscreen and tabstrip containers, control-type prefix and the screen field's name; SAP GUI's `<sap id>` is the same path after the window (`usr/ctxtMS_MATNR-LOW`) | taken whenever seen; a field's is not derivable from its DOM id |
-| SAP Fiori: `<view id>--<local id>`, the view id carrying the app (`application-…-component---…view.Main`, `…::…ListReport::C_PurchaseOrderTP`) | the view's id, `--`, the control's id in its view, which the driver gives as `ui5-view-local-id` | `ui5-view-local-id` with the part after the view's `--`; an id ending `-inner` is the `INPUT` inside the control whose id precedes it — the control's `ui5-*` attributes, `ui5-label` among them, sit on the control's element, the field's `labeledby` on the inner `INPUT`, two nodes (rule 14) |
+| Id | On `webctrl` |
+|---|---|
+| SAP Web GUI DOM `id` (`M0:46:::1:34`, `M0:50::btn[8]`), which `sapweb-lsid` repeats | a field's: `id` as recorded, medium confidence, when nothing better was recorded; the live pass replaces it with `sapweb-id`. A toolbar button's: `sapweb-id='wnd[0]/tbar[*]/btn[8]'` — the window and the function code carry over, the toolbar number does not |
+| SAP Web GUI `sapweb-id` (`wnd[0]/usr/ctxtMS_MATNR-LOW`) | taken whenever seen; a field's is not derivable from its DOM id |
+| SAP Fiori DOM `id`, `<view id>--<local id>` | `ui5-view-local-id` with the part after the view's `--`; an id ending `-inner` is the `INPUT` inside the control whose id precedes it, and the control and that `INPUT` are two nodes (rule 14) |
 
 A recorded text or name that is one character from U+E000–U+F8FF is an icon font's glyph, not a name: a button that shows only an icon holds it as its inner text, and its name is in `aria-label`, else in `uipath-html-title`.
 
@@ -168,23 +114,23 @@ Three traps follow from the cast. **The value display and the popup entry often 
 
 ## Rule 17 — web
 
-A `webctrl` search visits every element of the page in document order, a shadow root's content before its host's other children, hidden elements included, and takes the first that matches.
+How a `webctrl` search visits the page — its order, shadow roots, frames, hidden elements — is the `webctrl` attribute reference's. What each decision of the source's finder becomes:
 
 | The finder | On `webctrl` |
 |---|---|
-| enters shadow roots (an engine that pierces open shadow roots, a script that walks `shadowRoot`) | `shadowhostid='*'` on every tag translated without seeing the page: such a locator does not record which controls sit in one (§ attribute-getter table) |
-| enters frames | one frame tag per level (same table) |
+| enters shadow roots (an engine that pierces open shadow roots, a script that walks `shadowRoot`) | `shadowhostid='*'` on every tag translated without seeing the page: such a locator does not record which controls sit in one |
+| enters frames | one frame tag per level, as the `webctrl` attribute reference gives it |
 | considers visible elements only | `uipath-visible='1'` on the tag. Without it a hidden copy earlier in the page is the match — a closed menu's entry, a collapsed header's caption |
 | compares the element's own text | `aaname` on the node that owns the text, with its `tag` (§ Rule 5); on a `BUTTON`, whose `aaname` is its `title` first, `visibleinnertext` |
 | compares text with the descendants' included | `visibleinnertext`, or `innertext` where hidden text counts, on a tag with a criterion of its own (rule 5) |
-| compares the accessible name | the name on `visibleinnertext` where the node shows it as text — a button, a link, a tab, a menu entry; on an `INPUT` button, `value`, which holds its caption; on a field, `labeledby`; on a node named by its `aria-label` alone (an icon button, a link around an image), `aria-label`. A button or link translated without seeing the page takes `visibleinnertext`, with `aria-label` as the live check's alternative; for a field whose name `labeledby` does not hold (its row above), the live check names `uipath-html-title`, the label as the field's scope, or a path from the naming element (rule 6). Each compared as rule 2 gives for whitespace |
+| compares the accessible name | the name on `visibleinnertext` where the node shows it as text — a button, a link, a tab, a menu entry; on an `INPUT` button, `value`, which holds its caption; on a field, `labeledby`; on a node named by its `aria-label` alone (an icon button, a link around an image), `aria-label`. A button or link translated without seeing the page takes `visibleinnertext`, with `aria-label` as the live check's alternative; for a field whose name `labeledby` does not hold (the `webctrl` attribute reference), the live check names `uipath-html-title`, the label as the field's scope, or a path from the naming element (rule 6). Each compared as rule 2 gives for whitespace |
 | selects by role, whichever element carries it | the role's native elements and the written role as one `css-selector`: `button` → `'button, input[type=button], input[type=submit], input[type=reset], input[type=image], [role=button]'`, `link` → `'a[href], area[href], [role=link]'`, `textbox` → `'input:not([type]), input[type=text], input[type=email], input[type=tel], input[type=url], textarea, [role=textbox]'`, `searchbox` → `'input[type=search], [role=searchbox]'`, `combobox` → `'select:not([multiple]), [role=combobox]'`, `checkbox` → `'input[type=checkbox], [role=checkbox]'`, `radio` → `'input[type=radio], [role=radio]'`, `heading` → `'h1, h2, h3, h4, h5, h6, [role=heading]'`, `option` → `'option, [role=option]'`, `dialog` → `'dialog, [role=dialog]'`, `img` → `'img, [role=img]'`, `listitem` → `'li, [role=listitem]'`; a role no element carries natively (`tab`, `menuitem`) → `aria-role`. Neither `tag` nor `aria-role` alone covers both. The name goes where the accessible-name row says |
 | returns the innermost match | `isleaf='1'` |
 | returns an ancestor of its match — the link or button that takes the click | the text on the ancestor's `visibleinnertext`, which holds its descendants' text |
 
 With no `tag`, the text goes on `visibleinnertext` with `isleaf='1'`: the match is the element that shows the text, never a wrapper or a form control, and a click on it reaches the control around it.
 
-On a live pass a tag drops `uipath-visible` only where the page, in every state the step meets, holds no hidden copy of its node; a role's `css-selector` becomes the `tag` or `aria-role` the node has, and `shadowhostid` stays on a node inside a shadow root.
+On a live pass a tag drops `uipath-visible` only where the page, in every state the step meets, holds no hidden copy of its node; a role's `css-selector` becomes the `tag` or `aria-role` the node has, and `shadowhostid` stays on a node inside a shadow root: `'*'`, or the host's `id` only where that id is authored (not a counter) and tells two matches apart.
 
 ## Checks
 
@@ -195,6 +141,6 @@ On a live pass a tag drops `uipath-visible` only where the page, in every state 
 | A `data-*` type identifier is the only discriminator and the selector carries `idx` | attributes | 7, 14 |
 | `tag='DIV'` that no source recording and no known role vouches for, on a control the source typed as a button, input, checkbox or link — and the mirror case, a type-implied `tag` that contradicts the tag the source recorded | attributes + source control type + the recorded tag | 14 |
 | A caption-only target on a control whose source row also carried a role identifier (the id was dropped as a wrapper's when the role is a leaf's) | attributes + the source row's identifiers | 14 |
-| More than one distinct `ScopeSelectorArgument` per host across the project, unless a second tab of the host tells them apart; `url` values differing only by case; a web scope with `title` and no `url`, or with no title fragment where every page's title shares one | all definitions + the titles the source recorded | 9 |
+| More than one distinct `html` scope (`ScopeSelectorArgument`) per host across the project, unless a second tab of the host tells them apart; `url` values differing only by case; a web scope with `title` and no `url`, or with no title fragment where every page's title shares one | all definitions + the titles the source recorded | 9 |
 | `colName` written as the bare caption on a grid whose headers carry hidden suffixes | live attribute listing on one cell | 8 |
 | A control the source located by a positional web path, carried as `idx`, as ancestor tags or with the path's indexes dropped | attributes + the source's path | 7 |

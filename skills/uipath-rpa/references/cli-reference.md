@@ -407,6 +407,8 @@ Invalid package/destination combinations are refused before upload with `The sel
 
 A test package includes only test cases whose `project.json` `fileInfoCollection` entry has `"editingStatus": "Publishable"`. With none, upload fails `A testing project should contain at least one entry point.` (`errorCode` 2006). Marking cases Publishable is the user's decision; see [testing-guide.md § project.json Registration](testing-guide.md#projectjson-registration). There is no `uip or packages publish`; use `uip rpa publish`.
 
+**Publishing is not running.** Before offering to also schedule or run the published process, check that the target folder has a runtime to run it: `uip or folders runtimes "<FOLDER>" --output json` (a row with `Total` 0 for the runtime type means no robot can run it). Tell the user which stages (publish, trigger, run) can complete before you publish; the `uipath-platform` skill's end-to-end readiness guide has the full check. Report a stage done only after reading it back.
+
 ### Discovery cheatsheet
 
 ```bash

@@ -9,7 +9,7 @@ description: >
   token must round-trip through the resource's OWN invoking node, not a
   ScriptTask standing in for it. See composition.py/check_shape.py/
   check_behavior.py in this directory for the full anti-cheat rationale.
-tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:setup", "shape:multi-node", resource, outcome-graded]
+tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:setup", "shape:multi-node", resource, outcome-graded, studio-web-unsupported, studio-web-unsupported:no-testbench-publish]
 
 run_limits:
   max_turns: 150

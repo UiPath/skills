@@ -37,7 +37,6 @@ The standards the build follows beyond the genome.
    - Workflow analyzer: variables nothing uses removed; deep-nesting warnings may stay. Switch in place of a chain of Ifs on one value.
 6. **Packaging and versioning:** each project packed on its own, never assembled into a solution.
 7. **Process design:**
-   - A workbook flow: one queue item per workbook, its rows records in a Data Fabric entity; flows of the same shape use the same model.
    - Rows one robot works through in one run: a For Each, not a get-next over a "taken" flag; a queue only where items run in parallel or must survive a crash.
 8. **Hand-off:**
    - Audience: the team that runs and maintains the automations, with general automation knowledge. Simple, friendly documents, without migration internals.

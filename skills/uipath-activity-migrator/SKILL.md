@@ -6,7 +6,7 @@ when_to_use: "User says 'migrate activities', 'migrate UiPath activities', 'clas
 
 # UiPath Activity Migrator
 
-Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites UiPath's classic activities into their modern UiPath equivalents; third-party and custom packages are only moved to a Windows-compatible version by restore, never rewritten. It runs without Studio. It requires Windows and the .NET Desktop Runtime 8.
+Drive the standalone Activity Migrator (`UiPath.Upgrade.exe`) end to end: acquire, analyze, upgrade, verify, report. The tool converts a Windows-Legacy project to the Windows framework and rewrites UiPath's classic activities into their modern UiPath equivalents; third-party and custom packages are only moved to a Windows-compatible version by restore, never rewritten. It runs without Studio. It requires Windows and the .NET Desktop Runtime its build targets; Step 0 names it when missing.
 
 <!--skill-flavor:host-availability-extra:start-->
 
@@ -29,7 +29,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ## Critical Rules
 
-1. **Windows only.** Check the OS before anything else. On macOS or Linux, stop and tell the user to run the migration from a Windows machine that holds the project. The tool is a .NET 8 desktop process and cannot run elsewhere.
+1. **Windows only.** Check the OS before anything else. On macOS or Linux, stop and tell the user to run the migration from a Windows machine that holds the project.
 2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result. This holds for diagnostic runs too: to look into a result, read the SARIF, the `.err` file and the `project-<id>.log` the tool writes under `<PROJECT_DIR>/.upgrade`, never a console or `-v` rerun.
 3. **Never trust the exit code.** The tool exits 0 whether the migration succeeded, partially succeeded, or failed. Status comes only from the SARIF results, classified per [sarif-triage-guide.md](references/sarif-triage-guide.md).
 4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking, unless the user asked only for an analysis, a report or a plan: then stop after the triage, present the findings with the proposed treatment of each needs-attention item, and run `upgrade` only on the user's go. Any request whose deliverable is information rather than a migrated project counts as that: analysis, report, plan, dry run, "can this be migrated", "what would change"; when the wording leaves it open, ask one yes/no before `upgrade`. Rule 13 governs a treatment the user chooses there. One exception: a Step 4 rerun that the build guide or a package guide prescribes with an added flag reuses the Step 3 analyze; it counts as one build-fix iteration (Rule 10), and the skill deletes the `<OUTPUT_DIR>` it created in this session without asking.
@@ -51,7 +51,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 
 ### Step 0 — Preflight and acquire the tool
 
-Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. Without a flag the script locates a cached tool, checks the .NET Desktop Runtime 8, verifies the tool answers, and prints one JSON object on its last stdout line; it never downloads (Rule 15). Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
+Run the acquisition script with `node`, which Steps 2 to 4 already use for their scripts; the same command works in bash and in PowerShell. It executes no PowerShell or shell script file, so script execution policies and hosts that gate a script invocation do not apply. Without a flag the script locates a cached tool, verifies it starts and answers, and prints one JSON object on its last stdout line; it never downloads (Rule 15). Every other shell command in this skill assumes Git Bash, which the Bash tool uses on Windows: the redirections and the `grep` pipelines are not translated, and the only PowerShell alternative given is Rule 8's variable.
 
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"

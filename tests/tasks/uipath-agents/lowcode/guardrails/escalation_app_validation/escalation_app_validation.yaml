@@ -40,7 +40,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did NOT re-initialize the pre-existing ValidationSol solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
+    command_pattern: '(?:uip|\$UIP)\s+solution\s+init'
     exclude_pattern: '--help'
     weight: 1.0
     pass_threshold: 1.0
@@ -60,14 +60,14 @@ success_criteria:
   # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
   - type: command_executed
     description: "Agent looked up the escalation app"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")'
+    command_pattern: '\A(?!\{")[\s\S]*?(?:uip|\$UIP)\s+solution\s+resources\s+list|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent fetched the action schema via uip solution resources get (or ManageSolutionResources)"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
+    command_pattern: '\A(?!\{")[\s\S]*?(?:uip|\$UIP)\s+solution\s+resources?\s+get\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"get")'
     min_count: 1
     weight: 4.0
     pass_threshold: 1.0

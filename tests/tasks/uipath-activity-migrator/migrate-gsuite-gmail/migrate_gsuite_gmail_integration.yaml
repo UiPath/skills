@@ -22,7 +22,7 @@ description: >
   result agrees) and the connection config is graded as the skill's prescribed
   artifact, not as a tool outcome. Graded on the migrated artifact (package pin,
   modern tags, no classic GSuite tags), the config artifact, an untouched source,
-  and a build the harness runs itself. Windows only: the migrator is a .NET 8
+  and a build the harness runs itself. Windows only: the migrator is a .NET
   desktop tool and the build needs Helm. The runtime check is declined in the
   prompt because the connection is synthetic. Nightly only: the windows tag
   routes it to daily-windows.ps1, and the PR gate filters on smoke.

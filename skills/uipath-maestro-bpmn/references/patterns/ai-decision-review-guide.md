@@ -36,14 +36,14 @@ export default bpmn('claims-review')
   // Two routes reach the action: the confident arm falls through, and the review
   // arm's Approve falls through. The join `confidenceGate_join` is merge_gate.
   .choose('confidenceGate', [
-    { when: '=vars.aiConfidenceLevel >= 0.85 && vars.validationPassed', label: 'High confidence', body: (b) => b },
+    { when: '=js:vars.aiConfidenceLevel >= 0.85 && vars.validationPassed', label: 'High confidence', body: (b) => b },
     {
       otherwise: true,
       label: 'Low confidence',
       body: (b) =>
         b.humanTask('humanReview', { name: 'Review claim', form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { reviewOutcome: '=Action' } })
           .choose('postReviewGate', [
-            { when: '=vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
+            { when: '=js:vars.reviewOutcome == "Approve"', label: 'Approved', body: (a) => a },
             { otherwise: true, label: 'Rejected', body: (a) => a.endEvent('endRejected', { name: 'Rejected by reviewer' }) },
           ]),
     },
@@ -103,13 +103,13 @@ Fall-through cannot express either, so declare each with `.exclusiveGateway(id)`
 
 ```ts
   .choose('stakesGate', [
-    { when: '=vars.stakesValue >= 5000', label: 'High stakes', body: (b) => b.goto('seniorGate') },
+    { when: '=js:vars.stakesValue >= 5000', label: 'High stakes', body: (b) => b.goto('seniorGate') },
     { otherwise: true, label: 'Low stakes', body: (b) => b.choose('confidenceGate', [ /* arms end in .goto('mergeGate'), .goto('seniorGate') or an end event */ ]) },
   ])
   .exclusiveGateway('seniorGate', { name: 'Senior review' })
   .humanTask('seniorReview', { form: { fields: [], outcomes: ['Approve', 'Reject'] }, outputs: { seniorOutcome: '=Action' } })
   .choose('seniorVerdict', [
-    { when: '=vars.seniorOutcome == "Approve"', label: 'Approved', body: (c) => c.goto('mergeGate') },
+    { when: '=js:vars.seniorOutcome == "Approve"', label: 'Approved', body: (c) => c.goto('mergeGate') },
     { otherwise: true, label: 'Rejected', body: (c) => c.endEvent('endSeniorRejected', { name: 'Rejected by senior' }) },
   ])
   .exclusiveGateway('mergeGate', { name: 'Approved' })
@@ -123,7 +123,7 @@ Senior review has no `Escalate` outcome on purpose: a senior verdict that can es
 Adds `stakesValue` (number), a domain signal such as loan amount or claim value, and `seniorOutcome` (string); `5000` is illustrative.
 
 **Verification chain.** Insert a second `.startAgent('verifier', …)` between `analyze` and `validate`, and extend the gate to require agreement:
-`'=vars.aiConfidenceLevel >= 0.85 && vars.verifierConfidence >= 0.85 && vars.verifierDecision == vars.aiDecision && vars.validationPassed'`.
+`'=js:vars.aiConfidenceLevel >= 0.85 && vars.verifierConfidence >= 0.85 && vars.verifierDecision == vars.aiDecision && vars.validationPassed'`.
 Adds `verifierDecision` (string) and `verifierConfidence` (number).
 Bind the verifier to a **different model** than the analyzer; the same model has the same blind spots, so the second call verifies nothing.
 

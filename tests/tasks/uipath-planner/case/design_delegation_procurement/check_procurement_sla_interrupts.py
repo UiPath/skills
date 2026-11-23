@@ -150,8 +150,17 @@ def sla_references(sdd: str) -> list[tuple[int, list[str]]]:
     """(line number, quoted args) for every sla-status-change(...) in the SDD."""
     references = []
     for line_no, line in enumerate(sdd.splitlines(), 1):
-        call = re.search(r"sla-status-change\s*\(([^)]*)\)", line, re.IGNORECASE)
-        if call:
+        # One trigger per WHEN cell (case SDD template): an OR-joined cell is
+        # not an entry rule the build can emit, so name it instead of letting
+        # only its first call count and reporting the rest as unrouted.
+        if line.lstrip().startswith("|"):
+            for cell in line.split("|"):
+                if re.search(r"sla-status-change\s*\([^)]*\)\s+OR\s+sla-status-change", cell):
+                    fail(
+                        f"sdd.md:{line_no}: one WHEN cell OR-joins several "
+                        "sla-status-change triggers; write one entry row per SLA"
+                    )
+        for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", line, re.IGNORECASE):
             args = re.findall(r"[\"']([^\"']+)[\"']", call.group(1))
             # Zero quoted args means summary-table / prose shorthand, not an
             # executable reference; real rule coverage is enforced per stage +

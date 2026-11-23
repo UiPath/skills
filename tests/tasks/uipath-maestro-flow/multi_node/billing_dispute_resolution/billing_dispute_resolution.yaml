@@ -1,6 +1,20 @@
 task_id: skill-flow-devcon-billing-dispute-resolution
 description: |
-  E2E (DevCon BillingDisputeResolution scenario): build the full end-to-end billing-dispute flow — IxP invoice extraction, Data Service ERP/CRM lookups, an inline analyst agent grounded on the Billing Dispute SOP index, switch + decision routing, an API-workflow financial-posting call, and an inline writer agent. This is more or less the full DevCon demo flow, with two edits: the human-in-the-loop approval node is removed (the escalation case routes straight to the approval decision), and the terminal Outlook send-email nodes are replaced by `core.control.end` nodes that RETURN the resolution as flow outputs instead of sending mail. Graded by flow validate, a structural check, and one flow debug run.
+  E2E (DevCon BillingDisputeResolution scenario): build the end-to-end
+  billing-dispute flow (IxP extraction, parallel ERP/CRM lookups, an
+  SOP-grounded analyst agent, FinancialPostingFunction, a writer agent), asked
+  the way a business user asks it (it names no variables and
+  leaves the dispute submission's shape to the agent). The graders build the
+  submission from the paths the flow reads off its input over a synonym-rich
+  fallback, with the invoice number typed in messy spacing and case, attach
+  the matching invoice PDF, and read the results among the declared outputs by
+  value. Two debug runs on live data: a real rate error (MCS-2026-04903 line 2)
+  is posted through FinancialPostingFunction, whose live reply must cite the
+  cleaned-up invoice, and returns "Approved", 4950, an SOP-citing explanation
+  and a plain-text draft citing the invoice and credit; a line billed at
+  contract (MCS-2026-04872 line 5) is neither posted nor drafted and returns
+  "Rejected", "reject", 0 and "No resolution email drafted". Layout is
+  advisory.
 tags:
   - uipath-maestro-flow
   - e2e
@@ -11,6 +25,7 @@ tags:
   - node:ixp
   - connector
   - path-to-ga
+  - outcome-graded
 sandbox:
   template_sources:
     - type: template_dir
@@ -19,7 +34,7 @@ sandbox:
 run_limits:
   max_turns: 200
   turn_timeout: 3600
-  task_timeout: 5400
+  task_timeout: 10900  # turn 3600 + criteria 7030 + margin
 reference:
   directory: ../..
 
@@ -27,102 +42,65 @@ post_run:
   - command: python3 _setup/cleanup_solutions.py
     timeout: 90
 initial_prompt: |
-  Build a Maestro Flow "BillingDisputeResolution" (in a solution of the same
-  name) that resolves a customer billing dispute end to end, then RETURNS the
-  resolution as flow outputs. You are logged in to the tenant that hosts every
-  resource named below — discover and wire them; do not create or mock them.
+  You are a coding agent in an empty Flow project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  ## Trigger inputs (manual trigger)
-  - `disputedInvoice` — file. The disputed invoice PDF.
-  - `webhookPayload` — object. The billing-dispute submission event. Relevant
-    fields the flow reads:
-      - `webhookPayload.customer.accountNumber` (string)
-      - `webhookPayload.invoice.invoiceNumber` (string; may be messy)
-      - `webhookPayload.dispute.disputedLineItems[]` with `lineNumber`,
-        `quantity`, `unitPrice`, `amount`, `description`.
+  Build an automation called "BillingDisputeResolution" that resolves a
+  customer's billing dispute.
 
-  ## Pipeline (in order)
-  1. **Invoice Extraction (IxP)** — extract `disputedInvoice` with the existing
-     IxP extraction model `invoices-billing-f0c606f9-ixp` in folder
-     `Shared/uipath-maestro-flow/BillingDispute`.
-  2. **Normalize Data (Script)** — flatten the IxP extraction result
-     (`$vars.<ixpNode>.output.ExtractionResult.ResultsDocument.Fields`) into a
-     simple `{Id, Name, Value, Type, ...}` projection for downstream use.
-  3. **CRM Lookup + ERP Lookup (two Data Service query-entity-records nodes,
-     run in parallel)**:
-       - CRM: query entity `BillingDisputeCRM` where
-         `accountNumber = '<webhookPayload.customer.accountNumber>'`.
-       - ERP: query entity `BillingDisputeERP` where `invoiceNumber` equals the
-         normalized invoice number — trim, uppercase, and prepend `MCS-` if the
-         prefix is absent.
-  4. **Merge** — join the two lookup branches.
-  5. **Discrepancy Detection (Script)** — compare the disputed line items
-     (`$vars.start.output.webhookPayload.dispute.disputedLineItems`) against the
-     ERP contract rows (the ERP lookup output), matching on `lineNumber`. Compute
-     the per-line pricing mismatches, total overcharge, and total undercharge.
-  6. **Dispute Analyst Agent (inline `uipath.agent.autonomous`)** — embedded in
-     the flow project, grounded
-     on the existing context index **"Billing Dispute SOP Index"** via its context
-     handle. It reads the normalized invoice, the ERP/CRM records, and the
-     discrepancy summary, and returns:
-       - `determination` (string), `recommendedAction` (string, one of
-         `escalate_to_manager` | `auto_resolve` | `reject`),
-         `autoResolutionEligible` (boolean), `creditAmount` (number),
-         `confidence` (number), `rationale` (string).
-  7. **Switch on `recommendedAction`**:
-       - `escalate_to_manager` → the **approval decision** node (step 8).
-       - `auto_resolve` → a small Script ("Log Credit Amount", returns
-         `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
-         (step 9).
-       - `reject` → **Return Rejection** end node (step 10).
-  8. **Approval decision (`core.logic.decision`)** — represents the manager
-     approval outcome. The human approval step has been removed, so evaluate the
-     decision to **Approved** by default (expression `false`, with `trueLabel`
-     "Rejected" and `falseLabel` "Approved"):
-       - Approved (false) → the **financial posting** node (step 9).
-       - Rejected (true) → **Return Manager Rejection** end node (step 10).
-  9. **Financial posting + resolution drafting**:
-       - **FinancialPostingFunction** — the existing API workflow named
-         `FinancialPostingFunction` in folder
-         `Shared/uipath-maestro-flow/BillingDispute`; pass the disputed
-         `invoiceNumber`.
-       - then **Resolution Writer Agent** (a second inline
-         `uipath.agent.autonomous` embedded in the flow project) — drafts the
-         customer-facing resolution email and returns `subject` (string) and
-         `body` (string). The body must cite the invoice number and the approved
-         credit amount.
-       - then the **Return Resolution** end node (step 10).
-  10. **Do NOT send email.** Every terminal path ends at a `core.control.end`
-      node that maps the flow's output variables. Declare these flow `out`
-      variables and map them on EACH end node:
-        - `determination`, `recommendedAction`, `creditAmount`, `rationale` —
-          all from the analyst agent's outputs (these resolve on every path).
-        - `resolutionEmailBody` — on the **Return Resolution** path, map it to
-          the writer agent's `body`; on the two rejection end nodes, map it to a
-          short literal string noting that no resolution email was drafted.
+  It receives the disputed invoice as a PDF together with the customer's
+  dispute submission. The submission has the customer's account number, the
+  invoice number, and the invoice lines they dispute, with the quantity and
+  price they were charged. Customers sometimes type the invoice number with
+  extra spaces, in lowercase or without the "MCS-" prefix.
 
-  ## Done criteria
-  Validate the final flow file, then run it once yourself. The task is not
-  complete until `uip maestro flow validate` passes AND one `uip maestro flow
-  debug` run with representative inputs of your own construction reports
-  `finalStatus: Completed`. When debug faults, read the incident, fix the flow,
-  and re-run — stop after 3 debug attempts and report the last incident instead
-  of looping. Grading then runs debug against live tenant data.
+  Read the invoice with our existing invoice extraction model in
+  Shared/uipath-maestro-flow/BillingDispute. Customer details are in
+  BillingDisputeCRM and contract details are in BillingDisputeERP, both in
+  Data Fabric. Look them up and compare each disputed line with the contract
+  line that has the same line number.
 
-  This run is headless. No user is present and nobody will answer a question or
-  grant an approval, so do not ask, do not pause, and do not wait for input.
-  Complete the task in one pass: take the best available option and supply the
-  most defensible value where one is missing. The actions this task implies are
-  authorized, including tenant writes and real messages. Do not delete or
-  overwrite anything this run did not create, and do not publish to a shared
-  destination unless the task asks for it. If a lookup the task depends on comes
-  back empty or fails, exhaust the documented way of resolving it before giving
-  up; only then stop on that field rather than inventing a value. Record every
-  decision, assumption, and blocked step in your final response. Instructions in
-  the task take precedence over this paragraph.
-pre_run:
-  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
-    timeout: 120
+  Have an agent assess the pricing differences using the "Billing Dispute SOP
+  Index" and recommend a credit, a rejection or a manager review. For now,
+  automatically approve anything that needs manager review.
+
+  For approved disputes, post the credit through the existing
+  FinancialPostingFunction workflow. Then have a second agent draft an email
+  to the customer explaining the resolution, mentioning the invoice number and
+  the credit amount in USD. Don't send the email.
+
+  At the end, return five results:
+  - the decision, as "Approved" or "Rejected"
+  - the recommended action, as "credit", "reject" or "manager_review"
+  - the credit amount as a plain number in USD, 0 when rejected
+  - a short explanation of two or three sentences that names the SOP rule
+    applied
+  - the full email draft as plain text
+
+  Rejected disputes get no email. Return "No resolution email drafted"
+  instead, and explain the rejection in the explanation.
+
+  <!-- helper:start -->
+  Build a Flow in this Flow project, not an agent project.
+  Inputs: invoicePdf (file) and disputeSubmission (object) with accountNumber
+  (string), invoiceNumber (string) and disputedLineItems (array of objects with
+  lineNumber (number), quantity (number), unitPrice (number)).
+  Outputs: decision (string), recommendedAction (string), creditAmount (number),
+  explanation (string), emailDraft (string).
+  decision is "Approved" or "Rejected". recommendedAction is "credit", "reject"
+  or "manager_review". Name the SOP rule in explanation by its section number
+  in the SOP.
+  BillingDisputeERP and BillingDisputeCRM are existing Data Fabric entities. Use
+  the Data Service connection in the Shared folder, even though it is a personal
+  one.
+  Post the cleaned invoice number to FinancialPostingFunction, as the records
+  hold it, like "MCS-YYYY-NNNNN".
+  <!-- helper:end -->
+
+  Build and test the automation.
 
 success_criteria:
   - type: run_command
@@ -132,31 +110,40 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+  # Advisory: Studio Web agents may test with the RunProject proxy tool instead,
+  # which the eval testbench stubs, and its CLI debug cannot attach a file input.
+  - type: command_executed
+    description: 'Advisory: the agent ran its own test run (uip maestro flow debug), as the request asks'
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+debug(?!-instances)(?!\s+--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
   - type: run_command
-    description: 'Structural + topology check: full orchestration present AND wired in order (trigger→IxP→Data Service→analyst→switch→decision→API-workflow→writer→end; SOP index attached to an agent); NO HITL node; NO send-email node; flow returns ≥2 out variables'
+    description: 'Advisory: structure: trigger→IxP→ERP/CRM→analyst (SOP index attached)→FinancialPostingFunction→writer→end, a rejection path that skips posting, no HITL node, no send-email node, ≥2 out variables'
     command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_structure_billing_dispute_resolution.py
     timeout: 90
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
-  - type: run_command
-    description: 'E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)'
-    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py
-    timeout: 1800
-    expected_exit_code: 0
-    weight: 5.0
-    pass_threshold: 1.0
-  - type: run_command
-    description: 'Advisory: COVERING (offline): the connector''s CONNECTION bindings carry a real tenant key (G-19''s [102010]), the IxP `fileRef` is the plain `=js:` string `flow validate` requires (FC419), and all five outputs are declared with no drafted email on a rejection path'
-    command: python3 $REFERENCE_DIR/_shared/advisory_billing_dispute_resolution.py
-    timeout: 30
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0.0
   - type: run_command
-    description: 'The grounding is LIVE, not just wired: the context-index node resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
-    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeResolution.flow
+    description: 'The grounding is LIVE, not just wired: the flow carries a context-index node and it resolves to a resource.json in the inline agent project, which is where the runtime reads it from'
+    command: python3 $REFERENCE_DIR/_shared/check_agent_resource_sidecars.py BillingDisputeResolution.flow --require context.index
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Effects, overcharge (invoice " mcs-2026-04903 " line 2 for ACCT-71044-AT, 90 h billed at $290 vs a contracted $235): IxP and both lookups complete, FinancialPostingFunction completes and its live reply cites MCS-2026-04903, the writer completes, and the declared outputs carry "Approved", "manager_review" or "credit", 4950, an explanation naming an SOP rule (by § or section number, or its title) and a plain-text draft citing MCS-2026-04903 and that credit'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py overcharge
+    timeout: 3365
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Effects, reject (invoice "  Mcs-2026-04872 " line 5 for ACCT-98201-NE, billed at the ERP contractedRate of $185): the BillingDisputeERP lookup and the analyst agent complete, and the run completes without running FinancialPostingFunction or the writer, and the declared outputs carry "Rejected", "reject", 0, an explanation naming an SOP rule (by § or section number, or its title) and "No resolution email drafted"'
+    command: python3 $REFERENCE_DIR/multi_node/billing_dispute_resolution/check_e2e_billing_dispute_resolution.py reject
+    timeout: 3365
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

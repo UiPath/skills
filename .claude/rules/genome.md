@@ -50,7 +50,7 @@ Paths are relative to the skill folder.
 | Transactional shape at build: split questions, the projects a `Decided:` chain names, REFramework surfaces | `references/transactional-execution-guide.md` |
 | Migration: preflight, catalogs, credentials, source steps | `references/source-migration-guide.md`; source and pack resolution: `references/source-frameworks-guide.md` |
 | UI target migration: three phases, target spec, Object Repository, verification labels | `references/ui-target-migration-guide.md`; composite interaction patterns: `references/composite-interactions-guide.md` |
-| UiPath selector facts: tag chains, tiers, rules 1–17 | `references/selector-translation-guide.md`; matching semantics and checking a definition: `references/selector-matching-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md` |
+| Selector translation: rules 1–17, checking a definition | `references/selector-translation-guide.md`; per technology: `selector-translation-web-guide.md`, `selector-translation-sap-guide.md`, `selector-translation-desktop-guide.md`. What a selector matches on (tags, matching semantics, what an attribute holds, reliability) is the UI Automation package's Selector Reference, named there and never restated |
 | Live application: exploration, live healing pass | `references/live-application-guide.md` |
 | Where a UI check goes, in every build | `references/ui-verification-guide.md` |
 | Test components at build | `references/test-execution-guide.md` |
@@ -69,9 +69,9 @@ Framework facts (detection, inventory, locators, per-field translation, pitfalls
 3. **A procedure lives in the guide of the verb that runs it**, even when two verbs run the same script.
 4. **SKILL.md is a router.** A Critical Rule names its subject and home in one or two sentences; conditions, numbers and examples stay in the home.
 5. **No meta-commentary.** No sentences about a document's own editing or reconciling two files in prose; when two files disagree, fix one.
-6. **What another skill, a CLI or a package doc owns is named, never restated.** Name the artefact or capability; the build reads details from the owner. `uip rpa uia` syntax routes to the UI Automation package guide; generic `uip rpa` commands are stable and allowed. `offline-definition-workarounds-guide.md` is the labelled temporary exception.
+6. **What another skill, a CLI or a package doc owns is named, never restated.** Name the artefact or capability; the build reads details from the owner. `uip rpa uia` syntax routes to the UI Automation package guide, and what a selector matches on to the package's Selector Reference that guide routes to; generic `uip rpa` commands are stable and allowed. `offline-definition-workarounds-guide.md` is the labelled temporary exception.
 7. **UiPath behaviour is written as the latest version shows it**, with no per-version conditions. `package-doc-errata-guide.md` is the labelled temporary exception.
-8. **The builder ships no selector checker and no target tool.** A run writes its own script where it needs one (`selector-matching-guide.md` § Checking a definition).
+8. **The builder ships no selector checker and no target tool.** A run writes its own script where it needs one (`selector-translation-guide.md` § Checking a definition).
 9. **The framework migration pack cites rules by subject**, in the skill's words (a heading or bold rule head), never by file name or number. Renaming a subject the pack quotes updates the pack in a paired PR.
 10. **Every reference file has its row in its verb's § Read Plan**, keyed by a condition decidable at that phase, written in the same change as the file.
 11. **Temporary guides are deleted on their conditions:**
@@ -133,7 +133,8 @@ One change, every file in its row, same PR.
 | New scaffolding question | builder `configuration-questions-guide.md` |
 | New report line | builder `completion-report-guide.md` |
 | Rule for a build in parts | builder `execution-parts-guide.md` |
-| UiPath selector fact | the builder's selector guide of its technology; `selector-translation-guide.md` when it holds for every technology; matching quirk: `selector-matching-guide.md` |
+| UiPath selector fact (what a tag or attribute holds, how the driver computes or matches it) or activity behaviour (what an activity waits for, how it matches its input) | the UI Automation package's Selector Reference, or the activity's doc and the package guide it links, as a docs change in the package's repository; until a released package carries it, a row of builder `package-doc-errata-guide.md` |
+| Selector translation rule | the builder's selector guide of its technology; `selector-translation-guide.md` when it holds for every technology |
 | Build pattern for a composite interaction across technologies | builder `composite-interactions-guide.md` |
 | Where a UI check goes | builder `ui-verification-guide.md` |
 | Exploring, checking or healing against a reachable application | builder `live-application-guide.md`; what every UI migration owes the application, reachable or not: `ui-target-migration-guide.md` § Verifying targets |

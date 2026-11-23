@@ -217,6 +217,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Authenticate / manage tenants**                                                                                        | [references/uip-commands.md](references/uip-commands.md)                                                                                                     |
 | **Set up folders, users, machines**                                                                                      | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md)                                                                 |
 | **Give a user or robot account access (pick a standard role)**                                                           | [references/orchestrator/choose-roles.md](references/orchestrator/choose-roles.md)                                                                           |
+| **Offer or plan publish → schedule → run end to end (check robots first)**                                               | [references/orchestrator/end-to-end-readiness-guide.md](references/orchestrator/end-to-end-readiness-guide.md)                                               |
 | **Run and monitor jobs**                                                                                                 | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md)                                                                                   |
 | **Manage sessions and runtimes**                                                                                         | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md)                                                                     |
 | **Tenant settings, calendars, audit logs**                                                                               | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md)                                                                           |
@@ -340,40 +341,42 @@ Organization
 
 The UiPath CLI (`uip`) is a unified command-line tool for interacting with the UiPath platform:
 
-| Command Group           | Prefix            | Description                                                        | Status    |
-| ----------------------- | ----------------- | ------------------------------------------------------------------ | --------- |
-| **Authentication**      | `login`, `logout` | OAuth2, client credentials, PAT, tenant management                 | Available |
-| **Orchestrator**        | `or`              | Folders, jobs, processes, releases                                 | Available |
-| **Resource**            | `resource`        | Assets, queues, queue items, storage buckets, bucket files         | Available |
-| **Integration Service** | `is`              | Connectors, connections, activities, resources                     | Available |
-| **Data Fabric**         | `df`              | Entities, records, files, choice sets (`@uipath/data-fabric-tool`) | Available |
-| **Tools**               | `tools`           | CLI tool extension management                                      | Available |
-| **MCP**                 | `mcp`             | Model Context Protocol server                                      | Available |
-| **Coded Agents**        | `codedagent`      | Python agent lifecycle (setup, exec)                               | Available |
-| **RPA**                 | `rpa`             | RPA workflow management (create, compile, validate, execute)       | Available |
+| Command Group           | Prefix            | Description                                                                                                       | Status    |
+| ----------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| **Authentication**      | `login`, `logout` | OAuth2, client credentials, PAT, tenant management                                                                | Available |
+| **Orchestrator**        | `or`              | Folders, jobs, processes, packages, machines, users, assets, queues, queue items, buckets, bucket files, triggers | Available |
+| **Integration Service** | `is`              | Connectors, connections, activities, resources                                                                    | Available |
+| **Data Fabric**         | `df`              | Entities, records, files, choice sets (`@uipath/data-fabric-tool`)                                                | Available |
+| **Tools**               | `tools`           | CLI tool extension management                                                                                     | Available |
+| **MCP**                 | `mcp`             | Model Context Protocol server                                                                                     | Available |
+| **Coded Agents**        | `codedagent`      | Coded agent lifecycle (setup, init, run, eval, pack, publish, deploy)                                             | Available |
+| **RPA**                 | `rpa`             | RPA workflow management (create, compile, validate, execute)                                                      | Available |
+
+> Assets, queues, queue items, buckets and bucket files are Orchestrator groups: `uip or assets`, `uip or queues`, `uip or queue-items`, `uip or buckets` and `uip or bucket-files`. The CLI has no separate `resource` group for them.
 
 ### Global Options
 
 Every `uip` command accepts:
 
-| Option                         | Description                                                     | Default                                         |
-| ------------------------------ | --------------------------------------------------------------- | ----------------------------------------------- |
-| `--output <format>`            | Output format: `table`, `json`, `yaml`, `plain`                 | `table` (interactive), `json` (non-interactive) |
-| `--output-filter <expression>` | JMESPath expression to filter JSON output                       | --                                              |
-| `--profile <name>`             | Use a named auth profile from `~/.uipath/profiles/<name>/.auth` | built-in default login                          |
-| `--verbose`                    | Enable verbose/debug logging                                    | Off                                             |
-| `--help` / `-h`                | Display help for the command                                    | --                                              |
-| `--version` / `-v`             | Display CLI version                                             | --                                              |
+| Option                         | Description                                                     | Default                                    |
+| ------------------------------ | --------------------------------------------------------------- | ------------------------------------------ |
+| `--output <format>`            | Output format: `table`, `json`, `yaml`, `plain`, `markdown`     | `json` (`UIP_DEFAULT_OUTPUT` overrides it) |
+| `--output-filter <expression>` | JMESPath expression to filter JSON output                       | --                                         |
+| `--profile <name>`             | Use a named auth profile from `~/.uipath/profiles/<name>/.auth` | built-in default login                     |
+| `--log-level <level>`          | Log level: `debug`, `info`, `warn`, `error`                     | `warn`                                     |
+| `--log-file <path>`            | Write logs to a file instead of stderr                          | stderr                                     |
+| `--help` / `-h`                | Display help for the command                                    | --                                         |
+| `--version` / `-v`             | Display CLI version                                             | --                                         |
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
 >
 > **To narrow `list` results, use the noun's own filter flag** (`--state Faulted`, `--type Text`, `--status New`, `--name`, `--process-name`, `--search`). The backend filters before sending; pagination stays correct. Per-noun flags: [references/uip-commands.md](references/uip-commands.md). Never list-everything-then-filter-mentally.
 >
-> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "[].{id: Id, name: Name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute. Two things make a filter silently return nothing, since JMESPath reports no match and no error for either. The expression is evaluated against the `Data` payload, so it starts inside `Data` and never names it: write `[].Key`, never `Data[].Key`, which looks for a `Data` key inside `Data`. And field lookups are case-sensitive against keys the CLI PascalCases before filtering: match `DisplayName`, not `displayName`, unless the command is one of the few that preserves its raw casing (`maestro flow registry get`, `api-workflow registry`, conversational commands).
+> **Use `--output-filter` (JMESPath) for output reshaping** or for fields with no server-side flag — e.g., `--output-filter "[].{id: Id, name: Name}"`, or filtering by a derived/computed value. Don't reach for it when the server already has a filter for that attribute. When the command has a `--limit` option, always pass it with `--output-filter`: the filter sees only the rows one call fetched, so the CLI refuses `--output-filter` when `--limit` falls back to its default. A command with no `--limit` option (such as `uip is connections list`) takes none, so omit it. To search a whole Orchestrator list, use `--limit 1000` (the most a `uip or` list accepts; `uip or queue-items list` takes at most 100) and repeat with `--offset` while `Pagination.HasMore` is `true`. Two things make a filter silently return nothing, since JMESPath reports no match and no error for either. The expression is evaluated against the `Data` payload, so it starts inside `Data` and never names it: write `[].Key`, never `Data[].Key`, which looks for a `Data` key inside `Data`. And field lookups are case-sensitive against keys the CLI PascalCases before filtering: match `DisplayName`, not `displayName`, unless the command is one of the few that preserves its raw casing (`maestro flow registry get`, `api-workflow registry`, conversational commands).
 
 ## Deployment Notes
 
-- **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
+- **Starting jobs requires runtimes — check before you offer.** Before proposing to publish, schedule or run anything, check the target folder's runtimes and tell the user which stages can and cannot complete ([end-to-end-readiness-guide.md](references/orchestrator/end-to-end-readiness-guide.md)). Error 2818 "no runtimes configured" means the folder needs machine templates with Unattended/Development runtimes assigned.
 - **For `uip solution` pack / publish / deploy / activate flows, load [`uipath-solution`](/uipath:uipath-solution).** This skill owns the auth and Orchestrator surface those flows depend on; the solution skill owns the lifecycle commands.
 - **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
 - **Orchestrator rate-limits some endpoints per tenant.** Filtered `jobs list` / `queue-items list` calls are budgeted per minute, and `--export` on `jobs logs` / `audit-logs list` has a quota of 100 per day. The CLI does not retry a 429 (`ErrorCode: rate_limited`). Read [references/orchestrator/api-limits.md](references/orchestrator/api-limits.md) before writing any poller, loop or script over these commands.

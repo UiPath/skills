@@ -42,6 +42,8 @@ uip solution init "InvoiceAutomation" --output json
 Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
 
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
+
+> If the target folder already holds a `.uipx`, the solution exists: do not run `solution init`. It reports success but overwrites the manifest with a new `SolutionId` and an empty `Projects` list. Add projects to the existing solution instead.
 <!--skill-flavor:step-create-solution:end-->
 
 ## Step 2: Add Existing Projects
@@ -310,13 +312,15 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 }
 ```
 
-`Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
+`Status` is `"Added"` (newly created), `"Unchanged"` (the resource is already in the solution) or `"Updated"` (a remote import of a new resource that also changed resources already in the solution: their dependency links, or hidden resources). `add` never re-imports a resource already in the solution, even when its cloud definition changed: pull that change with [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
 
 A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value, which deploy refuses until a value is set or an existing asset linked ([Local virtual asset § What happens at deploy](scenarios/virtual-resource.md#what-happens-at-deploy)). When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
 
 ### Data Fabric kinds
 
-**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
+**Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. A repeated import returns `Unchanged`; it never overwrites. To pull a changed cloud definition, see [Step 11a](#step-11a-pull-a-changed-cloud-definition---source-remote).
+
+**A federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path <FOLDER>`, where `<FOLDER>` holds the connection.
 
 **Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity; the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg).
 <!--skill-flavor:tenant-df-rpa:start-->
