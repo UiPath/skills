@@ -124,7 +124,6 @@ This variant is not verified end to end.
 - **The per-item work** inside `processEach`: a UiPath agent, an RPA job, Document Understanding, an API call.
   Place and bind the node; the per-item work happens at runtime, not while authoring.
 - **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: the query's records), applies the policy and sets `policySatisfied` through `outputs`.
-  A `.task()` with `set` only assigns variables: use it for the per-item append, never for the aggregation.
   Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above a threshold.
   Evaluate it here, in a node, rather than as the loop's `completion` condition.
   A completion condition stops the block early, which is a different thing from judging the run afterwards, and it cannot see the per-item results the policy needs.
