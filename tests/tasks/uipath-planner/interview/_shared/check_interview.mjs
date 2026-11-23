@@ -21,7 +21,7 @@
 // A failing check prints the current hash, so a fixture's hash is read by running the check once.
 //
 // check-genome.mjs is the skill's own checker: in coder-eval's container, in the plugin under test (each plugin
-// mounts at /work/plugins/<i>); on a host, under $SKILLS_REPO_PATH or above this file.
+// mounts at /work/plugins/<i>); on a host, in the repository above this file.
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -60,10 +60,10 @@ function section(text, name) {
 
 function checkerPath() {
   const plugins = existsSync(CONTAINER_PLUGINS) ? readdirSync(CONTAINER_PLUGINS).map((p) => join(CONTAINER_PLUGINS, p)) : [];
-  const roots = [...plugins, process.env.SKILLS_REPO_PATH];
+  const roots = [...plugins];
   for (let d = GRADER_DIR; d !== dirname(d); d = dirname(d)) roots.push(d);
-  const hit = roots.filter(Boolean).map((r) => resolve(r, CHECKER)).find(existsSync);
-  if (!hit) fail(`check-genome.mjs not found in ${CONTAINER_PLUGINS}/*, $SKILLS_REPO_PATH or above ${GRADER_DIR}`, 2);
+  const hit = roots.map((r) => resolve(r, CHECKER)).find(existsSync);
+  if (!hit) fail(`check-genome.mjs not found in ${CONTAINER_PLUGINS}/* or above ${GRADER_DIR}`, 2);
   return hit;
 }
 
