@@ -33,6 +33,11 @@
         "file": "SKILL.md",
         "command": "eval",
         "reason": "Prose: `uip eval ... delete` is named as an example of a tenant delete that needs user confirmation, not an instruction to run it."
+      },
+      {
+        "file": "references/lowcode/capabilities/process/solution-files.md",
+        "command": "api",
+        "reason": "Studio Web note: names `uip api` as missing from this host, to say Steps 2-3 do not run here. Not an instruction to run it."
       }
     ],
     "ceiling": {
@@ -96,7 +101,7 @@
       "gov aops-policy": 1,
       "guardrails byo-configurations": 1,
       "login": 37,
-      "login refresh": 6,
+      "login refresh": 2,
       "login status": 19,
       "login tenant list": 4,
       "login tenant set": 3,
@@ -342,12 +347,13 @@
     "allow": [],
     "ceiling": {
       "agent": 1,
+      "api": 6,
       "codedapp pack": 1,
       "login": 4,
-      "login refresh": 2,
       "login status": 1,
       "maestro flow hitl": 2,
-      "traces": 1
+      "traces": 1,
+      "update": 1
     }
   },
   "uipath-insights": {
@@ -696,6 +702,7 @@
       }
     ],
     "ceiling": {
+      "api": 12,
       "codedagent": 1,
       "context-grounding": 11,
       "df entities": 1,
@@ -704,7 +711,7 @@
       "gov aops-policy deployed-policy": 1,
       "llm-configuration": 1,
       "login": 36,
-      "login refresh": 9,
+      "login refresh": 5,
       "login status": 22,
       "login tenant list": 6,
       "login tenant set": 11,
@@ -726,7 +733,8 @@
       "traces feedback get": 2,
       "traces feedback list": 2,
       "traces feedback list detailed": 3,
-      "traces feedback update": 5
+      "traces feedback update": 5,
+      "update": 1
     }
   },
   "uipath-process-mining": {
