@@ -467,14 +467,15 @@ jobs:
           # from the runner's process tracking so it outlives this step.
           cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
           #!/usr/bin/env bash
-          # Bounded: dies at the deadline (job timeout + margin) or when the
-          # runner temp dir is gone, so a force-killed job cannot leave it renewing.
+          # Bounded: dies at the deadline (job timeout + margin) or when its pid
+          # file (the lease) is gone or replaced by a later job, so a force-killed job cannot leave it renewing.
           umask 077
           echo $$ > "$RUNNER_TEMP/auth-refresher.pid"
           deadline=$(( $(date +%s) + 23400 ))
-          while [ "$(date +%s)" -lt "$deadline" ] && [ -d "$RUNNER_TEMP" ]; do
+          lease() { [ "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" = "$$" ]; }
+          while [ "$(date +%s)" -lt "$deadline" ] && lease; do
             sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"
-            [ -d "$RUNNER_TEMP" ] || exit 0
+            lease || exit 0
             if bash .github/scripts/refresh-auth.sh >/dev/null 2>&1; then
               chmod -R o+rwX "$HOME/.uipath"
               grep -E '^UIPATH_(ACCESS|REFRESH)_TOKEN=' "$HOME/.uipath/.auth" | cut -d= -f2- >> "$RUNNER_TEMP/issued-tokens"
