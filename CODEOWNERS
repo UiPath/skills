@@ -303,4 +303,5 @@
 # Vertical Solutions skill (uip vss deploy)
 /skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
 /tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/activation/uipath-vertical-solutions.jsonl @sandeeprao-uipath @UiPath/vertical-service-approvers
 /skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
