@@ -96,8 +96,8 @@
       "gov aops-policy": 1,
       "guardrails byo-configurations": 1,
       "login": 37,
-      "login refresh": 2,
-      "login status": 16,
+      "login refresh": 6,
+      "login status": 19,
       "login tenant list": 4,
       "login tenant set": 3,
       "logout": 2,
@@ -146,7 +146,9 @@
       "ah idea-flows list": 3,
       "ah phases set": 3,
       "ah users list": 3,
-      "login": 14,
+      "login": 16,
+      "login refresh": 9,
+      "login status": 3,
       "login tenant set": 1
     }
   },
@@ -330,8 +332,8 @@
       "gov compliance-packs state get": 7,
       "gov compliance-packs state list": 3,
       "gov compliance-packs state restore": 2,
-      "login": 50,
-      "login status": 20,
+      "login": 51,
+      "login status": 49,
       "login tenant list": 5,
       "login tenant set": 3
     }
@@ -341,7 +343,9 @@
     "ceiling": {
       "agent": 1,
       "codedapp pack": 1,
-      "login": 3,
+      "login": 4,
+      "login refresh": 2,
+      "login status": 1,
       "maestro flow hitl": 2,
       "traces": 1
     }
@@ -422,12 +426,12 @@
       {
         "file": "SKILL.md",
         "command": "or folders explore",
-        "reason": "CLI step for personal-workspace connection setup \u2014 not available in Studio Web's browser bundle."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       },
       {
         "file": "SKILL.md",
         "command": "or folders stop-exploring",
-        "reason": "CLI step for personal-workspace connection setup \u2014 not available in Studio Web's browser bundle."
+        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
       }
     ],
     "ceiling": {
@@ -653,7 +657,7 @@
       {
         "file": "references/integration-service/activity-generation/runtime.md",
         "command": "is resources",
-        "reason": "Prose in a diagram (`uip is resources reads the file \u2026`), not a command."
+        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
       },
       {
         "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
@@ -700,6 +704,7 @@
       "gov aops-policy deployed-policy": 1,
       "llm-configuration": 1,
       "login": 36,
+      "login refresh": 9,
       "login status": 22,
       "login tenant list": 6,
       "login tenant set": 11,

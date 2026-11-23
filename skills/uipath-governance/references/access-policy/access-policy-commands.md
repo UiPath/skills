@@ -43,20 +43,13 @@ For `evaluate`, login must target a specific tenant (not just an organization).
 
 ### Reading `organizationId` and `tenantId`
 
-The org and tenant UUIDs required in every `PolicyDefinition` live in `~/.uipath/.auth`:
+The org and tenant UUIDs required in every `PolicyDefinition` come from the login session:
 
 ```bash
-grep -E "UIPATH_ORGANIZATION_ID|UIPATH_TENANT_ID" ~/.uipath/.auth
+uip login status --output json
 ```
 
-Expected output:
-
-```
-UIPATH_ORGANIZATION_ID=<ORG_UUID>
-UIPATH_TENANT_ID=<TENANT_UUID>
-```
-
-Copy these into `organizationId` and `tenantId` when composing a policy (see [planning-impl.md — Step 1](./planning-impl.md#step-1--gather-identity)). Never hardcode.
+Read `Data.OrganizationId` (`<ORG_UUID>`) and `Data.TenantId` (`<TENANT_UUID>`). Never read the CLI's credentials file. Copy these into `organizationId` and `tenantId` when composing a policy (see [planning-impl.md — Step 1](./planning-impl.md#step-1--gather-identity)). Never hardcode.
 
 ---
 
