@@ -125,7 +125,7 @@ A coded Action App in the SAME solution is not yet deployed to a folder. Use `lo
 <!--skill-flavor:hitl-live-debug:start-->
 Debug suspends at the task until a person completes it; a long `--timeout` only waits.
 
-1. `uip maestro flow debug <project-dir> --timeout 90 --output json` returns the `instanceId` while suspended.
+1. `uip maestro flow debug <project-dir> --timeout 90 --output json` ends in `Result: Failure`, `ErrorCode: timeout` while suspended. Expected: proceed. The id is `Data.instanceId` (also in `Message`).
 2. `uip maestro flow debug-instance status <instanceId> --output json`: the HITL element's `ExternalLink` ends in the task id; `FolderKey` is the folder.
 3. `uip tasks complete <task-id> --type QuickFormTask --folder-key <FolderKey> --action <outcome> --data '<output fields as JSON>'` (`AppTask` for an action app).
 4. Poll `debug-instance status` until `Completed`, then read `debug-instance variables <instanceId>`.
