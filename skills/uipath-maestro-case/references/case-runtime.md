@@ -257,28 +257,42 @@ make from syntax alone. Exact signatures remain in the generated API.
   it. Read the SDD's own words for which: "returns to", "resumes", "rework"
   means the first; "closed", "terminated", "escalated out" means the second.
 
+<!-- RULE:case.skip.live -->
+- Whether a skipped task satisfies a completion rule is runtime behavior. For a
+  critical bypass, use a separate expression-gated exit or prove the path live.
+
+## Stage routing
+
 <!-- RULE:case.exit.branch-entry -->
 - `exitToStage` does not route at run time: the runtime drops the exit's
   target and, when a stage completes or exits, enters every stage whose entry
-  holds. A bare `selected-stage-completed` or `selected-stage-exited` entry
-  holds for every branch out of that stage, so a stage that branches several
-  ways opens every destination at once. Gate each destination's entry on its
-  own branch, with the expression its exit carries:
+  holds. A destination enters on `selected-stage-completed` when its exit
+  marks the stage complete, and on `selected-stage-exited` when it does not.
+  Without an expression, either holds for every exit of its kind out of that
+  stage, so a stage that branches several ways opens every destination at
+  once. Gate each destination's entry so only its own branch opens it:
 
   ```ts
   .stage('Review', s => s
     .entryWhen(rule('selected-stage-completed', { stage: 'Triage', expression: '=js:vars.route === "review"' })))
   ```
 
-  When the exits differ only by which task completed, have every deciding task
-  write one shared variable, each its own value, and gate on that value. A
-  variable only one task writes keeps its value when the stage runs again, so
-  that task's destination opens again on a later pass. `validate --strict`
-  refuses `selected-tasks-completed` in a stage entry.
+  Copy each exit's expression when the exits' expressions exclude one
+  another; otherwise rewrite the gates until they do. A fallback exit with no
+  expression gates its destination on the negation of the others
+  (`=js:!(vars.amount > 1000)`). When the exits differ only by which task
+  completed, have every deciding task write one shared variable, each its own
+  value, and gate on that value. A variable only one task writes keeps its
+  value when the stage runs again, so that task's destination opens again on
+  a later pass. The SDK's `exitToStage` doc comments say the exit routes and
+  suggest a `selected-tasks-completed` stage entry; `validate` refuses that
+  rule in a stage entry (`CASE_MGMT_RULE_SLOT_MISMATCH`).
 
-<!-- RULE:case.skip.live -->
-- Whether a skipped task satisfies a completion rule is runtime behavior. For a
-  critical bypass, use a separate expression-gated exit or prove the path live.
+  With an SDD, each entry row's IF is that entry's gate, and
+  `validate --strict --sdd` refuses an expression on a row whose IF is blank
+  (`STRICT_SDD_CONDITION_EXPRESSION_UNDECLARED`). When the SDD leaves IF blank
+  on a destination this rule gates, send the SDD back through the planner to
+  add the IF before building that stage.
 
 ## Completion and optionality
 
