@@ -845,21 +845,24 @@ jobs:
           if not values:
               raise SystemExit(0)
 
-          # Every text file, whatever its name or extension: a workspace dump
-          # (.txt, .env, no extension) is as public as the report. Binary files
-          # fail strict decoding and are skipped.
+          # Every file, whatever its name, extension or encoding: a workspace dump
+          # (.txt, .env, no extension, UTF-16) is as public as the report. Raw
+          # bytes, so nothing is skipped on decode; a file that cannot be read
+          # or rewritten is deleted rather than uploaded unscrubbed (fail closed).
+          needles = [v.encode("utf-8") for v in values]
+          needles += [v.encode("utf-16-le") for v in values]
           for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if not path.is_file() or path.is_symlink():
+              if path.is_symlink() or not path.is_file():
                   continue
               try:
-                  text = path.read_text(encoding="utf-8")
-              except (UnicodeDecodeError, OSError):
-                  continue
-              redacted = text
-              for value in values:
-                  redacted = redacted.replace(value, "***")
-              if redacted != text:
-                  path.write_text(redacted, encoding="utf-8")
+                  data = path.read_bytes()
+                  redacted = data
+                  for needle in needles:
+                      redacted = redacted.replace(needle, b"***")
+                  if redacted != data:
+                      path.write_bytes(redacted)
+              except OSError:
+                  path.unlink(missing_ok=True)
           PY
       - name: Report auth refresher status
         if: always()
