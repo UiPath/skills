@@ -150,8 +150,9 @@ and routing all work.
 ### 4. Write the main script, then test it
 
 Save it as `$WORK/<scriptRef>.js`: the file's base name **is** the `scriptRef`
-the min.json declares in step 5, and `flow node add --scripts $WORK` finds each
-script by that name alone. A lookup script from step 3 follows the same rule.
+the min.json declares in step 5, and a flow step reads each script by that name
+alone ([Putting it in a flow](#putting-it-in-a-flow)). A lookup script from step 3
+follows the same rule.
 
 **Decide first whether the operation has side effects.** Reads may be run
 immediately; writes may not be run at all until the user chooses to. Do not
@@ -302,7 +303,49 @@ $WORK/<Name>.json           the compiled activity metadata
 ## Putting it in a flow
 
 <!--skill-flavor:flow-sdk-generated-activity:start-->
-The builder-SDK Flow skill (`uipath-maestro-flow`) has no node for a generated activity: `rawNode` refuses every `uipath.connector.*` type, and `connector()` only takes catalog operations. Report that gap to the user rather than hand-editing the compiled `.flow`, and offer managed HTTP in connector mode (the `uipath-maestro-flow` skill covers it) as the fallback.
+A builder-SDK flow (the `uipath-maestro-flow` skill) runs a generated activity
+with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk` **6.125.0 or
+later**. The node embeds the whole activity, because nothing on the tenant knows
+it: compile builds the node's definition from `<Name>.json`, carries every
+script in the node, and needs no connector library and no `registry prepare`.
+
+1. Copy `$WORK/<Name>.json` and every `$WORK/<scriptRef>.js` into the flow's
+   work directory, for instance `.flow-sdk/activity/`, beside `<Name>.flow.ts`.
+2. Add the step. `inputs` take the metadata's own parameter and field names;
+   compile puts each one in the query, path or body slot the metadata names.
+
+   ```ts
+   import { readFileSync } from 'node:fs';
+   import metadata from './activity/ListUsergroupUsers.json' with { type: 'json' };
+
+   const script = (ref: string) => readFileSync(new URL(`./activity/${ref}.js`, import.meta.url), 'utf8');
+
+   // inside the flow chain:
+   .step('listMembers', inlineActivity(
+     { metadata, scripts: script },
+     { usergroup: input('group') },
+     { connection: 'slack', folder: 'shared' },
+   ))
+   ```
+
+   The node type is `uipath.connector.custom.<connector-key>.<slug>`, the slug
+   being the metadata's `name` in kebab case (`list-usergroup-users`). A List
+   activity's output is the bare array of records: read `out('listMembers')`.
+3. Bind `connection` and `folder` in `.flow-sdk/bindings.json` to the Enabled
+   connection you ran the scripts with in step 4: its `Id` and `FolderKey` from
+   `uip is connections list <connector-key> --all-folders`. The manual route in
+   the `uipath-maestro-flow` skill's `references/bindings.md` has the entry
+   shape. `registry prepare` does not help here: it resolves catalog operations, not a generated one.
+4. `uip maestro flow check`, then `compile`, as for any step. `check` reports
+   `INLINE_ACTIVITY_INVALID` for a missing script or metadata that is not a
+   generated activity, and `CONNECTOR_INPUT` for an undeclared input or a
+   required one left out. Fix the files, never the compiled `.flow`.
+
+On an SDK older than 6.125.0 there is no node for a generated activity:
+`rawNode` refuses every `uipath.connector.*` type, and `connector()` only takes
+catalog operations. Report that gap to the user rather than hand-editing the
+compiled `.flow`, and offer managed HTTP in connector mode (the
+`uipath-maestro-flow` skill covers it) as the fallback.
 <!--skill-flavor:flow-sdk-generated-activity:end-->
 
 ## Keep the scripts readable
