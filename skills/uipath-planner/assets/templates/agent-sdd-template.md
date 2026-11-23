@@ -1,7 +1,7 @@
 # Solution Design Document — <AGENT_NAME>
 
-> **Template:** UiPath Agents (Python/coded or low-code). If chosen when the PDD lacked AI-specific details, Phase 1 gap-filling Q&A fills: framework choice, tools, memory/RAG, evaluation criteria.
-> **Phase 2 sections:** §2, §3, §4, §6, §9. **Phase 3 sections:** all others.
+<!-- Template: UiPath Agents (Python/coded or low-code). When the PDD lacked AI-specific details, Phase 1 gap-filling Q&A fills framework choice, tools, memory/RAG and evaluation criteria.
+     Phase 2 sections: §2, §3, §4, §6, §9. Phase 3 sections: all others. -->
 
 ---
 
@@ -36,14 +36,12 @@
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
+EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3).
 Non-RPA scope: Platform constraints, Scope and the product row.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -68,9 +66,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -101,7 +100,7 @@ section again from it, with every open question. See open-questions-guide.md for
 3. Tools
 4. Memory / RAG
 5. Evaluation Criteria
-6. Orchestrator Bindings
+6. Platform Resources Used
 7. Error Handling & Escalation
 8. Integrated Components
 9. Project Structure
@@ -119,7 +118,7 @@ section again from it, with every open question. See open-questions-guide.md for
 | **Role** | <AGENT_ROLE — e.g., "Customer Analysis Agent"> |
 | **Objective** | <OBJECTIVE> |
 | **Trigger** | <HOW_IS_THE_AGENT_INVOKED> |
-| **Expected LLM model** | <MODEL_NAME — e.g., claude-sonnet-4-5, gpt-4o> |
+| **Expected LLM model** | <MODEL_NAME> |
 | **Expected volume** | <INVOCATIONS_PER_DAY> |
 | **Source PDD** | <PATH_OR_LINK_TO_PDD> |
 
@@ -163,9 +162,9 @@ section again from it, with every open question. See open-questions-guide.md for
 <!-- List every tool the agent can call. Tools can be: Python functions, RPA processes, API Workflows,
      Integration Service connectors, other agents. -->
 
-| Tool Name | Tool Type | Repo / IS URL | Purpose | Input Schema | Output Schema |
+| Tool Name | Tool Type | Repo / Integration Service URL | Purpose | Input Schema | Output Schema |
 |---|---|---|---|---|---|
-| `<TOOL_NAME>` | <PYTHON_FN / RPA_PROCESS / API_WORKFLOW / CONNECTOR / AGENT> | <REPO_URL_OR_IS_CONNECTOR_URL_OR_—> | <PURPOSE> | <JSON_SCHEMA_SUMMARY> | <JSON_SCHEMA_SUMMARY> |
+| `<TOOL_NAME>` | <PYTHON_FN / RPA_PROCESS / API_WORKFLOW / CONNECTOR / AGENT> | <REPO_URL_OR_INTEGRATION_SERVICE_CONNECTOR_URL_OR_—> | <PURPOSE> | <JSON_SCHEMA_SUMMARY> | <JSON_SCHEMA_SUMMARY> |
 
 ### Tool Invocation Policy
 
@@ -176,7 +175,7 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ### Agent Configuration
 
-<!-- Agent-level configuration. Fields already captured elsewhere are not repeated: agent name and LLM model live in §1 Agent Overview; context grounding lives in §4 Memory / RAG; evaluation scenarios live in §5 Evaluation Criteria; per-tool type + repo/IS URL live in the Tools table above. -->
+<!-- Agent-level configuration. Fields already captured elsewhere are not repeated: agent name and LLM model live in §1 Agent Overview; context grounding lives in §4 Memory / RAG; evaluation scenarios live in §5 Evaluation Criteria; per-tool type + repo or Integration Service URL live in the Tools table above. -->
 
 | Field | Value |
 |---|---|
@@ -251,13 +250,13 @@ flowchart LR
 
 ---
 
-## 6. Orchestrator Bindings
+## 6. Platform Resources Used
 
-<!-- Agents need bindings for Orchestrator resources: assets, queues, connections, processes. -->
+<!-- Every asset, queue, connection and process the agent uses, by business purpose. How the agent is bound to each is uipath-agents's. -->
 
-| Binding Name | Resource Type | Purpose |
+| Resource | Kind | Business Purpose |
 |---|---|---|
-| <BINDING_NAME> | <ASSET / QUEUE / CONNECTION / PROCESS> | <PURPOSE> |
+| <RESOURCE_NAME> | <ASSET / QUEUE / CONNECTION / PROCESS> | <PURPOSE> |
 
 ---
 
@@ -265,19 +264,21 @@ flowchart LR
 
 ### Agent-level errors
 
-| Error Scenario | Handling |
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules. A failure a person resolves is a row of HITL Escalation, not here. -->
+
+| Error Scenario | What Must Happen |
 |---|---|
-| Tool invocation fails | <RETRY / ESCALATE / RETURN_ERROR> |
-| LLM refuses or returns invalid output | <RETRY / ESCALATE / RETURN_ERROR> |
-| Rate limit hit | <BACKOFF_STRATEGY> |
+| Tool invocation fails | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
+| LLM refuses or returns invalid output | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
+| Rate limit hit | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
 
 ### HITL Escalation
 
-<!-- For coded agents, HITL is an escalation mechanism. Flag touchpoints. -->
+<!-- One row per situation the agent hands to a person. Business intent only: who acts, every decision they can take and where the work goes after each, what they are shown and what they enter. How the escalation is built is uipath-agents's. -->
 
-| Scenario | Escalation Type | Who Resolves |
-|---|---|---|
-| <SCENARIO — e.g., "low confidence on decision"> | <ESCALATION_VIA_SDK> | <ROLE_OR_USER> |
+| Scenario | Who Acts | Decisions → Next | Shown / Entered |
+|---|---|---|---|
+| <SCENARIO> | <ROLE> | <DECISION_1> → <NEXT>; <DECISION_2> → <NEXT> | <DATA_SHOWN> / <DATA_ENTERED> |
 
 ---
 
@@ -303,7 +304,7 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (tool + operation). -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (tool + operation). Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -311,27 +312,27 @@ flowchart LR
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project, built by uipath-ixp before its consumers. IXP model rows: sdd-writing-guide.md § Writing Rules. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
 | Model / Project | Used By Tool | Document Types | Purpose |
 |---|---|---|---|
 | `<IXP_PROJECT_NAME>` | `<TOOL_NAME>` | <DOCUMENT_TYPES> | <PURPOSE> |
 
-### Build Assumptions
-
-<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
-
-| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
-|---|---|---|---|---|
-| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
-
 ### Coded Functions
 
-<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked as agent tools. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
+<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, Integration Service connection query) invoked as agent tools. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
 
 | Function | Used By Tool | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|
 | `<FUNCTION_NAME>` | `<TOOL_NAME>` | `<INPUT_MODEL>` → `<OUTPUT_MODEL>` | <PURPOSE_AND_DEPENDENCIES> |
+
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the tools that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | `<TOOL_NAMES>` | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
 
 ---
 
@@ -340,31 +341,11 @@ flowchart LR
 ### Implementation Mode
 
 - [ ] **Coded Agent** (Python) — recommended for complex logic, custom frameworks
-- [ ] **Low-code Agent** (agent.json via Agent Builder) — recommended for simple agents
+- [ ] **Low-code Agent** (Agent Builder) — recommended for simple agents
 
-### Coded Agent Structure
+<!-- The agent project is scaffolded by uipath-agents, which owns its files and folders: never draw a file tree here. -->
 
-```text
-<AGENT_PROJECT_NAME>/
-├── pyproject.toml           # NO [build-system] section
-├── agent.json
-├── entry-points.json
-├── src/
-│   ├── agent.py             # main agent logic
-│   └── tools/
-│       └── <TOOL_NAME>.py
-├── evaluations/
-│   └── <EVAL_SET>.json
-└── .venv/
-```
-
-### Low-code Agent Structure
-
-```text
-<AGENT_PROJECT_NAME>/
-├── agent.json
-└── entry-points.json
-```
+**Agent project:** `<AGENT_PROJECT_NAME>` — built by `uipath-agents`.
 
 ### Solution / Project Breakdown
 
@@ -401,7 +382,7 @@ flowchart LR
 | **Security** | <LLM keys and tool credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope for tools; do not expose tool / API calls in the trace; guardrails on prompt injection and PII> |
 | **Performance** | <token budget and model latency; cache / batch tool calls; webhooks vs polling in tools; avoid license-consuming Windows processes in RPA tools> |
 | **Scalability** | <expected concurrent invocations; rate-limit headroom; peak-window sizing> |
-| **Availability / Resilience** | <retry / backoff on tool + LLM failures (§7); fallback when a tool is unavailable; graceful degradation> |
+| **Availability / Resilience** | <what happens when a tool or the model fails (§7); fallback when a tool is unavailable; graceful degradation> |
 | **Logging & Monitoring** | <trace capture; alerting on failure / low-confidence escalations; eval pass-rate tracking (§5, §10)> |
 | **Compliance** | <REGULATION_OR_—> |
 
@@ -423,9 +404,7 @@ flowchart LR
 
 ### Regression Strategy
 
-- Run evaluation dataset on every code change
-- Track pass rate over time
-- Any drop below <THRESHOLD>% blocks deployment
+- Minimum pass rate on the evaluation dataset: <THRESHOLD>%
 
 ---
 

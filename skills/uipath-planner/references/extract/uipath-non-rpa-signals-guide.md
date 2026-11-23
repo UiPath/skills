@@ -1,4 +1,4 @@
-# UiPath Source Guide — Non-RPA Signals
+# UiPath Non-RPA Signals Guide
 
 Read after [uipath-source-guide.md](uipath-source-guide.md); read the § Signals sections below whose artifact type the inventory holds.
 

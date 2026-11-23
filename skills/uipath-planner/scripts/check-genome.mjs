@@ -72,6 +72,11 @@ export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / De
   "uipath-automationhub", "uipath-feedback",
   "uipath-activity-migrator", "uipath-bundles", "uipath-vertical-solutions",
 ]);
+// build skills that never own a Build With or Components row (skill-mapping-guide.md § Build Skills)
+const NOT_A_ROW_SKILL = {
+  "uipath-human-in-the-loop": "the containing component's skill owns the checkpoint; name it in the Rationale column",
+  "uipath-solution": "solution packaging is recorded under Deployment",
+};
 const RETIRED_SKILLS = ["uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"];
 // the skill a genome's preamble routes its build to
 export const BUILDER = "uipath-genome";
@@ -138,46 +143,45 @@ export const TEMPLATE_PLACEHOLDERS = [
   "one {item}",
   "{identifying field(s)}",
   "{volume and cadence}",
-  "{items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}",
+  "because {reason}",
   "{other item}",
   "when {condition}",
-  "{steps that create items; how often; one source or several; guarded by a lock or ledger?}",
-  "{steps that take items; one robot or several; how items are picked; order}",
-  "{queue / table / in-memory list / folder}",
+  "{producer steps}",
+  "{consumer steps}",
+  "{item store}",
   "{status, tags, fields, output}",
-  "{parent items, ledgers, locks, tag joins — what each is for; \"none\"}",
-  "{one kind, or several routed inside the consumer — what differs}",
+  "| {coordination}",
+  "{item kinds}",
   "steps {n}",
   "{p–q}",
   "steps {r}",
   "with {result}",
   "rules: {names}",
+  "{business effect}",
   "handlers: {names}",
   "retried {n}",
   "after {m}",
-  "{what takes the items}",
   "| {unit}",
-  "{what this flow needs for one job to hold both roles — or \"excluded: {the fact that rules it out}",
-  "{projects and schedules, where per-item state is visible, retry granularity, end-of-parent work}",
+  "| {requires}",
+  "| {changes}",
   "{alternative unit}",
-  "{facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}",
-  "{only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}",
+  "**Evidence:** {facts}",
+  "{option, unit — source}",
   "{a, b}",
   "{c, d}",
-  "{per-item record and where it lands; screenshot on system exception; run summary}",
-  "{reason — the run is one unit of work; one item's work started per item by {caller}",
+  "**Traceability:** {traceability}",
+  "transactional: {reason}",
   "component {p}",
   "component {c}",
   "row {n}",
   "component {d}",
   "row {m}",
-  "{component # and steps that create items; how often; one source or several; guarded by a lock or ledger?}",
-  "{component # and steps that take items; one robot or several; how items are picked; order}",
+  "{producer component and steps}",
+  "{consumer component and steps}",
   "run: {steps}",
   "item: {steps}",
   "end: {steps}",
   "{component #}",
-  "{per-item record and where it lands; the upstream reference a chained item carries; screenshot on system exception; run summary; which component reports on them}",
   "{same block}",
 ];
 
@@ -346,6 +350,15 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
       // advisory: a platform row in Build With does no harm — the
       // resources still reach the target through the solution and the open-items files
       if (OPERATE_SKILLS.has(name)) r.strict(`operate-only skill '${name}' in ${heading}; it belongs under Platform Dependencies`);
+    }
+    const body = sectionBody(text, heading);
+    const header = lines(body).find((l) => l.trim().startsWith("|"));
+    const col = header ? cells(header).findIndex((c) => c.toLowerCase() === "skill") : -1;
+    if (col < 0) continue;
+    for (const row of tableRows(body, header.trim())) {
+      for (const name of skillNames(row[col] ?? "")) {
+        if (NOT_A_ROW_SKILL[name]) r.strict(`'${name}' in the Skill column of ${heading}; ${NOT_A_ROW_SKILL[name]}`);
+      }
     }
   }
   // a criterion is a list item in any form: '- ', '- [ ] ', '* ' or '1. '; the genome format numbers them

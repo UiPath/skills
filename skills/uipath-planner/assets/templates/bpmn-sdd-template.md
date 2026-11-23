@@ -1,8 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
-> **Template:** Maestro BPMN — standards-based BPMN 2.0 process orchestration: pools/lanes, gateways, events, boundary timeouts, subprocesses, and multi-instance loops over RPA, agents, API workflows, connectors, and HITL.
-> **Layout:** chapters 1–10 follow the PDD's order and say what the solution does, for the people who approve it; chapter 11 holds the BPMN wiring the build reads. Each fact has one home: a later chapter names an earlier one's rows, never restates them.
-> **Phase 2 sections:** §2, §3, §4, §5, §6, §11. **Phase 3 sections:** all others.
+<!-- Template: Maestro BPMN — BPMN 2.0 process orchestration over RPA, agents, API workflows, connectors and HITL.
+     Layout: chapters 1–10 follow the PDD's order and say what the solution does, for the people who approve it; chapter 11 holds the BPMN wiring the build reads. Each fact has one home: a later chapter names an earlier one's rows, never restates them.
+     Phase 2 sections: §2, §3, §4, §5, §6, §11. Phase 3 sections: all others. -->
 
 ---
 
@@ -115,7 +115,7 @@ flowchart LR
 | # | Node Key | Step Kind | Description | Inputs | Outputs | Integrated Component | Notes |
 |---|---|---|---|---|---|---|---|
 | 1 | `start` | Start | <DESCRIPTION> | — | — | — | Starts on: <MANUAL/SCHEDULED/MESSAGE> |
-| 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <RPA/AGENT/API/CONNECTOR/HITL/—> | <NOTES> |
+| 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <§6_COMPONENT_NAME or —> | <NOTES> |
 
 ---
 
@@ -169,11 +169,8 @@ flowchart LR
 
 ### Human Tasks
 
-<!--skill-flavor:bpmn-hitl-touchpoints:start-->
-<!-- One row per human-task node. Authored INLINE by uipath-maestro-bpmn (`.humanTask(...)` in the `.bpmn.ts` source) — never
-     route to uipath-human-in-the-loop, which hands Maestro HITL back to uipath-maestro-bpmn. Record business intent only
-     (who approves, what criteria); the BPMN specialist owns the task schema. -->
-<!--skill-flavor:bpmn-hitl-touchpoints:end-->
+<!-- One row per human step. uipath-maestro-bpmn builds it inline — never route it to uipath-human-in-the-loop. Record business intent only
+     (who acts, what they decide); the BPMN specialist owns the task schema. -->
 
 <!-- Every decision names the step the process continues at. A decision that leaves the work waiting names what ends the wait and the step it resumes at. Empty: `None. No person takes part in a run.` -->
 
@@ -185,7 +182,7 @@ flowchart LR
 
 ## 6. Systems and Integrations
 
-<!-- The components the process calls, keyed on Node Key from §2. Each flagged item creates an implementation task. -->
+<!-- The components the process calls, keyed on Node Key from §2. Each flagged item becomes a genome component built by its owning skill. -->
 
 ### RPA Processes Invoked
 
@@ -213,7 +210,7 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). A connection must exist before the parts that use it are built: a connection not yet provisioned is an `[SME REVIEW]` item that names it as a prerequisite. -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -221,7 +218,7 @@ flowchart LR
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. The model extracts fields; it is never the step that sorts documents by kind. Two Build Assumptions rows (§11) go with every model: that it reads each format listed here (one row per format that is not a PDF or a scan, with the conversion step the design falls back on), and that each document reaches it in the form it takes from the node that received it. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction from semi-structured documents (invoices, forms) consumed by this project, built by uipath-ixp before its consumers. IXP model rows (their Build Assumptions go in §11): sdd-writing-guide.md § Writing Rules. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
 | Model / Project | Called From Node | Document Types | Purpose |
 |---|---|---|---|
@@ -229,7 +226,7 @@ flowchart LR
 
 ### Coded Functions
 
-<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
+<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, Integration Service connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
 
 | Function | Called From Node | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|
@@ -247,7 +244,8 @@ flowchart LR
 
 ## 7. Exceptions and Error Handling
 
-<!-- One row per failure the design answers; each row names one §2 step. Attempts belong to that step: the process as a whole is never retried. A failure the run carries on from is caught by a §11 boundary error event on that step, or on the subprocess that holds it, and Then names the step that event leads to (the alert, the record written, the end event reached). That event is interrupting. A failure of one item inside a per-item loop that the other items carry on from is caught inside the loop: the event sits on the failing step, and Then is a step inside the same loop. `—` in Caught By means nothing catches it: the run ends as failed, and Then says exactly `run ends as failed`. A failure of the step named in Then is a row of its own. -->
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules.
+     One row per failure the design answers; each row names one §2 step. Attempts belong to that step: the process as a whole is never retried. A failure the run carries on from is caught by a §11 boundary error event on that step, or on the subprocess that holds it, and Then names the step that event leads to (the alert, the record written, the end event reached). That event is interrupting. A failure of one item inside a per-item loop that the other items carry on from is caught inside the loop: the event sits on the failing step, and Then is a step inside the same loop. `—` in Caught By means nothing catches it: the run ends as failed, and Then says exactly `run ends as failed`. A failure of the step named in Then is a row of its own. -->
 
 | Failing Node | Trigger | Attempts | Caught By | Then |
 |---|---|---|---|---|
@@ -279,7 +277,7 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Security** | <personal data: the fields that hold it, by name, and where each may be shown or stored — that run history and logs leave it out is a Build Assumptions row, never a promise; credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace> |
+| **Security** | <personal data: the fields that hold it, by name, and where each may be shown or stored. That run history and logs leave it out is a Build Assumptions row, never a promise. Credentials in Orchestrator credential / secret assets. Least-privilege Integration Service connection scope. Do not expose entity / API calls in the network trace> |
 | **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
 | **Scalability** | <expected concurrent process instances; multi-instance subprocess fan-out; peak-window sizing> |
 | **Availability / Resilience** | <boundary-timeout / retry behavior; idempotency of invoked components; graceful degradation> |
@@ -332,7 +330,7 @@ flowchart LR
 
 ## 10. Design Decisions
 
-<!-- Written in both execution modes: the architectural picks a reviewer checks first. sdd-writing-guide.md Step 2 item 3 for the rules. -->
+<!-- Written in every execution mode: the architectural picks a reviewer checks first (sdd-writing-guide.md Step 4 item 3). -->
 
 ### Decisions Made
 
@@ -371,7 +369,7 @@ flowchart LR
 
 ## 11. Build Specification
 
-<!-- For the build: the BPMN wiring that carries §2's steps, read by uipath-maestro-bpmn. Every key here is a §2 step, a gateway or an event of this chapter. -->
+<!-- For the build: the BPMN wiring that carries §2's steps, read by uipath-maestro-bpmn. Every key here is a §2 step or a gateway, event, sequence flow, subprocess or call activity of this chapter. Each Subprocess and Call Activity key equals the key of its §2 Subprocess or Call process step. -->
 
 ### Gateways
 
@@ -393,7 +391,7 @@ flowchart LR
 
 <!-- Event kinds: start / intermediate-catch / intermediate-throw / boundary / end.
      Definitions authored here: none, message, timer, error, terminate.
-     (Signal / escalation / conditional / compensate are preserve-only — do not author unless the PDD requires them.) -->
+     Signal / escalation / conditional / compensate: author these only when the PDD names one. -->
 
 | Event Key | Event Kind | Definition | Attached To (boundary) | Interrupting? | Timer / Message / Error detail |
 |---|---|---|---|---|---|
@@ -417,7 +415,7 @@ flowchart LR
 
 ### Build Assumptions
 
-<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
 
 | # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
 |---|---|---|---|---|
@@ -425,25 +423,16 @@ flowchart LR
 
 ### Project Structure
 
-<!--skill-flavor:bpmn-project-structure:start-->
-<!-- Editable source layout per the owning skill: `uip maestro bpmn init` scaffolds the project, and the .bpmn
-     basename matches the project directory exactly. The `.bpmn.ts` source sits in the workspace root,
-     not inside the solution or project folder; the compiled .bpmn is never hand-edited. bindings_v2.json, entry-points.json, operate.json,
-     package-descriptor.json are generated/CLI-managed package metadata — never scaffolded by hand. -->
+<!-- The BPMN project is scaffolded by uipath-maestro-bpmn, which owns its files and folders: never draw a file tree here. -->
 
-```text
-<WORKSPACE>/
-├── <BPMN_PROJECT_NAME>.bpmn.ts      # source: edit this, then compile
-└── <BPMN_PROJECT_NAME>/
-    ├── <BPMN_PROJECT_NAME>.bpmn     # compiled output
-    └── project.uiproj
-```
-<!--skill-flavor:bpmn-project-structure:end-->
+**BPMN project:** `<BPMN_PROJECT_NAME>` — built by `uipath-maestro-bpmn`.
 
 ### Orchestrator Deployment Target
 
-- [ ] Development workspace (default — the specialist's own authoring/publish surface)
-- [ ] Orchestrator (deployed as a solution → `uipath-solution`)
+<!-- Where the finished process runs. How it is packaged and published is its owning skills', never stated here. -->
+
+- [ ] Development workspace (default)
+- [ ] Orchestrator
 
 ### Solution / Project Breakdown
 
@@ -486,9 +475,10 @@ Implementation steps **do not live in this SDD** — the genome carries them.
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open; §1's Open questions row then reads `none`. Once the genome is written,
 uipath-planner writes this section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -508,7 +498,7 @@ uipath-planner writes this section again from it, with every open question. See 
 - **Until answered:** the SDD stays `draft` and no genome is written
 - **Answer (by <ROLE>):**
 
-> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item about something the build needs to exist first (a connection, a deployed component) names it as a prerequisite of the build. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 

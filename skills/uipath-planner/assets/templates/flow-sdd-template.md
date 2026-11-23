@@ -1,7 +1,7 @@
 # Solution Design Document — <PROCESS_NAME>
 
-> **Template:** Maestro Flow — orchestrates multiple automation types (RPA, agents, apps, API workflows, HITL).
-> **Phase 2 sections:** §3, §4, §5, §7, §9. **Phase 3 sections:** all others.
+<!-- Template: Maestro Flow — orchestrates multiple automation types (RPA, agents, apps, API workflows, HITL).
+     Phase 2 sections: §3, §4, §5, §7, §9. Phase 3 sections: all others. -->
 
 ---
 
@@ -36,14 +36,12 @@
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
+EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3).
 Non-RPA scope: Platform constraints, Scope and the product row.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -68,9 +66,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -90,7 +89,7 @@ section again from it, with every open question. See open-questions-guide.md for
 - **Until answered:** the SDD stays `draft` and no genome is written
 - **Answer (by <ROLE>):**
 
-> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item about something the build needs to exist first (a connection, a deployed component) names it as a prerequisite of the build. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
+> Each item is marked `[SME REVIEW] D<n>` in its section. A default-carried item blocks neither the genome nor the build: the automation is built on the option marked `(built now)`, or a value item's `Default:`, which must be verified before production sign-off. An item with an `Until answered:` line keeps the handoff at `Status: draft`.
 
 ---
 
@@ -160,7 +159,7 @@ flowchart LR
 ## 3. Nodes Inventory
 
 <!-- List every step in execution order: one row per step, one kind of work per row. Step Kind says what the step does; the Flow node that performs it is uipath-maestro-flow's choice, never named here. A step that does two kinds of work is two rows with two keys.
-     - Start (one row per way the flow starts: manual, scheduled, event)
+     - Start (one row per way the flow starts: manual, scheduled, event, HTTP)
      - Decide (routes on a condition and produces nothing: a value a later step needs is produced by a Compute row before it)
      - Repeat (works a list item by item; Notes names the steps it repeats)
      - Compute (derives, converts, ranks or assembles values the flow already holds)
@@ -171,7 +170,7 @@ flowchart LR
 
 | # | Node Key | Step Kind | Description | Inputs | Outputs | Notes |
 |---|---|---|---|---|---|---|
-| 1 | `start` | Start | <DESCRIPTION> | — | — | Starts on: <MANUAL/SCHEDULED/EVENT> |
+| 1 | `start` | Start | <DESCRIPTION> | — | — | Starts on: <MANUAL/SCHEDULED/EVENT/HTTP> |
 | 2 | `<NODE_KEY>` | <STEP_KIND> | <DESCRIPTION> | <INPUTS> | <OUTPUTS> | <NOTES> |
 
 ---
@@ -198,17 +197,17 @@ flowchart LR
 
 ## 6. Triggers
 
-<!-- How the flow is invoked. -->
+<!-- How the flow starts, in the business's words: the time, the time zone, the days, or the event or call that starts it. How a schedule is expressed is the build's; a calendar it depends on (business days, holidays) is a Build Assumptions row with its fallback. -->
 
-| Trigger Type | Configuration | Notes |
+| Trigger Type | When | Notes |
 |---|---|---|
-| <MANUAL/SCHEDULED/EVENT/HTTP> | <CRON_OR_EVENT_SPEC> | <NOTES> |
+| <MANUAL/SCHEDULED/EVENT/HTTP> | <WHEN_IN_BUSINESS_TERMS> | <NOTES> |
 
 ---
 
 ## 7. Integrated Components
 
-<!-- Flag the automation types the flow orchestrates. Each flagged item creates an implementation task. -->
+<!-- Flag the automation types the flow orchestrates. Each flagged item becomes a genome component built by its owning skill. -->
 
 ### RPA Processes Invoked
 
@@ -236,7 +235,7 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). A connection must exist before the parts that use it are built: a connection not yet provisioned is an `[SME REVIEW]` item that names it as a prerequisite. -->
+<!-- Every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Complements the Integration Service Connectors table above (connector + node + operation). Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -244,7 +243,7 @@ flowchart LR
 
 ### IXP / Document Understanding Models
 
-<!-- Extraction of fields from semi-structured documents (invoices, forms) consumed by this project. Implementation routes to uipath-ixp; the model is built and published BEFORE its consumers. Document Types: the business documents the source names, each with the format it arrives in (PDF, scan, spreadsheet, email body). Purpose: the fields to extract. Sorting documents by kind, and bringing a document from where it arrives to where the model reads it, are nodes of their own in §3, never part of this row. The model extracts fields; it is never the step that sorts documents by kind. Two Build Assumptions rows go with every model: that it reads each format listed here (one row per format that is not a PDF or a scan, with the conversion step the design falls back on), and that each document reaches it in the form it takes from the node that received it. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
+<!-- Extraction of fields from semi-structured documents (invoices, forms) consumed by this project, built by uipath-ixp before its consumers. Document Types: the business documents the source names, each with the format it arrives in (PDF, scan, spreadsheet, email body). Purpose: the fields to extract. IXP model rows: sdd-writing-guide.md § Writing Rules. OPTIONAL subsection — omit entirely when no document extraction is in scope (exempt from the template-superset check). -->
 
 | Model / Project | Called From Node | Document Types (format) | Purpose |
 |---|---|---|---|
@@ -252,7 +251,7 @@ flowchart LR
 
 ### Coded Functions
 
-<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, IS-connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. One row per function; how functions are grouped into projects is decided at build. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
+<!-- Atomic deterministic logic in TypeScript, JavaScript, or Python (transform, parse, score, custom-auth API call, Integration Service connection query) invoked by this project. Implementation routes to uipath-functions; each function is built and published BEFORE its consumers. One row per function; how functions are grouped into projects is decided at build. OPTIONAL subsection — omit entirely when no coded function is in scope (exempt from the template-superset check). -->
 
 | Function | Called From Node | Input → Output (typed) | Purpose / Dependencies |
 |---|---|---|---|
@@ -276,13 +275,15 @@ flowchart LR
 
 ### Coded Apps Referenced
 
-| App Name | Called From Node | Role |
+<!-- A person's decision in an app is a row of HITL Touchpoints, which names the app here. -->
+
+| App Name | Called From Node | Purpose |
 |---|---|---|
-| `<APP_NAME>` | `<NODE_KEY>` | <HITL_FORM / DASHBOARD / ACTION_CENTER_TASK> |
+| `<APP_NAME>` | `<NODE_KEY>` | <WHAT_THE_PERSON_DOES_IN_IT> |
 
 ### Build Assumptions
 
-<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md Step 1). One row per capability; its owning skill confirms it at build, before the nodes that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the nodes that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
 
 | # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
 |---|---|---|---|---|
@@ -292,7 +293,10 @@ flowchart LR
 
 ## 8. Error Handling
 
-<!-- Behavioural wording: what the business needs when a step fails — how many attempts are worth making and how far apart, and what happens when they run out ("three attempts a minute apart, then the instance fails and support is alerted"). Never a product setting: uipath-maestro-flow decides how the attempts and the alert are built. A failure a person resolves is a Human row of §3, not a row here. Every row names one §3 step: a flow has no handler that covers all steps, so a step with no row here simply fails the instance. An alert or a record of the failure is a Call row of §3 that the failing step leads to, named in What Must Happen. Attempts are a number and a wait, or the row has none: never "the platform's policy" or a default. -->
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules.
+     - Every row names one §3 step; a step with no row here fails the instance.
+     - A failure a person resolves is a Human row of §3, not a row here.
+     - An alert or a record of the failure is a Call row of §3 that the failing step leads to, named in What Must Happen. -->
 
 | Scope | Failure | Trigger | What Must Happen |
 |---|---|---|---|
@@ -308,10 +312,10 @@ flowchart LR
 
 ### Orchestrator Deployment Target
 
-<!-- Where the finished automation runs. `SDD scope: single-product` counts products, not packages: how the flow is wrapped and published is uipath-maestro-flow's and uipath-solution's, never stated here. -->
+<!-- Where the finished automation runs. How it is packaged and published is its owning skills', never stated here. -->
 
-- [ ] Development workspace (default — the specialist's own authoring/publish surface)
-- [ ] Orchestrator (`.uipx`-wrapped solution → `uipath-solution`; non-solution single package → `uipath-platform`)
+- [ ] Development workspace (default)
+- [ ] Orchestrator
 
 ### Solution / Project Breakdown
 
@@ -345,7 +349,7 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Security** | <credentials in Orchestrator credential / secret assets; least-privilege Integration Service connection scope; do not expose entity / API calls in the network trace; personal data: the fields that hold it, by name, and where each may be shown or stored; that run history and logs leave it out is a Build Assumptions row, never a promise> |
+| **Security** | <credentials in Orchestrator credential / secret assets. Least-privilege Integration Service connection scope. Do not expose entity / API calls in the network trace. Personal data: the fields that hold it, by name, and where each may be shown or stored. That run history and logs leave it out is a Build Assumptions row, never a promise> |
 | **Performance** | <database vs file storage; webhooks vs polling; avoid license-consuming Windows processes where a headless / cross-platform path exists> |
 | **Scalability** | <expected concurrent instances; per-node fan-out limits; peak-window sizing> |
 | **Availability / Resilience** | <what a failed instance leaves behind and how it is run again; which steps are safe to run twice; graceful degradation> |

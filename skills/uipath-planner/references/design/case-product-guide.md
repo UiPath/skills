@@ -1,8 +1,8 @@
 # Case Management Product Guide
 
-What a Case Management design must respect. `design` reads it when Level 1 picks Case Management or a Solution includes a case ([design-guide.md](design-guide.md) § Read Plan); the design process — phases, review, write, genome — is the same as for every product. It holds Layers 1–2; Layers 3–4, § Layer closure, § Files and Attachments, § Resources and Identities and § Review Items continue in [case-data-and-time-guide.md](case-data-and-time-guide.md) — read both whole. [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) holds § Presenting the Case Design (Phase 2 Step 5), § Finalizing a Case Draft and § SDD Conformance Checklist, which is read at the template-superset check ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 8).
+What a Case Management design must respect about the platform, ordered the way a design is made. `design` reads it when Level 1 picks Case Management or a Solution includes a case ([design-guide.md](design-guide.md) § Read Plan); the design process — phases, review, write, genome — is the same as for every product. It holds Layers 1–2; Layers 3–4, § Layer closure, § Files and Attachments, § Resources and Identities and § Review Items continue in [case-data-and-time-guide.md](case-data-and-time-guide.md) — read both whole. [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) holds § Presenting the Case Design (Phase 2 Step 5), § Finalizing a Case Draft and § SDD Conformance Checklist, which is read at the template-superset check ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 8).
 
-Everything a case design must respect about the Case Management platform, ordered the way a design is actually made. A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Naming rules). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
+A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Naming rules). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
 
 Design in four layers, each settled before the next refines it:
 
@@ -37,7 +37,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 | Source says | Author token |
 |---|---|
-| External system, portal, form, inbound event, or record-created start | `Intsvc.EventTrigger` — a tenant object start stays an event trigger even when provisioning is missing (unresolved detail becomes a placeholder later; never downgrade to Manual) |
+| External system, portal, form, inbound event, or record-created start | `Intsvc.EventTrigger`. A start on a tenant case-entity / data-object record stays an event trigger with that object name as Source, even when the object is not provisioned — never downgrade it to `Manual`; an unresolved `connectionId` / `activityTypeId` stays a placeholder with a high review item |
 | Schedule / recurring | `Intsvc.TimerTrigger` |
 | Otherwise (user or API call) | `Manual` |
 
@@ -120,7 +120,7 @@ Look beyond the primary flow. Check the source for each scenario; pick the small
 | Manual override / worker-launched side work | `adhoc` task (`Required: No`) or `user-selected-stage` lane |
 | Terminal outcomes different from success | Non-completing case-exit rows; XOR terminals ([Layer 2](#xor-terminal-stages)) |
 
-Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at all → ask it among the Phase 1 Step 6 clarifying questions; "primary flow only" is then a recorded decision, never an omission.
+Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at all → ask it among the Phase 1 Step 10 clarifying questions; "primary flow only" is then a recorded decision, never an omission.
 
 ---
 
@@ -142,11 +142,15 @@ The case, each stage, and each task move through gates driven by **rules** in di
 | Case exit | No | `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
-2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`), and `Marks Complete: No` pairs only with `selected-*` rules (or `wait-for-connector`). This is planner policy, not a platform rejection: the schema, `validate` and the Case Designer all accept the crossed pairs, so nothing downstream catches them. Never author either. Completion must track the stage's required set; a `selected-tasks-completed` completion row completes the stage as soon as its named tasks finish, including a task on a guarded branch.
+2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`), and `Marks Complete: No` pairs only with `selected-*` rules (or `wait-for-connector`). Never author a crossed pair: the schema, `validate` and the Case Designer all accept one, so nothing downstream catches it. Completion must track the stage's required set; a `selected-tasks-completed` completion row completes the stage as soon as its named tasks finish, including a task on a guarded branch.
 3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
 4. **Case completion is a root rule.** At least one case-exit row carries `Marks Case Complete: Yes` (normally `required-stages-completed`). A stage completing never closes the case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with `Marks Case Complete: No`. **Default:** the last primary stage completing closes the case unless the source describes another close-out.
 5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output instead ([Layer 3 § Gate on the producer](case-data-and-time-guide.md#gate-on-the-producer-never-on-the-variable-it-writes)).
-6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences: a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards; an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF. Both validator-enforced.
+6. **Evaluation precedence: case exit/completion → stage exit → stage completion → stage entry.** Two consequences:
+   - a stage entry identical to a case-exit row (same rule, selector, IF) leaves the stage permanently unreachable — differentiate the guards;
+   - an unguarded stage exit (`No`, empty IF) sharing its WHEN with a guarded completion (`Yes` + IF) always fires first and the stage never completes — the exit carries the completion's inverse IF.
+
+   Both validator-enforced.
 
 ### Exit types
 

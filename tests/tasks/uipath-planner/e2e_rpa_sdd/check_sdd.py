@@ -197,7 +197,7 @@ def check_planner_handoff(content: str) -> list[str]:
 def check_decisions_made_when_autonomous(content: str) -> list[str]:
     """If the Planner Handoff declares Execution autonomy: autonomous, the SDD
     must carry a ## Decisions Made block (sdd-writing-guide.md
-    Step 2 item 3). The block makes the five highest-leverage architectural picks
+    Step 4 item 3). The block makes the five highest-leverage architectural picks
     scannable in the SDD's first screenful — a reviewer must be able to spot
     a wrong autonomous call without reading the whole document.
     """
@@ -214,7 +214,7 @@ def check_decisions_made_when_autonomous(content: str) -> list[str]:
     if not re.search(r"^#{1,3}\s+Decisions Made", content, re.MULTILINE):
         return [
             "Autonomous-mode SDD missing `## Decisions Made` block "
-            "(sdd-writing-guide.md Step 2 item 3)"
+            "(sdd-writing-guide.md Step 4 item 3)"
         ]
 
     return []
@@ -222,9 +222,9 @@ def check_decisions_made_when_autonomous(content: str) -> list[str]:
 
 def check_need_profile(content: str) -> list[str]:
     """The Recommended Scope block must carry the Need profile line — the
-    durable record of the need→product reasoning (design-guide Step 3.5)."""
+    durable record of the need→product reasoning (design-guide Step 7)."""
     if "Need profile" not in content:
-        return ["Recommended Scope missing the `Need profile:` line (Step 3.5 output)"]
+        return ["Recommended Scope missing the `Need profile:` line (Step 7 output)"]
     return []
 
 

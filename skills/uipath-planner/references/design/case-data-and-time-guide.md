@@ -71,7 +71,7 @@ Validation never reads trigger-node outputs. A trigger payload field is referenc
 |---|---|---|---|---|
 | `In` | Caller-supplied at start; `Default`-initialized for event/timer triggers (no caller) | blank = primary trigger; a single `T<N>` selects another — never CSV | always empty (an In-arg selects a trigger, extracts nothing) | closed at case start |
 | `Out` | Returned to the caller | forbidden | empty | needs a producer Outputs row or a `Default` |
-| `Variable` | Internal state | single `T<N>`, or CSV for multi-trigger | bare path for one trigger; keyed `T<N>: <path>; T<M>: <path>` for CSV — one entry per listed T-number | producer or `Default` |
+| `Variable` | Internal state | single `T<N>`, or CSV for multi-trigger | bare path for one trigger (`response.subject`); keyed `T<N>: <path>; T<M>: <path>` for CSV — one entry per listed T-number; dot-paths only, no array indexing | producer or `Default` |
 
 **Types:** `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `jsonSchema`, `file`. `json` is not a type. Use `jsonSchema` (with `body`) when downstream picks sub-fields; `string` for opaque JSON blobs nothing dereferences. `file` is a JobAttachment record (§ Grammar — Files); the lane's confirmation surfaces the caller pre-upload obligation.
 
@@ -98,7 +98,7 @@ Every consumer of `vars.X` needs a producer that fires earlier — stage order f
 - `=js:`-prefixed JavaScript. Namespaces available to `=js:` evaluation: `vars`, `response`, `bindings`, `iterator`, `metadata`. Assignment operators are forbidden in every case expression.
 - A rule's condition expression gates CASE STATE only (`vars.*`, `metadata.*`) — there is no `event` namespace. In-rule extract-then-gate does not work at runtime (the gate evaluates before the extract writes): extract `response.field -> caseVar` on the connector rule and gate a DOWNSTREAM condition instead.
 - Use strict equality (`===` / `!==`); write mutually exclusive branch guards as exact inverses so completion and divert rows cannot dual-fire.
-- Thresholded policy ("Credit Analyst only over $5M") lands in an executable cell — owner/recipient, WHEN/IF, or a task input — with the numeral written out (`5000000`), actor and attribute on one line. Prose or a persona-table mention alone is a render failure.
+- **Thresholded policy** ("Credit Analyst only over $5M") lands in an executable table cell of the owning task or stage — owner/recipient, WHEN/IF, or a task input. It sits on the same side of the comparison the source states, with the numeral written out (`5000000`, not `$5M`), actor and attribute on one line. Reuse the variable that carries the attribute; never add or rename a task or variable to encode it. Prose (Description, Design Rationale, an `=js:` fragment inside either) or a persona-table mention alone is a render failure. Persona-row and cell shapes: the case template's § Personas comment.
 
 ### External names — schema fields are lookup keys
 
@@ -131,7 +131,7 @@ Bare field-name lists (`**Inputs:** a, b, c`) are forbidden — use the table wi
 
 ## Layer 4 — Time: SLAs & escalations
 
-> **Canonical + twin.** This layer owns the case SLA response model. The build skill `uipath-maestro-case` carries an operational twin of it (its SLA response-shapes reference), because skills here must work with siblings absent and a brownfield edit runs with no SDD and no planner in the loop. Twin, not a second source of truth: a change to the model lands here first, then there, in the same PR — parity is pinned by `tests/tasks/uipath-planner/_shared/test_case_twin_parity.py`.
+<!-- Canonical + twin: this layer owns the case SLA response model; `uipath-maestro-case` carries an operational twin (its SLA response-shapes reference). Change it here and there in the same PR; tests/tasks/uipath-planner/_shared/test_case_twin_parity.py pins parity. -->
 
 ### Where SLAs live
 
@@ -168,22 +168,19 @@ Pick from the source's words — WHERE the work lives, never whether it interrup
 | Response | Source says | What you author | Interrupting cell |
 |---|---|---|---|
 | `notify-only` | notify / alert / page someone, nothing more | An escalation on the target's SLA rules — no stage, task, or condition. The person notified is the escalation's `Notify:` cell; Target is `—` | `—` |
-| `start-task` | Follow-up work inside the SAME breached stage ("as part of the review", a named task for a manager or peer) | One task in the breached stage carrying `sla-status-change` as its OWN task-entry row, against that stage's (or the case's) SLA | `—` — a task entry interrupts nothing; never `Yes`/`No` |
-| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the source says **interrupt**, **global interrupt**, **take over**, **stop** or **pause** the work, or when the lane must be cleared **before the case or stage can close**; `No` ONLY for parallel oversight that leaves the work running |
+| `start-task` | Follow-up work inside the SAME breached stage ("as part of the review", a named task for a manager or peer) | One task in the breached stage. It carries `sla-status-change` as its OWN task-entry row, against that stage's (or the case's) SLA | `—` — a task entry interrupts nothing; never `Yes`/`No` |
+| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage. It carries the `sla-status-change` entry row | `Yes` when the source says **interrupt**, **global interrupt**, **take over**, **stop** or **pause** the work, or when the lane must be cleared **before the case or stage can close**. `No` ONLY for parallel oversight that leaves the work running |
 | `exit-stage` | The breached stage should end or route away | A stage-exit row | Per exit semantics |
 | `exit-case` | The case should close, cancel, or reach an alternate terminal | A case-exit row | Per exit semantics |
 
 Never author `start-task` as a stage-entry row on the breached stage: it validates, but stage re-entry re-runs every task whose `Run Only Once` is `No` — a breach meant to add one manager check silently re-runs the whole stage.
 
-Read the Interrupting cell off the SOURCE's words, exactly like the Response cell — it is not a judgement call you make after choosing the lane. A source that says "globally interrupt into <Lane>" has already said `Yes`; treating it as parallel oversight contradicts the sentence you are modelling. A case-scope breach that must be resolved before the case can close is a takeover, never oversight.
+Read the Interrupting cell off the source's words, like the Response cell — never decide it after choosing the lane. "Globally interrupt into <Lane>" → `Yes`, never parallel oversight. A case-scope breach that must be resolved before the case can close → `Yes`: a takeover, never oversight.
 
 ### Defaults when the source is silent
 
 - SLA exists only where the source mentions timing, read literally ("about a day" → 1 day). No timing → `—`, no SLA rule. Scope, status, and response are chosen separately (§ Choosing the response).
-- Every (scope, SLA) authors BOTH statuses, always. The rule is per status, not per SLA: a stated
-  response for one status never removes the other status's row, and a status the source is silent on is
-  `notify-only` with BOTH Target and Interrupting `—` (who is notified goes in the escalation's `Notify:` cell, never in Target) — an omitted row is an unauthored response, not a way to
-  write "nothing happens". Never invent a stage, task, or routing change.
+- Every (scope, SLA) authors BOTH statuses; a status the source is silent on is `notify-only`. Row rules: the case template's § SLA Response Map comment.
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
 
@@ -213,7 +210,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 
 **`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the conformance checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
-Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
+The rest of the charset is advisory and never gates. Apply it only to names you mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **Keep a name the user, the source document, or a draft supplied verbatim, punctuation included** (`Credit & Document Verification` stays) — never rewrite it to fit the charset.
 
 **Default:** case name = PascalCase from the domain noun; case ID prefix = a 2–4 letter mechanical derivation of it.
 
@@ -234,12 +231,32 @@ ONE checklist. Settle every item before the Phase 2 Step 5 review and re-walk it
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 
-1. **Other-path trigger source** — every modeled path's entry shape matches its trigger source ([case-product-guide.md](case-product-guide.md) § Secondary-lane entry shapes); interrupting flags set on the stage AND on every entry row; terminal `exit-only` vs returning `return-to-origin` chosen; a warning-only escalation stays a notification; an SLA response needing case work carries ONE `sla-status-change` entry row per SLA, with declared target + titles — one trigger per WHEN cell, never `OR`-joined; never duplicate a global-event entry or exit across primary stages.
-2. **Reachability walk** — every stage reachable from a trigger or SLA source: walk entries forward, and walk every conditional entry's FALSE branch too. A stage that does not enter never completes, so a downstream stage keying solely off its completion is unreachable on that branch — when a rule SKIPS a stage and the case continues, the bypass is an explicit extra entry row on the downstream stage (its own condition, negated); when the rule ENDS the case, that branch needs a terminal lane. Never write that a skipped stage "auto-completes" or "counts as complete" — that is an assertion, not a route, and the path stays dead. Every primary stage's completion consumed downstream, referenced by another entry, or feeding a lane; ≥ 1 primary stage `Required: Yes`; `adhoc` never a stage entry. Decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
+1. **Other-path trigger source:**
+   1. Every modeled path's entry shape matches its trigger source ([case-product-guide.md](case-product-guide.md) § Secondary-lane entry shapes).
+   2. Interrupting flags are set on the stage AND on every entry row.
+   3. Terminal `exit-only` vs returning `return-to-origin` is chosen.
+   4. A warning-only escalation stays a notification.
+   5. An SLA response needing case work carries ONE `sla-status-change` entry row per SLA, with declared target + titles.
+   6. One trigger per WHEN cell, never `OR`-joined.
+   7. A global-event entry or exit is never duplicated across primary stages.
+2. **Reachability walk** — every stage reachable from a trigger or SLA source: walk entries forward, and walk every conditional entry's FALSE branch too. A stage that does not enter never completes, so a downstream stage keying solely off its completion is unreachable on that branch:
+   - when a rule SKIPS a stage and the case continues, the bypass is an explicit extra entry row on the downstream stage (its own condition, negated);
+   - when the rule ENDS the case, that branch needs a terminal lane.
+
+   Never write that a skipped stage "auto-completes" or "counts as complete" — that is an assertion, not a route, and the path stays dead. Every primary stage's completion consumed downstream, referenced by another entry, or feeding a lane; ≥ 1 primary stage `Required: Yes`; `adhoc` never a stage entry. Decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
 3. **Entry producer** — every non-start entry names its concrete producer (source stage/task, connector event, paired `wait-for-user` exit, declared SLA reference); at-risk rows name the escalation, breach rows the SLA alone.
-4. **Decision-routing closure** — every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry AND has its own guarded exit row on the deciding stage — a lane keyed on `selected-stage-exited` of a stage that never exits on that value never enters ([case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane, Decision-routed edit 2); every `Marks Stage Complete: No` exit has a consumer: a lane entry or a case-exit row keyed on that stage and value; every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
+4. **Decision-routing closure** — every decision outcome routes somewhere:
+   - no dead-end status values;
+   - an outcome targeting a lane keys that lane's entry AND has its own guarded exit row on the deciding stage — a lane keyed on `selected-stage-exited` of a stage that never exits on that value never enters ([case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane, Decision-routed edit 2);
+   - every `Marks Stage Complete: No` exit has a consumer: a lane entry or a case-exit row keyed on that stage and value;
+   - every routing button's variable+value is consumed downstream or a declared terminal;
+   - a fully-orphaned decision variable on a decision task is blocking.
 5. **Gate reads the producer** — no condition whose WHEN names a task reads a case variable that task writes (§ Gate on the producer).
-6. **Data closure** — every configure/decide output lands in a variable or direct reference; every `vars.<name>` a condition reads is spelled exactly as the Case Variables row or upstream output that produces it — a reference under any other name has no producer; every send/connector/agent required input maps to variables/literals/upstream outputs as far as knowable without schemas (rest resolves at build); thresholded policy in executable cells (§ Expressions).
+6. **Data closure** — all of:
+   - every configure/decide output lands in a variable or direct reference;
+   - every `vars.<name>` a condition reads is spelled exactly as the Case Variables row or upstream output that produces it — a reference under any other name has no producer;
+   - every send/connector/agent required input maps to variables/literals/upstream outputs as far as knowable without schemas (rest resolves at build);
+   - thresholded policy in executable cells (§ Expressions).
 7. **Task-surface classification** — human-performed required work `action`, optional user-launched `adhoc`; no compliance trigger phrase paired with a non-`action` type without explicit user reconciliation ([case-product-guide.md](case-product-guide.md) § Task-type override priority).
 8. **Required-task presence** — a `required-tasks-completed` completion over a stage with zero `Required: Yes` tasks fails validate: `Stage exit rule '<name>' has no task(s) marked as required`; offer marking the terminal task required.
 9. **Resources** — intended names concrete everywhere (`Resolved Resource`, Action App title, `Child Case` — never `<UNRESOLVED>`); identities per § Resources and Identities, unresolved only with a paired high review item; when a live contract is in memory: required inputs bound, extract fields exist verbatim, declared action-app fields ⊆ app schema.
@@ -279,14 +296,21 @@ When the source mentions `file`, `attachment`, `PDF`, `upload`, `evidence` or `r
 
 Design resolves identities only: a resource the design names is looked up in the Level 0 estate sweep ([product-selection-guide.md](../shared/product-selection-guide.md) § Estate sweep); one confident match is adopted with its exact folder, anything ambiguous or missing renders `<UNRESOLVED>` with a paired review item, and the build resolves it. Schema discovery (`tasks describe`, `case spec`), project scaffolding and create-on-missing are build work — a needed field name nothing supplied is `<UNRESOLVED>`, never a spec call and never a key read off a `--output json` envelope (those are PascalCased: § External names). Registry data is evidence, not requirements: never add or rename business work to match tenant inventory. Deep runtime metadata (agent prompts, package versions, endpoints) stays out of the SDD — name, folder, identity and sub-type only.
 
+**`<UNRESOLVED>` scope.** `<UNRESOLVED>` — the Case SDD's one marker beside `[DEFAULT]` and `[SME REVIEW]` — stands only:
+
+- in a registry-identity cell (a resource id with its version, connection id, activity type id, action app id, child-case entity key, deployment or folder key, folder path);
+- in place of a schema field name whose exact spelling nothing in the conversation supplied (§ External names).
+
+It is always paired with a review item (high for an identity) and written as plain text. Never in an intended-name cell (`Resolved Resource`, Action App title, `Child Case`, IXP Deployment) or a timer `Value`.
+
 ## Review Items
 
 A field the design cannot fully resolve but the build needs is a **review item**: an `[SME REVIEW]` row in the SDD's `Action Required — SME Review Items` table, its id (`rev_<slug>`) in the Item cell and its next step in Question. Severity decides `Blocking` and the review:
 
 | Severity | Meaning | `Blocking` | Examples |
 |---|---|---|---|
-| **high** | The build cannot complete until resolved | `no` — default `resolve at build`; it labels the handed-over build option `Build despite N flagged items` | Missing `connectionId` / `actionAppId` / deployed runnable; unbound required input; phantom extract field; open variable lineage; missing trigger config; unreconciled compliance override |
+| **high** | The build cannot complete until resolved | `no` — default `resolve at build`. It labels the handed-over build option `Build despite N flagged items` | Missing `connectionId` / `actionAppId` / deployed runnable; unbound required input; phantom extract field; open variable lineage; missing trigger config; unreconciled compliance override |
 | **medium** | The build defaults it | `no` | Missing escalation recipient (default the owner group); missing variable default; ambiguous recipient |
 | **low** | Cosmetic | `no` | Missing case or secondary-stage description |
 
-Never downgrade a severity to pass a gate — it moves only when the issue resolves.
+`Blocking: yes` applies only to the blocking class of [sdd-writing-guide.md](sdd-writing-guide.md) Step 3 rule 5 — a design-level unknown with no defensible default that changes the architecture; every severity above is otherwise `no`. Never downgrade a severity to pass a gate — it moves only when the issue resolves.

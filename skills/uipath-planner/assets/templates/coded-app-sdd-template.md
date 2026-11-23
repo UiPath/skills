@@ -1,7 +1,7 @@
 # Solution Design Document — <APP_NAME>
 
-> **Template:** Coded Apps (web applications). If chosen when the PDD lacked UI details, Phase 1 gap-filling Q&A fills: framework, app type, pages/routes, state management.
-> **Phase 2 sections:** §2, §3, §4, §5, §6, §10. **Phase 3 sections:** all others.
+<!-- Template: Coded Apps (web applications). When the PDD lacked UI details, Phase 1 gap-filling Q&A fills framework, app type, pages/routes and the data the app keeps.
+     Phase 2 sections: §2, §3, §4, §5, §6, §10. Phase 3 sections: all others. -->
 
 ---
 
@@ -36,14 +36,12 @@
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
+EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3).
 Non-RPA scope: Platform constraints, Scope and the product row.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -68,9 +66,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -150,12 +149,11 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ### Tech Stack
 
-**Framework:** <React / Angular / Vue>
-**Build tool:** <Vite / Webpack / etc.>
-**UI library:** <Material UI / Ant Design / Tailwind / etc.>
-**State management:** <Redux / Zustand / Pinia / Context / etc.>
+<!-- The framework only: build tooling, UI libraries and state libraries are uipath-coded-apps's. -->
 
-**Justification:** <2-3 sentences on why this stack fits>
+**Framework:** <React / Angular / Vue>
+
+**Justification:** <2_TO_3_SENTENCES_ON_WHY_IT_FITS>
 
 ---
 
@@ -180,17 +178,11 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ## 5. State Management
 
-### Global State
+<!-- The data the app keeps while it is used, in business terms: what it is, how long it is kept, and which pages read it. How it is stored is uipath-coded-apps's. -->
 
-| State Slice | Type | Purpose |
-|---|---|---|
-| <SLICE_NAME> | <USER / DATA / UI> | <WHAT_IT_HOLDS> |
-
-### Local Component State
-
-<!-- Describe where local state is appropriate vs. global. -->
-
-- <COMPONENT_NAME>: uses local state for <REASON>
+| Data | Kept For (one page / the session / across sessions) | Read On Pages | Description |
+|---|---|---|---|
+| <DATA_NAME> | <HOW_LONG> | <PAGE_NAMES> | <WHAT_IT_HOLDS> |
 
 ---
 
@@ -198,9 +190,11 @@ section again from it, with every open question. See open-questions-guide.md for
 
 <!-- Which backends the app calls. -->
 
-| Backend | Type | Purpose | Auth |
+<!-- Calls As: the identity each call is made with (the signed-in user or a service identity). How the app authenticates is uipath-coded-apps's. -->
+
+| Backend | Type | Purpose | Calls As |
 |---|---|---|---|
-| <BACKEND_NAME> | <UIPATH_API_WORKFLOW / REST / GRAPHQL> | <PURPOSE> | <AUTH_MECHANISM> |
+| <BACKEND_NAME> | <UIPATH_API_WORKFLOW / REST / GRAPHQL> | <PURPOSE> | <USER_OR_SERVICE_IDENTITY> |
 
 ### UiPath API Workflow Calls
 
@@ -212,7 +206,7 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ### Integration Service Connections
 
-<!-- Every Integration Service connection the app relies on and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. -->
+<!-- Every Integration Service connection the app relies on and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
@@ -242,9 +236,11 @@ flowchart LR
 
 ## 8. Error Handling
 
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules. -->
+
 | Error Scenario | User-Facing Behavior | Logging |
 |---|---|---|
-| API call fails | <SHOW_ERROR_MESSAGE / RETRY_UI / FALLBACK> | <LOG_TO_WHERE> |
+| API call fails | <ATTEMPTS_AND_WAIT_THEN_WHAT_THE_USER_SEES> | <LOG_TO_WHERE> |
 | Validation error | <INLINE_ERROR_MESSAGE> | <YES/NO> |
 | Session expired | <REDIRECT_TO_LOGIN> | <YES/NO> |
 
@@ -260,38 +256,34 @@ flowchart LR
 |---|---|---|
 | <CALLER_NAME> | <RPA_PROCESS / FLOW / AGENT> | <WHEN_AND_WHY> |
 
-### HITL Form Role
+### Human Steps Served
 
-<!-- If the coded app serves as a HITL form renderer for another product. -->
+<!-- Include only when a person acts in this app for another product's human step; omit otherwise. Business intent only: who acts, every decision they can take and where the work goes after each, what they are shown and what they enter. -->
 
-- [ ] This app is a HITL form renderer (called from `uipath-human-in-the-loop` touchpoints)
-- [ ] This app is standalone
+| Step (caller's node key) | Who Acts | Decisions → Next | Shown / Entered |
+|---|---|---|---|
+| `<NODE_KEY>` | <ROLE> | <DECISION_1> → <NEXT>; <DECISION_2> → <NEXT> | <DATA_SHOWN> / <DATA_ENTERED> |
+
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
 
 ---
 
 ## 10. Project Structure
 
-```text
-<APP_PROJECT_NAME>/
-├── .uipath/
-│   ├── app.config.json
-│   ├── bindings.json
-│   ├── entry-points.json
-│   └── package-descriptor.json
-├── src/
-│   ├── pages/
-│   ├── components/
-│   ├── state/
-│   └── api/
-├── public/
-├── package.json
-└── dist/                    (build output — required before pack)
-```
+<!-- The app project is scaffolded by uipath-coded-apps, which owns its files and folders: never draw a file tree here. -->
+
+**App project:** `<APP_PROJECT_NAME>` — built by `uipath-coded-apps`.
 
 ### Deployment Target
 
-- [ ] Development workspace (default — the specialist's own authoring/publish surface)
-- [ ] Orchestrator (for production)
+- [ ] Development workspace (default)
+- [ ] Orchestrator
 
 ### Solution / Project Breakdown
 
@@ -325,10 +317,10 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Security** | <OAuth-PKCE auth (§6); no secrets in the client bundle; least-privilege scopes on UiPath API / Integration Service calls; do not expose API calls with sensitive data in the network trace> |
+| **Security** | <who may open the app and which data each role sees (§3). The identity each backend call is made with (§6). No secrets in the client bundle. Least-privilege scopes on UiPath API / Integration Service calls. Do not expose API calls with sensitive data in the network trace> |
 | **Performance** | <bundle size and code-splitting; API latency and caching; avoid over-fetching; webhooks vs polling for live data> |
 | **Scalability** | <expected concurrent users (§1); stateless client; CDN / static hosting> |
-| **Availability / Resilience** | <retry / fallback UI on API failure (§8); degraded / offline behavior; session-expiry handling> |
+| **Availability / Resilience** | <what the user sees when a backend call fails (§8); degraded / offline behavior; session-expiry handling> |
 | **Logging & Monitoring** | <client-side error logging and sink; usage / error dashboards; alerting> |
 | **Compliance** | <REGULATION_OR_—> |
 
@@ -344,13 +336,9 @@ flowchart LR
 
 ### Unit Tests
 
-- Component rendering
-- State management logic
-- API error handling
+- <UNIT_TEST_DESCRIPTION>
 
 ### E2E Tests
-
-<!-- Use a framework like Playwright or Cypress. -->
 
 - <E2E_TEST_DESCRIPTION>
 

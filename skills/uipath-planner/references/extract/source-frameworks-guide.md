@@ -10,7 +10,7 @@ A UiPath source (`.uipx`, `project.json`, `project.uiproj`, `.xaml`/`.cs`, `.flo
 
 Every other framework is read through the **framework migration pack**, which holds per framework a **source guide**, a **selectors guide** and an **inventory script**. Resolve it once per run:
 
-1. **Ask which pack to read**, unless the request already names one: "Which migration pack — the guides and script that read the export — should I use: UiPath's pack (https://github.com/UiPath/business-logic-extraction), or another, as a folder path or a git URL?" When the request says to proceed without questions, use UiPath's pack. Download UiPath's pack into a new scratch folder, which needs no git and no GitHub account; `<PACK_DIR>` is then `<SCRATCH_DIR>/business-logic-extraction-main`:
+1. **Ask which pack to read**, unless the request already names one. The question: "Which migration pack — the guides and script that read the export — should I use: UiPath's pack (https://github.com/UiPath/business-logic-extraction), or another, as a folder path or a git URL?" When the request says to proceed without questions, use UiPath's pack. Download UiPath's pack into a new scratch folder, which needs no git and no GitHub account; `<PACK_DIR>` is then `<SCRATCH_DIR>/business-logic-extraction-main`:
 
    ```bash
    curl -fsSL https://github.com/UiPath/business-logic-extraction/archive/refs/heads/main.tar.gz | tar -xzf - -C "<SCRATCH_DIR>"

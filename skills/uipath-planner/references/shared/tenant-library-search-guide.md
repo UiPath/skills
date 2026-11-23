@@ -1,6 +1,6 @@
 # Tenant Library Search
 
-Discover libraries already deployed to the tenant feed. Use whenever the user wants to "leverage", "reuse", "find", or "use existing" libraries — and as Step 2.5 of SDD generation for any RPA-bearing scope.
+Discover libraries already deployed to the tenant feed. Use whenever the user wants to "leverage", "reuse", "find", or "use existing" libraries — and as Step 5 of SDD generation for any scope containing an RPA project.
 
 ## Default search target: tenant feed, not local filesystem
 
@@ -45,7 +45,7 @@ uip or libraries list --limit 1000 \
   --output json
 ```
 
-For case-insensitive matching, lowercase the keyword in the filter and the field: `contains(to_string(Title), 'common') || contains(to_string(Title), 'Common')` — or run unfiltered and rank in-agent.
+JMESPath has no lowercase function: for case-insensitive matching, run unfiltered and rank in-agent.
 
 ### Authors-field filter
 
@@ -64,23 +64,26 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 1. **Auth preflight (never blocks SDD output).** Run a benign call once: `uip or libraries list --limit 1 --output json`. If it errors or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
    - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §16 (equivalent to fallback option 1). Do not pause.
    - **Interactive mode** — surface the failure and switch to the manual fallback (below).
-   - **`unknown command` / `unknown option`** — CLI version drift, not an auth failure. Discover the installed surface with `uip or --help`; if no library verb exists, fall back to `uip or packages list` against the libraries feed (`--feed-id`) or the Orchestrator API (`GET /odata/Libraries`) using the existing authenticated context — discover, never invent a verb. If no fallback works, treat as the auth-failure branch above.
+   - **`unknown command` / `unknown option`** — CLI version drift, not an auth failure. Discover the installed surface with `uip or --help`. If no library verb exists, fall back in order — never invent a verb, never extract a token for a direct call:
+     1. `uip or packages list` against the libraries feed (`--feed-id`);
+     2. the Orchestrator API through the CLI: `uip api "orchestrator_/odata/Libraries" --output json`;
+     3. neither works → the auth-failure branch above.
 
    Also skip this step (autonomous: public NuGet only) when the user's prompt forbids running `uip` commands.
-2. **Extract keywords** from the source (PDD Application Inventory, user prompt, project intent). Cap at 6:
+2. **Extract keywords** from the source (PDD Application Inventory, user prompt, project intent):
    - Org-prefix terms: `Common`, `Shared`, `Utils`, `Helpers`, `<Company>` if known
    - Capability terms: `Excel`, `SAP`, `ServiceNow`, `Salesforce`, `Email`, `PDF`, `SharePoint`, `Outlook`, `Citrix`, etc. — drawn from the in-scope applications
    - Domain terms: `Invoice`, `Vendor`, `Banking`, `Order` — drawn from the process name
 
-   If you have more than 6 candidate keywords, **skip the OR-filter** and run unfiltered (`--limit 1000`, paginate via `--offset` while `Pagination.HasMore` is `true`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
+   Up to 6 keywords → one OR-filtered call (step 3). More than 6 → **skip the OR-filter** and run unfiltered (`--limit 1000`, paginate via `--offset` while `Pagination.HasMore` is `true`); rank in-agent. Splitting a long keyword set across multiple OR-filtered calls is an anti-pattern (#7 below).
 3. **Run one filtered call covering all keywords** with the OR pattern above. Single call, not one per keyword — but if `Pagination.HasMore` is `true`, repeat that same call with `--offset 1000`, `--offset 2000`, … until it is `false`, and merge the matches. Branch on the merged result: ≥1 candidate after ranking → step 5a. 0 candidates → step 5b. Do not loop back to step 2 with new keyword permutations.
 4. **Rank candidates in-agent.**
    - Org-prefix match in `Title` or `Key` (starts with `Common`, `Shared`, `<Company>`) → rank highest
    - Capability/domain match in `Title` → rank next
    - Authors equal to the user's org → boost
    - De-duplicate by `Title` keeping the latest `Version`
-5a. **If ≥1 candidate — present top 5 via a multi-select structured question.** Each option label: `<PackageId> <Version> — <Title>`. Always include "None / skip" as a non-multiSelect-exclusive option (or describe it as "leave all unchecked").
-5b. **If 0 candidates — present a single-select numbered fallback** (autonomous mode takes option 1 without asking). Do not run more filtered calls with new keywords:
+5a. **If ≥1 candidate — present the top 4 candidates in one multi-select structured question** ([SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget)). Each option label: `<PackageId> <Version> — <Title>`. No selection means skip — say so in the question text.
+5b. **If 0 candidates — present a single-select structured question** (autonomous mode takes option 1 without asking). Do not run more filtered calls with new keywords:
 
    > No org-published libraries matched the search. How would you like to proceed?
    >
@@ -89,7 +92,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    > 3. **Provide names manually** — name libraries to include even if not yet deployed; each gets an `[SME REVIEW]` item to verify the deployment
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
 
-6. **Record the user's selection.** Write each selected library into every sub-project's §14 Packages table and into §16 → "Shared libraries referenced". Implementation skills handle the install step downstream.
+6. **Record the user's selection.** Write each selected library into every sub-project's §14 Packages table and into §11 Reusable Components (reused rows). Implementation skills handle the install step downstream.
 
 ## Manual fallback (auth preflight failed)
 
@@ -105,7 +108,7 @@ If `uip` is unauthenticated, ask:
 ## Anti-patterns
 
 1. **Searching the local filesystem first.** Tenant is authoritative; local matches do not indicate org adoption.
-2. **Inventing a verb or flag after a CLI rejection.** The surface drifts across versions (`--search` / `--feed-id` exist only on newer CLIs; older CLIs may lack `or libraries` entirely). On `unknown command` / `unknown option`, discover with `--help` and use the preflight's fallback chain (packages feed / Orchestrator API) — never guess.
+2. **Inventing a verb or flag after a CLI rejection.** The surface drifts across versions (`--search` / `--feed-id` exist only on newer CLIs; older CLIs may lack `or libraries` entirely). On `unknown command` / `unknown option`, discover with `--help` and use the preflight's fallback chain (packages feed / `uip api`) — never guess.
 3. **Using `--search` for multi-keyword scans.** `--search` takes one term; one call per keyword violates anti-pattern 7. Multi-keyword OR goes through `--output-filter`.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
 5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 1000` for a filtered scan; paginate via `--offset` while `Pagination.HasMore` is `true` (with `--output-filter`, `Data.length` counts matches, not rows fetched). Once `HasMore` is `false`, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.

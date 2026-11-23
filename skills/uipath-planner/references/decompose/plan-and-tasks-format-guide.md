@@ -4,6 +4,8 @@ Format spec for the `decompose` plan file, `<feature>.md`: lightweight architect
 
 ## Header schema
 
+A header field whose question was skipped reads `N/A`.
+
 ### `decompose` (`<feature>.md`)
 
 ```markdown
@@ -34,7 +36,7 @@ or ambiguities resolved during elicitation.>
 
 ## Stop conditions
 
-<Only populate when `Execution autonomy` is `autonomous`. List the concrete hard blockers that MUST interrupt execution — everything else is handled without asking the user. Examples:
+<Only populate when `Execution autonomy` is `autonomous`. List the concrete hard blockers that interrupt execution — everything else is handled without asking the user. Examples:
 - Authentication fails and cannot be recovered without user credentials
 - The target application is unresponsive after a reasonable retry window
 - A UI element cannot be captured reliably after 3 selector-improvement attempts
@@ -43,7 +45,7 @@ or ambiguities resolved during elicitation.>
 
 In `interactive` mode this section is optional — the user is available to resolve ambiguity as it arises.
 
-"Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
+"Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are not stop conditions. If it is not in this list, the executor continues.>
 ```
 
 ## Task row schema
@@ -99,9 +101,9 @@ Use values, mappings, and structure exactly as documented in the plan at <PLAN_F
 
 ## Testing task is mandatory
 
-Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops). A header field whose question was skipped reads `N/A`.
+Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
 
-Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact — connector validate/import check, IXP model metrics review, rule or function validate — placed immediately after that build task and **before** any consumer's build task.
+Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact: connector validate/import check, IXP model metrics review, rule or function validate. Each is placed immediately after that build task and **before** any consumer's build task.
 
 ```markdown
 ## Task T<N> — <generation-skill> — Testing (MANDATORY)
@@ -196,8 +198,7 @@ The planner creates live tasks with the task-list tool that mirror the file. Map
 
 ## Plan-mode integration
 
-- **Explore-first:** enter plan mode with the full `<feature>.md` content. User approves → exit plan mode → create the live tasks with the task-list tool.
-- **Simultaneous:** skip plan mode. Emit the file as text, then immediately create the live tasks with the task-list tool.
+Plan mode and the live tasks, per approach: [decompose-guide.md](decompose-guide.md) Step 6.
 <!--skill-flavor:live-tasks-and-plan-mode:end-->
 
 ## Quality rules (applied during self-review before saving)
@@ -210,8 +211,8 @@ The planner creates live tasks with the task-list tool that mirror the file. Map
 6. **Every generation skill has a dedicated Testing task** placed before any deploy task. Testing is mandatory — never a `Validate:` sub-step substitute.
 7. **Anti-hallucination rule** appended to every Skill prompt.
 8. **Skill order is correct** — RPA before platform deploy; integrated components before consumers; testing before deploy.
-9. **No specialist-internal flow leakage.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
-10. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode. Populate with hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources); never leave a generic placeholder.
+9. **No specialist-internal flow leakage.** The plan says which skill to load and in what order. It never describes the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's own docs own those details.
+10. **Autonomous plans include a populated Stop conditions section**, or specialists default to asking. Populate it with hard blockers realistic for this plan (auth, app state, element-capture limits, missing resources); never a generic placeholder.
 11. **Authoring surfaces are never plan fields.** Studio, Studio Web, VS Code are presentation layers — no plan-header field, task condition, or routing decision references them; each specialist owns its surface. A user-stated surface preference travels as ordinary requirement prose inside the relevant task prompt.
 12. **Coverage.** Every requirement of the request appears in at least one task.
 13. **Gap markers.** A gap the request leaves open is `[DEFAULT]` or `[SME REVIEW]`, written per [sdd-writing-guide.md § Gap Markers](../design/sdd-writing-guide.md#gap-markers).

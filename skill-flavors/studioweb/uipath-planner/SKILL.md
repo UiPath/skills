@@ -7,7 +7,7 @@ and the host plan authored in plan mode when a plan is reviewed;
 <!--skill-flavor:plan-design-only-outputs:end-->
 
 <!--skill-flavor:plan-and-tasks-format-row:start-->
-| `decompose`: format | [plan-and-tasks-format.md](references/shared/plan-and-tasks-format.md) — header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, plan-mode mapping, anti-hallucination rule, quality rules |
+| `decompose`: format | [plan-and-tasks-format-guide.md](references/decompose/plan-and-tasks-format-guide.md) — header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, plan-mode mapping, anti-hallucination rule, quality rules |
 <!--skill-flavor:plan-and-tasks-format-row:end-->
 
 <!--skill-flavor:host-tools-task-list:start-->
@@ -17,3 +17,7 @@ Studio Web has no task tools, so create no tasks: the host derives the task list
 <!--skill-flavor:deploy-after-build:start-->
 Publishing the open Studio Web solution (`uip solution publish`) is the user's call: when the request asks to publish, deploy or go live, the closing summary tells the user to publish it. When Solutions (`.uipx`) are blocked for the SDD's `Delivery model` — standalone, Automation Suite older than 2.2510, or a user exclusion ([platform-availability-guide.md](references/shared/platform-availability-guide.md)) — the publish goes per package to Orchestrator through `uipath-platform`.
 <!--skill-flavor:deploy-after-build:end-->
+
+<!--skill-flavor:client-word-row:start-->
+| `design`: client Word SDD, on request | Not available in Studio Web — the markdown SDD is the deliverable |
+<!--skill-flavor:client-word-row:end-->

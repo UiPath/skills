@@ -91,7 +91,7 @@
 
 ## Configuration Questions
 
-{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (genome questions guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (transactional shape guide rule 4). Each question names its kind — setting or constant (genome questions guide § Configuration Questions).}
+{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default. A value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open. Every value the source fixes stays in the section where it acts (genome questions guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (transactional shape guide rule 4). Each question names its kind — setting or constant (genome questions guide § Configuration Questions).}
 
 1. {Question}? ({setting | constant}; default: {value})
 2. {Question}? ({setting | constant}; default: {value})
@@ -140,7 +140,7 @@
 
 ## Transactional Shape
 
-{Does the project iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe; never decide. Standalone project: the `Flows:` line and the whole block below per flow. Component of a process: one block per flow it takes part in, each with only the `Role:` line, the As-is rows that concern this project (a producer: source, reference rule, fate of the queued source item; a consumer: step groups, outcomes, counts, configuration split, traceability) and the line `Split options: per the process genome, Flow N.`}
+{Describe, never decide: layout and rules per the transactional shape guide (§ Layout, § Rules). A component of a process keeps, per flow it takes part in, only the `Role:` line, the As-is rows of its role and `Split options: per the process genome, Flow N.`}
 
 **Flows:** Flow 1 — {unit}: steps {a–b} → steps {c–d}. *(standalone project only)*
 
@@ -148,45 +148,43 @@
 
 **Role:** {producer | consumer | producer and consumer | consumer of Flow {M} and producer of this flow} — {one sentence}. *(component of a process only)*
 
-**Unit of work:** one {item}; reference {identifying field(s)}; fields as in {Interface / Handoffs row}; {volume and cadence}; chosen because {items fail, retry and are reported independently at this level; the reference exists; the retry cost is acceptable}.
-**Alternative units of work:** one {other item} — fits when {condition}. *(every viable granularity, or "none")*
+**Unit of work:** one {item}; reference {identifying field(s)}; {volume and cadence}; chosen because {reason}.
+**Alternative units of work:** one {other item} — fits when {condition}.
 
-**As-is** — how the project handles the units today:
+**As-is:**
 
 | Aspect | As-is |
 |---|---|
-| Produced by | {steps that create items; how often; one source or several; guarded by a lock or ledger?} |
-| Consumed by | {steps that take items; one robot or several; how items are picked; order} |
-| Item store | {queue / table / in-memory list / folder}; per-item state as {status, tags, fields, output} |
-| Coordination | {parent items, ledgers, locks, tag joins — what each is for; "none"} |
-| Item kinds | {one kind, or several routed inside the consumer — what differs} |
+| Produced by | {producer steps} |
+| Consumed by | {consumer steps} |
+| Item store | {item store}; per-item state as {status, tags, fields, output} |
+| Coordination | {coordination} |
+| Item kinds | {item kinds} |
 | Step groups | once per run: steps {n}; per item: steps {p–q}; at the end: steps {r} |
-
-Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; transactional shape guide rule 4):
 
 | Outcome | When | Effect |
 |---|---|---|
 | Success | every per-item step completed | item recorded as done with {result} |
-| Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
-| System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
+| Business exception | Step {N} rules: {names} | {business effect} |
+| System exception | Step {N} handlers: {names} | retried {n}×; the run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted beyond the `Decided:` line. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options:**
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
-| {unit} | A | {what this flow needs for one job to hold both roles — or "excluded: {the fact that rules it out}"} | {projects and schedules, where per-item state is visible, retry granularity, end-of-parent work} |
-| {unit} | B | {…} | {…} |
-| {unit} | C | {…; the once-guard for this flow's population} | {…} |
-| {alternative unit} | A | … | {…} |
-| {alternative unit} | B | … | {…} |
-| {alternative unit} | C | … | {…} |
+| {unit} | A | {requires} | {changes} |
+| {unit} | B | {requires} | {changes} |
+| {unit} | C | {requires} | {changes} |
+| {alternative unit} | A | {requires} | {changes} |
+| {alternative unit} | B | {requires} | {changes} |
+| {alternative unit} | C | {requires} | {changes} |
 
-**Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
-**Decided:** {only when the SDD, the request or the refactor answers already chose the split: option and unit — source; for B, `: <Project> → <Project>[ → …]` when the source names the projects (transactional shape guide rule 8)}
+**Evidence:** {facts}
+**Decided:** {option, unit — source} *(only when already decided)*
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
-**Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
+**Traceability:** {traceability}
 
-*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
+*Stub when none: "Not transactional: {reason}."*
 
 ## Acceptance Criteria
 

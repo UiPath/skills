@@ -1,7 +1,7 @@
 # Solution Design Document — <API_WORKFLOW_NAME>
 
-> **Template:** UiPath API Workflows — serverless, bot-less, synchronous request-response integrations.
-> **Phase 2 sections:** §2, §3, §4, §5, §10. **Phase 3 sections:** all others.
+<!-- Template: UiPath API Workflows — serverless, bot-less, synchronous request-response integrations.
+     Phase 2 sections: §2, §3, §4, §5, §10. Phase 3 sections: all others. -->
 
 ---
 
@@ -36,14 +36,12 @@
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when Execution autonomy: autonomous.
-Skip entirely in interactive mode (decisions were checkpoint-reviewed).
-See sdd-writing-guide.md Step 2 item 3 for the format spec.
+EMIT THIS BLOCK ONLY in an autonomous run or a caller's design request (sdd-writing-guide.md Step 4 item 3).
 Non-RPA scope: Platform constraints, Scope and the product row.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -68,9 +66,10 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 ---
 
 <!--
-EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
+EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 3 resolution.
 Skip entirely when no review items are open. Once the genome is written, uipath-planner writes this
 section again from it, with every open question. See open-questions-guide.md for the item form.
+Build prerequisites: sdd-writing-guide.md § Writing Rules.
 -->
 ## Action Required — SME Review Items
 
@@ -144,8 +143,7 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ## 2. Input Schema
 
-<!-- JSON schema for the parameters the caller provides.
-     Use a table for clarity; the implementation skill will generate the actual JSON schema. -->
+<!-- The parameters the caller provides. A table only: the JSON schema is uipath-api-workflow's. -->
 
 | Field | Type | Required | Description | Example |
 |---|---|---|---|---|
@@ -181,8 +179,7 @@ section again from it, with every open question. See open-questions-guide.md for
 
 ## 4. Execution Flow
 
-<!-- High-level steps the API workflow performs. DO NOT include JavaScript — the implementation skill
-     handles that. Describe logical steps and data flow. -->
+<!-- The logical steps and data flow, never code: the scripts are uipath-api-workflow's. -->
 
 ```mermaid
 flowchart LR
@@ -196,9 +193,16 @@ flowchart LR
 
 ### Step Details
 
-| # | Step | Activity Type | Input | Output | Notes |
+<!-- One row per step, one kind of work per row. Step Kind says what the step does; the activity that performs it is uipath-api-workflow's choice, never named here.
+     - Decide (routes on a condition and produces nothing: a value a later step needs is produced by a Compute row before it)
+     - Repeat (works a list item by item; Notes names the steps it repeats)
+     - Compute (derives, converts, ranks or assembles values the workflow already holds)
+     - Call (invokes one connector operation, HTTP endpoint or component of §5, and names it)
+     - End (returns the output of §3 or an error of §6, and nothing else) -->
+
+| # | Step | Step Kind | Input | Output | Notes |
 |---|---|---|---|---|---|
-| 1 | <STEP_NAME> | <CONNECTOR / HTTP / SCRIPT / IF / FOR_EACH / TRY_CATCH> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <NOTES> |
+| 1 | <STEP_NAME> | <STEP_KIND> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <NOTES> |
 
 ---
 
@@ -220,11 +224,19 @@ flowchart LR
 
 ### Integration Service Connections
 
-<!-- Consolidated view of every Integration Service connection and how it is provisioned: reuse an existing IS connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Ties the Integration Service Connectors and Direct HTTP Calls tables above to an explicit access method. -->
+<!-- Consolidated view of every Integration Service connection and how it is provisioned: reuse an existing Integration Service connector, custom-build a connector, or call the system over direct HTTP. Access Method values: `Integration Service — <CONNECTOR_SLUG>`, `Custom connector — <CONNECTOR_SLUG>`, or `Direct HTTP`. Ties the Integration Service Connectors and Direct HTTP Calls tables above to an explicit access method. Build prerequisites: sdd-writing-guide.md § Writing Rules. -->
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
 | <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <STEPS> |
+
+### Build Assumptions
+
+<!-- What this design needs a product to be able to do, beyond what this template states (sdd-writing-guide.md § Writing Rules). One row per capability; its owning skill confirms it at build, before the steps that rely on it are built. `None.` when the design relies on nothing unconfirmed. -->
+
+| # | The Design Relies On | Relied On By | Confirmed By | If It Does Not Hold |
+|---|---|---|---|---|
+| A1 | <CAPABILITY_IN_PLAIN_WORDS> | <STEPS_OR_COMPONENTS> | `<OWNING_SKILL>` | <FALLBACK_STEP_OR_COMPONENT> |
 
 ---
 
@@ -240,9 +252,11 @@ flowchart LR
 
 ### Retry Policy
 
-| Operation | Retry Count | Backoff | Timeout |
-|---|---|---|---|
-| <OPERATION> | <NUMBER> | <STRATEGY> | <SECONDS> |
+<!-- Failure wording: sdd-writing-guide.md § Writing Rules. Every row names one §4 step. -->
+
+| Operation | What Must Happen |
+|---|---|
+| <OPERATION> | <ATTEMPTS_AND_WAIT_THEN_OUTCOME> |
 
 ---
 
@@ -264,18 +278,19 @@ flowchart LR
 
 ### Authentication to the API Workflow
 
-<!-- How callers authenticate when invoking this workflow. -->
+<!-- Who may call this workflow, with what identity, and what they may do. How callers authenticate is uipath-api-workflow's. -->
 
-- [ ] UiPath Orchestrator token (default)
-- [ ] Agent tool invocation (within agent context)
-- [ ] Flow node invocation (within flow context)
-- [ ] External HTTP (via Orchestrator-exposed endpoint)
+| Caller (§9) | Calls As | Allowed To |
+|---|---|---|
+| <CALLER> | <USER_OR_SERVICE_IDENTITY> | <WHAT_THEY_MAY_DO> |
 
 ### Authentication to External Systems
 
-| External System | Auth Type | Credential Source |
+<!-- The identity each external call is made with and the credential it uses (a §5 connection or an asset). How it authenticates is the owning skill's. -->
+
+| External System | Calls As | Credential |
 |---|---|---|
-| <SYSTEM_NAME> | <OAUTH / API_KEY / BASIC> | <UIPATH_ASSET / CONNECTOR_CONFIG> |
+| <SYSTEM_NAME> | <IDENTITY> | <CONNECTION_OR_ASSET_NAME> |
 
 ### Rate Limits
 
@@ -290,7 +305,7 @@ flowchart LR
 
 | Dimension | Requirement / Design decision |
 |---|---|
-| **Availability / Resilience** | <serverless auto-scale (§7); idempotency so caller retries are safe; retry / timeout per §6 Retry Policy> |
+| **Availability / Resilience** | <serverless auto-scale (§7); idempotency so caller retries are safe; what happens on a failed call per §6 Retry Policy> |
 | **Logging & Monitoring** | <request / response logging excluding sensitive fields; alerting on error-rate spikes; Insights / Orchestrator dashboards> |
 | **Compliance** | <REGULATION_OR_—> |
 
@@ -308,22 +323,13 @@ flowchart LR
 
 ## 10. Project Structure
 
-<!-- Layout per the owning skill's scaffold (`uip api-workflow` inside a solution):
-     Workflow.json carries the document.dsl definition; entry-points.json and bindings_v2.json
-     are generated/CLI-managed. Never invent project.json / api-workflow.json / data-manager.json. -->
+<!-- The API workflow project is scaffolded by uipath-api-workflow, which owns its files and folders: never draw a file tree here. -->
 
-```text
-<SOLUTION_NAME>/                     (API Workflow projects live inside a solution)
-└── <API_WORKFLOW_PROJECT_NAME>/
-    ├── project.uiproj
-    ├── Workflow.json                (workflow definition — document.dsl)
-    ├── entry-points.json
-    └── bindings_v2.json
-```
+**API workflow project:** `<API_WORKFLOW_PROJECT_NAME>` — built by `uipath-api-workflow`.
 
 ### Deployment Target
 
-- Published to **Orchestrator** for consumption by agents, flows, or external callers
+- Runs in **Orchestrator**, called by agents, flows or external callers
 
 ### Solution / Project Breakdown
 

@@ -9,12 +9,12 @@ Read this guide whole, and every § Signals section of the two files below, exce
 
 ## Reading the Project
 
-A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes (extraction's defect verification). Read in this order:
+A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass ([defect-verification-guide.md § Two passes](../shared/defect-verification-guide.md)). Read in this order:
 
 1. **Manifest** — `project.json` (fields: [uipath-rpa-signals-guide.md § Signals — XAML](uipath-rpa-signals-guide.md); test registrations: [uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md)), or the solution's `.uipx` (§ Detection) and each project's manifest.
 2. **Inventory** with Glob per § Inventory and Exclusions — files per folder and per artifact type, the counts § Provenance names.
 3. **Project activity defaults** in `.settings/` ([uipath-rpa-signals-guide.md § Signals — Project settings](uipath-rpa-signals-guide.md)), before any workflow: they decide every property a workflow leaves unset.
-4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML, and an Integration Service connector activity carries its connector's cached object schema — every field of the object with its search operators and picklist values — which can fill nine tenths of a connector-heavy file. Read the files through this filter, which drops view state, namespace and assembly lists, layout sizes, the cached schemas and the compressed design configuration only, keeping every activity, property, annotation, `IdRef`, `xmlns`, expression and every field the activity sets (a field it sets carries a child value element, so its line is never a self-closed one):
+4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML, and an Integration Service connector activity carries its connector's cached object schema — every field of the object with its search operators and picklist values — which can fill nine tenths of a connector-heavy file. Read the files through this filter. It drops view state, namespace and assembly lists, layout sizes, the cached schemas and the compressed design configuration only. It keeps every activity, property, annotation, `IdRef`, `xmlns`, expression and every field the activity sets (a field it sets carries a child value element, so its line is never a self-closed one):
 
    ```bash
    sed -e '/<TextExpression.NamespacesForImplementation>.*<\/TextExpression.NamespacesForImplementation>/d; /<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
@@ -94,11 +94,19 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 
 The project folder is the part of a workflow's path the project stands for; the rest, the project-relative path the step table's Source objects cell carries (§ Provenance), is the workflow's path in the rebuild.
 
-A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents: its test-case groups are test components, and its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 1; signals: [uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md)).
+A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents. Its test-case groups are test components. Its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](../shared/genome-format-guide.md) rule 1; signals: [uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md)).
 
 ## Target Resolution
 
-1. **XAML activity → application:** resolve from `xmlns` namespace (`UiPath.MicrosoftOffice365.Activities.Mail` → Outlook / Office 365; `UiPath.GSuite.Activities` → Gmail / Google Workspace; `UiPath.Excel.Activities` → Excel; `UiPath.Database.Activities` → database named in connection string; `UiPath.UIAutomation.Activities` → application named in target's `DisplayName` or Object Repository screen; `UiPath.PDF.Activities` / `UiPath.IntelligentOCR.Activities` / `UiPath.DocumentUnderstanding.*` → Document Understanding; `UiPath.Persistence.Activities` → Action Center; `UiPath.Web.Activities` → REST endpoint host).
+1. **XAML activity → application:** resolve from `xmlns` namespace:
+   - `UiPath.MicrosoftOffice365.Activities.Mail` → Outlook / Office 365;
+   - `UiPath.GSuite.Activities` → Gmail / Google Workspace;
+   - `UiPath.Excel.Activities` → Excel;
+   - `UiPath.Database.Activities` → database named in connection string;
+   - `UiPath.UIAutomation.Activities` → application named in target's `DisplayName` or Object Repository screen;
+   - `UiPath.PDF.Activities` / `UiPath.IntelligentOCR.Activities` / `UiPath.DocumentUnderstanding.*` → Document Understanding;
+   - `UiPath.Persistence.Activities` → Action Center;
+   - `UiPath.Web.Activities` → REST endpoint host.
 2. **Connector key → service:** `uipath-salesforce-sfdc` → Salesforce; `uipath-microsoft-outlook365` → Outlook; `uipath-atlassian-jira` → Jira; `uipath-servicenow` → ServiceNow; `uipath-slack` → Slack. Key not listed: strip `uipath-` prefix, use vendor name.
 3. **`ConnectionId` GUID alone** → look up `bindings_v2.json` `resources[resource=connection].metadata.connector`; if absent, activity's namespace decides; if still unknown, write "Integration Service connector *[Inferred]*" in Source Map notes and best-guess service in body.
 4. **Process / release references** (`releaseKey`, `processName`, `resourceKey`, `referenceKey`) → component with matching project name in same solution; otherwise external dependency listed in Platform Dependencies as `Deployed process: <name>`.
@@ -108,7 +116,17 @@ A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.out
 
 1. Entry point: `project.json` `main` (RPA), `entryPoints[]` for multi-entry processes; `.flow` trigger node with `isDefaultEntryPoint`; BPMN `startEvent`; Case trigger node; `langgraph.json` graph; `Workflow.json` root `do[]`; `uipath.json` `functions`.
 2. Edges inside a component: `<InvokeWorkflowFile FileName>`, `workflows.<Name>()` (`<Name>` is the workflow's file name without extension, whatever its class is called), `core.subflow`, BPMN `callActivity`, Case sub-stages. Depth-first from entry point; order siblings top-to-bottom (Sequence), left-to-right (Flowchart), by `edges[]` order (Flow), by `sequenceFlow` order (BPMN).
-3. Edges across components (handoffs): Flow resource nodes, BPMN `uipath:type` values that start a job or agent, Case task types `process` / `rpa` / `agent` / `api-workflow` / `action`, agent tools with `type` `process` / `api` / `agent`, `sdk.processes.invoke`, `InvokeProcess` / `StartJob` / `RunJob` activities and their `system.` calls, queue producers and consumers sharing a queue name, Action Center task creation and the coded app that renders it. A process call's activity gives its Handoffs mechanism: `InvokeProcess` an Invoke Process; `StartJob` a start job not waited for; `RunJob` a start job waited for, unless its `ExecutionMode` is `None` (`doNotWait: true` in code).
+3. Edges across components (handoffs):
+   - Flow resource nodes;
+   - BPMN `uipath:type` values that start a job or agent;
+   - Case task types `process` / `rpa` / `agent` / `api-workflow` / `action`;
+   - agent tools with `type` `process` / `api` / `agent`;
+   - `sdk.processes.invoke`;
+   - `InvokeProcess` / `StartJob` / `RunJob` activities and their `system.` calls;
+   - queue producers and consumers sharing a queue name;
+   - Action Center task creation and the coded app that renders it.
+
+   A process call's activity gives its Handoffs mechanism: `InvokeProcess` an Invoke Process; `StartJob` a start job not waited for; `RunJob` a start job waited for, unless its `ExecutionMode` is `None` (`doNotWait: true` in code).
 4. Missing entry point: `outputType: Library` → each public workflow is an independent capability, listed as separate steps; `Process` without `main` → `Main.xaml` / `Main.cs` by convention, else alphabetical with `*[Inferred]*`.
 5. Unreachable workflows are unused parts: steps or the Source Map's `Unused` row, as the Unused parts answer decides ([extract-guide.md](extract-guide.md) Step 1).
 6. Test project: the execution template invokes every registered case through its placeholder, so its steps are shared steps of every case ([uipath-rpa-signals-guide.md § Signals — Test projects](uipath-rpa-signals-guide.md)). A workflow belongs to the component whose folder holds it; a call from another component's case is a cross-component edge, never a copy of the callee.
@@ -134,17 +152,20 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 
 ## Deployed State
 
-A package runs as Orchestrator processes, and what runs is the process: each binds one package version, can override any binding of the package, and owns its triggers. When the user names the folder that runs it — or the package's bindings name it and this session is signed in to that tenant, which a refactor or migration needs, since what runs decides the split — read it with `uipath-platform`'s read commands — or, without that skill, the read-only `uip or processes list|get`, `uip or triggers list`, `uip or queues list|get` and `uip or assets list` with `--output json` — each process record with all its fields (its binding overrides are among them), the triggers, the assets and queues the workflows name, the job history, the other processes sharing them — and write nothing; an export of those records the user gives is read the same way.
+A package runs as Orchestrator processes, and what runs is the process: each binds one package version, can override any binding of the package, and owns its triggers. Read it when the user names the folder that runs it, or when the package's bindings name it and this session is signed in to that tenant (a refactor or migration needs it: what runs decides the split):
+1. **With** `uipath-platform`'s read commands, or without that skill the read-only `uip or processes list|get`, `uip or triggers list`, `uip or queues list|get` and `uip or assets list` with `--output json`.
+2. **What:** each process record with all its fields (its binding overrides are among them), the triggers, the assets and queues the workflows name, the job history, and the other processes sharing them.
+3. **Write nothing.** An export of those records the user gives is read the same way.
 
 | Read | Tells you | Genome |
 |---|---|---|
-| Processes per package: entry point, package version, runtime, job priority | which entry points run, and where; two processes of one package bound to different versions run different code | Deployment; a version difference is a Source Map row naming the files that differ, and each process's steps are described from the version it runs |
-| Binding overrides of each process | the connection, folder, file, queue or asset each binding resolves to at run time — one package binding can resolve differently in two processes | the override is the value that runs: an environment-bound value's default is the override, the package's value goes to the Source Map |
-| The connection behind each binding: connector, the account it signs in as, its folder | the identity every read and write runs as; a connection's name in the XAML is its name at design time | Platform Dependencies, identity in the purpose; a person's account is a Source Map finding |
+| Processes per package: entry point, package version, runtime, job priority | which entry points run, and where. Two processes of one package bound to different versions run different code | Deployment; a version difference is a Source Map row naming the files that differ, and each process's steps are described from the version it runs |
+| Binding overrides of each process | the connection, folder, file, queue or asset each binding resolves to at run time. One package binding can resolve differently in two processes | the override is the value that runs: an environment-bound value's default is the override, the package's value goes to the Source Map |
+| The connection behind each binding: connector, the account it signs in as, its folder | the identity every read and write runs as. A connection's name in the XAML is its name at design time | Platform Dependencies, identity in the purpose; a person's account is a Source Map finding |
 | Triggers: type, schedule and time zone, queue and its job limits, event (connector, object, event, filter) | how each entry point starts | Workflow step 1, Deployment. An event trigger is read here and never inferred from the entry point's event arguments, which show only that an event starts it |
 | Assets the workflows read, the queues' settings | values (never a credential's secret); unique reference, retries, retention | Configuration Question defaults; the Transactional Shape's As-is |
 | Job history of a window: runs, faults grouped by message and step, durations, items per run | whether an entry point is used, its volumes, what a fault does on real data | the Source Map's runtime row; a consequence the history shows is a fact, not `*[Inferred]*` |
-| The other processes of the folder and of each folder a binding resolves to: their declared resources, their triggers, and their packages' workflows when the declared resources leave a name blank or the package declares none | who else adds items to each queue the component uses or reads them, starts it or is started by it, and uses its assets, buckets and connections; a name another package builds from an expression is unresolved, never matched to one | each Platform Dependencies row names the processes sharing it and how; the processes read and the unresolved names go to the Source Map's deployed-state row |
+| The other processes of the folder and of each folder a binding resolves to. Their declared resources and their triggers. Their packages' workflows, when the declared resources leave a name blank or the package declares none | who else adds items to each queue the component uses or reads them, starts it or is started by it, and uses its assets, buckets and connections. A name another package builds from an expression is unresolved, never matched to one | each Platform Dependencies row names the processes sharing it and how. The processes read and the unresolved names go to the Source Map's deployed-state row |
 
 Without the deployed state, Platform Dependencies and Deployment come from the package, a trigger the package does not hold is `*[Inferred]*`, and the Source Map's deployed-state row says it was not read.
 
@@ -173,7 +194,7 @@ What the Source Map rows of [extracted-genome-guide.md § Source Map](../shared/
 | Deployed state | The folder and the date read; per process its package version, runtime and triggers, and each binding override with the package value it replaces; the other processes read, and each name another package builds from an expression; or "not read" (§ Deployed State) |
 | Runtime | The job-history window: per process the runs, the faults grouped by message and step, the durations; an entry point with no run named |
 
-No inventory script derives a process inventory or a recordset list, so a UiPath source gets no mechanical export check, and extraction's Step 6b file-search check takes its place.
+No inventory script derives a process inventory or a recordset list, so a UiPath source gets no mechanical export check, and extraction's Step 9 file-search check takes its place.
 
 ## Framework Pitfalls
 

@@ -4,26 +4,24 @@ Which specialist owns what, and the common request shapes that span more than on
 
 ## Skill capability map — which specialist owns what
 
-What each specialist owns, for the plans `decompose` writes; genomes take their Build With names from [skill-mapping-guide.md](skill-mapping-guide.md). **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
+What each specialist owns, for the plans `decompose` writes; genomes take their Build With names from [skill-mapping-guide.md](../shared/skill-mapping-guide.md). **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
 
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|
 | `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end, including live-app exploration and probing. | No (relies on Studio) | **No** — defer to `uipath-solution` for `.uipx` multi-project, `uipath-platform` for single non-solution packages |
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
-| `uipath-functions` | Coded Functions — Python (`uip function new -l py`; Pydantic typed I/O) or TypeScript/JavaScript (`-l ts / js`, TypeScript default; `defineFunction` + schema-first typed I/O) — atomic deterministic logic: transforms, custom-auth API calls, ERP/IS-connection queries. Runs serverless or on an RPA robot; a JS/TS function is delivered as a run-as-job function or an HTTP endpoint (Coded App backends) — one calling mode per function. Invoked from Maestro (Flow/BPMN), agents-as-tools, Orchestrator API, or its HTTP trigger. No LLM/agent loop (that → `uipath-agents`) | Yes (`uip login`) | **Yes** — `uip function pack/publish` |
+| `uipath-functions` | Coded Functions — Python (`uip function new -l py`; Pydantic typed I/O) or TypeScript/JavaScript (`-l ts / js`, TypeScript default; `defineFunction` + schema-first typed I/O) — atomic deterministic logic: transforms, custom-auth API calls, ERP or Integration Service connection queries. Runs serverless or on an RPA robot; a JS/TS function is delivered as a run-as-job function or an HTTP endpoint (Coded App backends) — one calling mode per function. Invoked from Maestro (Flow/BPMN), agents-as-tools, Orchestrator API, or its HTTP trigger. No LLM/agent loop (that → `uipath-agents`) | Yes (`uip login`) | **Yes** — `uip function pack/publish` |
 | `uipath-rules` | Business Rules projects — one `.dmn` decision table (DMN 1.5) per project: `uip rules init`, `refresh`, `validate`, `debug`. Called by BPMN business rule tasks, Case `business-rule` tasks, and RPA | Yes (`uip login` for `debug`) | **No** — `uip solution pack/publish/deploy` via `uipath-solution` |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution`; non-solution single package → `uipath-platform` |
-<!--skill-flavor:planner-bpmn-row:start-->
 | `uipath-maestro-bpmn` | `.bpmn` files — standards-based BPMN 2.0 process orchestration (gateways, events, boundary timeouts, subprocesses, multi-instance) over RPA, agents, APIs, HITL. Authored as a `.bpmn.ts` source with the TypeScript builder SDK and compiled to `.bpmn`; authors its own inline human tasks (`.humanTask(...)`). | Yes (`uip login`) | **Yes** — packages, uploads, publishes/deploys, and runs via `uip maestro bpmn`; Orchestrator deploy of `.uipx`-wrapped solutions → `uipath-solution` |
-<!--skill-flavor:planner-bpmn-row:end-->
 | `uipath-maestro-case` | Case Management authoring — `caseplan.case` from an SDD (`case pack` compiles it to `caseplan.case.bpmn`; authoring `.bpmn` directly is `uipath-maestro-bpmn`) | Yes (`uip login`) | **Partial** — publishes to Studio Web and Orchestrator itself; `.uipx` solution deploy → `uipath-solution` |
 | `uipath-api-workflow` | API Workflows (JSON `document.dsl`): author, run locally (`uip api-workflow run`), connector activities | Yes (`uip login`) | **No** — `uip solution pack/publish` via `uipath-solution` |
 | `uipath-human-in-the-loop` | HITL node authoring — approval gates, escalations, write-back validation inside **Flow** projects. Coded-agent HITL → `uipath-agents`; BPMN / Case / RPA own theirs inline (userTask / task type / Action Center) | No (authoring only) | **No** — ships inside the host project |
-| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), Data Fabric entities/records/files/choice-sets (`uip df`), traces, licensing | Yes (auth hub) | **Yes** — for every project outside a solution (`Packaging: standalone`) and Orchestrator-side post-deploy ops |
+| `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers). Also Integration Service (connectors, connections, activities, Integration Service triggers), Data Fabric entities/records/files/choice-sets (`uip df`), traces, licensing | Yes (auth hub) | **Yes** — for every project outside a solution (`Packaging: standalone`) and Orchestrator-side post-deploy ops |
 | `uipath-ixp` | Document Understanding / IXP — field extraction from semi-structured documents (invoices, forms): taxonomy, extraction model, prediction review, model deployment. Standalone project, or the extraction step a primary consumes | Yes (`uip login`) | **Partial** — model publish/tag via `uip ixp`; consumed by the host project |
-| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration, for any project type, RPA included. See [Integration mechanism](component-placement-guide.md#integration-mechanism--connection-before-raw-api-call) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
-| `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. NOT for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
+| `uipath-connector-builder` | Integration Service **custom connector** authoring (REST+JSON) on disk via `uip is connectors builder` — build a connector when the catalog has none for a required integration, for any project type, RPA included. See [Integration mechanism](../shared/component-placement-guide.md#integration-mechanism--connection-before-raw-api-call) | Yes (`uip login`) | **Yes** — import/publish is deployment (`uip is connectors`) |
+| `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and resource-tool authoring on `uipath`-type servers (`automation`, `agent`, `agentic-process`, `api-workflow`). Wraps Orchestrator resources, external HTTP MCP endpoints, OpenAPI specs, published coded agents, local subprocess commands, or first-party UiPath services as MCP tools. Not for FastMCP / Python `mcp` SDK work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
 | `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. | Yes (`uip login`) | **Yes** — for every project inside a solution (`Packaging: solution`) |
 
 ## When to emit a multi-skill plan
@@ -42,9 +40,9 @@ A request is **single-skill** when:
 - The user is modifying an existing automation in a single project
 - The request is read-only / diagnostic / exploration only
 
-> **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end, including live-app exploration and probing.
+Single-app UI automation (one project, one live app, one workflow) is a single-skill `uipath-rpa` task: `uipath-rpa` owns UI automation authoring end-to-end, including live-app exploration and probing.
 
-> **Important — inline nodes are not components.** A Flow whose only "components" are **inline nodes** (HITL QuickForm, script, connector activity, inline agent) is a **single-skill** `uipath-maestro-flow` task, **not** a multi-skill plan. The flow author journey scaffolds the solution and authors every inline node itself — it reads the HITL plugin reference inline; it does not hand off to `uipath-human-in-the-loop` as a separate task. Counting inline pieces as separate skills ("solution + flow + human-in-the-loop") is a mis-classification. A flow only becomes **multi-skill** (Pattern 2/3) when it orchestrates **separate buildable projects** — distinct `.uipx` projects such as a standalone RPA process, a coded agent, or a coded app, each of which needs its own specialist.
+Inline nodes (HITL QuickForm, script, connector activity, inline agent) are not components ([decompose-guide.md](decompose-guide.md) Step 2). A flow becomes multi-skill (Pattern 2/3) only when it orchestrates **separate buildable projects** — distinct projects such as a standalone RPA process, a coded agent or a coded app, each needing its own specialist.
 
 ## Pattern 1 — RPA build + deploy to Orchestrator
 
@@ -63,7 +61,7 @@ A request is **single-skill** when:
 
 ## Pattern 2 — Flow with local resources
 
-**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). Where the flow is authored and published during the build is `uipath-maestro-flow`'s own workflow — not a plan field.
+**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are not components ([decompose-guide.md](decompose-guide.md) Step 2); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). Where the flow is authored and published during the build is `uipath-maestro-flow`'s own workflow — not a plan field.
 
 ```
 1. uipath-maestro-flow   → create solution, init flow project
@@ -83,14 +81,12 @@ A request is **single-skill** when:
 ```
 1. <component skill>   → scaffold any unbuilt component
 2. <component skill>   → testing for the component (mandatory)
-3. uipath-solution     → deploy the component to Orchestrator via `uip solution` (RPA always needs uipath-solution; agents self-deploy; coded apps deploy via `uip solution` when the coded-app folder is under a parent `.uipx` — `uip codedapp init` under a solution auto-registers as `Type: "AppV2"`. Only standalone coded apps with no parent `.uipx` self-deploy via `uip codedapp pack` → `uip codedapp publish` → `uip codedapp deploy`.)
+3. <deploy skill>      → deploy the component to Orchestrator (RPA deploys via uipath-solution inside a `.uipx`, uipath-platform otherwise; agents self-deploy; coded apps deploy via `uip solution` when the coded-app folder is under a parent `.uipx` — `uip codedapp init` under a solution auto-registers as `Type: "AppV2"`. Only standalone coded apps with no parent `.uipx` self-deploy via `uip codedapp pack` → `uip codedapp publish` → `uip codedapp deploy`.)
 4. uipath-maestro-flow → design and wire the flow against the published components, validate, finalize
 5. uipath-maestro-flow → testing for the flow (mandatory)
 ```
 
-<!--skill-flavor:bpmn-peer-orchestrator:start-->
-> **BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. As with Flow, inline elements (script tasks, business rules, connectors, human tasks/HITL) are authored by the BPMN specialist itself and are NOT separate components — only separate buildable projects (standalone RPA process, coded agent, coded app) fan out.
-<!--skill-flavor:bpmn-peer-orchestrator:end-->
+**BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. Its inline elements (script tasks, business rules, connectors, human tasks) are not components ([decompose-guide.md](decompose-guide.md) Step 2).
 
 ## Pattern 4 — Flow deploy to Orchestrator
 
@@ -111,7 +107,7 @@ Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`.
 ```
 1. uipath-rpa      → create and validate the RPA process(es) the agent will call
 2. uipath-rpa      → testing for the RPA processes (mandatory)
-3. uipath-solution → deploy the RPA process(es) to Orchestrator via `uip solution`
+3. <deploy skill>  → deploy the RPA process(es) to Orchestrator (uipath-solution inside a `.uipx`, uipath-platform otherwise)
 4. uipath-agents   → create the agent, bind the published processes as tools
 5. uipath-agents   → testing for the agent (mandatory)
 6. uipath-agents   → deploy

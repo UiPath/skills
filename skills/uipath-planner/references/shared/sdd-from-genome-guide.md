@@ -11,7 +11,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
 | Phase | Condition | Read |
 |---|---|---|
 | the genome passed its strict check | — | this guide whole; [open-questions-guide.md](open-questions-guide.md) whole; [sdd-writing-guide.md](../design/sdd-writing-guide.md) § Gap Markers |
-| the genome passed its strict check | an SDD is written whole, or one of its body sections again | the template of each SDD item 1 names, in `assets/templates/`; [sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 2 items 2, 5 and 8 |
+| the genome passed its strict check | an SDD is written whole, or one of its body sections again | the template of each SDD item 1 names, in `assets/templates/`; [sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 4 items 2, 5 and 8 |
 | the genome passed its strict check | a process genome | [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Solution scope (Level 1 = Solution or user picked Solution (customize)) and § Solution overview SDD structure |
 
 ## Write the SDD
@@ -29,7 +29,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      | `uipath-api-workflow` | `api-workflow-sdd-template.md` |
      | `uipath-coded-apps` | `coded-app-sdd-template.md` |
 
-     A Case component designed in an SDD already has one: its Interface names it, and nothing is written for it.
+     A Case component designed in an SDD already has one, named by its Interface; nothing is written for it ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6).
    - **A process genome:**
      - a solution overview, `<slug>-solution-sdd.md`, beside the process genome;
      - one SDD per project, `<component-slug>-sdd.md` beside its component genome in `<slug>-genome/`, linked from the overview's Per-Project SDD Index; the RPA components of one flow share one RPA SDD, named after the first of them.
@@ -37,7 +37,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      The open questions of every component are in the overview's Action Required ([open-questions-guide.md](open-questions-guide.md) § Items).
 
      A component built by a skill with no template (a function, an IXP model, a connector) gets no SDD of its own. Its contract goes in the table its consumer's template holds for it.
-   - **A large extraction** writes its SDDs once the whole genome passes its strict check: the lead agent writes the solution overview, and may give each per-project SDD to a subagent that reads this guide, its template and that component genome, run as the parts are ([extraction-parts-guide.md § Running in Parts](extraction-parts-guide.md) item 7).
+   - **A large extraction** writes its SDDs once the whole genome passes its strict check. The lead agent writes the solution overview, and may give each per-project SDD to a subagent that reads this guide, its template and that component genome, run as the parts are ([extraction-parts-guide.md § Running in Parts](extraction-parts-guide.md) item 7).
 2. **Front matter and decision blocks, in the template's order and where the template places them:**
    - **Document History:** one row per write, naming the verb.
    - **Planner Handoff:**
@@ -76,7 +76,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
 
    **What the genome leaves to the build** is written as its options, never as a pick of the SDD's own: a split with no `Decided:` line, the libraries' layout, the implementation mode, the packages, the template. Each option comes with what it requires and changes, and the line "Decided when the build is prepared". A section whose subject the genome does not have says so in one line. A template instruction to add an Action Required item for a fact the source leaves out is met by the genome's own entry for that fact. The SDD adds no question the genome lacks: a missing one is a genome edit first.
 
-   Length follows content, and the template-superset check passes ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 2 items 5 and 8).
+   Length follows content, and the template-superset check passes ([sdd-writing-guide.md](../design/sdd-writing-guide.md) Step 4 items 5 and 8).
 
    An extracted genome's provenance stays in its Source Map. The SDD names the source once, in § 1, and nothing more of it.
 4. **Fingerprint.** `node "<SKILL_DIR>/scripts/sdd-fingerprint.mjs" --genome "<GENOME_MD>"` prints the genome's fingerprint: the process genome and every component genome it links. It goes in the root SDD's `Genome` row once the genome is final; a per-project SDD's row names its component genome, `| **Genome** | <relative path to its component genome> |`, with no fingerprint. The strict check fails an SDD whose row no longer matches its genome.
@@ -89,5 +89,5 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - the genome's Configuration Questions;
    - every entry the genome added.
 
-   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. A Case Management SDD keeps its own review-item table, and nothing is written into it.
+   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. A Case Management SDD's review items: [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6.
 7. **A client Word document** is made on request, as `design` makes one ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Client Word Document). It is for reading and sign-off: answers come back through the markdown, an interview or a reply.

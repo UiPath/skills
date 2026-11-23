@@ -76,7 +76,7 @@ List every `Reasoning` rule. Example:
 
 ## 4. Coverage
 
-Number BRs `BR-01`, `BR-02`, … in source order across every home. A decision-table row or reasoning row is the rule's definition; no separate register repeats it — so the definition carries the rule itself: the row's `Rule` cell reads `BR-12: a blocked vendor's invoice is rejected`, in the source's words, never the ID alone. A home's IDs skip the ones defined in another home; that gap is expected. In BPMN, a validation rule goes in the variable's `Description` in §7, prefixed with its BR ID.
+Number BRs `BR-01`, `BR-02`, … in source order across every home. A decision-table row or reasoning row is the rule's definition; no separate register repeats it — so the definition carries the rule itself: the row's `Rule` cell reads `BR-12: a blocked vendor's invoice is rejected`, in the source's words, never the ID alone. A home's IDs skip the ones defined in another home; that gap is expected. In BPMN, a validation rule goes in the variable's `Description` in §4 Data, prefixed with its BR ID.
 
 Before closing the section, run this mechanical check:
 1. List the BR IDs extracted from the PDD.

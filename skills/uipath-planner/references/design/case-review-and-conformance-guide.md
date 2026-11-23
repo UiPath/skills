@@ -32,30 +32,28 @@ Caller obligation (file In-arg detected):
 
 **Completeness gate.** Incomplete unless: all eight sections shown, every stage and task named, every modeled and intentionally omitted path covered, every meaningful SLA response/status row present, Caller obligation when relevant. No approval question before every section has been shown — even sections reading `None`. Never substitute a list of build steps, artifacts, folders, or validation commands, or a summary that points at the SDD for a missing business decision.
 
-When a design was handed over by `uipath-maestro-case` ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill), the review's one question carries its build options: `Build it — straight through` / `Build it — pause at the build preview` / `Change something`; with open high review items the first option reads `Build despite N flagged items — straight through`. The answer is the build consent and the build-review preference, never re-asked mid-build.
+When a design was handed over by `uipath-maestro-case` ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill), the review's one question carries its build options: `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. With open high review items the first option reads `Build despite N flagged items — straight through`. The answer is the build consent and the build-review preference, never re-asked mid-build.
 
 ## Finalizing a Case Draft
 
-A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer:
+A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer:
 
 1. `user-selected-stage` repair per [case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane; wording such as "any active case" means every primary stage.
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
-3. Threshold-policy conversion — MANDATORY scan, not optional polish. Scan the draft (descriptions, personas table, rationale) for comparator + amount phrases: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to an amount (`$5M`, `100000`, `L4`). EVERY such policy must also appear in an executable cell of the owning task or stage in the final — prose-only is a render failure:
-    - A personas row whose draft scope reads `StageX (amount > $N only)` renders in the final as Stages `StageX` and Notes `amount > $N only` — the Stages cell holds exact stage names only, since convert turns it into the role's stage ids — and REQUIRES a matching guarded expression inside a StageX task block, phrased on the HIGH side and assigning the exception role: an owner/recipient cell or entry-condition IF cell containing `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"` — the numeral written out (`5000000`, not `$5M`), the role and attribute on the same line. The expression lives in a table cell (Inputs/owner/recipient/WHEN/IF); an `=js:` fragment inside `**Design Rationale:**` or `**Description:**` prose is NOT an encoding and fails the gate.
-    - Reuse an existing variable that carries the attribute; the conversion never adds or renames a task or variable.
-    - Persona prose and Design Rationale alone are not final.
+3. Threshold-policy conversion — a required scan. Scan the draft (descriptions, personas table, rationale) for comparator + amount phrases: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to an amount (`$5M`, `100000`, `L4`). Encode EVERY such policy in an executable cell of the owning task or stage, per [case-data-and-time-guide.md](case-data-and-time-guide.md) § Expressions (Thresholded policy); the persona-row split and the guarded-cell shape are the case template's § Personas comment.
 4. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
 5. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not. Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep the column.
 
 ## SDD Conformance Checklist
 
-The gate for the case template's § Validation footer, walked against the written file before the `Status: ready` flip — by a read-only subagent when the host has one (it returns the PASS/FAIL table; the parent edits), otherwise inline. Not part of authoring: the template's cell rules are the render contract.
+The gate for the case template's § Validation footer. Not part of authoring: the template's shape rules are the render contract. No script and no interpreter — the checklist is answered, never run:
 
-Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or
-the line that satisfies (PASS). Judge structure by the ROLE and POSITION of a block (which heading level,
-which table, which column), not by prose wording. The enforcement detail behind each item is the
-template's cell rules, which are COMPLETE for the render contract; design semantics stay
-the case product guides'.
+1. **When:** against the written file, before the `Status: ready` flip, in every mode.
+2. **Who:** a read-only subagent when the host has one — it returns the PASS/FAIL table and the parent edits; otherwise inline, in the transcript.
+3. **How:** Read the written file once (one structural Read). Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or the line that satisfies (PASS). Judge structure by the ROLE and POSITION of a block (which heading level, which table, which column), not by prose wording.
+4. **Repair:** fix every FAIL with a targeted Edit, then re-answer only the failed items — at most 3 rounds, then stop and present what remains.
+
+The enforcement detail behind each item is the template's shape rules; design semantics stay the case product guides'.
 
 CONFORMANCE CHECKLIST — 37 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
 names only what to LOOK AT.
@@ -89,7 +87,7 @@ names only what to LOOK AT.
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
  Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the seventeen literals in [case-product-guide.md](case-product-guide.md) § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs for its group: write the plan type it gives, or leave the task to Studio Web.
+  8. Every task `**Type:**` is one of the seventeen literals in [case-product-guide.md](case-product-guide.md) § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs: write the plan type it gives.
   9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
      that row's Yes/No per case-product-guide.md § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
      Entry Condition rows only Task-entry rules.
@@ -139,14 +137,15 @@ names only what to LOOK AT.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
      (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
-     comparison — prose in Design Rationale or Description does not count.
+     comparison — prose in Design Rationale or Description does not count (case-data-and-time-guide.md
+     § Expressions).
  33. The draft file still exists beside the final, unrenamed.
  Modelling completeness
  34. Every task's `Persona` cell names exactly ONE role — never an either/or (`Underwriter or Credit
      Analyst`, `Recruiter / Hiring Manager`). An either/or persona is a routing rule the source stated and
      the design never modelled: no guard picks between the roles at run time. Repair by naming the owning
      role, and where the split was genuinely conditional, author the condition as a guarded row on the
-     deciding variable rather than as prose in the persona cell. `system` and `—` are single roles.
+     deciding variable rather than as prose in the persona cell. `system` is a single role.
  35. No `user-selected-stage` entry sits on a lane that a decision, event, or SLA routes to.
      `user-selected-stage` is picker exposure — a person choosing the next stage by hand — never
      deterministic routing, so when the source says entry is automatic the picker row IS the defect:

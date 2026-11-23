@@ -217,6 +217,18 @@ def test_unknown_skill_name_in_build_with_fails_core(check):
     assert "unknown skill name 'uipath-bogus' in Build With" in out
 
 
+@pytest.mark.parametrize("skill, reason", [
+    ("uipath-human-in-the-loop", "the containing component's skill owns the checkpoint; name it in the Rationale column"),
+    ("uipath-solution", "solution packaging is recorded under Deployment"),
+])
+def test_a_skill_that_owns_no_row_in_build_with_fails_strict_only(check, skill, reason):
+    text = COMPONENT.replace("`uipath-rpa`", f"`{skill}`", 1)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"'{skill}' in the Skill column of Build With; {reason}" in out
+
+
 def test_too_few_criteria_for_the_complexity_fails_strict_only(check):
     kept = [l for l in COMPONENT.splitlines() if not re.match(r"(?:[5-9]|1\d)\. Given", l)]
     text = "\n".join(kept) + "\n"

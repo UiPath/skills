@@ -2,7 +2,7 @@
 
 <!-- Companion to case-sdd-template.md (do not render this title or comment). Each `##### Task <N>.<M>:`
 block in Section 2 carries, after its Task envelope table, the ONE detail block below that its Type
-requires. Cell rules are complete where they stand, as in the main template. -->
+requires. Shape rules are complete where they stand, as in the main template. -->
 
 ###### Action Task Detail (type: `action`)
 
@@ -35,10 +35,8 @@ requires. Cell rules are complete where they stand, as in the main template. -->
 <!-- Buttons only on a decision task — then ≥2 rows; Maps To LHS = a §1.5 Name, taskOutcome, or this
 task's own output (read downstream via a direct producer reference) — never an identifier occurring
 nowhere else. Input/Output Schema fields MUST be ⊆ the resolved app's schema — a field the app lacks →
-Ask (task-specific app / drop / placeholder), never silently author. Field NAMES are carried verbatim
-from whatever supplied them, never re-cased or convention-converted, and never read off a
-`--output json` envelope's PascalCased keys (case-data-and-time-guide.md § External names); unsourced spelling →
-<UNRESOLVED> + review item. Reusing ONE deployed app across
+Ask (task-specific app / drop / placeholder), never silently author. Field NAMES are spelled
+per case-data-and-time-guide.md § External names. Reusing ONE deployed app across
 several action tasks is sanctioned only when each task carries a distinct actionType dispatch value AND
 its fields ⊆ the app schema (code-switched app); otherwise it is the substitute-app defect. -->
 
@@ -52,8 +50,8 @@ its fields ⊆ the app schema (code-switched app); otherwise it is the substitut
 **Operation:** <display/operation name>
 **Trigger / Event:** <trigger display name for wait-for-connector, or —>
 
-<!-- Missing Connection ID / Activity Type ID → high review item. Inputs `Field` verbatim to the IS
-activity schema. Operation Configuration carries through as =jsonString: only here. A solution-resource
+<!-- Missing Connection ID / Activity Type ID → high review item. Inputs `Field` verbatim to the Integration
+Service activity schema. Operation Configuration carries through as =jsonString: only here. A solution-resource
 picker (a Data Fabric entity) is an Inputs row holding the resource name; when that name can exist in
 more than one folder, add a `<picker>_folderKey` row with the folder key (and `entityScope` = `folder`).
 The task's own outputs are `response` and `Error`; a later task reads a field as
@@ -157,11 +155,11 @@ the model build routes to `uipath-ixp` (Section 4 § IXP / Document Understandin
 |----------------|----------------|
 | <child case variable> | <parent case variable> |
 
-###### Process / Agent / RPA / API Workflow Task Detail
+###### Process / Agent / RPA / API Workflow Task Detail (type: `process`, `agent`, `rpa`, `api-workflow`, `function`, `business-rule` or `flow-process`)
 
 **Resolved Resource:** <concrete intended resource name; never <UNRESOLVED>>
 **Folder Path:** <resolved exact folder path or <UNRESOLVED>>
-**Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId (+version) or <UNRESOLVED>>
+**Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId, or the function, business rule or flow's registry id (+version), or <UNRESOLVED>>
 **Dispatch / Operation:** <selector and value for shared facades (`requestSource = "RegisterCaseShell"`) — also an Inputs row; — for single-purpose resources>
 
 <!-- Folder Path = the exact resource folder (never a parent), or <UNRESOLVED> when identity is
