@@ -106,11 +106,14 @@ Option 1 is Recommended. Before writing, a request that asks to be interviewed h
 
 The gap list is the document's open items: the SDD's Action Required, or, for a genome with no SDD beside it, the open entries of its Open Decisions in the item form of [open-questions-guide.md](../shared/open-questions-guide.md) under their genome ids; plus, when a readiness file is beside the genome, each of its items with a blank `Answer:`, the build's own questions included, an entry it lists under Decisions still open asked once and answered there; its tasks (`Status:`) are named in the closing, never asked. A genome's Configuration Questions are asked only where a file keeps the answer for the build: its SDD's Configuration values, or the readiness file's Decisions still open; with neither, the build asks them. An item the request, an answers file, the preferences file or its own answer already settles is never asked.
 
-1. **How to answer.** One structured question comes first, skipped when the request already says. Inside `extract`, where it is the offer, "not now" takes the place of its last option and leaves every item open. Its options:
-   - every item, a batch at a time (Recommended when an item has no default);
-   - only what needs a decision: the items with no default and the business outcomes, the rest keeping their defaults;
-   - the defaults: a value item is answered `default`, and a choice stays open, built as marked, since a default nobody confirmed decides nothing;
-   - the defaults, with the overrides the user names.
+1. **How to answer.** Before any item is asked, send this question as its own message and end the turn: the answer decides which items are asked. Skip it only when the request already says how to answer. Inside `extract`, where it is the offer, option 4 is "**Not now** — every item stays open".
+
+   > <n> questions are open: <n> with no default, <n> business outcomes, <n> with a default. How do you want to answer them?
+   >
+   > 1. **Every item, a batch at a time** (Recommended when an item has no default)
+   > 2. **Only what needs a decision** — the items with no default and the business outcomes; the rest keep their defaults
+   > 3. **The defaults** — a value item takes its default; a choice stays open, built as marked, since a default nobody confirmed decides nothing
+   > 4. **The defaults, with the overrides you name**
 2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** as § Asking rule 3, one question per item, its options from the item's `Options:` and a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
