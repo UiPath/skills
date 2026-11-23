@@ -213,6 +213,21 @@
         "file": "references/widgets/decisions-and-reasons.md",
         "command": "codedapp pack",
         "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "codedapp delete",
+        "reason": "Critical Rule 23 (confirm before a delete). Studio Web's host-scope override (Studio Web Command Scope) says `uip codedapp` does not run here, so the rule is Node-only guidance."
+      },
+      {
+        "file": "references/commands-reference.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
+      },
+      {
+        "file": "references/pack-publish-deploy.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
       }
     ],
     "ceiling": {
@@ -1025,6 +1040,11 @@
         "file": "references/products/integration-service/overview.md",
         "command": "is triggers",
         "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/coded-apps/overview.md",
+        "command": "codedapp delete",
+        "reason": "Command-summary list of the Node CLI's `codedapp` verbs, describing what each does; not an instruction to delete anything."
       }
     ],
     "ceiling": {
