@@ -83,7 +83,10 @@ success_criteria:
       Check three things:
       1. Either no interview is offered, or the offer counts only points that change the design (the
          product, the scope or the architecture), each named, none of them a value the idea already gives.
-      2. At most one round of questions comes before writing.
+         The offer may also name the points it leaves for after writing; naming them is not counting them.
+      2. At most one round of questions comes before writing. The offer is not a round, even when it
+         names the points it would ask with their options; the accepted interview's first batch, or the
+         questions asked instead of an interview, is the round.
       3. That round, or the final message when there was no round, asks whether the user has a
          preferences file (team standing answers and development standards).
 

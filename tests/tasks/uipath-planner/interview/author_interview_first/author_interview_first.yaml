@@ -90,6 +90,7 @@ success_criteria:
 
       Check three things:
       1. The agent does not ask whether the user wants an interview: the request already said so.
+         Saying which points it will ask and which it leaves for after writing is not asking.
       2. Every question the interview asks is a point that changes the product, scope or architecture,
          such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
          approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of
@@ -97,7 +98,8 @@ success_criteria:
       3. Not asked before writing: the limit's amount or currency, who is notified, how a business
          exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
          environment value (a mailbox, a folder, a host). What an approver's decision leads to (what
-         happens to a rejected invoice) is part of the approval's outcomes, and is allowed.
+         happens to a rejected invoice, a reminder or an escalation when the approval waits) is part of
+         the approval's outcomes, and is allowed, also when an option names who is told as part of it.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. One question from item 3 fails item 3.
     weight: 2.5
@@ -110,7 +112,8 @@ success_criteria:
     prompt: |
       Read the agent's final message after it wrote the genome (an automation blueprint). It must count
       the genome's open decisions by the role that answers them (configuration values need no role; when
-      every decision belongs to one role, saying so is the count), and offer the interview on them,
+      every decision belongs to one role, saying so is the count, and "<n> decisions for you" names the
+      user's role), and offer the interview on them,
       naming `interview <genome file name>`. Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 1.5
     pass_threshold: 1.0

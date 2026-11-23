@@ -91,7 +91,8 @@ success_criteria:
 
       Check three things:
       1. Before asking anything else, one question offers an interview, counting the open points that
-         change the design, with the interview as the recommended option.
+         change the design, with the interview as the recommended option. The offer may also name the
+         points it leaves for after writing; naming them is neither counting nor asking them.
       2. Once accepted, every question asked is a point that changes the product, scope or architecture,
          such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
          approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of

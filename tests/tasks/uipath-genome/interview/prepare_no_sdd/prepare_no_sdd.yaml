@@ -113,7 +113,8 @@ success_criteria:
          the technology for a capability; everything else stays in the file for later.
       2. No question appears both in sections 1–3 of the readiness file and in its section 6
          ("Decisions still open"); a Configuration Question asked as a technology choice is answered on
-         its section 6 item, not repeated.
+         its section 6 item, not repeated. Two items on one subject that ask different things, such as
+         which value applies and how the build keeps to it, are not a repeat.
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
