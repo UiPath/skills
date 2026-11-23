@@ -80,9 +80,8 @@ initial_prompt: |
      executing at runtime.
   2. Create a Jira issue using the Atlassian Jira "Create Issue" connector
      activity, authored from its registry template and Integration Service
-     definition. Use the `project_key`, `issuetype_id`, and `reporter_id`
-     from `seed.json` (`reporter_id` is the issue's reporter field). The
-     issue summary MUST include the `correlationId` verbatim (e.g.
+     definition. Use the `project_key` and `issuetype_id` from `seed.json`.
+     The issue summary MUST include the `correlationId` verbatim (e.g.
      "[<severity>] <correlationId> <subject>"). Use the Atlassian Jira
      connection in the `Shared/uipath-maestro-flow` folder. If the Atlassian
      Jira connector isn't in your registry, STOP rather than falling back to
