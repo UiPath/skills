@@ -52,8 +52,14 @@ What to look for:
    uip or triggers list --type event --folder-path "<folder>" --output json
    ```
 
-   Each row carries `Key`, `Name`, `Enabled`, `ReleaseName`, `ConnectorKey`,
-   `Operation` and `ObjectName`. Read `Key` from the row whose `Name` matches.
+   Each row carries `Key`, `Name`, `Enabled`, `ReleaseKey`, `ConnectorKey`, `Operation`
+   and `ObjectName`. Read `Key` from the row whose `Name` matches.
+
+   Two field traps. `ReleaseName` is empty on some tenants (`null`, with
+   `Release: {}`), so never use it to decide which process a trigger belongs to — use
+   `ReleaseKey` or the `<ProcessName>_` prefix on the trigger name. And with
+   `--all-fields` the raw DTO carries the key as `Id`, not `Key`, so reading `Key` from
+   that response yields nothing.
 
    - **No row matches** — names are folder-scoped and exact. Show the names that *are*
      in the folder and ask which they meant. Do not guess at a near-match.

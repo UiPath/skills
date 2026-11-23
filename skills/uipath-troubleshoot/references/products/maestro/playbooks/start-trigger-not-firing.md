@@ -34,7 +34,7 @@ What can cause it:
 - **CA005** — the process is started by something other than an event trigger, and the premise is wrong
 
 What to look for:
-- The process's own start trigger, which is an Orchestrator event trigger in the process's folder
+- The process's own start trigger, which is an Orchestrator event trigger in the process's folder. Identify it by `ReleaseKey` or the trigger-name prefix, never by `ReleaseName`, which is empty on some tenants
 - Whether any trace exists in the user's window
 - `EventsFetched` vs `EventsMatched`, then the filter expression in the spans
 
@@ -63,12 +63,27 @@ What to look for:
    uip or triggers list --type event --folder-path "<folder>" --output json
    ```
 
-   Match `ReleaseName` to the process. More than one trigger can start one process —
-   list them for the user and confirm which one the missing events should have hit
-   rather than assuming the first.
+   **Do not match on `ReleaseName`.** It is empty on some tenants — observed `null`,
+   with `Release: {}`, for Box and OneDrive triggers on one environment while the same
+   field is populated on another. An empty `ReleaseName` is not evidence the trigger is
+   unrelated to the process. Match in this order instead:
 
-   Read `Key` from the matching row — step 3 takes the key, not the name. Keep the
-   `Name` too: it is what the user will recognise when you report back.
+   1. **`ReleaseKey`** — always populated. Use it when you have the process's release
+      key from `uip or processes list`.
+   2. **The trigger `Name` prefix** — triggers are named
+      `<ProcessName>_<ElementName>-<ElementName>`, e.g.
+      `ProcessFilesOneDrive_Wait for File Created-Wait for File Created`. The text
+      before the first `_` is the process.
+   3. **`ConnectorKey` and `Operation`** — to confirm the match is the one the missing
+      events should have hit, not just a trigger in the same folder.
+
+   More than one trigger can start one process. List them for the user and confirm which
+   one rather than assuming the first.
+
+   **Read the key from the right field.** The curated output carries it as `Key`; with
+   `--all-fields` the raw DTO carries it as `Id` and `Key` is `null`. Reading `Key` from
+   an `--all-fields` response yields nothing. Keep the `Name` too — it is what the user
+   will recognise when you report back.
 
    On a CLI predating cli#5902 the command answers `Invalid trigger type: 'event'`,
    and nothing else lists event triggers — ask for the key from Orchestrator → folder
