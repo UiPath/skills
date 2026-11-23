@@ -85,7 +85,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | `recordResult` | `.task()` with `set`, last in the body | Mechanism |
 | `itemFailures` | `.eventSubProcess()` inside the body | Mechanism |
 | `recordItemFailure` | `.task()` with `set`, in the net | Mechanism |
-| `aggregate` | the statement after the sub-process | Mechanism |
+| `aggregate` | `.scriptTask()` after the sub-process, never a `.task()` with `set` | Mechanism |
 | `sendReport` | a send step, before the gate | Placeholder |
 | `policyGate` | `.choose()` | Mechanism |
 | `endCompleted`, `endFailed` | `.endEvent()`, named | Mechanism |
@@ -123,11 +123,7 @@ This variant is not verified end to end.
 - **`fetchBatch`**: the source (database query, file, API list, queue); batch size and filters are decided here.
 - **The per-item work** inside `processEach`: a UiPath agent, an RPA job, Document Understanding, an API call.
   Place and bind the node; the per-item work happens at runtime, not while authoring.
-<<<<<<< HEAD
-- **`aggregate`**: count `itemResults` (Parallel: the query's records), apply the policy and set `policySatisfied`.
-=======
 - **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: the query's records), applies the policy and sets `policySatisfied` through `outputs`.
->>>>>>> 2db4631c8 (docs(uipath-maestro-bpmn): drop repeated aggregate instruction (table row carries it) (#5192))
   Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above a threshold.
   Evaluate it here, in a node, rather than as the loop's `completion` condition.
   A completion condition stops the block early, which is a different thing from judging the run afterwards, and it cannot see the per-item results the policy needs.
