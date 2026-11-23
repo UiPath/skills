@@ -103,17 +103,13 @@ From the parsed `ActionSchema` (Step 3), construct the channel fields:
 ]
 ```
 
-Ask the user who should receive the task. If they say "me" or don't specify, fall back to the current user's email from the JWT `email` claim:
+Ask the user who should receive the task. If they say "me" or don't specify, fall back to the current user's email, `Data.UserEmail` from:
 
 ```bash
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; echo "$UIPATH_ACCESS_TOKEN" | python3 -c "
-import sys, base64, json
-tok = sys.stdin.read().strip()
-payload = tok.split(\".\")[1]
-payload += \"=\" * (-len(payload) % 4)
-print(json.loads(base64.urlsafe_b64decode(payload)).get(\"email\"))
-"'
+uip login status --output json
 ```
+
+Never decode the access token or read the CLI's credentials file for it.
 
 Use other `type` values (1=UserId, 2=GroupId, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName) only when the user explicitly asks for a GUID-based recipient or an asset-backed one — they require additional inputs (user/group GUID from the Identity API, or an asset name).
 
