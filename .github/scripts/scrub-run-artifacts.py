@@ -17,10 +17,13 @@ publish nothing. Usage: scrub-run-artifacts.py <run_dir>
 from __future__ import annotations
 
 import base64
+import html
+import json
 import os
 import pathlib
 import shutil
 import sys
+import urllib.parse
 
 SECRET_ENV = (
     "AWS_BEARER_TOKEN_BEDROCK",
@@ -67,18 +70,22 @@ def _needles(values: list[str]) -> list[bytes]:
             lead = (4 * skew + 2) // 3  # chars that depend on the skew bytes
             tail = enc.rstrip("=")
             out.append(tail[lead:-1].encode() if len(tail) - lead > 12 else tail.encode())
-    return out
+    for v in values:  # secrets with markup-significant characters (token chars need no escaping)
+        for form in (json.dumps(v)[1:-1], html.escape(v), urllib.parse.quote(v), urllib.parse.quote_plus(v)):
+            if form != v:
+                out.append(form.encode("utf-8"))
+    return sorted(set(out), key=len, reverse=True)  # longest first: no fragment survives
 
 
 def _values(env: dict[str, str], auth_file: pathlib.Path, issued: pathlib.Path) -> list[str]:
     values = [env[n] for n in SECRET_ENV if len(env.get(n, "")) >= 8]
-    for source, prefix in ((auth_file, "UIPATH_ACCESS_TOKEN="), (issued, "")):
+    for source, prefixes in ((auth_file, ("UIPATH_ACCESS_TOKEN=", "UIPATH_REFRESH_TOKEN=")), (issued, ())):
         if source.is_file():
             for line in source.read_text(encoding="utf-8", errors="ignore").splitlines():
                 line = line.strip()
-                if prefix:
-                    # Token only: redacting org/tenant slugs would garble reports.
-                    line = line.split("=", 1)[1] if line.startswith(prefix) else ""
+                if prefixes:
+                    # Tokens only: redacting org/tenant slugs would garble reports.
+                    line = next((line.split("=", 1)[1] for p in prefixes if line.startswith(p)), "")
                 if len(line) > MIN_TOKEN:
                     values.append(line)
     return values
@@ -119,12 +126,18 @@ def main(argv: list[str]) -> int:
             pathlib.Path(os.path.expanduser("~/.uipath/.auth")),
             pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens",
         )
+        issued = pathlib.Path(os.environ.get("RUNNER_TEMP", "")) / "issued-tokens"
+        if os.environ.get("GITHUB_ACTIONS") and (not issued.is_file() or issued.stat().st_size == 0):
+            raise RuntimeError("no issued-tokens record")
         if not values:
             return 0
         withheld = scrub(root, values)
     except Exception:  # fixed message only: never echo a value or a path
         for child in root.iterdir() if root.is_dir() else ():
-            shutil.rmtree(child, ignore_errors=True) if child.is_dir() else child.unlink(missing_ok=True)
+            if child.is_dir() and not child.is_symlink():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink(missing_ok=True)
         print("::error::scrub failed; run files withheld from publication")
         return 1
     if withheld:

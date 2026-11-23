@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import importlib.util
 import io
+import os
 import pathlib
 import tarfile
 import zipfile
@@ -39,6 +40,7 @@ def test_plain_and_utf16_and_extensionless_are_redacted(tmp_path, monkeypatch):
     assert scrub_mod.main(["x", str(run)]) == 0
     assert sorted(p.name for p in run.iterdir()) == ["envdump", "notes.txt"]
     assert all(TOKEN.encode() not in p.read_bytes() for p in run.iterdir())
+    assert TOKEN.encode("utf-16-le") not in (run / "envdump").read_bytes()
 
 
 @pytest.mark.parametrize("skew", [0, 1, 2])
@@ -108,3 +110,52 @@ def test_no_secrets_leaves_files_alone(tmp_path, monkeypatch):
     (run / "a.txt").write_text("hello", encoding="utf-8")
     assert scrub_mod.main(["x", str(run)]) == 0
     assert (run / "a.txt").read_text(encoding="utf-8") == "hello"
+
+
+def test_token_only_in_the_auth_file_is_scrubbed(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch, issued=())
+    auth = tmp_path / "home" / ".uipath"
+    auth.mkdir(parents=True)
+    refresh = "refresh-token-0123456789abcdefghijklmnop"
+    (auth / ".auth").write_text(f"UIPATH_ACCESS_TOKEN={TOKEN}\nUIPATH_REFRESH_TOKEN={refresh}\n", encoding="utf-8")
+    (run / "a.log").write_text(f"{TOKEN} {refresh}", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    text = (run / "a.log").read_text(encoding="utf-8")
+    assert TOKEN not in text and refresh not in text
+
+
+def test_markup_escaped_secret_is_scrubbed(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    monkeypatch.setenv("UIPATH_BOT_PASSWORD", 'p"a&ss\\word-123')
+    (run / "task.json").write_text('{"pw": "p\\"a&ss\\\\word-123"}', encoding="utf-8")
+    (run / "r.html").write_text("p&quot;a&amp;ss\\word-123", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    assert "word-123" not in (run / "task.json").read_text(encoding="utf-8")
+    assert "word-123" not in (run / "r.html").read_text(encoding="utf-8")
+
+
+def test_ci_without_an_issued_tokens_record_fails_closed(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    (pathlib.Path(os.environ["RUNNER_TEMP"]) / "issued-tokens").unlink()
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    (run / "a.txt").write_text("x", encoding="utf-8")
+    assert scrub_mod.main(["x", str(run)]) == 1
+    assert list(run.iterdir()) == []
+
+
+def test_survivor_is_caught_by_the_verify_pass(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    (run / "a.txt").write_text(TOKEN, encoding="utf-8")
+    monkeypatch.setattr(pathlib.Path, "write_bytes", lambda self, data: len(data))  # replace "succeeds", file unchanged
+    assert scrub_mod.main(["x", str(run)]) == 1
+    assert list(run.iterdir()) == []
+
+
+def test_symlink_is_withheld_and_wipe_removes_links(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    (tmp_path / "outside").mkdir()
+    (run / "link").symlink_to(tmp_path / "outside")
+    (run / "dangling").symlink_to(tmp_path / "nowhere")
+    assert scrub_mod.main(["x", str(run)]) == 0
+    assert list(run.iterdir()) == []
+    assert (tmp_path / "outside").is_dir()
