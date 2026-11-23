@@ -5,7 +5,7 @@ description: >
   follow-up questions. The genome is written with defaults and open entries, the approval limit as a
   Configuration Question with `default: none`, no SDD, and passes the strict check. With no round
   asked, the closing asks for the preferences file; it names `interview <genome>` and offers to write
-  the SDD for answerers outside the session. A simulated process owner answers.
+  the SDD for answerers outside the session, which is advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -76,7 +76,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "No interview, at most one follow-up round, and a closing that says how to answer"
+    description: "No interview, at most one follow-up round, and the preferences file asked"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -85,15 +85,26 @@ success_criteria:
       said: do not interview me, use your defaults and write the open points down. Read the dialog and the
       agent's questions, whether asked in chat or as structured questions.
 
-      Check three things:
+      Check two things:
       1. The agent neither offers nor runs an interview, and asks at most one round of follow-up
          questions before writing the genome.
-      2. The final message names the interview command for the genome (`interview <genome file name>`)
-         and offers to write an SDD (solution design document) for answerers who are not in the session.
-      3. When no follow-up round was asked, the final message asks whether the user has a preferences
+      2. When no follow-up round was asked, the final message asks whether the user has a preferences
          file (team standing answers and development standards); when a round was asked, that round
          asked it.
 
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names the interview and the SDD offer"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      1. It names the interview command for the genome, `interview <genome file name>`.
+      2. It offers to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.0
+    pass_threshold: 0

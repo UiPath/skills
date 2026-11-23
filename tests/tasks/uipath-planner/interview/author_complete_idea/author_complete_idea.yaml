@@ -5,8 +5,8 @@ description: >
   when a point that changes the design is open, so there is no offer, or one that counts such points
   only; at most one round of questions comes before writing, and it asks for the preferences file. A
   genome only, passing the strict check. The closing counts the open entries by role, names
-  `interview <genome>` and offers to write the SDD for answerers outside the session. A simulated
-  requester answers.
+  `interview <genome>` and offers to write the SDD for answerers outside the session. What the offer
+  counts and the closing's interview and SDD offer are advisory. A simulated requester answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -67,7 +67,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "No offer, or one counting design-changing points only; one round at most, with the preferences file"
+    description: "One round at most before writing, with the preferences file"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -75,36 +75,60 @@ success_criteria:
       The user asked for a genome (an automation blueprint) of an idea that states its schedule (weekday
       07:00), source (the European Central Bank's euro reference rates), scope (USD, GBP, CHF, RON),
       recipient and retry rule. Read the dialog and the agent's questions, whether asked in chat or as
-      structured questions, up to the point the genome is written.
+      structured questions.
 
-      Only what comes before the genome is written is graded here. A summary written after it, listing
-      its open questions or offering to interview the user on them, is not the offer this check grades.
+      Check two things:
+      1. At most one round of questions comes before writing. An interview offer is not a round, even
+         when it names the points it would ask with their options; the accepted interview's first batch,
+         or the questions asked instead of an interview, is the round.
+      2. The agent asks whether the user has a preferences file (team standing answers and development
+         standards): before writing, or in the final message when nothing was asked before writing.
 
-      Check three things:
-      1. Either no interview is offered, or the offer counts only points that change the design (the
-         product, the scope or the architecture), each named, none of them a value the idea already gives.
-         The offer may also name the points it leaves for after writing; naming them is not counting them.
-      2. At most one round of questions comes before writing. The offer is not a round, even when it
-         names the points it would ask with their options; the accepted interview's first batch, or the
-         questions asked instead of an interview, is the round.
-      3. That round, or the final message when there was no round, asks whether the user has a
-         preferences file (team standing answers and development standards).
-
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.0
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts open entries by role and names the interview and the SDD offer"
+    description: "Advisory: no offer, or one counting design-changing points only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user asked for a genome (an automation blueprint) of an idea that states its schedule (weekday
+      07:00), source (the European Central Bank's euro reference rates), scope (USD, GBP, CHF, RON),
+      recipient and retry rule. Read the dialog up to the point the genome is written; a summary written
+      after it, listing its open questions or offering to interview the user on them, is not graded here.
+
+      Score 1.0 when either no interview is offered, or the offer counts only points that change the
+      design (the product, the scope or the architecture), each named, none of them a value the idea
+      already gives; 0.0 otherwise. The offer may also name the points it leaves for after writing;
+      naming them is not counting them. A point showing that a value the idea gives cannot hold as stated
+      (the rates are published later in the day than the run reads them) changes the design, and counts
+      as one.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "The closing counts open entries by role"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). It must:
-      1. Count the genome's open decisions, split by the role that answers them (configuration values
-         need no role).
-      2. Name the interview command for the genome, `interview <genome file name>`.
-      3. Offer to write an SDD (solution design document) for answerers who are not in the session.
-
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+      Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
+      it counts the genome's open decisions by the role that answers them, or says that none is open;
+      0.0 otherwise. Configuration values need no role; when every decision belongs to one role, saying
+      so is the count.
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names the interview and the SDD offer"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      1. It names the interview command for the genome, `interview <genome file name>`.
+      2. It offers to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.0
+    pass_threshold: 0

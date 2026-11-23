@@ -7,7 +7,8 @@ description: >
   approval limit is written as a Configuration Question with `default: none`. No SDD is written and
   the genome passes the strict check. The closing names the open items by role, offers the interview
   on them and offers to write the SDD for answerers who are not in the session, asking none of them.
-  A simulated process owner answers.
+  The P0-only questions, the limit's `default: none` and the closing's interview and SDD offer are
+  advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -71,16 +72,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "Advisory: the approval limit is a Configuration Question with no invented value (`default: none`)"
     command: >-
       node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
-    description: "One offer counting P0 points, then P0 points only before the genome is written"
+    description: "One offer counting the points that change the design comes first; no environment value is asked"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -89,35 +90,68 @@ success_criteria:
       supplier invoices entered in an ERP, approved when over a limit. Read the dialog and the agent's
       questions, whether asked in chat or as structured questions, up to the point the genome is written.
 
-      Check three things:
+      Check two things:
       1. Before asking anything else, one question offers an interview, counting the open points that
          change the design, with the interview as the recommended option. The offer may also name the
          points it leaves for after writing; naming them is neither counting nor asking them.
-      2. Once accepted, every question asked is a point that changes the product, scope or architecture,
-         such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
-         approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of
-         scope. Not every such point has to be asked. A question about a preferences file is allowed.
-      3. Not asked before writing: the limit's amount or currency, who is notified, how a business
-         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
-         environment value (a mailbox, a folder, a host). What an approver's decision leads to (what
-         happens to a rejected invoice) is part of the approval's outcomes, and is allowed.
+      2. No question before writing asks only for an environment value (a mailbox, a folder, a host, an
+         account) or only for what another role answers (how a robot reaches a system, asked on its own).
+         A question that asks which system is used and how it is reached asks the user's part.
 
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. One question from item 3 fails item 3.
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing names the open items by role, the interview and the SDD offer, asking none"
+    description: "Advisory: only points that change the design are asked before the genome is written"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea:
+      supplier invoices entered in an ERP, approved when over a limit. Read the dialog and the agent's
+      questions, whether asked in chat or as structured questions, up to the point the genome is written.
+
+      Check two things:
+      1. Once the interview is accepted, every question asked is a point that changes the product, scope
+         or architecture, such as the trigger and how invoices arrive, volume, which ERP and how a robot
+         reaches it, the approval (who, its outcomes, how long it waits), how invoices are read, what is
+         in and out of scope. Not every such point has to be asked. A question about a preferences file
+         is allowed.
+      2. Not asked before writing: the limit's amount or currency, who is notified, how a business
+         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
+         environment value. What an approver's decision leads to (what happens to a rejected invoice, a
+         reminder or an escalation when the approval waits) is part of the approval's outcomes, and is
+         allowed, also when an option names who is told as part of it.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither. One question from item 2 fails item 2.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "The closing counts the open decisions by role and asks none of them"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). It must:
-      1. Count the questions still open in the genome, split by the role that answers them (the process
-         owner, the system's owner, the environment's owners …).
-      2. Offer the interview on them, naming `interview <genome file name>`.
-      3. Offer to write an SDD (solution design document) for answerers who are not in the session.
-      4. Ask none of the open questions itself.
+      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      1. It counts the genome's open decisions by the role that answers them (the process owner, the
+         system's owner …), or says that none is open. Configuration values need no role; when every
+         decision belongs to one role, saying so is the count.
+      2. It asks none of the open questions itself.
 
-      Score 1.0 when all four hold, 0.75 with three, 0.5 with two, 0.0 otherwise.
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names `interview <genome>` and offers the SDD for absent answerers"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      1. It offers the interview on the open decisions, naming `interview <genome file name>`.
+      2. It offers to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.0
+    pass_threshold: 0

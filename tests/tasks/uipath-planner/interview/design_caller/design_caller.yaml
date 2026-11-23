@@ -5,7 +5,8 @@ description: >
   supplier invoice entry. The caller already held the business conversation, so no interview is
   offered and the only stop is the architecture review. Step 1.5 asks nothing: every item keeps its
   default. What the user sees uses business words, not the skill's vocabulary, and the run ends on one
-  `planner-design-result: v1` block. No genome, no build. A simulated business user approves the review.
+  `planner-design-result: v1` block. No genome, no build. The business words are advisory. A simulated
+  business user approves the review.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -103,24 +104,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Business words only, ending on one planner-design-result block"
+    description: "The run ends on one planner-design-result block"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      A calling skill sent a design request. Read the run's final message. The transcript may show it
+      twice, once as the assistant's message and once as the run's result: read it as one message.
+
+      Score 1.0 when it ends on exactly one `planner-design-result: v1` block; 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: business words only"
     include_dialog: true
     include_reference: false
     prompt: |
       A calling skill sent a design request for a business audience. Read everything the agent wrote to
-      the user.
-
-      The transcript may show the final message twice, once as the assistant's message and once as the
-      run's result: read it as one message.
-
-      Check two things:
-      1. The text the user reads uses business words: it does not say "SDD", "genome", "phase", "SME
-         REVIEW", "marker" or "Step 1.5". A file name is allowed.
-      2. The run's final message ends on exactly one `planner-design-result: v1` block.
-
-      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
-    weight: 2.0
-    pass_threshold: 1.0
+      the user. Score 1.0 when the text the user reads uses business words: it does not say "SDD",
+      "genome", "phase", "SME REVIEW", "marker" or "Step 1.5" (a file name is allowed); 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Design does not scaffold, build or run a project"

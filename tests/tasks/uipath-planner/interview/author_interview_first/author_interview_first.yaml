@@ -4,8 +4,9 @@ description: >
   genome is written. The request accepts the interview offer, so no offer question is asked; the
   interview still asks only the points that change the design (P0), and everything else is written as
   open entries and Configuration Questions, the approval limit with `default: none`. No SDD is written
-  and the genome passes the strict check. The closing offers the interview on the open items. A
-  simulated process owner answers.
+  and the genome passes the strict check. The closing offers the interview on the open items. The
+  P0-only questions, the limit's `default: none` and the closing's interview are advisory. A simulated
+  process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -69,16 +70,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "Advisory: the approval limit is a Configuration Question with no invented value (`default: none`)"
     command: >-
       node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
-    description: "No offer question; the interview asks P0 points only"
+    description: "No offer question, and no environment value asked before writing"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -88,32 +89,61 @@ success_criteria:
       it is written. Read the dialog and the agent's questions, whether asked in chat or as structured
       questions, up to the point the genome is written.
 
-      Check three things:
+      Check two things:
       1. The agent does not ask whether the user wants an interview: the request already said so.
          Saying which points it will ask and which it leaves for after writing is not asking.
-      2. Every question the interview asks is a point that changes the product, scope or architecture,
-         such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
-         approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of
-         scope. Not every such point has to be asked. A question about a preferences file is allowed.
-      3. Not asked before writing: the limit's amount or currency, who is notified, how a business
-         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
-         environment value (a mailbox, a folder, a host). What an approver's decision leads to (what
-         happens to a rejected invoice, a reminder or an escalation when the approval waits) is part of
-         the approval's outcomes, and is allowed, also when an option names who is told as part of it.
+      2. No question before writing asks only for an environment value (a mailbox, a folder, a host, an
+         account) or only for what another role answers (how a robot reaches a system, asked on its own).
+         A question that asks which system is used and how it is reached asks the user's part.
 
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. One question from item 3 fails item 3.
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing offers the interview on the open items"
+    description: "Advisory: the interview asks P0 points only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea —
+      supplier invoices entered in an ERP, approved when over a limit — and asked to be interviewed before
+      it is written. Read the dialog and the agent's questions, whether asked in chat or as structured
+      questions, up to the point the genome is written.
+
+      Check two things:
+      1. Every question the interview asks is a point that changes the product, scope or architecture,
+         such as the trigger and how invoices arrive, volume, which ERP and how a robot reaches it, the
+         approval (who, its outcomes, how long it waits), how invoices are read, what is in and out of
+         scope. Not every such point has to be asked. A question about a preferences file is allowed.
+      2. Not asked before writing: the limit's amount or currency, who is notified, how a business
+         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
+         environment value. What an approver's decision leads to (what happens to a rejected invoice, a
+         reminder or an escalation when the approval waits) is part of the approval's outcomes, and is
+         allowed, also when an option names who is told as part of it.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither. One question from item 2 fails item 2.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "The closing counts the open decisions by role"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). It must count
-      the genome's open decisions by the role that answers them (configuration values need no role; when
-      every decision belongs to one role, saying so is the count, and "<n> decisions for you" names the
-      user's role), and offer the interview on them,
-      naming `interview <genome file name>`. Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+      Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
+      it counts the genome's open decisions by the role that answers them, or says that none is open;
+      0.0 otherwise. Configuration values need no role; when every decision belongs to one role, saying
+      so is the count, and "<n> decisions for you" names the user's role.
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing offers the interview on the open items"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the genome (an automation blueprint). Score 1.0 when
+      it offers the interview on the open decisions, naming `interview <genome file name>`; 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 0

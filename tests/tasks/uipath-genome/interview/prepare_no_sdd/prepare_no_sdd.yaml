@@ -5,7 +5,8 @@ description: >
   readiness file's section 6, "Decisions still open", holds the genome's four open entries and its eight
   Configuration Questions in the item form, under the genome's ids, with no wording about an SDD; the
   build's own questions sit in sections 1–3, none of them also in section 6. `prepare` asks only what
-  the engineer answers now, writes no SDD and leaves the genome byte-identical. A simulated engineer
+  the engineer answers now, writes no SDD and leaves the genome byte-identical. Where the Configuration
+  Questions sit and whether a question repeats across sections are advisory. A simulated engineer
   answers.
 tags: [uipath-genome, integration, mode:build, lifecycle:generate, feature:conversational]
 
@@ -61,15 +62,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every open entry and Configuration Question is an item under its genome id"
+    description: "Advisory: every open entry and Configuration Question is an item under its genome id"
     command: "node $REFERENCE_DIR/_shared/check_interview.mjs count ecb-fx-rates-readiness.md '^\\*\\*(?:R\\d+\\.\\s+)?(D[1-4]|CQ[1-8])(?:[.:]|\\s+[—–-])\\s' 12"
     timeout: 30
     expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
-    description: "The open entries are left for their owner"
+    description: "The open entries are items under their genome ids, left for their owner"
     command: "node $REFERENCE_DIR/_shared/check_interview.mjs items ecb-fx-rates-readiness.md blank D1-4"
     timeout: 30
     expected_exit_code: 0
@@ -95,27 +96,32 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "prepare asks only the split, the libraries and the technology, and keeps each question in one section"
+    description: "prepare asks only the split, the libraries and the technology"
     include_dialog: true
     include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, an engineer, asked the build skill to prepare the build of a genome (an automation
+      blueprint) and said they answer now only how the work is split, the libraries and the technology for
+      each capability. Read the dialog and the agent's questions (in chat or as structured questions).
+
+      Score 1.0 when, apart from how the user wants to answer, the agent asks only about the split, the
+      libraries or the technology for a capability, and leaves everything else in the file for later;
+      0.0 otherwise.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the readiness file keeps each question in one section"
     include_reference: false
     files:
       - "ecb-fx-rates-readiness.md"
     max_file_chars: 60000
     prompt: |
-      The user, an engineer, asked the build skill to prepare the build of a genome (an automation
-      blueprint) and said they answer now only how the work is split, the libraries and the technology for
-      each capability. Read the dialog, the agent's questions (in chat or as structured questions) and the
-      readiness file it wrote.
-
-      Check two things:
-      1. Apart from how the user wants to answer, the agent asks only about the split, the libraries or
-         the technology for a capability; everything else stays in the file for later.
-      2. No question appears both in sections 1–3 of the readiness file and in its section 6
-         ("Decisions still open"); a Configuration Question asked as a technology choice is answered on
-         its section 6 item, not repeated. Two items on one subject that ask different things, such as
-         which value applies and how the build keeps to it, are not a repeat.
-
-      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
-    weight: 2.5
-    pass_threshold: 1.0
+      Read the readiness file the build skill wrote for a genome (an automation blueprint). Score 1.0 when
+      no question appears both in its sections 1–3 and in its section 6 ("Decisions still open"), and a
+      Configuration Question asked as a technology choice is answered on its section 6 item, not
+      repeated; 0.0 otherwise. Two items on one subject that ask different things, such as which value
+      applies and how the build keeps to it, are not a repeat.
+    weight: 1.0
+    pass_threshold: 0

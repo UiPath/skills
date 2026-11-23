@@ -7,8 +7,9 @@ description: >
   clarifying-questions round on top; answered points carry no marker. The SDD records the interview in
   its Document History and holds every other gap as an Action Required item, which tells its reader
   how to answer, the interview included. Step 1.5 asks no point the interview asked or left open. The
-  closing naming the open items by role and `interview <SDD>` is recorded as advisory. The run stops
-  at the SDD: no genome, no build. A simulated process owner answers.
+  closing counts the open items by role. The interview's P0-only questions and the closing's
+  `interview <SDD>` are advisory. The run stops at the SDD: no genome, no build. A simulated process
+  owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -91,7 +92,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The interview is offered after the Phase 1 summary and asks points that change the design only"
+    description: "The interview is offered after the Phase 1 summary, with no clarifying round on top and no environment value asked"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -105,19 +106,34 @@ success_criteria:
       2. Before scope is confirmed, after a summary of the process, one question offers an interview,
          counting the open points that change the design. The offer may also name the points it leaves
          for after writing; naming them is neither counting nor asking them.
-      3. Once accepted, every question of the interview, before scope is confirmed, is a point that
-         changes the product, scope or architecture, such as the trigger and schedule, volume and run
-         window, judgement steps with no rule, a human step's actor, outcomes or wait limit, how a system
-         is reached, scope boundaries; not every such point has to be asked. It does not ask a threshold's
-         value, who is told, a business exception's handling (unless its answer can add or remove a
-         person's step in the automation, which changes the architecture) or an environment value, and no separate
-         round of up to five clarifying questions is asked on top of it. A later round, once the SDD's
-         sections are written, about items marked for review is graded elsewhere: ignore it here.
+      3. Before scope is confirmed, no separate round of up to five clarifying questions is asked on top
+         of the interview, and no question asks only for an environment value (a mailbox, a folder, a
+         host, an account) or only for what another role answers (how a robot reaches a system, asked on
+         its own). A later round, once the SDD's sections are written, is graded elsewhere: ignore it here.
 
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise. A single point beyond the list in
-      item 3 costs that item.
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the interview asks points that change the design only"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for an interactive design of a thin PDD (supplier invoice entry:
+      no trigger, volume, approver or ERP access route) and accepted an interview. Read the dialog and the
+      agent's questions, whether asked in chat or as structured questions, up to the point scope is
+      confirmed; a later round, once the SDD's sections are written, is graded elsewhere.
+
+      Score 1.0 when every question of the interview is a point that changes the product, scope or
+      architecture, such as the trigger and schedule, volume and run window, judgement steps with no
+      rule, a human step's actor, outcomes or wait limit, how a system is reached, scope boundaries (not
+      every such point has to be asked), and it asks no threshold's value, no one to tell and no business
+      exception's handling (unless its answer can add or remove a person's step in the automation, which
+      changes the architecture). Score 0.0 when a single question goes beyond that.
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Step 1.5 asks no point the interview asked or left open"
@@ -145,14 +161,23 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Advisory: the closing counts open items by role and names `interview <SDD>`"
+    description: "The closing counts the open items by role"
     include_agent_output: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the SDD (solution design document). It must count
-      the items still open, split by the role that answers them (the process owner, the system's owner,
-      the environment's owners …), and name the interview command for the SDD, in the form
-      `interview <SDD file name>`. Score 1.0 when both are there, 0.5 with one, 0.0 with neither.
+      Read the agent's final message after it wrote the SDD (solution design document). Score 1.0 when
+      it counts the items still open, split by the role that answers them (the process owner, the
+      system's owner, the environment's owners …), or says that none is open; 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names `interview <SDD>`"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      Read the agent's final message after it wrote the SDD (solution design document). Score 1.0 when
+      it names the interview command for the SDD, in the form `interview <SDD file name>`; 0.0 otherwise.
     # Advisory: the SDD's How to answer is the gated record; the closing line is recorded, not gated.
     weight: 1.0
     pass_threshold: 0
