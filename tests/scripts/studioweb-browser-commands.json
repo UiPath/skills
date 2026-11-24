@@ -208,9 +208,6 @@
     }
   },
   "uipath-coded-apps": {
-<<<<<<< HEAD
-    "allow": [],
-=======
     "allow": [
       {
         "file": "references/widgets/decisions-and-reasons.md",
@@ -233,7 +230,6 @@
         "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
       }
     ],
->>>>>>> 8884c86ce (fix(skills): allow the Node-only codedapp delete mentions in the Studio Web command check (#5128))
     "ceiling": {
       "codedapp": 13,
       "codedapp deploy": 36,

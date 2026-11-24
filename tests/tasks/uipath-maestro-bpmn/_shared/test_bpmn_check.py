@@ -255,6 +255,7 @@ def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch
         "ShipmentReview.merged.bpmn",
         "ShipmentReview.original.bpmn",
         "_created-scaffolds/ShipmentReview.bpmn",
+        ".flow-sdk/original/ShipmentReview.bpmn",
         "tmp/ShipmentReview.bpmn",
         "tmp.Xa81kQ/ShipmentReview.bpmn",
     ],
