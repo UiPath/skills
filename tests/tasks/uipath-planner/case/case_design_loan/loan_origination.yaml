@@ -203,4 +203,5 @@ simulation:
     - "You want a draft to review first. If the assistant offers to finalize, validate, approve, build, or move to a next phase, tell it to leave it as a draft for now — you'll finalize later. If it wants to keep polishing or double-checking the draft, say it's good enough for a first review."
     - "Once the draft captures the design, you're done — end the conversation; don't open new topics or extend the interview."
     - "Keep replies short — one sentence or a single option pick."
+    - "The draft belongs in the assistant's working directory, wherever it wrote it there. Never ask it to move, copy, or paste the file to any other path."
   max_turns: 40

@@ -103,6 +103,8 @@ Use values, mappings, and structure exactly as documented in the plan at <PLAN_F
 
 Every plan with a generation skill (`uipath-rpa`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-agents`, `uipath-coded-apps`, `uipath-api-workflow`) gets a dedicated Testing task per generation skill, placed immediately after that skill's generation tasks and **before** any deploy task (`uipath-solution` for `.uipx`-bundled solutions; `uipath-platform` for non-solution Orchestrator ops).
 
+The Testing task heading is the literal shape below: its description is the word `Testing` followed by `(MANDATORY)`, never a rephrasing such as `Test the <project> (MANDATORY)`. The project goes in the Identity line.
+
 Plans that build a **custom connector** (`uipath-connector-builder`), an **IXP model** (`uipath-ixp`), a **decision table** (`uipath-rules`) or a **Coded Function** (`uipath-functions`) also get a validation task per artifact: connector validate/import check, IXP model metrics review, rule or function validate. Each is placed immediately after that build task and **before** any consumer's build task.
 
 ```markdown

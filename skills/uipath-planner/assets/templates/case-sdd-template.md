@@ -589,7 +589,8 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
      StageX carries the guarded cell — owner/recipient or entry-condition IF — phrased on the high side
      and assigning the exception role, e.g.
      `=js:vars.amount > 5000000 ? "Role:CreditAnalyst" : "Role:Underwriter"`. Policy (which cells count,
-     numerals, no new variables): case-product-guide.md § Expressions. -->
+     numerals, no new variables): case-product-guide.md § Expressions; finalizing a draft runs the
+     Validation footer's Draft repair 3 scan. -->
 
 | Persona | Scope | Stages | Permissions | Description | Notes |
 |---------|-------|--------|-------------|-------------|-------|
@@ -755,10 +756,17 @@ Draft repairs — the only changes beside the rules above:
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block,
    with its field names, variable references and output mapping intact — a shorthand that drops an input,
    predicate or intermediate field is a failure, not a simplification.
-3. Threshold-policy conversion, a required scan: every comparator + amount phrase in the draft (descriptions,
-   personas table, rationale) is encoded in an executable cell of the owning task or stage, per
-   case-product-guide.md § Expressions (Thresholded policy); the persona-row split and the guarded-cell shape are
-   the § Personas comment.
+3. Threshold-policy conversion — a MANDATORY scan, not optional polish. Scan the draft (descriptions, personas
+   table, rationale) for every comparator next to an amount: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`,
+   `below`, `at least`, `more/less than` beside `$5M`, `100000`, `L4`. Every such policy also appears in the
+   final in an executable table cell (Inputs, owner/recipient, WHEN/IF) of the owning task or stage:
+   - A personas row whose draft scope reads `StageX (amount > $N only)` renders as Stages `StageX` and Notes
+     `amount > $N only`, AND a task block in StageX carries the guarded cell, phrased on the high side and
+     assigning the exception role: `=js:vars.amount > 5000000 ? "Role:CreditAnalyst" : "Role:Underwriter"` —
+     numeral written out (`5000000`, not `$5M`), role and attribute on one line.
+   - Reuse the variable that carries the attribute; the conversion never adds or renames a task or variable.
+   - Persona prose, Description, Design Rationale, or an `=js:` fragment inside them is not an encoding and
+     fails the gate.
 4. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never
    keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
 5. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not.

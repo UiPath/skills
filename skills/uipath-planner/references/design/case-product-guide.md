@@ -216,6 +216,8 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 | Fan-in, convergence, conditional gate | `fan-in` / `conditional-gate` | `selected-tasks-completed("<tasks>")` |
 
 - Structure mirrors the mode in the stage's task sets: a strict chain is consecutive single-task sets; parallel-after-predecessor siblings share one set. Never duplicate `selected-tasks-completed("<previous>")` to express simple order.
+- **The first task of an ordered run is in the run.** "A, then B, then C": A, B and C are each `sequential` with `runs-sequentially`. Wrong: A on `current-stage-entered` because it starts first.
+- **Siblings after one predecessor stay siblings whatever they do.** "After A, B listens for a confirmation event while C tracks its deadline": A is one set; B and C share the next set, each `parallel-after-predecessor` with `runs-sequentially` — the race below, armed once A completes. Wrong: B and C each gated on `selected-tasks-completed("A")`.
 - `selected-tasks-completed` selects only non-`adhoc` tasks in the SAME stage.
 - A task with no entry condition never starts — validate accepts the omission silently.
 - Race (confirmation vs timeout/cancel/withdrawal) → listener + clock armed while the obligation is pending; downstream work gated on the winning fact.
