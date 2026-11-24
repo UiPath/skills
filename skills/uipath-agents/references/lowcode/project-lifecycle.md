@@ -124,7 +124,7 @@ uip agent refresh [path] --output json
 | Error (in `Data.Errors[]`) | Cause | Fix |
 |---|---|---|
 | `resources/<Folder>/resource.json: folder must be named after the resource name "<Name>" (found "<Folder>")` | Resource folder name must exactly equal the resource's `name` field — case- and whitespace-sensitive (`Count Sources`, not `CountSources`). | Rename the folder to match `name` verbatim, spaces included. |
-| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, diff the resource against a CLI-generated one (`uip agent tool add`) for the missing/mistyped field. |
+| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, compare the resource field by field with the `resource.json` example in that tool type's capability doc (`capabilities/<type>/`) to find the missing or mistyped field. |
 
 ### `uip agent memory`
 
