@@ -52,6 +52,36 @@ make from syntax alone. Exact signatures remain in the generated API.
   `STRICT_BINDINGS_TASK_ABSENT` there (a CLI false positive): keep the quick
   form and do not add an app to silence it.
 
+<!-- RULE:case.action.designer-outputs -->
+- The Case Designer gives an action task that opens an app three outputs
+  besides the app's own fields: `Action`, the outcome the assignee picked,
+  with the app's outcomes as its `options` (`OUTCOMES` below; a coded action
+  app's are the property names under `outcomes.properties` in its
+  `action-schema.json`); `hitlTask`, the task; and `Error`. `compile` adds
+  none of them, so declare them on each such task you add:
+
+  ```ts
+  .action({ ..., outputs: [
+    { name: 'decision', type: 'string', value: 'decision' },
+    { name: 'Action', type: 'string', value: 'action', options: OUTCOMES.map((v) => ({ value: v, label: v })) },
+    { name: 'hitlTask', type: 'jsonSchema', value: 'hitlTask' },
+    { name: 'Error', type: 'jsonSchema', value: 'error' },
+  ] })
+  ```
+
+  Each of the three writes a variable of its own: set its `value` to a name
+  no task output or case variable in the plan holds, the camelCased name or,
+  once that is taken, the first free one suffixed from `2` (`action2`,
+  `error3`), as the Designer numbers them. In an existing plan, take the
+  names in use from every `id` and `var` under its tasks' `outputs`: a
+  decompiled source omits a connector task's, whose `Error` may hold
+  `error`. A name in use makes two tasks write one variable, or `compile`
+  renames the saved output that held it. Left out, `compile` numbers the row
+  by task order, and in an existing plan can hand it a saved output's name.
+  A form field's `value` may name the same variable on several tasks.
+
+  Keep a saved task's outputs as saved: an older save may hold only `Action`.
+
 ## Action recipients and the go-live trap
 
 <!-- RULE:case.recipient.externalize -->

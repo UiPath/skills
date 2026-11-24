@@ -111,8 +111,7 @@ Without `bpmn-api.md`, use `dist/api-members.md` by field/method and `dist/api-i
 | Gateways | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | In-place decision/split/wait | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Whole-scope safety net | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
-| Script/assignment | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/ContractRegistry.bpmn.ts` |
-| Script and assignment tasks | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/ContractRegistry.bpmn.ts` |
+| Script/assignment (`scriptTask` computes: totals, counts, decisions; `task` only assigns) | `scriptTask`, `task` | [Script tasks](references/bpmn-runtime.md#script-tasks) | `examples/ContractRegistry.bpmn.ts` |
 | HTTP | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceEscalation.bpmn.ts` |
 | Orchestrator jobs/queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/InvoiceApproval.bpmn.ts` |
 | Business rule | `businessRule` | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | — |
