@@ -41,7 +41,7 @@ await processes.start(ProjectResources.summarize, { inputArguments: JSON.stringi
 const asset = await assets.getByName(ProjectResources.invoiceThreshold);
 ```
 
-At runtime the SDK applies the deployment's overrides to the declared name and folder, so the same code works after Solutions maps a resource to a different one. In a public app the SDK sends only the binding key, and the Apps service applies the override.
+At runtime the deployment's overrides apply to the declared name and folder, so the same code works after Solutions maps a resource to a different one. This works the same in a public app.
 
 The entity read calls (`getRecordByName`, `getRecordsByName`) take a string: pass `ProjectResources.eventFeedback.name`.
 
@@ -53,7 +53,7 @@ The entity read calls (`getRecordByName`, `getRecordsByName`) take a string: pas
 | entity | `Name` | looked up across the tenant by name |
 | connection | the connection id | declared as `resource.connection({ id, connector, name })` |
 
-Use these keys in `uipath.json` `access` entries for public apps ([public-coded-app.md](public-coded-app.md)).
+Use these keys in `uipath.json` `access` entries to set each resource's access mode in a public app ([public-coded-app.md](public-coded-app.md)).
 
 ## Gotchas
 
