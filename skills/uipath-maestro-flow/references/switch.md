@@ -15,7 +15,9 @@ a case may use `when: Expr` instead of `value` (below).
 
 Prefer Switch when one discriminant selects three or more paths; Branch is
 usually clearer for two. Decide whether cases end independently or rejoin a
-shared successor.
+shared successor. Cases that do not `.return()` rejoin the step after
+`.switch(...)`: put a shared last step there once (one `endCall`, one log),
+not a copy inside every case.
 
 Cases are tried top to bottom; a `value` case compares strictly (`===`) with
 `on`. Each case gets a generated `case-<id>` port; the optional final callback
