@@ -24,19 +24,13 @@ Only the project folder itself is read: the SDK's working copies live under
 from __future__ import annotations
 
 import glob
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import _HUSK_MAX_NODES, _flow_file_node_count, find_project_dir  # noqa: E402
+from flow_check import _HUSK_MAX_NODES, _flow_file_nodes, find_project_dir  # noqa: E402
 
 SCAFFOLD_TRIGGER = "core.trigger.manual"  # the one node `flow init` and Studio Web seed
-
-
-def _node_types(path: str) -> list:
-    with open(path, encoding="utf-8") as f:
-        return [n.get("type") if isinstance(n, dict) else None for n in json.load(f)["nodes"]]
 
 
 def single_flow_problem(project_dir: str, allow_unbuilt: bool = False) -> str | None:
@@ -46,14 +40,16 @@ def single_flow_problem(project_dir: str, allow_unbuilt: bool = False) -> str | 
     a flow with no nodes, or one lone node of another type, is not.
     """
     flows = sorted(glob.glob(os.path.join(glob.escape(project_dir), "*.flow")))
-    counts = [(path, _flow_file_node_count(path)) for path in flows]
-    listed = ", ".join(f"{os.path.basename(p)} ({'unreadable' if n is None else f'{n} node(s)'})" for p, n in counts)
+    nodes_by_file = [(path, _flow_file_nodes(path)) for path in flows]
+    listed = ", ".join(
+        f"{os.path.basename(p)} ({'unreadable' if n is None else f'{len(n)} node(s)'})" for p, n in nodes_by_file
+    )
     if len(flows) != 1:
         return f"{project_dir} holds {len(flows)} .flow files, expected 1: {listed or 'none'}"
-    count = counts[0][1]
-    if count is None or count < 1 or (count <= _HUSK_MAX_NODES and not allow_unbuilt):
+    nodes = nodes_by_file[0][1]
+    if not nodes or (len(nodes) <= _HUSK_MAX_NODES and not allow_unbuilt):
         return f"{project_dir} holds only an unbuilt flow: {listed}"
-    if count == 1 and _node_types(counts[0][0]) != [SCAFFOLD_TRIGGER]:
+    if len(nodes) == 1 and not (isinstance(nodes[0], dict) and nodes[0].get("type") == SCAFFOLD_TRIGGER):
         return f"{project_dir} holds one node that is not a {SCAFFOLD_TRIGGER} scaffold: {listed}"
     return None
 
