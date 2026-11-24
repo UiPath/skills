@@ -3,7 +3,7 @@
 <!--skill-flavor:extract-find-flow:end-->
 
 <!--skill-flavor:extract-sdk-mixing:start-->
-**A flow that holds this node takes the decompile round trip** of the [Lifecycle](../SKILL.md#lifecycle): the node decompiles to `dynamicExtract()`, its `processorKey` and taxonomy with it. Studio Web owns the SDK copy, and two floors apply: authoring or compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later, and a merge that repairs an existing node with no `processorKey` needs 6.124.16 or later. Report an old SDK only on evidence, never from a failure alone: an envelope's `requiresSdkVersion` names the version itself; a repair merge that prints no `named no IDP processor … gave it <key>` line and leaves the node keyless means older than 6.124.16; `check` reporting no `EXTRACT_TAXONOMY_*` code for a broken taxonomy means older than 6.119.0. Then tell the user which version the step needs, and stop. A failure that names a code or a field is a source problem: fix the source.
+**A flow that holds this node takes the decompile round trip** of the [Lifecycle](../SKILL.md#lifecycle): the node decompiles to `dynamicExtract()`, its `processorKey` and taxonomy with it. Studio Web owns the SDK copy, and two floors apply: authoring or compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later, and a merge that edits or repairs an existing node (its taxonomy, its draft, or a missing `processorKey`) needs 6.124.16 or later. Name an SDK version as the cause only when `uip` reports it: a message of the form `… needs @uipath/maestro-builder-sdk >= <version>; found <installed>` gives both, and then tell the user which version the step needs, and stop. Do not guess the version from what a command did not do. A merge that leaves a repaired node without `processorKey` and prints no `named no IDP processor … gave it <key>` line: tell the user the repair needs 6.124.16 or later and that the node is still keyless, and stop. A failure that names a code or a field is a source problem: fix the source.
 <!--skill-flavor:extract-sdk-mixing:end-->
 
 <!--skill-flavor:extract-processor-sync:start-->
@@ -13,3 +13,7 @@ At run time the extraction service resolves which processor to use from `inputs.
 <!--skill-flavor:extract-after-save:start-->
 Re-read the target `.flow` at the start of each turn rather than reusing an earlier copy: the designer saves as the user edits, with no save button. The node keeps its type, its `processorKey` and its resource file across those saves. A node the user added as the processor variant (`uipath.ixp.processor.<key>`) is a different node type, not `dynamicExtract()`: its taxonomy is edited in the designer.
 <!--skill-flavor:extract-after-save:end-->
+
+<!--skill-flavor:extract-report:start-->
+8. **Report** what was added, where it reads its file from, which fields it extracts, and its processor: the `processorKey` the node carries, which compile and merge add to the open solution. A `ResourcePending` list in their output means the host could not add it ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+<!--skill-flavor:extract-report:end-->

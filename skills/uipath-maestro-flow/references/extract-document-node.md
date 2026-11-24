@@ -19,7 +19,7 @@ uip maestro flow validate <file> --output json
   { label: 'Extract invoice' })
 ```
 
-**Support for this node is new.** It needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that repairs or edits an existing node needs 6.124.16 or later ([Making it actually extract](#making-it-actually-extract)). If `check` reports no `EXTRACT_TAXONOMY_*` code for a broken taxonomy, the SDK is older: upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
+**Support for this node is new.** It needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that repairs or edits an existing node needs 6.124.16 or later ([Making it actually extract](#making-it-actually-extract)). Read the installed version before blaming the SDK (`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`); below the floor, upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
 
 ## Which extraction node the user wants
 
@@ -49,7 +49,9 @@ Add a descriptive `dynamicExtract()` step, wire its file, write taxonomy, return
 5. **Write the taxonomy** in the step's `schema`: [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Return the result** as a flow output ([Returning the result](#returning-the-result)).
 7. **Check and write:** run `check`, then `compile` (new flow) or `merge` (existing flow), as the SKILL.md loop says. Then run `uip maestro flow validate <file> --output json`; it must return `Valid`.
+<!--skill-flavor:extract-report:start-->
 8. **Report** what was added, where it reads its file from, which fields it extracts, and the processor: compile and merge print `wrote resources/solution_folder/idpProcessor/extraction/<Label>.json (IDP processor)` inside a solution, and keep that file with the `.flow`; outside one, they print that the file is created when the project is packed ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
+<!--skill-flavor:extract-report:end-->
 
 ## Check the tenant can run it
 

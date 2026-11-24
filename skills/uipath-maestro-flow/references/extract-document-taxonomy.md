@@ -186,7 +186,7 @@ Never infer enum values from what appears in the samples: a value they did not s
 
 ### Names
 
-Group and field property keys, and field-type `title` values, must be **64 characters or fewer**, counting spaces. The entire nested key, including ` > `, counts. Names must not be empty, begin with punctuation, a symbol, or a space, and must be unique among siblings. Prefer short wording from the document.
+Group and field property keys, and field-type `title` values, must be **128 characters or fewer**, counting spaces. The entire nested key, including ` > `, counts. Names must not be empty, begin with punctuation, a symbol, or a space, and must be unique among siblings. Prefer short wording from the document.
 
 ### Instructions
 
@@ -234,7 +234,7 @@ Merge compiles too, and the merged `.flow` carries the result. On an edit, compa
 | --- | --- |
 | `EXTRACT_TAXONOMY_NESTING` | nesting by name: `A > B` needs a group `A`, and a top-level group names no parent ([Field groups](#field-groups)). If an existing group was clearly meant as parent, rename one key to match; never add an empty parent. |
 | `EXTRACT_TAXONOMY_REF` | every field names a field type, and every `$ref` resolves inside `$defs` ([Field types](#field-types)) |
-| `EXTRACT_TAXONOMY_LIMIT` | names within 64 characters, a nested group's whole composed key included; instructions within 4096 ([Names](#names), [Instructions](#instructions)) |
+| `EXTRACT_TAXONOMY_LIMIT` | names within 128 characters, a nested group's whole composed key included; instructions within 4096 ([Names](#names), [Instructions](#instructions)) |
 | `EXTRACT_TAXONOMY_DUPLICATE_ID` | no id on two groups or two fields ([What compile and merge do for you](#what-compile-and-merge-do-for-you)) |
 | `EXTRACT_TAXONOMY_FIELD_TYPE` | a `$defs` key needs no escaping in a `$ref`; every field type has a title ([Field types](#field-types)) |
 | `EXTRACT_TAXONOMY_STRUCTURE` | every group, field and container is the shape the Schema Editor reads |
