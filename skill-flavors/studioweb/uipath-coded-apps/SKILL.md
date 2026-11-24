@@ -14,3 +14,7 @@ The CLI host's steps below do not apply here, with these replacements:
 - **`npm install <package>` in any step:** add the package to `package.json` instead. Keep the version the step pins (`<package>@x.y.z` or `--save-exact`); otherwise use `"latest"`.
 
 <!--skill-flavor:host-scope:end-->
+
+<!--skill-flavor:login-rule:start-->
+2. **The host signs you in.** Never run `uip login` or `uip login status` here, and skip every login step in the references. Cloud commands this host bundles, such as `uip admin external-apps` and `uip or`, run as written.
+<!--skill-flavor:login-rule:end-->

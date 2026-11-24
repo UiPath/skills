@@ -1,5 +1,5 @@
 <!--skill-flavor:host-scope:start-->
-> **Studio Web:** the `uip codedapp` CLI tool is not available here, and there is no npm or full Node.js runtime — the shell's `node` is a QuickJS sandbox that cannot install, build or run the app (see SKILL.md § Studio Web Command Scope). This file's authoring guidance still applies to files you edit directly. § Project Scaffolding scaffolds by writing files; skip every install, build and run command, and hand the OAuth client setup in Q4b to the user.
+> **Studio Web:** the `uip codedapp` CLI tool is not available here, and there is no npm or full Node.js runtime — the shell's `node` is a QuickJS sandbox that cannot install, build or run the app (see SKILL.md § Studio Web Command Scope). This file's authoring guidance still applies to files you edit directly. § Project Scaffolding scaffolds by writing files; skip every install, build and run command. Q4b creates the External Application here with `uip admin external-apps`; the host signs you in, so skip its login check.
 
 <!--skill-flavor:host-scope:end-->
 

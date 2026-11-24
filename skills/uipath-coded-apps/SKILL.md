@@ -43,7 +43,9 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 ## Critical Rules
 
 1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 18): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+<!--skill-flavor:login-rule:start-->
 2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
+<!--skill-flavor:login-rule:end-->
 3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
 4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
 5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
