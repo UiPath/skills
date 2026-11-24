@@ -129,4 +129,4 @@ Fall back to the [Manual portal steps](#manual-portal-fallback) only when:
    - **Not yet listed**: click **"Add scopes"**, pick the resource, check the scopes, confirm.
 3. Click **"Save"**
 4. Update the `scope` field in `uipath.json` to include the new scopes
-5. Clear browser storage and re-test
+5. Clear browser state ([debug.md Step 3](debug.md#step-3-clear-browser-state), which also covers a UiPath Apps preview) and re-test
