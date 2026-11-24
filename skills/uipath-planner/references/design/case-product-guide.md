@@ -198,7 +198,7 @@ Entry shape follows the lane's trigger source:
 | Lane trigger | Entry shape |
 |---|---|
 | A person launches it | `user-selected-stage`, paired with an upstream `wait-for-user` exit |
-| External / global event | ONE `wait-for-connector` entry on the destination lane — never duplicated per origin stage |
+| External / global event | ONE `wait-for-connector` entry on the destination lane, `**Interrupting:** Yes` — never duplicated per origin stage, and no origin stage carries an exit row on that event: the interrupting entry leaves whatever stage is active |
 | SLA response | ONE `sla-status-change` entry row per SLA the lane answers ([Layer 4](case-data-and-time-guide.md#layer-4--time-slas--escalations)) — five phase SLAs into one lane are five rows on that lane, never one WHEN cell joined with `OR` |
 | Decision / signal divert | The origin stage carries a gated diverting exit — `Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF` on the signal, exit target → the lane — and the origin's completion exit carries the exact inverse `IF`. The lane enters via `selected-stage-exited("<origin>")` + the same `IF`. |
 

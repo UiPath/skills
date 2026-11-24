@@ -143,8 +143,10 @@ names only what to LOOK AT.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
-     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
-     comparison — prose in Design Rationale or Description does not count.
+     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, the same policy, with a role that
+     applies on one side only written on the high side (`=js:vars.amount > 5000000 ? "Role:<EXCEPTION_ROLE>"
+     : "Role:<DEFAULT_ROLE>"`) — prose in Design Rationale, Description, Personas or Notes does not count. The
+     PASS quote is the `=js:` cell itself; a quote without `=js:` is a FAIL, whatever it says.
  33. The draft file still exists beside the final, unrenamed.
  Modelling completeness
  34. Every task's `Persona` cell names exactly ONE role — never an either/or (`Underwriter or Credit
@@ -169,3 +171,6 @@ names only what to LOOK AT.
      declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
      and Case Exit tables — never in Case Triggers, and never in a task's Entry Conditions that also hold
      `runs-sequentially`. A Payload cell is a JSON Schema object in one code span, or `—`.
+     An event that enters an interrupting secondary stage from any point ("at any point", "any active case")
+     is that lane's ONE entry row and no primary stage's exit row: the same `api-event` WHEN in two or more
+     primary-stage Stage Exit tables is a FAIL — delete those rows; the interrupting entry leaves the stage.
