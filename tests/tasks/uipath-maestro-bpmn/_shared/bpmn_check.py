@@ -178,11 +178,8 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # left beside `Foo.bpmn` matches too, and sorts first. Apply
             # resolve_project's rule here as well so the draft is never graded.
             pool = _project_files(matches) or matches
-            # Several candidates: the shallowest is the file the agent edited in
-            # place (a same-named copy in a work folder, `Foo-work/Foo.bpmn`, is
-            # deeper). At equal depth the folder named for the hint is the project
-            # (`Foo/Foo.bpmn`); a sibling copy never wins on spelling: as strings
-            # `Foo-work/` sorts before `Foo/` (`-` < `/`), so compare path parts.
+            # Shallowest first, then the folder whose name equals the hint, then path parts
+            # (not the string: `Foo-work/` sorts before `Foo/`).
             stem = name_hint.removesuffix(".bpmn").lower()
             best = min(
                 pool,
