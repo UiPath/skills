@@ -19,7 +19,11 @@ uip maestro flow validate <file> --output json
   { label: 'Extract invoice' })
 ```
 
-**Support for this node is new.** It needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that repairs or edits an existing node needs 6.124.16 or later ([Making it actually extract](#making-it-actually-extract)). Read the installed version before blaming the SDK (`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`); below the floor, upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
+Authoring, checking and compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that edits or repairs an existing node needs 6.124.16 or later ([Making it actually extract](#making-it-actually-extract)).
+
+<!--skill-flavor:extract-sdk-version:start-->
+Read the installed version before blaming the SDK (`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`); below the floor, upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
+<!--skill-flavor:extract-sdk-version:end-->
 
 ## Which extraction node the user wants
 
@@ -90,7 +94,7 @@ No other CLI command answers this question. `registry search` reports `Available
   { label: 'Extract invoice' })
 ```
 
-The step name is the node id; the `label` sets the canvas name and the processor's name. Name the document and fields, not "Extract", since flows often have two extraction nodes. Pass no `model`: compile gives the node its working model defaults (`inputs.modelConfig`), an empty taxonomy with the six built-in field types when `schema` is omitted, a minted extraction identifier (`inputs.source`), the processor (`inputs.processorKey` and `inputs.processorName`; in a solution its resource file is written, otherwise it is created when the project is packed ([Making it actually extract](#making-it-actually-extract))), and the named `output` and `error` ports for downstream reads.
+The step name is the node id; the `label` sets the canvas name and the processor's name. Name the document and fields, not "Extract", since flows often have two extraction nodes. Pass no `model`: compile gives the node its working model defaults (`inputs.modelConfig`), an empty taxonomy with the six built-in field types when `schema` is omitted, a minted extraction identifier (`inputs.source`), the processor (`inputs.processorKey` and `inputs.processorName`; where its resource is created: [Making it actually extract](#making-it-actually-extract)), and the named `output` and `error` ports for downstream reads.
 
 Keep `modelName`, `folderKey`, and other deployment fields out of the step. They identify a trained IXP deployment and belong to [ixp.md](ixp.md); this node requires only `fileRef`.
 
@@ -147,7 +151,9 @@ Validation requires `fileRef` to be a `$vars` reference, both output ports to be
 At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. Compile and merge provision it while you author: compile mints the key, one per step and the same on every recompile; inside a solution, compile and merge write the resource (`resources/solution_folder/idpProcessor/extraction/<Label>.json`) for each node they write, keep it in step with the node's taxonomy, and declare it in `bindings_v2.json`; `uip solution pack` regenerates it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
 <!--skill-flavor:extract-processor-sync:end-->
 
+<!--skill-flavor:extract-keyless-repair:start-->
 A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. This needs SDK 6.124.16 or later; on an older SDK the merged node stays keyless: upgrade the SDK. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
+<!--skill-flavor:extract-keyless-repair:end-->
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 

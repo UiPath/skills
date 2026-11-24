@@ -17,3 +17,11 @@ Re-read the target `.flow` at the start of each turn rather than reusing an earl
 <!--skill-flavor:extract-report:start-->
 8. **Report** what was added, where it reads its file from, which fields it extracts, and its processor: the `processorKey` the node carries, which compile and merge add to the open solution. A `ResourcePending` list in their output means the host could not add it ([Making it actually extract](#making-it-actually-extract)). Taking the flow live is the user's step.
 <!--skill-flavor:extract-report:end-->
+
+<!--skill-flavor:extract-sdk-version:start-->
+Studio Web owns the SDK copy, so the user upgrades it, not you ([the round trip note](#adding-the-node) names which version each step needs and when to report one).
+<!--skill-flavor:extract-sdk-version:end-->
+
+<!--skill-flavor:extract-keyless-repair:start-->
+A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the decompile round trip and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, printing `named no IDP processor … gave it <key>`, and adds its processor to the open solution; a `ResourcePending` list means the host could not add it (see above). If the node is still keyless after the merge, tell the user the repair needs SDK 6.124.16 or later, and stop. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
+<!--skill-flavor:extract-keyless-repair:end-->
