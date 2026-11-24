@@ -303,10 +303,9 @@ $WORK/<Name>.json           the compiled activity metadata
 ## Putting it in a flow
 
 <!--skill-flavor:flow-sdk-generated-activity:start-->
-<!-- TODO(before merge): replace each `<release with builder-sdk#2257>` in this section with the first @uipath/maestro-builder-sdk release that exports inlineActivity(). -->
 A builder-SDK flow (the `uipath-maestro-flow` skill) runs a generated activity
 with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk`
-`<release with builder-sdk#2257>` or later. The node embeds the whole activity: compile builds the node's
+6.126.0 or later. The node embeds the whole activity: compile builds the node's
 definition from `<Name>.json` and carries every script in the node.
 
 1. Copy `$WORK/<Name>.json` and every `$WORK/<scriptRef>.js` into the flow's
