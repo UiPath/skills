@@ -36,8 +36,8 @@ from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
 RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
-# The key is interpolated raw, so one holding `"` or `]` cannot be mapped.
-THIS_READ = re.compile(r'^=this\["[^"\]]*"\]$')
+# The key is interpolated raw, so an empty one or one holding `"` or `]` cannot be mapped.
+THIS_READ = re.compile(r'=this\["[^"\]]+"\]')
 # A form or agent output field (`=Decision`); also lets an undeclared typo such as `=totl` pass.
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")
@@ -111,7 +111,7 @@ def main() -> None:
         owner = element.get("id") or owner
         for attr, value in element.attrib.items():
             # Checked on the raw attribute: a JSON-valued source must not lend the exemption to its strings.
-            if f"{local(element.tag)}@{local(attr)}" == "output@source" and THIS_READ.match(value):
+            if f"{local(element.tag)}@{local(attr)}" == "output@source" and THIS_READ.fullmatch(value):
                 continue
             if local(attr) not in LITERAL_ATTRS:
                 scan(value, owner, f"{local(element.tag)}@{local(attr)}")
