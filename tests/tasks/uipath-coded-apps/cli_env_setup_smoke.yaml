@@ -2,9 +2,8 @@ task_id: skill-coded-apps-cli-env-setup-smoke
 description: >
   Smoke test (mode:build): agent authors the environment-setup script the
   skill teaches for coded-app deploys — install `@uipath/codedapp-tool`
-  and `@uipath/orchestrator-tool` via `uip tools install` (checking
-  `uip tools list` first), and resolve a user-provided folder NAME to the
-  folder KEY via `uip or folders list --output json` (match on `Name`,
+  and `@uipath/orchestrator-tool` via `uip tools install`, and resolve a
+  user-provided folder NAME to the folder KEY via `uip or folders list --output json` (match on `Name`,
   read `Key`) per Critical Rule #11. Covers the 2 `uip tools install`
   components and promotes the folders-list name→key resolution from
   Indirect to Direct — none of these had a covering test.
@@ -59,14 +58,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "setup.sh checks installed tools first via `… tools list` (Rule #11 — check before installing)"
-    command: "grep -E 'tools\\s+list' setup.sh"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command

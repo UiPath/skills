@@ -209,6 +209,11 @@
   "uipath-coded-apps": {
     "allow": [
       {
+        "file": "references/pack-publish-deploy.md",
+        "command": "update",
+        "reason": "The row is for `uip codedapp deploy` on a CLI older than 1.204.0. Studio Web cannot run `uip codedapp` at all, and the studioweb host-scope note at the top of this file says its commands are handed to the user to run on their machine, where `uip update` (after the pinned `npm i -g`) is the right upgrade."
+      },
+      {
         "file": "references/widgets/decisions-and-reasons.md",
         "command": "codedapp pack",
         "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
