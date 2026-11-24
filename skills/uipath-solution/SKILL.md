@@ -105,7 +105,7 @@ Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
 - **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
 
-To debug or run the solution, neither path applies: refresh, then run the lead project's own debug command in your Personal Workspace ([Debug or Run the Solution](references/develop-solution.md#debug-or-run-the-solution)).
+To debug or run the solution from the CLI, refresh, then run the lead project's own debug command ([Debug or Run the Solution](references/develop-solution.md#debug-or-run-the-solution)); `upload` alone runs nothing.
 
 Authentication is a prerequisite. Check `uip login status --output json` before any work; if not logged in, ask the user to run `uip login` (interactive browser flow). See `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 

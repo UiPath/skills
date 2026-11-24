@@ -46,7 +46,7 @@ uip solution restore ./MySolution --output json
 | `<solutionPath>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` whose sources are added to the default ones | -- |
-| `--feed-folder <name>` / `--exclude-configured-sources` | Narrow the feeds dependencies resolve from — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
+| `--feed-folder <name>` / `--exclude-configured-sources` | Add a folder feed or drop the built-in feeds — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
 
 `restore` resolves dependencies on disk and does **not** produce a package. It needs an authenticated session (`uip login`) to reach private Orchestrator feeds. `pack` already restores internally, so this step is an **optimization, not a requirement** — its value is in CI, where running `login → restore → pack` fails fast on a missing or unreachable feed before the heavier pack step runs. Skip it for a plain local pack.
 
@@ -68,19 +68,19 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--name <name>` | Override the package name. Renames the solution archive only; member package ids keep the `.uipx` name ([Member package ids](pack-build-guide.md#member-package-ids)) | Solution folder name (or `.uis` file name) |
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` whose sources are added to the default ones | -- |
-| `--feed-folder <name>` / `--exclude-configured-sources` | Narrow the feeds dependencies resolve from — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
+| `--feed-folder <name>` / `--exclude-configured-sources` | Add a folder feed or drop the built-in feeds — see [Dependency feeds](pack-build-guide.md#dependency-feeds) | -- |
 | `--skip-analyze` / `--ignored-rules` / `--governance-file-path` / `--governance-product` | Workflow analyzer and governance — see [Workflow analyzer and governance](pack-build-guide.md#workflow-analyzer-and-governance) | Analyzer on |
 | `--skip-build` | Pack each coded app's existing build output instead of building it — see [Coded apps](pack-build-guide.md#coded-apps-pack-builds-them) | Build |
 | `--signing-certificate-path <path>` | Sign each project `.nupkg` — see [Package signing](pack-build-guide.md#package-signing) | Unsigned |
-| `--author <author>` | Set the package author for members that declare none | `UiPath` |
-| `--description <text>` | Set the package description for members that declare none | `Created by UiPath` |
+| `--author <author>` | Set the package author on every member | The member's own, else `UiPath` |
+| `--description <text>` | Set the package description on every member | The member's own, else `Created by UiPath` |
 | `--dry-run` | Run the full pack pipeline against a temporary directory and discard the output — proves the solution packs without producing a package | off |
 
 The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 **A failed pack names the broken file in `Data.Projects`, not in `Message`.** Read it per project — fields in [Read `Data.Projects` on a failed pack](pack-build-guide.md#read-dataprojects-on-a-failed-pack).
 
-**Controlling package sources.** `--nuget-sources-config-path` *adds* the sources of a local `NuGet.config`; it does not replace the tenant and built-in feeds. Before using `--exclude-configured-sources`, read [Dependency feeds](pack-build-guide.md#dependency-feeds): bare, it can fail the restore of official activity packages. `pack`, `restore` and `cleanup` all take these options.
+**Controlling package sources.** Before using `--exclude-configured-sources`, read [Dependency feeds](pack-build-guide.md#dependency-feeds): bare, it can fail the restore of official activity packages. `pack`, `restore` and `cleanup` all take these options.
 
 **Governance does not gate:** `pack` can exit `0` without the tenant policy — see [Governance does not gate a build](pack-build-guide.md#governance-does-not-gate-a-build).
 
@@ -524,7 +524,7 @@ Always increment the version when republishing (patch for fixes, minor for featu
 uip solution publish <PACKAGE_ZIP> --package-version <NEW_VERSION> --output json
 ```
 
-`--package-version` rewrites the version inside a packed `.zip`. With the solution source at hand, you can instead pack again with `--version <NEW_VERSION>` and publish that package. Never delete the published version to reuse its number: deployments made from it depend on it. Delete it only when the user asks. `uip solution packages delete <PACKAGE_NAME> <VERSION> --yes` never prompts, so `--yes` is the only check — ask first.
+`--package-version` rewrites the version inside a packed `.zip`. With the solution source at hand, you can instead pack again with `--version <NEW_VERSION>` and publish that package. Never delete the published version to reuse its number: deployments made from it depend on it ([Delete a Package Version](activate-and-manage.md#step-6-delete-a-package-version)).
 
 ---
 

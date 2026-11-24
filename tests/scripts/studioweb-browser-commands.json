@@ -848,7 +848,7 @@
       {
         "file": "references/develop-solution.md",
         "command": "rpa debug start",
-        "reason": "Lists each project type's Node CLI debug command next to the Studio Web Debug button the same paragraph names; the point is that debugging is not deploying."
+        "reason": "Lists each project type's Node CLI debug command and where each one runs; the point is that debugging is not deploying."
       }
     ],
     "ceiling": {

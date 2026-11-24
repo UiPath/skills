@@ -354,7 +354,7 @@ A local stub starts from the kind's defaults: a queue has automatic retry on, `m
 
 Only queues, assets, buckets and connections can be virtual (created by the deploy); a connection needs its `authenticationType` set ([Virtualizable vs non-virtualizable](#virtualizable-vs-non-virtualizable-resources)). Processes, apps, indexes and entities must already exist. `resources add --source local` does **not** enforce this: it prints `Result: Success` and writes a stub for any kind, and the deploy fails later. Catch it early:
 
-- Run `uip solution resources refresh --output json`. It checks, and warns per resource: `Link it before deploy: uip solution deploy config link <file> "<name>" --name <existing-name>`. That warning means the resource cannot be virtual: link it to the existing one at deploy with `deploy config link` ([Link to an Existing Orchestrator Resource](pack-and-deploy.md#link-to-an-existing-orchestrator-resource)), or import it with `--source remote`. A connection never gets that warning: a declared connection gets `Connection <key> not found in Resource Catalog`, expected until the deploy creates it.
+- Refresh does not check a stub `add --source local` wrote: it skips one that covers a binding, and an unbound process or app gets only the unused-declaration warning. Its `Link it before deploy: uip solution deploy config link <file> "<name>" --name <existing-name>` warning comes only for a stub refresh mints itself from a binding the Resource Catalog lacks: link that resource at deploy with `deploy config link` ([Link to an Existing Orchestrator Resource](pack-and-deploy.md#link-to-an-existing-orchestrator-resource)), or import it with `--source remote`. A connection never gets that warning: a declared connection gets `Connection <key> not found in Resource Catalog`, expected until the deploy creates it.
 - A local connection's stub has an empty `authenticationType`, which deploy refuses before install (`[CNS1055]`). Set it, with the connector, right after `add`: `uip solution resources edit <RESOURCE_KEY> --patch '{"authenticationType":"AuthenticateAfterDeployment","connectorKey":"<CONNECTOR_KEY>","connectorVersion":"<CONNECTOR_VERSION>"}' --output json` (`<CONNECTOR_VERSION>` is `Data[0].Version` from `uip is connectors metadata <CONNECTOR_KEY> --output json`). `AuthenticateAfterDeployment`: the deploy creates the connection unauthenticated and the deployment ends `NeedsSetupToActivate` (`[CNS1072]`). `ConfigurableByUsers`: the deploy creates no connection and the deployment activates.
 - For a kind Orchestrator owns, confirm the target exists first: `uip solution resources list --source remote --kind <kind> --output json`.
 
@@ -492,7 +492,6 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch -
 `edit` is a thin wrapper over the SDK's `updateConfigurationAsync`, which classifies each property against kind metadata and **merges into `resource.spec`**:
 
 - **Unknown / reference / read-only** properties are **silently skipped** — passing them is not an error, but nothing changes. (This is how the SDK enforces "don't hand-edit `*Reference` fields".)
-- **Patch keys must match the casing `resources get` prints** (`Value`, not `value`). A mis-cased key is treated as unknown and skipped the same way, still with `Result: Success`. Read the value back with `resources get` before relying on it.
 - **Identity fields** (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) are top-level, not `spec` — structurally unreachable through `edit`.
 - **Secret** properties are stored via the secret-upsert path (you pass the value, the SDK keeps a key).
 - **Name** is editable (renames the resource) with duplicate-name protection — supersedes the old "rename is Studio-Web-only" guidance.
@@ -580,7 +579,7 @@ uip agent debug <PROJECT_DIR>                                          # Agent
 uip rpa debug start --file-path <FILE> --project-dir <PROJECT_DIR>    # RPA
 ```
 
-A debug runs in your Personal Workspace, like the Debug button in Studio and Studio Web: it publishes no package, creates no deployment and no folder. Use `pack` → `publish` → `deploy run` only when the user means to deploy.
+Flow, case and agent debugs upload to Studio Web and run in your Personal Workspace by default; the flow and case upload overwrites the Studio Web solution whose `SolutionId` the `.uipx` holds, so confirm with the user before debugging a solution downloaded from Studio Web. `rpa debug start` runs on this machine, in headless Studio by default (`--remote`: the configured unattended robot). None of them publishes a package or creates a deployment or folder. Use `pack` → `publish` → `deploy run` only when the user means to deploy.
 
 ## Step 12: Upload to Studio Web
 

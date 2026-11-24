@@ -32,13 +32,13 @@ uip solution pack ./MySolution ./output --nuget-sources-config-path ./NuGet.conf
 uip solution pack ./MySolution ./output --exclude-configured-sources --nuget-sources-config-path ./NuGet.config --output json
 ```
 
-By default dependencies resolve against every tenant feed the session can see, plus the built-in feeds: nuget.org, UiPath-Official, Connect (`gallery.uipath.com`) and the UiPath internal feed.
+By default dependencies resolve against every tenant library feed the session can see, plus the built-in feeds: nuget.org, UiPath-Official, Connect (`gallery.uipath.com`) and the UiPath internal feed.
 
 | Option | Effect |
 |---|---|
-| `--feed-folder <name>` | Use one Orchestrator folder's library feed instead of every tenant feed. Folder name or full path. Fails closed: with no logged-in session it is an error, never a silent fall back to other feeds |
+| `--feed-folder <name>` | Add one Orchestrator folder's package feed to the tenant library feeds; it excludes no other feed. Folder name or full path. Fails closed: with no logged-in session it is an error, never a silent fall back to other feeds |
 | `--nuget-sources-config-path <path>` | Add the sources in that `NuGet.config` to the ones above. It adds; it does not replace |
-| `--exclude-configured-sources` | Drop the built-in feeds. Resolution uses only the tenant feeds (or `--feed-folder`) and `--nuget-sources-config-path` |
+| `--exclude-configured-sources` | Drop the built-in feeds. Resolution uses only the tenant library feeds, the `--feed-folder` feed and `--nuget-sources-config-path` |
 
 > **Bare `--exclude-configured-sources` restores only where the tenant includes the host libraries feed.** Official activity packages (`UiPath.System.Activities`, `UiPath.UIAutomation.Activities`, …) must then come from the feeds that are left. The tenant's library feeds are still used, the same ones Studio restores from: where the tenant includes the host libraries feed (UiPath-Official on Automation Cloud) they resolve from it. Where it does not, the restore fails; pair the flag with a `NuGet.config` that points at your own mirror.
 
@@ -122,7 +122,7 @@ The packed folder is `config.bundlePath` in `webAppManifest.json`, relative to t
 
 ## Member package ids
 
-Each member project is published as `<solution>.<project-type>.<member-folder>`: the `.uipx` name, the short type (`Rpa`, `Case`, `Flow`, …) and the member's folder inside the solution. The name a project declares for itself is not used.
+Each member project is published as `<solution>.<project-type>.<member-folder>`: the `.uipx` name, the short type (`Rpa`, `Case`, `Flow`, …) and the member's folder inside the solution. The name a project declares for itself is not used. A `packageName` saved on the project's process resource (Studio Web writes one) takes precedence, and renaming does not change it; `uip solution resources edit <PROCESS_RESOURCE_KEY> --patch '{"packageName":"<PACKAGE_ID>"}'` does.
 
 - `pack --name` renames the **solution archive only**. Member ids stay anchored on the `.uipx` name, so an upgrade lands on the same feed entries. Renaming the solution directory does not move them either.
 - **Ids must be unique.** Two members whose folders compose the same id fail the pack, naming the id and every folder. Spaces and dots collapse to one dot and ids are case-insensitive, so `collide me`, `collide.me` and `Collide.Me` are one id.
@@ -130,7 +130,7 @@ Each member project is published as `<solution>.<project-type>.<member-folder>`:
 
 Both are checked before anything is packed and fail with `ErrorCode: invalid_argument` / `Retry: RetryWillNotFix`. Fix by renaming the member folder or the `.uipx`. A whole-solution pack takes no `--package-id`; only a single-project pack (`--project <id-or-path> --package-id <id>`) overrides the id.
 
-`--author` and `--description` apply only to members that declare neither in their project file.
+`--author` and `--description` set every member's author and description. Without them, a member keeps the values its project file declares, else `UiPath` / `Created by UiPath`.
 
 ## Solution cleanup
 
