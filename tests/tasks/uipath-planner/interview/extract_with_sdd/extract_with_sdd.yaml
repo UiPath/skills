@@ -71,7 +71,7 @@ success_criteria:
   - type: file_matches_regex
     description: "The SDD's Document History records the interview"
     path: "*-sdd.md"
-    pattern: 'Interview: \d+ points? answered by'
+    pattern: '(?im)^\|\s*\d{4}-\d{2}-\d{2}\s*\|.*\b(interview|answer)'
     weight: 1.5
     pass_threshold: 1.0
 

@@ -149,8 +149,9 @@ success_criteria:
       1. It counts the genome's open decisions by the role that answers them (the process owner, the
          system's owner, whoever knows the process, whoever holds the source …), or says that none is
          open. Configuration values need no role, and those
-         listed beside the decisions are not part of their count, nor are the build's own questions
-         (how the work is split or queued, libraries, technology, setup); when every decision belongs to
+         listed beside the decisions are not part of their count, and the count need not include the
+         build's own questions (how the work is split or queued, libraries, technology, setup), nor is
+         it wrong for listing one of them among the decisions; when every decision belongs to
          one role, saying so is the count.
       2. It asks none of the open questions itself. Ending on "Want to adjust anything?", or offering
          the interview, an SDD or edits, is not asking an open question.

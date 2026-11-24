@@ -111,8 +111,9 @@ success_criteria:
 
       Read the agent's closing message after it applied the user's answers to the genome (an automation
       blueprint). Score 1.0 when it says which decisions are still open and who answers each (counted by
-      role, or each named with its role), or that none is; 0.0 otherwise. Configuration values the build
-      asks need no role.
+      role, or each named with its role), or that none is; 0.0 otherwise. Whoever knows the process (or
+      how it is run) and whoever holds the source are roles too. Configuration values the build asks
+      need no role.
     weight: 2.0
     pass_threshold: 1.0
 

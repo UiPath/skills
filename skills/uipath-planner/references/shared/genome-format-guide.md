@@ -249,6 +249,7 @@ Every writing verb writes the file(s) to the working directory immediately — n
 
 > **Written:** `<GENOME_MD>`, and `<SDD_MD>` when there is one. Strict check: OK, or each `FAIL` left after the third round.
 > **Open:** <n> decisions — <role> <n>; <role> <n>. <n> configuration values, <n> of them needed before the build.
+> **Tasks:** <the readiness file's tasks beside the genome, by id>, for whoever prepares the build.
 > **To answer them:** `interview <GENOME_MD>`, or the SDD's Action Required when there is one. I can write an SDD for <the roles not in this session>.
 > Do you have a preferences file: your team's standing answers and development standards for UiPath builds? A path, or none.
 > Want to adjust anything?

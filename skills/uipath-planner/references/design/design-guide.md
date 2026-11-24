@@ -207,6 +207,9 @@ Step 6 runs four moves in this order; autonomous mode skips it (Step 0), and a c
 scope-recommendation-guide.md → Presenting the Recommendation:
 Recommended Scope + Project List + Queue Architecture>
 
+### Interview
+<OFFER — interview-guide.md § The Offer, counted from the gap list, when the list holds an entry to ask; the message ends with it, and scope confirmation waits for its answer>
+
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY — left out when the interview is offered; a decline asks them then>
 ```

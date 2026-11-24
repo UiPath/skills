@@ -118,7 +118,9 @@ success_criteria:
       1. No interview is offered before the genome is written.
       2. Before the genome is written, nothing is asked except, at most, whether the user has a
          preferences file (team standing answers and development standards).
-      3. The final message counts the questions still open by the role that answers them.
+      3. The closing message, the one that reports the genome written, counts the genome's open
+         decisions by the role that answers them. Configuration values, and the items the SDD keeps
+         alone (sizing, deployment), need no role.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.0

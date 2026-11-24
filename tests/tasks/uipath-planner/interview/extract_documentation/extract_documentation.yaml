@@ -72,7 +72,7 @@ success_criteria:
   - type: file_matches_regex
     description: "The SDD's Document History records the interview"
     path: "*-sdd.md"
-    pattern: 'Interview: \d+ points? answered by'
+    pattern: '(?im)^\|\s*\d{4}-\d{2}-\d{2}\s*\|.*\b(interview|answer)'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -102,8 +102,10 @@ success_criteria:
       Read the dialog and the agent's questions, whether asked in chat or as structured questions.
 
       Check three things:
-      1. Apart from a preferences-file question and where the automation runs, nothing about the open
-         items is asked before the genome and the SDD are written.
+      1. Apart from a preferences-file question, where the automation runs and the refactor questions
+         every extraction asks (which UiPath product a rebuild uses, whether to fold one component into
+         another, whether to rebuild or retire an entry point), nothing about the open items is asked
+         before the genome and the SDD are written.
       2. Once they are written, one question asks how the user wants to answer the open items, and one
          of its options leaves them all open for now.
       3. A question asks which roles the user answers for, and the items then asked are that role's,

@@ -83,9 +83,9 @@ An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](
 
 ## The Offer
 
-The P0 points are choices only the user can make, and they change what is written. So before writing, send this question as its own message, with the counts from the gap list, and end the turn: nothing is written until it is answered.
+The P0 points are choices only the user can make, and they change what is written. So before writing, send this question as its own message, with the counts from the gap list — of the user's roles' entries alone when the request names them — and end the turn: nothing is written until it is answered.
 
-> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
+> The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, and other roles', in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
 > 1. **Interview me** — I ask those points, a few at a time; you can stop or accept defaults at any point.
 > 2. **No interview** — <the verb's own questions: `design` asks at most 5 clarifying questions; `author` its follow-up rounds>, then defaults for the rest.
@@ -106,14 +106,14 @@ Option 1 is Recommended. Before writing, a request that asks to be interviewed h
 
 The gap list is the document's open items: the SDD's Action Required, or, for a genome with no SDD beside it, the open entries of its Open Decisions in the item form of [open-questions-guide.md](../shared/open-questions-guide.md) under their genome ids; plus, when a readiness file is beside the genome, each of its items with a blank `Answer:`, the build's own questions included, an entry it lists under Decisions still open asked once and answered there; its tasks (`Status:`) are named in the closing, never asked. A genome's Configuration Questions are asked only where a file keeps the answer for the build: its SDD's Configuration values, or the readiness file's Decisions still open; with neither, the build asks them. An item the request, an answers file, the preferences file or its own answer already settles is never asked.
 
-1. **How to answer.** Before any item is asked, send this question as its own message and end the turn: the answer decides which items are asked. Skip it only when the request already says how to answer. Inside `extract`, where it is the offer, option 4 is "**Not now** — every item stays open".
+1. **How to answer.** Before any item is asked, send this question as its own message and end the turn: the answer decides which items are asked. Skip it only when the request already says how to answer.
 
    > <n> questions are open: <n> with no default, <n> business outcomes, <n> with a default. How do you want to answer them?
    >
    > 1. **Every item, a batch at a time** (Recommended when an item has no default)
    > 2. **Only what needs a decision** — the items with no default and the business outcomes; the rest keep their defaults
-   > 3. **The defaults** — a value item takes its default; a choice stays open, built as marked, since a default nobody confirmed decides nothing
-   > 4. **The defaults, with the overrides you name**
+   > 3. **The defaults, with any overrides you name** — a value item takes its default or your value; a choice stays open, built as marked, since a default nobody confirmed decides nothing
+   > 4. **Not now** — every item stays open
 2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** as § Asking rule 3, one question per item, opening with the item's id as its file names it, so each answer lands on its item:
@@ -123,7 +123,7 @@ The gap list is the document's open items: the SDD's Action Required, or, for a 
    > b. <option>
 
    Its options come from the item's `Options:`, a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
-5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then "Apply the answers" applies them ([edit-guide.md § Applying the Answers](../edit/edit-guide.md)), and the strict check runs after the last edit; an SDD with no genome yet takes them as § Where Answers Go states. An SDD gains a new Document History row for the interview, `Interview: <n> points answered by <roles>; <n> left open`, below the rows it has.
+5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then, in the same turn and with no request for it, apply them to the genome as [edit-guide.md § Applying the Answers](../edit/edit-guide.md) states, and run the strict check after the last edit; an SDD with no genome yet takes them as § Where Answers Go states. An SDD gains a new Document History row for the interview, `Interview: <n> points answered by <roles>; <n> left open`, below the rows it has.
 
 ## Where Answers Go
 
