@@ -156,7 +156,7 @@ def review_two_applies_joined() -> dict:
 
 
 def review_check_step(node_type: str, inputs: dict) -> dict:
-    """A step between the agent and the gate, and the gate reads its ``confidence``."""
+    """A step after the agent that the gate reads ``confidence`` from."""
     flow = add(fixture("batch_review"), "checkFields", node_type, parent="processBatch", inputs=inputs)
     retarget(flow, "analyzeItem", "success", "checkFields")
     node(flow, "lowConfidence")["inputs"]["expression"] = "$vars.checkFields.output.confidence < 0.8"

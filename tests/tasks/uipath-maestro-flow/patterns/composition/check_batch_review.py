@@ -35,8 +35,9 @@ def main() -> None:
         body = {n for n in g.nodes if g.inside(n, loop)}
         agents = [a for a in g.agents() if a in body]
         people = [p for p in g.hitl() if p in body]
-        # The gate reads the agent's output, or a step between the agent and
-        # the gate: a script that reads the agent and passes on a confidence.
+        # The gate reads the agent's output, or a script downstream of the
+        # agent (any number of steps; no human task between it and the gate)
+        # that reads the agent and passes on a confidence.
         gated = [
             (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in [a] + [
