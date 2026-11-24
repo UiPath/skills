@@ -19,7 +19,7 @@ uip maestro flow validate <file> --output json
   { label: 'Extract invoice' })
 ```
 
-Authoring, checking and compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that edits or repairs an existing node needs 6.124.16 or later ([Making it actually extract](#making-it-actually-extract)).
+Authoring, checking and compiling this node needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge into an existing flow that holds this node, to edit or repair it, needs 6.124.17 or later. 6.124.17 is the first release whose merge refuses, and writes nothing, when the round trip would drop a node or edge of the original (UiPath/builder-sdk#2264). On 6.124.16 such a merge only warns, exits 0 and writes a flow missing that part, for instance a human task's outcome branch ([Making it actually extract](#making-it-actually-extract)).
 
 <!--skill-flavor:extract-sdk-version:start-->
 Read the installed version before blaming the SDK (`npm ls -g @uipath/maestro-builder-sdk`, or the project's `node_modules`); below the floor, upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
@@ -152,7 +152,7 @@ At runtime, the service resolves `inputs.processorKey` to a solution resource co
 <!--skill-flavor:extract-processor-sync:end-->
 
 <!--skill-flavor:extract-keyless-repair:start-->
-A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. This needs SDK 6.124.16 or later; on an older SDK the merged node stays keyless: upgrade the SDK. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
+A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. This needs SDK 6.124.17 or later (the merge floor above); on an older SDK the merged node stays keyless: upgrade the SDK. If `validate`'s message suggests another command, do not run it: the round trip is the repair.
 <!--skill-flavor:extract-keyless-repair:end-->
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
