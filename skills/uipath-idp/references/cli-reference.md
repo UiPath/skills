@@ -38,10 +38,10 @@ uip documents uploads create "<FILE_PATH>" --folder-path "<FOLDER_PATH>" --outpu
 ## Digitize
 
 ```bash
-uip documents digitize --document-id "<DOCUMENT_ID>" --folder-path "<FOLDER_PATH>" [--page-range <RANGE>] [--ocr-engine <ENGINE>] [--apply-on-pdf <auto|always|never>] [--layout-engine uipath] --wait --timeout <SECONDS> --output json
+uip documents digitize --document-id "<DOCUMENT_ID>" --folder-path "<FOLDER_PATH>" [--page-range <RANGE>] [--ocr-engine <ENGINE>] [--apply-on-pdf <auto|always|never>] [--layout-engine uipath] [--wait] [--timeout <SECONDS>] --output json
 ```
 
-Starts one run and prints the run envelope ([Results Guide](results-guide.md#run-envelope)).
+Starts one run and prints the run envelope ([Results Guide](results-guide.md#run-envelope)). Start it with `--wait` (SKILL.md Critical Rule 5).
 
 **Document input:**
 

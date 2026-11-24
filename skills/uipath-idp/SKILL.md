@@ -30,7 +30,7 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 5. **Start a run once, with `--wait`, and resume it with `runs get`. Never start it again.** Every `digitize` call starts a new digitization. On `Result: TimeoutError` the run is still going on the server: run the `runs get` command printed in `Instructions`, which already carries the folder.
 6. **Keep `--timeout` under your shell's own command timeout.** `--wait` gives up after 300 seconds by default; a tool runner that kills commands sooner loses the output. Pass a lower `--timeout <SECONDS>` and resume as in Rule 5. Never poll in a shell loop.
 7. **Read engine names from `discovery digitization-engines list`; never guess one.** The defaults (OCR `auto`, `--apply-on-pdf auto`, no layout engine) suit most documents. Change them only when the user asks or the text comes back wrong. A layout engine runs on OCR output, so `--layout-engine` cannot be combined with `--apply-on-pdf never`.
-8. **Act on a failure by its `Retry`, not by guessing.** `RetryWillNotFix` with `ErrorCode: invalid_argument` → fix the request using the detail, then start ONE new run. `RetryLater` → wait, then send the same request once more. `RetryWillNotFix` with `ErrorCode: execution_failed` → do not retry; report the code and the `runId`. A run succeeds or fails for the whole document; there is no partial status. Full map: [Results Guide § Errors](references/results-guide.md#errors).
+8. **Act on a failure by its `Retry` and `ErrorCode`, not by guessing.** The map is in [Results Guide § Errors](references/results-guide.md#errors). Never send a `RetryWillNotFix` request again unchanged, and send a `RetryLater` one again only once. A run succeeds or fails for the whole document; there is no partial status.
 9. **Stop on `not-supported-yet`.** The service answers it (HTTP 501) for an input or option it does not run yet, and its detail says what to send instead. Follow the detail when you can; otherwise report it. Never retry the same call or go around the CLI.
 10. **Read large documents page by page.** `Data.result.markdown` holds every page and grows with the page count. Read the count first (`--output-filter "result.pageCount"`), then one page at a time with `pages get`, or write a page to disk with `--output-file`.
 11. **Report the text as it was digitized.** Do not correct, complete or translate OCR output unless the user asks. When the text looks wrong, say so and offer another engine or `--apply-on-pdf always`.
@@ -69,15 +69,9 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 | Symptom | Cause | Fix |
 |---|---|---|
 | `ValidationError`: `No folder given.` | A folder-scoped command ran without a folder | Add `--folder-path` or `--folder-key` (Critical Rule 3). |
-| `run-not-found` on a run that exists | Read from another folder than the one it ran in | Pass the folder the run was started with. |
-| `document-not-found` | The upload expired, or the id belongs to another folder | Use the upload's folder; upload again only when it expired. |
-| `pages get` → `run-not-final` | The digitization is still `queued` or `running` | Wait with `runs get --wait`, then read the page. |
 | `pages get` shows the wrong page after `--page-range 5-6` | Page numbers count within the digitization, from 1 in the order digitized | Page `1` is the file's page 5; map back from the range you passed. |
 | `--output-filter "Result.Markdown"` returns nothing | `Data` keeps camelCase keys | Use `result.markdown`, `result.pageCount`, … as printed. |
-| `settings-invalid` on digitize | An unknown engine, or `--layout-engine` together with `--apply-on-pdf never` | Take the engine from `discovery digitization-engines list`; the error's `allowed` lists the valid values. |
-| `unsupported-media-type` on upload | The file is not a PDF, PNG, JPEG, TIFF, GIF or BMP; the type is read from the file's bytes, not its name | Convert the file, then upload it. |
-| `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it: an upload is the only way to pass a document. |
-| `not-supported-yet` (501) | The service does not run that input or option yet | Critical Rule 9. |
+| `Result: Failure` with a code in `Context.ErrorCode` (`run-not-found`, `document-not-found`, `settings-invalid`, …) | The API rejected the request or failed the run | Look the code up in [Results Guide § Errors](references/results-guide.md#errors). |
 
 ## Unsupported Capabilities
 
