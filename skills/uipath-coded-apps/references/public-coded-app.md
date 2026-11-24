@@ -7,7 +7,7 @@ A public coded app is a Coded Web App that **anyone with the link can use withou
 > - CLI: `npm install -g @uipath/cli@preview` (`1.207.0-preview.341` or later)
 > - Local runs: `@uipath/coded-apps-dev` `1.0.0-beta.2` or later
 >
-> The preview CLI does not ship `uip resources` yet: if `uip resources --help` fails, write `source/uipath_resources.ts` by hand in the exact shape shown in [resource-declarations.md](resource-declarations.md), then run `uip solution resources refresh`.
+> Today you write `bindings_v2.json` by hand. Generating it from the app code is coming soon.
 
 ## Decide: public or sign-in
 
@@ -51,15 +51,15 @@ List every resource the app reads, and use `session` for anything personal.
 
    | Service | Call | Visitor gets |
    |---|---|---|
-   | `Processes` | `start(handle, { inputArguments })` | starts one job |
+   | `Processes` | `start({ name }, { folderPath, inputArguments })` | starts one job |
    | `Jobs` | `getOutput(jobKey)` | output of jobs they started (any job of the process in `all` mode) |
-   | `Entities` | `insertRecord(handle, data)` | adds a record |
-   | `Entities` | `getRecordByName(handle.name, recordId)` | records they added (any record in `all` mode) |
-   | `Entities` | `getRecordsByName(handle.name, { pageSize, cursor })` | `all` mode only |
-   | `Buckets` | `uploadFile(handle, fileName, content)` | uploads a file under a new name, so it never overwrites one |
+   | `Entities` | `insertRecord({ name }, data)` | adds a record |
+   | `Entities` | `getRecordByName(name, recordId)` | records they added (any record in `all` mode) |
+   | `Entities` | `getRecordsByName(name, { pageSize, cursor })` | `all` mode only |
+   | `Buckets` | `uploadFile({ name }, fileName, content, { folderPath })` | uploads a file under a new name, so it never overwrites one |
 
    Edit, delete, filtering, action apps and tenant-level entities are **not supported**. Put that logic in a process (RPA, coded function, agent, Maestro, API workflow) and `start` it.
-4. **Declare every resource in `uipath_resources.ts`** (`uip resources add`) — never hand-write `bindings_v2.json`; pack derives it from `uipath_resources.ts`. See [resource-declarations.md](resource-declarations.md). An undeclared resource is refused with 403.
+4. **List every resource the app uses in `bindings_v2.json`** at the app project root (see [Declare the resources](#declare-the-resources)). A resource that isn't listed is refused with 403.
 5. **Never handle the client secret in the conversation.** The user puts it in their own shell (`export APP_CLIENT_SECRET=...`) or their own `.env.local`; pass it as `"$APP_CLIENT_SECRET"`. `uip solution deploy config set ... clientSecret` echoes the value — always add `--output-filter Property`.
 
 ## Prerequisites (admin)
@@ -78,20 +78,55 @@ uip solution init "Feedback"
 cd Feedback
 uip codedapp init ./feedback-app
 # scaffold the React/Vite sources into feedback-app/source (create-web-app.md, Step 3), build output in source/dist
-uip resources add EventFeedback --kind entity --project-path ./feedback-app/source   # writes source/uipath_resources.ts
 ```
 
-Use the generated handles:
+### Declare the resources
+
+Write `feedback-app/bindings_v2.json` (the project root, next to `source/`), one entry per resource:
+
+```json
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "entity",
+      "key": "EventFeedback",
+      "value": {
+        "name": { "defaultValue": "EventFeedback", "isExpression": false, "displayName": "Name" },
+        "folderPath": { "defaultValue": ".", "isExpression": false, "displayName": "Folder Path" }
+      },
+      "metadata": { "BindingsVersion": "2.2" }
+    },
+    {
+      "resource": "process",
+      "key": "Summarize.Shared",
+      "value": {
+        "name": { "defaultValue": "Summarize", "isExpression": false, "displayName": "Name" },
+        "folderPath": { "defaultValue": "Shared", "isExpression": false, "displayName": "Folder Path" }
+      },
+      "metadata": { "BindingsVersion": "2.2" }
+    }
+  ]
+}
+```
+
+- `resource` is `process`, `entity` or `bucket`.
+- `key` is `Name.FolderPath` for processes and buckets, and the name alone for entities (folder path `"."`).
+- Then run `uip solution resources refresh` from the solution root to add them to the solution. It reads the file only at the project root.
+
+### Call the resources
+
+Pass the same name and folder as in `bindings_v2.json`. The SDK sends `Name.FolderPath`, and anything that doesn't match an entry is refused.
 
 ```ts
 import { UiPath } from '@uipath/uipath-typescript/core';
 import { Entities } from '@uipath/uipath-typescript/entities';
-import { ProjectResources } from '../uipath_resources';   // src/main.ts -> source/uipath_resources.ts
+import { Processes } from '@uipath/uipath-typescript/processes';
 
 const sdk = new UiPath();
 await sdk.initialize();                       // no sign-in in public mode
-const entities = new Entities(sdk);
-await entities.insertRecord(ProjectResources.eventFeedback, { guestName, comment });
+await new Entities(sdk).insertRecord({ name: 'EventFeedback' }, { guestName, comment });
+await new Processes(sdk).start({ name: 'Summarize' }, { folderPath: 'Shared', inputArguments: JSON.stringify({ text }) });
 ```
 
 `uipath.json` goes into the build output (Vite: `source/public/uipath.json`, so it lands in `source/dist`). It must list the scopes the app needs, and the access mode of each resource it reads:
@@ -103,7 +138,7 @@ await entities.insertRecord(ProjectResources.eventFeedback, { guestName, comment
 }
 ```
 
-`key` is the binding key: `Name.FolderPath` for processes and buckets, the entity name for entities. Run `uip resources list` to see them.
+`key` is the same key as in `bindings_v2.json`.
 
 Then:
 
@@ -137,7 +172,7 @@ Wait for `publish` to finish before deploying or upgrading.
    ```
 3. `npm run dev`, then open the app on `localhost`. To act as a second visitor, open it in a private window.
 
-Locally, resources use the name and folder declared in `uipath_resources.ts` (solution overrides apply only after deploy), and sessions reset when the dev server restarts. The external application needs a role in the folders that hold the resources. Set `UIPATH_PUBLIC_APP=false` to go back to signing in as the developer.
+Locally, resources use the name and folder in `bindings_v2.json` (solution overrides apply only after deploy), and sessions reset when the dev server restarts. The external application needs a role in the folders that hold the resources. Set `UIPATH_PUBLIC_APP=false` to go back to signing in as the developer.
 
 ## Deploy — Studio Web (preferred)
 
@@ -171,7 +206,7 @@ The upgrade keeps the stored secret **and its scope** (a changed `scope` in `uip
 | Symptom | Cause |
 |---|---|
 | `ValidationError`, no request sent | Call not supported in public mode (rule 3) |
-| 403 on every call | Resource not declared in `uipath_resources.ts`, or not connected at deploy |
+| 403 on every call | Resource not in `bindings_v2.json`, name or folder in the code doesn't match its entry, or not connected at deploy |
 | 403 `Missing permissions: EntityRecords.Create` | External application has no role in the deployment folder |
 | 403 on a list call | The entity is in `session` mode |
 | 404 reading a record or job output | Another visitor added it, or the visitor is in a new session |
