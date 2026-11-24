@@ -94,12 +94,12 @@ Common codes (an open set: expect others):
 |---|---|---|
 | `settings-invalid` | An unknown OCR or layout engine, or a layout engine with `--apply-on-pdf never` | Use `allowed` and `pointer`; re-read `discovery digitization-engines list` |
 | `page-range-invalid` | A range outside the document, or a page outside the digitization on `pages get` | `detail` states the page count; fix `--page-range` or the page number |
-| `document-not-found` | The upload expired, or the upload or attachment is not in the resolved folder | Use its folder; upload again only when it expired |
+| `document-not-found` | The upload expired, or it was uploaded to another folder | Use its folder; upload again only when it expired |
 | `run-not-found` | A wrong id, another folder, or a run whose output has expired | Pass the folder the run was started in |
 | `run-not-final` | `pages get` while the digitization is running | `runs get --wait`, then read the page |
 | `run-failed` | `pages get` on a failed digitization | Read its error with `runs get`; start a new run only when the cause is fixed |
 | `unsupported-media-type`, `file-too-large` | The upload was rejected | Convert to PDF or an image; split a file over 160 MB |
-| `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it; `--attachment-id` still works for an Orchestrator attachment |
+| `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it: an upload is the only way to pass a document |
 | `not-supported-yet` (501) | The service does not run that input or option yet | Follow `detail`, or report it; do not retry (SKILL.md Critical Rule 9) |
 | `folder-access-denied` | The caller may not use that folder | Report it; a person must grant access |
 | `unauthenticated` | The token was refused | Run `uip login`, then send the same request once more |

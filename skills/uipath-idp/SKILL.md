@@ -45,7 +45,7 @@ uip documents digitize --document-id "<DOCUMENT_ID>" --folder-path "<FOLDER_PATH
 uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --folder-path "<FOLDER_PATH>" --output json
 ```
 
-1. **Upload** → keep `Data.documentId`. Skip this step when the user already gave a `documentId`, or the file is an Orchestrator attachment (`--attachment-id` instead of `--document-id`).
+1. **Upload** → keep `Data.documentId`. Skip this step when the user already gave a `documentId`.
 2. **Digitize** → check `Result` and `Data.status` ([Results Guide § Run envelope](references/results-guide.md#run-envelope)). `Data.result.markdown` is the whole document, each page opening with `<!-- page: N -->`. Keep `Data.runId` for the pages.
 3. **Read pages** (optional) → one page as `text`, `markdown` or `dom` (Critical Rule 10).
 4. **On `TimeoutError`** → the `runs get` command in `Instructions`, repeated while it keeps timing out (cap: 10 tries, then report the `runId` and stop).
@@ -62,7 +62,6 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 | "Only pages 2 to 4" | Add `--page-range 2-4` (syntax `1-3,5,8-`; the order given is the order digitized). |
 | "Give me page 3" / "Where is this word on the page?" | `uip documents pages get 3 --run-id "<RUN_ID>" --format <text\|markdown\|dom> --folder-path "<FOLDER_PATH>" --output json`. `dom` holds the words with their boxes. |
 | "Check on run X" / the wait timed out | `uip documents runs get "<RUN_ID>" --folder-path "<FOLDER_PATH>" --wait --timeout <SECONDS> --output json` (Critical Rule 5). |
-| "The file is already an Orchestrator attachment" | Digitize with `--attachment-id "<ATTACHMENT_ID>"` instead of `--document-id`; no upload. |
 | "When does my upload expire?" | `expiresAt` in the `uploads create` output. Keep it: the upload cannot be read again later. |
 
 ## Common Pitfalls
@@ -77,7 +76,7 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 | `--output-filter "Result.Markdown"` returns nothing | `Data` keeps camelCase keys | Use `result.markdown`, `result.pageCount`, … as printed. |
 | `settings-invalid` on digitize | An unknown engine, or `--layout-engine` together with `--apply-on-pdf never` | Take the engine from `discovery digitization-engines list`; the error's `allowed` lists the valid values. |
 | `unsupported-media-type` on upload | The file is not a PDF, PNG, JPEG, TIFF, GIF or BMP; the type is read from the file's bytes, not its name | Convert the file, then upload it. |
-| `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it. If the document is already an Orchestrator attachment, digitize it with `--attachment-id`. |
+| `upload-unavailable-for-tenant` | Uploads are not enabled for the tenant | Report it: an upload is the only way to pass a document. |
 | `not-supported-yet` (501) | The service does not run that input or option yet | Critical Rule 9. |
 
 ## Unsupported Capabilities

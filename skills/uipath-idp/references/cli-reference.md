@@ -43,12 +43,11 @@ uip documents digitize --document-id "<DOCUMENT_ID>" --folder-path "<FOLDER_PATH
 
 Starts one run and prints the run envelope ([Results Guide](results-guide.md#run-envelope)).
 
-**Document input: exactly one per call** (none or both → `ValidationError`, nothing sent):
+**Document input:**
 
 | Option | Document |
 |---|---|
-| `--document-id <id>` | A file from `uploads create`, in the same folder |
-| `--attachment-id <id>` | An Orchestrator attachment, read in the resolved folder |
+| `--document-id <id>` (required) | A file from `uploads create`, in the same folder |
 | `--page-range <range>` (optional) | Pages to read, `1-3,5,8-` syntax; default every page. Order matters: `1,3,2` reads the pages in that order |
 
 **Digitization options:**
@@ -100,5 +99,5 @@ A page outside the digitization answers `page-range-invalid`; a digitization sti
 | 0 | `Success` | Includes a succeeded run with warnings (check `Warning`) and a not-yet-final run printed without `--wait` |
 | 1 | `Failure` | A `failed` run, or an API error other than the ones below |
 | 2 | `AuthenticationError` | Not logged in, or the token was refused: run `uip login` |
-| 3 | `ValidationError` | Bad options, a missing folder or a bad document input caught locally (nothing sent), or the API rejected the request as invalid |
+| 3 | `ValidationError` | Bad or missing options, a missing folder included, caught locally (nothing sent), or the API rejected the request as invalid |
 | 4 | `TimeoutError` | `--wait` ran out; the run keeps going: read it with `runs get --wait` |
