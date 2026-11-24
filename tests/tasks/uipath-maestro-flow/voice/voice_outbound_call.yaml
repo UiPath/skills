@@ -113,17 +113,20 @@ success_criteria:
 
   # `flow debug` on an OUTBOUND flow dials for real. The prompt forbids it and
   # the sandbox has no tenant, so a debug attempt is both a rule breach and a
-  # wasted turn — graded here rather than on the inbound task, where the CLI
-  # rejects the run on its own.
-  # Counted only at a command position: line start, after ; & | ( or $(, after a
+  # wasted turn. Graded strictly here because a debug run places a real call; the
+  # inbound task grades it too, as a wasted turn.
+  # Counted only at a command position: line start, after ; & | ( { or $(, after a
   # `bash -lc`/`sh -c` wrapper (codex records every call that way), after
-  # do/then/else/if/!/time, or after VAR=x prefixes. A README, apply_patch body or
-  # grep/echo that only MENTIONS `uip maestro flow debug` mid-line does not count;
-  # a heredoc line that starts with the command still does.
+  # do/then/else/if/!/time, VAR=x, env/exec/command/nohup/nice/sudo/xargs/npx
+  # (with flags) or `timeout [flags] N`, and with an optional path (/usr/bin/uip).
+  # A README, apply_patch body or grep/echo that only MENTIONS
+  # `uip maestro flow debug` mid-line does not count; a heredoc line that starts
+  # with the command, or follows `|` or `(` in prose, still does.
+  # Examples: tests/scripts/test_task_command_patterns.py.
   - type: command_not_executed
     description: "Agent did not run flow debug, which would place a real outbound call"
     tool_name: "Bash"
-    command_pattern: '(?:^|[\n;&|(]|\b(?:ba|z)?sh\s+-l?c\s+[''"]?)\s*(?:(?:do|then|else|if|!|time)\s+)*(?:\w+=\S*\s+)*(uip|\$UIP|"\$UIP"|\$\{UIP\})\s+(maestro\s+)?flow\s+debug'
+    command_pattern: '(?:^|[\n;&|({]|\b(?:ba|z)?sh\s+-l?c\s+[''"]?)\s*(?:(?:do|then|else|if|!|time|(?:env|exec|command|nohup|nice|sudo|xargs|npx)(?:\s+-\S+(?:\s+\w+)?)*|timeout(?:\s+-\S+(?:\s+\w+)?)*\s+\d\S*|\w+=\S*)\s+)*(?:[^\s;&|"''`]*/)?(uip|\\?\$UIP|"\$UIP"|\$\{UIP\})\s+(maestro\s+)?flow\s+debug'
     weight: 2.0
     pass_threshold: 1.0
 
