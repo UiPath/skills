@@ -44,7 +44,7 @@ simulation:
     - "If the assistant warns about the file field, keep it as a file field."
     - "When a table is right, approve that table only. Never tell the assistant to build, validate or pack, and never waive a check."
     - "When asked to confirm the ontology artifact files (schema, mapping), say: stop here, I'll review the model first. Then end the conversation."
-    - "If the assistant reports a blocker, or asks about validation, packing or signing in, say the same: stop here, I'll review the model first. Then end the conversation."
+    - "If the assistant asks about validation or packing, or reports that either is blocked, say the same: stop here, I'll review the model first. Then end the conversation."
   max_turns: 25
 
 success_criteria:
@@ -65,8 +65,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No artifact file was written: the run stopped at the artifact batch confirmation"
-    command: "test -z \"$(find maintenance -maxdepth 1 -type f 2>/dev/null)\""
+    description: "The ontology folder exists and holds no artifact file: the run stopped at the artifact batch confirmation"
+    command: "test -d maintenance && test -z \"$(find maintenance -maxdepth 1 -type f)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
