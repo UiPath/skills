@@ -13,7 +13,7 @@ Compares the compliance standard's recommended settings against what is currentl
 ```bash
 # Read the session dir written by catalog get — never create a new one here.
 SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session")
-TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+TENANT_ID=$(uip login status --output json | sed -n 's/.*"TenantId": *"\([^"]*\)".*/\1/p')
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json \
   > "$SESSION_TEMP/coverage.json"
 
@@ -29,7 +29,7 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json \
 ```powershell
 # Windows PowerShell
 $tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).Trim()
-$tenantId = (Select-String '^UIPATH_TENANT_ID=(.+)' "$env:USERPROFILE\.uipath\.auth").Matches[0].Groups[1].Value
+$tenantId = (uip login status --output json | ConvertFrom-Json).Data.TenantId
 uip gov compliance-packs state coverage tenant $tenantId <packId> --output json |
   Set-Content "$tmpDir\coverage.json"
 

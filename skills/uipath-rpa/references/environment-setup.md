@@ -163,6 +163,8 @@ uip rpa studio start --project-dir "{projectRoot}" --output json   # launches St
 
 If registry resolution fails, pass `--studio-dir` with the Studio installation root. You may force Studio for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is unnecessary for standard authoring and loses headless benefits.
 
+If `studio start` fails with `does not support rpa-tool` or `Requires Studio <MIN_VERSION>+`, this Studio has no rpa-tool interop. Do not retry; continue headless per [cli-reference.md § Headless Studio (Helm) vs Studio Desktop](cli-reference.md#headless-studio-helm-vs-studio-desktop) instead of asking the user to upgrade.
+
 ---
 
 ## Project Structure Reference

@@ -201,7 +201,7 @@ def require_fork_exits_safe(root, flows) -> None:
     for fork in forks:
         if incoming.get(fork, 0) > 1:
             fail(f"parallel fork {fork} has {incoming[fork]} incoming flows and waits for all of them; "
-                 "enter a loop back through a box before the fork, not the fork itself")
+                 "an extra flow into the fork, such as a loop-back or an unended handler, must go through a box before the fork, not into the fork itself")
         branches = []
         for first in succ[fork]:
             normal, own, _ = walk([(first, 1, fork)], False)

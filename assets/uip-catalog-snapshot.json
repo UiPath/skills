@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-23T04:06:11Z",
-  "cli_version": "1.208.0-dev.10025",
+  "generated_at": "2026-11-24T04:06:36Z",
+  "cli_version": "1.208.0-dev.10056",
   "verbs": [
     "admin",
     "admin audit",
@@ -347,6 +347,7 @@
     "aops solution",
     "aops solution commits",
     "aops solution get",
+    "api",
     "api-workflow",
     "api-workflow bindings",
     "api-workflow bindings sync",
@@ -1542,6 +1543,12 @@
     "rpa packages inspect",
     "rpa packages install",
     "rpa packages versions",
+    "rpa project",
+    "rpa project migrate",
+    "rpa project migrate analyze",
+    "rpa project migrate bulk",
+    "rpa project migrate upgrade",
+    "rpa project migrate version",
     "rpa publish",
     "rpa remote",
     "rpa remote configure",
@@ -1938,6 +1945,10 @@
     "codedagent register",
     "codedagent run",
     "coder",
-    "context-grounding"
+    "context-grounding",
+    "rpa project migrate analyze",
+    "rpa project migrate bulk",
+    "rpa project migrate upgrade",
+    "rpa project migrate version"
   ]
 }

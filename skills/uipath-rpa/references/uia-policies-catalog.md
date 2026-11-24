@@ -25,7 +25,9 @@ This skill's conditional UIA policies, one entry each. Read by entry, never end-
    uip rpa execution cancel --project-dir "<PROJECT_DIR>" --output json
    ```
 4. **List windows again** via the UIA snapshot CLI.
-5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uip rpa uia interact` CLI (diff and close procedure: the package guide's § Window Baseline).
+5. **Diff before vs after**, in this order:
+   1. **Reset apps the run drove.** A faulted or cancelled run can leave any app it drove — leaked or in the baseline — mid-task: unsaved edits, an open dialog, menu or prompt, a half-filled form, a screen other than the one the workflow starts from. Inspect each such window via the UIA snapshot CLI and return it to its pre-run state via the `uip rpa uia interact` CLI. Choose the action that discards the run's changes (cancel, close without saving, navigate back) — never one that commits them (save, submit, confirm). A dismiss or close can raise a prompt the run never captured: capture it before answering. Reset before closing any window: closing a window does not discard its state, and session-restoring apps reopen unsaved content at the next launch. Leave state already present in the baseline — it is the user's.
+   2. **Close leaked windows.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uip rpa uia interact` CLI (diff and close procedure: the package guide's § Window Baseline).
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
 
@@ -49,7 +51,7 @@ When a workflow fails at runtime with a selector error:
 2. **Identify the failing element** -- read the error to find which descriptor/element failed.
 3. **Read the window selector** -- from the Object Repository files, find the screen's selector that scopes the failing element.
 4. **Follow the package's recover selector guide** -- routed from `ui-automation-guide.md` § Documentation.
-5. **Clean up and re-run** -- follow the procedure above (stop, diff, close leaked windows, re-run).
+5. **Clean up and re-run** -- follow the procedure above (stop, diff, reset app state, close leaked windows, re-run).
 
 Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
