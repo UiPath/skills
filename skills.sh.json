@@ -43,6 +43,7 @@
         "uipath-test",
         "uipath-governance",
         "uipath-insights",
+        "uipath-idp",
         "uipath-process-mining",
         "uipath-tasks",
         "uipath-a2a-agents",

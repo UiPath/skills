@@ -44,6 +44,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Integration Service connections | `uipath-platform` |
 | Data Fabric entities | `uipath-platform` |
 | Action Center tasks at runtime | `uipath-tasks` |
+| Document digitization runs (uploads, OCR to markdown) | `uipath-idp` |
 | Test Manager cases, sets, reports | `uipath-test` |
 | Identity, roles, tenants, audit | `uipath-admin` |
 

@@ -71,6 +71,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-platform** | Platform ops via `uip` CLI — auth, Orchestrator (folders, assets, queues, buckets, jobs, triggers), Integration Service, Data Fabric (entities and records), LLM Gateway, traces, licensing. |
 | **uipath-admin** | UiPath Admin — Identity Server, Authorization (custom roles, role assignments, PDP), OMS (org, tenants, services, regions), IP restriction, audit; governance policies (AOps product policies and Access ToolUsePolicy). |
 | **uipath-test** | Test Manager — manage projects, cases, sets, executions; generate persona-tailored test reports. |
+| **uipath-idp** | IDP document capabilities (`uip documents`) — upload a file to a folder, digitize it to markdown, choose OCR and layout engines, read single pages. |
 
 ### Diagnostics & Feedback
 
@@ -101,6 +102,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-genome` | Preview |
 | `uipath-governance` | Preview |
 | `uipath-human-in-the-loop` | Stable |
+| `uipath-idp` | Preview |
 | `uipath-insights` | Preview |
 | `uipath-ixp` | Stable |
 | `uipath-maestro-bpmn` | Stable |
