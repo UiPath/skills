@@ -29,12 +29,21 @@
 //           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
+<<<<<<< HEAD
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
 //           component genome linked twice; the `Source framework`
+=======
+//           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
+//           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
+//           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
+//           its `<slug>-genome/` component folder, never inside it; no process genome of a dispatcher and a performer alone; a case component (Build With `uipath-maestro-case`) beside a Case
+//           Management SDD naming that SDD in its Interface or its `Designed in:` line; no H2 heading twice; no
+//           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
+>>>>>>> a73fc25d3 (fix(uipath-planner): fix the 7 luna planner failures: genome placement check, case variable parity, reworded case and genome rules, Test grader (#5230))
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
-//           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
+//           lists) and still has that fingerprint, and a component genome carrying its SDD's Action Required items; an SDD written from the genome (`<slug>-sdd.md`, a process
 //           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
 //
 // Export check (--processes and --recordsets, both required together):
@@ -325,7 +334,7 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
   if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
   const designedIn = text.match(/^>\s*Designed in:[^\n]*/m);
   if (designedIn && !/\bsdd-sha256\s+[0-9a-f]{64}\b/.test(designedIn[0])) r.strict("Designed in: line has no sdd-sha256 fingerprint");
-  checkDesignedIn(path, text, r);
+  checkDesignedIn(path, text, level, r);
   const pos = h2Positions(text);
   const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
   for (const h of new Set(headings.filter((h, i) => headings.indexOf(h) !== i))) r.strict(`heading '## ${h}' appears more than once`);
@@ -423,6 +432,10 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
     else if (pool.get(num) !== "open") r.strict(`${mark} names entry ${num} of ${where}, which is ${pool.get(num)}: a settled point keeps no marker`);
   }
   if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
+  // an entry withdrawn into a Configuration Question keeps its point marked on the line that uses the question
+  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (\d+)/gm)) {
+    if (!new RegExp(`\\*\\[Inferred:\\s*CQ${n}\\]\\*`).test(text)) r.strict(`Open Decisions entry ${num} is withdrawn as Configuration Question ${n}, and no line carries *[Inferred: CQ${n}]*: mark the line that uses the question, *[Inferred: CQ${n}]* (SDD [SME REVIEW]: <note>)`);
+  }
   const named = namedEntries(text);
   for (const [num, status] of entries) {
     if (status === "open" && !named.has(num) && !namedElsewhere.has(num)) r.strict(`Open Decisions entry ${num} is named nowhere in the genome: mark the line that states its point (*[Inferred: D${num}]*), or name it at its defect, row or step`);
@@ -430,7 +443,7 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
 }
 
 /** strict: the SDD a `Designed in:` line links still has the fingerprint the line records. */
-function checkDesignedIn(path, text, r) {
+function checkDesignedIn(path, text, level, r) {
   const m = text.match(DESIGNED_IN);
   if (!m || !m[2]) return;
   const sdd = resolvePath(dirname(path), m[1]);
@@ -438,6 +451,13 @@ function checkDesignedIn(path, text, r) {
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
   if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  // a component genome holds every gap of its SDD: an SDD with Action Required items, a genome with none of them
+  if (level !== "component") return;
+  const asked = sectionBody(read(sdd), "Action Required");
+  const hasItems = /\[(?:SME REVIEW|DEFAULT)\]/.test(asked) || /^\|\s*\d+\s*\|/m.test(asked) || /\*\*(?:D|CQ)\d+/.test(asked);
+  if (hasItems && !/\(SDD \[(?:SME REVIEW|DEFAULT)\]/.test(text) && !openDecisions(text).size) {
+    r.strict(`${m[1]} has Action Required items and the genome carries none: write each as an Open Decisions entry and its marked line, *[Inferred: D<n>]* (SDD [SME REVIEW]: <note>); an operator setting as a Configuration Question, its entry 'withdrawn: asked as Configuration Question <n>' and its line marked *[Inferred: CQ<n>]*`);
+  }
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;
@@ -624,6 +644,22 @@ export function componentLinks(path, text) {
   return out;
 }
 
+/** strict: a case component (Build With `uipath-maestro-case`) beside a Case Management SDD — in its folder or the
+ * one above, the SDD whose first section is `## Section 1: Case Definition` — names that SDD as its build input, in
+ * its Interface or its own `Designed in:` line. */
+function checkCaseBuildInput(path, text, r) {
+  if (!/uipath-maestro-case/.test(sectionBody(text, "Build With"))) return;
+  const here = dirname(resolvePath(path));
+  const caseSdds = [here, dirname(here)].flatMap((dir) => {
+    let names;
+    try { names = readdirSync(dir); } catch { return []; }
+    return names.filter((n) => /-sdd\.md$/i.test(n) && /^## Section 1: Case Definition\b/m.test(read(join(dir, n))));
+  });
+  if (!caseSdds.length) return;
+  const named = sectionBody(text, "Interface") + (text.match(DESIGNED_IN)?.[0] ?? "");
+  if (!caseSdds.some((n) => named.includes(n))) r.strict(`case component: Interface names no case SDD as its build input; name ${caseSdds[0]} (its path relative to the genome)`);
+}
+
 function checkComponent(path, a, partOf, shape = true, library = false, processEntries = null) {
   const text = read(path);
   // a library is named so in its process genome's Components table, or in its own Transactional Shape stub
@@ -636,6 +672,7 @@ function checkComponent(path, a, partOf, shape = true, library = false, processE
   const bw = sectionPos(pos, "Build With"), wf = sectionPos(pos, "Workflow");
   if (bw !== null && wf !== null && bw > wf) r.core("Build With must precede Workflow");
   if (!/uipath-[a-z-]+/.test(sectionBody(text, "Build With"))) r.core("Build With names no skill");
+  checkCaseBuildInput(path, text, r);
   const workflow = sectionBody(text, "Workflow");
   const steps = (workflow.match(/^(?:\d+\.|[-*]) \S/gm) ?? []).length; // top-level numbered or bulleted steps
   // a test component's steps are its cases and a library's its public workflows
@@ -677,11 +714,24 @@ function checkProcess(path, a) {
   for (const row of tableRows(comp, "| #")) {
     if (row.length > 2 && /\b(dispatcher|performer)\b/i.test(row[2])) r.strict(`Components: role word in the Type cell of '${row[1]}' — it reads the component type only`);
   }
+  // a dispatcher and a performer over one queue are one `uipath-rpa` component, their split its Transactional Shape
+  const rows = tableRows(comp, "| #").filter((row) => row.join("|").includes("uipath-"));
+  if (rows.length === 2 && rows.every((row) => row.join("|").includes("uipath-rpa"))
+    && rows.some((row) => /dispatch/i.test(row.join("|"))) && rows.some((row) => /perform/i.test(row.join("|")))) {
+    r.strict("Components: a dispatcher and a performer alone are ONE uipath-rpa component, its split recorded in the Transactional Shape — write a component genome, not a process genome");
+  }
   const links = componentLinks(path, text);
   if (!links.length) r.core("Components table links no component genome");
   const targets = links.map(([, t]) => posix(t).toLowerCase());
   const first = (i) => targets.indexOf(targets[i]) === i;
   for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
+  // `<slug>-genome.md` sits beside its `<slug>-genome/` folder, never inside it — whatever the folder is spelled
+  const slug = baseName(path).replace(/-genome\.md$/i, "");
+  const home = dirname(resolvePath(path));
+  const sameFolder = links.some(([, target]) => posix(dirname(target)).toLowerCase() === posix(home).toLowerCase());
+  if (/-genome$/i.test(baseName(home)) && (sameFolder || baseName(home).toLowerCase() === `${slug}-genome`.toLowerCase())) {
+    r.strict(`process genome sits inside its component folder ${baseName(home)}/; write it beside that folder`);
+  }
   checkSourceFramework(text, r);
   checkWrittenSdd(path, text, "process", r);
   // the process genome's entries are named in its own text or in a component's (`process D3`)

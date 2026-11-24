@@ -160,7 +160,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 - `wait-for-user` + `Marks Stage Complete: Yes` is legal and canonical for user-routed completion.
 - `return-to-origin` is completion-only, and its lane is always interrupting.
 
-**`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways: a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
+**`wait-for-user` ↔ `user-selected-stage` pairing.** `wait-for-user` is an Exit Type, never a WHEN. Validate enforces the pair both ways: an exit row with Exit Type `wait-for-user` and no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
 
 #### Repairing a `user-selected-stage` lane
 
@@ -172,7 +172,15 @@ Diagnose first; the two repairs are opposites.
 | Entry is automatic from a decision, event, or SLA | The picker rule itself | Decision-routed |
 | Nothing either way | Assume person-launched — re-keying on an unstated fact invents a business rule | Person-launched |
 
-**Person-launched.** Give every eligible upstream primary stage a completing exit row `| required-tasks-completed | — | wait-for-user | Yes |` (WHEN, IF, Exit Type, Marks Stage Complete — `wait-for-user` is the Exit Type, never a WHEN) ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+**Person-launched.** Give every eligible upstream primary stage ("any active case" means every primary stage) this completing exit row. It REPLACES that stage's existing `required-tasks-completed | — | exit-only | Yes` row — one completion row per stage, never a second one, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+
+```markdown
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|------|-----|-----------|---------------------|--------------|
+| required-tasks-completed | — | wait-for-user | Yes | — |
+```
+
+The WHEN stays `required-tasks-completed`; only the Exit Type changes. `wait-for-user` is never a WHEN value — `| wait-for-user | — | wait-for-user | Yes |` fails validation.
 
 **Decision-routed.** All four edits, or the branch dual-fires or deadlocks:
 
@@ -190,9 +198,13 @@ Entry shape follows the lane's trigger source:
 | Lane trigger | Entry shape |
 |---|---|
 | A person launches it | `user-selected-stage`, paired with an upstream `wait-for-user` exit |
-| External / global event | ONE `wait-for-connector` entry on the destination lane — never duplicated per origin stage |
+| External / global event | ONE `wait-for-connector` entry on the destination lane, `**Interrupting:** Yes` — never duplicated per origin stage, and no origin stage carries an exit row on that event: the interrupting entry leaves whatever stage is active |
 | SLA response | ONE `sla-status-change` entry row per SLA the lane answers ([Layer 4](case-data-and-time-guide.md#layer-4--time-slas--escalations)) — five phase SLAs into one lane are five rows on that lane, never one WHEN cell joined with `OR` |
 | Decision / signal divert | The origin stage carries a gated diverting exit — `Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF` on the signal, exit target → the lane — and the origin's completion exit carries the exact inverse `IF`. The lane enters via `selected-stage-exited("<origin>")` + the same `IF`. |
+
+**Reachability walk — every write, a draft included.** Before the write ends, list each secondary lane with the row that enters it and, for a decision divert, the origin's gated exit: `<lane> ← <entry row> ← <origin exit row>`. A lane with no entry row, or a decision value the design names (reject, decline, withdraw, hold) with no `IF` on that value in an origin exit and a lane entry, is a gap: write the rows now — a reviewer of the draft routes a case only along rows that exist.
+
+**A role chosen by a value is the task's Recipient — every write, a draft included.** "Over $5M the Credit Analyst does it, otherwise the Underwriter" is ONE task whose `**Recipient:**` is `=js:vars.<amount> > 5000000 ? "Role:<role above>" : "Role:<role at or below>"` (numeral written out, high side first). A Business Rules row, a Personas note or an entry `IF` (which skips the task on the other side) is not that encoding.
 
 Omitting the diverting exit makes a decision path dual-fire (ungated completion → the next stage AND the lane both enter) or deadlock (gated completion with no alternative exit). Only a `selected-stage-exited` lane entry needs a diverting exit; a `selected-stage-completed("<origin>")` + `IF` lane keys off the origin's normal completion — guard only.
 
@@ -204,7 +216,7 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 
 | Described timing | Activation Mode token | Entry rule |
 |---|---|---|
-| Ordered run (`then`, `after`, `before`, a dependency) | `sequential` | One `runs-sequentially` row — on EVERY task in the run, including the first |
+| Ordered run (`then`, `after`, `before`, a dependency) | `sequential` | One `runs-sequentially` row — on EVERY task in the run, including the first: it starts when the stage enters, yet its rule is `runs-sequentially`, never `current-stage-entered` |
 | Independent, starts with the stage | `parallel` | `current-stage-entered` |
 | Independent siblings after one predecessor | `parallel-after-predecessor` | `runs-sequentially`; the siblings share the next task set |
 | External callback | `event-triggered` | `wait-for-connector` (or `sla-status-change` for an SLA-started task) |
