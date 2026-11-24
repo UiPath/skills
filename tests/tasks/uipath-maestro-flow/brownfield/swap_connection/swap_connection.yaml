@@ -10,7 +10,7 @@ description: >
   what is under test is the file the swap writes, and the grader checks the
   connection against the tenant. Unlike bindings/reconfigure_different_connection
   (two configures of a new node), this edits an existing .flow that lacks bindings[].
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, connector]
 
 run_limits:
   max_turns: 40
@@ -72,6 +72,14 @@ success_criteria:
   - type: run_command
     description: "The .flow was written by uip maestro flow merge, not edited by hand"
     command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/brownfield/fixture_ticket_triage/TicketTriageSolution/TicketTriage --project TicketTriageSolution/TicketTriage"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Only fetchTickets and its two binding rows changed"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --changed-node fetchTickets --added-binding 'uipath-atlassian-jira connection' --added-binding FolderKey --original $REFERENCE_DIR/brownfield/fixture_ticket_triage/TicketTriageSolution/TicketTriage --project TicketTriageSolution/TicketTriage"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

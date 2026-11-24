@@ -120,10 +120,17 @@ Emit-only rules—mode selection by `package.json`, and `compile`/`check` behavi
 
 The JSON envelope has top-level `Result`; successful validation also reports `Data.Status: "Valid"` and may contain `Data.Warnings`. Treat warnings as failures except the reviewed shared-connection advisory and `err()` read diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve an exception's exact code/text and rationale; do not broaden the allowlist.
 
-`[UNRESOLVED_BINDING]`: the `.flow` lacks the `bindings[]` row a step's `<bindings.NAME>` placeholder needs, and Studio Web refuses to publish it. Re-emit once through the loop in use, then validate again: a new flow, `compile` its source; an existing `.flow`, decompile it (`--no-pipeline`) and `merge` it back ([the safe project loop](brownfield.md#the-safe-project-loop); with [a supplied source](brownfield.md#a-supplied-source), rerun its merge instead of decompiling). Merge's warning that it writes a missing binding row is [that repair](brownfield.md#merge-warnings-what-the-round-trip-changed), not a failure. Validate reads only the `.flow`, so `bindings.json`, `bindings_v2.json` and solution resources cannot explain it.
+`[UNRESOLVED_BINDING]`: the `.flow` lacks the `bindings[]` row a step's `<bindings.NAME>` placeholder needs, and Studio Web refuses to publish it. Re-emit once through the loop in use, then validate again:
+
+- A new flow: `compile` its source.
+- An existing `.flow`, connection placeholder: decompile it (`--no-pipeline`) and `merge` it back ([the safe project loop](brownfield.md#the-safe-project-loop)).
+- An existing `.flow`, any other placeholder (queue, IxP): merge does not restore those rows; report the node and placeholder.
+- [A supplied source](brownfield.md#a-supplied-source): rerun its merge. Do not decompile, even though the warning says to: decompile overwrites the supplied source.
+
+Merge's warning that it writes a missing binding row is [that repair](brownfield.md#merge-warnings-what-the-round-trip-changed), not a failure. Validate reads only the `.flow`, so `bindings.json`, `bindings_v2.json` and solution resources cannot explain it.
 
 <!--skill-flavor:unresolved-binding-persists:start-->
-Still there after the merge: [update `@uipath/maestro-builder-sdk`](#installing-the-package) and merge once more; still there, report the node and placeholder.
+A connection placeholder still there after the merge: update the SDK copy `uip` runs, `npm install --save-dev @uipath/maestro-builder-sdk@latest` when the workspace has `node_modules/@uipath/maestro-builder-sdk` (that copy runs first), else `npm install -g @uipath/maestro-builder-sdk@latest`, and merge once more. Any other placeholder, or still there: report the node and placeholder.
 <!--skill-flavor:unresolved-binding-persists:end-->
 
 A warning with no fix in this skill gets one bounded experiment ([below](#bounded-completion)), then is reported as a failure with its code and node.

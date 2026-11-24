@@ -190,7 +190,7 @@ A swap edits only the step's `connection:` and `folder:`:
 
 1. `uip is connections list <CONNECTOR_KEY> --all-folders --output json`: take the requested connection's `Id` and `FolderKey`. A folder name or several matches: [where both values come from](bindings.md#where-both-values-come-from).
 2. Decompile, set that step's `connection:` to the `Id` and `folder:` to the `FolderKey`, then check, merge and validate as in [the safe project loop](#the-safe-project-loop). Merge rewrites the step's `bindings[]` rows and `bindings_v2.json`.
-3. An input holding an id looked up through the old connection (a Slack channel, a Jira issue type) may not exist behind the new one: re-run its `uip maestro registry prepare <CONNECTOR_KEY> --action <ACTION> --connection-id <ID>` with the same `--resolve`.
+3. An input holding an id looked up through the old connection (a Slack channel, a Jira issue type) may not exist behind the new one: re-run `uip maestro registry prepare <CONNECTOR_KEY> --action <ACTION> --connection-id <ID>`, picking each such value again by name (`--resolve <field>:name=<display name>`, [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values)); the decompiled source holds only the old id.
 
 <!--skill-flavor:swap-connection-finish:start-->
 No other step: do not read solution resource files or compile a scratch copy.
