@@ -20,6 +20,8 @@ TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 uip gov compliance-packs state settings --output json > "$SESSION_TEMP/settings.json"
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json > "$SESSION_TEMP/coverage.json"
 uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json > "$SESSION_TEMP/state.json"
+# Modes on: the checker view the Enable view counts from (coverage § Enable view)
+uip gov compliance-packs catalog get <packId> --include-checker-rules --output json > "$SESSION_TEMP/catalog-checker.json"
 ```
 
 `settings.json` `Data.ModeSelectionEnabled == true` → [Modes on](#modes-on). `false`, or a failed / 404 `state settings` → [Modes off](#modes-off).
@@ -30,12 +32,12 @@ Every decision below is the admin's. Ask, wait for the answer, and never fill on
 
 ### Step 1 — Ask how the standard should run
 
-The admin must have seen coverage's [YOUR DEPLOYED POLICIES](../coverage/impl.md#your-deployed-policies) and WHAT HAPPENS TO YOUR AOPS POLICIES blocks ([coverage § If you apply / If you enforce](../coverage/impl.md#if-you-apply--if-you-enforce)) before choosing. If coverage was just printed in this reply, ask right after it and don't repeat anything; otherwise show those two blocks unchanged first. The question itself stays short — the blocks already say what each mode does.
+The admin chooses from coverage's [Enable view](../coverage/impl.md#enable-view): its APPLICATION MODE block (what each mode covers), YOUR DEPLOYED POLICIES, WHAT HAPPENS TO YOUR AOPS POLICIES and the conflicts by requirement. It ends with the mode question (`Reply 1 (Enforce) or 2 (Observe).`); when it was just printed, don't ask again or repeat anything. Otherwise (the Enable view isn't in view, or the template was shown instead: older server, no `CheckerSummary`) show the blocks first, then ask:
 
 ```
 How should <packName> run on <tenantName>?
 
-  1. Enforce — you then choose, for each conflict (C1–C<N>), current or standard
+  1. Enforce — for each conflict (C1–C<N>), you then keep the current value or update to the standard's recommendation
   2. Observe — nothing changes in your AOps policies; you can enforce later
 
 Reply 1 or 2.
@@ -50,43 +52,63 @@ Observe → go to step 4 (no choices: Observe changes none of the conflicting va
 
 ### Step 2 — Show the conflicts
 
-The conflicts were shown with coverage (CONFLICTS — RESOLVE THEM TO ENFORCE). Don't print them again in the same reply; if they are no longer in view, render [coverage § Conflicts with your existing policies](../coverage/impl.md#conflicts-with-your-existing-policies) exactly. 0 conflicts → step 4.
+The conflicts were shown with coverage (CONFLICTS TO RESOLVE, by requirement, in the Enable view). Don't print them again in the same reply; if they are no longer in view, render them again as in [coverage § Enable view](../coverage/impl.md#enable-view). 0 conflicts → step 4.
 
-### Step 3 — Ask, for every conflict: current or standard
+### Step 3 — Ask, for every conflict: keep the current value or update to the standard's recommendation
 
-One message, then wait. The admin answers with the words **current** and **standard**; `keep` / `pack` are only the values sent to the service, never shown.
+One message, then wait. The question and the two options use the Governance portal's words, so the CLI and the portal ask the same thing. The admin answers with **keep** and **update**; `keep` / `pack` are only the values sent to the service, never shown.
 
 ```
-For each conflict, choose what the setting holds after enforcing:
-  current   — stays as your policy has it today. <packName> then counts that setting
-              as not applied.
-  standard  — set to the value <packName> recommends.
+Keep the current value or update to the standard's recommendation?
+Keep: your value stays, but <packName> reports that setting as not met.
+Update: the setting takes the value the standard recommends.
 
-  #     Setting                                          Today              Standard
-  C1    Agents: Enable Agents                            Disabled           Enabled
-  C2    Coded Agents: Enable Coded Agents                Not set            Enabled
-  C4    Trace Management: Trace Data TTL                 30d                7d
-          ↳ TTL enforcement                              Disabled           Enabled
-          ↳ in 2 policies: RPA Developer ("Robot Dev"), Automation Developer ("Robot AD")
-  C7    Product Toggles: Enable Coded Agents             Disabled           Enabled
-          ↳ ISO 42001 also requires today's value: standard changes it there too.
-  C9    Product Toggles: Enable Apps AI Features         Disabled           Enabled
-          ↳ today's value also meets <packName>: current keeps it applied.
-  …     one row per conflict, C1 to C<N>
+On enforce, P1 "aitl-22-nov-2026" (AI Trust Layer · No License) is replaced by
+"AI Capabilities And Safety Governance", which starts from P1's values plus the choices
+below. P1 itself isn't edited; it's undeployed.
+
+6.1.4  AI system impact assessment
+  C1  Agent Guardrail — Sensitive Data Exposure Protection
+        Keep current value                        "aitl-22-nov-2026" holds Disabled / Not set (7 settings)
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds Enabled
+  C2  Agent Guardrail — Prompt Injection Prevention
+        Keep current value                        "aitl-22-nov-2026" holds Disabled / Not set (6 settings)
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds Enabled
+
+A.6.2.8  AI system recording of event logs
+  C4  Trace Management — Trace Data TTL
+        Keep current value                        "aitl-22-nov-2026" holds 30d · TTL enforcement Disabled
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds 7d · TTL enforcement Enabled
+  C5  Trace Management — Input/Output Logging
+        Keep current value                        "aitl-22-nov-2026" holds Disabled
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds Enabled
+
+A.9.2  Processes for responsible use of AI systems
+  C7  Product Toggles — Enable Coded Agents
+        Keep current value                        "aitl-22-nov-2026" holds Not set / Disabled
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds Enabled
+        ↳ ISO 27001 also requires today's value: updating changes it there too.
+  C8  Product Toggles — Enable Apps AI Features
+        Keep current value                        "aitl-22-nov-2026" holds Disabled
+        Update to the standard's recommendation   "AI Capabilities And Safety Governance" holds Enabled
+        ↳ today's value also meets <packName>: keeping it still counts as applied.
+
+…   one group per requirement with conflicts, as in the Enable view (C1 to C<N>)
 
 Reply in any of these ways:
-  all standard                              all current
-  C1 standard, C2 standard, rest current    C1–C9 current, C10–C15 standard
-  all standard except C3, C5                C4 standard for RPA Developer, current for Automation Developer
+  all update                         all keep
+  C1 update, C2 update, rest keep    C1–C9 keep, C10–C15 update
+  all update except C3, C5           C4 update for RPA Developer, keep for Automation Developer
 ```
 
-- **Today / Standard** = the conflict's `Lines[]` `Current` / `Recommended`, per the [line rules](../coverage/impl.md#line-rules) (same rows and `↳` sub-rows as the conflict table). One or two short lines after the list may say what the choices turn on or off ("standard for C1–C9 turns on AI features that are off today"); never more.
-- **Reading the reply.** `current`, `keep`, `mine`, `today` → keep · `standard`, `pack`, `recommended` → pack. `all <choice>` sets every conflict; `except C…` gives the listed ones the other choice; `rest` / `others` / `remaining` sets every conflict not named earlier in the same reply; ranges `C1–C9`, `C1-C9`, `C1 to C9`. A per-license-type answer applies only to the license types it names.
+- **Groups** follow the Enable view's conflict blocks: one per requirement (`ClauseId` and catalog `ClauseName`), in the same order, with the same conflict numbers. Above the groups, one short paragraph per deployed policy with conflicts (`P<i>`, live `PolicyName`, product, license types) says what enforce does to it, from the slot's `ApplyPlan[]` entry: when its `PolicyId` is P<i>'s own `PolicyId` (P<i> was created by this standard), write `On enforce, P<i> "<name>" (<product> · <license types>) itself is updated with the choices below.`; otherwise use the replace wording in the template, naming the policy enforce deploys in that slot: the `ApplyPlan[]` entry's `PolicyName` for that product and license type, or the catalog's `DeploymentPolicies[].PolicyName` when it is absent (same rule as coverage's [WHAT HAPPENS TO YOUR AOPS POLICIES](../coverage/impl.md#if-you-apply--if-you-enforce) table). Never "the standard's policy" or "the new policy".
+- **Keep / Update values** = the conflict's `Lines[]` `Current` / `Recommended`, per the [line rules](../coverage/impl.md#line-rules). A conflict with sub-settings (`↳` rows in the conflict table) lists them after the main value, joined with ` · `. One or two short lines after the list may say what the choices turn on or off ("updating C1–C9 turns on AI features that are off today"); never more.
+- **Reading the reply.** `keep`, `current`, `mine`, `today` → keep · `update`, `standard`, `pack`, `recommended` → pack. `all <choice>` sets every conflict; `except C…` gives the listed ones the other choice; `rest` / `others` / `remaining` sets every conflict not named earlier in the same reply; ranges `C1–C9`, `C1-C9`, `C1 to C9`. A per-license-type answer applies only to the license types it names.
 - **Nothing is filled in by the skill.** After reading the reply, every conflict (and, for a conflict in several policies, every license type of it) must have a choice the admin gave, directly or through `all` / `rest` / a range. Ask again only for what is still open, listing those conflicts. Ask too when a reply is contradictory (a conflict given both choices) or names a conflict that doesn't exist. Never use the service's "no entry means pack".
-- A conflict whose `Policies[]` has several entries (license-type groups): show the `↳ in N policies` line. A plain choice for it applies to all its license types.
-- A current value with `OwnerPackIds`: show the `↳` line naming those standards (catalog names) — standard writes this standard's value, and their setting then shows as changed.
-- Mark `today's value also meets <packName>` only when every one of the conflict's `Lines[]` has `IsMet == true`; otherwise the `current` legend line holds.
-- Correcting changed settings on a standard already in Enforce: `standard` puts its value back, `current` accepts the change. Settings left at current on an earlier apply come back as conflicts; say so, and ask again anyway.
+- A conflict whose `Policies[]` has several entries (license-type groups): the Keep line names each policy and its value, one per line (`"Robot Dev" holds 30d (RPA Developer)`), aligned under the first. A plain choice for it applies to all its license types.
+- A current value with `OwnerPackIds`: show the `↳` line naming those standards (catalog names) — updating writes this standard's value, and their setting then shows as changed.
+- Mark `today's value also meets <packName>` only when every one of the conflict's `Lines[]` has `IsMet == true`; otherwise the "Keep: … reports that setting as not met" line holds.
+- Correcting changed settings on a standard already in Enforce: update puts its value back, keep accepts the change. Settings kept on an earlier apply come back as conflicts; say so, and ask again anyway.
 - Never show a `ConflictId`, `PolicyId` or license identifier.
 
 ### Step 4 — Confirm
@@ -97,13 +119,13 @@ Reply in any of these ways:
 CONFLICT CHECK
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ ⚠  <N> CONFLICTS WITH YOUR DEPLOYED POLICIES                                                 ┃
-┃    Your choices: <S> set to the standard · <K> stay as today                                 ┃
+┃    Your choices: <S> updated to the standard's recommendation · <K> current value kept       ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 Your choices                                              (Enforce, with conflicts)
-  C1   Agents: Enable Agents                        standard → Enabled
-  C2   Coded Agents: Enable Coded Agents            current  → Not set
-  C4   Trace Management: Trace Data TTL             RPA Developer: standard → 7d · Automation Developer: current → 30d
+  C1   Agents: Enable Agents                        update → Enabled
+  C2   Coded Agents: Enable Coded Agents            keep   → Not set
+  C4   Trace Management: Trace Data TTL             RPA Developer: update → 7d · Automation Developer: keep → 30d
   … every conflict, C1 to C<N>
 
 WHAT HAPPENS TO YOUR AOPS POLICIES
@@ -120,7 +142,7 @@ Proceed? (y/n)
   ```
   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   ┃ ⚠  <N> CONFLICTS WITH YOUR DEPLOYED POLICIES                                                 ┃
-  ┃    Your choices: <S> set to the standard · <K> stay as today                                 ┃
+  ┃    Your choices: <S> updated to the standard's recommendation · <K> current value kept       ┃
   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   
   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -130,7 +152,7 @@ Proceed? (y/n)
   
   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   ┃ ⓘ  <N> CONFLICTS WITH YOUR DEPLOYED POLICIES                                                 ┃
-  ┃    Observe changes none of them. You'll choose current or standard for each if you enforce.  ┃
+  ┃    Observe changes none of them. You'll choose keep or update for each if you enforce.       ┃
   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   ```
 
@@ -138,14 +160,14 @@ Proceed? (y/n)
   - 0 conflicts (Enforce or Observe) → ✓; for Observe write "Observe writes nothing to your policies." as its second line.
   - Observe with conflicts → ⓘ.
   - Never fold this into a sentence or the "Your choices" list.
-- "Your choices" lists every conflict with the value it will hold (`Recommended` for standard, `Current` for current). Its line count equals `Summary.ConflictCount`; check before printing.
+- "Your choices" lists every conflict with the value it will hold (`Recommended` for update, `Current` for keep). Its line count equals `Summary.ConflictCount`; check before printing.
 - The ⚠ list is coverage `Clauses[].Controls[]` with `StatusAfterApply == "manual"`, with the `ManualConfigChecks[]` expectation as the prompt.
 - "Your choices" always lists every conflict, also when the admin answered with `all` / `rest` / a range — this is where a shortcut is checked.
-- Require `y`. Halt on anything else. A change of mind ("make C3 current") updates that conflict and shows this confirmation again.
+- Require `y`. Halt on anything else. A change of mind ("keep C3") updates that conflict and shows this confirmation again.
 
 ### Step 5 — Enable
 
-Write the choices (current → `keep`, standard → `pack`), one entry per conflict — `pack` ones too, so what is sent is exactly what the admin chose — or one per license type for a conflict answered per license type (`licenseTypeIdentifier` = that policy's `LicenseTypes[].Identifier`; a policy with several license types gets an entry for each):
+Write the choices (keep → `keep`, update → `pack`), one entry per conflict — `pack` ones too, so what is sent is exactly what the admin chose — or one per license type for a conflict answered per license type (`licenseTypeIdentifier` = that policy's `LicenseTypes[].Identifier`; a policy with several license types gets an entry for each):
 
 ```json
 [
@@ -233,6 +255,10 @@ uip gov compliance-packs state get tenant $TENANT_ID <packId> --output json
 Parse `Data.Active` (must be `true`), `Data.Mode` (modes on: the mode the admin chose) and `Data.Policies[]` (policy UUIDs). Then run coverage again: with Enforce, every conflict answered `pack` is gone, and every one answered `keep` still shows (as a ✗ setting).
 
 ## Report
+
+**Modes on, Enforce:** report with [coverage § Enforced view](../coverage/impl.md#enforced-view), built from `catalog.json` and the coverage read again in Verify. Open with one line, `<packName> is now enforced on <tenantName> ✓`, then the view, then the `Applied by` and `Note` lines below. The view's own offers (correct drifted settings, configure manual ones, restore an Unverifiable policy) follow it.
+
+Otherwise (Observe, or modes off):
 
 ```
 <packName> settings configured on <tenantName> ✓
