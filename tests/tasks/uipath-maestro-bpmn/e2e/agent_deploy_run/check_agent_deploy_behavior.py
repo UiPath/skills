@@ -7,9 +7,9 @@ gender), starts the process deployed in `<parentFolderPath>/<folderName>`, and
 requires a clean completion with `sum` = a + b, `gender` = the expected value
 and a non-empty `reason`. One run of the agent-job node must return exactly
 that label (no other of male/female/unknown) together with the process
-`reason`, so a script or a constant cannot stand in for the agent. A job of
-the folder's Agent process must also have succeeded on the deployed job's
-trace.
+`reason`, so a script or a constant cannot stand in for the agent. The job
+that agent-job node started (its element-execution `JobKey`) must be a
+successful job of the seeded folder's Agent process.
 """
 
 from __future__ import annotations
@@ -37,6 +37,7 @@ from _shared.bpmn_live import (  # noqa: E402
     debug_evidence,
     element_output_records,
     fetch_asset,
+    fetch_element_executions,
     get_ci,
     named_values,
     payload_data,
@@ -145,8 +146,17 @@ def agent_release_keys(rows: list[Any]) -> set[str]:
     }
 
 
-def trace_key(value: Any) -> str:
-    return str(value or "").replace("-", "").casefold()
+def started_job_keys(executions: list[Any], node_ids: list[str]) -> set[str]:
+    keys = set()
+    for execution in executions:
+        if get_ci(execution, "ElementId") not in node_ids:
+            continue
+        runs = get_ci(execution, "ElementRuns", []) or []
+        for item in [execution, *runs]:
+            key = get_ci(item, "JobKey") if isinstance(item, dict) else None
+            if key:
+                keys.add(str(key).casefold())
+    return keys
 
 
 def release_key(job: Any) -> str:
@@ -154,21 +164,30 @@ def release_key(job: Any) -> str:
     return str(get_ci(release, "Key", "") or "").casefold() if isinstance(release, dict) else ""
 
 
-def traced_agent_jobs(jobs: list[Any], release_keys: set[str], trace_id: Any) -> list[Any]:
-    trace = trace_key(trace_id)
+def started_agent_jobs(jobs: list[Any], release_keys: set[str], job_keys: set[str]) -> list[Any]:
     return [
         job
         for job in jobs
-        if release_key(job) in release_keys
-        and trace_key(get_ci(job, "TraceId")) == trace
+        if str(get_ci(job, "Key", "") or "").casefold() in job_keys
+        and release_key(job) in release_keys
         and get_ci(job, "State") == "Successful"
     ]
 
 
-def assert_agent_job_ran(folder_path: str, run_data: dict) -> None:
-    since, trace_id = run_data.get("CreationTime"), run_data.get("TraceId")
-    if not isinstance(since, str) or not since or not trace_key(trace_id):
-        raise CheckFailure(f"the deployed job has no CreationTime or TraceId to find its agent job by: {run_data}")
+def assert_agent_job_ran(
+    folder_path: str, since: Any, process: ET.Element, instance_id: str, folder_key: str
+) -> None:
+    if not isinstance(since, str) or not since:
+        raise CheckFailure("the deployed job has no CreationTime to bound the agent job by")
+    node_ids = agent_job_ids(process)
+    executions = fetch_element_executions(instance_id, folder_key)
+    job_keys = started_job_keys(executions, node_ids)
+    if not job_keys:
+        mine = [e for e in executions if get_ci(e, "ElementId") in node_ids]
+        raise CheckFailure(
+            f"agent-job node(s) {node_ids} report no started job in their element executions: "
+            f"{json.dumps(mine, default=str)[:3000]}"
+        )
     _payload, processes = payload_data(
         run_cli(
             ["uip", "or", "processes", "list", "--folder-path", folder_path, "--all-fields", "--limit", "200"],
@@ -190,14 +209,14 @@ def assert_agent_job_ran(folder_path: str, run_data: dict) -> None:
         f"jobs list in {folder_path}",
     )
     rows = jobs if isinstance(jobs, list) else []
-    if not traced_agent_jobs(rows, release_keys, trace_id):
+    if not started_agent_jobs(rows, release_keys, job_keys):
         seen = [
-            (get_ci(j, "ReleaseName"), get_ci(j, "State"), trace_key(get_ci(j, "TraceId")) == trace_key(trace_id))
+            (get_ci(j, "Key"), get_ci(j, "ReleaseName"), get_ci(j, "State"), get_ci(j, "ParentJobKey"))
             for j in rows
         ]
         raise CheckFailure(
-            f"no job of the Agent process in {folder_path} succeeded on the deployed job's trace {trace_id}; "
-            f"jobs since {since} (name, state, same trace): {seen}"
+            f"agent-job node(s) {node_ids} started job(s) {sorted(job_keys)}, none a successful job of the "
+            f"Agent process in {folder_path}; jobs there since {since} (key, name, state, parent): {seen}"
         )
 
 
@@ -226,8 +245,8 @@ def main() -> None:
         print("OK: sum, gender and reason are correct")
         assert_agent_provenance(process, evidence.variables, gender)
         print("OK: the agent-job node produced the gender and the reason")
-        assert_agent_job_ran(folder_path, run_data)
-        print(f"OK: the Agent process in {folder_path} ran on the deployed job's trace")
+        assert_agent_job_ran(folder_path, run_data["CreationTime"], process, instance_id, folder_key)
+        print(f"OK: the job the agent-job node started is a successful job of {folder_path}'s Agent process")
     except CheckFailure as error:
         raise SystemExit(f"FAIL: {error}") from error
     print("PASS")

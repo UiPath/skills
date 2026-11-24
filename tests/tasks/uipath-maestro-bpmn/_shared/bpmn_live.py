@@ -703,9 +703,7 @@ def run_deployed(
         while True:
             try:
                 job = call(
-                    ["uip", "or", "jobs", "get", job_key, "--folder-key", folder_key, "--all-fields", "--no-download"],
-                    "jobs get",
-                    quiet=True,
+                    ["uip", "or", "jobs", "get", job_key, "--folder-key", folder_key], "jobs get", quiet=True
                 )
                 failed_polls = 0
             except CheckFailure as error:
@@ -735,7 +733,6 @@ def run_deployed(
         "ProcessName": get_ci(release, "Name"),
         "CreationTime": get_ci(job, "CreationTime"),
         "Info": get_ci(job, "Info"),
-        "TraceId": get_ci(job, "TraceId"),
     }
     return run_data, job_key, folder_key
 
@@ -745,6 +742,7 @@ SOLUTION_IMPORT_TIMEOUT = 180
 VARIABLES_ALL_TIMEOUT = 120
 INCIDENTS_TIMEOUT = 120
 ASSET_TIMEOUT = 120
+ELEMENT_EXECUTIONS_TIMEOUT = 120
 
 COMPLETED_STATUSES = frozenset({"Completed", "Successful"})
 
@@ -845,6 +843,19 @@ def fetch_asset(instance_id: str, folder_key: str) -> str:
     if not isinstance(data, str) or not data.strip():
         raise CheckFailure(f"instances asset returned no BPMN for {instance_id}: {data!r}")
     return data
+
+
+def fetch_element_executions(instance_id: str, folder_key: str) -> list[Any]:
+    """`instances element-executions`: one row per element, each with its runs
+    and the `JobKey` of any job a run started."""
+
+    completed = run_cli(
+        _instance_command("element-executions", instance_id, folder_key),
+        timeout=ELEMENT_EXECUTIONS_TIMEOUT,
+    )
+    _payload, data = payload_data(completed, "instances element-executions")
+    rows = get_ci(data, "ElementExecutions", [])
+    return rows if isinstance(rows, list) else []
 
 
 def require_clean_run(debug_data: Any, evidence: DebugEvidence) -> str:

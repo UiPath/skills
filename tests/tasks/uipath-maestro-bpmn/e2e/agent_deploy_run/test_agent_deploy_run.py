@@ -171,8 +171,8 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(check_behavior.agent_job_ids(process()), ["classify"])
 
 
-def job(release="bbbb", state="Successful", trace="0a1b2c3d4e5f60718293a4b5c6d7e8f9"):
-    return {"ReleaseName": "A", "Release": {"Key": release}, "State": state, "TraceId": trace}
+def job(key="c0ffee00-0000-4000-8000-000000000001", release="bbbb", state="Successful"):
+    return {"Key": key, "ReleaseName": "A", "Release": {"Key": release}, "State": state}
 
 
 class AgentJobTests(unittest.TestCase):
@@ -180,29 +180,33 @@ class AgentJobTests(unittest.TestCase):
         {"Name": "P", "ProcessType": "ProcessOrchestration", "Key": "AAAA"},
         {"Name": "A", "ProcessType": "Agent", "Key": "BBBB"},
     ]
-    TRACE = "0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9"
+    STARTED = {"c0ffee00-0000-4000-8000-000000000001"}
+    EXECUTIONS = [
+        {"ElementId": "start", "JobKey": None, "ElementRuns": [{"JobKey": None}]},
+        {"ElementId": "classify", "JobKey": None, "ElementRuns": [{"JobKey": "C0FFEE00-0000-4000-8000-000000000001"}]},
+        {"ElementId": "lookalike", "JobKey": "dddd", "ElementRuns": [{"JobKey": "dddd"}]},
+    ]
 
-    def traced(self, jobs):
-        return check_behavior.traced_agent_jobs(jobs, {"bbbb"}, self.TRACE)
+    def started(self, jobs):
+        return check_behavior.started_agent_jobs(jobs, {"bbbb"}, self.STARTED)
 
     def test_agent_release_keys_are_case_folded(self):
         self.assertEqual(check_behavior.agent_release_keys(self.ROWS), {"bbbb"})
 
-    def test_agent_job_on_the_run_trace_counts(self):
-        self.assertEqual(len(self.traced([job(release="aaaa"), job(release="BBBB")])), 1)
+    def test_job_keys_come_only_from_agent_job_nodes(self):
+        self.assertEqual(check_behavior.started_job_keys(self.EXECUTIONS, ["classify"]), self.STARTED)
+
+    def test_the_started_agent_job_counts(self):
+        self.assertEqual(len(self.started([job(release="aaaa"), job(release="BBBB")])), 1)
 
     def test_faulted_agent_job_does_not_count(self):
-        self.assertEqual(self.traced([job(state="Faulted")]), [])
+        self.assertEqual(self.started([job(state="Faulted")]), [])
 
-    def test_concurrent_agent_job_on_another_trace_does_not_count(self):
-        self.assertEqual(self.traced([job(trace="ffffffffffffffffffffffffffffffff")]), [])
+    def test_concurrent_agent_job_the_node_did_not_start_does_not_count(self):
+        self.assertEqual(self.started([job(key="c0ffee00-0000-4000-8000-000000000002")]), [])
 
-    def test_job_without_a_release_does_not_count(self):
-        self.assertEqual(self.traced([{"State": "Successful", "TraceId": self.TRACE}]), [])
-
-    def test_run_without_a_trace_fails_before_listing(self):
-        with self.assertRaisesRegex(CheckFailure, "TraceId"):
-            check_behavior.assert_agent_job_ran("Shared/x", {"CreationTime": "2026-01-01T00:00:00Z", "TraceId": None})
+    def test_started_job_of_another_release_does_not_count(self):
+        self.assertEqual(self.started([job(release="eeee")]), [])
 
 
 class DeployedTests(unittest.TestCase):
