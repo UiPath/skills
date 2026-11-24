@@ -593,42 +593,23 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
-      - name: Redact secrets from eval report
-        if: always()
-        env:
-          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-        run: |
-          python - <<'PY'
-          import os
-          import pathlib
-
-          names = (
-              "UIPATH_CLI_AUTH_TOKEN",
-              "AWS_BEARER_TOKEN_BEDROCK",
-          )
-          values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
-          if not values:
-              raise SystemExit(0)
-
-          suffixes = {".html", ".json", ".log", ".md"}
-          for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if not path.is_file() or path.suffix not in suffixes:
-                  continue
-              text = path.read_text(encoding="utf-8", errors="ignore")
-              redacted = text
-              for value in values:
-                  redacted = redacted.replace(value, "***")
-              if redacted != text:
-                  path.write_text(redacted, encoding="utf-8")
-          PY
-
       - name: Clean up artifacts (remove .venv and node_modules)
         if: always()
         run: |
           find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
 
-      - name: Upload HTML / JSON eval report
+      - name: Redact secrets from eval report
+        id: scrub
         if: always()
+        env:
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+        # Cover every uploaded file, including arbitrary agent artifact bytes.
+        # Keep task fields intact: both quality gates below still read them.
+        run: python3 .github/scripts/redact-smoke-artifacts.py /tmp/runs
+
+      - name: Upload HTML / JSON eval report
+        if: always() && steps.scrub.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: eval-report-${{ github.run_id }}
