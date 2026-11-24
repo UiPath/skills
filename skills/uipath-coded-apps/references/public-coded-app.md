@@ -3,8 +3,8 @@
 A public coded app is a Coded Web App that **anyone with the link can use without signing in to UiPath** — customers, suppliers, event guests. It calls UiPath as a **confidential external application** of the organization, and only for the resources it declares.
 
 > **Preview.** Public coded apps need:
-> - SDK: `@uipath/uipath-typescript@preview` (`1.9.0-preview.0` or later)
-> - CLI: `npm install -g @uipath/cli@preview` (`1.207.0-preview.341` or later)
+> - SDK: `@uipath/uipath-typescript` `1.8.5` or later
+> - CLI: `npm install -g @uipath/cli` (`1.206.0` or later)
 > - Local runs: `@uipath/coded-apps-dev` `1.0.0-beta.2` or later
 >
 > Today you write `bindings_v2.json` by hand. Generating it from the app code is coming soon.
