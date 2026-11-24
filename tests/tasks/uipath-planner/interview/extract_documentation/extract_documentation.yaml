@@ -39,6 +39,7 @@ simulation:
     Get the project documented, answering the open questions that are yours, then stop.
   constraints:
     - "Do not say which role you hold until the agent asks; when asked which roles you answer for, answer: the process owner."
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "Do not ask for the interview yourself; answer it when the agent offers it."

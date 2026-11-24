@@ -39,6 +39,7 @@ simulation:
   goal: |
     Get the genome and its SDD written, answering the open questions that are yours, then stop.
   constraints:
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
