@@ -163,6 +163,10 @@ def review_check_step(node_type: str, inputs: dict) -> dict:
     return edge(flow, "checkFields", "lowConfidence")
 
 
+def review_check_script(script: str) -> dict:
+    return review_check_step("core.action.script", {"script": script})
+
+
 def review_before_check_step() -> dict:
     """Every item goes to the person first; a check script after the review feeds the gate."""
     flow = review_check_step("core.action.script", {"script": CHECK_SCRIPT})
@@ -236,6 +240,18 @@ CASES = [
     ("composition/check_batch_review.py", "mock between agent and gate only names the agent",
      lambda: review_check_step("core.logic.mock", {"note": "passes on $vars.analyzeItem.output.confidence"}), 1),
     ("composition/check_batch_review.py", "check script after the human task", review_before_check_step, 1),
+    ("composition/check_batch_review.py", "check script destructures the confidence",
+     lambda: review_check_script("const { decision, confidence } = $vars.analyzeItem.output; return { decision, confidence };"), 0),
+    ("composition/check_batch_review.py", "check script passes on the agent's confidence directly",
+     lambda: review_check_script("return { decision: $vars.analyzeItem.output.decision, confidence: $vars.analyzeItem.output['confidence'] };"), 0),
+    ("composition/check_batch_review.py", "check script reads the label, returns a constant confidence",
+     lambda: review_check_script("return { label: $vars.analyzeItem.output.label, confidence: 1 };"), 1),
+    ("composition/check_batch_review.py", "check script reads the agent, returns a constant confidence",
+     lambda: review_check_script("const p = $vars.analyzeItem.output; return { decision: p.decision, confidence: 1 };"), 1),
+    ("composition/check_batch_review.py", "check script passes on the loop item's confidence",
+     lambda: review_check_script("return { decision: $vars.analyzeItem.output.decision, confidence: $vars.processBatch.currentItem.confidence };"), 1),
+    ("composition/check_batch_review.py", "check script names the agent's confidence only in a comment",
+     lambda: review_check_script("// passes on $vars.analyzeItem.output.confidence\nreturn { decision: $vars.analyzeItem.output.decision, confidence: 1 };"), 1),
     ("no_pattern/check_no_pattern.py", "export", lambda: fixture("export"), 0),
     ("no_pattern/check_no_pattern.py", "retrofitted gate", export_gated, 1),
     ("no_pattern_triage/check_near_miss.py", "classify and route", triage_without_person, 0),

@@ -6,12 +6,13 @@ instead of ending the run."""
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from _shared.flow_graph import _CONFIDENCE, CONTINUE_PORT, CONTROL, DECISION, LOOP, SWITCH, fail, load_graph  # noqa: E402
+from _shared.flow_graph import CONTINUE_PORT, CONTROL, DECISION, LOOP, SWITCH, fail, load_graph  # noqa: E402
 
 ERROR_PORT = "error"
 SCRIPT = "core.action.script"
@@ -19,6 +20,23 @@ SCRIPT = "core.action.script"
 
 def moves_on(g, edge, loop: str) -> bool:
     return (edge["targetNodeId"] == loop and edge.get("targetPort") == CONTINUE_PORT) or g.continues(edge["targetNodeId"], loop)
+
+
+def passes_on_confidence(g, script: str, agent: str) -> bool:
+    """``script`` reads ``agent``'s confidence: ``$vars.<agent>.output.confidence``,
+    or a name bound to ``$vars.<agent>.output`` and then ``<name>.confidence``
+    (or ``{ confidence }`` destructured from it). Comments don't count, and a
+    script that returns a constant confidence reads none of these."""
+    script_text = str(g.nodes[script].get("inputs", {}).get("script", ""))
+    text = re.sub(r"/\*.*?\*/|//[^\n]*", "", script_text, flags=re.S)
+    field = r"(?:\??\.|\[['\"])confid"
+    output = rf"\bvars\.{re.escape(agent.rsplit('/', 1)[-1])}\.output\b"
+    if re.search(rf"{output}{field}", text, re.I):
+        return True
+    return any(
+        re.search(r"confid", name, re.I) if name.startswith("{") else re.search(rf"\b{name}{field}", text, re.I)
+        for name in re.findall(rf"(\w+|\{{[^}}]*\}})\s*=\s*\$?{output}(?!\??\.)", text)
+    )
 
 
 def only_control_between(g, source: str, target: str, blocked) -> bool:
@@ -37,13 +55,13 @@ def main() -> None:
         people = [p for p in g.hitl() if p in body]
         # The gate reads the agent's output, or a script downstream of the
         # agent (any number of steps, no human task on the way from the agent
-        # to the gate) that reads the agent and passes on a confidence.
+        # to the gate) that reads the agent's confidence and passes it on.
         gated = [
             (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in [a] + [
                 s for s in g.reachable(a, blocked=people)
-                if s in body and g.type_of(s) == SCRIPT and _CONFIDENCE.search(g.text(s))
-                and g.reaches(s, n, blocked=people) and g.reads(s, a)
+                if s in body and g.type_of(s) == SCRIPT and passes_on_confidence(g, s, a)
+                and g.reaches(s, n, blocked=people)
             ]
             if g.thresholds(n, s) and g.routes_low(n, people, s)
         ]
