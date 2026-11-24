@@ -346,6 +346,9 @@ definition from `<Name>.json` and carries every script in the node.
    generated activity, and `CONNECTOR_INPUT` for an undeclared input or a
    required one left out. Fix the files, never the compiled `.flow`.
 
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:start-->
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:end-->
+
 On an older SDK there is no SDK node for a generated activity: `rawNode`
 refuses every `uipath.connector.*` type, and `connector()` only takes catalog
 operations. `uip` still places it with its graph commands until they are

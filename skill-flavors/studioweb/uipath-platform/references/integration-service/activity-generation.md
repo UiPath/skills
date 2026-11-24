@@ -31,3 +31,13 @@
 
    A List activity's output is the bare array of records: read `out('listMembers')`.
 <!--skill-flavor:flow-sdk-generated-activity-source:end-->
+
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:start-->
+Studio Web bundles its own SDK copy, so neither you nor the user can upgrade it
+from the open solution. When `check` or `compile` reports that
+`@uipath/maestro-builder-sdk` does not export `inlineActivity`, the host's SDK
+is older than 6.126.0: use the `uip` route below. If `uip` has no
+`nodes create` either, tell the user that this step needs Studio Web with SDK
+6.126.0 or later, then offer managed HTTP as below. Never run `npm` to work
+around it.
+<!--skill-flavor:flow-sdk-generated-activity-host-sdk:end-->
