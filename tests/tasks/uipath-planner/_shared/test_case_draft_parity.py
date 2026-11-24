@@ -25,9 +25,13 @@ def parity(tmp_path, final_text, draft=LOAN):
     return done.returncode, done.stdout
 
 
+GUARD = '\n**Recipient:** =js:vars.loanAmount > 5000000 ? "Role:Credit Analyst" : "Role:Underwriter"\n'
+
+
 def finalized(text):
-    """The draft with the final's first heading."""
-    return re.sub(r"\A.*", lambda m: m[0] if m[0].startswith("# SDD — ") else "# SDD — Sample", text, count=1)
+    """The draft with the final's first heading, and the loan's $5M role policy encoded as a Recipient."""
+    text = re.sub(r"\A.*", lambda m: m[0] if m[0].startswith("# SDD — ") else "# SDD — Sample", text, count=1)
+    return text + GUARD if "≤$5M" in text else text
 
 
 @pytest.mark.parametrize("draft", DRAFTS, ids=lambda p: p.parent.parent.name)
@@ -85,3 +89,17 @@ def test_a_final_without_its_first_heading_fails(tmp_path):
     rc, out = parity(tmp_path, text)
     assert rc == 1
     assert "FAIL: first line is not '# SDD — <Case Name>'" in out
+
+
+def test_a_role_threshold_left_in_prose_fails(tmp_path):
+    text = finalized(LOAN.read_text(encoding="utf-8")).replace(GUARD, "")
+    rc, out = parity(tmp_path, text)
+    assert rc == 1
+    assert "FAIL: threshold '≤$5M' picks a role, and no =js: line holds 5000000 with a Role:" in out
+
+
+def test_a_role_threshold_as_an_entry_if_fails(tmp_path):
+    text = finalized(LOAN.read_text(encoding="utf-8")).replace(GUARD, "\n| `current-stage-entered` | =js:vars.loanAmount > 5000000 ? true : false | — |\n")
+    rc, out = parity(tmp_path, text)
+    assert rc == 1
+    assert "picks a role" in out

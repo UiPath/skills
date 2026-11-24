@@ -63,7 +63,7 @@ Constraint Gate outcome. See scope-recommendation-guide.md → Summary block for
 
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
 **Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
-**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... — every product the source signals that the gate blocks, the picked design's or not (an orchestration of several steps or systems on Automation Suite older than 2.2510.2 → Maestro Flow / BPMN, named even when RPA hosts it) | none>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... — every product the source signals that the gate blocks, the picked design's or not (on Automation Suite older than 2.2510.2 the line always names Maestro — Flow, BPMN and Case — with the alternative the design applies, even when no Maestro project was ever a candidate) | none>
 **Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI>
 
 ---

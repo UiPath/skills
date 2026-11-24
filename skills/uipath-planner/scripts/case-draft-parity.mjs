@@ -5,7 +5,8 @@
 // Usage: node case-draft-parity.mjs <NAME>.draft.md <NAME>.md
 // Exit 0 and "OK" when the final keeps the draft's: first heading form; stages in order, each with its kind
 // (`### Stage <N>:` primary, `### Secondary Stage:` secondary); tasks in order under each stage; Case
-// Variables rows by name; every `=js:` expression verbatim. Exit 1 with one FAIL line per difference.
+// Variables rows by name; every `=js:` expression verbatim; every comparator + money amount of the draft as a `=js:`
+// cell holding the numeral written out — on a line naming a draft persona, an expression that picks a `Role:`. Exit 1 with one FAIL line per difference.
 // Names compare with a trailing id suffix stripped, backticked or not: `(`t01`)`, `(t01)`.
 import { existsSync, readFileSync } from "node:fs";
 
@@ -70,6 +71,31 @@ const finalVars = new Set(variables(final));
 for (const v of variables(draft)) if (!finalVars.has(v)) fails.push(`Case Variables: '${v}' is missing from the final`);
 
 for (const e of expressions(draft)) if (!final.includes(e)) fails.push(`expression missing from the final: ${e}`);
+
+// checklist item 32: every comparator + money amount in the draft is a `=js:` cell in the final, the numeral written out
+const UNIT = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, b: 1e9, billion: 1e9 };
+const THRESHOLD = /(?:≤|≥|<=?|>=?|\b(?:over|above|under|below|at least|at most|more than|less than|greater than|up to)\s+)\s*\$\s?(\d[\d,]*(?:\.\d+)?)\s*(k|m|b|thousand|million|billion)?\b/gi;
+const cells = (final.match(/=js:[^\n]*/g) ?? []).join("\n");
+// a role-picking expression: the amount and a `Role:` on one =js: line (a Recipient, an Inputs cell)
+const roleCells = (final.match(/=js:[^\n]*Role:[^\n]*/g) ?? []).join("\n");
+const personas = (draft.match(/^### Personas\s*\n([\s\S]*?)(?=^#{2,3} )/m)?.[1] ?? "").split("\n")
+  .filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l)).slice(1).map((l) => l.split("|")[1].trim()).filter(Boolean);
+const seen = new Set();
+for (const m of draft.matchAll(THRESHOLD)) {
+  const amount = Math.round(Number(m[1].replace(/,/g, "")) * (UNIT[(m[2] ?? "").toLowerCase()] ?? 1));
+  const line = draft.slice(draft.lastIndexOf("\n", m.index) + 1, draft.indexOf("\n", m.index));
+  // a threshold on a line naming a persona picks who does the work: its home is a task's Recipient
+  const picksRole = personas.some((p) => line.toLowerCase().includes(p.toLowerCase()));
+  const key = `${amount}:${picksRole}`;
+  if (seen.has(key)) continue;
+  seen.add(key);
+  const has = new RegExp(`(?<![\\d.])${amount}(?![\\d])`);
+  if (picksRole && !has.test(roleCells)) {
+    fails.push(`threshold '${m[0].trim()}' picks a role, and no =js: line holds ${amount} with a Role: (write the owning task's **Recipient:** as =js:vars.<amount> > ${amount} ? "Role:<above>" : "Role:<at or below>")`);
+  } else if (!picksRole && !has.test(cells)) {
+    fails.push(`threshold '${m[0].trim()}' has no =js: cell holding ${amount} in the final`);
+  }
+}
 
 if (fails.length) {
   for (const f of fails) console.log(`FAIL: ${f}`);
