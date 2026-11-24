@@ -19,7 +19,7 @@ uip maestro flow validate <file> --output json
   { label: 'Extract invoice' })
 ```
 
-**Support for this node is new.** It needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that repairs or edits an existing node needs the SDK with builder-sdk#2255 ([Making it actually extract](#making-it-actually-extract)). If `compile` fails reading `modelName`, or `check` reports no `EXTRACT_TAXONOMY_*` code for a broken taxonomy, the SDK is older: upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
+**Support for this node is new.** It needs `@uipath/maestro-builder-sdk` 6.119.0 or later; a merge that repairs or edits an existing node needs the SDK with builder-sdk#2255 ([Making it actually extract](#making-it-actually-extract)). If `check` reports no `EXTRACT_TAXONOMY_*` code for a broken taxonomy, the SDK is older: upgrade it ([document-pipeline.md](document-pipeline.md#authoring-it-the-processor-and-the-sdk-it-needs)).
 
 ## Which extraction node the user wants
 
@@ -145,7 +145,7 @@ Validation requires `fileRef` to be a `$vars` reference, both output ports to be
 At runtime, the service resolves `inputs.processorKey` to a solution resource containing its taxonomy. Compile and merge provision it while you author: compile mints the key, one per step and the same on every recompile; inside a solution, compile and merge write the resource (`resources/solution_folder/idpProcessor/extraction/<Label>.json`) for each node they write, keep it in step with the node's taxonomy, and declare it in `bindings_v2.json`; `uip solution pack` regenerates it from the node so the deployed processor matches the latest taxonomy. Keep the `.flow` and `resources/` file together when storing, uploading, or versioning the solution.
 <!--skill-flavor:extract-processor-sync:end-->
 
-A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. This needs the SDK with builder-sdk#2255; on an older SDK the merged node stays keyless: upgrade the SDK. While `validate`'s message still names `nodes provision`, the round trip is the repair.
+A node from before processors were provisioned, or written by hand, arrives without a processor; `validate` reports an error at `inputs.processorKey`. Repair it with the brownfield loop and no edit: decompile, then `merge`. Merge gives every Extract document node that authors a processor but names none the key compile minted for it, and writes its resource file, printing `named no IDP processor … gave it <key>` and `wrote …/<Label>.json (IDP processor)`. This needs the SDK with builder-sdk#2255; on an older SDK the merged node stays keyless: upgrade the SDK.
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 

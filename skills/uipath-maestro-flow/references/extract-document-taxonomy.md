@@ -202,7 +202,7 @@ These limits are not enforced by `check` but improve extraction:
 
 ## What compile and merge do for you
 
-- **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. Compile keeps an id the source carries; for an entry with none it takes the id the overwritten `.flow` has for the same name (a group by its key, a field by its name within that group), else mints one. Decompile prints every id, so a decompiled source already has them. An id belongs to one entry: never copy one onto a second group or field.
+- **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. Compile keeps an id the source carries; for an entry with none it takes the id the overwritten `.flow` has for the same name (a group by its key, a field by its name within that group), else mints one; merge writes those ids into an existing flow with the SDK with builder-sdk#2262. Decompile prints every id, so a decompiled source already has them. An id belongs to one entry: never copy one onto a second group or field.
 - **Model settings:** A document with no `config` gets one built from `inputs.modelConfig`.
 - **Validation:** `check` refuses a non-schema or limit violation before anything is written ([When it refuses](#when-it-refuses)). Compile does not run `check`; run it first.
 - **The processor:** Compile and merge give the node its processor key and, inside a solution, write the processor's resource file with this taxonomy ([extract-document-node.md](extract-document-node.md#making-it-actually-extract)).

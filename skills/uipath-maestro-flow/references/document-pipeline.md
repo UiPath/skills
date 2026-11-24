@@ -65,10 +65,8 @@ after it.
   { label: 'Extract invoice' })
 ```
 
-Needs `@uipath/maestro-builder-sdk` 6.119.0 or later. An older SDK requires
-`model` (compile fails reading `modelName` without it), writes no
-`inputs.processorKey`, mints no taxonomy ids, and `check` reports no
-`EXTRACT_TAXONOMY_*` code.
+Needs `@uipath/maestro-builder-sdk` 6.119.0 or later. An older SDK mints no
+taxonomy ids, and `check` reports no `EXTRACT_TAXONOMY_*` code.
 <!--skill-flavor:extract-sdk-floor:start-->
 Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a
 workspace that has its own `node_modules` copy, else
