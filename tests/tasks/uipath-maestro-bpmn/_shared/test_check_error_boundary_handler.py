@@ -1,8 +1,7 @@
 """check_error_boundary_handler.py: an omitted cancelActivity is interrupting (BPMN default true).
 
-The builder SDK omits the default, so the compiled boundary carries no attribute
-(Studio Web run 45307831896); only an explicit cancelActivity="false" is
-non-interrupting, which is how the canvas reads it too.
+Compiled output may or may not carry the attribute; only an explicit
+cancelActivity="false" is non-interrupting, which is how the canvas reads it too.
 """
 
 from __future__ import annotations

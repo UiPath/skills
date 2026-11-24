@@ -1,8 +1,7 @@
 """check_http_weather.py: the skill's `.http()` manual request passes; the older HttpExecution form does not.
 
-Shapes from Studio Web run 45302067687 (`.http()` -> Intsvc.UnifiedHttpRequest
-with body authentication "manual") and the old mode="manual" Intsvc.HttpExecution
-form, which the runtime faults with 102018.
+Shapes: `.http()` -> Intsvc.UnifiedHttpRequest with body authentication "manual",
+versus the older Intsvc.HttpExecution type, which the skill does not prescribe.
 """
 
 from __future__ import annotations
