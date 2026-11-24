@@ -89,7 +89,8 @@ names only what to LOOK AT.
      `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
      The `**Activation Mode:**` value, and the Tasks table's Activation Mode cell, is one template literal
      written verbatim — `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`,
-     `fan-in`, `conditional-gate`; `Parallel after predecessor` or `Sequential: stage start` is a FAIL. The
+     `fan-in`, `conditional-gate`; `Parallel after predecessor` or `Sequential: stage start` is a FAIL. A task that
+     starts after another task is never `parallel` — siblings after one task are `parallel-after-predecessor`. The
      Tasks table keeps the template's nine columns. `runs-sequentially` is written bare, never with an
      argument (`runs-sequentially("Collect Fees")` is a FAIL).
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
@@ -110,6 +111,10 @@ names only what to LOOK AT.
      display name; arg 2 is an SLA Title that target declares (the `SLA Title` row of Case Metadata for
      root; `**SLA Title:**` under the stage's `#### Stage SLA`); every SLA Response Map row whose response is not
      `notify-only` has its `sla-status-change` row, and every `sla-status-change` row has its Map row.
+     A breach entry is the 2-arg form; arg 3, when present, is a display name from that target's SLA table
+     (its At-Risk or Breach Escalation Display Name) — a status word (`Breached`, `At-Risk`) is a FAIL. Each
+     `#### Stage SLA` holds the template's `**SLA Title:**` line and its `| SLA | Unit | At-Risk | … |` table,
+     never `**Duration:**` / `**Breach Response:**` bullet lines.
  14. Every `selected-stage-completed("X")` / `selected-stage-exited("X")` names a declared stage; every
      `selected-tasks-completed("T")` names a declared, non-`adhoc` task in the SAME stage.
  15. No stage's entry row references its own stage.
@@ -150,6 +155,9 @@ names only what to LOOK AT.
      and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
      Every stage keeps its draft kind: a draft primary stage (`### Stage <N>:`) stays `**Stage Kind:** primary`
      with its completion exit, a secondary stays secondary; list `<stage> — draft kind — final kind`.
+     Every task keeps its draft start point: a draft task gated on `selected-tasks-completed("X")` still starts
+     after X — siblings after X become `parallel-after-predecessor` with `runs-sequentially`, a lone follower
+     `sequential` — never `parallel` / `current-stage-entered`; list `<task> — draft WHEN — final WHEN`.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell

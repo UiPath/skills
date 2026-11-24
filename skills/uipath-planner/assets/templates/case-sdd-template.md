@@ -336,7 +336,7 @@ the exact stage display name — never the case name. -->
 ##### Task <N>.<M>: <TASK_NAME>
 
 **Type:** <exact task type from schema>
-**Activation Mode:** <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate>
+**Activation Mode:** <sequential (one after another) \| parallel (starts when the stage enters, nothing before it) \| parallel-after-predecessor (starts together with its siblings after one task completes — "after X" is never plain parallel) \| event-triggered \| adhoc \| fan-in \| conditional-gate>
 **Design Rationale:** <Why this task type fits the actor/work and why this activation mode fits.>
 **Description:** <What this task does and why it exists in the case plan.>
 

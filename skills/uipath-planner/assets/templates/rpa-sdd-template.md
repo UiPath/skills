@@ -468,7 +468,9 @@ Sub-type reference:
 
 ### Project Mode Decision
 
-<!-- INDEPENDENT dimensions per project — never let one choice silently decide another.
+<!-- Write this table with its ten columns as they stand, one row per project — never a
+     Decision / Selected mode / Reason table, which drops Attendance and Initiation.
+     INDEPENDENT dimensions per project — never let one choice silently decide another.
      Sources: Type ← Level 1.5 · Compatibility ← PDD/§16 (Cross-platform when no desktop-UI or Windows-only
      dependency exists — headless/web/API work; Windows otherwise; legacy only when unavoidable) ·
      Authoring ← §13 / Level 2 · Attendance + Initiation ← §16 Robot & Runtime (keep §16 Trigger row aligned) ·
