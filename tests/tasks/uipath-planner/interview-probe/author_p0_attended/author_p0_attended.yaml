@@ -1,0 +1,187 @@
+task_id: skill-planner-interview-author-p0-only-attended
+description: >
+  Integration: `author` on a one-sentence idea that leaves points open which change the design. Before
+  writing, one question offers the interview, counting only those points (P0), with "Interview me"
+  recommended. Accepted, the questions before the genome is written are P0 points only, plus the
+  preferences file; a threshold's value, who is told and environment values are not asked, so the
+  approval limit is written as a Configuration Question with `default: none`. No SDD is written and
+  the genome passes the strict check. The closing names the open items by role, offers the interview
+  on them and offers to write the SDD for answerers who are not in the session, asking none of them.
+  The P0-only questions, the limit's `default: none` and the closing's interview and SDD offer are
+  advisory. A simulated process owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+agent:
+  system_prompt: |
+    You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+
+    This session is attended: the user is present and answers your questions in the next turn. When the
+    request or a skill you use calls for asking the user something, ask it in a message of its own and end
+    your turn, rather than assuming the answer.
+
+reference:
+  directory: ../../interview
+
+initial_prompt: |
+  Write a genome for this automation, in this folder:
+
+  When a supplier invoice comes in, enter it in our ERP and get it approved when it is over the limit.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice handling in accounts payable. You decide business
+    outcomes, rules and scope. You do not know how the ERP can be reached by a robot, nor the
+    environments' hosts and mailboxes.
+  goal: |
+    Get the genome written, answering the questions that are yours, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "When a question asks for something you do not know (how a system is reached, a host, a mailbox), say it is for the system's owner or the environment's owners."
+    - "If the agent offers edits, the SDD or a build after writing the genome, decline: the genome is all you want."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 10
+
+pre_run:
+  - command: ':; f="${CODEX_HOME:-$HOME/.codex}/config.toml"; mkdir -p "$(dirname "$f")"; grep -q "^model_reasoning_effort" "$f" 2>/dev/null || printf "\nmodel_reasoning_effort = \"high\"\n" >> "$f"; true'
+    timeout: 30
+
+post_run:
+  - command: ':; mkdir -p codex-rollouts; cp -r "${CODEX_HOME:-$HOME/.codex}/sessions" codex-rollouts/ 2>/dev/null; true'
+    timeout: 60
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the approval limit is a Configuration Question with no invented value (`default: none`)"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "One offer counting the points that change the design comes first; no environment value is asked"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea:
+      supplier invoices entered in an ERP, approved when over a limit. Read the dialog and the agent's
+      questions, whether asked in chat or as structured questions, up to the point the genome is written.
+
+      Check two things:
+      1. Before asking anything else, one question offers an interview, counting the open points that
+         change the design, with the interview as the recommended option. The offer may also name the
+         points it leaves for after writing; naming them is neither counting nor asking them.
+      2. No question before writing asks only for an environment value (a mailbox, a folder, a host, an
+         account) or only for what another role answers (how a robot reaches a system, asked on its own).
+         A question that asks which system is used and how it is reached asks the user's part. A question
+         about a preferences file (team standing answers and development standards) is allowed, and so
+         is where the automation runs (Automation Cloud, Automation Suite, standalone Orchestrator),
+         which decides the products it can use.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: only points that change the design are asked before the genome is written"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea:
+      supplier invoices entered in an ERP, approved when over a limit. Read the dialog and the agent's
+      questions, whether asked in chat or as structured questions, up to the point the genome is written.
+
+      Check two things:
+      1. Once the interview is accepted, every question asked is a point that changes the product, scope
+         or architecture, such as the trigger and how invoices arrive, volume, which ERP and how a robot
+         reaches it, the approval (who, its outcomes, how long it waits), how invoices are read, what is
+         in and out of scope. Not every such point has to be asked. A question about a preferences file
+         is allowed.
+      2. Not asked before writing: the limit's amount or currency, who is notified, how a business
+         exception is handled (a mismatch with its purchase order, a duplicate), retry counts, or an
+         environment value. What an approver's decision leads to (what happens to a rejected invoice, a
+         reminder or an escalation when the approval waits) is part of the approval's outcomes, and is
+         allowed, also when an option names who is told as part of it.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither. One question from item 2 fails item 2.
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: llm_judge
+    description: "The closing counts the open decisions by role and asks none of them"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Check two things:
+      1. It counts the genome's open decisions by the role that answers them (the process owner, the
+         system's owner …), or says that none is open. Configuration values need no role, and those
+         listed beside the decisions are not part of their count, nor are the build's own questions
+         (how the work is split or queued, libraries, technology, setup); when every decision belongs to
+         one role, saying so is the count.
+      2. It asks none of the open questions itself. Ending on "Want to adjust anything?", or offering
+         the interview, an SDD or edits, is not asking an open question.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names `interview <genome>` and offers the SDD for absent answerers"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Check two things:
+      1. It offers the interview on the open decisions, naming `interview <genome file name>`.
+      2. It offers to write an SDD (solution design document) for answerers who are not in the session.
+
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 1.0
+    pass_threshold: 0
