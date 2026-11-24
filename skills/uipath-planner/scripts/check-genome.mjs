@@ -29,13 +29,14 @@
 //           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
-//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
+//           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
+//           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
 //           its `<slug>-genome/` component folder, never inside it; no H2 heading twice; no
 //           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
-//           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
+//           lists) and still has that fingerprint, and a component genome carrying its SDD's Action Required items; an SDD written from the genome (`<slug>-sdd.md`, a process
 //           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
 //
 // Export check (--processes and --recordsets, both required together):
@@ -328,7 +329,7 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
   if (blockquote && !routesToBuilder(blockquote[0])) r.strict(`blueprint blockquote does not name ${BUILDER} as the skill that builds the genome`);
   const designedIn = text.match(/^>\s*Designed in:[^\n]*/m);
   if (designedIn && !/\bsdd-sha256\s+[0-9a-f]{64}\b/.test(designedIn[0])) r.strict("Designed in: line has no sdd-sha256 fingerprint");
-  checkDesignedIn(path, text, r);
+  checkDesignedIn(path, text, level, r);
   const pos = h2Positions(text);
   const headings = [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim());
   for (const h of new Set(headings.filter((h, i) => headings.indexOf(h) !== i))) r.strict(`heading '## ${h}' appears more than once`);
@@ -429,6 +430,10 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
     else if (pool.get(num) !== "open") r.strict(`${mark} names entry ${num} of ${where}, which is ${pool.get(num)}: a settled point keeps no marker`);
   }
   if (unnamed.length) r.strict(`${unnamed.length} *[Inferred]* mark(s) name no Open Decisions entry or Configuration Question (write *[Inferred: D<n>]*), first: ${unnamed[0]}`);
+  // an entry withdrawn into a Configuration Question keeps its point marked on the line that uses the question
+  for (const [, num, n] of section.matchAll(/^(\d+)\. .*\(withdrawn: asked as Configuration Question (\d+)/gm)) {
+    if (!new RegExp(`\\*\\[Inferred:\\s*CQ${n}\\]\\*`).test(text)) r.strict(`Open Decisions entry ${num} is withdrawn as Configuration Question ${n}, and no line carries *[Inferred: CQ${n}]*: mark the line that uses the question, *[Inferred: CQ${n}]* (SDD [SME REVIEW]: <note>)`);
+  }
   const named = namedEntries(text);
   for (const [num, status] of entries) {
     if (status === "open" && !named.has(num) && !namedElsewhere.has(num)) r.strict(`Open Decisions entry ${num} is named nowhere in the genome: mark the line that states its point (*[Inferred: D${num}]*), or name it at its defect, row or step`);
@@ -436,7 +441,7 @@ function checkOpenDecisions(text, r, processEntries = null, namedElsewhere = new
 }
 
 /** strict: the SDD a `Designed in:` line links still has the fingerprint the line records. */
-function checkDesignedIn(path, text, r) {
+function checkDesignedIn(path, text, level, r) {
   const m = text.match(DESIGNED_IN);
   if (!m || !m[2]) return;
   const sdd = resolvePath(dirname(path), m[1]);
@@ -444,6 +449,13 @@ function checkDesignedIn(path, text, r) {
   // a line taken over the whole SDD, its Action Required section included, still matches an SDD that has not changed
   try { matches = sddFingerprint(sdd) === m[2] || sddFingerprint(sdd, { keepOpenQuestions: true }) === m[2]; } catch { r.strict(`Designed in: ${m[1]} or a child SDD it lists cannot be read`); return; }
   if (!matches) r.strict(`Designed in: sdd-sha256 does not match ${m[1]}; the SDD changed since the genome was written`);
+  // a component genome holds every gap of its SDD: an SDD with Action Required items, a genome with none of them
+  if (level !== "component") return;
+  const asked = sectionBody(read(sdd), "Action Required");
+  const hasItems = /\[(?:SME REVIEW|DEFAULT)\]/.test(asked) || /^\|\s*\d+\s*\|/m.test(asked) || /\*\*(?:D|CQ)\d+/.test(asked);
+  if (hasItems && !/\(SDD \[(?:SME REVIEW|DEFAULT)\]/.test(text) && !openDecisions(text).size) {
+    r.strict(`${m[1]} has Action Required items and the genome carries none: write each as an Open Decisions entry and its marked line, *[Inferred: D<n>]* (SDD [SME REVIEW]: <note>); an operator setting as a Configuration Question, its entry 'withdrawn: asked as Configuration Question <n>' and its line marked *[Inferred: CQ<n>]*`);
+  }
 }
 
 const GENOME_ROW = /^\|\s*\*\*Genome\*\*\s*\|[^\n]*?\bgenome-sha256\s+([0-9a-f]{64})\b/m;

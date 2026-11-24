@@ -154,6 +154,47 @@ def pinned(tmp_path, fingerprint=None):
     return designed_in(COMPONENT, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {recorded}")
 
 
+ASKED_SDD = "# SDD\n\n## Action Required — SME Review Items\n\n**D1. Which CRM address?**\n- **Default:** the sandbox. [SME REVIEW] D1: production URL\n\n## 1. Overview\n"
+NOT_CARRIED = "has Action Required items and the genome carries none"
+DECISIONS = re.compile(r"(## Open Decisions\n\n)(?:\d+\. .*\n)+")
+D_MARK = re.compile(r" ?\*\[Inferred: D\d+\]\*")
+
+
+def asked(tmp_path, text):
+    """text with a Designed in: line linking an SDD whose Action Required holds one item."""
+    sdd = tmp_path / "x-sdd.md"
+    sdd.write_text(ASKED_SDD, encoding="utf-8")
+    return designed_in(text, f"> Designed in: [Design](x-sdd.md) · sdd-sha256 {sdd_fingerprint(sdd)}")
+
+
+def with_decisions(text, entries):
+    """text with its Open Decisions entries replaced by entries and their D marks removed."""
+    return D_MARK.sub("", DECISIONS.sub(lambda m: m[1] + entries, text))
+
+
+def test_sdd_items_the_component_genome_drops_fail_strict_only(check, tmp_path):
+    text = asked(tmp_path, with_decisions(COMPONENT, "No open decisions.\n"))
+    assert NOT_CARRIED not in check(text)[1]
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert f"x-sdd.md {NOT_CARRIED}" in out
+
+
+def test_sdd_items_carried_as_entries_have_no_carry_finding(check, tmp_path):
+    assert NOT_CARRIED not in check(asked(tmp_path, COMPONENT), profile="strict")[1]
+
+
+def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
+    text = with_decisions(COMPONENT, "1. Which portal address? (withdrawn: asked as Configuration Question 4) — SDD item 1\n")
+    finding = "Open Decisions entry 1 is withdrawn as Configuration Question 4, and no line carries *[Inferred: CQ4]*"
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert finding in out
+    marked = text.replace("held as a Text asset)", "held as a Text asset) *[Inferred: CQ4]* (SDD [SME REVIEW]: portal)", 1)
+    assert marked != text
+    assert finding not in check(marked, profile="strict")[1]
+
+
 def test_designed_in_line_without_fingerprint_fails_strict_only(check, tmp_path):
     text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
     assert text != COMPONENT
