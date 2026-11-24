@@ -719,7 +719,8 @@ draft supplied kept, `**Resolved Resource:**` = the draft's intended resource na
 never <UNRESOLVED> there.
 
 Upgrade every draft task block; never copy its shape. A draft task block lacks `**Activation Mode:**`,
-`**Design Rationale:**` and `**Task envelope**` — add all three to EVERY task block, complete ones included:
+`**Design Rationale:**` and `**Task envelope**` — add all three to EVERY task block, including blocks the draft
+rendered completely (checklist item 3). Every table keeps the template's column headers, never the draft's:
 - `**Activation Mode:**` from the draft's Starts When / sequencing column; `sequential` when it says nothing.
 - `**Design Rationale:**` from the draft's own reasoning for the task: one concrete sentence, never boilerplate.
 - `**Task envelope**` from the Inputs/Outputs the draft already lists.
@@ -759,9 +760,10 @@ CONFORMANCE CHECKLIST — 21 items.
   1. No summary-only top-level heading (`## Source`, `## Case Objective`, `## Actors And Systems`,
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
      `## Acceptance Scenarios`); no literal `\n` escape in block content; `<UNRESOLVED>` never backtick-wrapped.
-  2. `### Case Variables` holds exactly one table, with the template's header verbatim — no second table,
-     `####` sub-heading or sibling `###` section of variables (only the first table declares; later rows drop
-     silently).
+  2. `### Case Variables` holds exactly one table, whose header is literally
+     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |` — never the draft's own
+     columns — and no second table, `####` sub-heading or sibling `###` section of variables (only the first
+     table declares; later rows drop silently).
   3. Every stage block carries `**Type:** Stage`, `**Design Rationale:**` and the three `####` condition/task
      sections; a secondary stage an explicit `**Interrupting:**`, `Yes` whenever an exit row is
      `return-to-origin`. Every Tasks-table row has its own `##### Task <N>.<M>:` block (`S<K>.<M>` in a
@@ -808,8 +810,9 @@ CONFORMANCE CHECKLIST — 21 items.
      either/or (`Underwriter or Credit Analyst`); a conditional split is a guarded row on the deciding variable.
      Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or typed (`Role:` / `User:` /
      `UserGroup:` / `Email:` / `Expression:`).
- 17. The Personas table is machine-readable per its § Personas comment: Scope, exact stage names, listed
-     permission keys only. `View, Act, Reassign` is prose, not permissions — convert reports a `case-role`
+ 17. The Personas table header is literally `| Persona | Scope | Stages | Permissions | Description | Notes |`, and
+     every row is machine-readable per its § Personas comment: Scope, exact stage names, listed permission keys
+     only. `View, Act, Reassign` is prose, not permissions — convert reports a `case-role`
      Unresolved item and `validate --sdd` fails it.
  18. No `user-selected-stage` entry sits on a lane that a decision, event or SLA routes to — the picker row is
      then the defect (case-product-guide.md § Repairing a `user-selected-stage` lane). Source silent on who
