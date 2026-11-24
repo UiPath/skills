@@ -98,7 +98,11 @@ success_criteria:
     # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
     # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
     # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    # The skill's own Data Fabric route is `.dataService()` (connectors.md §5), which the
+    # SDK expands to the `_V3` operations itself: its only discovery is the entity
+    # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
+    # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\b|df\s+entities\s+(list|get)\b))(?=.*\b(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
@@ -111,7 +115,11 @@ success_criteria:
     # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
     # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
     # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    # The skill's own Data Fabric route is `.dataService()` (connectors.md §5), which the
+    # SDK expands to the `_V3` operations itself: its only discovery is the entity
+    # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
+    # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\b|df\s+entities\s+(list|get)\b))(?=.*\b(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
@@ -124,7 +132,11 @@ success_criteria:
     # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
     # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
     # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    # The skill's own Data Fabric route is `.dataService()` (connectors.md §5), which the
+    # SDK expands to the `_V3` operations itself: its only discovery is the entity
+    # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
+    # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\b|df\s+entities\s+(list|get)\b))(?=.*\b(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
