@@ -1,4 +1,4 @@
-"""check_http_weather.py: the skill's `.http()` manual request passes; the retired form does not.
+"""check_http_weather.py: the skill's `.http()` manual request passes; the older HttpExecution form does not.
 
 Shapes from Studio Web run 45302067687 (`.http()` -> Intsvc.UnifiedHttpRequest
 with body authentication "manual") and the old mode="manual" Intsvc.HttpExecution
@@ -54,10 +54,10 @@ def test_unified_http_manual_get_passes(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_retired_http_execution_fails(tmp_path: Path) -> None:
+def test_http_execution_type_fails(tmp_path: Path) -> None:
     result = _run(tmp_path, "Intsvc.HttpExecution", GOOD)
     assert result.returncode == 1
-    assert "retired" in result.stderr
+    assert "not the type" in result.stderr
 
 
 def test_connector_mode_fails(tmp_path: Path) -> None:

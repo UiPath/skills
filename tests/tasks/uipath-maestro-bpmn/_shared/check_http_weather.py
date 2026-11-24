@@ -5,8 +5,8 @@ Grades that the weather fetch is a bpmn:sendTask carrying the registry
 Intsvc.UnifiedHttpRequest wrapper in manual (connectionless) mode — what the
 skill's `.http()` writes: a body object with authentication "manual", method GET
 and a literal Open-Meteo url — capturing the response into a declared variable.
-The older mode="manual" Intsvc.HttpExecution form faults at runtime (102018
-"Body cannot be null"), so it does not pass. Mirrors the Flow Open-Meteo test's
+The older Intsvc.HttpExecution type is not what `.http()` writes, so it does not
+pass; the task grades the skill's prescribed form. Mirrors the Flow Open-Meteo test's
 discipline (a real activity, not a mock) within the authoring-only BPMN scope.
 Reuses the shared uipath-maestro-bpmn check helpers.
 """
@@ -52,7 +52,7 @@ def main() -> None:
         fail("no end event")
 
     if any(has_type(t, LEGACY_TOKEN) for t in elements(root, "sendTask")):
-        fail(f"{LEGACY_TOKEN} is the retired manual form (faults at runtime); write {TYPE_TOKEN} in manual mode")
+        fail(f"{LEGACY_TOKEN} is not the type the skill's .http() writes; write {TYPE_TOKEN} in manual mode")
     http_tasks = [t for t in elements(root, "sendTask") if has_type(t, TYPE_TOKEN)]
     if not http_tasks:
         fail(f"missing bpmn:sendTask with {TYPE_TOKEN} wrapper")
