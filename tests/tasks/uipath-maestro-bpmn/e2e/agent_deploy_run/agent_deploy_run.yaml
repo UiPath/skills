@@ -6,9 +6,10 @@ description: >
   that folder. Graded on the live outcome: both processes are deployed in the
   seeded folder, and a run of the deployed process there, with inputs the
   grader picks after the agent stops, returns the right sum, the agent's
-  classification of the name, and its reason. The classification and reason
-  are traced to one run of the agent-job node, and the job that node started
-  must be a successful job of the folder's Agent process. Covers what the
+  classification of the name, and its reason. The end event must publish the
+  classification and reason straight from one agent-job node's response
+  fields, that node must run once and hold those values, and the one job it
+  started must be a successful job of the folder's Agent process. Covers what the
   authoring-only agent_job task and the agents deploy task cannot: the
   deployed agent actually answering when the deployed process calls it.
 tags: [uipath-maestro-bpmn, e2e, "mode:build", "lifecycle:setup", "shape:multi-node", resource, outcome-graded, studio-web-unsupported, studio-web-unsupported:no-testbench-publish]
@@ -95,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Behaviour: the deployed process, started in the seeded folder with grader-picked inputs, completes cleanly with the right sum, gender and reason; the gender and reason come from one run of the agent-job node, and the job that node started is a successful job of the folder's Agent process"
+    description: "Behaviour: the deployed process, started in the seeded folder with grader-picked inputs, completes cleanly with the right sum, gender and reason; gender and reason are published from one agent-job node's response fields, that node runs once, and the job it started is a successful job of the folder's Agent process"
     command: "python3 $REFERENCE_DIR/e2e/agent_deploy_run/check_agent_deploy_behavior.py"
     timeout: 1260
     expected_exit_code: 0

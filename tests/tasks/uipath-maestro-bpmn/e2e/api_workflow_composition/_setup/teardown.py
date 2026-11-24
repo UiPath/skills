@@ -13,9 +13,11 @@ Order (folder delete is what actually reclaims the tenant --
      delete those folders.
   3. Delete the run's `solutionName` package, latest version first, until
      `uip solution packages list --name` returns none.
-  4. Delete the Studio Web solutions named exactly `solutionName`. The ids
-     come from `uip solution list`, not from a `.uipx` in the sandbox, so a
-     manifest copied in from another solution can never select it.
+  4. Delete the Studio Web solutions named exactly `solutionName` and created
+     within the last MAX_SOLUTION_AGE. The ids and creation times come from
+     `uip solution list`, not from a `.uipx` in the sandbox, so neither a
+     manifest copied in from another solution nor a seed.json edited to name
+     an older one can select it.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ import logging
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="teardown: %(message)s")
@@ -46,6 +49,10 @@ PAGE_SIZE = 100
 MAX_PAGES = 20
 MAX_PACKAGE_VERSIONS = 10
 SUCCESS = "Success"
+
+# Both tasks that mount this teardown cap the agent at 3900s and grading adds
+# under an hour, so a solution older than this was not created by this run.
+MAX_SOLUTION_AGE = timedelta(hours=4)
 
 # post_run is killed at 300s (api_workflow_composition.yaml); stop short so
 # later phases are skipped cleanly instead of killed mid-call.
@@ -151,13 +158,33 @@ def delete_package_versions(solution_name: str) -> None:
     logger.warning("stopped after %d package versions: %s", MAX_PACKAGE_VERSIONS, solution_name)
 
 
+def created_within_run_window(row: dict, now: datetime) -> bool:
+    try:
+        created = datetime.fromisoformat(str(row.get("CreationTime") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if created.tzinfo is None:
+        return False
+    return timedelta(minutes=-5) <= now - created <= MAX_SOLUTION_AGE
+
+
 def run_solution_ids(solution_name: str) -> list[str]:
     rows = _list_all(["uip", "solution", "list", "--name", solution_name], SOLUTION_LIST_TIMEOUT)
-    return sorted({
-        str(row["Id"])
-        for row in rows
-        if isinstance(row, dict) and row.get("Id") and str(row.get("Name") or "").casefold() == solution_name.casefold()
-    })
+    now = datetime.now(timezone.utc)
+    ids = set()
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("Id"):
+            continue
+        if str(row.get("Name") or "").casefold() != solution_name.casefold():
+            continue
+        if created_within_run_window(row, now):
+            ids.add(str(row["Id"]))
+        else:
+            logger.warning(
+                "keep Studio Web solution %s (%s): CreationTime %s is not within this run",
+                row["Id"], solution_name, row.get("CreationTime"),
+            )
+    return sorted(ids)
 
 
 def delete_studio_web_solutions(solution_name: str) -> None:

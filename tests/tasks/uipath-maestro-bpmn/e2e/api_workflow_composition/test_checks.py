@@ -27,6 +27,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -824,11 +825,15 @@ class CompletedAssertionTests(unittest.TestCase):
             check_behavior.assert_completed(debug_data, [{"Message": "boom"}])
 
 
+def minutes_ago(minutes: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
+
+
 class TeardownTests(unittest.TestCase):
     SOLUTIONS = [
-        {"Id": "run-id", "Name": "GreetingPipelineab12cd34"},
-        {"Id": "prefix-id", "Name": "GreetingPipelineab12cd34 copy"},
-        {"Id": "other-id", "Name": "Someone Else's Solution"},
+        {"Id": "run-id", "Name": "GreetingPipelineab12cd34", "CreationTime": minutes_ago(20)},
+        {"Id": "prefix-id", "Name": "GreetingPipelineab12cd34 copy", "CreationTime": minutes_ago(20)},
+        {"Id": "other-id", "Name": "Someone Else's Solution", "CreationTime": minutes_ago(20)},
     ]
 
     def delete_calls(self, rows):
@@ -858,6 +863,14 @@ class TeardownTests(unittest.TestCase):
 
     def test_no_matching_solution_deletes_nothing(self):
         self.assertEqual(self.delete_calls(self.SOLUTIONS[1:]), [])
+
+    def test_an_older_solution_with_the_run_name_is_not_deleted(self):
+        rows = [{"Id": "old-id", "Name": "GreetingPipelineab12cd34", "CreationTime": "2026-01-05T10:00:00.000Z"}]
+        self.assertEqual(self.delete_calls(rows), [])
+
+    def test_a_solution_without_a_creation_time_is_not_deleted(self):
+        rows = [{"Id": "run-id", "Name": "GreetingPipelineab12cd34"}]
+        self.assertEqual(self.delete_calls(rows), [])
 
 
 if __name__ == "__main__":

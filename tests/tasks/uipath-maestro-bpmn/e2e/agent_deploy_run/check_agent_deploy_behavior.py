@@ -5,11 +5,13 @@ the deployed agent it calls answers.
 Picks fresh inputs now (two numbers and a first name with an unambiguous
 gender), starts the process deployed in `<parentFolderPath>/<folderName>`, and
 requires a clean completion with `sum` = a + b, `gender` = the expected value
-and a non-empty `reason`. One run of the agent-job node must return exactly
-that label (no other of male/female/unknown) together with the process
-`reason`, so a script or a constant cannot stand in for the agent. The job
-that agent-job node started (its element-execution `JobKey`) must be a
-successful job of the seeded folder's Agent process.
+and a non-empty `reason`. In the deployed BPMN, the end event must publish
+`gender` and `reason` straight from variables that only one agent-job node's
+response mapping writes, so a script, a literal or a second agent call cannot
+stand in. That node must run once, its Outputs must hold the expected label and
+the process `reason` in those mapped fields, and the one job it started (its
+element-execution `JobKey`) must be a successful job of the seeded folder's
+Agent process.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -30,21 +33,23 @@ while _suite_dir != os.path.dirname(_suite_dir) and not os.path.isdir(
     _suite_dir = os.path.dirname(_suite_dir)
 sys.path.insert(0, _suite_dir)
 
-from _shared.bpmn_assertions import activity_type  # noqa: E402
+from _shared.bpmn_assertions import activity_type, mapping_outputs  # noqa: E402
 from _shared.bpmn_live import (  # noqa: E402
     BPMN_NS,
+    UIPATH_NS,
     CheckFailure,
     debug_evidence,
+    declarations,
     element_output_records,
     fetch_asset,
     fetch_element_executions,
     get_ci,
     named_values,
     payload_data,
+    q,
     require_clean_run,
     run_cli,
     run_deployed,
-    value_leaves,
 )
 
 AGENT_JOB_TYPE = "Orchestrator.StartAgentJob"
@@ -52,7 +57,11 @@ NAMES = {
     "female": ("Maria", "Olivia", "Sophia", "Emma", "Isabella"),
     "male": ("James", "Michael", "David", "Robert", "William"),
 }
-LABELS = {"male", "female", "unknown"}
+TRACED_OUTPUTS = ("gender", "reason")
+FIELDS = r"((?:\??\.[A-Za-z_][A-Za-z0-9_]*)*)"
+VARS_SOURCE = re.compile(rf"=(?:js:)?\s*vars\.([A-Za-z_][A-Za-z0-9_]*){FIELDS}\s*;?")
+RESULT_SOURCE = re.compile(rf"=(?:js:)?\s*result{FIELDS}\s*;?")
+MISSING = object()
 LIST_TIMEOUT = 60
 
 
@@ -98,44 +107,133 @@ def assert_outputs(process: ET.Element, variables: Any, a: int, b: int, gender: 
         raise CheckFailure(f"output `reason` is empty; runtime values: {reasons!r}")
 
 
-def string_leaves(value: Any) -> list[str]:
-    """String leaves, descending into strings that hold a JSON object or array."""
-    out: list[str] = []
-    for leaf in value_leaves(value):
-        if not isinstance(leaf, str):
-            continue
-        text = leaf.strip()
-        if text[:1] in ("{", "["):
-            try:
-                out.extend(string_leaves(json.loads(text)))
-                continue
-            except json.JSONDecodeError:
-                pass
-        out.append(leaf)
-    return out
+def field_path(text: str) -> tuple[str, ...]:
+    return tuple(part for part in re.split(r"\??\.", text) if part)
+
+
+def output_writes(process: ET.Element) -> list[tuple[str, ET.Element]]:
+    """(owner id, `uipath:output`) for every output mapping in the process."""
+    return [
+        (element.attrib["id"], output)
+        for element in process.iter()
+        if element.attrib.get("id")
+        for output in mapping_outputs(element)
+    ]
+
+
+def traced_field(process: ET.Element, name: str, agent_ids: list[str]) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    """(node id, the node's output name, response path, path below that output)
+    of the agent-job response field the process output `name` is published from."""
+    output_ids = {
+        d.attrib.get("id")
+        for d in declarations(process)
+        if d.tag == q(UIPATH_NS, "output") and d.attrib.get("name") == name
+    }
+    writes = output_writes(process)
+    sources = [out.attrib.get("source", "") for _owner, out in writes if out.attrib.get("var") in output_ids]
+    if not sources:
+        raise CheckFailure(f"no mapping publishes the process output `{name}`")
+    traced = set()
+    for source in sources:
+        match = VARS_SOURCE.fullmatch(source.strip())
+        if match is None:
+            raise CheckFailure(f"`{name}` is published from {source!r}, not straight from one variable")
+        var, below = match.group(1), field_path(match.group(2))
+        var_writes = [(owner, out) for owner, out in writes if out.attrib.get("var") == var]
+        owners = sorted({owner for owner, _out in var_writes})
+        if len(var_writes) != 1 or owners[0] not in agent_ids:
+            raise CheckFailure(
+                f"`{name}` is published from vars.{var}, which is written by {owners or 'no element'}; "
+                f"it must be written only by the response mapping of an agent-job node {agent_ids}"
+            )
+        owner, write = var_writes[0]
+        node_source = (write.attrib.get("source") or "=result").strip()
+        node_match = RESULT_SOURCE.fullmatch(node_source)
+        if node_match is None:
+            raise CheckFailure(f"vars.{var} takes {node_source!r} on {owner!r}, not a field of the agent's response")
+        traced.add((owner, write.attrib.get("name", ""), field_path(node_match.group(1)) + below, below))
+    if len(traced) != 1:
+        raise CheckFailure(f"`{name}` is published from more than one agent response field: {sorted(traced)}")
+    return traced.pop()
+
+
+def mapped_agent_fields(process: ET.Element) -> tuple[str, dict[str, tuple[str, tuple[str, ...], tuple[str, ...]]]]:
+    """The one agent-job node `gender` and `reason` are published from, and
+    for each its (output name, response path, path below that output)."""
+    agent_ids = agent_job_ids(process)
+    if not agent_ids:
+        raise CheckFailure(f"no serviceTask uses {AGENT_JOB_TYPE}; the agent is never called")
+    traced = {name: traced_field(process, name, agent_ids) for name in TRACED_OUTPUTS}
+    nodes = {node for node, *_rest in traced.values()}
+    if len(nodes) != 1:
+        sources = {name: node for name, (node, *_rest) in traced.items()}
+        raise CheckFailure(f"`gender` and `reason` come from different agent-job nodes: {sources}")
+    return nodes.pop(), {name: tuple(rest) for name, (_node, *rest) in traced.items()}
+
+
+def parsed(value: Any) -> Any:
+    if isinstance(value, str) and value.strip()[:1] in ("{", "["):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
+def at_path(value: Any, path: tuple[str, ...]) -> Any:
+    for key in path:
+        value = parsed(value)
+        if not isinstance(value, dict):
+            return MISSING
+        value = get_ci(value, key, MISSING)
+        if value is MISSING:
+            return MISSING
+    return value
+
+
+def mapped_values(
+    record: Any, output_name: str, path: tuple[str, ...], below: tuple[str, ...]
+) -> list[tuple[str, Any]]:
+    """(where, value) for one mapped response field in the node's Outputs: the
+    node's own output of that name when present, else the field at `path` in
+    the Outputs or in a response object directly under them."""
+    record = parsed(record)
+    if not isinstance(record, dict):
+        return []
+    own = get_ci(record, output_name, MISSING) if output_name else MISSING
+    if own is not MISSING:
+        value = at_path(own, below)
+        return [] if value is MISSING else [(f"Outputs[{output_name!r}]", value)]
+    roots = [("Outputs", record), *((f"Outputs[{key!r}]", parsed(value)) for key, value in record.items())]
+    dotted = "".join(f".{key}" for key in path)
+    return [(f"{where}{dotted}", value) for where, root in roots if (value := at_path(root, path)) is not MISSING]
 
 
 def squash(text: str) -> str:
     return " ".join(text.split()).casefold()
 
 
-def assert_agent_provenance(process: ET.Element, variables: Any, gender: str) -> None:
-    node_ids = agent_job_ids(process)
-    if not node_ids:
-        raise CheckFailure(f"no serviceTask uses {AGENT_JOB_TYPE}; the agent is never called")
-    reasons = {squash(v) for v in named_values(process, variables, "reason") if isinstance(v, str)}
-    records = element_output_records(variables, tuple(node_ids))
-    labels_per_run = []
-    for record in records:
-        leaves = {squash(leaf) for leaf in string_leaves(record)}
-        labels = leaves & LABELS
-        if labels == {gender} and reasons & (leaves - LABELS):
-            return
-        labels_per_run.append(sorted(labels))
-    raise CheckFailure(
-        f"no run of agent-job node(s) {node_ids} returned exactly the label {gender!r} together with "
-        f"the process `reason` {sorted(reasons)!r}; labels per run: {labels_per_run}; Outputs: {records!r}"
-    )
+def assert_agent_provenance(process: ET.Element, variables: Any, gender: str) -> str:
+    node_id, fields = mapped_agent_fields(process)
+    records = element_output_records(variables, node_id)
+    if len(records) != 1:
+        raise CheckFailure(
+            f"agent-job node {node_id!r} ran {len(records)} times; the process should call the agent once. "
+            f"Outputs: {records!r}"
+        )
+    record = records[0]
+    reasons = {squash(v) for v in named_values(process, variables, "reason") if isinstance(v, str) and v.strip()}
+    expected = {"gender": {gender}, "reason": reasons}
+    found = {}
+    for name, (output_name, path, below) in fields.items():
+        values = mapped_values(record, output_name, path, below)
+        found[name] = values
+        if not values or any(not isinstance(v, str) or squash(v) not in expected[name] for _where, v in values):
+            raise CheckFailure(
+                f"process `{name}` is mapped from result.{'.'.join(path)} of agent-job node {node_id!r}, which "
+                f"should hold {sorted(expected[name])!r}; found {values!r}; Outputs: {record!r}"
+            )
+    return f"{node_id!r}: " + ", ".join(f"{name} from {where}" for name, values in found.items() for where, _v in values)
 
 
 def agent_release_keys(rows: list[Any]) -> set[str]:
@@ -179,7 +277,8 @@ def assert_agent_job_ran(
 ) -> None:
     if not isinstance(since, str) or not since:
         raise CheckFailure("the deployed job has no CreationTime to bound the agent job by")
-    node_ids = agent_job_ids(process)
+    node_id, _fields = mapped_agent_fields(process)
+    node_ids = [node_id]
     executions = fetch_element_executions(instance_id, folder_key)
     job_keys = started_job_keys(executions, node_ids)
     if not job_keys:
@@ -187,6 +286,11 @@ def assert_agent_job_ran(
         raise CheckFailure(
             f"agent-job node(s) {node_ids} report no started job in their element executions: "
             f"{json.dumps(mine, default=str)[:3000]}"
+        )
+    if len(job_keys) != 1:
+        raise CheckFailure(
+            f"agent-job node {node_id!r} started {len(job_keys)} jobs {sorted(job_keys)}; "
+            "the process should call the agent once"
         )
     _payload, processes = payload_data(
         run_cli(
@@ -243,8 +347,8 @@ def main() -> None:
         process = process_element(fetch_asset(instance_id, folder_key))
         assert_outputs(process, evidence.variables, a, b, gender)
         print("OK: sum, gender and reason are correct")
-        assert_agent_provenance(process, evidence.variables, gender)
-        print("OK: the agent-job node produced the gender and the reason")
+        traced = assert_agent_provenance(process, evidence.variables, gender)
+        print(f"OK: gender and reason are published from one run of agent-job node {traced}")
         assert_agent_job_ran(folder_path, run_data["CreationTime"], process, instance_id, folder_key)
         print(f"OK: the job the agent-job node started is a successful job of {folder_path}'s Agent process")
     except CheckFailure as error:
