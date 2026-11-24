@@ -42,8 +42,8 @@ Two Studio Web uploads are the exceptions, as [Studio Web upload](#studio-web-up
    rewrites the four derived files — `bindings_v2.json`, `entry-points.json`,
    `operate.json`, `package-descriptor.json`; `Data.WrittenFiles` names the ones
    that were stale, which is the drift report. Never hand-edit those files;
-   `init` creates them and `refresh` is the only command that rewrites them,
-   including the `Intsvc.*` connection bindings in `bindings_v2.json`.
+   `init` creates them and `refresh` rewrites them, including the `Intsvc.*`
+   connection bindings in `bindings_v2.json`.
 
    When the process calls other Orchestrator processes, queues, agents or
    connections, `bindings_v2.json` must be the versioned object
