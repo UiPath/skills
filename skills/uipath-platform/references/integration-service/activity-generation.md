@@ -303,9 +303,10 @@ $WORK/<Name>.json           the compiled activity metadata
 ## Putting it in a flow
 
 <!--skill-flavor:flow-sdk-generated-activity:start-->
+<!-- TODO(before merge): replace each `<release with builder-sdk#2257>` in this block with the first @uipath/maestro-builder-sdk release that exports inlineActivity(). -->
 A builder-SDK flow (the `uipath-maestro-flow` skill) runs a generated activity
-with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk` **6.125.0 or
-later**. The node embeds the whole activity: compile builds the node's
+with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk`
+`<release with builder-sdk#2257>` or later. The node embeds the whole activity: compile builds the node's
 definition from `<Name>.json` and carries every script in the node.
 
 1. Copy `$WORK/<Name>.json` and every `$WORK/<scriptRef>.js` into the flow's
@@ -340,11 +341,23 @@ definition from `<Name>.json` and carries every script in the node.
    generated activity, and `CONNECTOR_INPUT` for an undeclared input or a
    required one left out. Fix the files, never the compiled `.flow`.
 
-On an SDK older than 6.125.0 there is no node for a generated activity:
-`rawNode` refuses every `uipath.connector.*` type, and `connector()` only takes
-catalog operations. Report that gap to the user rather than hand-editing the
-compiled `.flow`, and offer managed HTTP in connector mode (the
-`uipath-maestro-flow` skill covers it) as the fallback.
+On an older SDK there is no SDK node for a generated activity: `rawNode`
+refuses every `uipath.connector.*` type, and `connector()` only takes catalog
+operations. Add the node to the compiled `.flow` with the CLI instead, after the
+last compile (a later compile rewrites the `.flow` and drops it):
+
+```bash
+uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key>.<slug> \
+  --metadata $WORK/<Name>.json --scripts $WORK --output json
+uip maestro flow nodes configure <Name>.flow <node-id> \
+  --detail '{"connectionId":"<Id>","folderKey":"<FolderKey>"}' --output json
+```
+
+The `<slug>` is the metadata's `name` in kebab case (`list-usergroup-users`);
+`--scripts` is the directory that holds every `<scriptRef>.js`. Never hand-edit
+the compiled `.flow`. When `uip` has no `nodes create`, report the gap to the
+user and offer managed HTTP in connector mode (the `uipath-maestro-flow` skill
+covers it).
 <!--skill-flavor:flow-sdk-generated-activity:end-->
 
 ## Keep the scripts readable
