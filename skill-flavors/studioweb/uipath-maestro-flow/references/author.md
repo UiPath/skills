@@ -28,9 +28,9 @@ at a valid artifact; publishing, running and debugging are
 
 <!--skill-flavor:completion-next:start-->
 7. **What's next** — when the request did not already say, ask with rule 9:
-   run and test the flow with `flow debug` (the run is server-side: a flow
-   has no local run, and Local workspace runs only RPA projects), publish the
-   solution, or "Something else". Each hands off
+   run and test the flow with `flow debug`, publish the solution, or
+   "Something else". `flow debug` runs the flow server-side. A flow has no
+   local run, and Local workspace runs only RPA projects. Each hands off
    to [`operate.md`](operate.md). A request that already named the next step
    ("publish it", "debug it") is the selection; act on it. When you wrote a
    new `<Name>.flow` that is not the open file, tell the user to open it in
