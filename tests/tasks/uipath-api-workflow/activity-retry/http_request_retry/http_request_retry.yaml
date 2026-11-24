@@ -30,15 +30,11 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: _setup
-      mount_point: _setup
+      path: _fixtures/OrderSync
+      mount_point: OrderSync
 
 reference:
   directory: ..
-
-pre_run:
-  - command: "python3 _setup/seed.py"
-    timeout: 60
 
 run_limits:
   expected_turns: 12

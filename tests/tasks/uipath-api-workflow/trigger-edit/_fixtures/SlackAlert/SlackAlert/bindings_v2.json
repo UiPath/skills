@@ -1,0 +1,27 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "EventTrigger",
+      "key": "00000000-0000-4000-8000-000000000001",
+      "activityId": "Button_Clicked_1",
+      "activityDisplayName": "Button Clicked",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-4000-8000-000000000001",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack",
+        "ActivityName": "Button Clicked",
+        "BindingsVersion": "2.2",
+        "ObjectName": "button",
+        "Operation": "BUTTON_CLICKED",
+        "FilterExpression": "(user_id == 'U_ALERT_USER_ID') && (channel_id == 'C_OLD_CHANNEL_ID')",
+        "SolutionsSupport": "true"
+      }
+    }
+  ]
+}
