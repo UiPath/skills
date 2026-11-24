@@ -9,10 +9,11 @@ POST /v1/chat/completions in a Node vm against an OpenAI chat body and Acme
 Inference API answers (see fixtures/acme-inference-api.md), and assert the
 translation both ways. Exit 0 only when every check passes.
 
-Usage: check_byo_connector.py <connector_root> [--hooks]
+Usage: check_byo_connector.py <workspace_or_connector_root> [--hooks | --print-root]
 """
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,7 @@ FLAVOR_PATH = "/v1/chat/completions"
 FLAVOR_TAG = "aigateway-openai-chat-completions"
 VENDOR_PATH = "/v2/generate"
 CREDENTIAL_HINTS = ("key", "token", "secret", "password", "authorization", "credential")
+CONNECTOR_KEY = "design-acme-acmechatbridge"
 
 NODE_RUNNER = r"""
 const fs = require('fs');
@@ -90,6 +92,27 @@ class Report:
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_connector_root(workspace: Path) -> Path:
+    """Locate the task's connector by its identity, not its chosen folder name."""
+    matches = []
+    for directory, children, files in os.walk(workspace):
+        children[:] = [name for name in children if name not in {
+            "node_modules", ".git", ".agents", ".claude", ".venv", ".npm-prefix",
+        }]
+        path = Path(directory)
+        if path.parts[-2:] != ("app", "element") or "element.json" not in files:
+            continue
+        try:
+            element = load_json(path / "element.json")
+        except (OSError, ValueError):
+            continue
+        if isinstance(element, dict) and element.get("key") == CONNECTOR_KEY:
+            matches.append(path.parent.parent)
+    if len(matches) != 1:
+        raise ValueError(f"Expected one connector with key {CONNECTOR_KEY}; found {len(matches)}")
+    return matches[0]
 
 
 def as_obj(value):
@@ -253,7 +276,14 @@ def main() -> int:
     if len(args) != 1:
         print(__doc__)
         return 2
-    root = Path(args[0])
+    try:
+        root = resolve_connector_root(Path(args[0]))
+    except ValueError as error:
+        print(f"FAIL  {error}", file=sys.stderr)
+        return 1
+    if "--print-root" in sys.argv:
+        print(root)
+        return 0
     report = Report()
     element_path = root / "app" / "element" / "element.json"
     metadata_path = root / "app" / "element" / "element-metadata.json"
