@@ -115,16 +115,10 @@ success_criteria:
   # the sandbox has no tenant, so a debug attempt is both a rule breach and a
   # wasted turn. Graded strictly here because a debug run places a real call; the
   # inbound task grades it too, as a wasted turn.
-  # Counted only at a command position: line start, after ; & | ( { or $(, after a
-  # `bash -lc`/`sh -c` wrapper (codex records every call that way), after
-  # do/then/else/if/!/time, VAR=x, env/exec/eval/command/nohup/nice/sudo/xargs/npx
-  # (with flags), `timeout [flags] N|$T` or `find ... -exec`, and with an optional
-  # path (/usr/bin/uip). A flag value is never itself a prefix word, so a run of
-  # prefixes without a uip call fails in linear time.
-  # A README, apply_patch body or grep/echo that only MENTIONS
-  # `uip maestro flow debug` mid-line does not count; a heredoc line that starts
-  # with the command, or follows `|` or `(` in prose, still does.
-  # Examples: tests/scripts/test_task_command_patterns.py.
+  # Counts `flow debug` at a command position (line start, after ; & | ( or
+  # bash -lc, behind wrappers like timeout/env/sudo/xargs/find -exec), not a
+  # mid-line mention in a README, grep or echo. Examples and a timing test:
+  # tests/scripts/test_task_command_patterns.py.
   - type: command_not_executed
     description: "Agent did not run flow debug, which would place a real outbound call"
     tool_name: "Bash"

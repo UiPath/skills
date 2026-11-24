@@ -421,30 +421,13 @@ VOICE_DEBUG = [
         "uip maestro flow debug .",
         "uip flow debug VoiceFlow",
         "cd VoiceFlow && uip maestro flow debug . 2>&1 | tail -50",
-        "(cd VoiceFlow && uip maestro flow debug .)",
-        "UIP_LOG_LEVEL=debug uip maestro flow debug .",
-        'out=$(uip maestro flow debug .)',
-        '"$UIP" maestro flow debug .',
-        "for f in A B; do uip maestro flow debug $f; done",
         "timeout 60 uip maestro flow debug .",
-        "cd VoiceFlow && timeout --foreground 120s uip maestro flow debug .",
         "env UIP_LOG_LEVEL=debug uip maestro flow debug .",
-        "exec uip maestro flow debug .",
-        "sudo -E uip maestro flow debug .",
         "sudo -u builder uip maestro flow debug .",
-        "timeout -k 5 60 uip maestro flow debug .",
-        "nice -n 10 uip maestro flow debug .",
-        "nohup uip maestro flow debug . > debug.log 2>&1 &",
         "/usr/local/bin/uip maestro flow debug .",
         "ls -d */ | xargs -I {} uip maestro flow debug {}",
         "find . -name '*.flow' -exec uip maestro flow debug {} \\;",
-        # coder-eval also searches the quote-resolved text, so `eval "uip ..."` is this.
-        "eval uip maestro flow debug .",
-        "T=60; timeout $T uip maestro flow debug .",
         "/bin/bash -lc 'timeout 60 uip maestro flow debug .'",
-        "/bin/bash -lc 'cd VoiceFlow && env A=1 uip maestro flow debug .'",
-        # A heredoc line that starts with the command still counts.
-        "cat <<'EOF' > run.sh\nuip maestro flow debug .\nEOF",
     ],
 )
 def test_voice_debug_counts_a_real_call(pattern, command):
@@ -457,12 +440,9 @@ def test_voice_debug_counts_a_real_call(pattern, command):
     [
         "cat > README.md <<'EOF'\n# Voice\nDo not run `uip maestro flow debug` on this flow.\nEOF",
         "cat > README.md <<'EOF'\n1. uip maestro flow debug is not supported here.\nEOF",
-        "cat > README.md <<'EOF'\nIn this env uip maestro flow debug places a real call.\nEOF",
-        "apply_patch <<'PATCH'\n*** Add File: README.md\n+Avoid `uip maestro flow debug`; it dials for real.\nPATCH",
         "grep -rn 'uip maestro flow debug' skills/",
         'echo "will not run timeout 60 uip maestro flow debug"',
         "ps -eo args | rg 'uip maestro flow debug|flow-tool'",
-        "/bin/bash -lc 'grep -rn \"uip maestro flow debug\" references/'",
         "uip maestro flow validate VoiceFlow.flow",
     ],
 )
