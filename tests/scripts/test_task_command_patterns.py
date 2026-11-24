@@ -468,3 +468,12 @@ def test_voice_debug_counts_a_real_call(pattern, command):
 )
 def test_voice_debug_ignores_a_mention(pattern, command):
     assert _hits(pattern, command) == {False}
+
+
+@pytest.mark.parametrize("pattern", VOICE_DEBUG)
+@pytest.mark.parametrize("prefixes", ["sudo -E env -i nice -n " * 40, "find . -exec " * 40])
+def test_voice_debug_does_not_backtrack_on_many_prefixes(pattern, prefixes):
+    for flags in FLAGS:
+        start = time.perf_counter()
+        assert not re.search(pattern, prefixes + "true", flags)
+        assert time.perf_counter() - start < 0.05
