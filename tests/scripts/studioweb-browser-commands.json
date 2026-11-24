@@ -712,7 +712,13 @@
     }
   },
   "uipath-rpa": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/uia-policies-catalog.md",
+        "command": "rpa uia",
+        "reason": "Desktop UI Automation runs only in the local uip CLI: these steps drive and clean up apps on the user's machine after a faulted or cancelled run, which Studio Web cannot do."
+      }
+    ],
     "ceiling": {
       "login": 17,
       "login status": 1,
@@ -769,7 +775,7 @@
       "rpa tm connect": 3,
       "rpa tm set-default-project": 2,
       "rpa tm status": 2,
-      "rpa uia": 14,
+      "rpa uia": 13,
       "rpa validate": 32,
       "rpa workflow-examples get": 2,
       "rpa workflow-examples list": 2,
