@@ -34,8 +34,10 @@ from typing import Any
 
 try:
     from _shared.bpmn_check import vars_ref
-except ImportError:  # imported with _shared itself on sys.path (unit tests)
+    from _shared.uip_auth import grader_env
+except ImportError:  # imported with _shared itself on sys.path (unit tests; stage_shared.sh pass 2)
     from bpmn_check import vars_ref
+    from uip_auth import grader_env
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
@@ -182,6 +184,7 @@ def run_cli(
         text=True,
         timeout=effective_timeout,
         cwd=cwd,
+        env=grader_env(),
     )
 
 
