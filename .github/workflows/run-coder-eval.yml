@@ -196,6 +196,10 @@ jobs:
           if [ "$DROPPED" -gt 0 ]; then
             echo "::warning::studio-web: dropped $DROPPED windows-tagged task(s); the desktop-RPA suite does not run under Studio Web"
           fi
+          # Overlapping globs list a file twice; the verdict compares against this count.
+          if [ "${#LINUX[@]}" -gt 0 ]; then
+            mapfile -t LINUX < <(printf '%s\n' "${LINUX[@]}" | awk '!seen[$0]++')
+          fi
           LCOUNT=${#LINUX[@]}
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
@@ -447,15 +451,38 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ vars.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
+          AUTH_REFRESH_INTERVAL_S:  "1200"
         run: |
-          bash .github/scripts/refresh-auth.sh
-          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
-          # containers (reference anti-cheat), so container-root can no longer
-          # read the host-owned ~/.uipath extra_mount (mounted by
-          # experiments/nightly.yaml) by capability. Widen it recursively via
-          # the "other" bits so the mounted .auth file (mode 600) is readable —
-          # mirrors coder-eval's own grant_container_access.
-          chmod -R o+rwX "$HOME/.uipath"
+          # Mint into staging, record the tokens host-side, then install (see the
+          # script: a rotation that cannot be recorded is never handed out).
+          bash .github/scripts/rotate-auth.sh
+          # Keep the login fresh for the whole run: the ROPC token lives ~1h and
+          # graders re-read the file per call. Silent (a background process cannot
+          # register masks); status goes to a file a later step prints. Detached
+          # from the runner's process tracking so it outlives this step.
+          cat > "$RUNNER_TEMP/auth-refresher.sh" <<'REFRESH'
+          #!/usr/bin/env bash
+          # Bounded: dies at the deadline (job timeout + margin) or when its pid
+          # file (the lease) is gone or replaced by a later job.
+          umask 077
+          echo $$ > "$RUNNER_TEMP/auth-refresher.pid"
+          deadline=$(( $(date +%s) + 23400 ))
+          lease() { [ "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" = "$$" ]; }
+          while [ "$(date +%s)" -lt "$deadline" ] && lease; do
+            sleep "${AUTH_REFRESH_INTERVAL_S:-1200}"
+            lease && [ "$(date +%s)" -lt "$deadline" ] || exit 0
+            if ROTATE_QUIET=1 bash .github/scripts/rotate-auth.sh; then
+              echo "$(date -u +%H:%M:%S) refreshed" >> "$RUNNER_TEMP/auth-refresh.log"
+            else
+              echo "$(date -u +%H:%M:%S) FAILED" >> "$RUNNER_TEMP/auth-refresh.log"
+            fi
+          done
+          REFRESH
+          if command -v setsid >/dev/null; then
+            env RUNNER_TRACKING_ID="" setsid nohup bash "$RUNNER_TEMP/auth-refresher.sh" >/dev/null 2>&1 &
+          else
+            echo "::warning::no setsid; auth refresher not started, runs over ~1h lose grader auth"
+          fi
 
       # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
       # can no longer import the group-level _shared/ helper by walking up the
@@ -538,6 +565,24 @@ jobs:
           # word splitting, no pathname expansion. That is what the delegate `-D`
           # override needs: to bash its `[...]` list is a character class.
           args=(-e experiments/nightly.yaml)
+
+          # Tenant coordinates for live e2e graders (escalation_is.py
+          # configured_target). Non-secret, read from ~/.uipath/.auth. The login
+          # itself is NOT exported as UIPATH_CLI_* env: graders that need it build
+          # env-auth per subprocess from the mounted file (_shared/uip_auth.py), so
+          # those variables are never in the agent's env and offline tasks stay
+          # logged out. (The Delegate / Studio Web agents still receive their own
+          # DELEGATE_AUTH_TOKEN below; that is the agent's login, not a grader one.)
+          passthrough_extra="UIPATH_URL,UIPATH_ORGANIZATION_ID,UIPATH_TENANT_ID"
+          AUTH_FILE="$HOME/.uipath/.auth"
+          for key in UIPATH_URL UIPATH_ORGANIZATION_ID UIPATH_TENANT_ID; do
+            val="$(sed -n "s/^$key=//p" "$AUTH_FILE")"
+            if [ -z "$val" ]; then
+              echo "::error::no $key in $AUTH_FILE — the ROPC login did not complete"
+              exit 1
+            fi
+            env_lines+=("$key=$val")
+          done
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
@@ -643,14 +688,14 @@ jobs:
             # Live token channel: nightly.yaml bind-mounts ~/.uipath -> /.uipath,
             # and the host re-reads the first READABLE path per turn — so the
             # frozen DELEGATE_AUTH_TOKEN env copy stops mattering past the ~1h
-            # ROPC TTL, PROVIDED the file stays fresh. This workflow mints the token once
-            # (no refresher loop like the nightly's), so runs longer than ~1h can
-            # still hit token expiry on late tasks. A refresher here would need a
-            # foreground step: masks registered from a background process never
-            # reach the job log, and this repo's logs are public.
+            # ROPC TTL, PROVIDED the file stays fresh: the mint step starts a silent
+            # background refresher for that (masks registered from a background
+            # process never reach the job log, and this repo's logs are public,
+            # so it prints nothing).
             env_lines+=("DELEGATE_AUTH_TOKEN_FILE=/.uipath/.auth:$AUTH_FILE")
             # Docker forwards only an env allowlist into the container; append
-            # the delegate auth/env vars to nightly.yaml's own list (MergeField
+            # the delegate auth/env vars to passthrough_extra, which the single
+            # -D below appends to nightly.yaml's own list (MergeField
             # append-semantics). Same list as run.py in coder_eval_uipath, less
             # DELEGATE_BACKEND_URL (unused here).
             # USER_ID is included for parity — the delegate host reads it when
@@ -662,13 +707,19 @@ jobs:
             delegate_env="$delegate_env,DELEGATE_ORG_ID,USER_ID,DELEGATE_ORG_SLUG"
             delegate_env="$delegate_env,DELEGATE_TENANT_SLUG,DELEGATE_ENV,USE_LLM_GATEWAY_FOR_FIREWORKS"
             delegate_env="$delegate_env,DELEGATE_STDIO_VERBOSE,DELEGATE_STDIO_LOG_MAX_CHARS,DELEGATE_STALL_TIMEOUT_S"
-            args+=(-D "sandbox.docker.env_passthrough_extra=[$delegate_env]")
+            passthrough_extra="$passthrough_extra,$delegate_env"
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
           fi
 
+          # One -D for the whole list (append-semantics onto nightly.yaml's own).
+          args+=(-D "sandbox.docker.env_passthrough_extra=[$passthrough_extra]")
+
           # After the clamp, so a delegate run reports the -j it will actually use.
-          args+=(-j "$j" -v --model "$model")
+          # No -v: verbose mode streams agent and grader output (which can echo a
+          # rotated token no one could mask) into the live Actions log. Detail
+          # stays in each task's task.log, which the scrub covers.
+          args+=(-j "$j" --model "$model")
 
           # Task globs are `args` entries like everything else: the action
           # promotes none of the CLI's flags to named inputs, so there is no
@@ -700,8 +751,8 @@ jobs:
       # the CLI takes is in the single `args` block the prep step composed: the
       # action promotes none of its flags to named inputs. That is also why there
       # is no job-summary switch here — the action writes none, so the report is
-      # appended below, after redaction. JUnit lands at /tmp/runs/junit.xml and
-      # travels with the run into the artifact and the blob.
+      # appended below, after the scrub. JUnit lands at /tmp/runs/junit.xml but is
+      # withheld by the scrub's allow-list, like every non-report file.
       - name: Run coder-eval
         id: eval
         # A moving major tag, not a SHA like the third-party actions above.
@@ -733,13 +784,14 @@ jobs:
         run: |
           find /tmp/runs -type d \( -name .venv -o -name node_modules \) -path "*/artifacts/*" -exec rm -rf {} + || true
 
-      # Ported from smoke-skills.yml, which has had this since the reports
-      # started carrying agent transcripts. This workflow never had it, so its
-      # artifact has been shipping unredacted transcripts all along. Runs BEFORE
+      # Reduces the run dir to an allow-list of result files and replaces secrets
+      # and issued tokens in them (.github/scripts/scrub-run-artifacts.py); fails
+      # closed. Ported in spirit from smoke-skills.yml. Runs BEFORE
       # anything that publishes the tree — the artifact upload, the job summary,
       # and the evalboard blob — and AFTER the cleanup above, which removes tens
       # of thousands of files this walk would otherwise scan for nothing.
       - name: Redact secrets from the eval report
+        id: scrub
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
@@ -749,52 +801,23 @@ jobs:
           E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
+          TASK_COUNT:                ${{ needs.partition.outputs.linux_count }}
+        # Fail closed: on any error the run dir is wiped and this step fails; the
+        # publishing steps below require its success, so nothing is published.
+        # The refresher stops first so the issued-tokens record is final.
         run: |
-          python - <<'PY'
-          import os
-          import pathlib
+          # The refresher is its own process group (setsid): kill the group so an
+          # in-flight rotation stops too.
+          pid="$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null || true)"
+          if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; fi
+          python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-tasks "$TASK_COUNT"
 
-          # Every secret this job forwards into the run, not just the ones
-          # smoke-skills.yml strips. It matters more here than there: this report
-          # is uploaded twice (a GitHub artifact and, when the identity is wired,
-          # an evalboard blob) and its run.md is echoed into the job summary.
-          names = (
-              "AWS_BEARER_TOKEN_BEDROCK",
-              "CODEX_API_KEY",
-              "GEMINI_API_KEY",
-              "E2E_PROCESS_KEY",
-              "E2E_LONG_PROCESS_KEY",
-              "UIPATH_ROPC_CLIENT_SECRET",
-              "UIPATH_BOT_PASSWORD",
-              # The ROPC user token, which the delegate host and the in-container
-              # uip CLI both use. Read from the file rather than the environment:
-              # this workflow mints it at runtime, so no secret carries it.
-              "UIPATH_CLI_AUTH_TOKEN",
-          )
-          values = [os.environ[n] for n in names if len(os.environ.get(n, "")) >= 8]
+      - name: Report auth refresher status
+        if: always()
+        run: |
+          cat "$RUNNER_TEMP/auth-refresh.log" 2>/dev/null || echo "no refresh fired (run shorter than the interval)"
+          kill "$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)" 2>/dev/null || true
 
-          auth = pathlib.Path(os.path.expanduser("~/.uipath/.auth"))
-          if auth.is_file():
-              for line in auth.read_text(encoding="utf-8", errors="ignore").splitlines():
-                  # Token only. Redacting the org/tenant SLUGS as well would
-                  # garble every report that legitimately names the tenant.
-                  if line.startswith("UIPATH_ACCESS_TOKEN=") and len(line) > 28:
-                      values.append(line.split("=", 1)[1])
-
-          if not values:
-              raise SystemExit(0)
-
-          suffixes = {".html", ".json", ".log", ".md", ".xml"}
-          for path in pathlib.Path("/tmp/runs").rglob("*"):
-              if not path.is_file() or path.suffix not in suffixes:
-                  continue
-              text = path.read_text(encoding="utf-8", errors="ignore")
-              redacted = text
-              for value in values:
-                  redacted = redacted.replace(value, "***")
-              if redacted != text:
-                  path.write_text(redacted, encoding="utf-8")
-          PY
       # ==================================================================
       # Evalboard publish. Entirely additive and entirely best-effort: every
       # step here warns and returns 0 rather than reddening a run, because a
@@ -816,7 +839,7 @@ jobs:
       # ==================================================================
 
       - name: Publish the run to evalboard
-        if: always() && env.EVALBOARD_UPLOAD_ENABLED == 'true'
+        if: always() && steps.scrub.outcome == 'success' && env.EVALBOARD_UPLOAD_ENABLED == 'true'
         continue-on-error: true
         env:
           # The only step in the job that sees the credential. Mirrors how the ADO
@@ -910,7 +933,7 @@ jobs:
       # path, with the literal as a fallback: a composite action's outputs may not
       # propagate from a step that exited non-zero, and this step runs on failure.
       - name: Append the run report to the job summary
-        if: always()
+        if: always() && steps.scrub.outcome == 'success'
         env:
           RUN_MD: ${{ steps.eval.outputs.run-md-path }}
         run: |
@@ -923,7 +946,7 @@ jobs:
           fi
 
       - name: Upload eval report
-        if: always()
+        if: always() && steps.scrub.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: coder-eval-linux-${{ github.run_id }}
@@ -948,14 +971,21 @@ jobs:
             /tmp/runs/**/task.html
             /tmp/runs/**/task.json
             /tmp/runs/**/task.log
-            /tmp/runs/**/artifacts
           if-no-files-found: warn
           retention-days: 14
 
       - name: Plaintext summary + verdict
         if: always()
+        env:
+          SCRUB_OUTCOME: ${{ steps.scrub.outcome }}
+          TASK_COUNT:    ${{ needs.partition.outputs.linux_count }}
         run: |
           set -uo pipefail
+          # Reads the run dir, so it only runs on what the scrub left behind.
+          if [ "$SCRUB_OUTCOME" != "success" ]; then
+            echo "FAIL — run results withheld (artifact scrub did not succeed)" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           # /tmp/runs IS the run dir (--run-dir above), so its subdirectories are
           # VARIANTS. `ls -td */ | head -n 1` picked one of them: correct only
           # while nightly.yaml declares a single variant, and a second variant
@@ -966,14 +996,16 @@ jobs:
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          python - "$run_dir" "$TASK_COUNT" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          print(f"\n{ok}/{len(rows)} PASS (linux)")
-          sys.exit(0 if rows and ok == len(rows) else 1)
+          expected = int(sys.argv[2])
+          print(f"\n{ok}/{len(rows)} PASS (linux; expected at least {expected})")
+          # >= : a dataset task fans out into one task.json per row; a missing task still fails.
+          sys.exit(0 if len(rows) >= expected and ok == len(rows) else 1)
           PY
 
   run-windows:
