@@ -250,6 +250,15 @@ const CODED_APP_CREATION_DENIAL =
 const CREATE_VITE_COMMAND = "npx --yes create-vite";
 const SCAFFOLD_REFERENCES = ["create-web-app.md", "create-action-app.md"];
 const SOLUTION_CODEDAPP_INIT_RULE = "`uip codedapp init` is the solution-side scaffolding entry point";
+// One line from each canonical passage that runs the CLI host's scaffold, install or build;
+// the studioweb flavor replaces each passage through its own named block.
+const CLI_HOST_PASSAGES = [
+  "**Two lifecycles, two scaffolding entry points.**",
+  "**Never skip the build step.**",
+  "If `node_modules` is absent, run the install step first",
+  "**A scaffold is not React until `src/main.tsx` exists",
+  "`cd <app-name> && npm run dev`",
+];
 
 test("the built studioweb flavor creates coded apps with CreateProjects and writes buildable base files", (t) => {
   const output = buildStudioweb(t);
@@ -258,10 +267,9 @@ test("the built studioweb flavor creates coded apps with CreateProjects and writ
   const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
   assert.ok(skill.includes("`CreateProjects` host tool"), "uipath-coded-apps must create coded apps with CreateProjects");
   assert.ok(skill.includes("Read its live schema first"), "uipath-coded-apps must take the CreateProjects fields from its live schema");
-  assert.ok(
-    skill.includes("Critical Rules 3 and 20") && skill.includes("Critical Rule 19:"),
-    "uipath-coded-apps must replace the CLI-host build, scaffold and installed-types rules",
-  );
+  for (const passage of CLI_HOST_PASSAGES) {
+    assert.ok(!skill.includes(passage), `uipath-coded-apps must replace the CLI-host passage: ${passage}`);
+  }
 
   const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
   assert.ok(!solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "uipath-solution must not send coded apps to `uip codedapp init`");
@@ -290,6 +298,10 @@ test("the default uipath-coded-apps skill keeps create-vite scaffolding (the gua
   const output = buildDefault(t);
   const codedApps = join(output, "uipath-coded-apps");
 
+  const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
+  for (const passage of CLI_HOST_PASSAGES) {
+    assert.ok(skill.includes(passage), `the default uipath-coded-apps must keep: ${passage}`);
+  }
   const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
   assert.ok(!template.includes("## Studio Web base files"));
   const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
