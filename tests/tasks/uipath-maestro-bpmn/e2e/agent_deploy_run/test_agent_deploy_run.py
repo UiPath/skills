@@ -48,9 +48,11 @@ def process(xml=PROCESS_XML):
     return check_behavior.process_element(xml)
 
 
-def variables(sum_value=9, gender="female", reason=REASON, agent_outputs=None):
+def variables(sum_value=9, gender="female", reason=REASON, agent_outputs=None, agent_runs=None):
     if agent_outputs is None:
         agent_outputs = {"response": {"gender": gender, "reason": reason}}
+    if agent_runs is None:
+        agent_runs = [agent_outputs]
     return {
         "Variables": [
             {
@@ -58,7 +60,7 @@ def variables(sum_value=9, gender="female", reason=REASON, agent_outputs=None):
                 "Globals": {"sumVar": sum_value, "genderVar": gender, "reasonVar": reason},
                 "GlobalDefinitions": {},
                 "Elements": [
-                    {"ElementId": "classify", "Outputs": agent_outputs},
+                    *({"ElementId": "classify", "Outputs": outputs} for outputs in agent_runs),
                     {"ElementId": "lookalike", "Outputs": {"response": {"gender": gender, "reason": reason}}},
                     {"ElementId": "fake", "Outputs": {"scriptResponse": "female"}},
                 ],
@@ -108,11 +110,11 @@ class ProvenanceTests(unittest.TestCase):
 
     def test_other_node_cannot_cover_for_agent(self):
         payload = variables(agent_outputs={"response": {}})
-        with self.assertRaisesRegex(CheckFailure, "Outputs"):
+        with self.assertRaisesRegex(CheckFailure, "exactly the label"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_male_does_not_match_female(self):
-        with self.assertRaisesRegex(CheckFailure, "Outputs"):
+        with self.assertRaisesRegex(CheckFailure, "exactly the label"):
             check_behavior.assert_agent_provenance(process(), variables(), "male")
 
     def test_wrong_gender_with_both_labels_fails(self):
@@ -120,8 +122,32 @@ class ProvenanceTests(unittest.TestCase):
             gender="male",
             agent_outputs={"response": {"gender": "female", "reason": REASON, "labels": ["male", "female"]}},
         )
-        with self.assertRaisesRegex(CheckFailure, "both"):
+        with self.assertRaisesRegex(CheckFailure, "exactly the label"):
             check_behavior.assert_agent_provenance(process(), payload, "male")
+
+    def test_unknown_classification_with_a_matching_hint_fails(self):
+        payload = variables(agent_outputs={"response": {"gender": "unknown", "hint": "female", "note": REASON}})
+        with self.assertRaisesRegex(CheckFailure, r"labels per run: \[\['female', 'unknown'\]\]"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_label_and_reason_from_different_runs_fail(self):
+        payload = variables(
+            agent_runs=[
+                {"response": {"gender": "female", "reason": "A different explanation."}},
+                {"response": {"gender": "unknown", "reason": REASON}},
+            ]
+        )
+        with self.assertRaisesRegex(CheckFailure, "exactly the label"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_one_matching_run_among_several_passes(self):
+        payload = variables(
+            agent_runs=[
+                {"response": {"gender": "unknown", "reason": "Retrying."}},
+                {"response": {"gender": "female", "reason": REASON}},
+            ]
+        )
+        check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_constant_process_reason_fails(self):
         payload = variables(
@@ -145,28 +171,38 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(check_behavior.agent_job_ids(process()), ["classify"])
 
 
+def job(release="bbbb", state="Successful", trace="0a1b2c3d4e5f60718293a4b5c6d7e8f9"):
+    return {"ReleaseName": "A", "Release": {"Key": release}, "State": state, "TraceId": trace}
+
+
 class AgentJobTests(unittest.TestCase):
     ROWS = [
         {"Name": "P", "ProcessType": "ProcessOrchestration", "Key": "AAAA"},
         {"Name": "A", "ProcessType": "Agent", "Key": "BBBB"},
     ]
+    TRACE = "0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9"
+
+    def traced(self, jobs):
+        return check_behavior.traced_agent_jobs(jobs, {"bbbb"}, self.TRACE)
 
     def test_agent_release_keys_are_case_folded(self):
         self.assertEqual(check_behavior.agent_release_keys(self.ROWS), {"bbbb"})
 
-    def test_successful_agent_job_counts(self):
-        jobs = [
-            {"ReleaseKey": "aaaa", "State": "Successful"},
-            {"ReleaseKey": "bbbb", "State": "Successful"},
-        ]
-        self.assertEqual(len(check_behavior.successful_agent_jobs(jobs, {"bbbb"})), 1)
+    def test_agent_job_on_the_run_trace_counts(self):
+        self.assertEqual(len(self.traced([job(release="aaaa"), job(release="BBBB")])), 1)
 
-    def test_faulted_or_other_jobs_do_not_count(self):
-        jobs = [
-            {"ReleaseKey": "bbbb", "State": "Faulted"},
-            {"ReleaseKey": "aaaa", "State": "Successful"},
-        ]
-        self.assertEqual(check_behavior.successful_agent_jobs(jobs, {"bbbb"}), [])
+    def test_faulted_agent_job_does_not_count(self):
+        self.assertEqual(self.traced([job(state="Faulted")]), [])
+
+    def test_concurrent_agent_job_on_another_trace_does_not_count(self):
+        self.assertEqual(self.traced([job(trace="ffffffffffffffffffffffffffffffff")]), [])
+
+    def test_job_without_a_release_does_not_count(self):
+        self.assertEqual(self.traced([{"State": "Successful", "TraceId": self.TRACE}]), [])
+
+    def test_run_without_a_trace_fails_before_listing(self):
+        with self.assertRaisesRegex(CheckFailure, "TraceId"):
+            check_behavior.assert_agent_job_ran("Shared/x", {"CreationTime": "2026-01-01T00:00:00Z", "TraceId": None})
 
 
 class DeployedTests(unittest.TestCase):

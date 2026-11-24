@@ -5,10 +5,11 @@ the deployed agent it calls answers.
 Picks fresh inputs now (two numbers and a first name with an unambiguous
 gender), starts the process deployed in `<parentFolderPath>/<folderName>`, and
 requires a clean completion with `sum` = a + b, `gender` = the expected value
-and a non-empty `reason`. The agent-job node's own runtime Outputs must hold
-that gender and not the other one, and the process `reason` must be one of
-their strings, so a script or a constant cannot stand in for the agent. A job
-of the folder's Agent process must also have succeeded during the run.
+and a non-empty `reason`. One run of the agent-job node must return exactly
+that label (no other of male/female/unknown) together with the process
+`reason`, so a script or a constant cannot stand in for the agent. A job of
+the folder's Agent process must also have succeeded on the deployed job's
+trace.
 """
 
 from __future__ import annotations
@@ -50,7 +51,6 @@ NAMES = {
     "female": ("Maria", "Olivia", "Sophia", "Emma", "Isabella"),
     "male": ("James", "Michael", "David", "Robert", "William"),
 }
-OTHER_GENDER = {"female": "male", "male": "female"}
 LABELS = {"male", "female", "unknown"}
 LIST_TIMEOUT = 60
 
@@ -122,23 +122,19 @@ def assert_agent_provenance(process: ET.Element, variables: Any, gender: str) ->
     node_ids = agent_job_ids(process)
     if not node_ids:
         raise CheckFailure(f"no serviceTask uses {AGENT_JOB_TYPE}; the agent is never called")
+    reasons = {squash(v) for v in named_values(process, variables, "reason") if isinstance(v, str)}
     records = element_output_records(variables, tuple(node_ids))
-    leaves = {squash(leaf) for record in records for leaf in string_leaves(record)}
-    if gender not in leaves:
-        raise CheckFailure(
-            f"agent-job node(s) {node_ids} produced no {gender!r} in their own Outputs: {records!r}"
-        )
-    if OTHER_GENDER[gender] in leaves:
-        raise CheckFailure(
-            f"agent-job node(s) {node_ids} hold both {gender!r} and {OTHER_GENDER[gender]!r}, "
-            f"so their Outputs do not decide the gender: {records!r}"
-        )
-    agent_text = leaves - LABELS
-    reasons = [squash(v) for v in named_values(process, variables, "reason") if isinstance(v, str)]
-    if not any(reason in agent_text for reason in reasons):
-        raise CheckFailure(
-            f"output `reason` {reasons!r} is not a string the agent-job node returned: {records!r}"
-        )
+    labels_per_run = []
+    for record in records:
+        leaves = {squash(leaf) for leaf in string_leaves(record)}
+        labels = leaves & LABELS
+        if labels == {gender} and reasons & (leaves - LABELS):
+            return
+        labels_per_run.append(sorted(labels))
+    raise CheckFailure(
+        f"no run of agent-job node(s) {node_ids} returned exactly the label {gender!r} together with "
+        f"the process `reason` {sorted(reasons)!r}; labels per run: {labels_per_run}; Outputs: {records!r}"
+    )
 
 
 def agent_release_keys(rows: list[Any]) -> set[str]:
@@ -149,18 +145,30 @@ def agent_release_keys(rows: list[Any]) -> set[str]:
     }
 
 
-def successful_agent_jobs(jobs: list[Any], release_keys: set[str]) -> list[Any]:
+def trace_key(value: Any) -> str:
+    return str(value or "").replace("-", "").casefold()
+
+
+def release_key(job: Any) -> str:
+    release = get_ci(job, "Release")
+    return str(get_ci(release, "Key", "") or "").casefold() if isinstance(release, dict) else ""
+
+
+def traced_agent_jobs(jobs: list[Any], release_keys: set[str], trace_id: Any) -> list[Any]:
+    trace = trace_key(trace_id)
     return [
         job
         for job in jobs
-        if str(get_ci(job, "ReleaseKey", "") or "").casefold() in release_keys
+        if release_key(job) in release_keys
+        and trace_key(get_ci(job, "TraceId")) == trace
         and get_ci(job, "State") == "Successful"
     ]
 
 
-def assert_agent_job_ran(folder_path: str, since: Any) -> None:
-    if not isinstance(since, str) or not since:
-        raise CheckFailure("the deployed job has no CreationTime to bound the agent job by")
+def assert_agent_job_ran(folder_path: str, run_data: dict) -> None:
+    since, trace_id = run_data.get("CreationTime"), run_data.get("TraceId")
+    if not isinstance(since, str) or not since or not trace_key(trace_id):
+        raise CheckFailure(f"the deployed job has no CreationTime or TraceId to find its agent job by: {run_data}")
     _payload, processes = payload_data(
         run_cli(
             ["uip", "or", "processes", "list", "--folder-path", folder_path, "--all-fields", "--limit", "200"],
@@ -173,16 +181,23 @@ def assert_agent_job_ran(folder_path: str, since: Any) -> None:
         raise CheckFailure(f"{folder_path} holds no Agent process")
     _payload, jobs = payload_data(
         run_cli(
-            ["uip", "or", "jobs", "list", "--folder-path", folder_path, "--created-after", since, "--limit", "50"],
+            [
+                "uip", "or", "jobs", "list", "--folder-path", folder_path,
+                "--created-after", since, "--all-fields", "--limit", "50",
+            ],
             timeout=LIST_TIMEOUT,
         ),
         f"jobs list in {folder_path}",
     )
     rows = jobs if isinstance(jobs, list) else []
-    if not successful_agent_jobs(rows, release_keys):
-        seen = [(get_ci(j, "ProcessName"), get_ci(j, "State")) for j in rows]
+    if not traced_agent_jobs(rows, release_keys, trace_id):
+        seen = [
+            (get_ci(j, "ReleaseName"), get_ci(j, "State"), trace_key(get_ci(j, "TraceId")) == trace_key(trace_id))
+            for j in rows
+        ]
         raise CheckFailure(
-            f"no job of the Agent process in {folder_path} succeeded during the run; jobs since {since}: {seen}"
+            f"no job of the Agent process in {folder_path} succeeded on the deployed job's trace {trace_id}; "
+            f"jobs since {since} (name, state, same trace): {seen}"
         )
 
 
@@ -211,8 +226,8 @@ def main() -> None:
         print("OK: sum, gender and reason are correct")
         assert_agent_provenance(process, evidence.variables, gender)
         print("OK: the agent-job node produced the gender and the reason")
-        assert_agent_job_ran(folder_path, run_data["CreationTime"])
-        print(f"OK: the Agent process in {folder_path} ran during the run")
+        assert_agent_job_ran(folder_path, run_data)
+        print(f"OK: the Agent process in {folder_path} ran on the deployed job's trace")
     except CheckFailure as error:
         raise SystemExit(f"FAIL: {error}") from error
     print("PASS")

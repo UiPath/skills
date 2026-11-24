@@ -703,7 +703,9 @@ def run_deployed(
         while True:
             try:
                 job = call(
-                    ["uip", "or", "jobs", "get", job_key, "--folder-key", folder_key], "jobs get", quiet=True
+                    ["uip", "or", "jobs", "get", job_key, "--folder-key", folder_key, "--all-fields", "--no-download"],
+                    "jobs get",
+                    quiet=True,
                 )
                 failed_polls = 0
             except CheckFailure as error:
@@ -733,6 +735,7 @@ def run_deployed(
         "ProcessName": get_ci(release, "Name"),
         "CreationTime": get_ci(job, "CreationTime"),
         "Info": get_ci(job, "Info"),
+        "TraceId": get_ci(job, "TraceId"),
     }
     return run_data, job_key, folder_key
 

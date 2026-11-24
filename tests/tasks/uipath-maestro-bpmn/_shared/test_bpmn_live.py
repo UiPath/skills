@@ -363,7 +363,7 @@ _STARTED = _ok({"jobKey": "jk", "state": "Pending"})
 
 
 def _job(state: str) -> str:
-    return _ok({"Key": "jk", "State": state, "CreationTime": "2026-01-01T00:00:00.000Z", "Info": "x"})
+    return _ok({"Key": "jk", "State": state, "CreationTime": "2026-01-01T00:00:00.000Z", "Info": "x", "TraceId": "tr"})
 
 
 def _stub_deployed(monkeypatch, outputs: list[tuple[int, str]]) -> list[list[str]]:
@@ -388,6 +388,8 @@ def test_run_deployed_starts_the_listed_release_and_waits(monkeypatch, tmp_path)
     assert (instance_id, folder_key) == ("jk", "fk")
     assert run_data["FinalStatus"] == "Successful"
     assert run_data["CreationTime"] == "2026-01-01T00:00:00.000Z"
+    assert run_data["TraceId"] == "tr"
+    assert seen[3][-2:] == ["--all-fields", "--no-download"]
     run = seen[2]
     assert run[:6] == ["uip", "maestro", "bpmn", "process", "run", "P.pk:1.0.1"]
     assert run[run.index("--release-key") + 1] == "rk"
