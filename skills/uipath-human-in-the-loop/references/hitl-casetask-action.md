@@ -4,7 +4,7 @@
 > **In this package, read this file only to understand a compiled Case plan.** Author Case HITL with the `uipath-maestro-case` skill: `action(...)` in `<Name>.case.ts`, then compile. Never hand-edit the compiled plan.
 
 <!--skill-flavor:case-json-reading-note:end-->
-The agent writes an `action` task into a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Direct JSON write is the primary method on the Case surface.** There is no CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.case` directly per the path-specific JSON shapes below.
+A compiled Case plan holds each HITL task as an `action` task in a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Author the task in the Case source, never in the plan:** the `uipath-maestro-case` skill writes `action(...)` in `<Name>.case.ts` (decompiling an existing plan first) and compiles, and the next compile rewrites `caseplan.case`, dropping anything written into it by hand. The JSON shapes below, the `context[]` entries and the `.hitl.json` linkage included, are what that compile produces: read them to understand or check a compiled plan.
 
 > If the stage or case predates required entry/exit/completion rules (see the checklist below), add them in the Case source, never in the plan: the next compile rewrites `caseplan.case` and drops a hand-written rule. Use the `uipath-maestro-case` skill's brownfield loop: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`, add the rules in `<Name>.case.ts`, `uip maestro case check <Name>.case.ts --source` (with the `--baseline` copy that skill describes), then `uip maestro case compile <Name>.case.ts -o <project>/<plan>`. The rule shapes below show what a compiled plan holds; read them, do not write them. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
 
@@ -18,10 +18,10 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 > **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a deployed Action Center app later."
 
 > **Build time vs design time.** A case action task lives in two surfaces:
-> - **Design time** — the JSON written into `caseplan.case` (what this skill produces). Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
+> - **Design time** — the JSON compile writes into `caseplan.case`. Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
 > - **Build / runtime time** — `uip maestro case validate` accepts it, `uip solution upload` packs it, and Action Center renders the form to the assignee at runtime.
 >
-> Every shape documented below is required to round-trip in both. After writing, always run `uip maestro case validate <caseplan.case> --output json`.
+> Every shape documented below is required to round-trip in both. After each compile, run `uip maestro case validate <caseplan.case> --output json`.
 
 ---
 
