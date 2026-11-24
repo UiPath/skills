@@ -25,7 +25,7 @@ def moves_on(g, edge, loop: str) -> bool:
 
 
 # Runs a check script and the gate on a mocked agent output, in a bare vm
-# context: no require, process or network, 2 s per run.
+# context (for determinism, not a security boundary), 2 s per run.
 ROUTE_JS = r"""
 const vm = require("vm");
 const context = vm.createContext(Object.assign(Object.create(null), { JOB: require("fs").readFileSync(0, "utf8") }));
@@ -35,7 +35,7 @@ run(`
   const { agent, step, script, gate, fallback, fields, scores } = JSON.parse(JOB);
   // Any other value the script reads: a harmless object that reads as "".
   const anything = new Proxy({}, { get: (_, key) => key === Symbol.toPrimitive ? () => "" : anything });
-  const call = (code, $vars) => new Function("$vars", "vars", "return (function () {" + code + "\\n})();")($vars, $vars);
+  const call = (code, $vars) => new Function("$vars", "vars", "$metadata", "return (function () {" + code + "\\n})();")($vars, $vars, anything);
   globalThis.route = confidence => {
     const output = new Proxy({ ...fields, ...Object.fromEntries(scores.map(name => [name, confidence])) }, {
       get: (t, key) => key in t ? t[key] : typeof key !== "string" ? undefined : /confid/i.test(key) ? confidence : "approve",
