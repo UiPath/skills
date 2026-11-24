@@ -135,6 +135,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Script tasks
 
+<!-- RULE:bpmn.script.compute-step -->
+- A new step whose job is computation (totalling or counting over a collection, filtering, combining several values, deciding) is a `.scriptTask()`, in any pattern or composition outside a draft skeleton (bare `.task()` only there).
+  `.task()` with `set` assigns or copies values (a per-item append, a status flag, one simple expression). The designer shows a `set` task as an Assign step, so a computation hidden in it is not visible as a Script step. Leave existing `.task()`/`set` steps in an imported file as they are.
+
 <!-- RULE:bpmn.script.result-response -->
 - A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
   Read it as `=result.response` for a scalar, or `=result.response.<field>` for one field of a returned object; never `=result.<field>`, which reads nothing.
