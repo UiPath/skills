@@ -155,6 +155,20 @@ def review_two_applies_joined() -> dict:
     return edge(flow, "record", "processBatch", "success", "continue")
 
 
+def review_check_step(node_type: str, inputs: dict) -> dict:
+    """A step between the agent and the gate, and the gate reads its ``confidence``."""
+    flow = add(fixture("batch_review"), "checkFields", node_type, parent="processBatch", inputs=inputs)
+    retarget(flow, "analyzeItem", "success", "checkFields")
+    node(flow, "lowConfidence")["inputs"]["expression"] = "$vars.checkFields.output.confidence < 0.8"
+    return edge(flow, "checkFields", "lowConfidence")
+
+
+CHECK_SCRIPT = (
+    "const p = $vars.analyzeItem.output; if (!p.decision) throw new Error('no decision'); "
+    "return { decision: p.decision, confidence: p.confidence };"
+)
+
+
 def triage_without_person() -> dict:
     """Classify and route with the human fallback removed: what the near miss asks for."""
     flow = fixture("triage_ai")
@@ -208,6 +222,12 @@ CASES = [
     ("composition/check_batch_review.py", "End in the body", review_end_in_body, 1),
     ("composition/check_batch_review.py", "apply per route", review_two_applies, 1),
     ("composition/check_batch_review.py", "apply per route, then joined", review_two_applies_joined, 1),
+    ("composition/check_batch_review.py", "gate reads a check script",
+     lambda: review_check_step("core.action.script", {"script": CHECK_SCRIPT}), 0),
+    ("composition/check_batch_review.py", "check step does not read the agent",
+     lambda: review_check_step("core.action.script", {"script": "return { decision: 'approve', confidence: 0.9 };"}), 1),
+    ("composition/check_batch_review.py", "mock between agent and gate only names the agent",
+     lambda: review_check_step("core.logic.mock", {"note": "passes on $vars.analyzeItem.output.confidence"}), 1),
     ("no_pattern/check_no_pattern.py", "export", lambda: fixture("export"), 0),
     ("no_pattern/check_no_pattern.py", "retrofitted gate", export_gated, 1),
     ("no_pattern_triage/check_near_miss.py", "classify and route", triage_without_person, 0),
