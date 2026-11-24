@@ -109,5 +109,8 @@ def test_the_refresher_exits_when_its_lease_is_gone(tmp_path):
 
 def test_the_partition_resolves_result_ids_with_the_dataset_expander():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert 'expected-task-ids.py "${LINUX[@]}"' in text
-    assert "id*" not in text
+    # the step cd's into tests/, so the helper must be addressed from the workspace root
+    assert '"$GITHUB_WORKSPACE/.github/scripts/expected-task-ids.py" "${LINUX[@]}"' in text
+    # a failure inside process substitution is invisible to `||`: capture first, then split
+    assert 'IDS_OUT="$(python3' in text and "mapfile -t LIDS <<<" in text
+    assert "mapfile -t LIDS < <(" not in text and "id*" not in text

@@ -15,13 +15,14 @@ Runs carry a live UiPath login, so nothing agent- or grader-authored is trusted:
 * Task text is redacted before it is serialized to JSON or HTML (escaping would hide a
   secret from a byte match). A missing or non-object `run.json`, an unreadable
   `task.json`, a scheduled task id without a result in every variant, or a result
-  nobody scheduled means the run is incomplete (`ID*` also accepts a dataset task's rows).
+  nobody scheduled means the run is incomplete. Scheduled ids are exact: a task's `task_id`,
+  or `<task_id>/<row>` for every dataset row; `ID!sampled` (a sampled dataset) is inconclusive.
 * A `publication-disabled` flag in $RUNNER_TEMP (written when a rotated token could
   not be recorded), a missing issued-tokens record under CI, or any error wipes the
   run dir (best effort), prints a fixed message and exits 1. Publishing steps
   require this step's success.
 
-Usage: scrub-run-artifacts.py <run_dir> [--expect-ids "ID ID* ..."]
+Usage: scrub-run-artifacts.py <run_dir> [--expect-ids "ID ID/ROW ..."]
 """
 
 from __future__ import annotations

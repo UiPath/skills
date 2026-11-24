@@ -205,10 +205,12 @@ jobs:
           # Result ids the scrub requires: each task's task_id, or `<task_id>/<row>` per dataset row.
           LIDS=()
           if [ "${#LINUX[@]}" -gt 0 ]; then
-            mapfile -t LIDS < <(python3 .github/scripts/expected-task-ids.py "${LINUX[@]}") || {
+            # Paths are relative to tests/ (cd above); the helper lives at the workspace root.
+            IDS_OUT="$(python3 "$GITHUB_WORKSPACE/.github/scripts/expected-task-ids.py" "${LINUX[@]}")" || {
               echo "::error::could not resolve the task ids of the matched task files"
               exit 1
             }
+            mapfile -t LIDS <<<"$IDS_OUT"
           fi
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
