@@ -22,11 +22,26 @@ def workspace(tmp_path, monkeypatch):
     return tmp_path
 
 
+class _Completed:
+    def __init__(self, returncode: int) -> None:
+        self.returncode = returncode
+
+
 @pytest.fixture
 def deletes(monkeypatch):
-    """Every id handed to `uip solution delete`, without running it."""
+    """Every id handed to `uip solution delete`, without running it. Each call succeeds."""
     called = []
-    monkeypatch.setattr(sc.subprocess, "run", lambda argv, **_: called.append(argv[3]))
+    monkeypatch.setattr(sc.subprocess, "run",
+                        lambda argv, **_: (called.append(argv[3]), _Completed(0))[1])
+    return called
+
+
+@pytest.fixture
+def refused(monkeypatch):
+    """Every id handed to `uip solution delete`, each call exiting non-zero as a 403 does."""
+    called = []
+    monkeypatch.setattr(sc.subprocess, "run",
+                        lambda argv, **_: (called.append(argv[3]), _Completed(1))[1])
     return called
 
 
@@ -107,3 +122,17 @@ def test_no_record_deletes_nothing_rather_than_everything(workspace, deletes):
     sc.delete("FeeRules")
 
     assert deletes == []
+
+
+def test_a_refused_delete_is_reported_rather_than_counted(workspace, refused, capsys):
+    # A 403 exits non-zero and the solution is still on the tenant. Reporting it as deleted hid
+    # a cleanup failure behind a line saying the opposite.
+    sc.record("FeeRules")
+    manifest(workspace / "FeeRules", "FeeRules.uipx", "refused-by-the-tenant")
+
+    sc.delete("FeeRules")
+
+    assert refused == ["refused-by-the-tenant"]
+    printed = capsys.readouterr().out
+    assert "deleted nothing" in printed
+    assert "FAILED to delete, still on the tenant: ['refused-by-the-tenant']" in printed

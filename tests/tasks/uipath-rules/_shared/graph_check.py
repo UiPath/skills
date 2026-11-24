@@ -23,6 +23,7 @@ from rules_check import (
     DMN_NS,
     NS,
     POLICY,
+    UNEVALUABLE,
     check_named_rules,
     evaluate,
     fail,
@@ -153,7 +154,11 @@ def model_calls(decision: ET.Element, model: str) -> list[str]:
     Whitespace between the name and the parenthesis is a call — FEEL allows it — and a name
     ending in the model's is not: `netDiscounted(` is not a call to `discounted`.
     """
-    text = executable_text(decision)
+    return model_calls_in(executable_text(decision), model)
+
+
+def model_calls_in(text: str, model: str) -> list[str]:
+    """The argument text of each `model(...)` call in `text`."""
     scan = outside_strings(text)
     calls = []
     for match in re.finditer(rf"(?<![A-Za-z0-9_.]){re.escape(model)}\s*\(", scan):
@@ -164,6 +169,33 @@ def model_calls(decision: ET.Element, model: str) -> list[str]:
                 break
         calls.append(text[match.end():cursor])
     return calls
+
+
+def executable_cells(decision: ET.Element) -> list[str]:
+    """Each FEEL expression the decision runs, one per cell, rather than joined into one blob."""
+    cells = [decision.findtext("dmn:literalExpression/dmn:text", default="", namespaces=NS) or ""]
+    cells += [element.text or "" for element
+              in decision.findall("dmn:decisionTable/dmn:rule/dmn:outputEntry/dmn:text", NS)]
+    return [cell.strip() for cell in cells if cell.strip()]
+
+
+def sole_call(decision: ET.Element, model: str) -> str:
+    """The arguments of a call that is the whole of the cell it sits in.
+
+    `discounted(50, tier) + 100` answers a different number from `discounted(50, tier)`, and a
+    check that only looked for a call accepted both. Requiring the call to be the entire
+    expression is what makes the arguments enough to say what the decision returns.
+    """
+    for cell in executable_cells(decision):
+        calls = model_calls_in(cell, model)
+        if not calls:
+            continue
+        if cell != f"{model}({calls[0]})" and cell != f"{model} ({calls[0]})":
+            fail(f"decision {decision.get('name')!r} answers with {cell!r}; the prompt asks for the "
+                 f"result of {model}(...) and nothing added to it")
+        return calls[0]
+    fail(f"no cell of decision {decision.get('name')!r} calls {model}(...)")
+    raise AssertionError  # unreachable; `fail` exits
 
 
 def check_model_called(root: ET.Element, decision: ET.Element, model: str) -> list[str]:
@@ -237,7 +269,11 @@ def evaluate_graph(root: ET.Element, inputs: dict) -> dict:
             if not found:
                 fail(f"decision {decision.get('name')!r} reads {column!r}, which is not an input or decision it requires")
             values[column] = value
-        hits[decision_id] = evaluate(table, values, context)
+        hit = evaluate(table, values, context)
+        # A matched cell holding a call or a formula makes this decision unevaluable, not the
+        # whole grade. Aborting here killed a case that asked only for an independent table's
+        # output, because `evaluate_graph` visits every decision in the file.
+        hits[decision_id] = UNEVALUATED if hit and any(v is UNEVALUABLE for v in hit.values()) else hit
 
     for decision_id in by_id:
         run(decision_id, ())
@@ -281,8 +317,9 @@ def check_graph_cases(root: ET.Element, cases: list) -> None:
         actual = evaluate_graph(root, inputs)
         for name, value in expected.items():
             if name not in actual:
-                fail(f"no decision table returns an output named {name}; a literal expression or a "
-                     f"knowledge model is graded by the engine (graph_check.py engine), not here")
+                fail(f"no decision table returns an output named {name} that this check can evaluate; "
+                     f"a literal expression, a call or a formula is graded by the engine "
+                     f"(graph_check.py engine), not here")
             if not same_value(actual[name], value):
                 fail(f"{inputs} returned {name}={actual[name]!r}, expected {value!r}")
 

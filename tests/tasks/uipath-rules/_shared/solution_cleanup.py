@@ -1,27 +1,15 @@
 #!/usr/bin/env python3
 """Deletes only the Studio Web solutions a `uip rules debug` run created.
 
-`rules debug` uploads a solution per run, so an e2e task has to clean up after
-itself or the solutions accumulate on the tenant. Deleting by a glob over every
-`.uipx` in the workspace is how that was first written, and it deletes whatever
-a manifest names — including a solution that was already there, which no run of
-this task created and which deleting destroys.
+`rules debug` uploads a solution per run, so an e2e task has to clean up after itself or they
+accumulate on the tenant. An id is deleted only when its manifest sits under the project
+directory the task names, its path was not on disk before the run, and its id was not either --
+so a manifest that was already there, copied to a new path, is not a new solution.
 
-`record` runs before the agent and writes down what is already on disk.
-`delete` runs after it and deletes an id only when all three hold:
-
-  * its manifest sits under the project directory the task names, not anywhere
-    in the tree;
-  * that path was not on disk before the run;
-  * that **id** was not on disk before the run — so copying a manifest that was
-    already there to a new path does not turn it back into a delete target.
-
-What this cannot do is prove the tenant solution came from this run. Only
-`uip rules debug` knows that, and `post_run` never sees its output;
-`uip solution list` would confirm it against the tenant but registers on
-preview builds only (UiPath/cli solution-tool/src/tool.ts), so a task running a
-stable CLI cannot call it. An id this skips is left on the tenant, which is the
-safe way round: a leftover solution is tidied by hand, a deleted one is not.
+Ownership is inferred, not proven: only `uip rules debug` knows which solution it made, and
+`post_run` never sees its output. Where ownership is unknown the id is left on the tenant, and
+no record at all deletes nothing -- a leftover solution is tidied by hand, a deleted one is not.
+Narrowing this to a trusted create record is MST-18679.
 """
 
 from __future__ import annotations
@@ -62,7 +50,7 @@ def delete(project: str) -> None:
         return
     before = json.loads(STATE.read_text(encoding="utf-8"))
     known_ids = {value for value in before.values() if value}
-    deleted, skipped = [], []
+    deleted, failed, skipped = [], [], []
     for path in manifests(project):
         found = solution_id(path)
         if not found:
@@ -70,9 +58,12 @@ def delete(project: str) -> None:
         if str(path) in before or found in known_ids:
             skipped.append(f"{path} ({found})")
             continue
-        subprocess.run(["uip", "solution", "delete", found, "--yes", "--output", "json"], timeout=120)
-        deleted.append(found)
+        completed = subprocess.run(["uip", "solution", "delete", found, "--yes", "--output", "json"],
+                                   timeout=120)
+        (deleted if completed.returncode == 0 else failed).append(found)
     print(f"deleted {deleted or 'nothing'}")
+    if failed:
+        print(f"FAILED to delete, still on the tenant: {failed}")
     if skipped:
         print(f"left alone, on disk before the run: {skipped}")
 

@@ -470,3 +470,70 @@ class TestUnevaluatedDecisions:
     def test_a_case_naming_an_unevaluated_output_fails_loudly(self):
         with pytest.raises(SystemExit):
             gc.check_graph_cases(self.graph(), [({"a": 1}, {"flag": 0})])
+
+
+class TestAnUnsupportedCellIsLocal:
+    """A cell only the engine can read makes its own decision unevaluable, not the whole grade."""
+
+    @staticmethod
+    def graph() -> ET.Element:
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        return ET.fromstring(f'''<definitions {model}>
+          <inputData id="in_a" name="a"><variable name="a" typeRef="number"/></inputData>
+          <businessKnowledgeModel id="bkm_rate" name="rate"><variable name="rate"/>
+            <encapsulatedLogic><formalParameter name="x" typeRef="number"/>
+              <literalExpression typeRef="number"><text>x * 2</text></literalExpression>
+            </encapsulatedLogic></businessKnowledgeModel>
+          <decision id="d_band" name="band"><variable name="band" typeRef="string"/>
+            <informationRequirement><requiredInput href="#in_a"/></informationRequirement>
+            <decisionTable hitPolicy="FIRST">
+              <input><inputExpression typeRef="number"><text>a</text></inputExpression></input>
+              <output name="band" typeRef="string"/>
+              <rule><inputEntry><text>&gt;= 50</text></inputEntry><outputEntry><text>"Large"</text></outputEntry></rule>
+              <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>"Small"</text></outputEntry></rule>
+            </decisionTable></decision>
+          <decision id="d_fee" name="fee"><variable name="fee" typeRef="number"/>
+            <informationRequirement><requiredInput href="#in_a"/></informationRequirement>
+            <knowledgeRequirement><requiredKnowledge href="#bkm_rate"/></knowledgeRequirement>
+            <decisionTable hitPolicy="FIRST">
+              <input><inputExpression typeRef="number"><text>a</text></inputExpression></input>
+              <output name="fee" typeRef="number"/>
+              <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>rate(a)</text></outputEntry></rule>
+            </decisionTable></decision>
+        </definitions>''')
+
+    def test_an_independent_table_is_still_graded(self):
+        # `evaluate_graph` visits every decision, so `rate(a)` in the fee table used to abort the
+        # whole grade through `literal()` even though the case only asks about the band.
+        gc.check_graph_cases(self.graph(), [({"a": 60}, {"band": "Large"}), ({"a": 10}, {"band": "Small"})])
+
+    def test_the_model_calling_table_publishes_nothing(self):
+        assert "fee" not in gc.evaluate_graph(self.graph(), {"a": 60})
+
+    def test_a_case_naming_the_unevaluable_output_fails(self):
+        with pytest.raises(SystemExit):
+            gc.check_graph_cases(self.graph(), [({"a": 60}, {"fee": 120.0})])
+
+
+class TestSoleCall:
+    """A call that is the whole expression is what makes its arguments say what it returns."""
+
+    def test_a_bare_call_gives_its_arguments(self):
+        probe = decision_xml('<literalExpression><text>discounted(50, tier)</text></literalExpression>')
+        assert gc.sole_call(probe, "discounted") == "50, tier"
+
+    def test_arithmetic_around_the_call_is_refused(self):
+        # `discounted(50, tier) + 100` returns a different number, and a check that only looked
+        # for a call anywhere in the cell accepted it.
+        probe = decision_xml('<literalExpression><text>discounted(50, tier) + 100</text></literalExpression>')
+        with pytest.raises(SystemExit):
+            gc.sole_call(probe, "discounted")
+
+    def test_whitespace_before_the_parenthesis_is_still_the_whole_cell(self):
+        probe = decision_xml('<literalExpression><text>discounted (50, tier)</text></literalExpression>')
+        assert gc.sole_call(probe, "discounted") == "50, tier"
+
+    def test_an_output_cell_holding_only_the_call_gives_its_arguments(self):
+        probe = decision_xml('<decisionTable><rule><outputEntry><text>discounted(50, tier)</text>'
+                             '</outputEntry></rule></decisionTable>')
+        assert gc.sole_call(probe, "discounted") == "50, tier"

@@ -36,6 +36,7 @@ from graph_check import (  # noqa: E402
     model_calls,
     reference_name,
     required,
+    sole_call,
 )
 from rules_check import NS, fail, find_project, load_graph  # noqa: E402
 
@@ -126,13 +127,13 @@ def wired() -> None:
     freight = decision_for_output(root, "freight")
     if freight.get("name") == "netUnitPrice":
         fail("netUnitPrice answers under 'freight'; the freight discount belongs in its own decision")
-    calls = model_calls(freight, "discounted")
-    if not calls:
+    if not model_calls(freight, "discounted"):
         fail(f"decision {freight.get('name')!r} requires 'discounted' but its logic never calls it; "
              f"a mention in an annotation is not a call")
-    arguments = [argument.strip() for argument in calls[0].split(",")]
-    if len(arguments) != 2 or arguments[0] != "50":
-        fail(f"the freight decision calls discounted({calls[0]}); the prompt discounts 50 by the tier")
+    arguments = [argument.strip() for argument in sole_call(freight, "discounted").split(",")]
+    if len(arguments) != 2:
+        fail(f"the freight decision calls discounted({', '.join(arguments)}); 'discounted' takes an "
+             f"amount and a percentage")
     # The tier decision has one output, so its result is that value and a reader addresses the
     # decision itself. `tier.tierPct` reads a field of a number and is what Critical Rule 3
     # exists to prevent; allowing it here would have graded an invalid call as correct, and this
@@ -142,7 +143,28 @@ def wired() -> None:
         fail(f"the freight discount is taken at {arguments[1]!r}, not at {tier!r}, "
              f"the tier percentage the rule already computes; {tier!r} has one output, so a "
              f"reader names the decision and never a field of it")
-    print(f"OK: {len(callers)} decisions call 'discounted', and freight discounts 50 by the tier")
+    _freight_values(arguments[0])
+    print(f"OK: {len(callers)} decisions call 'discounted', and the freight comes out right for every tier")
+
+
+def _freight_values(amount: str) -> None:
+    """What the freight decision returns for each tier, worked out rather than pattern-matched.
+
+    Two things are already pinned by the time this runs: the call is the whole expression, and
+    `kept()` has compared the model's body with the fixture's `amount * (1 - pct / 100)`. So the
+    returned value follows from the base amount alone, and checking the amount's text was never
+    enough — `discounted(50, tier) + 100` answered 142.5 for Gold and passed, while the correct
+    `discounted(50.0, tier)` was refused for spelling 50 differently.
+    """
+    try:
+        base = float(amount)
+    except ValueError:
+        fail(f"the freight discount is taken on {amount!r}; the prompt asks for a flat 50 before discount")
+    expected = {inputs["customerTier"]: 50 * (1 - answer["tierPct"] / 100) for inputs, answer in TIER_CASES}
+    actual = {inputs["customerTier"]: base * (1 - answer["tierPct"] / 100) for inputs, answer in TIER_CASES}
+    if actual != expected:
+        fail(f"a flat freight of {base} discounted by the tier returns {actual}; the prompt asks for 50 "
+             f"before discount, which returns {expected}")
 
 
 def diagram() -> None:

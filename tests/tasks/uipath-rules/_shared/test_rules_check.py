@@ -247,15 +247,26 @@ class TestProject:
         assert rc.read_name(names, "notAName") == (False, None)
 
     def test_a_call_in_an_output_cell_is_not_read_as_a_string(self):
-        # Returning the raw source would grade a correct rule wrong; the engine grades calls.
-        with pytest.raises(SystemExit):
-            rc.literal("scoreModel(1)")
-        with pytest.raises(SystemExit):
-            rc.literal("base * 1.1")
+        # Returning the raw source would grade a correct rule wrong; the engine grades calls. It
+        # answers unevaluable rather than aborting, so a cell no case asks about cannot kill the
+        # whole grade — the caller decides what an unevaluable cell means for it.
+        assert rc.literal("scoreModel(1)") is rc.UNEVALUABLE
+        assert rc.literal("base * 1.1") is rc.UNEVALUABLE
         assert rc.literal('"High"') == "High"
         assert rc.literal("12.5") == 12.5
         assert rc.literal("-3") == -3.0
         assert rc.literal("true") is True
+
+    def test_a_single_decision_case_still_fails_loudly_on_a_call(self):
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        table = ET.fromstring(f'''<decisionTable {model} hitPolicy="UNIQUE">
+          <input><inputExpression typeRef="number"><text>amount</text></inputExpression></input>
+          <output name="fee" typeRef="number"/>
+          <rule><inputEntry><text>-</text></inputEntry><outputEntry><text>scoreModel(amount)</text></outputEntry></rule>
+        </decisionTable>''')
+
+        with pytest.raises(SystemExit):
+            rc.check_cases(table, "fee", [({"amount": 1}, 1.0)])
 
     def test_renamed_decision_id_breaks_the_contract(self, project):
         dmn_file, root = rc.load_rule(project)

@@ -34,13 +34,20 @@ def main() -> None:
     if expression is None:
         fail(f"the fee comes from {name!r}, whose logic is not a literalExpression; "
              f"the fee was asked for as a formula")
-    if not (expression.get("typeRef") or "").strip():
-        fail(f"the literal expression of {name!r} declares no typeRef; validate reports DMN_LITERAL_EXPRESSION_TYPE_MISSING")
+    # The type, not merely a type. The prompt asks for a numeric fee, and `validate` never looks
+    # at a graph's literal expressions, so a fee declared `string` reaches the engine and fails
+    # there — and the offline cases below only assert `band`, so nothing else catches it.
+    if (expression.get("typeRef") or "").strip() != "number":
+        fail(f"the literal expression of {name!r} declares typeRef {expression.get('typeRef')!r}, "
+             f"expected \"number\"; the fee was asked for as a number")
     if not (expression.findtext("dmn:text", default="", namespaces=NS) or "").strip():
         fail(f"the literal expression of {name!r} is empty")
     variable = fee.find("dmn:variable", NS)
     if variable is None or variable.get("name") != name:
         fail(f"decision {name!r} has no <variable> of its own name")
+    if (variable.get("typeRef") or "").strip() != "number":
+        fail(f"the <variable> of {name!r} declares typeRef {variable.get('typeRef')!r}, expected "
+             f"\"number\"; it is what a caller binds to, so it has to agree with the expression")
     if fee.find("dmn:decisionTable", NS) is not None:
         fail(f"decision {name!r} carries both a table and a literal expression")
     if not fee.findall("dmn:informationRequirement/*", NS):

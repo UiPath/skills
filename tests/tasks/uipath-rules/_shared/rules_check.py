@@ -234,6 +234,16 @@ def unary_test(cell: str, value: object) -> bool:
     raise AssertionError
 
 
+class _Unevaluable:
+    """A cell the offline evaluator cannot read — a call or a formula, which only the engine runs."""
+
+    def __repr__(self) -> str:
+        return "<unevaluable: a call or a formula>"
+
+
+UNEVALUABLE = _Unevaluable()
+
+
 def literal(text: str) -> object:
     text = text.strip()
     if re.fullmatch(r'"[^"]*"', text):
@@ -249,9 +259,10 @@ def literal(text: str) -> object:
         return text
     # Anything else carrying a call or an operator is neither a literal nor a name. Returning the
     # raw source would grade `scoreModel(1)` as the string "scoreModel(1)" and silently mark a
-    # correct rule wrong. The engine grades those (graph_check.py engine).
+    # correct rule wrong, so the cell is answered as unevaluable and the caller decides. Failing
+    # here instead aborted a whole graph on a cell no case asked about.
     if re.search(r"[()+*/]|(?<![<>=!])-(?!\s*$)", text):
-        fail(f"output cell {text!r} is a call or a formula; grade it with 'graph_check.py engine'")
+        return UNEVALUABLE
     return text
 
 
@@ -312,6 +323,8 @@ def evaluate(table: ET.Element, inputs: dict, names: dict | None = None) -> dict
 def check_cases(table: ET.Element, output: str, cases: list) -> None:
     for inputs, expected in cases:
         actual = (evaluate(table, inputs) or {}).get(output)
+        if actual is UNEVALUABLE:
+            fail(f"output {output} for {inputs} is a call or a formula; grade it with 'graph_check.py engine'")
         if actual != expected:
             fail(f"{inputs} returned {actual!r}, expected {expected!r}")
 
