@@ -361,15 +361,17 @@ uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key
   --id listMembers --metadata $WORK/<Name>.json --scripts $WORK --output json
 uip maestro flow nodes configure <Name>.flow listMembers --output json \
   --detail '{"connectionId":"<Id>","folderKey":"<FolderKey>","queryParameters":{"usergroup":"<value or =expression>"}}'
-uip maestro flow edges list <Name>.flow --output json          # the edge the node goes into
+uip maestro flow edges list <Name>.flow --output json          # the edge the node goes into: note its sourcePort and targetPort
 uip maestro flow edges delete <Name>.flow <edge-id> --output json
-uip maestro flow edges create <Name>.flow <previous-node-id> listMembers --output json
-uip maestro flow edges create <Name>.flow listMembers <next-node-id> --output json
+uip maestro flow edges create <Name>.flow <previous-node-id> listMembers --source-port <its sourcePort> --output json
+uip maestro flow edges create <Name>.flow listMembers <next-node-id> --target-port <its targetPort> --output json
 uip maestro flow validate <Name>.flow --output json
 ```
 
 The `<slug>` is the metadata's `name` in kebab case (`list-usergroup-users`);
-`--scripts` is the directory that holds every `<scriptRef>.js`. Each required
+`--scripts` is the directory that holds every `<scriptRef>.js`. The two new
+edges keep the replaced edge's ports: a decision's `true` arm or a loop's body
+has no default port, so leaving them out fails or rewires the wrong arm. Each required
 input goes in the slot the metadata names: `queryParameters`, `pathParameters`
 or `bodyParameters`. Never hand-edit the compiled `.flow`. When `uip` has no
 `nodes create`, report the gap to the user and offer managed HTTP in connector
