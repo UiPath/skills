@@ -41,6 +41,7 @@ def _bpmn(
     marker: bool = True,
     version: str = "v2",
     trigger_name: str = "=bindings.bEntity",
+    activity_name: str = "=bindings.bEntity",
 ) -> str:
     """Trimmed from the CI run 2026-10-22 artifact."""
     return (
@@ -64,7 +65,7 @@ def _bpmn(
         '<uipath:type value="Intsvc.ActivityExecution" version="v1" />'
         f"{_context(object_name, version=version)}"
         '<uipath:input name="queryParameters" type="json" target="queryParameters">'
-        '<![CDATA[{"folderEntityName":"=bindings.bEntity"}]]></uipath:input>'
+        f'<![CDATA[{{"folderEntityName":"{activity_name}"}}]]></uipath:input>'
         '<uipath:input name="body" type="json" target="body"><![CDATA[{"title":"V2Test"}]]></uipath:input>'
         "</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
         "</bpmn:process></bpmn:definitions>"
@@ -130,3 +131,21 @@ def test_trigger_read_of_the_entity_folder_binding_is_not_the_name_picker(tmp_pa
     rc, out = _run(tmp_path, "CreateEntityRecord_V3", trigger_name="=bindings.bFolder")
     assert rc != 0
     assert "not a read of" in out
+
+
+def test_activity_literal_entity_is_not_a_picker(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", activity_name="SkillPickerEvalEntity")
+    assert rc != 0
+    assert "the activity's folderEntityName is 'SkillPickerEvalEntity', not a read of" in out
+
+
+def test_activity_read_of_the_entity_folder_binding_is_not_the_name_picker(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", activity_name="=bindings.bFolder")
+    assert rc != 0
+    assert "the activity's folderEntityName is '=bindings.bFolder', not a read of" in out
+
+
+def test_activity_read_of_a_binding_that_is_not_the_entity_picker_fails(tmp_path: Path) -> None:
+    rc, out = _run(tmp_path, "CreateEntityRecord_V3", activity_name="=bindings.bOther")
+    assert rc != 0
+    assert "the activity's folderEntityName is '=bindings.bOther', not a read of" in out
