@@ -176,9 +176,67 @@ No other keys. Never plain-string prompts: [critical-rules/conversational-critic
 | `temperature` | 0 = deterministic, higher = creative |
 | `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
 | `maxIterations` | Max autonomous agent loop iterations. Default 25. Default 8 for conversational. |
-| `mode` | Use `"standard"` |
+| `mode` | Use `"standard"`. Use `"advanced"` only when the user asks for an advanced agent — see [Advanced Agents](#advanced-agents). |
+| `advancedAgent` | Advanced agents only. Turns the agent's built-in tools on and off — see [Advanced Agents](#advanced-agents). |
 
 > Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
+
+#### Advanced Agents
+
+`"mode": "advanced"` runs the agent on the advanced harness: a file workspace, sub-agents, and optional JavaScript execution. Advanced agents are in preview.
+
+1. **Set `mode` to `"advanced"` only when the user asks for an advanced agent.** On a tenant without advanced agents, the run fails at startup with "Advanced Mode is not enabled". If you see that error, set `mode` back to `"standard"` and tell the user.
+2. **Do not add guardrails to an advanced agent.** The run fails if the root `guardrails` array is not empty.
+3. **A conversational advanced agent needs conversational advanced mode on the tenant.** Without it, the run fails with "Conversational agents are not enabled in Advanced Mode".
+
+##### Built-in Tools (`advancedAgent.builtInTools`)
+
+Besides the tools added as resources, an advanced agent has built-in tools: file tools on its workspace, `task` to hand work to sub-agents, and `eval` to run JavaScript. `settings.advancedAgent.builtInTools` turns them on and off. Studio Web shows the same switches under **Capabilities**.
+
+```json
+"settings": {
+  "model": "anthropic.claude-sonnet-4-6",
+  "maxTokens": 64000,
+  "temperature": 0,
+  "engine": "basic-v2",
+  "maxIterations": 25,
+  "mode": "advanced",
+  "advancedAgent": {
+    "builtInTools": {
+      "ls": { "enabled": true },
+      "read_file": { "enabled": true },
+      "write_file": { "enabled": true },
+      "edit_file": { "enabled": true },
+      "delete": { "enabled": false },
+      "glob": { "enabled": true },
+      "grep": { "enabled": true },
+      "eval": { "enabled": true }
+    }
+  }
+}
+```
+
+| Tool | What it does |
+|------|--------------|
+| `ls` | Lists files in the workspace |
+| `read_file` | Reads a file, including attachments. Always on. |
+| `write_file` | Creates a file |
+| `edit_file` | Changes an existing file |
+| `delete` | Deletes a file |
+| `glob` | Finds files by name pattern |
+| `grep` | Finds text inside files |
+| `eval` | Runs JavaScript in a sandbox |
+
+1. **Omit `advancedAgent` unless the user asks to turn a tool off.** Without it, the agent gets every tool.
+2. **When you add `builtInTools`, list all eight tools with an explicit `enabled`.** A tool missing from the map is off. To turn one tool off, write the full map with only that tool `false`.
+3. **Always write `read_file` as `true`.** The runtime cannot run an advanced agent without it and keeps it on regardless.
+4. **Do not add `task`.** Sub-agents are always on and are not a setting.
+5. **Turning off `write_file` or `edit_file` also turns off the agent's workspace memory (`/memory/`),** because the agent writes memory with them. This is not the memory spaces feature.
+6. **Do not add `config` to an entry.** No built-in tool takes settings yet; the runtime ignores them.
+7. **`eval` needs code execution enabled on the tenant.** `"enabled": true` alone does not turn it on.
+8. **Do not add `advancedAgent` to a standard agent.** It has no effect there, and Studio Web drops it when an agent switches to standard.
+
+The runtime applies `builtInTools` only on tenants where capabilities are enabled; elsewhere it ignores the field and the agent keeps every tool.
 
 ### Schema Types
 
