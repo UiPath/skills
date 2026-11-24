@@ -94,7 +94,7 @@ Option 1 is Recommended. Before writing, a request that asks to be interviewed h
 
 ## Asking
 
-1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked. The question is skipped when the entries name one answerer between them, or the request names the user's roles.
+1. **Roles first.** One multi-select structured question: which of the gap list's answerer roles does the user answer for? Only those entries are asked: a process owner is asked which system the work runs in, never how a robot reaches it, which is the system's owner's. The question is skipped when the entries name one answerer between them, or the request names the user's roles.
 2. **Order.** Before writing: missing before needs confirmation, then process order. After writing: § After Writing.
 3. **Batches.** One prompt holds at most 4 questions, one entry each, with at most 4 options, the Recommended option first (with none recommended, the one built now first), the default named. While entries remain after a batch, its fourth question offers "use the defaults for the rest" (after writing, the rest of the group). A batch before writing is asked alone; its answers can change the verb's product selection.
 4. **New gaps.** An answer that opens a gap adds an entry: before writing, a P0 one is asked in turn and any other is written as an item; after writing, it is a new entry at the end of the genome's Open Decisions, with its default ([open-questions-guide.md](../shared/open-questions-guide.md) § Where Answers Go).
@@ -106,14 +106,14 @@ Option 1 is Recommended. Before writing, a request that asks to be interviewed h
 
 The gap list is the document's open items: the SDD's Action Required, or, for a genome with no SDD beside it, the open entries of its Open Decisions in the item form of [open-questions-guide.md](../shared/open-questions-guide.md) under their genome ids; plus, when a readiness file is beside the genome, each of its items with a blank `Answer:`, the build's own questions included, an entry it lists under Decisions still open asked once and answered there; its tasks (`Status:`) are named in the closing, never asked. A genome's Configuration Questions are asked only where a file keeps the answer for the build: its SDD's Configuration values, or the readiness file's Decisions still open; with neither, the build asks them. An item the request, an answers file, the preferences file or its own answer already settles is never asked.
 
-1. **How to answer.** Before any item is asked, send this question as its own message and end the turn: the answer decides which items are asked. Skip it only when the request already says how to answer. Inside `extract`, where it is the offer, option 4 is "**Not now** — every item stays open".
+1. **How to answer.** Before any item is asked, send this question as its own message and end the turn: the answer decides which items are asked. Skip it only when the request already says how to answer.
 
    > <n> questions are open: <n> with no default, <n> business outcomes, <n> with a default. How do you want to answer them?
    >
    > 1. **Every item, a batch at a time** (Recommended when an item has no default)
    > 2. **Only what needs a decision** — the items with no default and the business outcomes; the rest keep their defaults
    > 3. **The defaults** — a value item takes its default; a choice stays open, built as marked, since a default nobody confirmed decides nothing
-   > 4. **The defaults, with the overrides you name**
+   > 4. **The defaults, with the overrides you name** — inside `extract`, where this question is the offer: **Not now** — every item stays open
 2. **Roles**, as § Asking rule 1, from each item's `Answer (by <role>):` line or entry's `answered by:`, a readiness item's from its section's "Usually answered by" line, whose roles (the engineer, the architect) the question lists with the genome's.
 3. **Order.** Items with no default come first. Then the business outcomes, run behaviours, readings, material and configuration values, each group in step order.
 4. **Batches** as § Asking rule 3, one question per item, opening with the item's id as its file names it, so each answer lands on its item:

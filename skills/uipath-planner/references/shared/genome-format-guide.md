@@ -253,7 +253,7 @@ Every writing verb writes the file(s) to the working directory immediately — n
 > Do you have a preferences file: your team's standing answers and development standards for UiPath builds? A path, or none.
 > Want to adjust anything?
 
-The SDD offer is made only with no SDD beside the genome and an open item whose answerer is not in the session; the preferences question only when no earlier question asked it. Edits are targeted and in place, never a regeneration, and made only by the `edit` verb of the skill that writes genomes.
+For example: "**Open:** 6 decisions — the process owner 4; the ERP's owner 1; whoever knows the process 1. 9 configuration values, 2 of them needed before the build." A total with no roles leaves each answerer to search the file for theirs. The SDD offer is made only with no SDD beside the genome and an open item whose answerer is not in the session; the preferences question only when no earlier question asked it. Edits are targeted and in place, never a regeneration, and made only by the `edit` verb of the skill that writes genomes.
 
 ## Provenance
 
