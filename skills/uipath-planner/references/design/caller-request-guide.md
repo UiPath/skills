@@ -56,7 +56,7 @@ The user is present in this session: ask in the host's own question tool, and do
 
 1. **Phase 1 Step 1.** Take the execution mode from `execution`; ask it only when the key is missing. Ask the delivery model only when its skip rule cannot resolve it from `source` and `facts`.
 2. **Phase 1 Step 10.** Present the scope recommendation only when no `product` was given and the choice is genuinely ambiguous (product-selection-guide.md); otherwise take the recommendation and record it in Decisions Made.
-3. **Phase 2 Step 5 — the one review, interactive only.** `interactive`: present the architecture review and wait for approval, in its own structure (a case: case-review-and-conformance-guide.md § Presenting the Case Design); it is the run's only checkpoint. `autonomous`: present nothing and wait for nothing.
+3. **Phase 2 Step 5 — the one review, interactive only.** `interactive`: present the architecture review and wait for approval, in the shape of the product guide's § Design Review when it has one; it is the run's only checkpoint. `autonomous`: present nothing and wait for nothing.
 4. **Phase 3 Step 3.** Ask nothing. Keep every item's default and class in the Action Required section; a `blocking` item keeps `Status: draft` — name it in the result, where the user's answer comes back through a later request.
 5. **Decisions Made.** Always write the block (sdd-writing-guide.md Step 4 item 3): the decisions you took without a question must stay scannable.
 6. **End.** Write the result below. With `stop-after: sdd`, end the run there, in the same turn; otherwise § Chaining applies.

@@ -1,6 +1,6 @@
 # Design Guide — the `design` verb
 
-`design` converts a PDD or other process-knowledge source into an implementation-ready SDD in three phases: **Phase 1** analyzes the source and selects scope, **Phase 2** reviews architecture, and **Phase 3** incrementally writes the full SDD and flips it to `ready` ([sdd-writing-guide.md](sdd-writing-guide.md)). The next turn writes the genome from the `ready` SDD (Verb Rule 8). The source may be a document or the request itself; every product runs this guide, with the differences in § Product Deltas. Ask every user question as a structured question.
+`design` converts a PDD or other process-knowledge source into an implementation-ready SDD in three phases: **Phase 1** analyzes the source and selects scope, **Phase 2** reviews architecture, and **Phase 3** incrementally writes the full SDD and flips it to `ready` ([sdd-writing-guide.md](sdd-writing-guide.md)). The next turn writes the genome from the `ready` SDD (Verb Rule 8). The source may be a document or the request itself; every product runs this guide; its template and its product guide hold what differs. Ask every user question as a structured question.
 
 ## Verb Rules
 
@@ -12,7 +12,7 @@ These supplement the Critical Rules in [SKILL.md](../../SKILL.md).
 Never put Task 1 / Task N templates or *implementation* tasks created with the task-list tool in the SDD. End it with `## Next Steps`. Progress-tracking tasks created with the task-list tool are allowed separately.
 <!--skill-flavor:sdd-no-task-lists:end-->
 3. **Write both handoff signals into every SDD** ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 2).
-4. **Treat template structure as a hard superset.** Single-product output is `<PROCESS_NAME_KEBAB>-sdd.md`; Solution output is `<SOLUTION_NAME_KEBAB>-solution-sdd.md` plus `<PROJECT_NAME_KEBAB>-sdd.md` per project; if the user specifies an output path for the SDD, use it instead of these defaults. Read every selected template end to end before generating — never a head slice or a heading list; column contracts sit deep in the file. Copy every template table's column headers verbatim, and after writing, diff generated H2/H3 headings against the template TOC: the generated set MUST be a superset. Missing required H2/H3 is an SDD defect, not `[SME REVIEW]`; regenerate it.
+4. **Treat template structure as a hard superset.** Single-product output is `<PROCESS_NAME_KEBAB>-sdd.md`; Solution output is `<SOLUTION_NAME_KEBAB>-solution-sdd.md` plus `<PROJECT_NAME_KEBAB>-sdd.md` per project; if the user specifies an output path for the SDD, use it instead of these defaults. Read every selected template end to end before generating — never a head slice or a heading list; column contracts sit deep in the file. Copy every template heading and table column header verbatim. The template owns every product-specific layout — its title, its headings, where its front matter sits, which sections repeat per project, which it makes conditional — and a guide never restates it. After writing, diff generated H2/H3 headings against the template TOC: the generated set MUST be a superset. Missing required H2/H3 is an SDD defect, not `[SME REVIEW]`; regenerate it.
 5. **Testing is mandatory and thorough — never offer "happy path only".** Cover happy path, edge cases, errors, and e2e for Master Projects. Implementation specialists may scope down during execution; the SDD may not.
 <!--skill-flavor:solution-terminal-artifact:start-->
 6. **The terminal artefact of a Solution build is a packed `.uipx`.** Point `## Next Steps` to `uipath-solution`, which packs it; a bare project folder is not the deliverable. When the Constraint Gate blocks Solutions, Next Steps routes the publish per [SKILL.md § Chaining](../../SKILL.md#chaining) instead.
@@ -39,7 +39,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 | Phase 1 Steps 7–10 | — | [product-selection-guide.md](../shared/product-selection-guide.md) whole; [solution-composition-guide.md](solution-composition-guide.md) § Level 2.5 — Project Decomposition; [component-placement-guide.md](../shared/component-placement-guide.md) § Per-task component placement (the to-be, per step) |
 | Phase 1 Step 7 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | component-placement-guide.md § Level 3 — Capability Add-ons |
 | Phase 1 Step 8 | Level 1 = RPA, or a Solution includes RPA | [rpa-product-guide.md](rpa-product-guide.md) (Level 1.5, Level 2, Level 2.5 Part A, R-07 naming, REFramework) |
-| Phase 1 Step 8 | Level 1 = Case Management, or a Solution includes a case | [case-product-guide.md](case-product-guide.md) and [case-data-and-time-guide.md](case-data-and-time-guide.md), both whole |
+| Phase 1 Step 8 | Level 1 = Case Management, or a Solution includes a case | [case-product-guide.md](case-product-guide.md) whole |
 | Phase 1 Steps 8–10 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 9 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 10 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |
@@ -47,26 +47,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping; then the SDD template(s) it names, in `../assets/templates/` |
 | Phase 2 Step 2 | filling §14 Packages or its equivalent | [package-selection-guide.md](package-selection-guide.md) |
 | Phase 2 Step 2 or Phase 3 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions | [business-rules-guide.md](business-rules-guide.md) |
-| Phase 2 Step 5 | the design includes a case | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design |
 | Phase 3 | Phase 2 Step 5 is approved (or skipped in autonomous mode) | [sdd-writing-guide.md](sdd-writing-guide.md) whole; its § Read Plan names Phase 3's reads |
-
-## Product Deltas
-
-Where a product departs from the general rule. A column a row leaves `—` follows the general rule:
-
-- front matter (Decisions Made, Recommended Scope, Action Required) above the Table of Contents in template order;
-- review items in the Action Required item form ([sdd-writing-guide.md](sdd-writing-guide.md) Step 4 item 4);
-- gap markers per [sdd-writing-guide.md § Gap Markers](sdd-writing-guide.md#gap-markers);
-- the superset check of sdd-writing-guide.md Step 4 item 8;
-- the HITL owner per host of [component-placement-guide.md § HITL](../shared/component-placement-guide.md#hitl-human-in-the-loop);
-- packages per [package-selection-guide.md](package-selection-guide.md);
-- output path and handover per sdd-writing-guide.md Step 4 item 7 and § Step 5.
-
-| Product | Title / headings | Front-matter placement | Review items | Gap markers | Superset check | Human step (HITL) | Packages | Output path / handover |
-|---|---|---|---|---|---|---|---|---|
-| Case Management | Title `# SDD — {Case Name}`. Body headings in the template's long form (`## Section 1: Case Definition`, …): `uipath-maestro-case` parses the heading text verbatim; `§N` is notation in planner documents only. Phase 2 core: Sections 1–4 | — | Phase 2 Step 5 review in the shape of [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design. Action Required keeps its review-item table (`rev_<slug>` ids). It does not take the `D1` item form ([case-data-and-time-guide.md](case-data-and-time-guide.md) § Review Items) | Adds `<UNRESOLVED>` (sdd-writing-guide.md § Gap Markers) | Every H2 the template's Table of Contents lists, then case-review-and-conformance-guide.md § SDD Conformance Checklist (items 30–33 only when finalizing a draft, after § Finalizing a Case Draft). `Template validation: passed` needs every item PASS | An `action` task detail in Section 2 Stages & Tasks, with Action App intent. Never `uipath-human-in-the-loop` | No Packages subsection. Dependencies surface in Section 4 Integrations | A design `uipath-maestro-case` handed over writes `sdd.md` at the working root, gets no genome and returns to that build ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill) |
-| Maestro BPMN | — | Decisions Made and Recommended Scope are H3s under §10 Design Decisions. Decisions Made is written in every mode. Action Required sits at the end of the file | — | — | — | A human step goes in §5 People and Human Tasks, authored by `uipath-maestro-bpmn`. Never `uipath-human-in-the-loop` | None for the process. Each RPA process it invokes uses the RPA template's §14 | — |
-| RPA Master Project | §10 Option A. §11 repeated per sub-project (`### 11.1 <PROJECT>_Dispatcher`, …). Each copy sits one heading level deeper | — | — | — | §12 Queue Architecture and §17 End-to-End Pipeline Test are required | — | §14: one table per sub-project | One RPA SDD file for the whole group ([scope-recommendation-guide.md](scope-recommendation-guide.md) § Solution scope) |
 
 ## Anti-patterns
 
@@ -259,7 +240,7 @@ Generate the sections the template's `Phase 2 sections:` line names. What they h
 - **RPA:** §10 applies Level 2.5 Part A ([rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals)) — Single vs Master Project, sub-projects, queue schema; §11 Project Structure is the most load-bearing section — the genome's components come from it; §13 applies Level 2 ([rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode)); §14 infers NuGet packages from §9 and the process steps.
 - **Maestro BPMN:** §3 Business Rules and Decisions carries the decision tables and the reasoning list ([Business Rules Guide](business-rules-guide.md)).
 - **Agents:** §9 Project Structure states Coded vs Low-code. **API Workflows:** §4 Execution Flow is high-level steps, no JavaScript.
-- **Case Management:** Sections 1–4 per [case-product-guide.md](case-product-guide.md) and [case-data-and-time-guide.md](case-data-and-time-guide.md); heading form in § Product Deltas.
+- **Case Management:** Sections 1–4 per [case-product-guide.md](case-product-guide.md).
 
 ### Step 3: Decompose Steps Into Implementation Units
 
@@ -291,7 +272,7 @@ For RPA Master Project, assign each PDD step to a §10 sub-project, then, within
 
 For each Phase 1 integrated component and non-primary placement, flag the template section:
 
-- **HITL:** flag each touchpoint for the owner its host names in [component-placement-guide.md § HITL](../shared/component-placement-guide.md#hitl-human-in-the-loop); Case and BPMN placement: § Product Deltas.
+- **HITL:** flag each touchpoint for the owner its host names in [component-placement-guide.md § HITL](../shared/component-placement-guide.md#hitl-human-in-the-loop).
 - **Integration Service connectors:** list in Application Inventory (RPA) or the Connectors section (other types); check `uip is connectors list`; route existing connector configuration to `uipath-platform`, custom build to `uipath-connector-builder`.
 - **IXP / Document Understanding models:** for semi-structured extraction, list in the host's "IXP / Document Understanding Models" table (Flow/BPMN/Case/Agent/RPA); for API Workflow or Coded App primary, make a row in §Solution / Project Breakdown. Route implementation to `uipath-ixp`, before consumers.
 - **Coded Functions** (TypeScript / JavaScript / Python): atomic deterministic transform / compute (e.g., parsing, scoring, custom-auth API calls, Integration Service connection queries) only when justified by [placement rule 6](../shared/component-placement-guide.md#per-task-component-placement-the-to-be-per-step); keep host-native logic in host inventory. List in host "Coded Functions" table (Flow/BPMN/Case/Agent); route to `uipath-functions` before consumers; no per-project SDD file (see [Template Mapping](scope-recommendation-guide.md#template-mapping)).
@@ -300,7 +281,7 @@ For each Phase 1 integrated component and non-primary placement, flag the templa
 
 ### Step 5: Present Architecture for Review
 
-Present the architectural core to the user, in the product's review shape when § Product Deltas names one. Wait for approval or adjustments. A design a build skill handed over presents the build options the caller passed ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill). A caller's `execution: interactive` request runs this review as its one checkpoint; `autonomous` skips it (Verb Rule 14).
+Present the architectural core to the user, in the shape of the product guide's § Design Review when the product guide has one. Wait for approval or adjustments. A design a build skill handed over presents the build options the caller passed ([sdd-writing-guide.md](sdd-writing-guide.md) § Design Handed Over by a Build Skill). A caller's `execution: interactive` request runs this review as its one checkpoint; `autonomous` skips it (Verb Rule 14).
 
 Any response without specific change requests approves it, including "looks good", "ok", "proceed", "yes", or a topic change. Incorporate specific changes and re-present, within the revision cap of [SKILL.md § Prompt Budget](../../SKILL.md#prompt-budget); then proceed with the latest and tag disagreements `[SME REVIEW]`.
 

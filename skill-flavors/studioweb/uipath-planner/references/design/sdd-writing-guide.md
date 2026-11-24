@@ -1,7 +1,3 @@
-<!--skill-flavor:build-handoff-row:start-->
-(`uipath-maestro-case`: its Phase 1 directly — the open Studio Web solution already exists and project creation happens at Step 6.0),
-<!--skill-flavor:build-handoff-row:end-->
-
 <!--skill-flavor:client-word-read-row:start-->
 <!--skill-flavor:client-word-read-row:end-->
 

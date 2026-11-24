@@ -8,8 +8,6 @@ Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME 
 |---|---|---|
 | Step 2 | filling RPA §4 Business Rules or BPMN §3 Business Rules and Decisions, and [business-rules-guide.md](business-rules-guide.md) is not yet open from Phase 2 | [business-rules-guide.md](business-rules-guide.md) |
 | Step 4 item 4 | an `[SME REVIEW]` item remains | [open-questions-guide.md](../shared/open-questions-guide.md) whole |
-| Step 4 item 6 | finalizing a Case Management draft | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Finalizing a Case Draft |
-| Step 4 item 8 | a Case Management SDD | [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § SDD Conformance Checklist |
 | Step 5, next turn | the SDD is `Status: ready` and no build skill handed the design over | [author-guide.md](../author/author-guide.md) whole — the `author` verb; its § Read Plan names the rest |
 <!--skill-flavor:client-word-read-row:start-->
 | § Client Word Document | the user asks for the client-facing Word SDD / ASDD (their official template, a `.docx`) | [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) whole |
@@ -91,7 +89,7 @@ Write every section by [§ Writing Rules](#writing-rules).
 Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. Section assignments per phase:
 
 **Phase 1 produces (for all templates):**
-- Header & Document History (process name, today's date, version 1.0; title per [design-guide.md § Product Deltas](design-guide.md#product-deltas)). When the Phase 1 Step 10 interview ran, a second Document History row, as [interview-guide.md](../interview/interview-guide.md) § Where Answers Go words it.
+- Header & Document History (process name, today's date, version 1.0; the title as the template writes it). When the Phase 1 Step 10 interview ran, a second Document History row, as [interview-guide.md](../interview/interview-guide.md) § Where Answers Go words it.
 - Overview section (§1)
 - Process/Flow/Lifecycle diagram (§2 for most templates)
 - Detailed steps / nodes description where applicable
@@ -190,11 +188,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - a `blocking` item has no default: an `Until answered:` line in its place;
    - each ends on `Answer (by <role>):`.
 
-   Where the SDD's items land in one genome file, the genome keeps each item's id on the entry it carries the item into ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 5). Once the genome exists, the section is written again from it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6). Case Management review items: [design-guide.md § Product Deltas](design-guide.md#product-deltas).
+   Where the SDD's items land in one genome file, the genome keeps each item's id on the entry it carries the item into ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 5). Once the genome exists, the section is written again from it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md) item 6).
 
 5. **Length follows content, never padding.** Every step, rule, exception, application and example the source states is kept — business rules all of them ([business-rules-guide.md](business-rules-guide.md) § 4). What is cut is restatement: a fact lives in one section and others name it; no template instruction, placeholder or empty example row survives; a table row replaces prose that says the same; a section the template makes conditional and whose condition does not hold is omitted.
 6. **Re-run handling** — Step 1 resolved it; never ask again.
-   - **A draft at another path to finalize** (`<name>.draft.md`, or a draft the user names): no question. The draft is the settled design — read it whole, write the final at its basename minus `.draft` (a path the user names wins) from Step 1 onwards, and keep the draft on disk. Never add, drop or rename a business element: every element of the draft's inventory (projects, steps, stages, tasks, variables, rules) and every expression appears in the final, verbatim. The product guide's draft repairs are the only other change ([design-guide.md § Product Deltas](design-guide.md#product-deltas)).
+   - **A draft at another path to finalize** (`<name>.draft.md`, or a draft the user names): no question. The draft is the settled design — read it whole, write the final at its basename minus `.draft` (a path the user names wins) from Step 1 onwards, and keep the draft on disk. Never add, drop or rename a business element: every element of the draft's inventory (projects, steps, stages, tasks, variables, rules) and every expression appears in the final, verbatim. The template's draft rules, when its Validation footer holds them, are the only other change.
 
 7. Write the output file(s) to the current working directory. If the user specified an output path for the SDD, use it instead of these defaults:
    - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
@@ -206,10 +204,13 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    A subsection the template repeats per sub-project ("repeat this section per sub-project") may sit one heading level deeper. Every other template H2 and H3 is required.
 
-   Minimum required H2 headings per template:
-   - **RPA template:** every H2 its Table of Contents lists; §12 Queue Architecture may be omitted only when the design defines or consumes no Orchestrator queue.
-   - **Case template:** [design-guide.md § Product Deltas](design-guide.md#product-deltas).
-   - **Other templates:** every H2 the template's Table of Contents lists.
+   **A template whose Validation footer holds a conformance checklist** is checked against it in the same pass, after the headings:
+   1. **When:** against the written file, before the `Status: ready` flip, in every mode.
+   2. **Who:** a read-only subagent when the host has one — it returns the PASS/FAIL table and the parent edits; otherwise inline, in the transcript.
+   3. **How:** read the written file once. Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or the line that satisfies (PASS). Judge structure by the role and position of a block (which heading level, which table, which column), not by prose wording.
+   4. **Repair:** fix every FAIL with a targeted edit, then answer only the failed items again — at most 3 rounds, then stop and present what remains.
+
+   `Template validation: passed` needs every heading present and every checklist item PASS.
 
    The SDD's own Table of Contents then lists exactly the H2 sections the SDD has: an omitted conditional section leaves no entry behind.
 
@@ -271,7 +272,7 @@ An SDD change is either a `design` revise (a `revise:` caller request, a design 
 
 ## Gap Markers
 
-`[DEFAULT]` and `[SME REVIEW]` are the entire gap vocabulary of an SDD and a plan ([SKILL.md](../../SKILL.md) Critical Rule 6), with one Case Management exception: `<UNRESOLVED>`. It marks a value the build resolves — a registry identity or folder the Level 0 estate sweep did not match confidently, or a schema field name nothing in the conversation spells. It is always paired with a review item. Its exact scope: [case-data-and-time-guide.md](case-data-and-time-guide.md) § Resources and Identities.
+`[DEFAULT]` and `[SME REVIEW]` are the entire gap vocabulary of an SDD and a plan ([SKILL.md](../../SKILL.md) Critical Rule 6). A placeholder value a template names in its own cell rules — a value the build resolves, such as a registry identity the design could not match — is a cell value, not a gap marker. It is always paired with an `[SME REVIEW]` item.
 
 1. **The exact string is load-bearing.** The `Action Required — SME Review Items` block, the gap counts, the `Status: ready` flip, the genome's carry-over and every reviewer grepping the file find the items by exact match on `[SME REVIEW]` / `[DEFAULT]`.
 2. **Write the marker verbatim, with nothing else inside the brackets.** The note goes *after* the closing bracket: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never fold the note inside (`[SME REVIEW — not recorded]`) and never substitute another word (`[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, `N/A`, prose like "to be confirmed"). A decorated or renamed marker is invisible to every consumer above — the gap silently disappears.
@@ -279,15 +280,11 @@ An SDD change is either a `design` revise (a `revise:` caller request, a design 
 
 ## Design Handed Over by a Build Skill
 
-This is the Case Management path: today only `uipath-maestro-case` hands a design over, when it finds no SDD to build from (SKILL.md Choosing the Verb item 3), in the same conversation. `design` runs as for any request, with three differences ([design-guide.md § Product Deltas](design-guide.md#product-deltas)):
+A build skill that finds no SDD to build from hands its request here in the same conversation (SKILL.md Choosing the Verb item 3); `uipath-maestro-case` does. `design` runs as for any request, with three differences:
 
-1. **The output path is the caller's.** Never overwrite an existing file there: stop and say it exists.
-2. **The Phase 2 Step 5 review carries the caller's build options** (case: [case-review-and-conformance-guide.md](case-review-and-conformance-guide.md) § Presenting the Case Design). The answer is the build consent; it is never asked again.
-3. **The write does not end the turn and gets no genome:** after the `ready` flip, the caller's build starts in this conversation
-<!--skill-flavor:build-handoff-row:start-->
-(`uipath-maestro-case`: `uip solution init` and its Phase 1),
-<!--skill-flavor:build-handoff-row:end-->
-verifying the identities the SDD resolved instead of re-discovering them.
+1. **The output path is the caller's** (`sdd.md` at the working root for `uipath-maestro-case`). Never overwrite an existing file there: stop and say it exists.
+2. **The Phase 2 Step 5 review carries the caller's build options.** Its one question offers `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. With open items that name a prerequisite of the build, the first option reads `Build despite N flagged items — straight through`. The answer is the build consent and the build-review preference; it is never asked again.
+3. **The write does not end the turn and gets no genome.** After the `ready` flip, the caller continues its own build in this conversation, verifying the identities the SDD resolved instead of re-discovering them.
 
 ## Client Word Document
 

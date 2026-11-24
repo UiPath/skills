@@ -29,7 +29,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      | `uipath-api-workflow` | `api-workflow-sdd-template.md` |
      | `uipath-coded-apps` | `coded-app-sdd-template.md` |
 
-     A Case component designed in an SDD already has one, named by its Interface; nothing is written for it ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6).
+     A component built from its SDD already has one, named by its Interface; nothing is written for it ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6).
    - **A process genome:**
      - a solution overview, `<slug>-solution-sdd.md`, beside the process genome;
      - one SDD per project, `<component-slug>-sdd.md` beside its component genome in `<slug>-genome/`, linked from the overview's Per-Project SDD Index; the RPA components of one flow share one RPA SDD, named after the first of them.
@@ -89,5 +89,5 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - the genome's Configuration Questions;
    - every entry the genome added.
 
-   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. A Case Management SDD's review items: [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6.
+   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. An SDD a component is built from is never written again: [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6.
 7. **A client Word document** is made on request, as `design` makes one ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Client Word Document). It is for reading and sign-off: answers come back through the markdown, an interview or a reply.

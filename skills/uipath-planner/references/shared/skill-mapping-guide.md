@@ -31,6 +31,8 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 **Human approval or validation checkpoints** inside a Flow, BPMN process, Case plan, or agent belong to the containing component's skill. Name `uipath-human-in-the-loop` in the Rationale column only for a Flow host; a BPMN, Case or agent human step stays with its host skill ([component-placement-guide.md § HITL](component-placement-guide.md#hitl-human-in-the-loop)).
 
+**Built from the SDD.** A build skill that takes the designed SDD itself as its build input gets the SDD unchanged and builds from it, never redesigning it. `uipath-maestro-case` is one: an SDD whose first body section is `## Section 1: Case Definition` is its build input. Such a component's genome Interface names that SDD's path, relative to the genome ([genome-format-guide.md § Components Built from the SDD](genome-format-guide.md#components-built-from-the-sdd)).
+
 **Solution packaging** (`.uipx`) is not a Build With row. A process genome records it under **Deployment** with `uipath-solution`.
 
 ## Platform Dependencies (not Build With)

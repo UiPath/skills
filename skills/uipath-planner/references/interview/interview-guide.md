@@ -90,7 +90,7 @@ SDD homes use the RPA template's numbers; another product's template holds the s
 | Not covered and unused objects | the Source Map has a `Not covered` or `Unused` row | P1 | the process owner | — | partial re-extraction ([edit-guide.md](../edit/edit-guide.md)) | after writing (migration) |
 | Values not in the export | a Configuration Question's default is "not in the export" | P2 | the environment's owners | — | the question's default | after writing (migration) |
 
-An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Gap Handling for Agent / Coded App, asked in `design` Step 9; a Case design adds the entries [case-product-guide.md](../design/case-product-guide.md) sends to Step 6, as P0.
+An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](../design/scope-recommendation-guide.md) § Gap Handling for Agent / Coded App, asked in `design` Step 9; a question the product guide sends to Step 10 is a P0 entry too.
 
 ## The Offer
 

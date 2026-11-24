@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import task_types  # noqa: E402
 
 REPO = task_types.REPO
-CHECKLIST = REPO / "skills" / "uipath-planner" / "references" / "design" / "case-review-and-conformance-guide.md"
+CHECKLIST = REPO / "skills" / "uipath-planner" / "assets" / "templates" / "case-sdd-template.md"
 GATES = [
     REPO / "tests" / "tasks" / "uipath-maestro-case" / "_shared" / "sdd_check.py",
     REPO / "tests" / "tasks" / "uipath-planner" / "_shared" / "sdd_check.py",
