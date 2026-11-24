@@ -3,12 +3,27 @@
     "allow": [
       {
         "file": "SKILL.md",
-        "command": "rpa",
+        "command": "rpa project migrate",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "rpa project migrate version",
         "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
       },
       {
         "file": "references/acquisition-guide.md",
-        "command": "rpa",
+        "command": "rpa project",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "rpa project migrate",
+        "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
+      },
+      {
+        "file": "references/acquisition-guide.md",
+        "command": "rpa project migrate version",
         "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
       },
       {
@@ -18,7 +33,7 @@
       },
       {
         "file": "references/tool-behavior-guide.md",
-        "command": "rpa",
+        "command": "rpa project migrate",
         "reason": "`uip rpa project migrate` runs the Windows desktop migrator inside Helm; the studioweb flavor stops this skill before any step (host-availability-extra)."
       },
       {
