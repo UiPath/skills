@@ -43,6 +43,8 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-governance": 100,
     "uipath-ixp": 100,
     "uipath-mcp-servers": 100,
+    # Measured on #4624's gate runs, 2026-11-23/24: 34/34 on each of three.
+    "uipath-a2a-agents": 100,
     "uipath-tasks": 100,
     "uipath-human-in-the-loop": 100,
     "uipath-rpa": 90,

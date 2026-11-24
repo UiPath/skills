@@ -87,7 +87,7 @@ Emit this block as the Phase 1 summary content:
 ## Recommended Scope
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
 **Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
-**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... — every product the source signals that the gate blocks, the picked design's or not (on Automation Suite older than 2.2510.2 the line always names Maestro — Flow, BPMN and Case — with the alternative the design applies, even when no Maestro project was ever a candidate) | none>
 **Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI — from design-guide.md Step 3.5>
 **Reasoning:**
 - <NEED_FACTOR — determinism / input structure / integration surface / coordination shape / volume / risk / trigger> → <PRODUCT>
@@ -103,6 +103,8 @@ Emit this block as the Phase 1 summary content:
 <QUEUE_TABLE_OR_N/A>
 **Boundaries named:** <BOUNDARY_PER_SPLIT_PER_RPA_PROCESS_PROJECT_OR_N/A>
 ```
+
+**`Blocked by platform:` names every gated product the source signals**, by its matrix name — not only the one the design would have picked. A PDD with a dashboard, an approval orchestration, and an AS 2024.10 constraint lists Coded Apps AND Maestro (Flow / BPMN), each with its alternative. Dropping a blocked product from this line hides the gate outcome; `none` only when no signaled product is blocked.
 
 **Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`) must also survive into the SDD — every template hosts a `## Recommended Scope` section between `## Decisions Made` and `## Action Required`, emitted in BOTH execution modes ([sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
 

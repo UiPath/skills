@@ -2,7 +2,9 @@
 """Structural check for the interrupting error boundary event + recovery path.
 
 Asserts:
-  - an interrupting error boundary event (cancelActivity="true") whose
+  - an interrupting error boundary event (cancelActivity="true", or absent:
+    BPMN's default is true and the builder SDK omits the default; the canvas
+    treats only an explicit false as non-interrupting) whose
     attachedToRef resolves to a task-like activity (serviceTask, sendTask,
     userTask, scriptTask, ... — registry templates host service calls on
     different task kinds, e.g. Intsvc.UnifiedHttpRequest on bpmn:sendTask);
@@ -92,7 +94,7 @@ def main() -> None:
         edef = child(be, "errorEventDefinition")
         ref = attr(edef, "errorRef")
         # Batch scenario: an interrupting boundary with a configured error code.
-        if attr(be, "cancelActivity") != "true":
+        if attr(be, "cancelActivity") == "false":
             continue
         if not ref:
             continue  # this scenario wants a configured (non catch-all) error
@@ -111,7 +113,7 @@ def main() -> None:
             fail(f"error boundary {be_id} has no BPMNShape")
         valid = True
     if not valid:
-        fail('no interrupting (cancelActivity="true") error boundary with a configured errorCode on an activity routing to recovery')
+        fail('no interrupting (cancelActivity not "false") error boundary with a configured errorCode on an activity routing to recovery')
 
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)

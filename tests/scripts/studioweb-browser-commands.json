@@ -209,6 +209,11 @@
   "uipath-coded-apps": {
     "allow": [
       {
+        "file": "references/pack-publish-deploy.md",
+        "command": "update",
+        "reason": "The row is for `uip codedapp deploy` on a CLI older than 1.204.0. Studio Web cannot run `uip codedapp` at all, and the studioweb host-scope note at the top of this file says its commands are handed to the user to run on their machine, where `uip update` (after the pinned `npm i -g`) is the right upgrade."
+      },
+      {
         "file": "references/widgets/decisions-and-reasons.md",
         "command": "codedapp pack",
         "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
@@ -794,6 +799,31 @@
         "file": "references/develop-solution.md",
         "command": "login tenant set",
         "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "config",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "config freeze",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "tools install",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "tools list",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "update",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
       }
     ],
     "ceiling": {

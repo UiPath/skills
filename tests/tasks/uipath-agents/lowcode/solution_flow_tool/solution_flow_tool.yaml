@@ -1,0 +1,141 @@
+task_id: skill-agent-solution-flow-tool
+description: >
+  Use a Maestro Flow as an agent tool inside an existing solution
+  (brownfield). The fixture ships an `OrdersSol` solution that already
+  contains a registered `OrderFlow` Flow project with two `in` variables
+  (`orderId`, and `customer` — an object whose nested fields are in the Flow
+  file, not in `uip maestro flow variables list`), one `out` variable
+  (`status`) and one `inout` variable (`retryCount`, internal state). The
+  agent must add a NEW
+  `OrderDeskAgent` project and wire the pre-existing `OrderFlow` in as a
+  tool — reusing it, NOT re-creating it and NOT re-initializing the
+  solution. Verifies the tool resource.json uses `type: "flow"`
+  (lowercase), `location: "solution"`, `folderPath: "solution_folder"`,
+  the Flow's release key as `referenceKey`, and input/output schemas
+  built from the Flow's `in` / `out` variables — `customer` with its nested
+  fields — with the `inout` variable in neither.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/OrdersSol
+      mount_point: OrdersSol
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a new UiPath low-code agent named "OrderDeskAgent" inside the existing
+  "OrdersSol" solution (in the current directory). OrderDeskAgent answers
+  questions about an order by running the existing "OrderFlow" Maestro Flow
+  that's already in the solution, rather than looking the order up itself.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The workspace has an Agent project (a project.uiproj with ProjectType Agent)"
+    command: |-
+      python3 -c "import glob, json, sys; sys.exit(0 if sum(json.load(open(f)).get('ProjectType') == 'Agent' for f in glob.glob('**/project.uiproj', recursive=True)) >= 1 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Brownfield: OrderFlow ships in the fixture. The agent must reuse it, not
+  # scaffold a fresh copy over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing OrderFlow project"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+maestro\s+flow\s+init\s+["'']?OrderFlow'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Informational discovery criteria: the agent may read the fixture files
+  # instead of using CLI discovery. pass_threshold:0 means these never block.
+  - type: command_executed
+    description: "Agent discovered the existing OrderFlow via solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent read the Flow's variables with uip maestro flow variables list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+maestro\s+flow\s+variables?\s+list\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with OrderFlow registered;
+  # auto-registration via `uip agent init` must add OrderDeskAgent, bringing
+  # Projects[] to 2.
+  - type: json_check
+    description: "OrderDeskAgent is registered alongside OrderFlow in the parent solution .uipx"
+    path: "OrdersSol/OrdersSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "OrderDeskAgent/agent.json was created"
+    path: "OrdersSol/OrderDeskAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow tool resource shape (type flow lowercase, location, folderPath, referenceKey, schemas from the Flow's variables incl. the object variable's nested fields)"
+    command: "python3 $REFERENCE_DIR/check_solution_flow_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  # Advisory: re-runs the validator on the finished project. Not gating — the
+  # shape check above is the enforced signal and this one depends on the CLI
+  # build in the sandbox.
+  - type: run_command
+    description: "uip agent validate reports the finished agent project Valid (advisory)"
+    command: |-
+      uip agent validate OrdersSol/OrderDeskAgent --output json | python3 -c "import json, sys; t = sys.stdin.read(); d = json.loads(t[t.index('{'):]); sys.exit(0 if d.get('Result') == 'Success' and d.get('Data', {}).get('Status') == 'Valid' else 1)"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
