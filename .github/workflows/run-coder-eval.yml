@@ -202,18 +202,14 @@ jobs:
             mapfile -t LINUX < <(printf '%s\n' "${LINUX[@]}" | awk '!seen[$0]++')
           fi
           LCOUNT=${#LINUX[@]}
-          # Task identities the scrub requires results for: `id`, or `id*` when the task
-          # has a dataset (it fans out into one result per row).
+          # Result ids the scrub requires: each task's task_id, or `<task_id>/<row>` per dataset row.
           LIDS=()
-          for f in "${LINUX[@]}"; do
-            id="$(sed -n 's/^task_id:[[:space:]]*//p' "$f" | head -n 1 | tr -d "\"'\r" | sed 's/[[:space:]]*#.*$//; s/[[:space:]]*$//')"
-            if [ -z "$id" ]; then
-              echo "::error::$f has no task_id"
+          if [ "${#LINUX[@]}" -gt 0 ]; then
+            mapfile -t LIDS < <(python3 .github/scripts/expected-task-ids.py "${LINUX[@]}") || {
+              echo "::error::could not resolve the task ids of the matched task files"
               exit 1
-            fi
-            if grep -qE '^dataset:' "$f"; then id="$id*"; fi
-            LIDS+=("$id")
-          done
+            }
+          fi
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
           echo "Matched $TOTAL task file(s): $LCOUNT linux + $WCOUNT windows"

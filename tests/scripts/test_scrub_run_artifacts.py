@@ -157,18 +157,28 @@ def _expect(tmp_path, monkeypatch, tasks, ids, variants=("default",)):
 
 
 def test_exact_task_identities_are_required(tmp_path, monkeypatch):
-    # two successful rows of the first dataset task must not stand in for the second task
-    rc, run = _expect(tmp_path / "a", monkeypatch, ["a-1", "a-2"], "a* b")
+    rc, run = _expect(tmp_path / "a", monkeypatch, ["a-1", "a-2"], "a/1 b")  # not the scheduled row or task
     assert rc == 1 and _names(run) == []
-    rc, run = _expect(tmp_path / "b", monkeypatch, ["a/1", "a/2", "b"], "a* b")  # dataset fan-out is fine
+    rc, run = _expect(tmp_path / "b", monkeypatch, ["a/1", "a/2", "b"], "a/1 a/2 b")  # dataset fan-out, every row
     assert rc == 0 and (run / "default/a/1/00/task.json").is_file()
     rc, _ = _expect(tmp_path / "c", monkeypatch, ["a", "b", "zzz"], "a b")  # a result nobody scheduled
     assert rc == 1
-    for n, other in enumerate(("ab", "a-b", "a_1", "a#1")):  # `a*` covers rows `a/<row>` only
-        rc, _ = _expect(tmp_path / f"d{n}", monkeypatch, [other], "a*")
-        assert rc == 1, other
     rc, _ = _expect(tmp_path / "e", monkeypatch, ["a/1"], "a")  # a row of a task nobody scheduled as a dataset
     assert rc == 1
+
+
+def test_a_partial_dataset_is_not_a_pass(tmp_path, monkeypatch):
+    rc, run = _expect(tmp_path / "a", monkeypatch, ["a/1"], "a/1 a/2 a/3 a/4 a/5")  # 1 of 5 rows ran
+    assert rc == 1 and _names(run) == []
+    rc, _ = _expect(tmp_path / "b", monkeypatch, ["a/1", "a/2"], "a/1 a/2 a/3")
+    assert rc == 1
+    rc, _ = _expect(tmp_path / "c", monkeypatch, ["a/1", "a/2", "a/3", "a/4", "a/5"], "a/1 a/2 a/3 a/4 a/5")
+    assert rc == 0
+
+
+def test_a_sampled_dataset_is_inconclusive(tmp_path, monkeypatch):
+    rc, run = _expect(tmp_path, monkeypatch, ["a/1", "a/2"], "a!sampled")
+    assert rc == 1 and _names(run) == []
 
 
 def test_every_variant_must_cover_every_task(tmp_path, monkeypatch):
@@ -177,8 +187,6 @@ def test_every_variant_must_cover_every_task(tmp_path, monkeypatch):
     assert not scrub_mod.allowed(pathlib.PurePosixPath("default/s/row-1/x/00/task.json"))
     for bad in ("default/s/row/x/task.json", "default/artifacts/row/00/task.json", "default/s/row/00/x.json"):
         assert not scrub_mod.allowed(pathlib.PurePosixPath(bad)), bad
-    for bad in ("a/", "a/x/y", "a//1", "ab/1"):
-        assert not scrub_mod._covers("a*", bad), bad
     for variant, names in (("v1", ["a", "b"]), ("v2", ["a"])):
         for name in names:
             d = run / variant / name / "00"
@@ -296,5 +304,53 @@ def test_a_task_json_must_sit_at_the_path_of_its_own_task_id(tmp_path, monkeypat
     d = run / "default" / "a" / "00"
     d.mkdir(parents=True)
     (d / "task.json").write_text(json.dumps(_task("a/1")), encoding="utf-8")  # claims to be a row of `a`
-    assert scrub_mod.main(["x", str(run), "--expect-ids", "a*"]) == 1
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "a/1"]) == 1
     assert _names(run) == []
+
+
+def _spanning(prefix_len):
+    return "x" * (scrub_mod._STR_CAP - prefix_len) + TOKEN  # the token straddles the 2000-character cut
+
+
+@pytest.mark.parametrize("prefix_len", [1, 5, len(TOKEN) // 2, len(TOKEN) - 1])
+def test_a_token_spanning_the_truncation_cut_is_redacted_whole(tmp_path, monkeypatch, prefix_len):
+    run = _env(tmp_path, monkeypatch)
+    task = _put_task(run)
+    raw = json.loads((task / "task.json").read_text(encoding="utf-8"))
+    raw["error_message"] = raw["model_used"] = _spanning(prefix_len)
+    raw["success_criteria_results"][0]["description"] = _spanning(prefix_len)
+    (task / "task.json").write_text(json.dumps(raw), encoding="utf-8")
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "t"]) == 0
+    for name in ("task.json", "task.html"):
+        blob = (task / name).read_text(encoding="utf-8")
+        for n in range(6, len(TOKEN) + 1):  # no prefix of the token survives, not even a short one
+            assert TOKEN[:n] not in blob, (name, n)
+
+
+def test_no_text_is_cut_before_it_is_redacted():
+    needles = [TOKEN.encode()]
+    out = scrub_mod.sanitize_task(_task(model_used=_spanning(3)), needles)
+    assert TOKEN[:4] not in out["model_used"] and "***" in out["model_used"]
+
+
+EXPECTED = pathlib.Path(__file__).resolve().parents[2] / ".github/scripts/expected-task-ids.py"
+
+
+def _expected(tmp_path, yaml_text, *files):
+    import subprocess
+    import sys
+
+    (tmp_path / "t.yaml").write_text(yaml_text, encoding="utf-8")
+    for name, body in files:
+        (tmp_path / name).write_text(body, encoding="utf-8")
+    out = subprocess.run([sys.executable, str(EXPECTED), str(tmp_path / "t.yaml")], capture_output=True, text=True, check=True)
+    return out.stdout.split()
+
+
+def test_expected_ids_expand_every_dataset_row(tmp_path):
+    assert _expected(tmp_path, "task_id: plain\n") == ["plain"]
+    rows = '{"id": "r1"}\n{"id": "r2"}\n\n{"id": "r3"}\n'
+    assert _expected(tmp_path, "task_id: ds\ndataset:\n  paths: [rows.jsonl]\n", ("rows.jsonl", rows)) == ["ds/r1", "ds/r2", "ds/r3"]
+    assert _expected(tmp_path, "task_id: ds\ndataset:\n  id_field: k\n  rows:\n    - {k: a}\n    - {k: b}\n") == ["ds/a", "ds/b"]
+    sampled = "task_id: ds\ndataset:\n  sample_per_stratum: 2\n  paths: [rows.jsonl]\n"
+    assert _expected(tmp_path, sampled, ("rows.jsonl", rows)) == ["ds!sampled"]

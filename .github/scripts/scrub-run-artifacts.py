@@ -83,16 +83,17 @@ def _is_text(data: bytes) -> bool:
     return True
 
 
-def _scalar(value: object) -> object:
+def _scalar(value: object, needles: list[bytes]) -> object:
+    """Redact the whole string, then truncate: a token spanning the cap must not leave its prefix."""
     if isinstance(value, str):
-        return value[:_STR_CAP]
+        return _redact_value(value, needles)[:_STR_CAP]
     return value if isinstance(value, (bool, int, float)) or value is None else None
 
 
-def _criteria(items: object) -> list[dict]:
+def _criteria(items: object, needles: list[bytes]) -> list[dict]:
     if not isinstance(items, list):
         return []
-    return [{k: _scalar(c.get(k)) for k in _CRITERION_FIELDS} for c in items if isinstance(c, dict)]
+    return [{k: _scalar(c.get(k), needles) for k in _CRITERION_FIELDS} for c in items if isinstance(c, dict)]
 
 
 def _redact_value(value: object, needles: list[bytes]) -> object:
@@ -103,9 +104,9 @@ def _redact_value(value: object, needles: list[bytes]) -> object:
 
 def sanitize_task(raw: dict, needles: list[bytes]) -> dict:
     """Structured fields only, redacted before any JSON or HTML serialization escapes them."""
-    out = {k: _redact_value(_scalar(raw.get(k)), needles) for k in _TASK_FIELDS}
+    out = {k: _scalar(raw.get(k), needles) for k in _TASK_FIELDS}
     for key in ("success_criteria_results", "post_failure_criteria_results"):
-        out[key] = [{k: _redact_value(v, needles) for k, v in c.items()} for c in _criteria(raw.get(key))]
+        out[key] = _criteria(raw.get(key), needles)
     return out
 
 
@@ -144,24 +145,16 @@ def _replace(data: bytes, needles: list[bytes]) -> bytes:
     return data
 
 
-def _covers(expected: str, task_id: str) -> bool:
-    """`id` matches exactly; `id*` (a dataset task) also matches its rows, which coder-eval names `id/<row>`."""
-    if not expected.endswith("*"):
-        return task_id == expected
-    base = expected[:-1]
-    row = task_id[len(base) + 1 :] if task_id.startswith(base + "/") else ""
-    return task_id == base or (bool(row) and "/" not in row)
-
-
 def check_coverage(found: dict[str, set[str]], expected_ids: list[str]) -> None:
-    """Every expected task has a result in every variant, and no result is unexpected."""
+    """Every expected task or dataset row has a result in every variant, and no result is unexpected."""
     if not found:
         raise RuntimeError("no variant results")
+    if any("!" in e for e in expected_ids):  # a sampled dataset: the runner's row selection is not knowable here
+        raise RuntimeError("dataset row selection unknown")
+    expected = set(expected_ids)
     for ids in found.values():
-        if not all(any(_covers(e, i) for i in ids) for e in expected_ids):
-            raise RuntimeError("a scheduled task has no result")
-        if not all(any(_covers(e, i) for e in expected_ids) for i in ids):
-            raise RuntimeError("unexpected task result")
+        if ids != expected:
+            raise RuntimeError("task results do not match the scheduled tasks")
 
 
 def scrub(root: pathlib.Path, needles: list[bytes], expect_ids: list[str] | None = None) -> int:

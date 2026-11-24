@@ -105,3 +105,9 @@ def test_the_refresher_exits_when_its_lease_is_gone(tmp_path):
     finally:
         proc.kill()
         proc.wait()
+
+
+def test_the_partition_resolves_result_ids_with_the_dataset_expander():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert 'expected-task-ids.py "${LINUX[@]}"' in text
+    assert "id*" not in text
