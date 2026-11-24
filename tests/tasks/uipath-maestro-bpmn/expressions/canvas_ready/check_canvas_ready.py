@@ -77,6 +77,7 @@ def main() -> None:
     starts = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}startEvent")}
     declared = {e.get("id") for e in root.iter() if e.get("id") and e.get("elementId")}
     forms = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}userTask")}
+    output_tag = f"{{{NS['uipath']}}}output"
 
     bad: list[str] = []
     authored = 0
@@ -111,7 +112,7 @@ def main() -> None:
         owner = element.get("id") or owner
         for attr, value in element.attrib.items():
             # Checked on the raw attribute: a JSON-valued source must not lend the exemption to its strings.
-            if f"{local(element.tag)}@{local(attr)}" == "output@source" and THIS_READ.fullmatch(value):
+            if element.tag == output_tag and attr == "source" and THIS_READ.fullmatch(value):
                 continue
             if local(attr) not in LITERAL_ATTRS:
                 scan(value, owner, f"{local(element.tag)}@{local(attr)}")
