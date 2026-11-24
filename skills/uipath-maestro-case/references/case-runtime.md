@@ -20,6 +20,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 
   `object` and `subscription` are mutually exclusive. Only a live
   subscription proves the payload shape.
+  A placeholder trigger never starts the case. When you report the result,
+  list each placeholder trigger and what the user must set in the designer:
+  connector, connection, object, event and filter. Say that the case cannot
+  start on its own until they do.
 
 ## Human and on-demand work
 
