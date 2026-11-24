@@ -83,7 +83,7 @@ An Agent or Coded App gap stays the question of [scope-recommendation-guide.md](
 
 ## The Offer
 
-Before writing, send this question as its own message, with the counts from the gap list, and end the turn: nothing is written until it is answered, since the answer decides what is asked first.
+The P0 points are choices only the user can make, and they change what is written. So before writing, send this question as its own message, with the counts from the gap list, and end the turn: nothing is written until it is answered.
 
 > The source leaves <P0> points open that change the design: <what they decide, in a few words>. Should I ask them before I write? Everything else — <the other open points, in a few words> — I write as questions in the <SDD | genome>, each with who answers it and what is built until then.
 >
