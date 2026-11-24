@@ -292,6 +292,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   writing. A warning about a merged edge's handle means `validate` will refuse
   the merged file.
 
+`node "<id>" spells <bindings.NAME> but the original has no binding row for it, … merge writes the row …` is a repair, not a failure: the original lacked a row Studio Web needs to publish. Keep it; `validate` is the check.
+
 `the round trip appends End "<id>" after …` is benign: compile caps a path that simply stops and does not change behavior. A `.openTails()` flow gets it only after a human task; see [A path without an End stays open](#a-path-without-an-end-stays-open).
 
 `agent "<id>" carries its prompts, model and settings on the node (embedded) …` means configuration is in `.flow`, not `<source>/agent.json`; merge keeps it embedded and applies node edits (input, output, label).
