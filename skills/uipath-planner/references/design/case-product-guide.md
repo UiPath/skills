@@ -455,7 +455,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the conformance checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the conformance checklist (item 6) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
 The rest of the charset is advisory and never gates. Apply it only to names you mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **Keep a name the user, the source document, or a draft supplied verbatim, punctuation included** (`Credit & Document Verification` stays) — never rewrite it to fit the charset.
 

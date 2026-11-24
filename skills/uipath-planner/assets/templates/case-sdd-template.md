@@ -1,16 +1,11 @@
 # SDD — <CASE_NAME>
 
-> Case Definition Blueprint for <CASE_NAME>.
-> **Phase 2 sections:** Section 1, Section 2, Section 3, Section 4. **Phase 3 sections:** all others.
-
-<!-- Render the case body in the `uipath-maestro-case` `sdd.md` shape below.
-
-Shape rules are complete where they stand: a cell's shape is its angle-bracket hint plus the comment in
-its own section, here or in its task's detail block. Design semantics (which response, which
-gate, which default) live in case-product-guide.md, which a comment names. A value still unstated after its own
-section and the guide it links takes the default recorded there, or `—` where the cell is optional, with
-its provenance. No script or validator exists: the § Validation gate is a checklist answered in the
-transcript. -->
+<!-- Template: Case Management — a case moving through stages; `uipath-maestro-case` builds it from Sections 1–4.
+     Phase 2 sections: Sections 1–4. Phase 3 sections: all others.
+     A cell's shape is its angle-bracket hint plus the comment in its own section or task detail block, complete
+     where it stands. Design semantics (which response, gate, default) live in case-product-guide.md, which the
+     comment names. A value still unstated takes the default recorded there, or `—` where the cell is optional,
+     with its provenance. The gate is the Validation footer's checklist, answered in the transcript. -->
 
 ---
 
@@ -53,7 +48,7 @@ Case-specific rows must preserve the stage/task rationale that Section 2 later s
 -->
 ## Decisions Made
 
-> Autonomous mode picked the architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant Case Definition Blueprint section.
+> The architectural decisions below were picked without a user checkpoint. Override by editing the relevant SDD section, or rerun in Interactive mode.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
@@ -165,26 +160,22 @@ filled from the default tiers rather than the source carries provenance `default
 
 ### SLA Response Map
 
-**THE single authored source of SLA responses.** Every per-stage SLA block carries only its title and
-duration and points here; nothing restates a response.
+The single authored source of SLA responses: each per-stage SLA block carries only its title and duration.
 
 | Scope | SLA | Status | Response | Target | Interrupting | Rationale |
 |-------|-----|--------|----------|--------|--------------|-----------|
 | <case \| stage: <StageName> \| task: <TaskName>> | <that target's SLA Title> | <At-Risk \| Breached> | <notify-only \| start-task \| enter-stage \| exit-stage \| exit-case> | <— for notify-only; else the task name / stage name / produced exit row> | <— for notify-only and for every start-task; else Yes \| No matching the produced stage-entry row> | <why this response fits the source> |
 
-<!-- Section required whenever ANY SLA exists (case, stage, or action task); omit only in a case with no
-SLA at all. Row rules:
-1. Scope: the bare word `case` for the case-level SLA (not `case: root`, not the case name); stage and
-   task scopes take a `: <name>` qualifier.
-2. EXACTLY two rows per (Scope, SLA) — one `At-Risk`, one `Breached` — always. A stated response for
-   one status never removes the other status's row; an omitted row never expresses "nothing was asked for".
-3. A status the source says nothing about is still authored: `notify-only` with BOTH Target and
-   Interrupting `—`. Who is notified goes in the SLA block's escalation `Notify:` cell, never in Target.
-4. `—` is legal ONLY in Target and Interrupting. Response is a closed enum with no `—` value, so a
-   scope with no SLA gets no rows here — no SLA, no row.
-5. Never invent a stage, task, or routing change to carry a notification.
-Legal Response values and the Interrupting value each implies: case-product-guide.md § Choosing
-the response. Two-way closure against the SDD's `sla-status-change` rows is conformance checklist item 13. -->
+<!-- Section required whenever any SLA exists (case, stage, or action task). Row rules:
+1. Scope: the bare word `case` for the case-level SLA; stage and task scopes take a `: <name>` qualifier.
+2. Exactly two rows per (Scope, SLA) — `At-Risk` and `Breached` — always; a stated response for one status never
+   removes the other's row.
+3. A status the source says nothing about is `notify-only` with Target and Interrupting `—`; who is notified is
+   the SLA block's escalation `Notify:` cell, never Target.
+4. `—` only in Target and Interrupting; a scope with no SLA has no rows. Never invent a stage, task or routing
+   change to carry a notification.
+Response values and the Interrupting each implies: case-product-guide.md § Choosing the response. Closure with
+the `sla-status-change` rows: checklist item 8. -->
 
 ### Variable SLA Rules
 
@@ -228,38 +219,28 @@ N 1-based per label kind — never invent a label otherwise. -->
 
 ### Case Variables
 
-<!--
-Only include In/Out arguments, trigger-payload Variables, and true case-level state read by conditions or reused by multiple consumers.
-Do not mint relay variables for one upstream task output consumed once downstream; bind those directly with `<- "Stage"."Task".out` or `vars.$xref('Stage','Task','out')`.
-Every row must have Category. Name camelCase, no role suffix.
-Every variable is a row of this ONE table — In/Out arguments, trigger-payload Variables and task-output targets alike. Never split it into a second table, under a `####` sub-heading (e.g. `#### Task-output variables`), or into a sibling `###` section (e.g. `### Task-output variables`): only the first table under `### Case Variables` declares variables, so every row of a later table is left undeclared — with no warning.
-sourceTriggers / sourceFields per Category, the Type values, Config-as-In and `file`: case-product-guide.md § Category semantics.
--->
+<!-- Rows: In/Out arguments, trigger-payload Variables, and case-level state a condition reads or several consumers
+reuse — never a relay variable for one upstream output consumed once (bind it directly:
+`<- "Stage"."Task".out` or `vars.$xref('Stage','Task','out')`). Name camelCase, no role suffix; Category on every
+row. ONE table holds every variable (checklist item 2). sourceTriggers / sourceFields per Category, the Type values,
+Config-as-In and `file`: case-product-guide.md § Category semantics.
+`Default` is always a string, for every Type — a non-string default is dropped on the way to runtime: `"5"`,
+`"true"`, and a `jsonSchema` default as string-encoded JSON (`"{\"amount\":125.5}"`). Blank for no default; a
+`file` default is always blank. -->
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
 | <camelCase name> | <In \| Out \| Variable> | <string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file> | <T02, blank, or CSV only for Variable rows> | <payload path or keyed T-number paths> | <default or blank — see below> | <what this variable represents> |
 
-> **`Default` is always a string, for every Type.** A non-string default is dropped on the way to
-> runtime, leaving the variable null for the first task that reads it. Write a
-> `jsonSchema` default as string-encoded JSON in the cell:
-> `{"employeeName":"Test Employee","amount":125.5}` becomes
-> `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
-> `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
-
 ### Business Events
 
-<!-- Section only when ≥1 condition row's WHEN is `api-event("<Name>")`; omit otherwise. A business
-event is a named signal an outside caller sends to a running case through the case API; each row
-becomes one `metadata.businessEvents[]` entry. Name is the exact text every `api-event("…")` cell
-quotes — a WHEN that quotes an undeclared Name is not resolved. Names are unique (on a duplicate the
-first row wins). Payload is a JSON Schema object for the event body, in one code span, or `—` when the
-event carries no body. Description is optional.
-Where `api-event` may stand: Stage Entry, Stage Exit (either Marks value), Task Entry and Case Exit
-(either Marks value). Never on a task whose Entry Conditions also hold `runs-sequentially`, and never
-in Case Triggers — a case is not started by a business event. The Case Designer offers business events
-only when the `canvas-enableCaseEventSender` feature flag is on for the tenant; when the user has not
-confirmed it, add a medium review item `Business events need canvas-enableCaseEventSender`. -->
+<!-- Section only when ≥1 condition row's WHEN is `api-event("<Name>")`; omit otherwise. A business event is a
+named signal an outside caller sends to a running case; each row becomes one `metadata.businessEvents[]` entry.
+Name is the exact text every `api-event("…")` cell quotes, unique (a duplicate: the first row wins). Payload is a
+JSON Schema object in one code span, or `—` for no body. `api-event` stands in Stage Entry, Stage Exit, Task Entry
+and Case Exit tables — never in Case Triggers, never on a task whose Entry Condition holds `runs-sequentially`.
+The Case Designer shows business events only with the tenant flag `canvas-enableCaseEventSender`; unconfirmed →
+medium review item `Business events need canvas-enableCaseEventSender`. -->
 
 | Name | Description | Payload |
 |------|-------------|---------|
@@ -271,17 +252,11 @@ confirmed it, add a medium review item `Business events need canvas-enableCaseEv
 
 **Purpose:** The case plan. Every stage has entry/exit conditions, optional SLA, and complete task detail blocks. Case has no BPMN-style edges; transitions are expressed by stage entry/exit conditions.
 
-**Authoring rules** — this template IS the render contract: cell rules live inline at each cell. Design
-semantics (type enum, gates, sequencing, SLA surface): [case-product-guide.md](../../references/design/case-product-guide.md).
-During draft finalization, read only this template's FINALIZING rules (Validation footer) and the sections they name — the draft is the settled design and
-this template is the complete normalization contract; finalization preserves existing display names verbatim.
-Template-local rules:
-- Every stage and task carries a concrete `Design Rationale` and prose `Description`.
-- Secondary stages use `### Secondary Stage: {Name}`, `Stage Kind: secondary`, `Required for Case
-  Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
-  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
-  on a secondary stage is a parallel-oversight `sla-status-change` row.
-- Stage-picker repair is a replacement, never a duplicate, and its two forms are opposites: case-product-guide.md § Repairing a `user-selected-stage` lane.
+**Authoring rules:** every stage and task carries a concrete `Design Rationale` and a prose `Description`.
+Secondary stages use `### Secondary Stage: {Name}`, `Stage Kind: secondary`, `Required for Case Completion: No`,
+and `Interrupting: Yes` on every entry row, decision-keyed rows included; the only `Interrupting: No` entry row on
+a secondary stage is a parallel-oversight `sla-status-change` row. Design semantics — task types, gates,
+sequencing, SLA surface, the stage-picker repair: [case-product-guide.md](../../references/design/case-product-guide.md).
 
 ---
 
@@ -469,18 +444,14 @@ caseplan.case. -->
 
 ###### Document Extraction Task Detail (type: `document-extraction`)
 
-<!-- Runs a deployed IXP model on one file. All five lines come from read-only tenant lookups:
-`uip solution resources list --kind IxpDeployment --source remote --output json` gives the
-deployment's Name (IXP Deployment), Key (Deployment Key), Folder (Folder Path) and FolderKey
-(Folder Key); `uip ixp deployments list <ixp-project-name> --output json` gives its DeploymentName
-(Model Name) on the row whose DeploymentTitle is that Name. Model Name is the deployment's name,
-never the IXP project's. A deployment not found yet → `<UNRESOLVED>` on Deployment Key and Folder Key
-+ high review item. Inputs take only `fileRef` (the file, e.g. `=vars.invoiceFile`, required) and
-`pageRange` (optional). The outputs are fixed: `output` (the IXP result, `ExtractionResult` and
-`Taxonomy`) and `error`. Read the result downstream as `"<Stage>"."<Task>".output` and omit the
-Outputs table; an arrow row (`| output | -> extraction |`) needs a `jsonSchema` case variable with a
-body schema. No document-extraction deployment for the documents →
-the model build routes to `uipath-ixp` (Section 4 § IXP / Document Understanding Models). -->
+<!-- Runs a deployed IXP model on one file. The five lines come from read-only lookups:
+`uip solution resources list --kind IxpDeployment --source remote --output json` (Name → IXP Deployment, Key →
+Deployment Key, Folder → Folder Path, FolderKey → Folder Key) and `uip ixp deployments list <ixp-project-name>
+--output json` (DeploymentName → Model Name, on the row whose DeploymentTitle is that Name — never the IXP
+project's name). Not deployed yet → `<UNRESOLVED>` on both keys + high review item, and the model build routes to
+`uipath-ixp` (§ IXP / Document Understanding Models). Inputs: `fileRef` (required) and `pageRange` (optional).
+Outputs are fixed — `output` (`ExtractionResult`, `Taxonomy`) and `error`: read `"<Stage>"."<Task>".output`
+downstream and omit the Outputs table; an arrow row needs a `jsonSchema` case variable with a body schema. -->
 
 **IXP Deployment:** <deployment name as the solution lists it (DeploymentTitle)>
 **Model Name:** <the deployment's DeploymentName, e.g. `<name>-<hash>-ixp`>
@@ -584,13 +555,9 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
      target tenant has the flag. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
      is required (at most 500 characters) and ships as the role's description. A cell convert cannot
      map is reported as a `case-role` Unresolved item, never guessed at.
-     A condition on the persona is neither a permission nor a stage: a scope reading
-     `StageX (amount > $5M only)` renders as Stages `StageX` and Notes `amount > $5M only`, and a task in
-     StageX carries the guarded cell — owner/recipient or entry-condition IF — phrased on the high side
-     and assigning the exception role, e.g.
-     `=js:vars.amount > 5000000 ? "Role:CreditAnalyst" : "Role:Underwriter"`. Policy (which cells count,
-     numerals, no new variables): case-product-guide.md § Expressions; finalizing a draft runs the
-     Validation footer's Draft repair 3 scan. -->
+     A condition on the persona (`StageX (amount > $5M only)`) is neither a permission nor a stage: it renders as
+     Stages `StageX` and Notes `amount > $5M only`, and a task in StageX carries the guarded cell —
+     case-product-guide.md § Expressions; finalizing a draft, Draft repair 3 in the Validation footer. -->
 
 | Persona | Scope | Stages | Permissions | Description | Notes |
 |---------|-------|--------|-------------|-------------|-------|
@@ -723,7 +690,7 @@ spelled per case-product-guide.md § External names. -->
 
 ## Next Steps
 
-This SDD uses the downstream Case Definition Blueprint shape: `uipath-maestro-case` builds the case from this file, Section 1-4 content unchanged. To build it, load `uipath-planner` with this SDD path:
+This SDD captures architecture and decisions; `uipath-maestro-case` builds the case from its Sections 1–4. To build it, load `uipath-planner` with this SDD path:
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
@@ -734,21 +701,29 @@ Implementation steps **do not live in this SDD** — the genome carries them.
 ---
 
 <!-- ============================ VALIDATION (do not render) ============================
-Markers: <UNRESOLVED> renders as plain text — never backtick-wrapped, never annotated in-cell — and
-stands only where case-product-guide.md § Resources and Identities (`<UNRESOLVED>` scope) allows
-it, each paired with a review item. `—` allowed only where a cell above says so (optional cells the
-build defaults safely). Narrative cells never carry skill-internal vocabulary (Pattern C, bridge,
-companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, savedFilterTrees, dispatcher,
+Markers: <UNRESOLVED> renders as plain text — never backtick-wrapped, never annotated in-cell — and stands only
+where case-product-guide.md § Resources and Identities (`<UNRESOLVED>` scope) allows it, each paired with a review
+item. `—` only where a cell above allows it. Narrative cells never carry skill-internal vocabulary (Pattern C,
+bridge, companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, savedFilterTrees, dispatcher,
 io-binding, aliased into/from, reassign, originalVar, auto-mint).
 
-FINALIZING a draft (`sdd.draft.md` -> the final SDD): the render obeys this contract IN FULL — the
-document skeleton above, one `##### Task <n>: <Name>` detail block per task the draft inventories (never
-a stage-level Tasks table standing in for them), `**Type:** Stage` on every stage block, the exact
-type-specific detail headings and bold field labels (`**Timer:**` stays `**Timer:**`), Section 3/4 column
-headers verbatim, real newlines. A task the draft left as a summary still gets its full detail block:
-fill concise defaults, keep every concrete value the draft supplied, and set `**Resolved Resource:**` to
-the draft's intended resource name — or, when it names none, the task display name; never <UNRESOLVED>
-there.
+Never ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## Stages / ## Task Plan, or
+build-mode/path narration), even if a later caseplan.json would validate — rewrite from the model and this template.
+
+FINALIZING a draft (`sdd.draft.md` -> the final SDD): the render obeys this contract IN FULL — the skeleton above,
+one `##### Task <n>: <Name>` detail block per task the draft inventories (never a stage-level Tasks table standing
+in for them), `**Type:** Stage` on every stage block, the exact detail headings and bold field labels
+(`**Timer:**` stays `**Timer:**`), Section 3/4 column headers verbatim, real newlines. Display names stay verbatim.
+A task the draft left as a summary still gets its full detail block: concise defaults, every concrete value the
+draft supplied kept, `**Resolved Resource:**` = the draft's intended resource name, else the task display name —
+never <UNRESOLVED> there.
+
+Upgrade every draft task block; never copy its shape. A draft task block lacks `**Activation Mode:**`,
+`**Design Rationale:**` and `**Task envelope**` — add all three to EVERY task block, complete ones included:
+- `**Activation Mode:**` from the draft's Starts When / sequencing column; `sequential` when it says nothing.
+- `**Design Rationale:**` from the draft's own reasoning for the task: one concrete sentence, never boilerplate.
+- `**Task envelope**` from the Inputs/Outputs the draft already lists.
+Every stage block gets `**Type:** Stage` and `**Design Rationale:**` the same way.
 
 Draft repairs — the only changes beside the rules above:
 1. `user-selected-stage` repair per case-product-guide.md § Repairing a `user-selected-stage` lane; wording such as
@@ -773,131 +748,77 @@ Draft repairs — the only changes beside the rules above:
    Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep
    the column.
 
-Upgrade every draft task block; never copy its shape. A draft task block carries `**Type:**`,
-`**Description:**`, `**Entry Condition:**` and the type-specific detail, but not `**Activation Mode:**`,
-`**Design Rationale:**` or `**Task envelope**` — add all three to EVERY task block, including blocks the
-draft rendered completely (conformance checklist item 6):
-- `**Activation Mode:**` from the draft's Starts When / sequencing column; `sequential` when it says nothing.
-- `**Design Rationale:**` from the draft's own reasoning for the task: one concrete sentence, never boilerplate.
-- `**Task envelope**` from the Inputs/Outputs the draft already lists.
-Every stage block gets `**Type:** Stage` and `**Design Rationale:**` the same way.
+Gate: the CONFORMANCE CHECKLIST below, walked against the on-disk file BEFORE the Status: ready flip, in every
+mode, by the procedure of sdd-writing-guide.md Step 4 item 8 — which also checks every heading above is present.
+Items 19–21 apply only when finalizing a draft. Each item names what to LOOK AT; the cell rules above are the
+render contract, and a cell rule broken anywhere is a FAIL of the item that covers its section.
 
-Never ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## Stages / ## Task
-Plan, or build-mode/path narration) even if a later caseplan.json would validate — rewrite from the
-model and this template.
+CONFORMANCE CHECKLIST — 21 items.
 
-Gate: the CONFORMANCE CHECKLIST below (items 30–33 only when finalizing a draft), walked against the on-disk
-file BEFORE the Status: ready flip, in every mode, by the procedure of sdd-writing-guide.md Step 4 item 8.
-The checklist names only what to look at; the shape rules above are the render contract.
-
-CONFORMANCE CHECKLIST — 37 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
-names only what to LOOK AT.
-
- Skeleton
-  1. The first non-empty line is `# SDD — <Case Name>`.
-  2. Present, in this order: `## Document History`; `## Planner Handoff` with the `planner-handoff:v1`
-     marker; `## Table of Contents`; `## Section 1: Case Definition` holding `### Case Metadata`,
-     `### Case Triggers`, `### Case Exit Conditions`, `### Case Variables`; `## Section 2: Stages & Tasks`;
-     `## Section 3: Personas & App Views` holding `### Personas` and `### Process App Views`;
-     `## Section 4: Integrations`.
-  3. No summary-only top-level heading: `## Source`, `## Case Objective`, `## Actors And Systems`,
+ Shape
+  1. No summary-only top-level heading (`## Source`, `## Case Objective`, `## Actors And Systems`,
      `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`,
-     `## Acceptance Scenarios`.
-  4. The Case Variables header is literally
-     `| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |`, and that
-     table is the section's only table: every variable, task-output targets included, is a row of it —
-     no second table, no `####` sub-heading split, no sibling `###` section (e.g.
-     `### Task-output variables`). Only the first table declares variables; later rows drop silently.
-  5. Every `### Stage <N>:` / `### Secondary Stage:` block carries `**Type:** Stage`, `**Design Rationale:**`,
-     `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, `#### Tasks`; a secondary stage carries an
-     explicit `**Interrupting:** Yes` or `No`, and `Yes` whenever one of its exit rows is `return-to-origin`.
-  6. Every row of a stage's Tasks table has its own `##### Task <N>.<M>:` block (`S<K>.<M>` in a secondary
-     stage; never the letter prefixes `R.1` / `W.1` / `CC.1` / `ESC.1`) carrying `**Type:**`,
-     `**Activation Mode:**`, `**Design Rationale:**`, an `**Entry Condition:**` table, `**Task envelope**`,
-     and the detail block its type requires — action: `**HITL Implementation:**`; wait-for-connector:
-     `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity / external-agent / external-workflow:
-     `**Connector:**` / `**Operation:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
-     `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
-  7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
-     skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
-     inputOutputs[]) appears anywhere in the body.
- Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the seventeen literals in case-product-guide.md § Task types. If a `Type:` appears in that section's never-author block, fix it as the block directs: write the plan type it gives.
-  9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
-     that row's Yes/No per case-product-guide.md § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
-     Entry Condition rows only Task-entry rules.
- 10. Exit Type pairs with Marks Stage Complete — Yes: exit-only / return-to-origin / wait-for-user;
-     No: exit-only / wait-for-user. `return-to-origin` never appears in Case Exit Conditions.
- Names
- 11. No stage label and no task display name contains `:`.
- 12. Stage labels are unique case-wide; task display names are unique case-wide, across every stage.
- SLA references + selectors
- 13. Every `sla-status-change(...)` has 2 or 3 quoted args; arg 1 is the literal `root` or a declared stage
-     display name; arg 2 is an SLA Title that target declares (the `SLA Title` row of Case Metadata for
-     root; `**SLA Title:**` under the stage's `#### Stage SLA`); every SLA Response Map row whose response is not
-     `notify-only` has its `sla-status-change` row, and every `sla-status-change` row has its Map row.
- 14. Every `selected-stage-completed("X")` / `selected-stage-exited("X")` names a declared stage; every
-     `selected-tasks-completed("T")` names a declared, non-`adhoc` task in the SAME stage.
- 15. No stage's entry row references its own stage.
- Data closure
- 16. Every `=vars.X` is a row in Case Variables.
- 17. Every consumed variable whose Category is not `In` is produced somewhere: an Outputs row `-> X`, an
-     assignment `X = ...`, a Default, or a sourceTriggers entry.
- 18. Every `Out` variable has a Default or a producing Outputs row.
- 19. Every Buttons `Maps To` target is a declared variable, `taskOutcome`, or an identifier read somewhere
-     outside the Buttons tables.
- Recipients, entry tables
- 20. Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or carries a typed prefix
-     (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`).
- 21. Every task `**Entry Condition:**` table, every `#### Stage Entry Conditions` table and every
-     `#### Stage Exit Conditions` table has at least one body row.
- Structure
- 22. Some stage's entry table carries a `case-entered` row.
- 23. Case Triggers has at least one row.
- 24. Case Exit Conditions has at least one row with Marks Case Complete `Yes`, and no two rows identical in
-     (WHEN, IF, THEN, Marks).
- 25. A `wait-for-user` exit exists if and only if a `user-selected-stage` entry exists.
- 26. `required-stages-completed` used → some stage declares `**Required for Case Completion:** Yes`;
-     `required-tasks-completed` on a stage → some task envelope in that stage has Required `Yes`.
- Precedence & liveness
- 27. No stage entry row equals a Case Exit row in (rule, selector, IF) — case exit evaluates first, so the
-     stage would be unreachable.
- 28. Within a stage, no unguarded exit row (Marks `No`, empty IF) shares its WHEN with a guarded completion
-     row (Marks `Yes`, IF set) — the exit always wins and the stage never completes.
- 29. The Case-Level SLA and every stage SLA expressed in minutes lie within 15–1000, and no stage SLA
-     exceeds the case-level SLA.
+     `## Acceptance Scenarios`); no literal `\n` escape in block content; `<UNRESOLVED>` never backtick-wrapped.
+  2. `### Case Variables` holds exactly one table, with the template's header verbatim — no second table,
+     `####` sub-heading or sibling `###` section of variables (only the first table declares; later rows drop
+     silently).
+  3. Every stage block carries `**Type:** Stage`, `**Design Rationale:**` and the three `####` condition/task
+     sections; a secondary stage an explicit `**Interrupting:**`, `Yes` whenever an exit row is
+     `return-to-origin`. Every Tasks-table row has its own `##### Task <N>.<M>:` block (`S<K>.<M>` in a
+     secondary stage) carrying `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, an
+     `**Entry Condition:**` table, `**Task envelope**`, and the detail block its type requires — action:
+     `**HITL Implementation:**`; wait-for-connector: `**Connector:**` / `**Trigger / Event:**`;
+     execute-connector-activity / external-agent / external-workflow: `**Connector:**` / `**Operation:**`;
+     wait-for-timer: `**Timer:**`; case-management: `**Child Case:**`; http-request: `**Method:**` / `**URL:**`;
+     script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` /
+     `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process:
+     `**Resolved Resource:**`.
+  4. Every task `**Type:**` is one of the seventeen literals in case-product-guide.md § Task types. A `Type:` in
+     that section's never-author block is fixed as the block directs: write the plan type it gives.
+  5. Every WHEN is legal for its table and its Marks value (case-product-guide.md § Lifecycle gates); Exit Type
+     pairs with Marks Stage Complete — Yes: exit-only / return-to-origin / wait-for-user, No: exit-only /
+     wait-for-user; `return-to-origin` never in Case Exit Conditions.
+  6. No stage label or task display name contains `:` (case-product-guide.md § Naming rules); stage labels are unique case-wide, and task display
+     names unique across every stage.
+ References
+  7. Every `selected-stage-*("X")` names a declared stage other than its own; every `selected-tasks-completed("T")`
+     a declared, non-`adhoc` task in the SAME stage.
+  8. Every `sla-status-change(...)` has 2 or 3 quoted args: arg 1 `root` or a declared stage display name, arg 2
+     an SLA Title that target declares. Every SLA Response Map row not `notify-only` has its `sla-status-change`
+     row, and every `sla-status-change` row its Map row.
+  9. Every `api-event("<Name>")` quotes a `### Business Events` Name verbatim, every declared event is quoted
+     once or more, and each cell stands where § Business Events allows.
+ Data
+ 10. Every `=vars.X` is a Case Variables row; every consumed variable not `In` has a producer (an Outputs row
+     `-> X`, an assignment, a Default, a sourceTriggers entry); every `Out` variable a Default or a producing
+     Outputs row; every Buttons `Maps To` target is a declared variable, `taskOutcome`, or read outside the
+     Buttons tables.
+ Structure and liveness
+ 11. Every task Entry Condition, Stage Entry and Stage Exit table has a body row; some stage enters on
+     `case-entered`; Case Triggers has a row; Case Exit Conditions has a Marks `Yes` row and no two identical
+     rows.
+ 12. A `wait-for-user` exit exists if and only if a `user-selected-stage` entry exists.
+ 13. `required-stages-completed` → some stage is `Required for Case Completion: Yes`; `required-tasks-completed`
+     on a stage → some task envelope in that stage is Required `Yes`.
+ 14. No stage entry row equals a Case Exit row in (rule, selector, IF) — the case exit evaluates first; within
+     a stage, no unguarded exit row (Marks `No`, empty IF) shares its WHEN with a guarded completion row.
+ 15. Case-Level SLA and every stage SLA in minutes lie within 15–1000; no stage SLA exceeds the case SLA.
+ Roles
+ 16. Every task `Persona` cell names exactly ONE role — a row of the Personas table, or `system` — never an
+     either/or (`Underwriter or Credit Analyst`); a conditional split is a guarded row on the deciding variable.
+     Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or typed (`Role:` / `User:` /
+     `UserGroup:` / `Email:` / `Expression:`).
+ 17. The Personas table is machine-readable per its § Personas comment: Scope, exact stage names, listed
+     permission keys only. `View, Act, Reassign` is prose, not permissions — convert reports a `case-role`
+     Unresolved item and `validate --sdd` fails it.
+ 18. No `user-selected-stage` entry sits on a lane that a decision, event or SLA routes to — the picker row is
+     then the defect (case-product-guide.md § Repairing a `user-selected-stage` lane). Source silent on who
+     launches the lane → keep what is authored.
  Draft parity (finalizing a draft only)
- 30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
- 31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
- 32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
-     over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
-     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
-     comparison — prose in Design Rationale or Description does not count (case-product-guide.md
-     § Expressions).
- 33. The draft file still exists beside the final, unrenamed.
- Modelling completeness
- 34. Every task's `Persona` cell names exactly ONE role — never an either/or (`Underwriter or Credit
-     Analyst`, `Recruiter / Hiring Manager`). An either/or persona is a routing rule the source stated and
-     the design never modelled: no guard picks between the roles at run time. Repair by naming the owning
-     role, and where the split was genuinely conditional, author the condition as a guarded row on the
-     deciding variable rather than as prose in the persona cell. `system` is a single role.
- 35. No `user-selected-stage` entry sits on a lane that a decision, event, or SLA routes to.
-     `user-selected-stage` is picker exposure — a person choosing the next stage by hand — never
-     deterministic routing, so when the source says entry is automatic the picker row IS the defect:
-     repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
-     edits). Source silent on who launches the lane ⟹ keep what is authored.
- 36. The Personas table header is literally `| Persona | Scope | Stages | Permissions | Description | Notes |`,
-     and every row is machine-readable: Scope is `Case` or `Stages`; Stages names exact Section 2 stage
-     display names (`—` for `Case`); Permissions holds only the permission keys the template lists, and a
-     `Stages` row only View, Assign, ManageSLA, RunAdhocTasks; every task's `Persona` cell (rule 34) names a
-     row of this table or `system`. `View, Act, Reassign` is prose, not permissions — `uip maestro case sdd
-     convert` reports each such cell as a `case-role` Unresolved item and `validate --sdd` fails it. A
-     condition on the persona goes in Notes and in a guarded cell (rule 32), never in Permissions or Stages.
- 37. Every `api-event("<Name>")` WHEN cell quotes a Name declared verbatim in `### Business Events`
-     (a Section 1 `###` sibling of Case Variables, header `| Name | Description | Payload |`), and every
-     declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
-     and Case Exit tables — never in Case Triggers, and never in a task's Entry Conditions that also hold
-     `runs-sequentially`. A Payload cell is a JSON Schema object in one code span, or `—`.
+ 19. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
+ 20. Draft repairs 2 and 3 hold: every draft `=js:` expression verbatim in its owning block, and every
+     comparator + amount policy in an executable cell on the same side of the comparison.
+ 21. The draft file still exists beside the final, unrenamed.
 ===================================================================================== -->
 
-**End of Case Definition Blueprint.**
+**End of Solution Design Document.**
