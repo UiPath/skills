@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url';
 export const FIELD_TYPES = ['STRING', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME_WITH_TZ', 'CHOICE_SET_SINGLE', 'RELATIONSHIP'];
 export const KINDS = ['native', 'federated', 'review'];
 export const ROLES = ['owner', 'part', 'copy', 'junction', 'view'];
-const FIELD_KEYS = ['type', 'displayName', 'length', 'precision', 'required', 'unique', 'choiceSet', 'target', 'property'];
+const FIELD_KEYS = ['type', 'displayName', 'length', 'precision', 'required', 'unique', 'choiceSet', 'target', 'display', 'property'];
 const ENTITY_KEYS = ['kind', 'displayName', 'realizes', 'fields', 'primary', 'sources'];
 // Fields every entity already has.
 const SYSTEM_FIELDS = ['Id', 'CreateTime', 'UpdateTime', 'CreatedBy', 'UpdatedBy', 'RecordOwner'];
@@ -33,6 +33,21 @@ myclass narrowing next not nothing notinheritable notoverridable of on option op
 paramarray partial property raiseevent redim rem removehandler resume select set shadows shared single step stop sub synclock then to
 trycast until variant wend when widening with withevents writeonly xor`.split(/\s+/));
 const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_]{0,99}$/;
+// The platform's own refusal: "Entity name must start with a letter, use only letters and numbers, and be 3-100 characters."
+const ENTITY_NAME = /^[A-Za-z][A-Za-z0-9]{2,99}$/;
+// The platform refuses a reserved SQL word as an entity or field name ("'order' is a reserved SQL word"). This is the
+// Transact-SQL reserved keyword list; any letter case.
+export const SQL_RESERVED = new Set(`add all alter and any as asc authorization backup begin between break browse bulk by cascade case check
+checkpoint close clustered coalesce collate column commit compute constraint contains containstable continue convert create cross
+current current_date current_time current_timestamp current_user cursor database dbcc deallocate declare default delete deny desc disk
+distinct distributed double drop dump else end errlvl escape except exec execute exists exit external fetch file fillfactor for foreign
+freetext freetexttable from full function goto grant group having holdlock identity identity_insert identitycol if in index inner insert
+intersect into is join key kill left like lineno load merge national nocheck nonclustered not null nullif of off offsets on open
+opendatasource openquery openrowset openxml option or order outer over percent pivot plan precision primary print proc procedure public
+raiserror read readtext reconfigure references replication restore restrict return revert revoke right rollback rowcount rowguidcol rule
+save schema securityaudit select semantickeyphrasetable semanticsimilaritydetailstable semanticsimilaritytable session_user set setuser
+shutdown some statistics system_user table tablesample textsize then to top tran transaction trigger truncate try_convert tsequal union
+unique unpivot update updatetext use user values varying view waitfor when where while with within writetext`.split(/\s+/));
 const CHOICE_SET_NAME = /^[A-Za-z0-9]+$/;
 const VALUE_NAME = /^[A-Za-z][A-Za-z0-9]*$/;
 
@@ -69,6 +84,8 @@ export function check(schema) {
   const kindOf = (e) => (isObj(ents[e]) ? ents[e].kind : undefined);
   for (const [name, e] of Object.entries(ents)) {
     const at = `entity ${name}`;
+    if (!ENTITY_NAME.test(name)) why.push(`${at}: an entity name starts with a letter and holds only letters and digits, 3-100 characters`);
+    if (SQL_RESERVED.has(name.toLowerCase())) why.push(`${at}: a reserved SQL word, not a usable entity name`);
     if (!isObj(e)) { why.push(`${at}: must be an object`); continue; }
     for (const k of Object.keys(e)) if (!ENTITY_KEYS.includes(k)) why.push(`${at}: unknown key "${k}"`);
     if (!KINDS.includes(e.kind)) { why.push(`${at}: kind must be one of ${KINDS.join(', ')}`); continue; }
@@ -86,6 +103,7 @@ export function check(schema) {
       if (!FIELD_NAME.test(fname)) why.push(`${fat}: a field name starts with a letter and holds letters, digits and _`);
       if (SYSTEM_FIELDS.includes(fname)) why.push(`${fat}: every entity already has a field of this name`);
       if (LANGUAGE_KEYWORDS.has(fname.toLowerCase())) why.push(`${fat}: a C# or VB keyword, not a usable field name`);
+      if (SQL_RESERVED.has(fname.toLowerCase())) why.push(`${fat}: a reserved SQL word, not a usable field name`);
       if (!isObj(f)) { why.push(`${fat}: must be an object`); continue; }
       for (const k of Object.keys(f)) if (!FIELD_KEYS.includes(k)) why.push(`${fat}: unknown key "${k}"`);
       if (!FIELD_TYPES.includes(f.type)) { why.push(`${fat}: type must be one of ${FIELD_TYPES.join(', ')}`); continue; }
@@ -98,7 +116,12 @@ export function check(schema) {
       if (f.type === 'RELATIONSHIP') {
         relationships += 1;
         if (kindOf(f.target) !== 'native') why.push(`${fat}: a relationship must point at a native entity of this file; "${f.target}" is ${kindOf(f.target) ? `a ${kindOf(f.target)} entity` : 'not in the file'}`);
-      } else if (f.target !== undefined) why.push(`${fat}: target belongs to a RELATIONSHIP`);
+        else if (typeof f.display !== 'string') why.push(`${fat}: a RELATIONSHIP needs display: the field of ${f.target} shown for the related record; the Developer chooses it`);
+        else if (f.display !== 'Id' && !(isObj(ents[f.target].fields) && f.display in ents[f.target].fields)) why.push(`${fat}: display "${f.display}" is not a field of ${f.target}`);
+      } else {
+        if (f.target !== undefined) why.push(`${fat}: target belongs to a RELATIONSHIP`);
+        if (f.display !== undefined) why.push(`${fat}: display belongs to a RELATIONSHIP`);
+      }
       for (const b of ['required', 'unique']) if (f[b] !== undefined && typeof f[b] !== 'boolean') why.push(`${fat}: ${b} is true or false`);
     }
     if ((e.realizes ?? []).some((r) => r?.role === 'junction') && relationships < 2) {
@@ -189,7 +212,7 @@ function fieldBody(name, f, local) {
   }
   if (f.type === 'RELATIONSHIP') {
     if (local) b.referenceEntityName = f.target;
-    else Object.assign(b, { referenceEntityId: `{{entity ${f.target}.id}}`, referenceFieldId: `{{entity ${f.target}.idField}}`, referenceFolderKey: '{{folderKey}}' });
+    else Object.assign(b, { referenceEntityId: `{{entity ${f.target}.id}}`, referenceFieldId: `{{entity ${f.target}.field ${f.display}}}`, referenceFolderKey: '{{folderKey}}' });
   }
   return b;
 }
@@ -296,8 +319,8 @@ function fill(value, ctx) {
   const m = /^\{\{(.+)\}\}$/.exec(value);
   if (!m) return value;
   if (m[1] === 'folderKey') return ctx.folderKey;
-  const [, step, key] = /^(.+)\.(id|idField)$/.exec(m[1]) ?? [];
-  const got = ctx.created[step]?.[key];
+  const [, step, key, fieldName] = /^(.+?)\.(idField|id|field)(?: (\S+))?$/.exec(m[1]) ?? [];
+  const got = key === 'field' ? ctx.created[step]?.fields?.[fieldName] : ctx.created[step]?.[key];
   if (!got) throw new Error(`placeholder {{${m[1]}}} has no value: ${step} was not created first`);
   return got;
 }
@@ -318,6 +341,7 @@ export function compare(body, stored, { local }) {
     if (Boolean(have.IsRequired) !== Boolean(want.isRequired)) diffs.push(`${want.name}: required ${Boolean(have.IsRequired)}, sent ${Boolean(want.isRequired)}`);
     if (Boolean(have.IsUnique) !== Boolean(want.isUnique)) diffs.push(`${want.name}: unique ${Boolean(have.IsUnique)}, sent ${Boolean(want.isUnique)}`);
     if (want.referenceEntityId && have.ReferenceEntity?.Id !== want.referenceEntityId) diffs.push(`${want.name}: points at ${have.ReferenceEntity?.Id}, sent ${want.referenceEntityId}`);
+    if (want.referenceFieldId && have.ReferenceField?.Id !== want.referenceFieldId) diffs.push(`${want.name}: displays field ${have.ReferenceField?.Id}, sent ${want.referenceFieldId}`);
     if (want.referenceEntityName && have.ReferenceEntity?.Name !== want.referenceEntityName) diffs.push(`${want.name}: points at ${have.ReferenceEntity?.Name}, sent ${want.referenceEntityName}`);
     if (want.choiceSetId && have.ChoiceSetId !== want.choiceSetId) diffs.push(`${want.name}: choice set ${have.ChoiceSetId}, sent ${want.choiceSetId}`);
   }
@@ -371,7 +395,7 @@ export function apply(planned, { state, folderKey, profile, local, solution }) {
     const got = uip(['df', 'entities', 'get', id, ...where], opts);
     if (!got.ok) return { result: { ...result, failed: { step: `${step.id} read back`, platform: got.response } }, code: 1 };
     const fields = got.response.Data?.Fields ?? [];
-    state.created[step.id] = { id, idField: fields.find((f) => f.Name === 'Id')?.Id ?? null };
+    state.created[step.id] = { id, idField: fields.find((f) => f.Name === 'Id')?.Id ?? null, fields: Object.fromEntries(fields.filter((f) => f.Name && f.Id).map((f) => [f.Name, f.Id])) };
     save();
     const diffs = compare(body, fields, { local });
     differences += diffs.length;

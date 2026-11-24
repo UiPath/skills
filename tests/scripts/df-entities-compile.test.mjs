@@ -24,56 +24,61 @@ test('the club fixture compiles, and twice to the same bytes', () => {
 
 test('choice sets first, each relationship target before its referrer, federated last', () => {
   const s = club();
-  s.entities.club_view = {
+  s.entities.clubView = {
     kind: 'federated', realizes: [{ class: 'Member', role: 'view' }],
-    primary: { entity: 'club_member', fields: { memberId: 'memberId' } },
-    sources: [{ entity: 'club_attendance', join: 'memberId', fields: {} }],
+    primary: { entity: 'clubMember', fields: { memberId: 'memberId' } },
+    sources: [{ entity: 'clubAttendance', join: 'memberId', fields: {} }],
   };
-  s.entities.club_attendance.fields.memberId = { type: 'STRING', length: 12 };
-  s.entities.club_view.sources[0].fields = { memberId: 'attendanceMemberId' };
+  s.entities.clubAttendance.fields.memberId = { type: 'STRING', length: 12 };
+  s.entities.clubView.sources[0].fields = { memberId: 'attendanceMemberId' };
   const { order, refused } = plan(JSON.stringify(s));
   assert.deepEqual(refused, []);
   assert.equal(order[0], 'choiceSet EventType');
-  assert.ok(order.indexOf('entity club_member') < order.indexOf('entity club_attendance'));
-  assert.ok(order.indexOf('entity club_event') < order.indexOf('entity club_attendance'));
-  assert.equal(order.at(-1), 'entity club_view');
+  assert.ok(order.indexOf('entity clubMember') < order.indexOf('entity clubAttendance'));
+  assert.ok(order.indexOf('entity clubEvent') < order.indexOf('entity clubAttendance'));
+  assert.equal(order.at(-1), 'entity clubView');
 });
 
 test('relationship and choice-set bodies carry placeholders on a folder, names on --local', () => {
-  const folder = plan(fixture).steps.find((s) => s.name === 'club_attendance').body.fields[0];
-  assert.equal(folder.referenceEntityId, '{{entity club_member.id}}');
+  const folder = plan(fixture).steps.find((s) => s.name === 'clubAttendance').body.fields[0];
+  assert.equal(folder.referenceEntityId, '{{entity clubMember.id}}');
   assert.equal(folder.referenceFolderKey, '{{folderKey}}');
-  const local = plan(fixture, { local: true }).steps.find((s) => s.name === 'club_event').body.fields.find((f) => f.name === 'type');
+  const local = plan(fixture, { local: true }).steps.find((s) => s.name === 'clubEvent').body.fields.find((f) => f.name === 'type');
   assert.equal(local.choiceSetName, 'EventType');
 });
 
 const REFUSALS = {
-  'a C# keyword field': [(s) => { s.entities.club_member.fields.virtual = { type: 'BOOLEAN' }; }, 'C# or VB keyword'],
-  'a system field': [(s) => { s.entities.club_member.fields.Id = { type: 'BOOLEAN' }; }, 'already has a field'],
+  'a C# keyword field': [(s) => { s.entities.clubMember.fields.virtual = { type: 'BOOLEAN' }; }, 'C# or VB keyword'],
+  'a system field': [(s) => { s.entities.clubMember.fields.Id = { type: 'BOOLEAN' }; }, 'already has a field'],
   'a choice-set name with _': [(s) => { s.choiceSets.Event_Type = s.choiceSets.EventType; }, 'letters and digits only'],
   'a value name with a symbol': [(s) => { s.choiceSets.EventType.values.push({ name: 'X-Large' }); }, 'starting with a letter'],
-  'a STRING with no length': [(s) => { delete s.entities.club_member.fields.email.length; }, 'needs a length'],
-  'a DECIMAL with no precision': [(s) => { delete s.entities.club_event.fields.budget.precision; }, 'needs a precision'],
-  'an unknown choice set': [(s) => { s.entities.club_event.fields.type.choiceSet = 'Nope'; }, 'is not in choiceSets'],
-  'a relationship to an unknown entity': [(s) => { s.entities.club_attendance.fields.member.target = 'club_ghost'; }, 'not in the file'],
+  'a STRING with no length': [(s) => { delete s.entities.clubMember.fields.email.length; }, 'needs a length'],
+  'a DECIMAL with no precision': [(s) => { delete s.entities.clubEvent.fields.budget.precision; }, 'needs a precision'],
+  'an unknown choice set': [(s) => { s.entities.clubEvent.fields.type.choiceSet = 'Nope'; }, 'is not in choiceSets'],
+  'a relationship to an unknown entity': [(s) => { s.entities.clubAttendance.fields.member.target = 'clubGhost'; }, 'not in the file'],
   'a relationship to a federated entity': [(s) => {
-    s.entities.club_view = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'club_member', fields: { memberId: 'memberId' } }, sources: [] };
-    s.entities.club_attendance.fields.member.target = 'club_view';
+    s.entities.clubView = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'clubMember', fields: { memberId: 'memberId' } }, sources: [] };
+    s.entities.clubAttendance.fields.member.target = 'clubView';
   }, 'a federated entity'],
-  'a junction with one relationship': [(s) => { delete s.entities.club_attendance.fields.eventRef; }, 'it has 1'],
-  'a relationship cycle': [(s) => { s.entities.club_member.fields.lastEvent = { type: 'RELATIONSHIP', target: 'club_attendance' }; }, 'form a cycle'],
-  'kind review': [(s) => { s.entities.club_member.kind = 'review'; }, 'still "review"'],
-  'an unknown key': [(s) => { s.entities.club_member.fields.email.maxLength = 3; }, 'unknown key "maxLength"'],
+  'a junction with one relationship': [(s) => { delete s.entities.clubAttendance.fields.eventRef; }, 'it has 1'],
+  'a relationship cycle': [(s) => { s.entities.clubMember.fields.lastEvent = { type: 'RELATIONSHIP', target: 'clubAttendance' }; }, 'form a cycle'],
+  'kind review': [(s) => { s.entities.clubMember.kind = 'review'; }, 'still "review"'],
+  'an entity name with _': [(s) => { s.entities.club_extra = s.entities.clubMember; }, 'holds only letters and digits'],
+  'a SQL reserved field name': [(s) => { s.entities.clubMember.fields.order = { type: 'BOOLEAN' }; }, 'reserved SQL word, not a usable field name'],
+  'a SQL reserved entity name': [(s) => { s.entities.select = s.entities.clubMember; }, 'reserved SQL word, not a usable entity name'],
+  'a relationship with no display field': [(s) => { delete s.entities.clubAttendance.fields.member.display; }, 'needs display'],
+  'a display field the target lacks': [(s) => { s.entities.clubAttendance.fields.member.display = 'nickname'; }, 'is not a field of clubMember'],
+  'an unknown key': [(s) => { s.entities.clubMember.fields.email.maxLength = 3; }, 'unknown key "maxLength"'],
   'a federated source that is not native': [(s) => {
-    s.entities.club_view = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'club_member', fields: { memberId: 'memberId' } }, sources: [{ entity: 'club_other', join: 'memberId', fields: { memberId: 'm2' } }] };
+    s.entities.clubView = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'clubMember', fields: { memberId: 'memberId' } }, sources: [{ entity: 'clubOther', join: 'memberId', fields: { memberId: 'm2' } }] };
   }, 'is not a native entity'],
   'the same name selected from two sources': [(s) => {
-    s.entities.club_attendance.fields.memberId = { type: 'STRING', length: 12 };
-    s.entities.club_view = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'club_member', fields: { memberId: 'memberId' } }, sources: [{ entity: 'club_attendance', join: 'memberId', fields: { memberId: 'memberId' } }] };
+    s.entities.clubAttendance.fields.memberId = { type: 'STRING', length: 12 };
+    s.entities.clubView = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'clubMember', fields: { memberId: 'memberId' } }, sources: [{ entity: 'clubAttendance', join: 'memberId', fields: { memberId: 'memberId' } }] };
   }, 'selected from both'],
   'a join field not selected': [(s) => {
-    s.entities.club_attendance.fields.memberId = { type: 'STRING', length: 12 };
-    s.entities.club_view = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'club_member', fields: { email: 'email' } }, sources: [{ entity: 'club_attendance', join: 'memberId', fields: { memberId: 'm2' } }] };
+    s.entities.clubAttendance.fields.memberId = { type: 'STRING', length: 12 };
+    s.entities.clubView = { kind: 'federated', realizes: [{ class: 'Member', role: 'view' }], primary: { entity: 'clubMember', fields: { email: 'email' } }, sources: [{ entity: 'clubAttendance', join: 'memberId', fields: { memberId: 'm2' } }] };
   }, 'the primary must select the join field'],
 };
 for (const [name, [mutate, reason]] of Object.entries(REFUSALS)) {
@@ -93,7 +98,7 @@ test('the documented format and the compiler agree on kinds, roles and field typ
   assert.deepEqual(ent.realizes.items.properties.role.enum, ROLES);
   assert.deepEqual(ent.fields.additionalProperties.properties.type.enum, FIELD_TYPES);
   assert.deepEqual(Object.keys(ent.fields.additionalProperties.properties).sort(),
-    ['choiceSet', 'displayName', 'length', 'precision', 'property', 'required', 'target', 'type', 'unique']);
+    ['choiceSet', 'display', 'displayName', 'length', 'precision', 'property', 'required', 'target', 'type', 'unique']);
   assert.deepEqual(check(club()), []);
 });
 
@@ -119,9 +124,9 @@ if (a[1] === 'entities' && a[2] === 'create') {
   const body = JSON.parse(a[a.indexOf('--body') + 1]);
   const p = ${JSON.stringify(join(dir, 'store.json'))};
   const store = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
-  store[id(n)] = (body.fields ?? []).map((f) => ({ Name: f.name, IsRequired: ${storeRequired === undefined ? 'f.isRequired' : JSON.stringify(storeRequired)}, IsUnique: !!f.isUnique,
+  store[id(n)] = (body.fields ?? []).map((f) => ({ Name: f.name, Id: 'fid-' + id(n) + '-' + f.name, IsRequired: ${storeRequired === undefined ? 'f.isRequired' : JSON.stringify(storeRequired)}, IsUnique: !!f.isUnique,
     FieldDataType: { Name: f.type, LengthLimit: f.lengthLimit, DecimalPrecision: f.decimalPrecision },
-    ReferenceEntity: f.referenceEntityId ? { Id: f.referenceEntityId } : null, ChoiceSetId: f.choiceSetId }));
+    ReferenceEntity: f.referenceEntityId ? { Id: f.referenceEntityId } : null, ReferenceField: f.referenceFieldId ? { Id: f.referenceFieldId } : null, ChoiceSetId: f.choiceSetId }));
   fs.writeFileSync(p, JSON.stringify(store));
   out({ Result: 'Success', Data: { Id: id(n) } });
 }
@@ -147,12 +152,12 @@ test('apply creates in order, fills ids from earlier responses, and reads back w
     const { result, code } = apply(plan(fixture), { state, folderKey: 'fk-1' });
     assert.equal(code, 0, JSON.stringify(result.failed));
     const creates = calls(log).filter((a) => a[2] === 'create' && a[1] === 'entities');
-    assert.deepEqual(creates.map((a) => a[3]), ['club_member', 'club_event', 'club_attendance']);
+    assert.deepEqual(creates.map((a) => a[3]), ['clubMember', 'clubEvent', 'clubAttendance']);
     const attendance = JSON.parse(creates[2][creates[2].indexOf('--body') + 1]);
-    assert.equal(attendance.fields[0].referenceEntityId, result.created['entity club_member'].id);
-    assert.equal(attendance.fields[0].referenceFieldId, `idf-${result.created['entity club_member'].id}`);
+    assert.equal(attendance.fields[0].referenceEntityId, result.created['entity clubMember'].id);
+    assert.equal(attendance.fields[0].referenceFieldId, `fid-${result.created['entity clubMember'].id}-memberId`);
     assert.equal(attendance.fields[0].referenceFolderKey, 'fk-1');
-    assert.deepEqual(result.readBack['entity club_event'].differences, []);
+    assert.deepEqual(result.readBack['entity clubEvent'].differences, []);
   });
 });
 
@@ -168,12 +173,12 @@ test('a rerun with the same state skips what exists', { skip: process.platform =
 });
 
 test('a platform failure stops the run and is passed through as returned', { skip: process.platform === 'win32' }, () => {
-  withFake({ failOn: 'club_event' }, (dir, log) => {
+  withFake({ failOn: 'clubEvent' }, (dir, log) => {
     const { result, code } = apply(plan(fixture), { state: { path: join(dir, 'state.json'), created: {} }, folderKey: 'fk-1' });
     assert.equal(code, 1);
-    assert.equal(result.failed.step, 'entity club_event');
+    assert.equal(result.failed.step, 'entity clubEvent');
     assert.equal(result.failed.platform.Retry, 'RetryWillNotFix');
-    assert.ok(!calls(log).some((a) => a[3] === 'club_attendance'));
+    assert.ok(!calls(log).some((a) => a[3] === 'clubAttendance'));
   });
 });
 
@@ -181,7 +186,7 @@ test('a stored value that differs from the body is reported and exits 1', { skip
   withFake({ storeRequired: false }, (dir) => {
     const { result, code } = apply(plan(fixture), { state: { path: join(dir, 'state.json'), created: {} }, folderKey: 'fk-1' });
     assert.equal(code, 1);
-    assert.match(result.readBack['entity club_member'].differences.join('\n'), /memberId: required false, sent true/);
+    assert.match(result.readBack['entity clubMember'].differences.join('\n'), /memberId: required false, sent true/);
   });
 });
 

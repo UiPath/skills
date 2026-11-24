@@ -4,7 +4,7 @@
     "EventType": { "displayName": "Event type", "values": [{ "name": "Meeting", "displayName": "Meeting" }, { "name": "Game", "displayName": "Game" }] }
   },
   "entities": {
-    "club_member": {
+    "clubMember": {
       "kind": "native",
       "realizes": [{ "class": "Member", "role": "owner" }],
       "fields": {
@@ -12,7 +12,7 @@
         "email": { "type": "STRING", "length": 120, "property": "Member.email" }
       }
     },
-    "club_event": {
+    "clubEvent": {
       "kind": "native",
       "realizes": [{ "class": "Event", "role": "owner" }],
       "fields": {
@@ -22,12 +22,12 @@
         "startsAt": { "type": "DATETIME_WITH_TZ", "property": "Event.startsAt" }
       }
     },
-    "club_attendance": {
+    "clubAttendance": {
       "kind": "native",
       "realizes": [{ "class": "Member", "role": "junction" }],
       "fields": {
-        "member": { "type": "RELATIONSHIP", "target": "club_member", "required": true, "property": "Member.attends" },
-        "eventRef": { "type": "RELATIONSHIP", "target": "club_event", "required": true }
+        "member": { "type": "RELATIONSHIP", "target": "clubMember", "display": "memberId", "required": true, "property": "Member.attends" },
+        "eventRef": { "type": "RELATIONSHIP", "target": "clubEvent", "display": "eventName", "required": true }
       }
     }
   }
