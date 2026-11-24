@@ -161,11 +161,11 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 | Aspect | As-is |
 |---|---|
-| Produced by | {producer component and steps} |
-| Consumed by | {consumer component and steps} |
-| Item store | {item store}; per-item state as {status, tags, fields, output} |
-| Coordination | {coordination} |
-| Item kinds | {item kinds} |
+| Produced by | {component and steps that read the source and create the items; how often; one source or several; how a second population is prevented — lock, ledger, "once per date" — or not} |
+| Consumed by | {component and steps that work the items; one robot or several; how a robot picks its items — any, by parent, by kind — and in which order} |
+| Item store | {where items live today: framework work queue, Orchestrator queue, database table, in-memory list, folder}; per-item state kept as {which of: status text, tags, data fields, output} |
+| Coordination | {what keeps runs and item levels from colliding — parent items, ledgers, locks, tag joins — and what each is for; "none" when absent} |
+| Item kinds | {one kind, or the kinds the consumer routes between and what differs per kind: payload, work, outcomes} |
 | Step groups | consumer once per run: {steps}; per item: {steps}; at the end: {steps} |
 
 | Outcome | When | Effect |
@@ -178,17 +178,17 @@ Legend: ⏰ time trigger · 🔔 queue trigger · ⚡ event or API trigger · �
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|
-| {unit} | A | {requires} | {changes} |
-| {unit} | B | {requires} | {changes} |
-| {unit} | C | {requires} | {changes} |
-| {alternative unit} | A | {requires} | {changes} |
-| {alternative unit} | B | {requires} | {changes} |
-| {alternative unit} | C | {requires} | {changes} |
+| {unit} | A | {what this flow needs to produce and work its items in one job — or "excluded: <the fact that rules it out>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {unit} | B | {what this flow needs for a producer process and a consumer process with one queue between them — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {unit} | C | {what this flow needs for one process that fills and works its own queue, and the once-guard its population uses — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | A | {what this flow needs to produce and work its items in one job — or "excluded: <the fact that rules it out>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | B | {what this flow needs for a producer process and a consumer process with one queue between them — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
+| {alternative unit} | C | {what this flow needs for one process that fills and works its own queue, and the once-guard its population uses — or "excluded: <fact>"} | {what changes against as-is: projects and schedules, retry granularity, where per-item state is visible} |
 
-**Evidence:** {facts}
+**Evidence:** {facts that bear on the split, never a verdict: robot count, schedules, sources, applications per item kind, whether items survive a run today}
 **Decided:** {option, unit — source} *(only when already decided)*
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every asset row of Platform Dependencies.
-**Traceability:** {traceability}
+**Traceability:** {what is recorded per item today and where — reference, outcome and reason; screenshot on system exception; run summary}
 
 ### Flow 2 — {…}
 

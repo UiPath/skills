@@ -128,7 +128,7 @@ def test_a_value_pattern_is_no_template_placeholder(tmp_path):
     at = text.index("**Unit of work:**")
     pattern = text[:at] + "Items are tagged `{kind};{region}` and {region}/{unit}, referenced `{item}_{date}` and INV-{n}.\n\n" + text[at:]
     assert run(tmp_path, pattern, profile="strict") == 0
-    for leftover in ("Items are tagged {status, tags, fields, output}.", "Each item is recorded as done with {result}."):
+    for leftover in ("Items are tagged {which of: status text, tags, data fields, output}.", "Each item is recorded as done with {result}."):
         assert run(tmp_path, text[:at] + leftover + "\n\n" + text[at:], profile="strict") == 1
 
 
