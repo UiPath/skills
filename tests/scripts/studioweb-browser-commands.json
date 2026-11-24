@@ -33,6 +33,11 @@
         "file": "SKILL.md",
         "command": "eval",
         "reason": "Prose: `uip eval ... delete` is named as an example of a tenant delete that needs user confirmation, not an instruction to run it."
+      },
+      {
+        "file": "references/lowcode/capabilities/process/solution-files.md",
+        "command": "api",
+        "reason": "Studio Web note: names `uip api` as missing from this host, to say Steps 2-3 do not run here. Not an instruction to run it."
       }
     ],
     "ceiling": {
@@ -42,7 +47,6 @@
       "agent eval run results": 5,
       "agent eval run start": 8,
       "agent eval run status": 2,
-      "agent memory item remove": 2,
       "agent tool": 1,
       "agenthub mcp create": 1,
       "codedagent": 6,
@@ -97,7 +101,7 @@
       "guardrails byo-configurations": 1,
       "login": 37,
       "login refresh": 2,
-      "login status": 16,
+      "login status": 18,
       "login tenant list": 4,
       "login tenant set": 3,
       "logout": 2,
@@ -146,7 +150,9 @@
       "ah idea-flows list": 3,
       "ah phases set": 3,
       "ah users list": 3,
-      "login": 14,
+      "login": 16,
+      "login refresh": 9,
+      "login status": 3,
       "login tenant set": 1
     }
   },
@@ -203,9 +209,29 @@
   "uipath-coded-apps": {
     "allow": [
       {
+        "file": "references/pack-publish-deploy.md",
+        "command": "update",
+        "reason": "The row is for `uip codedapp deploy` on a CLI older than 1.204.0. Studio Web cannot run `uip codedapp` at all, and the studioweb host-scope note at the top of this file says its commands are handed to the user to run on their machine, where `uip update` (after the pinned `npm i -g`) is the right upgrade."
+      },
+      {
         "file": "references/widgets/decisions-and-reasons.md",
         "command": "codedapp pack",
         "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
+      },
+      {
+        "file": "SKILL.md",
+        "command": "codedapp delete",
+        "reason": "The confirm-before-delete Critical Rule. Studio Web's host-scope override (Studio Web Command Scope) says `uip codedapp` does not run here, so the rule is Node-only guidance."
+      },
+      {
+        "file": "references/commands-reference.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
+      },
+      {
+        "file": "references/pack-publish-deploy.md",
+        "command": "codedapp delete",
+        "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
       }
     ],
     "ceiling": {
@@ -336,8 +362,8 @@
       "gov compliance-packs state get": 7,
       "gov compliance-packs state list": 3,
       "gov compliance-packs state restore": 2,
-      "login": 50,
-      "login status": 20,
+      "login": 51,
+      "login status": 49,
       "login tenant list": 5,
       "login tenant set": 3
     }
@@ -346,10 +372,13 @@
     "allow": [],
     "ceiling": {
       "agent": 1,
+      "api": 6,
       "codedapp pack": 1,
-      "login": 3,
+      "login": 4,
+      "login status": 1,
       "maestro flow hitl": 2,
-      "traces decisions": 1
+      "traces decisions": 1,
+      "update": 1
     }
   },
   "uipath-insights": {
@@ -374,8 +403,6 @@
       "login": 3,
       "login status": 1,
       "maestro bpmn": 37,
-      "maestro bpmn eval": 2,
-      "maestro bpmn eval list": 1,
       "maestro bpmn pack": 1,
       "solution pack": 2
     }
@@ -417,25 +444,12 @@
       "maestro": 1,
       "maestro flow": 25,
       "maestro flow eval": 16,
-      "maestro flow extraction check": 5,
       "maestro flow nodes": 1,
-      "maestro flow nodes provision": 1,
       "solution pack": 2
     }
   },
   "uipath-mcp-servers": {
-    "allow": [
-      {
-        "file": "SKILL.md",
-        "command": "or folders explore",
-        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "or folders stop-exploring",
-        "reason": "CLI step for personal-workspace connection setup — not available in Studio Web's browser bundle."
-      }
-    ],
+    "allow": [],
     "ceiling": {
       "login": 1,
       "mcp serve": 2
@@ -465,52 +479,7 @@
       },
       {
         "file": "SKILL.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont create",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
         "command": "ont files",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont files remove",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont get",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont update",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "SKILL.md",
-        "command": "ont validate",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
@@ -521,21 +490,6 @@
       {
         "file": "references/artifacts-guide.md",
         "command": "login",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/artifacts-guide.md",
-        "command": "ont validate",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
@@ -559,78 +513,8 @@
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       },
       {
-        "file": "references/errors-guide.md",
-        "command": "ont delete",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont files remove",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont list",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/errors-guide.md",
-        "command": "ont update",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/mapping-yarrrml-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/owl-patterns-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
         "file": "references/relationships-guide.md",
         "command": "df entities",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/relationships-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont files add",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/shacl-patterns-guide.md",
-        "command": "ont validate",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/summary-context-guide.md",
-        "command": "ont artifacts check",
-        "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
-      },
-      {
-        "file": "references/summary-context-guide.md",
-        "command": "ont files add",
         "reason": "The studioweb flavor stops this skill before any command (host-support-extra): it builds a local solution folder with --local commands that only the local uip CLI runs."
       }
     ],
@@ -768,6 +652,7 @@
       }
     ],
     "ceiling": {
+      "api": 12,
       "codedagent": 1,
       "context-grounding": 11,
       "df entities": 1,
@@ -775,11 +660,12 @@
       "eval run": 1,
       "gov aops-policy deployed-policy": 1,
       "llm-configuration": 1,
-      "login": 30,
-      "login status": 18,
+      "login": 32,
+      "login refresh": 2,
+      "login status": 20,
       "login tenant list": 3,
       "login tenant set": 10,
-      "login which": 3,
+      "login which": 2,
       "logout": 1,
       "mcp serve": 2,
       "or": 1,
@@ -796,7 +682,8 @@
       "traces feedback get": 2,
       "traces feedback list": 2,
       "traces feedback list detailed": 3,
-      "traces feedback update": 5
+      "traces feedback update": 5,
+      "update": 1
     }
   },
   "uipath-process-mining": {
@@ -831,7 +718,7 @@
       "login status": 1,
       "login which": 1,
       "or packages": 1,
-      "rpa": 23,
+      "rpa": 14,
       "rpa activities find": 27,
       "rpa activities get-default-xaml": 88,
       "rpa analyze": 3,
@@ -860,6 +747,7 @@
       "rpa packages inspect": 16,
       "rpa packages install": 18,
       "rpa packages versions": 5,
+      "rpa project": 9,
       "rpa publish": 4,
       "rpa remote": 3,
       "rpa remote configure": 2,
@@ -913,19 +801,29 @@
         "reason": "Prose: explains that switching tenants does not change which Studio Web solution an upload overwrites, not an instruction to run it."
       },
       {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont files",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
+        "file": "references/pack-and-deploy.md",
+        "command": "config",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
       },
       {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont get",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
+        "file": "references/pack-and-deploy.md",
+        "command": "config freeze",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
       },
       {
-        "file": "references/scenarios/ontology-solution.md",
-        "command": "ont update",
-        "reason": "Post-deploy check of an ontology solution; ontology solutions are built only with the local uip CLI (uipath-ontology stops in Studio Web)."
+        "file": "references/pack-and-deploy.md",
+        "command": "tools install",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "tools list",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
+      },
+      {
+        "file": "references/pack-and-deploy.md",
+        "command": "update",
+        "reason": "The GitHub Actions example and its freeze note describe a CI runner with the npm-installed CLI, not the Studio Web host, so the text is right as is for a Studio Web user who sets up CI."
       }
     ],
     "ceiling": {
@@ -1012,6 +910,11 @@
         "file": "references/products/integration-service/overview.md",
         "command": "is triggers",
         "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/coded-apps/overview.md",
+        "command": "codedapp delete",
+        "reason": "Command-summary list of the Node CLI's `codedapp` verbs, describing what each does; not an instruction to delete anything."
       }
     ],
     "ceiling": {

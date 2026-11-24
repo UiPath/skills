@@ -124,7 +124,7 @@ uip agent refresh [path] --output json
 | Error (in `Data.Errors[]`) | Cause | Fix |
 |---|---|---|
 | `resources/<Folder>/resource.json: folder must be named after the resource name "<Name>" (found "<Folder>")` | Resource folder name must exactly equal the resource's `name` field — case- and whitespace-sensitive (`Count Sources`, not `CountSources`). | Rename the folder to match `name` verbatim, spaces included. |
-| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, diff the resource against a CLI-generated one (`uip agent tool add`) for the missing/mistyped field. |
+| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, compare the resource field by field with the `resource.json` example in that tool type's capability doc (`capabilities/<type>/`) to find the missing or mistyped field. |
 
 ### `uip agent memory`
 
@@ -292,7 +292,7 @@ uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--
   "Key": "<guid>",                 // kind-specific: release Key (Process), index GUID (Index), app id (App), connection id (Connection), ...
   "Name": "<display name>",
   "Kind": "Process",               // matches --kind
-  "Type": "agent",                 // subtype: process/agent/api/processOrchestration/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
+  "Type": "agent",                 // subtype: process/agent/api/processOrchestration/Flow/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
   "Folder": "Shared/MyFolder",     // fully-qualified folder path
   "FolderKey": "<folder-guid>"     // folder GUID — refresh writes it into debug_overwrites.json
 }
@@ -306,6 +306,7 @@ uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--
 | `Process` | `agent` | Low-code / coded agent |
 | `Process` | `api` | API workflow |
 | `Process` | `processOrchestration` | Agentic process |
+| `Process` | `Flow` (remote rows) / `flow` (local rows) | Maestro Flow — agent tool `type` is `flow`. See [capabilities/process/process.md](capabilities/process/process.md) § Maestro Flow as a Tool |
 | `Process` | `webApp` | Deployed Apps — ignore when looking for runnable tools; use `--kind App` for escalations |
 | `App` | `Workflow Action` | Action Center app (backs escalations) |
 | `App` | `Coded` / `CodedAction` | Coded Apps — not supported as escalations today |

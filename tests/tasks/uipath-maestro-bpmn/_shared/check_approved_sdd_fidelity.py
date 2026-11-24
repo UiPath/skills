@@ -79,7 +79,11 @@ def main() -> None:
     if sorted(ACTIVITIES) != names:
         missing = sorted(ACTIVITIES - set(names))
         extra = [n for n in names if n not in ACTIVITIES]
-        fail(f"activities must be exactly the SDD's five; missing {missing}, extra {extra}")
+        duplicated = sorted({n for n in names if names.count(n) > 1})
+        fail(
+            f"activities must be exactly the SDD's five, each built once; "
+            f"missing {missing}, extra {extra}, duplicated {duplicated}"
+        )
 
     starts = elements(root, "startEvent")
     if [name_of(el) for el in starts] != [START]:

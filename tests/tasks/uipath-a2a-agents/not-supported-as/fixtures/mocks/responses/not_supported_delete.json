@@ -1,0 +1,11 @@
+{
+  "Result": "Failure",
+  "Code": "AgentHubRemoteA2aAgentDelete",
+  "ErrorCode": "not_supported",
+  "Message": "Remote A2A agent management isn't supported on the connected environment.",
+  "Instructions": "Agent Gateway on the connected environment does not offer remote A2A agents. Run the command against an environment that offers them.",
+  "Retry": "RetryWillNotFix",
+  "Context": {
+    "HttpStatus": 404
+  }
+}

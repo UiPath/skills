@@ -113,3 +113,35 @@ def test_fails_when_a_tier_3_step_is_invented(tmp_path, monkeypatch) -> None:
     with pytest.raises(SystemExit) as exc:
         _grade(tmp_path, monkeypatch, _xml(nodes, flows))
     assert "exactly the SDD's five" in str(exc.value)
+
+
+def test_names_a_duplicated_activity(tmp_path, monkeypatch) -> None:
+    nodes = NODES + [("scriptTask", "P2", "Schedule payment")]
+    flows = [f for f in FLOWS if f[0] != "f11"] + [("f11", "P", "P2", ""), ("f12", "P2", "EP", "")]
+    with pytest.raises(SystemExit) as exc:
+        _grade(tmp_path, monkeypatch, _xml(nodes, flows))
+    message = str(exc.value)
+    assert "duplicated ['schedule payment']" in message
+    assert "missing []" in message and "extra []" in message
+
+
+def test_names_a_duplicate_alongside_a_missing_activity(tmp_path, monkeypatch) -> None:
+    nodes = [n for n in NODES if n[1] != "D"] + [("scriptTask", "P2", "Schedule payment")]
+    flows = [f for f in FLOWS if f[0] not in ("big", "f10", "f11")] + [
+        ("big", "G2", "P", "=vars.normalizedAmount &gt; 10000"),
+        ("f11", "P", "P2", ""),
+        ("f12", "P2", "EP", ""),
+    ]
+    with pytest.raises(SystemExit) as exc:
+        _grade(tmp_path, monkeypatch, _xml(nodes, flows))
+    message = str(exc.value)
+    assert "missing ['apply dual-control flag']" in message
+    assert "duplicated ['schedule payment']" in message
+
+
+def test_names_a_duplicated_invented_activity(tmp_path, monkeypatch) -> None:
+    nodes = NODES + [("scriptTask", "T", "Tier 3 supplier check"), ("scriptTask", "T2", "Tier 3 supplier check")]
+    flows = [f for f in FLOWS if f[0] != "f11"] + [("f11", "P", "T", ""), ("f12", "T", "T2", ""), ("f13", "T2", "EP", "")]
+    with pytest.raises(SystemExit) as exc:
+        _grade(tmp_path, monkeypatch, _xml(nodes, flows))
+    assert "duplicated ['tier 3 supplier check']" in str(exc.value)

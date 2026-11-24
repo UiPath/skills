@@ -1,6 +1,6 @@
 # Process Tool Capability
 
-Tools that call a runnable process — RPA workflows, agents, API workflows, or agentic processes (process orchestration). All process tools share the `$resourceType: "tool"` envelope; the `type` field selects the subtype.
+Tools that call a runnable process — RPA workflows, agents, API workflows, agentic processes (process orchestration), or Maestro Flows. All process tools share the `$resourceType: "tool"` envelope; the `type` field selects the subtype.
 
 For Integration Service connector tools (separate capability), see [../integration-service/integration-service.md](../integration-service/integration-service.md). For built-in tools that ship pre-built (e.g. `analyze-attachments`), see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) — those use `type: "internal"` and need no solution-level files.
 
@@ -8,7 +8,7 @@ For tools the **client** executes rather than the server — user forms, host-ap
 
 ## When to Use
 
-- Agent needs to invoke an RPA process, another agent, an API workflow, or an agentic process
+- Agent needs to invoke an RPA process, another agent, an API workflow, an agentic process, or a Maestro Flow
 - Target lives in the **same solution** (`Source: "Local"` from discovery) or is **already deployed in Orchestrator** (`Source: "Remote"`)
 
 ## Subtypes
@@ -19,6 +19,7 @@ For tools the **client** executes rather than the server — user forms, host-ap
 | `agent` | Low-code autonomous agent / coded agent | `process/agent/` | JSON Schema — `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` |
 | `api` | API workflow | `process/api/` | JSON Schema — V2 fields |
 | `processOrchestration` | Agentic process / process orchestration | `process/processOrchestration/` | JSON Schema — V2 fields |
+| `flow` | Maestro Flow | `process/flow/` | JSON Schema — V2 fields (deployed Flow); the Flow's own variables (in-solution Flow project) — see [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) |
 
 **Local and external resources follow the same flow.** Discovery, `resource.json` shape, validation, and refresh are identical. The only difference is the `location` value written into `resource.json`: `"solution"` for local (in-solution) resources, `"external"` for resources already deployed in Orchestrator.
 
@@ -63,7 +64,8 @@ Per entry:
 | `Source` | `"Local"` → `location: "solution"`. `"Remote"` → `location: "external"`. |
 | `Key` | Release Key GUID. Used as `referenceKey` in the agent resource and as the argument to step 2. |
 | `Name` | Process display name → `properties.processName` and binding `name`. |
-| `Type` | Lowercase. Maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"`. |
+| `Kind` | `"Process"` on remote rows, `"process"` on local rows — compare case-insensitively. |
+| `Type` | Maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"` / `"flow"`. A deployed Maestro Flow returns `"Flow"` (capital F) — write `"flow"` in `resource.json`. |
 | `Folder` | Literal folder path → `properties.folderPath` and binding `folderPath`. Local resources typically return `"solution_folder"` (their declared folder in the solution); external resources return the literal Orchestrator folder (e.g., `"Shared/Sales"`). Refresh resolves RCS by `(name, folderPath)`, so this disambiguates same-named processes. |
 | `FolderKey` | Folder GUID. Refresh handles folder resolution; you don't pass it yourself. |
 
@@ -79,13 +81,15 @@ Response wrapper: `{Result, Code: "ResourceConfiguration", Data: {...}}`. `Data`
 
 #### `Data.spec` — process declaration
 
+`uip solution resources get` prints these keys in PascalCase (`Data.Spec.Type`, `Data.Spec.InputArgumentsSchemaV2`); the solution-level declaration file on disk uses camelCase (`spec.type`, `spec.inputArgumentsSchemaV2`). Match the keys below case-insensitively.
+
 | Field | Use as |
 |-------|--------|
 | `name` | Display name. |
-| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration`); lowercase it when copying into the agent-level `resource.json`. |
+| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration` / `Flow`); lowercase the first letter when copying into the agent-level `resource.json` (`ProcessOrchestration` → `processOrchestration`). |
 | `package.name` / `package.key` | Package identity. Refresh writes the package decl from this. |
 | `entryPointUniqueId` / `entryPointName` | Entry point IDs. Refresh embeds these in the solution-level decl. |
-| `inputArgumentsSchemaV2` | JSON Schema string (Agent / API / Agentic). Parse → agent-level `inputSchema`. |
+| `inputArgumentsSchemaV2` | JSON Schema string (Agent / API / Agentic / deployed Flow). Parse → agent-level `inputSchema`. |
 | `outputArgumentsSchemaV2` | JSON Schema string. Parse → agent-level `outputSchema`. |
 | `inputArgumentsSchema` / `outputArgumentsSchema` | Raw .NET type arrays for RPA. Map .NET types to JSON Schema per [solution-files.md § How to Get the Values](solution-files.md#how-to-get-the-values). |
 | `entryPoints` | Already-serialized JSON array string. Refresh writes it verbatim. |
@@ -112,7 +116,7 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
   "name": "MyProcess",
   "description": "What this tool does (shown to LLM for tool selection)",
   "location": "external",       // "solution" if Source: "Local", "external" if Source: "Remote"
-  "type": "process",            // "process" | "agent" | "api" | "processOrchestration"
+  "type": "process",            // "process" | "agent" | "api" | "processOrchestration" | "flow"
   "inputSchema": {
     "type": "object",
     "properties": { "param1": { "type": "string" } },
@@ -142,15 +146,59 @@ Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` cont
 
 | Field | Source | Same rule for local & external |
 |---|---|---|
-| `type` | lowercase `Type` from `resource list` | yes |
+| `type` | `Type` from `resource list`, copied as returned — except `Flow` → `flow` | yes |
 | `referenceKey` | lowercase `Key` GUID from `resource list` | yes |
 | `properties.folderPath` | literal `Folder` from `resource list` | yes |
 | `properties.exampleCalls` | required (can be `[]`) | yes |
-| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA). Local projects (`Source: "Local"`) return neither — parse the `Data.Spec.EntryPoints` JSON string and use the matching `entryPoints[].input` / `.output` (same content as the project's `entry-points.json`). See [Copy the process schema exactly](#copy-the-process-schema-exactly) | yes |
+| `inputSchema` / `outputSchema` | parsed from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or .NET-mapped raw schemas for RPA). Local projects (`Source: "Local"`) return neither — parse the `Data.Spec.EntryPoints` JSON string and use the matching `entryPoints[].input` / `.output` (same content as the project's `entry-points.json`). See [Copy the process schema exactly](#copy-the-process-schema-exactly). A local Flow project has no `EntryPoints` either — build its schemas per [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) | yes |
 
 ### Copy the process schema exactly
 
 Copy the process's `input` / `output` schemas into the tool's `inputSchema` / `outputSchema` verbatim — same properties, types, `$ref`s, `definitions`, and `required` lists. Do not add, remove, or rename properties, and do not add or change `required` (an output schema with no `required` stays without one). Only `description` text may be added or edited. The template above shows a `required` list only as an example; take it from the process, not from the template.
+
+## Maestro Flow as a Tool
+
+`type: "flow"` uses the same envelope, discovery commands, and refresh steps as the other subtypes. What differs:
+
+| | Deployed Flow (`Source: "Remote"`) | Flow project in the same solution (`Source: "Local"`) |
+|---|---|---|
+| `resources list` row | `Kind: "Process"`, `Type: "Flow"` | `Kind: "process"`, `Type: "flow"`, `Folder: "solution_folder"` |
+| `type` in `resource.json` | `"flow"` | `"flow"` |
+| Input / output contract | `Data.Spec.InputArgumentsSchemaV2` / `Data.Spec.OutputArgumentsSchemaV2` from `resources get` | Not in `Data.Spec` — for a Flow project it carries no schema and no entry-point fields. Read the Flow's variables instead (below) |
+| `uip solution resources refresh` writes | `resources/solution_folder/process/flow/<Name>.json` (`resource.type: "flow"`, `spec.type: "Flow"`), `resources/solution_folder/package/<PackageName>.json`, and the `debug_overwrites.json` entry | Nothing new — `process/flow/<Name>.json` and `package/<Name>.json` already exist from the Flow project's registration with the solution |
+
+**Deployed Flow.** `Data.Spec.EntryPoints` lists the Flow's trigger entry point plus one entry per inline agent inside the Flow. Take the tool contract from the top-level `InputArgumentsSchemaV2` / `OutputArgumentsSchemaV2` — they describe the entry point named by `Data.Spec.EntryPointName` — not from an inline-agent entry.
+
+**Flow project in the same solution.** The tool starts the Flow's **default entry point**: the trigger node with `inputs.isDefaultEntryPoint: true` in the `.flow` file's `nodes[]`, or the first trigger node when none is marked. List the Flow's variables (read-only — changing the Flow belongs to the `uipath-maestro-flow` skill):
+
+```bash
+uip maestro flow variables list "<FLOW_FILE>" --output json
+```
+
+Parse `.Data.Variables[]` — the packed default entry point takes and returns only these:
+
+| Variable | Goes in |
+|---|---|
+| `Direction: "in"` with `TriggerNodeId` = the default entry point's trigger node | `inputSchema.properties.<Id>` |
+| `Direction: "in"` with `TriggerNodeId` = another trigger node | Neither — input of a different entry point |
+| `Direction: "in"` without `TriggerNodeId` | Neither — dropped when the Flow is packed |
+| `Direction: "out"` | `outputSchema.properties.<Id>` |
+| `Direction: "inout"` | Neither — internal Flow state |
+
+Build each property from the variable's `Type`:
+
+| `Type` | Property |
+|---|---|
+| `string`, `number`, `integer`, `boolean` | `{ "type": "<Type>", "description": "<Description>" }`. Any other scalar type → `"type": "string"` |
+| `object`, `array` | `variables list` does not return the nested shape. Read the variable in the `.flow` file (`variables.globals[]`, matched by `id`): when it has a `schema`, the property is that `schema` — its `properties` / `items` included — without the `$schema` key, plus the `description`; a nested `"type": "file"` becomes the `job-attachment` `$ref` (last row). No `schema` → `{ "type": "<Type>", "description": "<Description>" }` |
+| `jsonSchema` | The property is the variable's `body` in the `.flow` file (a JSON Schema), without the `$schema` key. Never write `"type": "jsonSchema"` |
+| `file` | `{ "$ref": "#/definitions/job-attachment" }` plus the `job-attachment` definition ([agent-definition.md § File Attachments](../../agent-definition.md#file-attachments-job-attachment)) |
+
+Each schema is `{ "type": "object", "properties": { … } }` with no top-level `required` list — the packed entry point has none. No matching variable → `{ "type": "object", "properties": {} }`. These schemas are built, not copied, so [Copy the process schema exactly](#copy-the-process-schema-exactly) does not apply to them.
+
+**Write `"type": "flow"` in lowercase.** Copying the remote row's `Type: "Flow"` verbatim fails `uip agent validate` with `resource.json: Invalid input`.
+
+> Agent Builder offers Flows in its tool picker only on tenants where the Flow tool is enabled. A Flow missing from the picker is not a reason to change the resource: the `resource.json` shape, `uip agent validate`, and `uip solution resources refresh` do not depend on the picker.
 
 ## Solution-Level Files
 
@@ -173,8 +221,9 @@ For in-solution agents already registered with the parent solution — auto-regi
 | `Agent` | `agent` | `Agent` | `process/agent/` |
 | `Api` | `api` | `Api` | `process/api/` |
 | `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` |
+| `Flow` | `flow` | `Flow` | `process/flow/` |
 
-**Hand-authoring fallback** — when refresh cannot run (offline, missing RCS match, custom deployment), see [solution-files.md](solution-files.md) for the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and debug_overwrites templates.
+**Hand-authoring fallback** — when refresh cannot run (offline, missing RCS match, custom deployment), see [solution-files.md](solution-files.md) for the full Templates A (RPA) and B (Agent / API / Agentic), package declaration, and debug_overwrites templates. Maestro Flow declarations have no hand-authoring template — only refresh writes them. If refresh cannot run for a Flow tool, stop and tell the user it is required; do not adapt Template B.
 
 ## Walkthrough
 
@@ -186,21 +235,23 @@ For in-solution agents already registered with the parent solution — auto-regi
 uip solution resources list --source remote --kind Process --search "<NAME>" --output json
 # Local: --kind and --search NOT supported — list, then filter .Data[] client-side.
 uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
-# Parse .Data[]. Each entry: Source, Key, Name, Kind, Type (lowercase), Folder, FolderKey.
+# Parse .Data[]. Each entry: Source, Key, Name, Kind, Type, Folder, FolderKey.
 # Source: "Local" → location: "solution". "Remote" → location: "external".
-# Use Key as referenceKey, Name as processName, Type for the agent-level type,
+# Use Key as referenceKey, Name as processName, Type for the agent-level type
+# (copied as returned, except a deployed Maestro Flow's "Flow" → "flow"),
 # Folder as properties.folderPath.
 
 # 3. Pull the full configuration
 uip solution resources get <KEY> --output json
 # Parse .Data.spec for:
-#   inputArgumentsSchemaV2 / outputArgumentsSchemaV2  → JSON Schema strings (Agent / API / Agentic)
+#   inputArgumentsSchemaV2 / outputArgumentsSchemaV2  → JSON Schema strings (Agent / API / Agentic / deployed Flow)
 #   inputArgumentsSchema   / outputArgumentsSchema    → raw .NET arrays (RPA)
 #   EntryPoints (Local projects)                      → JSON string; entryPoints[].input / .output
+#   (Local Flow project: no schema fields — see § Maestro Flow as a Tool)
 #   package.name / package.key, entryPointUniqueId / entryPointName
 ```
 
-Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (lowercase), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA, or `Data.Spec.EntryPoints` for Local projects), copied exactly per [Copy the process schema exactly](#copy-the-process-schema-exactly).
+Then create the agent-level resource file at `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json` per § Tool resource.json Shape. Set `location` from the row's `Source`, `type` from `Type` (`Flow` → `flow`), `folderPath` from `Folder`, `referenceKey` from `Key`, schemas from `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` (or raw .NET arrays for RPA, or `Data.Spec.EntryPoints` for Local projects), copied exactly per [Copy the process schema exactly](#copy-the-process-schema-exactly). For a local Flow project, build the schemas from the Flow's variables per [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool).
 
 ```bash
 # 4. Configure agent.json (system prompt, model, schemas)
@@ -241,7 +292,7 @@ uip agent init "ToolAgent" --output json
 # 3. From ParentAgent, add ToolAgent as a tool — discovery via the unified flow.
 # `--source local` accepts neither --kind nor --search; list then filter client-side.
 uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
-# Pick the row with Kind="Process" and Name="ToolAgent", then:
+# Pick the row with Kind "process" (case-insensitive) and Name="ToolAgent", then:
 uip solution resources get <KEY> --output json
 # Then create ParentAgent/resources/ToolAgent/resource.json with location: "solution".
 
@@ -256,7 +307,7 @@ UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<
 
 ## Gotchas
 
-See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 18, and 24 also apply.
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 18, and 24 also apply. For `type: "flow"`, [§ Maestro Flow as a Tool](#maestro-flow-as-a-tool) applies on top.
 
 ## References
 
