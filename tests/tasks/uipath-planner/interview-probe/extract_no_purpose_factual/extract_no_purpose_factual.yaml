@@ -1,0 +1,141 @@
+task_id: skill-planner-interview-extract-no-purpose-factual
+description: >
+  Integration: `extract` of a three-workflow XAML project with a request that names no purpose ("extract
+  its genome"), by a user who says they are the process owner. A request that names no purpose is not a
+  documentation request, so no SDD is written. After the strict check the interview is offered on the
+  genome's open entries, and the closing names what is open by role and offers to write the SDD, the
+  offer advisory. Nothing is built. A simulated process
+  owner answers.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../extract_component/fixtures
+
+agent:
+  system_prompt: |
+    You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+
+    A user is present in this session and replies to your messages.
+
+reference:
+  directory: ../../interview
+
+initial_prompt: |
+  `InvoiceIntake/` is a UiPath project. Extract its genome into this folder. It does not run in Orchestrator, and there are no other resources for it.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of the invoice intake this project automates. You decide business outcomes
+    and rules. You do not know the systems' hosts, accounts or mailboxes.
+  goal: |
+    Get the genome extracted and answer the open questions that are yours, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
+    - "When asked for a preferences file, answer that you have none."
+    - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
+    - "Do not ask for the interview yourself; answer it when the agent offers it."
+    - "You answer only as the process owner: if offered other roles' questions, decline them."
+    - "When asked whether you want to adjust anything, or offered a build or an SDD, say no."
+    - "Once the agent reports the answers applied and what is still open, end the conversation."
+  max_turns: 10
+
+post_run:
+  - command: ':; mkdir -p codex-rollouts; cp -r "${CODEX_HOME:-$HOME/.codex}/sessions" codex-rollouts/ 2>/dev/null; true'
+    timeout: 60
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "A genome was written"
+    path: "*-genome.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent 'sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check after the answers are applied"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not scaffold, build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|new|run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The interview is offered after the genome is written, on its open entries"
+    include_dialog: true
+    include_tool_calls: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for the genome (an automation blueprint) of a small UiPath
+      project. Read the dialog and the agent's questions, whether asked in chat or as structured questions.
+
+      Score 1.0 when, once the genome is written, one question asks how the user wants to answer its open
+      entries (one option leaving them open for now), and the entries then asked carry their genome ids
+      (D1, D2 …). Score 0.5 when the offer is made but the entries are asked without their ids. Score 0.0
+      when no such offer is made, or the open entries are asked before the genome is written.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The closing names the open decisions by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
+      blueprint). Score 1.0 when it says which decisions are still open and who answers each (counted by
+      role, or each named with its role), or that none is; 0.0 otherwise. Configuration values the build
+      asks need no role.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names the interview and offers to write the SDD"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
+      blueprint). Check two things:
+      1. When a decision is still open, it names the interview command (`interview <genome file name>`).
+         Configuration values the build asks need no interview command.
+      2. It offers to write an SDD (solution design document).
+
+      Score 1.0 when all that applies holds, 0.5 when one item is missing, 0.0 otherwise.
+    weight: 1.0
+    pass_threshold: 0

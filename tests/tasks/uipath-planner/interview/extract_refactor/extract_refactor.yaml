@@ -22,6 +22,11 @@ sandbox:
     - type: template_dir
       path: ../_setup/build_stop
 
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
 reference:
   directory: ..
 

@@ -12,6 +12,11 @@ run_limits:
   turn_timeout: 1500
   task_timeout: 2400
 
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
 reference:
   directory: ..
 

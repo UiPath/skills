@@ -23,6 +23,11 @@ sandbox:
     - type: template_dir
       path: ../../../uipath-planner/interview/_setup/build_stop
 
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../../../uipath-planner/interview/_shared/attended-session.md
+
 reference:
   directory: ../../../uipath-planner/interview
 
