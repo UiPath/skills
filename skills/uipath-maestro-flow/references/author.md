@@ -86,8 +86,8 @@ Inputs, outputs, and vars take one of the six types the Flow CLI and Workbench o
   siblings exist but do nothing, so the output goes nowhere
   ([script runtime](script.md#the-javascript-runtime)). Return the value to
   inspect: `return { debug: value }`.
-- **Never put every `$vars` reference in an expression inside double quotes.** An End-node `=js:` expression such as `'No results for "' + $vars.start.output.topic + '".'` evaluates to null without warning; keep at least one reference outside quotes.
-- **Never rely on dotted JSON keys surviving `$vars`.** `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`; pass JSON as a string and `JSON.parse` it in a script.
+- **Never put every `$vars` reference in an End output or `{ updates }` expression inside double quotes.** `'No results for "' + $vars.start.output.topic + '".'` evaluates to null without warning (also inside `'…'` or a template literal); Decision and Switch conditions and an HTTP `url` are unaffected. Write the quote as `String.fromCharCode(34)`, or keep one reference outside the quoted text (`$vars.start.output.topic + ' "no results"'`).
+- **Never rely on dotted JSON keys surviving `$vars`.** `{"5.3.0":"x"}` becomes `{"5":{"3":{"0":"x"}}}`; see [script.md](script.md#dotted-keys-in-values).
 - **Never treat green `validate` as business-correctness proof.** It checks structure. Named outputs, reference IDs, and connector values require evidence from [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
 
 ## Completion output
