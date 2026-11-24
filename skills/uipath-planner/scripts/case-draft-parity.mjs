@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Compares a finalized Case Management SDD with the draft it was finalized from, before the ready flip
-// (references/design/case-review-and-conformance-guide.md § Finalizing a Case Draft, checklist items 30–33).
+// (references/design/case-review-and-conformance-guide.md § Finalizing a Case Draft, checklist items 20 and 30–33).
 //
 // Usage: node case-draft-parity.mjs <NAME>.draft.md <NAME>.md
 // Exit 0 and "OK" when the final keeps the draft's: first heading form; stages in order, each with its kind
 // (`### Stage <N>:` primary, `### Secondary Stage:` secondary); tasks in order under each stage; Case
 // Variables rows by name; every `=js:` expression verbatim; every comparator + money amount of the draft as a `=js:`
-// cell holding the numeral written out — on a line naming a draft persona, an expression that picks a `Role:`. Exit 1 with one FAIL line per difference.
+// cell holding the numeral written out — on a line naming a draft persona, an expression that picks a `Role:`.
+// In the final alone: every Tasks table row has its header's cell count, and a plain `**Recipient:** Role:<X>` names
+// its task's Persona cell (checklist item 20). Exit 1 with one FAIL line per difference.
 // Names compare with a trailing id suffix stripped, backticked or not: `(`t01`)`, `(t01)`.
 import { existsSync, readFileSync } from "node:fs";
 
@@ -71,6 +73,25 @@ const finalVars = new Set(variables(final));
 for (const v of variables(draft)) if (!finalVars.has(v)) fails.push(`Case Variables: '${v}' is missing from the final`);
 
 for (const e of expressions(draft)) if (!final.includes(e)) fails.push(`expression missing from the final: ${e}`);
+
+// checklist item 20: a plain `Role:` Recipient names its task's Persona from the stage's Tasks table
+const persona = new Map();
+for (const table of final.match(/^\|[^\n]*\bTask Name\b[^\n]*\bPersona\b[^\n]*\|\n(?:\|[^\n]*\|\n?)+/gm) ?? []) {
+  const rows = table.trim().split("\n").map((r) => r.split("|").slice(1, -1).map((c) => c.trim()));
+  const ni = rows[0].indexOf("Task Name"), pi = rows[0].indexOf("Persona");
+  for (const r of rows.slice(2)) {
+    if (r.length !== rows[0].length) { fails.push(`Tasks table row '${r[ni] ?? r.join(" | ")}' has ${r.length} cells, its header ${rows[0].length}`); continue; }
+    if (r[ni] && r[pi]) persona.set(clean(r[ni].replace(/`/g, "")), r[pi]);
+  }
+}
+const blocks = final.split(/^(?=#{3,5} )/m);
+for (const b of blocks) {
+  const t = b.split("\n")[0].match(TASK);
+  const rc = b.match(/^\*\*Recipient:\*\*\s*Role:\s*([^\n]+?)\s*$/m);
+  if (!t || !rc) continue;
+  const want = persona.get(clean(t[1]));
+  if (want && !/^(system|—|-)$/i.test(want) && rc[1] !== want) fails.push(`task '${clean(t[1])}': Recipient Role:${rc[1]}, Persona ${want}`);
+}
 
 // checklist item 32: every comparator + money amount in the draft is a `=js:` cell in the final, the numeral written out
 const UNIT = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, b: 1e9, billion: 1e9 };

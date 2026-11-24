@@ -32,7 +32,7 @@
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
 //           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
-//           its `<slug>-genome/` component folder, never inside it; a case component (Build With `uipath-maestro-case`) beside a Case
+//           its `<slug>-genome/` component folder, never inside it; no process genome of a dispatcher and a performer alone; a case component (Build With `uipath-maestro-case`) beside a Case
 //           Management SDD naming that SDD in its Interface or its `Designed in:` line; no H2 heading twice; no
 //           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
@@ -712,6 +712,12 @@ function checkProcess(path, a) {
   for (const s of a.skills) if (!new RegExp(`\\b${esc(s)}\\b`).test(comp)) r.core(`Components table lacks skill '${s}'`);
   for (const row of tableRows(comp, "| #")) {
     if (row.length > 2 && /\b(dispatcher|performer)\b/i.test(row[2])) r.strict(`Components: role word in the Type cell of '${row[1]}' — it reads the component type only`);
+  }
+  // a dispatcher and a performer over one queue are one `uipath-rpa` component, their split its Transactional Shape
+  const rows = tableRows(comp, "| #").filter((row) => row.join("|").includes("uipath-"));
+  if (rows.length === 2 && rows.every((row) => row.join("|").includes("uipath-rpa"))
+    && rows.some((row) => /dispatch/i.test(row.join("|"))) && rows.some((row) => /perform/i.test(row.join("|")))) {
+    r.strict("Components: a dispatcher and a performer alone are ONE uipath-rpa component, its split recorded in the Transactional Shape — write a component genome, not a process genome");
   }
   const links = componentLinks(path, text);
   if (!links.length) r.core("Components table links no component genome");

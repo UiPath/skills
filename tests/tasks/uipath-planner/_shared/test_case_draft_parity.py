@@ -103,3 +103,29 @@ def test_a_role_threshold_as_an_entry_if_fails(tmp_path):
     rc, out = parity(tmp_path, text)
     assert rc == 1
     assert "picks a role" in out
+
+
+INTERVIEW = CASE / "case_finalize_draft" / "fixtures" / "sdd.draft.md"
+
+
+def with_recipient(text, task, role):
+    """text with a Recipient line under the task's heading."""
+    return re.sub(rf"(^##### Task [^:\n]+: {re.escape(task)}[^\n]*\n)", lambda m: f"{m[1]}\n**Recipient:** Role:{role}\n", text, count=1, flags=re.M)
+
+
+def test_a_recipient_naming_another_persona_fails(tmp_path):
+    text = finalized(INTERVIEW.read_text(encoding="utf-8"))
+    right = with_recipient(text, "Recruiter Initial Review", "Recruiter")
+    assert right != text
+    assert parity(tmp_path, right, INTERVIEW)[0] == 0
+    rc, out = parity(tmp_path, with_recipient(text, "Recruiter Initial Review", "Hiring Manager"), INTERVIEW)
+    assert rc == 1
+    assert "FAIL: task 'Recruiter Initial Review': Recipient Role:Hiring Manager, Persona Recruiter" in out
+
+
+def test_a_tasks_row_with_a_cell_too_many_fails(tmp_path):
+    text = finalized(INTERVIEW.read_text(encoding="utf-8"))
+    row = re.search(r"^\| 1 \| Sync Application from Greenhouse \|[^\n]*$", text, re.M)[0]
+    rc, out = parity(tmp_path, text.replace(row, row + " extra |", 1), INTERVIEW)
+    assert rc == 1
+    assert "FAIL: Tasks table row 'Sync Application from Greenhouse' has" in out

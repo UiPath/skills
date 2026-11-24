@@ -44,7 +44,7 @@ Start the final as a copy of the draft (`cp <NAME>.draft.md <NAME>.md`, the draf
 node "<SKILL_DIR>/scripts/case-draft-parity.mjs" "<NAME>.draft.md" "<NAME>.md"
 ```
 
-(`<SKILL_DIR>` is the folder holding planner's `SKILL.md`). It compares the stages in order with their kinds, the tasks under each stage, the Case Variables rows and every `=js:` expression, and finds every comparator + amount policy (repair 3) without its `=js:` cell; each `FAIL:` line is a defect your edits introduced — repair it in place from the draft and run it again until it prints `OK`. Repairs:
+(`<SKILL_DIR>` is the folder holding planner's `SKILL.md`). It compares the stages in order with their kinds, the tasks under each stage, the Case Variables rows and every `=js:` expression, finds every comparator + amount policy (repair 3) without its `=js:` cell, and checks each Tasks table row's cell count and each `Role:` Recipient against its task's Persona; each `FAIL:` line is a defect your edits introduced — repair it in place from the draft and run it again until it prints `OK`. Repairs:
 
 1. `user-selected-stage` repair per [case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane; wording such as "any active case" means every primary stage.
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
@@ -156,7 +156,7 @@ names only what to LOOK AT.
      row (Marks `Yes`, IF set) — the exit always wins and the stage never completes.
  29. The Case-Level SLA and every stage SLA expressed in minutes lie within 15–1000, and no stage SLA
      exceeds the case-level SLA.
- Draft parity (finalizing a draft only) — items 30, 31 and 32 PASS only after `case-draft-parity.mjs` prints `OK`; quote that line
+ Draft parity (finalizing a draft only) — items 20, 30, 31 and 32 PASS only after `case-draft-parity.mjs` prints `OK`; quote that line
  30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —
      and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
      Every stage keeps its draft kind: a draft primary stage (`### Stage <N>:`) stays `**Stage Kind:** primary`

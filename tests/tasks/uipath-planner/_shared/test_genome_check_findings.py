@@ -1064,3 +1064,23 @@ def test_a_process_mark_naming_a_missing_process_entry_fails_strict(process_tree
     rc, out = check_process(profile="strict")
     assert rc == 1
     assert "*[Inferred: process D9]* names entry 9, which the process genome's Open Decisions does not have" in out
+
+
+SPLIT_ONLY = "a dispatcher and a performer alone are ONE uipath-rpa component"
+
+
+def test_process_genome_of_a_dispatcher_and_performer_alone_fails_strict_only(check_process):
+    def two_rpa_rows(text):
+        rows = re.findall(r"^\| [123] \|.*$", text, flags=re.M)
+        text = text.replace(rows[0], "| 1 | Invoice Dispatcher | RPA process | `uipath-rpa` | [invoice-orchestration-genome.md](invoice-processing-genome/invoice-orchestration-genome.md) | Queues one item per invoice |")
+        text = text.replace(rows[1], "| 2 | Invoice Performer | RPA process | `uipath-rpa` | [invoice-extraction-genome.md](invoice-processing-genome/invoice-extraction-genome.md) | Works one queue item |")
+        return text.replace(rows[2] + "\n", "")
+
+    assert SPLIT_ONLY not in check_process(transform=two_rpa_rows)[1]
+    rc, out = check_process(profile="strict")
+    assert rc == 1
+    assert SPLIT_ONLY in out
+
+
+def test_process_example_has_no_dispatcher_performer_finding(check_process):
+    assert SPLIT_ONLY not in check_process(profile="strict")[1]

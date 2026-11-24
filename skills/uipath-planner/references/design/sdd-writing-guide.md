@@ -118,7 +118,8 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - Each "One-sentence reason" is ≤ 20 words and cites the PDD signal or process characteristic that drove the pick.
    - Add one row for every further decision a guide sends to Decisions Made (a departure from a project shape the PDD names, a source-precedence override).
    - Row 1 always appears, even when nothing was blocked (`cloud; no products blocked`) — the reviewer must see which platform the architecture assumes.
-   - For Solution scope, rows 3-5 repeat per RPA project (use a sub-table or one row per project — keep concise).
+   - RPA scope also carries row 6, **Attendance / Initiation**: who runs the process and what starts it, two answers, copied to §11 Project Mode Decision's Attendance and Initiation columns.
+   - For Solution scope, rows 3-6 repeat per RPA project (use a sub-table or one row per project — keep concise).
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 are replaced by the template's own product row (framework choice, app type, trigger) — never `N/A` rows. A Flow or BPMN SDD also carries the **Maestro engine** row: the row-5 structures the process needs, counted ([product-selection-guide.md § Maestro disambiguation](../shared/product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)); two or more on a Flow template means the wrong template — rewrite it on the BPMN template.
    - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.
 

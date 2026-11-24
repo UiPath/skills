@@ -52,6 +52,7 @@ See sdd-writing-guide.md Step 2 item 3 for the format spec.
 | 3 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
 | 4 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
 | 5 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
+| 6 | **Attendance / Initiation** (§11 Project Mode Decision) | <ATTENDED_OR_UNATTENDED> / <MANUAL_OR_SCHEDULED_OR_QUEUE_TRIGGER_OR_EVENT_OR_API> | <REASON — two separate answers: who runs it, and what starts it> |
 
 ---
 

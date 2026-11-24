@@ -231,6 +231,11 @@ success_criteria:
         nowhere, an inverted sequence, or data a task needs that no upstream task
         produces. Tenant-default / placeholder connector IDs are expected — do
         NOT penalize them.
+      - Persona Permissions hold platform permission keys only: a `Stages`
+        persona may hold just View, Assign, ManageSLA and RunAdhocTasks, so a
+        draft's prose "View, Act" becomes "View". A person works a task because
+        the task's Recipient names their role, not through a permission — do
+        NOT penalize the absence of an Act / complete permission.
 
       Score 1.0 if the design is coherent and would build into a working case
       with no major flaws; 0.5 if mostly coherent with minor gaps; 0.0 if there
