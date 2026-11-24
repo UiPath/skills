@@ -107,7 +107,8 @@ success_criteria:
       1. The agent never asks which roles the user answers for. Saying that other roles' items stay open
          unless the user can answer them is not asking.
       2. The questions asked are the process owner's items only, each named by its id.
-      3. The final message names what is still open, by the role that answers it.
+      3. The final message names what is still open, by the role that answers it; a count of the open
+         items per role is enough.
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
