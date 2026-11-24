@@ -110,6 +110,10 @@ def _budget_of_call(call: ast.Call) -> int | None:
     return bpmn_live.debug_budget(**passed)
 
 
+# Both share one deadline-bounded `timeout`, priced by `debug_budget`.
+_PRICED_RUNNERS = frozenset({"run_debug", "run_deployed"})
+
+
 def _is_run_debug(node: ast.AST) -> bool:
     """Bare or `mod.run_debug`. Matching only a Name made an attribute call read
     as no debug at all, skipping the criterion."""
@@ -117,7 +121,7 @@ def _is_run_debug(node: ast.AST) -> bool:
         return False
     func = node.func
     name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", None)
-    return name == "run_debug"
+    return name in _PRICED_RUNNERS
 
 
 def _calls_in(node: ast.AST) -> list[ast.Call]:
@@ -443,9 +447,9 @@ def _reject_aliased_debug(tree: ast.Module, path: str) -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             for alias in node.names:
-                if alias.name == "run_debug" and alias.asname:
+                if alias.name in _PRICED_RUNNERS and alias.asname:
                     pytest.fail(
-                        f"{path}: imports run_debug as `{alias.asname}`, which "
+                        f"{path}: imports {alias.name} as `{alias.asname}`, which "
                         "this guard cannot follow. Import it under its own name."
                     )
         # `rd = run_debug` / `rd = bpmn_live.run_debug`: calls through `rd` are
@@ -456,13 +460,13 @@ def _reject_aliased_debug(tree: ast.Module, path: str) -> None:
             else value.attr if isinstance(value, ast.Attribute)
             else None
         )
-        if source != "run_debug":
+        if source not in _PRICED_RUNNERS:
             continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for name in (n.id for t in targets for n in ast.walk(t) if isinstance(n, ast.Name)):
-            if name != "run_debug":
+            if name != source:
                 pytest.fail(
-                    f"{path}: binds run_debug to `{name}`, which this guard "
+                    f"{path}: binds {source} to `{name}`, which this guard "
                     "cannot follow. Call it under its own name."
                 )
 
@@ -767,6 +771,11 @@ _ONE_BUDGET = bpmn_live.debug_budget(240)  # this suite: one attempt, no backoff
 
 def test_straight_line_calls_are_summed(tmp_path):
     src = f"def main():\n    {_ONE}\n    {_ONE}\n"
+    assert _price(src, tmp=str(tmp_path)) == (_ONE_BUDGET * 2)
+
+
+def test_deployed_run_is_priced_like_a_debug(tmp_path):
+    src = f"def main():\n    run_deployed(timeout=240)\n    {_ONE}\n"
     assert _price(src, tmp=str(tmp_path)) == (_ONE_BUDGET * 2)
 
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import sys
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -15,7 +14,9 @@ import check_agent_deploy_behavior as check_behavior  # noqa: E402
 import check_agent_deploy_folder as check_deployed  # noqa: E402
 from check_agent_deploy_behavior import CheckFailure  # noqa: E402
 
-PROCESS_XML = """
+REASON = "Isabella is a common female given name."
+
+PROCESS_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                   xmlns:uipath="http://uipath.org/schema/bpmn">
   <bpmn:process id="P">
@@ -31,17 +32,23 @@ PROCESS_XML = """
         <uipath:activity><uipath:type value="Orchestrator.StartAgentJob" version="v2"/></uipath:activity>
       </bpmn:extensionElements>
     </bpmn:serviceTask>
+    <bpmn:serviceTask id="lookalike">
+      <bpmn:documentation>Not an Orchestrator.StartAgentJob, despite this text.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <uipath:activity><uipath:type value="Orchestrator.StartJob" version="v2"/></uipath:activity>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
     <bpmn:scriptTask id="fake"/>
   </bpmn:process>
 </bpmn:definitions>
 """
 
 
-def process():
-    return ET.fromstring(PROCESS_XML).find("{http://www.omg.org/spec/BPMN/20100524/MODEL}process")
+def process(xml=PROCESS_XML):
+    return check_behavior.process_element(xml)
 
 
-def variables(sum_value=9, gender="female", reason="Common female name.", agent_outputs=None):
+def variables(sum_value=9, gender="female", reason=REASON, agent_outputs=None):
     if agent_outputs is None:
         agent_outputs = {"response": {"gender": gender, "reason": reason}}
     return {
@@ -52,6 +59,7 @@ def variables(sum_value=9, gender="female", reason="Common female name.", agent_
                 "GlobalDefinitions": {},
                 "Elements": [
                     {"ElementId": "classify", "Outputs": agent_outputs},
+                    {"ElementId": "lookalike", "Outputs": {"response": {"gender": gender, "reason": reason}}},
                     {"ElementId": "fake", "Outputs": {"scriptResponse": "female"}},
                 ],
             }
@@ -91,7 +99,11 @@ class ProvenanceTests(unittest.TestCase):
         check_behavior.assert_agent_provenance(process(), variables(), "female")
 
     def test_agent_output_as_json_string_passes(self):
-        payload = variables(agent_outputs={"response": '{"gender": "Female", "reason": "x"}'})
+        payload = variables(agent_outputs={"response": f'{{"gender": "Female", "reason": "{REASON}"}}'})
+        check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_reason_matches_across_whitespace_and_case(self):
+        payload = variables(agent_outputs={"response": {"gender": "female", "reason": f"  {REASON.upper()} "}})
         check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_other_node_cannot_cover_for_agent(self):
@@ -103,11 +115,58 @@ class ProvenanceTests(unittest.TestCase):
         with self.assertRaisesRegex(CheckFailure, "Outputs"):
             check_behavior.assert_agent_provenance(process(), variables(), "male")
 
+    def test_wrong_gender_with_both_labels_fails(self):
+        payload = variables(
+            gender="male",
+            agent_outputs={"response": {"gender": "female", "reason": REASON, "labels": ["male", "female"]}},
+        )
+        with self.assertRaisesRegex(CheckFailure, "both"):
+            check_behavior.assert_agent_provenance(process(), payload, "male")
+
+    def test_constant_process_reason_fails(self):
+        payload = variables(
+            reason="Classified by the agent.",
+            agent_outputs={"response": {"gender": "female", "reason": REASON}},
+        )
+        with self.assertRaisesRegex(CheckFailure, "reason"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_reason_that_is_only_the_label_fails(self):
+        payload = variables(reason="female", agent_outputs={"response": {"gender": "female", "reason": REASON}})
+        with self.assertRaisesRegex(CheckFailure, "reason"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
     def test_no_agent_job_fails(self):
-        no_agent = ET.fromstring(PROCESS_XML.replace("Orchestrator.StartAgentJob", "Orchestrator.StartJob"))
-        proc = no_agent.find("{http://www.omg.org/spec/BPMN/20100524/MODEL}process")
+        proc = process(PROCESS_XML.replace('value="Orchestrator.StartAgentJob"', 'value="Orchestrator.StartJob"'))
         with self.assertRaisesRegex(CheckFailure, "never called"):
             check_behavior.assert_agent_provenance(proc, variables(), "female")
+
+    def test_type_named_only_in_text_is_not_an_agent_job(self):
+        self.assertEqual(check_behavior.agent_job_ids(process()), ["classify"])
+
+
+class AgentJobTests(unittest.TestCase):
+    ROWS = [
+        {"Name": "P", "ProcessType": "ProcessOrchestration", "Key": "AAAA"},
+        {"Name": "A", "ProcessType": "Agent", "Key": "BBBB"},
+    ]
+
+    def test_agent_release_keys_are_case_folded(self):
+        self.assertEqual(check_behavior.agent_release_keys(self.ROWS), {"bbbb"})
+
+    def test_successful_agent_job_counts(self):
+        jobs = [
+            {"ReleaseKey": "aaaa", "State": "Successful"},
+            {"ReleaseKey": "bbbb", "State": "Successful"},
+        ]
+        self.assertEqual(len(check_behavior.successful_agent_jobs(jobs, {"bbbb"})), 1)
+
+    def test_faulted_or_other_jobs_do_not_count(self):
+        jobs = [
+            {"ReleaseKey": "bbbb", "State": "Faulted"},
+            {"ReleaseKey": "aaaa", "State": "Successful"},
+        ]
+        self.assertEqual(check_behavior.successful_agent_jobs(jobs, {"bbbb"}), [])
 
 
 class DeployedTests(unittest.TestCase):

@@ -4,8 +4,8 @@
 Writes `seed.json` with the same keys as api_workflow_composition's seed, so
 that task's `_setup/teardown.py` (mounted beside this file) reclaims this run's
 deployment, folders, package versions and Studio Web solutions by `runId` and
-`solutionName`. The runtime inputs are picked by check_behavior.py after the
-agent stops, so the agent never sees them.
+`solutionName`. The runtime inputs are picked by check_agent_deploy_behavior.py
+after the agent stops, so the agent never sees them.
 """
 import json
 import subprocess
