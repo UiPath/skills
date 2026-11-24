@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Assert the Flow project holds one ``.flow`` file, and that the flow is built in it.
+"""Assert the Flow project holds one ``.flow`` file, and that the flow is built in it
+(with ``--allow-unbuilt``: that it holds at least its trigger node).
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_single_flow.py [--allow-unbuilt]
 
 ``--allow-unbuilt`` keeps the one-file rule but accepts a trigger-only flow,
-for a task whose prompt only scaffolds the flow.
+for a task whose prompt only scaffolds the flow. A flow with no nodes still fails.
 
 A task that asks for one new flow ends with one ``.flow`` in the project:
 ``<Name>.flow`` from the Node CLI, ``new.flow`` in Studio Web. Studio Web seeds
@@ -29,14 +30,17 @@ from flow_check import _HUSK_MAX_NODES, _flow_file_node_count, find_project_dir 
 
 
 def single_flow_problem(project_dir: str, allow_unbuilt: bool = False) -> str | None:
-    """Why ``project_dir`` is not one built flow, or ``None`` when it is."""
+    """Why ``project_dir`` is not one built flow, or ``None`` when it is.
+
+    With ``allow_unbuilt`` a lone trigger-only flow is accepted; a flow with no nodes is not.
+    """
     flows = sorted(glob.glob(os.path.join(glob.escape(project_dir), "*.flow")))
     counts = [(path, _flow_file_node_count(path)) for path in flows]
     listed = ", ".join(f"{os.path.basename(p)} ({'unreadable' if n is None else f'{n} node(s)'})" for p, n in counts)
     if len(flows) != 1:
         return f"{project_dir} holds {len(flows)} .flow files, expected 1: {listed or 'none'}"
     count = counts[0][1]
-    if count is None or (count <= _HUSK_MAX_NODES and not allow_unbuilt):
+    if count is None or count < 1 or (count <= _HUSK_MAX_NODES and not allow_unbuilt):
         return f"{project_dir} holds only an unbuilt flow: {listed}"
     return None
 

@@ -52,6 +52,10 @@ def test_allow_unbuilt_accepts_a_lone_trigger_only_flow_but_not_two_files(tmp_pa
     assert "holds 2 .flow files" in single_flow_problem(str(two), allow_unbuilt=True)
 
 
+def test_allow_unbuilt_still_rejects_a_flow_with_no_nodes(tmp_path):
+    assert "unbuilt" in single_flow_problem(str(_project(tmp_path, **{"new.flow": 0})), allow_unbuilt=True)
+
+
 def test_unreadable_flow_fails(tmp_path):
     project = _project(tmp_path)
     (project / "new.flow").write_text("", encoding="utf-8")
@@ -72,3 +76,11 @@ def test_main_finds_the_project_from_the_sandbox_root(tmp_path, monkeypatch, cap
 
     assert main([]) == 1
     assert "FAIL: Sol/Proj holds 2 .flow files" in capsys.readouterr().err
+
+
+def test_main_allow_unbuilt_passes_a_lone_trigger_only_flow(tmp_path, monkeypatch, capsys):
+    _project(tmp_path, **{"new.flow": 1})
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["--allow-unbuilt"]) == 0
+    assert "OK: Sol/Proj holds one .flow" in capsys.readouterr().out
