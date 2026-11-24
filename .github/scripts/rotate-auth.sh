@@ -39,6 +39,7 @@ while IFS= read -r token; do
 done <<< "$tokens"
 
 mkdir -p "$HOME/.uipath"
+chmod o+r "$staging" || true  # readable by container root the instant it is installed
 mv -f "$staging" "$HOME/.uipath/.auth" || { rm -f "$staging"; exit 1; }
 # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task containers, so
 # container-root cannot read the host-owned ~/.uipath mount by capability; widen

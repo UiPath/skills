@@ -33,8 +33,8 @@ def test_every_always_step_after_the_scrub_requires_its_success():
     assert after, "expected publishing steps after the scrub"
     for step in after:
         condition = str(step.get("if", ""))
-        if step.get("name") in UNGATED or "always()" not in condition:
-            continue
+        if step.get("name") in UNGATED or not re.search(r"always\(\)|failure\(\)|cancelled\(\)", condition):
+            continue  # no status function: GitHub adds success(), so it skips after a failed scrub
         gated = "steps.scrub.outcome == 'success'" in condition
         # The verdict step must run (to fail the job) but reads the dir only after checking the outcome.
         checks_outcome = step.get("env", {}).get("SCRUB_OUTCOME") == "${{ steps.scrub.outcome }}" and (
@@ -77,3 +77,26 @@ def test_the_scrub_step_survives_a_missing_refresher_pid_file(tmp_path):
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0 and "reached-scrub" in result.stdout, result.stderr
+
+
+def test_the_refresher_exits_when_its_lease_is_gone(tmp_path):
+    import os
+    import subprocess
+    import time
+
+    run = next(s["run"] for s in _linux_steps() if "auth-refresher.sh" in s.get("run", "") and "REFRESH" in s.get("run", ""))
+    body = run.split("<<'REFRESH'\n", 1)[1].split("\nREFRESH", 1)[0]
+    script = tmp_path / "refresher.sh"
+    script.write_text(body)
+    (tmp_path / ".github/scripts").mkdir(parents=True)
+    (tmp_path / ".github/scripts/rotate-auth.sh").write_text("exit 0\n")
+    env = {**os.environ, "RUNNER_TEMP": str(tmp_path), "AUTH_REFRESH_INTERVAL_S": "1"}
+    proc = subprocess.Popen(["bash", str(script)], cwd=tmp_path, env=env)
+    pid_file = tmp_path / "auth-refresher.pid"
+    for _ in range(50):
+        if pid_file.exists():
+            break
+        time.sleep(0.1)
+    assert pid_file.read_text().strip() == str(proc.pid)
+    pid_file.unlink()
+    assert proc.wait(timeout=10) == 0, "refresher must exit once its pid-file lease is gone"
