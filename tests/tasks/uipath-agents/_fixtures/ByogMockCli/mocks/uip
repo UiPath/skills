@@ -167,6 +167,9 @@ def main():
         if literal[:3] == ["guardrails", "byo-configurations", "list"]:
             return emit("ByoGuardrailConfigurationsList", [CONFIGURATION])
 
+    # Bridged into Studio Web's browser shell: exit 199 so the browser's own uip runs the call.
+    if os.environ.get("STUDIOWEB_HOST_MOCK"):
+        return 199
     real = real_uip()
     if not real:
         sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
