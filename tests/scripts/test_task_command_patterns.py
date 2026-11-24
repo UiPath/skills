@@ -436,6 +436,11 @@ VOICE_DEBUG = [
         "nice -n 10 uip maestro flow debug .",
         "nohup uip maestro flow debug . > debug.log 2>&1 &",
         "/usr/local/bin/uip maestro flow debug .",
+        "ls -d */ | xargs -I {} uip maestro flow debug {}",
+        "find . -name '*.flow' -exec uip maestro flow debug {} \\;",
+        # coder-eval also searches the quote-resolved text, so `eval "uip ..."` is this.
+        "eval uip maestro flow debug .",
+        "T=60; timeout $T uip maestro flow debug .",
         "/bin/bash -lc 'timeout 60 uip maestro flow debug .'",
         "/bin/bash -lc 'cd VoiceFlow && env A=1 uip maestro flow debug .'",
         # A heredoc line that starts with the command still counts.
