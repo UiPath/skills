@@ -69,7 +69,8 @@ def allowed(rel: pathlib.PurePosixPath) -> bool:
         return parts[0] in TOP_LEVEL
     if len(parts) == 2:
         return parts[1] in VARIANT_LEVEL
-    return len(parts) == 4 and bool(_REPLICATE.fullmatch(parts[2])) and parts[3] in TASK_LEVEL  # <variant>/<task>/<NN>/
+    # <variant>/<task>/<NN>/ or, for a dataset row, <variant>/<suite>/<row>/<NN>/
+    return len(parts) in (4, 5) and bool(_REPLICATE.fullmatch(parts[-2])) and parts[-1] in TASK_LEVEL
 
 
 def _is_text(data: bytes) -> bool:
@@ -144,11 +145,11 @@ def _replace(data: bytes, needles: list[bytes]) -> bytes:
 
 
 def _covers(expected: str, task_id: str) -> bool:
-    """`id` matches exactly; `id*` (a dataset task) also matches its rows `id<sep>...`."""
+    """`id` matches exactly; `id*` (a dataset task) also matches its rows, which coder-eval names `id/<row>`."""
     if not expected.endswith("*"):
         return task_id == expected
     base = expected[:-1]
-    return task_id == base or (task_id.startswith(base) and not task_id[len(base)].isalnum())
+    return task_id == base or task_id.startswith(base + "/")
 
 
 def check_coverage(found: dict[str, set[str]], expected_ids: list[str]) -> None:

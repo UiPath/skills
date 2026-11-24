@@ -149,7 +149,7 @@ def _expect(tmp_path, monkeypatch, tasks, ids, variants=("default",)):
     tmp_path.mkdir(parents=True, exist_ok=True)
     run = _env(tmp_path, monkeypatch)
     for variant in variants:
-        for name in tasks:
+        for name in tasks:  # a dataset row `a/1` lands at <variant>/a/1/00, as coder-eval lays it out
             d = run / variant / name / "00"
             d.mkdir(parents=True)
             (d / "task.json").write_text(json.dumps(_task(name)), encoding="utf-8")
@@ -160,16 +160,21 @@ def test_exact_task_identities_are_required(tmp_path, monkeypatch):
     # two successful rows of the first dataset task must not stand in for the second task
     rc, run = _expect(tmp_path / "a", monkeypatch, ["a-1", "a-2"], "a* b")
     assert rc == 1 and _names(run) == []
-    rc, _ = _expect(tmp_path / "b", monkeypatch, ["a-1", "a-2", "b"], "a* b")  # dataset fan-out is fine
-    assert rc == 0
+    rc, run = _expect(tmp_path / "b", monkeypatch, ["a/1", "a/2", "b"], "a* b")  # dataset fan-out is fine
+    assert rc == 0 and (run / "default/a/1/00/task.json").is_file()
     rc, _ = _expect(tmp_path / "c", monkeypatch, ["a", "b", "zzz"], "a b")  # a result nobody scheduled
     assert rc == 1
-    rc, _ = _expect(tmp_path / "d", monkeypatch, ["ab"], "a*")  # `a*` is a row prefix, not a string prefix
+    for n, other in enumerate(("ab", "a-b", "a_1", "a#1")):  # `a*` covers rows `a/<row>` only
+        rc, _ = _expect(tmp_path / f"d{n}", monkeypatch, [other], "a*")
+        assert rc == 1, other
+    rc, _ = _expect(tmp_path / "e", monkeypatch, ["a/1"], "a")  # a row of a task nobody scheduled as a dataset
     assert rc == 1
 
 
 def test_every_variant_must_cover_every_task(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
+    assert scrub_mod.allowed(pathlib.PurePosixPath("default/s/row-1/00/task.json"))
+    assert not scrub_mod.allowed(pathlib.PurePosixPath("default/s/row-1/x/00/task.json"))
     for variant, names in (("v1", ["a", "b"]), ("v2", ["a"])):
         for name in names:
             d = run / variant / name / "00"
