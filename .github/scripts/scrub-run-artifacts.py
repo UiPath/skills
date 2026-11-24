@@ -12,8 +12,8 @@ Runs carry a live UiPath login, so nothing agent- or grader-authored is trusted:
 * Other kept files (`run.*`, `experiment.*`, `variant.*`, `task.log`) must be strict
   UTF-8 text; every forwarded secret and every UiPath token issued in the run is
   replaced verbatim, then a verify pass re-reads each file once.
-* An unreadable required result (`run.json`, any `task.json`) or a task count that
-  differs from --expect-tasks means the run is incomplete.
+* An unreadable required result (`run.json`, any `task.json`) or fewer task results
+  than --expect-tasks (a minimum: dataset tasks fan out) means the run is incomplete.
 * A `publication-disabled` flag in $RUNNER_TEMP (written when a rotated token could
   not be recorded), a missing issued-tokens record under CI, or any error wipes the
   run dir (best effort), prints a fixed message and exits 1. Publishing steps
