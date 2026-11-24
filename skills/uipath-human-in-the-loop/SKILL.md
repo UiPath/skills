@@ -224,7 +224,7 @@ Never block on these — use the stated default when no answer is available, wri
 
 ## Step 4b — Schema Design Resilience (QuickForm — Flow and Case)
 
-Apply these checks while designing the schema, before writing it — per Critical Rule 1, do not wait on the user to confirm. Applies equally to Flow QuickForm nodes and Case QuickForm action tasks — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
+Apply these checks while designing the schema, before writing it — per Critical Rule 1, do not wait on the user to confirm. Applies equally to Flow QuickForm nodes and to a Case form design (the Case SDK cannot author a quick form, so the design goes into a Coded Action App or into the report for the Studio Web designer) — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
 
 ### Field direction
 
@@ -367,4 +367,4 @@ After completing the wiring:
 - **[Guided decision experience](references/decision-capture-guide.md)** — Read this only when the request asks to capture a decision or a reviewer corrects a proposal; it decides from the request whether the guided decision experience is on. Covers the toggle, how capture depth scales to stakes, the decision fields it adds beside the author's own, what the backend records, and the capture layout.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
-- **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.
+- **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: authoring a new human task (app-based only; QuickForm comes from the Studio Web designer), and reading a compiled action task: its JSON, the designer-saved `.hitl` file format, context entries, field binding, and downstream output access.

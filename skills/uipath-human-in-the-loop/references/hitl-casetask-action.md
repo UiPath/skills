@@ -4,7 +4,7 @@
 > **In this package, read this file only to understand a compiled Case plan.** Author Case HITL with the `uipath-maestro-case` skill: `action(...)` in `<Name>.case.ts`, then compile. Never hand-edit the compiled plan.
 
 <!--skill-flavor:case-json-reading-note:end-->
-A compiled Case plan holds each HITL task as an `action` task in a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Author the task in the Case source, never in the plan:** the `uipath-maestro-case` skill writes `action(...)` in `<Name>.case.ts` (decompiling an existing plan first) and compiles, and the next compile rewrites `caseplan.case`, dropping anything written into it by hand. The JSON shapes below, the `context[]` entries and the `.hitl.json` linkage included, are what that compile produces: read them to understand or check a compiled plan.
+A compiled Case plan holds each HITL task as an `action` task in a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Author the task in the Case source, never in the plan:** the `uipath-maestro-case` skill writes `action(...)` in `<Name>.case.ts` (decompiling an existing plan first) and compiles, and the next compile rewrites `caseplan.case`, dropping anything written into it by hand. The JSON shapes below are what a compiled plan holds: read them to understand or check one. A quick form's `context[]` rows and `.hitl.json` linkage come from the Studio Web Case designer, and compile carries them over.
 
 > If the stage or case predates required entry/exit/completion rules (see the checklist below), add them in the Case source, never in the plan: the next compile rewrites `caseplan.case` and drops a hand-written rule. Use the `uipath-maestro-case` skill's brownfield loop: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`, add the rules in `<Name>.case.ts`, `uip maestro case check <Name>.case.ts --source` (with the `--baseline` copy that skill describes), then `uip maestro case compile <Name>.case.ts -o <project>/<plan>`. The rule shapes below show what a compiled plan holds; read them, do not write them. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
 
@@ -21,7 +21,7 @@ A compiled plan can hold two kinds of action task. **Only the app-based kind can
 > 3. The user wants a quick form anyway: author nothing for that task. Put the designed fields and outcomes in the final report, and say that the user adds the quick form in the Studio Web Case designer, which the next decompile and compile keep. Never write the `.hitl.json` or the task JSON by hand.
 
 > **Build time vs design time.** A case action task lives in two surfaces:
-> - **Design time** — the JSON compile writes into `caseplan.case`. Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
+> - **Design time** — the JSON compile writes into `caseplan.case`. Studio Web's case designer round-trips this JSON; a quick form saved there must stay valid here.
 > - **Build / runtime time** — `uip maestro case validate` accepts it, `uip solution upload` packs it, and Action Center renders the form to the assignee at runtime.
 >
 > Every shape documented below is required to round-trip in both. After each compile, run `uip maestro case validate <caseplan.case> --output json`.
@@ -60,18 +60,18 @@ The form schema lives in a separate `.hitl.json` file that sits alongside `casep
 **This path is read-only for an agent.** A QuickForm task comes from the Studio Web Case designer; the Case SDK keeps it but cannot create one (see the routing above). Use this section to read, check and keep an existing quick form. For instance, after a brownfield decompile and compile, the checklist below confirms the form survived.
 
 > **What makes Path 1 (QuickForm) unique — checklist for a compiled task:**
-> - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.case`
+> - ✅ A `<TaskLabel>.hitl.json` file sits alongside `caseplan.case`
 > - ✅ `data.context[hitlType].value` is `"quick"` (not `"custom"`)
 > - ✅ `data.context[_schemaFileId].value` is a **plain UUID v4 string** — e.g. `"f1e2d3c4-b5a6-7890-abcd-ef1234567890"`. Never an `=bindings.xxx` expression.
 > - ✅ `data.context[hitlSchemaId].value` is a **plain UUID v4 string** matching `schemaId` in the `.hitl.json` file. Never an `=bindings.xxx` expression.
-> - ✅ `data.inputs[]` and `data.outputs[]` are **empty arrays** (`[]`)
+> - ✅ `data.inputs[]` and `data.outputs[]` are **populated**, mirroring the `.hitl.json` fields, and `data.inputSchema` is present (see the callout under Step 3)
 > - ❌ `data.name` and `data.folderPath` do NOT exist — those are App-based (Path 2) only
 > - ❌ No `=bindings.xxx` expressions anywhere in the task JSON — those are App-based only
-> - ❌ No top-level `bindings[]` entries added
+> - ❌ No top-level `bindings[]` entries for this task
 
 ### Step 1 — Design the Schema
 
-Use these roles to plan the fields before writing:
+Use these roles to plan the fields. The design feeds a Coded Action App's schema, or the form the user adds in the designer:
 
 | Role | `field.direction` | Human can… | Use for |
 |---|---|---|---|
@@ -213,7 +213,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 }
 ```
 
-> **`displayName`, `inputs[]`/`outputs[]`, and `inputSchema` are all required — this is the part an earlier draft of this doc got wrong.** It previously claimed `data.inputs[]`/`data.outputs[]` "are always empty arrays for QuickForm — the schema is in the `.hitl.json` file." That is false. Confirmed against a real Studio Web export and by direct reproduction: without `inputSchema` (a JSON-Schema mirror of the input fields) and populated `inputs[]`/`outputs[]` on the task node itself, Studio Web's "Edit Schema" canvas does not open at all — clicking it does nothing, silently. The `.hitl.json` file and the task's own `data.*` fields are **two parallel representations of the same schema** that must both be written; neither one alone is sufficient.
+> **`displayName`, `inputs[]`/`outputs[]`, and `inputSchema` are all required — this is the part an earlier draft of this doc got wrong.** It previously claimed `data.inputs[]`/`data.outputs[]` "are always empty arrays for QuickForm — the schema is in the `.hitl.json` file." That is false. Confirmed against a real Studio Web export and by direct reproduction: without `inputSchema` (a JSON-Schema mirror of the input fields) and populated `inputs[]`/`outputs[]` on the task node itself, Studio Web's "Edit Schema" canvas does not open at all — clicking it does nothing, silently. The `.hitl.json` file and the task's own `data.*` fields are **two parallel representations of the same schema**; the designer writes both, and neither one alone is sufficient.
 > - `inputs[]`: one entry per input field, `name` = field `id`, `value` = the same `=`-expression as that field's `binding` in `.hitl.json`.
 > - `outputs[]`: one entry per **output field with a `variable`**, plus one always-present `Action` entry whose `options[]` mirrors `outcomes[]` from `.hitl.json` (`{value, label}` pairs) — this is the decision/outcome the reviewer picks, not a separate field.
 > - `inputSchema`: a `draft-07` JSON Schema, `properties` keyed by the same field ids as `inputs[]`, each `{"type": "<field type>", "title": "<field label>"}`.
@@ -226,10 +226,10 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 | `_schemaFileId` | **Not a value you can invent — see the callout below.** It must be the real, backend-assigned file ID of the uploaded `.hitl.json`, not a fresh UUID. |
 | `hitlSchemaId` | Must match the `schemaId` value inside the `.hitl.json` file exactly. |
 | `taskTitle` | Appears both as `data.taskTitle` (top-level) and in `context[]` — **both are required**. |
-| `labels` | No `value` — leave the entry present but empty. |
+| `labels` | No `value` — the entry is present but empty. |
 | `priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `actionCatalogName` | No `value` for QuickForm — leave the entry present but empty. |
-| `enableActionableNotifications` | Leave as `"false"` unless the user explicitly wants email notifications. |
+| `actionCatalogName` | No `value` for QuickForm — the entry is present but empty. |
+| `enableActionableNotifications` | `"false"` unless the form sends email notifications. |
 | `assignmentCriteria` | `"user"` when assigning to a specific email. Omit the `value` (or omit the entry) for group rules. |
 | `recipient` | `{ "Type": 2, "Value": "<email>" }` for email; `{ "Type": 1, "Value": "<group>" }` for group; `{ "Type": 3, "Value": "=vars.<varId>" }` for runtime-resolved assignee. |
 
@@ -255,7 +255,7 @@ Read available case variables from the top-level `variables` field in `caseplan.
 For cross-task references, source values come from upstream task `outputs[].var`. A builder-SDK Case reads them with `taskOutput('<stage>', '<task>', '<output>')`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
 <!--skill-flavor:case-xref-pointer:end-->
 
-> **No root-level bindings needed for QuickForm.** Unlike App-based (Path 2), QuickForm does **not** add entries to the top-level `bindings[]` array.
+> **A quick form has no root-level bindings.** Unlike App-based (Path 2), a QuickForm task has **no** entries in the top-level `bindings[]` array.
 
 ### Verification After Compile (QuickForm)
 
@@ -267,7 +267,7 @@ Run `uip maestro case validate <caseplan.case> --output json`. Confirm:
 - `data.context[]` has entries for: `hitlType` (`"quick"`), `_schemaFileId`, `hitlSchemaId`, `taskTitle`, `labels`, `priority`, `actionCatalogName`, `enableActionableNotifications`
 - `data.context[hitlSchemaId].value` matches `schemaId` in the `.hitl.json` file
 - `data.inputs[]`/`data.outputs[]` are populated (mirroring `.hitl.json`'s fields) and `data.inputSchema` is present — see the callout in Step 3
-- top-level `bindings[]` is **not** modified by this path
+- top-level `bindings[]` has **no** entries for this task
 
 ### Downstream Output Access (QuickForm)
 
