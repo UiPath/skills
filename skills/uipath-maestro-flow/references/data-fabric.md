@@ -45,7 +45,14 @@ its keys; run it, then `check` again. `waitForEvent` takes `entity` the same way
 Needs `@uipath/maestro-builder-sdk` <NEXT_SDK_VERSION> or later; an older SDK has
 no `entity` on an event (`check` reports `TS2353`),
 <!--skill-flavor:event-entity-sdk-upgrade:start-->
-so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+so upgrade the copy `uip` resolves, local copy first, then global. From the
+directory you run `uip` in (the workspace root), run
+`node -e "console.log(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]}))"`.
+When it prints a path, that `node_modules` (possibly in a parent directory) owns
+the copy: run `npm install --save-dev @uipath/maestro-builder-sdk@latest` in the
+directory holding it when a `package.json` sits beside it; otherwise tell the
+user the path, and never create a `package.json`. On error, run
+`npm install -g @uipath/maestro-builder-sdk@latest`. Then run `check` again.
 <!--skill-flavor:event-entity-sdk-upgrade:end-->
 See
 [`event-trigger.md`](event-trigger.md#tenant-discovery--check-names-it-prepare-does-it).
