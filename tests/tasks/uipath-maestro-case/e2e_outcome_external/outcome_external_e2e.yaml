@@ -1,19 +1,22 @@
 task_id: skill-case-e2e-outcome-external
 description: >
-  OUTCOME-BASED E2E — grades whether the case ACHIEVED ITS BUSINESS OBJECTIVE in
-  third-party systems, not whether it was built a particular way. The agent gets an
-  approved SDD for a two-stage expense-approval case whose stages each produce a real
-  external effect: an Outlook 365 email notifying the approver, and a Jira issue filed
-  as the audit record, both carrying a per-run reference token. The harness executes
-  the case, then queries Microsoft Graph and Atlassian (through the tenant's own
-  Integration Service connections) to confirm both effects landed exactly once.
-  Deliberately NOT graded: caseplan topology and stage/task shape — any design that
-  achieves the objective passes. `uip maestro case validate` passing is advisory only,
-  and reaching finalStatus=Completed carries less weight than the effects themselves,
-  because a case can complete while notifying nobody (the Outlook connector's
-  `saveAsDraft` defaults to true, which drafts the message instead of sending it —
-  structural grading passes that, outcome grading correctly fails it).
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back, path-to-ga]
+  OUTCOME-BASED E2E, asked the way a Studio Web user would ask it: build an
+  expense-approval case that emails the approver and files a Jira audit issue,
+  both carrying a per-run request reference that pre_run writes into
+  `request.md` (with the two connection IDs). The harness runs the case once
+  under debug, then reads Microsoft Graph and Atlassian (through the tenant's
+  own Integration Service connections) to confirm the email was sent to the approver and
+  the issue exists, each created after the harness started the
+  run. Caseplan shape is not graded; validate passing is advisory, and
+  reaching finalStatus=Completed weighs less than the effects, because a case
+  can complete while notifying nobody (the Outlook send action saves a draft
+  unless `saveAsDraft` is false). The agent's own test run is advisory; records
+  it makes predate the harness run and are not counted. Text between the
+  helper markers is lower-tier guidance (experiments/use-case-tiers.yaml).
+
+  Tenant prerequisite: the shared sandbox Outlook 365 and Jira connections are
+  healthy. pre_run pings both and ends the run as ERROR when either is not.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back, path-to-ga, outcome-graded]
 sandbox:
   template_sources:
     - type: template_dir
@@ -44,38 +47,33 @@ pre_run:
     timeout: 60
 
 initial_prompt: |
-  I have an approved SDD for our OutcomeExpenseApproval case-management solution —
-  it's staged as `sdd.md` in this folder. Build a UiPath Case Management solution
-  named "OutcomeExpenseApproval" containing a project also named
-  "OutcomeExpenseApproval" from it.
+  You are a coding agent in an empty Case project. No user is present, and
+  nobody will answer a question or grant approval, so do not ask, do not
+  pause, and do not wait for input. Do not delete or overwrite anything this
+  run did not create, except what the task asks you to change, and do not
+  publish to a shared destination unless the task asks for it.
 
-  What this has to achieve, in the real systems:
-  - The approver is NOTIFIED: an email carrying the request reference actually
-    arrives in the approver's mailbox. A saved draft notifies nobody.
-  - The audit record EXISTS: a Jira issue carrying the same reference is filed in
-    the audit project.
+  Build an expense approval case called "OutcomeExpenseApproval". When an
+  expense request comes in, first the approver is emailed that the request is
+  waiting for their decision, then a Jira issue has to be filled in our audit
+  project as the audit record. The email subject and the issue summary must
+  both carry the request's reference, so the auditors can match the
+  notification to the audit record. The email has to really be sent: a saved
+  draft notifies nobody.
 
-  How you shape the case to get there is your call — I care that those two things
-  are true afterwards. Use the staged `sdd.md` as the source of truth for the
-  business requirements and the connection identities.
+  The request reference, the approver's address, the wording, the Jira project
+  and issue type, and the Outlook and Jira connections to use are in
+  `request.md` in this folder.
 
-  The CASE has to produce both effects when it runs. Do not send the email or file
-  the issue yourself from the shell — a hand-made record is not the automation I
-  asked for.
+  The case has to send the email and file the issue itself when it runs. Do
+  not send or file them by hand, and do not publish the solution.
 
-  Important:
-  - The `uip` CLI is available and already authenticated against the target tenant.
-  - The SDD pins a connection ID for each connector because the tenant hosts several
-    connections per connector, including personal ones whose names collide with the
-    shared sandbox ones. Use the pinned connection IDs verbatim; resolve the activity
-    type IDs yourself against the registry.
-  - Treat all hard stops as pre-approved, including plan approval and any
-    publish-for-review gate. Choose the continue / skip-publish path and keep going.
-  - Do NOT call AskUserQuestion — it is not available in this harness.
-  - Do NOT publish the solution, and do NOT run `uip maestro case debug` yourself —
-    the harness executes the case and measures the results.
+  <!-- helper:start -->
+  Outlook's send action saves a draft unless its `saveAsDraft` query parameter is false.
+  Jira's create-issue metadata does not list `fields.summary` or `fields.description`, but the API accepts both.
+  <!-- helper:end -->
 
-  Before starting, load the uipath-maestro-case skill and follow its workflow.
+  Build and test the automation.
 success_criteria:
   - type: skill_triggered
     description: "Advisory: agent invoked the uipath-maestro-case skill"
@@ -108,7 +106,7 @@ success_criteria:
 
   # THE OUTCOMES — measured in the third-party systems.
   - type: run_command
-    description: "OUTCOME — the approver was notified: an email carrying this run's reference is present in the sandbox mailbox, as measured via Microsoft Graph"
+    description: "OUTCOME — the approver was notified: a sent, non-draft email to the approver carrying this run's reference is in the connection's Sent Items, as measured via Microsoft Graph"
     command: "python3 $REFERENCE_DIR/e2e_outcome_external/check_outcome_email.py"
     timeout: 1800
     expected_exit_code: 0
@@ -134,20 +132,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # LOAD-BEARING for attribution, not just tidiness. The run token names the RUN,
-  # not which execution produced a record, so the harness's debug start is the only
-  # thing separating "the case did this" from "the agent did this". An agent that
-  # runs debug itself creates token-bearing records just before that floor, which a
-  # clock-skew allowance can admit. Hence weight 2.0, equal to the other guard.
-  #
-  # Pattern notes: `debug(?![-\w])` so the read-only `maestro case debug-instance`
-  # verbs are NOT caught; `(?!\s+--help)` so a syntax lookup is not punished; the
-  # leading anchor requires a real shell statement, not a mention inside an echo.
-  - type: command_not_executed
-    description: "Agent did not run case debug itself (the harness executes the case; agent-run debug makes outcomes unattributable)"
+  # Advisory: the request asks for a test run. Records the agent's own run makes
+  # predate the harness's debug start and are filtered out by the outcome probes
+  # (outcome_probe._only_after), so testing cannot pass the outcome criteria.
+  - type: command_executed
+    description: "Advisory: the agent ran its own test run (uip maestro case debug), as the request asks"
     tool_name: "Bash"
     command_pattern: '(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
-    weight: 2.0
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Agent did not publish the solution, as the request asks"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|]\s*)(uip|\$UIP)\s+(maestro\s+case|solution)\s+publish\b(?![^;&|\n]*--help)'
+    weight: 1.0
     pass_threshold: 1.0
 
 post_run:

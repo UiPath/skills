@@ -19,5 +19,5 @@ What can cause it:
 
 ## Resolution
 
-- Open the email received trigger configuration in Studio Web and republish the solution
-- Verify deployment succeeds and the trigger fires correctly in the target environment
+- Open the email received trigger configuration in Studio Web and fix it; republishing the solution is a later decision
+- After that publish, verify the deployment succeeds and the trigger fires in the target environment

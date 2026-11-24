@@ -31,7 +31,7 @@
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
-//           component genome linked twice; the `Source framework`
+//           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
 //           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
@@ -64,6 +64,7 @@ export const VALID_SKILLS = new Set([
   "uipath-agents", "uipath-functions", "uipath-api-workflow", "uipath-coded-apps",
   "uipath-connector-builder", "uipath-ixp", "uipath-process-mining", "uipath-mcp-servers",
   "uipath-solution", "uipath-human-in-the-loop", "uipath-rules",
+  "uipath-ontology",
 ]);
 export const OPERATE_SKILLS = new Set([ // allowed in Platform Dependencies / Deployment, never in Build With or Components
   "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
@@ -108,6 +109,8 @@ const BANNED_BODY_TOKENS = [
   "AndAlso", "OrElse", "dt_", "in_", "out_", ".xaml", "core.action", "core.logic",
   "uipath.core.", "activityType", "JsInvoke",
 ];
+// a number another agent of an extraction in parts fixes later, which reconciliation fills in
+const UNFILLED_REFERENCE = /\{\{ref:[^}\n]*\}\}/g;
 export const OUTCOME_ROWS = new Set(["Success", "Business exception", "System exception", "Postponed"]);
 // the genome format's minimum Workflow steps and Acceptance Criteria per complexity, a component genome's.
 // core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
@@ -356,9 +359,12 @@ function checkCommon(path, text, level, sections, r, minCriteria) {
 
   const body = bodyWithoutSourceMap(text);
   for (const tok of BANNED_BODY_TOKENS) {
-    // a prefix token counts at the start of a word only: `in_Folder`, never "login_page" or "layout_name"
-    if (tok.endsWith("_") ? new RegExp(`\\b${esc(tok)}\\w`).test(body) : body.includes(tok)) r.strict(`code-level token '${tok}' in the genome body (outside Source Map)`);
+    // a prefix token counts at a word start, in a word holding a capital, as UiPath names arguments and variables:
+    // `in_Folder`, `in_strPath`, never "login_page" or a record's field `in_reply_to`, which the genome spells as the source does
+    if (tok.endsWith("_") ? new RegExp(`\\b${esc(tok)}\\w*[A-Z]`).test(body) : body.includes(tok)) r.strict(`code-level token '${tok}' in the genome body (outside Source Map)`);
   }
+  const unfilled = text.match(UNFILLED_REFERENCE);
+  if (unfilled) r.strict(`${unfilled.length} cross-part reference(s) left unfilled, first: ${unfilled[0]}`);
   for (const [, num, question] of sectionBody(text, "Configuration Questions").matchAll(/^(\d+)\. (.*)$/gm)) {
     const pointer = !question.includes("?") && /Configuration Question \d+/.test(question); // a question the process genome asks
     const withdrawn = /^Withdrawn: /.test(question); // kept so later questions keep their numbers

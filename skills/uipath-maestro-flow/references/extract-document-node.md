@@ -2,11 +2,13 @@
 
 *Commands: `uip maestro flow extraction check`, `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
+Add this node to a new flow only when the user names it ([Which extraction node the user wants](#which-extraction-node-the-user-wants)). "We don't have a trained model yet" does not name it; that request goes to [ixp.md](ixp.md).
+
 An Extract document node (`uipath.ixp.extract-document-builder`) extracts named fields using taxonomy embedded in the `.flow`; it has no trained model or IXP project. Add, wire, and validate it; design taxonomy in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
 uip maestro flow extraction check --output json
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --position <x>,<y> --output json
 uip maestro flow validate <file> --output json
 ```
 
@@ -14,7 +16,7 @@ uip maestro flow validate <file> --output json
 
 ## Which extraction node the user wants
 
-In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet, since building one is the first step. Add the Extract document node to a new flow only when the user asks for it by name. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
+In a new flow, document extraction is a published IXP model, covered in [ixp.md](ixp.md): the IXP project is built and deployed first, and the flow then runs against it. That holds when no model exists yet ([ixp.md](ixp.md#resource-identity)). Add the Extract document node to a new flow only when the user asks for it by name, or offer it when `uipath-ixp` reports IXP not enabled. In an existing flow, keep the extraction node it has (`uip maestro flow nodes list <file> --output json` shows its type); a builder node or its inline taxonomy stays on this guide. A published-model taxonomy belongs to `uipath-ixp`.
 
 | Node | Node type | Where covered |
 | --- | --- | --- |
@@ -35,7 +37,7 @@ Add a descriptive node, wire its file, write taxonomy, bind the result, and vali
 <!--skill-flavor:extract-find-flow:end-->
 1. **Check the tenant:** run `uip maestro flow extraction check --output json`. Any settled answer other than `Available` stops the loop; an unsettled check is a question for the user ([Check the tenant can run it](#check-the-tenant-can-run-it)).
 2. **Declare the input if absent:** run `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. Its `TriggerNodeId` is `<trigger>` in `$vars.<trigger>.output.invoice`.
-3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`, laid out per [operate.md](operate.md#layout-of-the-emitted-flow).
+3. **Add the node** with `--label` naming what it extracts, `--input` carrying `fileRef`, and `--position` on the canvas grid ([operate.md](operate.md#lay-out-from-source-instead-layout-at-dim), rule 1). Same model as an existing Extract document node: `--input` also carries that node's `processorKey` and `"processorReadOnly":true`, and step 5 is skipped ([Making it actually extract](#making-it-actually-extract)).
 4. **Connect it** with `edges create` ([Wiring the file it reads](#wiring-the-file-it-reads)).
 5. **Write the taxonomy:** [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result** to a flow output ([Returning the result](#returning-the-result)).
@@ -89,7 +91,7 @@ Keep `modelName`, `folderKey`, and other deployment fields under `inputs` as emp
 Set it at creation when the upstream node already exists:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract Invoice' --input '{"fileRef":"=js:$vars.<trigger>.output.invoice"}' --position <x>,<y> --output json
 ```
 
 Use the plain `=js:$vars.…` string. The structured form `{"type":"jsExpression","expression":"$vars.…","fieldType":"object"}` validates only when `fieldType` is present. A literal filename or hand-built attachment object remains literal and does not resolve upstream.
@@ -129,7 +131,7 @@ Declare an output, add an End node, connect the extract node, then bind the outp
 
 ```bash
 uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
-uip maestro flow nodes create <file> core.control.end --label 'End' --output json
+uip maestro flow nodes create <file> core.control.end --label 'End' --position <x>,<y> --output json
 uip maestro flow edges create <file> <extract-id> <end-id> --output json
 ```
 
@@ -179,10 +181,10 @@ uip maestro flow nodes provision <file> --output json
 
 Never hand-write `processorKey` or give a node another node's key as its own. Each processor holds one node's definition; duplicate authorship makes pack or publish refuse. Deliberate sharing requires the reader to take the author's `processorKey` and set `inputs.processorReadOnly: true`; neither half works alone and validation rejects a read-only node without a key.
 
-A second node with identical fields and model settings shares the existing node's processor rather than copying its taxonomy; supply both inputs at creation, since nothing adds them later:
+A node's model is its processor: its taxonomy and model settings together. A second node that uses the same model as an existing one reads that node's processor rather than getting a copy of its own; never a new processor synced to the same taxonomy and model. Supply both inputs at creation, since nothing adds them later:
 
 ```bash
-uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --output json
+uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label 'Extract credit note' --input '{"fileRef":"=js:$vars.start.output.creditNote","processorKey":"<the authoring node key>","processorReadOnly":true}' --position <x>,<y> --output json
 ```
 
 A read-only node has no resource or taxonomy; it runs the author's processor. `nodes schema set` changes nothing that deploys when run on it.
@@ -202,7 +204,7 @@ After a pulled-down flow has been through Studio Web, pull the solution again be
 
 ## When Extract document is not available
 
-Report the reason from `Data.Reason` or the deploy/run message, even when it names something this guide does not describe. Never add the node anyway, and never substitute a placeholder when working extraction was requested.
+`uipath-ixp` reporting IXP not enabled is not this case; `extraction check` decides. Report the reason from `Data.Reason` or the deploy/run message, even when it names something this guide does not describe. Never add the node anyway, and never substitute a placeholder when working extraction was requested.
 
 **First, look for a published IXP model:**
 

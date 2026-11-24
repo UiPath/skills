@@ -1,40 +1,26 @@
 #!/usr/bin/env python3
-"""Structural check for the full DevCon BillingDisputeResolution flow.
+"""Structural check for the DevCon BillingDisputeResolution flow.
 
-No execution — pure shape + WIRING asserts on the agent-built `.flow`. Existence
-of the right node *types* is necessary but not sufficient: a flow with every
-required node left unconnected, or wired in the wrong order, would reproduce the
-node inventory without reproducing the orchestration. So this check verifies the
-actual directed topology against the reference flow's shape:
+No execution: shape and wiring asserts on the agent-built `.flow`. The prompt
+asks for the orchestration in business terms and leaves the routing to the
+agent. "Automatically approve anything requiring manager review" can be built
+as a decision node that defaults to Approved, or as the manager-review case
+going straight to posting. Both are correct, so this check does not pin the
+reference's switch + decision layout. It asserts the wiring the request implies:
 
-  Required nodes (anti-hardcode — each targets a tenant resource a Script node
-  cannot fake):
-    - IxP extraction              (uipath.ixp.*)                 invoice parsing
-    - entity read                 (`flow_check.ENTITY_QUERY_HINTS`)   ERP/CRM lookup
-      Either shape counts: the `uipath-uipath-dataservice` connector activity
-      or the native `core.datafabric.read` node. Tenant availability decides
-      which one the agent can build, so pinning one rejects a correct flow.
-    - inline autonomous agent     (uipath.agent.autonomous)      analyst + writer
-    - context index               (uipath.agent.resource.context.index.*)  SOP grounding
-    - API-workflow function       (uipath.core.api-workflow.*)   financial posting
-    - switch + decision           (core.logic.switch / .decision) routing
-    - end                         (core.control.end)             RETURNS the outcome
-
-  Topology the reference flow pins (each is wiring, not mere presence):
-    1. trigger → IxP → 2× entity read → analyst agent    (the ingest pipeline is
-       connected end-to-end; no orphaned resource nodes).
-    2. the SOP context index is ATTACHED to an agent      (a `[context]` edge),
-       not present-but-dangling.
-    3. analyst agent → switch with ≥3 case branches       (routes on recommendedAction).
-    4. switch → decision; decision → BOTH the API-workflow path AND an end node
-       (the approve→post / reject→return outcomes).
-    5. API-workflow → a SECOND, distinct agent (the writer) → end.
-    6. every control-flow leaf is a `core.control.end`    (no path dead-ends).
-
-  Edits this task requires (the reason it differs from the raw DevCon flow):
-    - NO human-in-the-loop node  — the HITL approval gate was removed.
-    - NO send-email node         — the flow must NOT email; it RETURNS instead.
-    - declares ≥2 `out` variables — the resolution is returned to the caller.
+  1. IxP and both entity reads are reachable from the trigger. Either
+     entity-read shape counts (`flow_check.ENTITY_QUERY_HINTS`): tenant
+     availability decides which one the agent can build.
+  2. An analyst agent sits after both entity reads and before the
+     FinancialPostingFunction API workflow.
+  3. The SOP context index is attached to an agent.
+  4. A second, distinct agent (the writer) is downstream of the API workflow,
+     and an end node follows it.
+  5. A rejection path: an end node is reachable from the analyst without
+     passing through the API workflow (a rejected dispute is not posted).
+  6. Every control-flow leaf is a `core.control.end`.
+  7. No human-in-the-loop node and no send-email node.
+  8. At least two `out` variables (the resolution is returned, not sent).
 """
 import glob
 import json
@@ -73,15 +59,13 @@ def _flow_graph(project_dir):
     return nodes_by_id, edges, globals_list
 
 
-# ── pure topology assertions (unit-testable against the reference) ─────────────
+# ── topology ─────────────────────────────────────────────────────────────────
 
 
 def assert_topology(nodes_by_id, edges):
-    """Assert the directed wiring matches the reference orchestration.
+    """Assert the wiring the request implies. Exits on the first violation.
 
-    Pure: takes the parsed graph, calls ``sys.exit`` on the first violation.
-    Identifies roles by node TYPE + reachability, never by node id/label, so a
-    correct agent build with its own naming still passes.
+    Roles are found by node type and reachability, never by id or label.
     """
 
     def of(sub):
@@ -92,12 +76,12 @@ def assert_topology(nodes_by_id, edges):
     for e in edges:
         adj.setdefault(e.get("sourceNodeId"), []).append(e.get("targetNodeId"))
 
-    def reach(starts):
-        seen, stack = set(), list(starts)
+    def reach(starts, blocked=frozenset()):
+        seen, stack = set(), [s for s in starts if s not in blocked]
         while stack:
             x = stack.pop()
             for y in adj.get(x, ()):
-                if y not in seen:
+                if y not in seen and y not in blocked:
                     seen.add(y)
                     stack.append(y)
         return seen
@@ -108,77 +92,56 @@ def assert_topology(nodes_by_id, edges):
 
     triggers = of("core.trigger")
     ixp = of("uipath.ixp")
-    ds = {i for hint in ENTITY_QUERY_HINTS for i in of(hint)}
-    agents = of("uipath.agent.autonomous")
+    reads = {i for hint in ENTITY_QUERY_HINTS for i in of(hint)}
+    # The writer may be an existing tenant agent (`uipath.core.agent.<key>`).
+    agents = of("uipath.agent.autonomous") | of("uipath.core.agent.")
     ctx = of("uipath.agent.resource.context.index")
-    switch = of("core.logic.switch")
-    decision = of("core.logic.decision")
     api = of("uipath.core.api-workflow")
     ends = of("core.control.end")
 
-    need(triggers, "no trigger node (core.trigger.*) — flow has no entry point")
-    need(len(ds) >= 2, f"expected ≥2 entity-read nodes (ERP+CRM), found {len(ds)}")
-    need(len(agents) >= 2, f"expected ≥2 inline agents (analyst+writer), found {len(agents)}")
+    need(triggers, "no trigger node (core.trigger.*)")
+    need(ixp, "no IxP extraction node (uipath.ixp.*)")
+    need(len(reads) >= 2, f"expected ≥2 entity-read nodes (ERP+CRM), found {len(reads)}")
+    need(len(agents) >= 2, f"expected ≥2 agents (analyst+writer), found {len(agents)}")
+    need(api, "no API-workflow node (FinancialPostingFunction)")
 
     from_trigger = reach(triggers)
-
-    # 1. Ingest pipeline is connected: IxP and both entity-read lookups are
-    #    reachable from the trigger (not orphaned islands).
     need(ixp & from_trigger, "IxP node not reachable from the trigger")
-    need(ds <= from_trigger, "an entity-read node is not reachable from the trigger")
+    need(reads <= from_trigger, "an entity-read node is not reachable from the trigger")
 
-    # analyst = an agent the switch is reachable FROM (it routes on the agent's output)
-    need(switch, "no switch node (core.logic.switch)")
-    analysts = {a for a in agents if switch & reach({a})}
-    need(analysts, "no agent flows into the switch — analyst agent is not wired before routing")
+    # The analyst runs after both lookups and before posting; the writer, which
+    # is also downstream of the lookups, runs after posting.
+    analysts = {
+        a for a in agents
+        if all(a in reach({q}) for q in reads) and api & reach({a})
+    }
+    need(analysts, "no agent sits between the entity reads and the API workflow (analyst not wired)")
 
-    # ingest → analyst: the analyst is downstream of BOTH entity-read lookups.
-    for q in ds:
-        need(analysts & reach({q}), "analyst agent is not downstream of an entity-read lookup")
-
-    # 2. SOP context index is attached to an agent (a context edge), not dangling.
     need(ctx, "no context-index node (SOP grounding)")
     attached = any(
         ({e.get("sourceNodeId"), e.get("targetNodeId")} & ctx)
         and ({e.get("sourceNodeId"), e.get("targetNodeId")} & agents)
         for e in edges
     )
-    need(attached, "context index is present but not attached to any agent (no grounding edge)")
+    need(attached, "context index is present but not attached to any agent")
 
-    # 3. switch fans out to ≥3 branches (escalate / auto-resolve / reject).
-    for sw in switch:
-        outs = [e for e in edges if e.get("sourceNodeId") == sw]
-        need(len(outs) >= 3, f"switch has {len(outs)} branches, expected ≥3 (escalate/auto/reject)")
-
-    # 4. switch → decision; decision → BOTH api-workflow AND an end node.
-    need(decision, "no decision node (core.logic.decision) for the approval gate")
-    need(decision & reach(switch), "decision (approval) node is not downstream of the switch")
-    need(api, "no API-workflow node (financial posting)")
-    from_decision = reach(decision)
-    need(api & from_decision, "API-workflow not reachable from the approval decision (approve path)")
-    need(ends & from_decision, "no end node reachable from the approval decision (reject path)")
-
-    # 5. api-workflow → a SECOND distinct agent (writer) → end.
     from_api = reach(api)
-    writers = agents & from_api
-    need(writers, "no agent downstream of the API-workflow — writer agent is not wired after posting")
-    need(writers - analysts, "writer and analyst resolve to the same agent — expected two distinct agents")
-    need(ends & from_api, "no end node reachable after the API-workflow / writer (path does not return)")
+    writers = (agents & from_api) - analysts
+    need(writers, "no second agent downstream of the API workflow (writer not wired after posting)")
+    need(ends & reach(writers), "no end node after the writer agent (the resolution path does not return)")
 
-    # 6. every control-flow leaf is an end node (resource nodes like the context
-    #    index are legitimately leaves and are excluded).
-    resource_leaves = ctx
+    need(
+        ends & reach(analysts, blocked=frozenset(api)),
+        "no end node reachable from the analyst without the API workflow (no rejection path)",
+    )
+
     for nid, n in nodes_by_id.items():
-        if adj.get(nid):
-            continue  # has outgoing edges
-        if nid in resource_leaves or nid in ends:
+        if adj.get(nid) or nid in ctx or nid in ends:
             continue
         sys.exit(
-            f"FAIL: topology — node {nid!r} (type {n.get('type','')!r}) is a dead end "
-            f"with no outgoing edge and is not a core.control.end"
+            f"FAIL: topology — node {nid!r} (type {n.get('type', '')!r}) is a dead end "
+            "with no outgoing edge and is not a core.control.end"
         )
-
-    need(len(ends) >= 2, f"expected ≥2 end nodes (a resolution path + ≥1 rejection path), found {len(ends)}")
 
 
 def _assert_absent(nodes_by_id, substr, why):
@@ -189,41 +152,28 @@ def _assert_absent(nodes_by_id, substr, why):
 
 
 def main():
-    # Positive: the full orchestration is present. Each hint targets a resource
-    # node that a hardcoded Script cannot substitute for.
+    # Each hint targets a resource node that a hardcoded Script cannot stand in for.
     assert_flow_has_node_type(["uipath.ixp"])
     assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
     assert_flow_has_node_type(["uipath.agent.autonomous"])
     assert_flow_has_node_type(["uipath.agent.resource.context.index"])
     assert_flow_has_node_type(["uipath.core.api-workflow"])
-    assert_flow_has_node_type(["core.logic.switch"])
-    assert_flow_has_node_type(["core.logic.decision"])
     assert_flow_has_node_type(["core.control.end"])
-    print("OK: full orchestration present (IxP, entity read, 2 inline agents, "
-          "SOP context index, API-workflow, switch, decision, end)")
+    print("OK: IxP, entity read, inline agent, SOP context index, API workflow and end nodes present")
 
-    project_dir = find_project_dir()
-    nodes_by_id, edges, globals_list = _flow_graph(project_dir)
+    nodes_by_id, edges, globals_list = _flow_graph(find_project_dir())
 
-    # Wiring — the orchestration is connected in the right order, not just present.
     assert_topology(nodes_by_id, edges)
-    print("OK: topology wired correctly (trigger→IxP→entity read→analyst→switch→"
-          "decision→API-workflow→writer→end; SOP index attached to an agent)")
+    print("OK: trigger→IxP→ERP/CRM→analyst (SOP index attached)→posting→writer→end, "
+          "plus a rejection path that skips posting")
 
-    # Edit 1 — HITL removed.
-    _assert_absent(nodes_by_id, "human-in-the-loop", "HITL node must be removed")
-    # Edit 2 — no terminal email; the flow returns instead of sending.
-    _assert_absent(nodes_by_id, "send-email", "flow must NOT send email — return the outcome instead")
+    _assert_absent(nodes_by_id, "human-in-the-loop", "the manager review is auto-approved, no HITL node")
+    _assert_absent(nodes_by_id, "send-email", "the email is drafted, not sent")
     print("OK: no human-in-the-loop node and no send-email node")
 
-    # Edit 2 (cont.) — the outcome is RETURNED as flow output variables.
     out_vars = [v["id"] for v in globals_list if v.get("direction") == "out"]
     if len(out_vars) < 2:
-        sys.exit(
-            f"FAIL: flow declares {len(out_vars)} `out` variable(s); expected ≥2 — the "
-            "resolution must be RETURNED to the caller (e.g. determination / rationale / "
-            "resolution body), not emailed."
-        )
+        sys.exit(f"FAIL: flow declares {len(out_vars)} `out` variable(s); expected ≥2")
     print(f"OK: flow returns its outcome via out variables {out_vars}")
 
 

@@ -66,12 +66,13 @@ A skeleton is not a working process and must never be reported as one.
    Do not hand-roll a loop from a gateway and a `.goto()` for a per-item step, and do not leave the marker to *Build it*: it is structure, and the user is approving it.
 9. **A path that leaves a `.fork()` branch early must end the process; every other path continues on its own branch to the join.**
    A parallel gateway, the fork as well as the join, fires only when every incoming flow has delivered a token.
-   Four shapes break that, and `check` and `validate` all pass them:
+   Five shapes break that, and `check` and `validate` all pass them:
    - A plain `.endEvent()` anywhere inside a branch — on the branch's own path, in a `.choose()` or `.race()` arm such as a rejection, or at the end of an interrupting `onError` or `onTimer` handler — consumes the branch's token, so the join waits forever.
    - A `.goto()` inside a branch that jumps into a sibling branch, past the join, or into the join while the branch's own path also reaches it, breaks the join's count: the branch's own input to the join never delivers, or the join gets an input that never delivers, so the join waits forever.
    - An interrupting handler whose path does not end rejoins at the statement after the activity, and for a branch's last activity that statement is the fork's join.
      The handler's path then becomes an extra input to the join: the activity's own flow never delivers because the handler cancelled it, so the join waits forever.
    - A `.goto()` from anywhere, after the join included, that targets the `.fork()` itself gives the fork a second incoming flow; a parallel gateway waits for every incoming flow, so the fork never fires.
+   - An interrupting handler whose path does not end, on the activity written directly before a `.fork()`, rejoins at the fork: the activity's own flow never delivers because the handler cancelled it, and the handler's path becomes a second incoming flow into the fork, so the fork never fires.
 
    Write the safe shape:
    - When the failure or outcome stops the process, end its path in `.endEvent(<id>, { name, terminate: true })`, or in an error end event (`.endEvent(<id>, { name, error: '<ErrorName>' })`) when a caller or an event sub-process handles the error.
@@ -81,6 +82,7 @@ A skeleton is not a working process and must never be reported as one.
      A bare `.exclusiveGateway()` inside a branch does not compile, so merge on a box.
    - To retry the whole parallel block, `.goto()` the box just before the `.fork()`, never the fork: the box merges the loop, and the fork keeps one incoming flow.
      When the fork directly follows the start event, add that box first, such as the step that prepares the retry.
+   - When an activity with an `onError` or `onTimer` handler comes directly before a `.fork()`, put a plain box between them, such as the step that starts the parallel work, or end the handler's path as above.
 
    A non-interrupting handler leaves the step running on its branch and ends in its own end event (rule 4), so rule 9 lets it end separately; a `.goto()` on its path still must not target the fork or a node that reaches `<fork>_join`.
    Rule 9 also does not apply to the end event that closes a `.subProcess()` body: the sub-process then continues on its branch.
@@ -187,6 +189,7 @@ Without `confirmAccounts`, the compiled file carries `createByHand → setup_joi
      This holds for source that `decompile` wrote too: its `.goto()` rejoins pass only when they stay on their own branch, and the `check --graph` bullet below cannot prove that, because a jump into a sibling branch leaves the join's `Incoming` count unchanged.
      A non-interrupting handler's `.goto()` is exempt when its target cannot reach `<fork>_join`.
    - In the `.bpmn.ts`, no `.goto()` anywhere targets a `.fork()` id; a whole-block retry targets the box before the fork (rule 9).
+   - In the `.bpmn.ts`, an activity written directly before a `.fork()` has no `onError` or `onTimer` handler whose path does not end; a handler there needs an end event or a plain box between the activity and the fork.
    - In the `check --graph` output, under `Data.Graph.Nodes`, the node whose `Id` is `<fork>_join` has an `Incoming` no larger than the number of `Outgoing` entries on the `<fork>` node.
      A larger `Incoming` means an extra path flows into the join; the join's extra source is a box inside an `onError` or `onTimer` handler, or a `.goto()` from a decision arm.
 
@@ -243,7 +246,8 @@ It is the turn's last tool call: before it, read [gate-reply-template.md](gate-r
   Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
-- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+- **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[?contains(Name,'<KEYWORD>') || contains(Name,'<keyword>')].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
+  A tenant holds hundreds of entities, so never list them unfiltered. `contains` is case-sensitive: test each keyword from the box's label as written, capitalized and lowercase, and a plural by its stem (`Compan` for `companies`, matching `Company` and `Companies`), all joined with `||`.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
 
 Run each lookup exactly as written, adding no flag: `uip` rejects `--output-filter` on `uip solution resources list` without `--limit`, and rejects `--limit` on every `uip is` and `uip df` list.
@@ -295,7 +299,10 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:end-->
   An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
   When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
-  A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
+  A box the gate marked `none yet` that runs a process (an RPA workflow, an agent, an API workflow, a function, or a Maestro BPMN, Case or Flow process) gets a placeholder binding pair shaped as [RULE `bpmn.orchestrator.in-solution-process`](bpmn-runtime.md#http-and-orchestrator-work) shows: `value` and `resourceKey` are a short name taken from the box's label (`PilotEmailExtractor`), `resourceSubType` is its `ProcessType` from [RULE `bpmn.orchestrator.process-type`](bpmn-runtime.md#http-and-orchestrator-work) (`Process`, `Agent`, `Api`, `Function`), and the folder binding carries no value.
+  Every other `none yet` box (a connector, Data Fabric, Business rule or queue box) stays a bare `.task()`, because `refresh` refuses a connection binding that is not a connection id: a connector or Data Fabric box is named as the second bullet of [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) says, and a Business rule or queue box keeps its gate label.
+  The final report lists them under `Needs:` and reads `built, not runnable yet`.
+  A connection the gate named is the user's choice once they pick *Build it*, their own personal one included, unless it is another person's or not `State: Enabled` ([connection rules](connectors.md#3-the-loop-author--check--prepare--check--compile)): treat that box as `none yet`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
   A real start trigger, a renamed start event or a new entry point now needs `uip maestro bpmn refresh` before `validate`, as [SKILL.md](../SKILL.md#workflow) step 7 says.

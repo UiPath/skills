@@ -1,70 +1,142 @@
 #!/usr/bin/env python3
-"""Inline-agent analyst flow (context-grounded).
+"""BillingDisputeAnalyst: debug the flow against the live tenant and grade
+what the SOP-grounded agent decided.
 
-Tests a Maestro Flow whose single work node is an inline low-code agent
-(`uipath.agent.autonomous`) grounded on a semantic index via its `context`
-handle. Three layers:
-  1. Structural: the flow contains BOTH an inline autonomous agent node AND a
-     `uipath.agent.resource.context.index.*` node — the agent's context handle
-     must be wired to a real index (anti-hardcode).
-  2. Behavior: `flow debug` completes.
-  3. Output: the agent returns a non-empty `determination`. We do NOT assert
-     grounding: the dispute facts (290/300/contracted) are in the prompt, so a
-     keyword match proves restatement, not that the SOP index was consulted.
-     Grading the named output keeps the pass honest.
+The prompt names no variables, so the seeded values are mapped onto the flow's
+declared inputs by meaning (`flow_io_roles.map_inputs`) and the decision and
+reasoning are found among its declared outputs by value.
+
+The live "Billing Dispute SOP Index" is a numbered SOP: §5.4 "Incorrect rate"
+compares the billed unit price with the contracted rate, and §7 routes a credit
+under $500 to auto-resolve, $500 to $5,000 to manager review, and anything
+without a variance to reject. The prompt states none of those rules.
+
+  overcharge   Invoice MCS-2026-04903 line 2 (DevOps Engineering): 90 h billed
+               at $290 against a contracted $235. Credit (290 - 235) x 90 =
+               $4,950, inside §7's $500-$5,000 band, so "manager_review". The
+               description carries both rates; only the SOP says where $4,950
+               lands, so the decision proves the agent read it.
+  reject       Invoice MCS-2026-04872 line 5 (Custom Integration Build): 14 h
+               billed at $185 and contracted at $185. No variance, so "reject".
+  thin         A description with no figures at all. The prompt says a
+               description too thin to check goes to "manager_review".
+
+Each run must complete the agent node, return the decision exactly as the
+prompt spells it, and return reasoning that names an SOP rule.
+
+Usage: check_billing_dispute_analyst.py overcharge|reject|thin
 """
+import json
 import os
 import sys
 
-# Walk up to the skill's tests root (the dir holding the _shared package).
 _d = os.path.dirname(os.path.abspath(__file__))
 while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared")):
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
+from _shared import flow_io_roles as io  # noqa: E402
+from _shared.billing_sop import NAMES_A_RULE  # noqa: E402
 from _shared.flow_check import (  # noqa: E402
-    assert_flow_has_node_type,
-    assert_output_nonempty,
-    get_last_debug_raw,
+    _fail,
+    _fail_with_capture,
+    _load_flow,
+    completed_node_ids_of_type,
     run_debug,
 )
 
-INPUTS = {
-    "disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
-    "invoiceNumber": "MCS-2026-04872",
+# An inline agent, or an existing tenant agent (`uipath.core.agent.<key>`).
+AGENT_TYPES = ("uipath.agent.autonomous", "uipath.core.agent.")
+DECISIONS = ("credit", "reject", "manager_review")
+
+CASES = {
+    "overcharge": {
+        "invoice": "MCS-2026-04903",
+        "description": (
+            "Atlas Manufacturing Group (account ACCT-71044-AT) disputes line 2 of "
+            "invoice MCS-2026-04903, DevOps Engineering: 90 hours billed at $290 per "
+            "hour. Our SOW AT-2026-008 contracts this work at $235 per hour."
+        ),
+        "decision": "manager_review",
+        # check_analyst_band.py grades the band.
+        "accept": ("manager_review", "credit"),
+    },
+    "reject": {
+        "invoice": "MCS-2026-04872",
+        "description": (
+            "Northwind Electronics Corp. (account ACCT-98201-NE) disputes line 5 of "
+            "invoice MCS-2026-04872, Custom Integration Build: 14 hours billed at $185 "
+            "per hour. Our contract rate for this work is $185 per hour, but we feel "
+            "the hourly rate is too high."
+        ),
+        "decision": "reject",
+    },
+    "thin": {
+        "invoice": "MCS-2026-04872",
+        "description": "Something on this invoice looks wrong to us. Please check it.",
+        "decision": "manager_review",
+    },
 }
 
 
-def main():
-    assert_flow_has_node_type(["uipath.agent.autonomous"])
-    assert_flow_has_node_type(["uipath.agent.resource.context.index"])
-    print("OK: flow wires an inline autonomous agent to a context.index node")
+def roles(case):
+    c = CASES[case]
+    return {
+        "invoice number": {"value": c["invoice"], "keywords": [
+            "invoicenumber", "invoiceno", "invoiceid", "invoiceref", "invoice"]},
+        "dispute description": {"value": c["description"], "keywords": [
+            "description", "complaint", "problem", "issue", "statement", "details", "dispute",
+            "message", "reason", "claim", "text"]},
+    }
 
-    payload = run_debug(inputs=INPUTS, timeout=540)
-    # Persist the full debug trace next to the check so the execution (element
-    # runs, agent outputs, traceId) can be inspected after the run — e.g. to
-    # confirm whether the context index was actually retrieved.
-    raw = get_last_debug_raw()
-    if raw:
-        # Diagnostics only — never fail the check over persistence. The task dir
-        # is read-only on CI checkouts (OSError 30); fall back to the sandbox cwd.
-        for trace_dir in (os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
-            trace_path = os.path.join(trace_dir, "last_debug_trace.json")
-            try:
-                with open(trace_path, "w") as fh:
-                    fh.write(raw)
-                print(f"trace: wrote debug payload to {trace_path}")
-                break
-            except OSError:
-                continue
-        else:
-            print("trace: debug payload not persisted (no writable location)")
-    # Assert the flow produced a non-empty `determination` output. We do NOT
-    # assert grounding here: the dispute facts (290/300/contracted) are present
-    # in the prompt, so any keyword match is satisfiable by restatement and
-    # would not prove the SOP index was actually consulted. Grading the named
-    # output keeps this honest — the agent ran and emitted its determination.
-    assert_output_nonempty(payload, "determination")
-    print("OK: flow completed and the agent returned a non-empty determination")
+
+DECISION_FILE = ".grading/analyst_overcharge_decision.json"
+
+
+def check(case, flow, payload):
+    expected = CASES[case]["decision"]
+    accepted = CASES[case].get("accept", (expected,))
+    agents = set()
+    for hint in AGENT_TYPES:
+        agents |= completed_node_ids_of_type(payload, hint)
+    if not agents:
+        _fail_with_capture("no agent node completed in the debug run")
+    print(f"OK: the agent completed ({sorted(agents)})")
+
+    outs = io.out_values(flow, payload)
+    print(f"outputs: { {k: v for k, (_t, v) in outs.items()} }")
+    # Text nested in an object output counts too: {decision, reasoning} is one result pair.
+    found = [(k, t) for k, (_t, v) in outs.items() for t in io.texts(v)]
+    matched = sorted({t.strip() for _k, t in found if any(io.equals_exact(a)(t) for a in accepted)})
+    if not matched:
+        returned = [t for _k, t in found if t.strip().lower() in DECISIONS]
+        _fail_with_capture(
+            f"no declared output is the decision {' or '.join(map(repr, accepted))} (the SOP's answer "
+            f"for this dispute); decisions returned: {returned}; outputs: {outs}"
+        )
+    print(f"OK: the decision is {matched}")
+    if case == "overcharge":
+        os.makedirs(os.path.dirname(DECISION_FILE), exist_ok=True)
+        with open(DECISION_FILE, "w") as f:
+            json.dump({"decisions": matched}, f)
+
+    reasons = [t for _k, t in found if not any(io.equals_exact(a)(t) for a in accepted) and len(t.split()) >= 5]
+    if not any(NAMES_A_RULE.search(t) for t in reasons):
+        _fail_with_capture(f"no returned reasoning names an SOP rule (by § or section number, or its title): {reasons}")
+    print("OK: the reasoning names an SOP rule")
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in CASES:
+        sys.exit(f"usage: {os.path.basename(__file__)} {'|'.join(CASES)}")
+    case = sys.argv[1]
+    flow = _load_flow("**/project.uiproj")
+    if not any(h in str(n.get("type", "")) for n in flow.get("nodes") or [] for h in AGENT_TYPES):
+        _fail("the flow has no agent node (inline or existing tenant agent)")
+    inputs, _attachments, unmapped = io.map_inputs(flow, roles(case), object_fallback=None, file_path=None)
+    if problem := io.unmapped_error(flow, unmapped, inputs):
+        _fail(problem)
+    print(f"debug inputs: {inputs}")
+    check(case, flow, run_debug(inputs=inputs, timeout=540))
 
 
 if __name__ == "__main__":

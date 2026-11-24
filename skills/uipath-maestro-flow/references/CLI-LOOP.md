@@ -57,7 +57,7 @@ Read the answer this way:
 
 - The list prints and has the name: the feature is there.
 - The list prints and lacks the name: the feature is not there. Upgrade the SDK, or use the fallback the reference gives.
-- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. That says nothing about the features below, which all shipped earlier. For one of them, follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
+- `error: unknown command 'capabilities'`: the SDK is older than 6.101.0. For `flow-entry-point-default`, which shipped later, that means the feature is not there. For the other features below, which all shipped earlier, it says nothing: follow the version note in its reference (for example, `check --baseline` works from 6.64.0).
 
 The names are stable:
 
@@ -69,6 +69,7 @@ The names are stable:
 | `flow-script-metadata` | the `$metadata` parameter of a script function |
 | `flow-merge-source` | `merge <Name>.flow.ts --original <Name>.flow`, from the `// @decompiled-from` stamp |
 | `project-min-version` | `flowSdk.minVersion`, below |
+| `flow-entry-point-default` | `.entryPoint(id, spec, { default: true })` ([manual-trigger.md](manual-trigger.md#multiple-entry-points)); always absent when `capabilities` is unknown |
 
 To pin one SDK floor for a project, add `"flowSdk": { "minVersion": "<version>" }` to its `package.json`.
 From 6.101.0, `compile`, `check`, `decompile` and `merge` then refuse an older SDK with exit 2. The message names the copy that ran and the `npm install ...@latest` command that upgrades it (`--save-dev` in the project for a workspace copy, else `-g`).
@@ -78,7 +79,7 @@ Both need `@uipath/maestro-builder-sdk` 6.101.0 or later (UiPath/builder-sdk#200
 ## Local authoring hard gates
 
 <!--skill-flavor:local-gates:start-->
-Use this section only with emit-only disabled. Use source `check` as the fast no-output loop; with a library and `.flow-sdk/bindings.json` beside the source it reports every connector-input and binding refusal that `compile` would raise. Compile to emit, then run product static check on the artifact. There is no compiled-artifact `check`; `validate` is that rung. `compile` does not run `check` and writes any serializable flow, so never compile with a `check` error. Ignore only an error whose own message says to ignore it, when applicable (for example `INLINE_AGENT_PROMPT_JSON_TEXT` when JSON is mentioned only as data). For a brownfield edit, add `--baseline <original.flow>` ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)).
+Use this section only with emit-only disabled. Use source `check` as the fast no-output loop; with a library and `.flow-sdk/bindings.json` beside the source it reports every connector-input and binding refusal that `compile` would raise. Compile to emit, then run product static check on the artifact. There is no compiled-artifact `check`; `validate` is that rung. `validate` judges connector and other tenant nodes against the node cache `registry pull` wrote for your login (CLI 1.206 and earlier judge built-in nodes against that cache too); after a stale-handle error, run `uip maestro flow registry pull --force` once and validate again. `compile` does not run `check` and writes any serializable flow, so never compile with a `check` error. Ignore only an error whose own message says to ignore it, when applicable (for example `INLINE_AGENT_PROMPT_JSON_TEXT` when JSON is mentioned only as data). For a brownfield edit, add `--baseline <original.flow>` ([brownfield.md](brownfield.md#check-only-what-you-changed-check---baseline)).
 
 Run this sequence in order; run `registry prepare` only when `check` names it:
 

@@ -70,10 +70,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Studio Web cannot run `uip solution resources refresh` (no .uipx on disk), so the
+  # studioweb skill declares each resource with `resources add` instead; either counts.
   - type: command_executed
-    description: "Agent refreshed solution resources"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+refresh'
+    description: "Agent declared the connection in the solution: uip solution resources refresh, or resources add --kind Connection (CLI or ManageSolutionResources)"
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+(?:refresh\b|add\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Connection\b)|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"add")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Connection")'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

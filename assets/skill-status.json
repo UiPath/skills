@@ -177,6 +177,14 @@
       },
       "last_synced": null
     },
+    "uipath-ontology": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-planner": {
       "status": "stable",
       "confluence": {
@@ -250,7 +258,7 @@
       "last_synced": null
     },
     "uipath-troubleshoot": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null

@@ -25,10 +25,15 @@ Never mix the two transports in one run. The domain contract — required fields
 Resolve the cloud token + base URL + org + tenant in this **priority order**:
 
 1. **Runtime env-auth (preferred — how UiPath Delegate provides it).** If `UIPATH_CLI_AUTH_TOKEN` is set (with `UIPATH_CLI_ENABLE_ENV_AUTH=true`), use it as the bearer and take org/tenant from `UIPATH_CLI_ORGANIZATION_NAME` / `UIPATH_CLI_TENANT_NAME` (and the `..._ID` variants). Base URL defaults to `https://cloud.uipath.com`. *(If a parent `uip` process instead exported `UIPATH_ACCESS_TOKEN` + `UIPATH_URL` — the `{base}/{org}/{tenant}` shape — use those.)*
-2. **Logged-in `uip` session.** Otherwise, if the user has run `uip login`, read `~/.uipath/.auth` (JSON: `accessToken`, `baseUrl`, `organizationName`, `tenantName`).
-3. **User-provided (last resort).** Ask the user to paste a cloud bearer token plus their **org** and **tenant** slugs (the two path segments after the host in their AH URL).
+2. **Logged-in `uip` session.** Otherwise take `$BASE_URL`, `$ORG`, `$TENANT` from `uip login status --output json` (`Data.BaseUrl`, `Data.Organization`, `Data.Tenant`; `Data.Status` must be `Logged in`) and the token from `uip login refresh --output json` (`Data.AccessToken`). Never read the CLI's credentials file.
 
-Use whatever you resolved as `$ACCESS_TOKEN`, `$BASE_URL`, `$ORG`, `$TENANT` in the flows.
+Set `$ACCESS_TOKEN` in the **same shell invocation** as each request, and never print it:
+
+```bash
+ACCESS_TOKEN=${UIPATH_CLI_AUTH_TOKEN:-$(uip login refresh --output json | sed -n 's/.*"AccessToken": *"\([^"]*\)".*/\1/p')}
+```
+
+Never run `uip login refresh --output json` on its own: its output includes the token. If neither source yields a token, stop and ask the user to run `uip login`. Never ask the user to paste a token.
 
 **Gateway URL** (every request):
 
@@ -43,7 +48,7 @@ The platform injects tenant-routing headers from the `{org}/{tenant}` segments �
 - Send `Authorization: Bearer <cloud access token>` on every request (and `Content-Type: application/json` on POSTs).
 - **NEVER** send `x-ah-openapi-auth` or `x-ah-openapi-app-key`. Those route to the admin-token path and reject a cloud token with **401** — never add them to "fix" a 401.
 - Never fall back to an admin OpenAPI token. If no token resolves, stop and explain the skill needs the user's cloud session (`uip login`) or a host-provided token.
-- Cloud tokens are short-lived. On a **401**, if the token came from `~/.uipath/.auth`, tell the user to run `uip login` again, re-resolve, and retry.
+- Cloud tokens are short-lived. On a **401** with a `uip login` session, re-run the request (its `uip login refresh` renews the token); if it still fails, tell the user to run `uip login` again.
 
 ## Routing — pick the flow by intent
 

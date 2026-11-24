@@ -6,7 +6,7 @@ description: >
   — natural-language similarity → llm-judge-output, deterministic JSON shape
   similarity → json-similarity, substring presence → contains. The evaluator
   taxonomy is the shared eval engine, identical to Flow.
-tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:discover, feature:eval]
+tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:discover, feature:eval, studio-web-unsupported, studio-web-unsupported:no-eval-in-host]
 
 run_limits:
   expected_turns: 15
@@ -63,9 +63,9 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Agent created the solution"
+    description: "Agent created the solution (solution init, or bpmn init, which auto-scaffolds the solution off Studio Web)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(new|init)\b(?![^\n;&|]*\s(?:--help|-h)\b)|maestro\s+bpmn\s+init[ \t]+["'']?[A-Za-z_$])'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)

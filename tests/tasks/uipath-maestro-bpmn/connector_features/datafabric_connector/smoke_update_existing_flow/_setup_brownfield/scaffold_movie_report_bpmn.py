@@ -4,8 +4,8 @@ snapshot its initial state. Used by `smoke_update_existing_flow` (BPMN port)
 to give the agent a real brownfield artifact to edit + revert.
 
 Ported from Flow's `scaffold_movie_report_flow.py`. Flow builds the project
-with structured CLI verbs (`flow init`, `flow node add`, `flow node
-configure`); the BPMN CLI has no node-authoring verb (see
+with `flow init` plus a committed `.flow` fixture (it used `flow node add` /
+`node configure`, which are being retired); the BPMN CLI has no node-authoring verb (see
 `uip maestro bpmn --help` -- only `init`/`format`/`validate`/`registry`/
 `refresh`), so this scaffold builds the project with `uip maestro bpmn init`
 and then hand-edits the generated XML the way

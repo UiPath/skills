@@ -33,7 +33,7 @@
 
 ## Platform Dependencies
 
-{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is classed as the format guide's § Open Decisions classes a point.}
+{One table per kind of resource the automation uses, in this order; leave out a kind it does not use. Used by names the steps. A value the source or description does not show is classed as the genome questions guide's § Open Decisions classes a point.}
 
 ### Queues
 
@@ -91,7 +91,7 @@
 
 ## Configuration Questions
 
-{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (format guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (transactional shape guide rule 4). Each question names its kind — setting or constant (format guide § Configuration Questions).}
+{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (genome questions guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (transactional shape guide rule 4). Each question names its kind — setting or constant (genome questions guide § Configuration Questions).}
 
 1. {Question}? ({setting | constant}; default: {value})
 2. {Question}? ({setting | constant}; default: {value})
@@ -100,7 +100,7 @@
 
 ## Open Decisions
 
-{Every point left to a person, numbered once and never renumbered: an entry stays when decided or withdrawn (format guide § Open Decisions). Each marked line names its entry: `*[Inferred: D1]*`.}
+{Every point left to a person, numbered once and never renumbered: an entry stays when decided or withdrawn (genome questions guide § Open Decisions). Each marked line names its entry: `*[Inferred: D1]*`.}
 
 1. {The decision as a question}? ({business outcome}; answered by: {the process owner}; builds now: {what the genome builds}; instead: {the other option}) — step {N}, {step name}
 2. {The point as a question}? ({run behaviour}; answered by: {the process owner}; recommended: {the evident intent, in words}; builds now: {the source's behaviour}) — step {N}, {step name}

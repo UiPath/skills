@@ -12,7 +12,7 @@ Change one and you are building something else.
   The marker runs the body once per item, each with its own `iterator`; it does **not** by itself stop one item's failure ending the run.
   An unhandled failure propagates outward, so containing it needs a `failure-escalation` net placed inside the iteration.
   Isolation is the loop plus that net, never the loop alone.
-- **Every item leaves a result, and aggregation reads them once, after the block completes.** Both exits of the body, the normal end and the net, append the item's outcome to `itemResults`.
+- **Every item leaves a result, and aggregation reads them once, after the block completes.** Both exits of the body, the normal end and the net, append the item's outcome to `itemResults` (Parallel: write it to the store).
   The multi-instance sub-process does not exit until every instance has, which is what makes a single aggregation step correct rather than a race.
 - **The policy decision is separate from the aggregation.** Aggregating counts results; the gate decides whether those counts constitute success.
   Best-effort, all-or-nothing, and quorum are then one condition apart.
@@ -85,7 +85,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | `recordResult` | `.task()` with `set`, last in the body | Mechanism |
 | `itemFailures` | `.eventSubProcess()` inside the body | Mechanism |
 | `recordItemFailure` | `.task()` with `set`, in the net | Mechanism |
-| `aggregate` | the statement after the sub-process | Mechanism |
+| `aggregate` | `.scriptTask()` after the sub-process, never a `.task()` with `set` | Mechanism |
 | `sendReport` | a send step, before the gate | Placeholder |
 | `policyGate` | `.choose()` | Mechanism |
 | `endCompleted`, `endFailed` | `.endEvent()`, named | Mechanism |
@@ -96,6 +96,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | `itemResults` | array | `[]` | One `{ item, ok }` per item, appended by the body or the net |
 | `batchSummary` | jsonSchema | | Totals, success count, failure breakdown |
 | `policySatisfied` | boolean | `false` | Did the run meet the configured policy |
+| `batchId` | string | | Parallel only: tags this run's records for the read-back |
 
 `policySatisfied` defaults to `false` so a run whose `aggregate` never wrote it ends as failed, not completed.
 
@@ -104,10 +105,17 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | Variant | Question it answers | Delta |
 | --- | --- | --- |
 | Sequential | — | The shape above |
-| Parallel | Must items run several at a time? | Drop `sequential`, and record each result outside the process |
+| Parallel | Must items run several at a time? | With a named store: drop `sequential`, record each result outside the process. No store named: stay sequential |
 
 **Parallel.** Drop `sequential: true` and the items run concurrently, but the in-process append no longer collects them ([Getting results to `aggregate`](#getting-results-to-aggregate)).
-Write each item's outcome to a store outside the process instead, such as a Data Fabric record per item keyed by a batch id (`.dataService()`), in place of `recordResult` and `recordItemFailure`, and have `aggregate` read the batch's records back.
+When the request names no store, do not invent an entity or connection, and do not stop to ask: keep `sequential: true`, which collects results correctly, and put on the final report's `Assumed:` line that items run one at a time because no store was named.
+With a store, write each item's outcome to it, one Data Fabric record per item: a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`).
+Declare `.var('batchId', 'string')`, set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`, and write it on every record.
+After the sub-process, read the batch back with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, with `limit` at or above the batch size (it defaults to 100 and silently drops the rest).
+Keep `aggregate` a `.scriptTask()` that totals the records from `vars.<queryId>_response` and writes `batchSummary` and `policySatisfied` through `outputs`, as the Shape does.
+A `.task()` without `set` compiles to a no-op `bpmn:task` and leaves `policySatisfied` at its `false` default.
+On a tenant entity the response is a bare array of records, `[]` when none (read `.length` and `.filter` on it directly).
+The total is `vars.batchItems.length`, not the record count: a record count below it is an item that left no result, so count it as a failure (`met` needs `ok === vars.batchItems.length`).
 This variant is not verified end to end.
 
 ## What to bind
@@ -115,7 +123,7 @@ This variant is not verified end to end.
 - **`fetchBatch`**: the source (database query, file, API list, queue); batch size and filters are decided here.
 - **The per-item work** inside `processEach`: a UiPath agent, an RPA job, Document Understanding, an API call.
   Place and bind the node; the per-item work happens at runtime, not while authoring.
-- **`aggregate`**: count `itemResults`, apply the policy and set `policySatisfied`.
+- **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: the query's records), applies the policy and sets `policySatisfied` through `outputs`.
   Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above a threshold.
   Evaluate it here, in a node, rather than as the loop's `completion` condition.
   A completion condition stops the block early, which is a different thing from judging the run afterwards, and it cannot see the per-item results the policy needs.
@@ -129,7 +137,7 @@ That is the common case when this pattern is nested inside another.
 Drop `policyGate` and `endFailed` when every run succeeds by definition and only the counts matter.
 Keep `sendReport`.
 
-Keep both `recordResult` and `recordItemFailure` when you change the body: an item that leaves no result is one `aggregate` cannot count.
+Keep both `recordResult` and `recordItemFailure` (Parallel: their store writes) when you change the body: an item that leaves no result is one `aggregate` cannot count.
 Add fields to the record (a reason, a skipped flag) as the policy needs them.
 
 ## Getting results to `aggregate`
@@ -139,7 +147,7 @@ The sketch collects them itself: each iteration appends to `itemResults`, and `s
 A Maestro debug run of this shape over `[1, -2, 3]` completed with three results, the `-2` one caught by the net, and `aggregate` counted 3 / 2 ok.
 
 Parallel iterations overwrite each other's writes to one variable: the engine's variable store is last-writer-wins, and a Maestro run appending 12 items in parallel kept 11.
-Never append to one variable from parallel iterations; use the parallel variant's external store.
+Never append to one variable from parallel iterations; write to the parallel variant's external store, or keep `sequential: true` when none is named.
 
 The append is a `set` expression because it reads `iterator` directly and validates clean.
 Declare the list as `array`, whose default is written as JSON; a `jsonSchema` default of `[]` does not arrive as a list.

@@ -157,7 +157,7 @@ Here's a worked invoice taxonomy example, which illustrates the format specifica
 
 Each `outputSchema.properties` entry is a group. A single-occurrence group is `"type": ["object", "null"]` with fields directly under `properties`; a repeating group is `"type": "array"` with fields under `items.properties`. Model repeating tables as arrays.
 
-Nesting is by property name: `Invoice > Line Items` is a child of `Invoice`; both remain top-level properties, separated by space-greater-than-space. `set` derives and stores the parent back-reference, so do not write it. Start with one document-type group and put each table or section beneath it.
+Nesting is by property name: `Invoice > Line Items` is a child of `Invoice`; both remain top-level properties, separated by space-greater-than-space. `set` derives and stores the parent back-reference, so do not write it. A top-level group names no parent. Start with one document-type group and put each table or section beneath it.
 
 ### Field types
 
@@ -174,7 +174,7 @@ Fields use `$ref` entries in `outputSchema.$defs`; the node initially provides:
 
 Carry the whole `$defs` block through unchanged. `set` replaces the document; omitting an entry removes that type, and every `$ref` must resolve within the same block. Prefer a stricter type only when certain; otherwise use `ft-inferred-text`.
 
-A Choice is the only type you add; add one only when its complete set of allowed values is small, fixed, and evident from documents or user instructions — a status column, not a description column. Use an `ft-` key with a URL-safe suffix, for example:
+A Choice is the only type you add; add one only when its complete set of allowed values is small, fixed, and evident from documents or user instructions — a status column, not a description column. Use an `ft-` key with a URL-safe suffix (letters, digits, `.`, `_` or `-` only, so the `$ref` naming it needs no escaping) and give every entry a `title`, for example:
 
 ```json
 "ft-payment-status": { "title": "Payment Status", "type": ["string", "null"], "enum": ["Paid", "Unpaid", "Partially paid"] }
@@ -200,7 +200,7 @@ These limits are not CLI-enforced but improve extraction:
 
 ## What `set` does for you
 
-- **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve supplied ids and assign a missing entry the id of the same-named replaced entry.
+- **Stable ids:** Groups and fields carry `x-uipath-field-group-id` and `x-uipath-field-id`, used by annotations, evaluator settings, and taxonomy history. First writes mint ids; later writes preserve supplied ids and assign a missing entry the id of the same-named replaced entry. An id belongs to one entry: never copy one onto a second group or field.
 - **Model settings:** It rebuilds them from `inputs.modelConfig`.
 - **Validation:** A non-schema or limit violation returns exit 3 and changes nothing on disk.
 - **Draft protection:** When someone left an editing session open in Studio Web, the node carries that draft and `set` stops. `--discard-draft` proceeds and throws the draft away; pass it only when the user asked in this conversation. Headless or CI: leave the node unchanged, report the draft and `DraftIssueMessages`, and stop; the request is not done. Run no `nodes provision` either: it writes `inputs.processorKey` into the node. Report a missing processor instead. Never hand-edit `inputs.schemaDocument` to bypass this.
@@ -241,6 +241,20 @@ On an edit, check `FieldIdsMinted` and `BusinessChecksDropped` before reporting 
 | 1 | `Invalid --schema JSON` | The argument did not parse; prefer `--schema @<file>` for sizeable JSON. |
 | 1 | `Cannot read the schema file` | The `@` path is absent or unreadable; this is a path error, not malformed schema. |
 | 1 | node not found, or wrong node type | Run `uip maestro flow nodes list <file>` for ids and types. Only Extract document nodes carry a taxonomy. |
+
+On the SDK route, `check` reports the same content problems before compile, one code per rule, with the path and the problem in the message (SDK with builder-sdk#2055):
+
+| Code | Rule it enforces |
+| --- | --- |
+| `EXTRACT_TAXONOMY_NESTING` | nesting by name: `A > B` needs a group `A`, and a top-level group names no parent ([Field groups](#field-groups)) |
+| `EXTRACT_TAXONOMY_REF` | every field names a field type, and every `$ref` resolves inside `$defs` ([Field types](#field-types)) |
+| `EXTRACT_TAXONOMY_LIMIT` | names within 64 characters, a nested group's whole composed key included; instructions within 4096 ([Names](#names), [Instructions](#instructions)) |
+| `EXTRACT_TAXONOMY_DUPLICATE_ID` | no id on two groups or two fields ([What `set` does for you](#what-set-does-for-you)) |
+| `EXTRACT_TAXONOMY_FIELD_TYPE` | a `$defs` key needs no escaping in a `$ref`; every field type has a title ([Field types](#field-types)) |
+| `EXTRACT_TAXONOMY_STRUCTURE` | every group, field and container is the shape the Schema Editor reads |
+| `EXTRACT_TAXONOMY_BARE`, `EXTRACT_TAXONOMY_LEGACY` (warnings) | a bare JSON Schema, or the `{taxonomy, fieldTypes}` form, in place of `{ prompt, outputSchema }`; `set` refuses both, so treat either as an error |
+
+No code checks sibling-name uniqueness ([Names](#names)): each name is a property key, so JSON already makes siblings unique.
 
 ## Evidence boundary
 
