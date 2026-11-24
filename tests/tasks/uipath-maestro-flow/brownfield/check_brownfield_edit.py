@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The requested edit to the DevCon BillingDisputeResolution fixture is present.
+"""The requested edit to a brownfield fixture is present.
 
 One subcommand per task, plus `merged`: the `.flow` came out of the skill's
 decompile -> compile -> merge loop, not a hand edit.
@@ -268,7 +268,61 @@ def check_merged(original: dict, final: dict, _original_agents: dict, _agents: d
     return 0
 
 
+SWAP_CONNECTOR = "uipath-atlassian-jira"
+SWAP_FOLDER = "uipath-maestro-flow"
+SWAP_NODE = "fetchTickets"
+OLD_CONNECTION = "3f6b2a9e-41c7-4d2b-9a8e-5c1d7e0f4b21"
+OLD_FOLDER_KEY = "8d2e5c47-0b9a-4f13-a6c2-71e9d3b05a8f"
+
+
+def folder_connections() -> dict[str, str]:
+    """Id -> FolderKey of every Enabled Jira connection in SWAP_FOLDER."""
+    proc = subprocess.run(
+        ["uip", "is", "connections", "list", SWAP_CONNECTOR, "--all-folders", "--output", "json"],
+        capture_output=True, text=True, timeout=120,
+    )
+    out = proc.stdout
+    payload = json.loads(out[out.find("{"):]) if "{" in out else {}
+    rows = payload.get("Data") or []
+    return {
+        r["Id"]: r.get("FolderKey", "")
+        for r in rows
+        if r.get("Folder") == SWAP_FOLDER and r.get("State") == "Enabled"
+    }
+
+
+def check_connection_swap(_original: dict, final: dict, _original_agents: dict, _agents: dict) -> int:
+    node = next((n for n in final["nodes"] if n.get("id") == SWAP_NODE), None)
+    if node is None:
+        return fail(f"node {SWAP_NODE!r} is gone")
+
+    detail = (node.get("inputs") or {}).get("detail") or {}
+    connection = detail.get("connectionId")
+    candidates = folder_connections()
+    if not candidates:
+        return fail(f"no Enabled {SWAP_CONNECTOR} connection in folder {SWAP_FOLDER!r} to grade against")
+    if connection not in candidates:
+        return fail(f"{SWAP_NODE} uses connection {connection!r}, not one in {SWAP_FOLDER!r}: {sorted(candidates)}")
+    if detail.get("connectionFolderKey") != candidates[connection]:
+        return fail(f"{SWAP_NODE} folder key {detail.get('connectionFolderKey')!r} is not the connection's {candidates[connection]!r}")
+
+    rows = {b.get("propertyAttribute"): b for b in final.get("bindings") or [] if b.get("resource") == "connection"}
+    if (rows.get("ConnectionId") or {}).get("default") != connection:
+        return fail(f"bindings[] has no ConnectionId row for {connection}: Studio Web cannot publish the flow")
+    if (rows.get("FolderKey") or {}).get("default") != candidates[connection]:
+        return fail(f"bindings[] has no FolderKey row for {candidates[connection]}")
+
+    text = json.dumps(final)
+    stale = [g for g in (OLD_CONNECTION, OLD_FOLDER_KEY) if g in text]
+    if stale:
+        return fail(f"the .flow still names the old connection or folder: {stale}")
+
+    print(f"OK: {SWAP_NODE} and its bindings[] rows use connection {connection} in {SWAP_FOLDER!r}")
+    return 0
+
+
 CHECKS = {
+    "connection-swap": check_connection_swap,
     "credit-cap": check_credit_cap,
     "merged": check_merged,
     "switch-route": check_switch_route,
