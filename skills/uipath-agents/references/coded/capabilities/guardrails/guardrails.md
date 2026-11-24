@@ -42,7 +42,7 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 
 > **File inspection is the one exception.** For `detection_scope`, [files-guide.md](files-guide.md) and the validator's entry in [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) are the authority. A fetched summary that omits `detection_scope`, or says a validator has no file support, is not a reason to leave it out.
 
-**And it is complete — do not go digging for more.** Never grep the installed CLI or SDK (`/usr/lib/node_modules/@uipath/**`, `site-packages/uipath*`), read minified `dist/*.js` bundles, or run ad-hoc Python import probes to reverse-engineer class names, signatures, or schemas. The fetched docs plus this reference cover everything needed to write the guardrail; write the code first, then verify. The only permitted runtime probes are the two wiring checks in [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails) — run those AFTER editing the agent file, not before.
+**And it is complete — do not go digging for more.** Never grep the installed CLI or SDK (`/usr/lib/node_modules/@uipath/**`, `site-packages/uipath*`), read minified `dist/*.js` bundles, or run ad-hoc Python import probes to reverse-engineer class names, signatures, or schemas. The fetched docs plus this reference cover everything needed to write the guardrail. Order: run the `uip` discovery this reference names ([Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators), BYO discovery), write the code, then verify. The only permitted SDK probes are the two wiring checks in [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails) — run those AFTER editing the agent file, not before.
 
 > **That authority covers shape, not availability.** These pages carry `Platform Availability` notes for features still rolling out (BYOG, LLM-as-judge). Those notes are product-wide, never a statement about the tenant in front of you — [Check Tenant Availability](#check-tenant-availability-mandatory-for-built-in-ai-validators) below is the only authority for that. A validator the docs describe as "not enabled on every tenant yet" can still be `Available` here; author it.
 
@@ -83,7 +83,7 @@ The same entry decides file inspection: offer `detection_scope` only when its `P
 > uip agent guardrails llm-as-judge-models --output json
 > ```
 >
-> Use a `ModelId` from the returned list for the `model` parameter. Prefer a non-preview model; a small, fast model (Haiku / mini class) is a sound judge default. If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID.
+> Use a `ModelId` from the returned list for the `model` parameter, never an ID from memory or copied from another example. Prefer a non-preview model; a small, fast model (Haiku / mini class) is a sound judge default. If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID. A judge you chose yourself (the user did not ask for one) is optional: with no model, leave it out and do not present another validator as covering its policy.
 
 ---
 

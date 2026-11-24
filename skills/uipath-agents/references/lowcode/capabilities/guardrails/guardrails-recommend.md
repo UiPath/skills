@@ -73,23 +73,25 @@ From `agent.json`, extract:
 
 Also read `resources/` to list all tool names (needed for Tool-scope recommendations).
 
-### Exact Named-Tool Deterministic Rules — before catalog ranking
+### Literal-Predicate Tool Rules — before catalog ranking
 
-When the request gives both a named Tool and an exact mechanical predicate on
-its input or output (literal word/phrase, regex, number, boolean, or always),
-use the custom deterministic recipe below. This decision happens before
-built-in catalog candidate ranking:
+When the request points at a Tool — by its name, or by the system it calls or
+the action it performs ("emails the report" → the Tool whose `resource.json`
+sends email) — and gives an exact mechanical predicate on its input or output
+(literal word/phrase, regex, number, boolean, or always), use the custom
+deterministic recipe below, even when the user states it as a concern or asks
+for recommendations. This decision happens before built-in catalog candidate
+ranking:
 
 0. **Run the Step 0 catalog and guardrails-list fetches now, even though this
    branch does not use their content to pick a validator.** They are still
    mandatory discovery/audit steps before writing any guardrail — this branch
    only skips catalog-driven *ranking* (step 2 below), not the Step 0 calls
    themselves.
-1. Treat quoted text and a distinct all-caps token such as `CONFIDENTIAL` as
-   an exact literal predicate, even when the surrounding request is phrased
-   semantically (for example, "worried it might publish CONFIDENTIAL content"
-   or "what guardrails should I add?"). Do not broaden that literal into a
-   semantic confidentiality classification.
+1. Treat quoted text and a distinct all-caps label (a classification marking
+   such as `INTERNAL ONLY`, or a project code name; not an acronym for a data
+   category such as `PII`) as an exact literal predicate. Do not broaden it
+   into a semantic classification.
 2. Read the Tool's `resource.json.name` and use that exact value as the only
    entry in `selector.matchNames`.
 3. Set `$guardrailType: "custom"` and `selector.scopes: ["Tool"]`. This branch
@@ -101,12 +103,15 @@ built-in catalog candidate ranking:
 5. Use a blocking action when the request says to prevent the Tool operation,
    then build the complete object from [guardrails.md](guardrails.md).
 
-Broad semantic threats without an exact mechanical predicate continue through
-the built-in catalog ranking in Step 2.
+Only a threat with no literal marker or other mechanical predicate (for
+example "personal data" or "offensive replies") continues to the built-in
+catalog ranking in Step 2.
 
 Once this deterministic branch matches, the Step 0 catalog/list calls (already
 run per step 0 above) cannot replace or override the custom rule with
-`llm_as_judge`, PII detection, or any other built-in validator.
+`llm_as_judge`, PII detection, or any other built-in validator. This custom rule
+is the primary control for the user's own predicate, not the automatic fallback
+that the catalog's `custom` `WhenNotToUse` forbids.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
 
@@ -211,12 +216,14 @@ uip agent validate "<AgentName>" --output json
 
 `refresh` regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails — always run it before `validate`, matching [guardrails.md](guardrails.md)'s base walkthrough.
 
-**Deterministic completion gate:** when the request matched the exact
-named-Tool branch, re-read `agent.json` before validation and confirm the
-written entry has `$guardrailType: "custom"`, Tool scope, the exact Tool name,
-and the requested custom rule type/value. If a built-in validator was written,
-replace it with the required custom rule before running validation or
-reporting completion.
+**Deterministic completion gate:** whatever branch you took, when the request
+has a literal marker or other mechanical predicate on a Tool's input or output
+(see [Literal-Predicate Tool Rules](#literal-predicate-tool-rules--before-catalog-ranking)),
+re-read `agent.json` before validation and confirm an entry has
+`$guardrailType: "custom"`, Tool scope, the exact Tool name, and the requested
+custom rule type/value. If it is missing, write it before running validation or
+reporting completion, and never report a built-in validator as covering that
+predicate.
 
 Report to the user:
 - What was added (by name)

@@ -144,6 +144,8 @@ agent = create_agent(
 
 ### Recipe 2 — A tool that takes a file, decorator
 
+Before writing it, run the `llm_as_judge` tenant check in [guardrails.md](guardrails.md#check-tenant-availability-mandatory-for-built-in-ai-validators): `uip agent guardrails list --output json` (`Status`, and `detectionScope` in `Parameters`) and `uip agent guardrails llm-as-judge-models --output json`. Set `model=` to a returned `ModelId`, never an ID from memory or copied from another example; for an empty list, follow that section.
+
 ```python
 # standard imports omitted
 from uipath_langchain.guardrails import LLMAsJudgeValidator, guardrail
@@ -165,7 +167,7 @@ def screen_invoice(invoice: Attachment) -> str:
     ...
 ```
 
-`<JUDGE_MODEL_ID>` comes from `uip agent guardrails llm-as-judge-models --output json`. A tool created by a factory instead of `@tool` is decorated by calling the decorator: `guardrail(...)(create_analyze_file_tool(...))`.
+A tool created by a factory instead of `@tool` is decorated by calling the decorator: `guardrail(...)(create_analyze_file_tool(...))`.
 
 ### Recipe 3 — A file the agent produces
 
