@@ -1,0 +1,49 @@
+task_id: skill-idp-e2e-digitize-lifecycle
+description: >
+  Live lifecycle against the tenant: upload the bundled one-page invoice to
+  the Shared folder, digitize it, and read page 1 back as markdown. The
+  checker reads the run back from the service by the runId the agent saved,
+  so it grades what the tenant holds, not what the agent reported.
+  Skipped in CI: `uip documents` is not in a published CLI build yet and the
+  service does not digitize an uploaded document yet. Run it with
+  --include-skipped once both have shipped.
+tags: [uipath-idp, e2e, mode:operate, lifecycle:setup, outcome-graded]
+skip: true  # until `uip documents` is in the CLI image and the service digitizes an uploaded document
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  task_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup/fixtures
+reference:
+  directory: .
+
+initial_prompt: |
+  Digitize ./invoice.pdf with UiPath in the Orchestrator folder "Shared".
+
+  Capture these files in the current working directory:
+  - `run.json` — the full output of the finished digitization run.
+  - `page1.md` — page 1 of the digitized document as markdown, unchanged.
+
+  - The `uip` CLI is already authenticated.
+  - Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-idp skill"
+    skill_name: "uipath-idp"
+    expected_skill: "uipath-idp"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The saved run exists on the tenant as a succeeded one-page digitization, and page1.md holds its text"
+    command: "python3 $REFERENCE_DIR/check_digitize_lifecycle.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

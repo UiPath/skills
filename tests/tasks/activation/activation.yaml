@@ -21,6 +21,7 @@ dataset:
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
+    - uipath-idp.jsonl
     - uipath-insights.jsonl
     - uipath-ixp.jsonl
     - uipath-maestro-bpmn.jsonl
@@ -116,6 +117,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-human-in-the-loop activation"
     skill_name: uipath-human-in-the-loop
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-idp activation"
+    skill_name: uipath-idp
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
