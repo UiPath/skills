@@ -101,8 +101,6 @@ def main() -> None:
             return
         if RESULT_READ.match(value) or ENVELOPE.match(value):
             return
-        if THIS_READ.match(value) and where == "output@source":
-            return
         if BARE_FIELD.match(value) and where.endswith("@source") and (owner in forms or value[1:] not in declared):
             return
         if "[HitlTaskArguments]" in where and FORM_INPUT.match(value):
@@ -112,6 +110,9 @@ def main() -> None:
     def walk(element: ET.Element, owner: str | None) -> None:
         owner = element.get("id") or owner
         for attr, value in element.attrib.items():
+            # Checked on the raw attribute: a JSON-valued source must not lend the exemption to its strings.
+            if f"{local(element.tag)}@{local(attr)}" == "output@source" and THIS_READ.match(value):
+                continue
             if local(attr) not in LITERAL_ATTRS:
                 scan(value, owner, f"{local(element.tag)}@{local(attr)}")
         if element.text and local(element.tag) not in LITERAL_TEXT:

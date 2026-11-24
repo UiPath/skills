@@ -59,6 +59,7 @@ CASES = [
     ("raw backslash bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a\\b c"]') + "</bpmn:serviceTask>", True),
     ("bracket read of a key with a quote", '<bpmn:serviceTask id="t">' + _row('=this["a&quot;b"]') + "</bpmn:serviceTask>", False),
     ("bracket read of a key ending in a backslash", '<bpmn:serviceTask id="t">' + _row('=this["a\\"]') + "</bpmn:serviceTask>", True),
+    ("bracket read inside a JSON source", '<bpmn:serviceTask id="t">' + _row('["=this[\\"x\\"]"]') + "</bpmn:serviceTask>", False),
     ("computed bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a"] + vars.b') + "</bpmn:serviceTask>", False),
     (
         "bracket read on an input",
