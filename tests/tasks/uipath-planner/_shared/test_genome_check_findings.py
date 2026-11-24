@@ -970,3 +970,115 @@ def test_a_process_mark_naming_a_missing_process_entry_fails_strict(process_tree
     rc, out = check_process(profile="strict")
     assert rc == 1
     assert "*[Inferred: process D9]* names entry 9, which the process genome's Open Decisions does not have" in out
+
+
+# --- entity schema file (Data Fabric entities from a data model) ----------------------------------
+
+ENTITY_SCHEMA = {"version": 1, "entities": {
+    "req_requisition": {"kind": "native", "realizes": [{"class": "Requisition", "role": "owner"}],
+                        "fields": {"number": {"type": "STRING", "length": 20, "required": True, "property": "Requisition.number"}}}}}
+
+
+def with_entities(tmp_path, entities=("req_requisition",), schema=ENTITY_SCHEMA, line="Entity schema: `sample-genome.entities.json`"):
+    if schema is not None:
+        (tmp_path / "sample-genome.entities.json").write_text(json.dumps(schema), encoding="utf-8")
+    rows = "".join(f"| `{e}` | number: STRING | Dispatcher | Performer |\n" for e in entities)
+    table = f"### Data Fabric entities\n\n| Entity | Fields | Written by | Read by |\n|--------|--------|------------|---------|\n{rows}\n{line}\n\n"
+    return COMPONENT.replace("### Triggers", table + "### Triggers", 1)
+
+
+def test_entity_schema_matching_the_table_passes_strict(check, tmp_path):
+    assert check(with_entities(tmp_path), profile="strict")[0] == 0
+
+
+def test_entity_schema_that_does_not_exist_fails_strict_only(check, tmp_path):
+    text = with_entities(tmp_path, schema=None)
+    assert check(text)[0] == 0
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "entity schema sample-genome.entities.json does not exist beside the genome" in out
+
+
+def test_entity_schema_and_table_naming_different_entities_fails_strict(check, tmp_path):
+    rc, out = check(with_entities(tmp_path, entities=("req_requisition", "req_supplier")), profile="strict")
+    assert rc == 1
+    assert "['req_supplier'] are not in sample-genome.entities.json" in out
+
+
+def test_entity_schema_with_a_review_kind_fails_strict(check, tmp_path):
+    schema = json.loads(json.dumps(ENTITY_SCHEMA))
+    schema["entities"]["req_requisition"]["kind"] = "review"
+    rc, out = check(with_entities(tmp_path, schema=schema), profile="strict")
+    assert rc == 1
+    assert "still kind \"review\"" in out
+
+
+def test_template_placeholder_entity_schema_line_is_not_checked(check, tmp_path):
+    text = with_entities(tmp_path, schema=None, line="{Entity schema: <GENOME_SLUG>.entities.json — only when the entities come from a data model}")
+    assert check(text, profile="strict")[0] == 0
+
+
+def test_entity_schema_file_beside_the_genome_without_its_line_fails_strict(check, tmp_path):
+    text = with_entities(tmp_path, line="")
+    (tmp_path / "sample-genome.entities.json").write_text(json.dumps(ENTITY_SCHEMA), encoding="utf-8")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "sample-genome.entities.json sits beside the genome, but no 'Entity schema:' line" in out
+
+
+DATA_MODEL = {"classes": [
+    {"name": "Requisition", "fields": [{"name": "Requisition.number"}]},
+    {"name": "Supplier", "fields": [{"name": "Supplier.code"}]}],
+    "links": [
+    {"name": "Requisition.Supplier", "from": "#Requisition", "to": "#Supplier", "required": True, "many": False, "inverse": "#Supplier.Requisition"},
+    {"name": "Supplier.Requisition", "from": "#Supplier", "to": "#Requisition", "required": False, "many": True, "inverse": "#Requisition.Supplier"}]}
+
+
+def coverage_schema(both_sides=False, drop_link=False):
+    schema = {"version": 1, "entities": {
+        "reqRequisition": {"kind": "native", "realizes": [{"class": "Requisition", "role": "owner"}], "fields": {
+            "number": {"type": "STRING", "length": 20, "required": True, "property": "Requisition.number"},
+            "supplier": {"type": "RELATIONSHIP", "target": "reqSupplier", "display": "code", "required": True, "property": "Requisition.Supplier"}}},
+        "reqSupplier": {"kind": "native", "realizes": [{"class": "Supplier", "role": "owner"}], "fields": {
+            "code": {"type": "STRING", "length": 10, "required": True, "property": "Supplier.code"}}}}}
+    if both_sides:
+        schema["entities"]["reqSupplier"]["fields"]["requisition"] = {"type": "RELATIONSHIP", "target": "reqRequisition", "display": "number", "property": "Supplier.Requisition"}
+    if drop_link:
+        del schema["entities"]["reqRequisition"]["fields"]["supplier"]
+    return schema
+
+
+def with_model(tmp_path, schema):
+    (tmp_path / "model.json").write_text(json.dumps(DATA_MODEL), encoding="utf-8")
+    return with_entities(tmp_path, entities=("reqRequisition", "reqSupplier"), schema=schema), ("--data-model", str(tmp_path / "model.json"))
+
+
+def test_data_model_fully_carried_passes(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema())
+    assert check(text, profile="strict", extra=extra)[0] == 0
+
+
+def test_data_model_link_carried_by_no_field_fails_core(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema(drop_link=True))
+    rc, out = check(text, extra=extra)
+    assert rc == 1
+    assert "link Requisition.Supplier is carried by no RELATIONSHIP field (nor its inverse Supplier.Requisition)" in out
+
+
+def test_data_model_inverse_pair_carried_twice_fails_core(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema(both_sides=True))
+    rc, out = check(text, extra=extra)
+    assert rc == 1
+    assert "are one inverse pair but both carry a RELATIONSHIP field" in out
+
+
+def test_data_model_class_and_property_not_carried_fail_core(check, tmp_path):
+    schema = coverage_schema()
+    del schema["entities"]["reqSupplier"]
+    del schema["entities"]["reqRequisition"]["fields"]["supplier"]
+    (tmp_path / "model.json").write_text(json.dumps(DATA_MODEL), encoding="utf-8")
+    text = with_entities(tmp_path, entities=("reqRequisition",), schema=schema)
+    rc, out = check(text, extra=("--data-model", str(tmp_path / "model.json")))
+    assert rc == 1
+    assert "classes ['Supplier'] are realized by no entity" in out
+    assert "properties ['Supplier.code'] are carried by no field" in out

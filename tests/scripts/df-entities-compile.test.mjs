@@ -195,3 +195,16 @@ test('a plan compiled for a folder is refused by a local apply', () => {
   assert.equal(code, 2);
   assert.match(result.failed.refused, /compiled for folder/);
 });
+
+test('the planner\'s entity schema guide names the same kinds, roles, field keys and types as the compiler', () => {
+  const guide = readFileSync(resolve(here, '../../skills/uipath-planner/references/shared/entities-json-guide.md'), 'utf8');
+  const row = (label) => {
+    const line = guide.split('\n').find((l) => l.startsWith(`| ${label} |`));
+    assert.ok(line, `no "${label}" row in entities-json-guide.md`);
+    return [...line.split('|')[2].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  };
+  assert.deepEqual(row('`kind`'), KINDS);
+  assert.deepEqual(row('`realizes[].role`').filter((r) => r !== 'key'), ROLES);
+  assert.deepEqual(row('field `type`'), FIELD_TYPES);
+  assert.deepEqual(row('field keys').sort(), ['choiceSet', 'display', 'displayName', 'length', 'precision', 'property', 'required', 'target', 'type', 'unique']);
+});
