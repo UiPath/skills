@@ -8,12 +8,13 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
    text, or a string inside a JSON body), is JavaScript: it starts with `=js:`.
    The designer opens a plain `=` expression in its C# editor.
    Exempt, as the canvas writes them: a row `source` reading the node's own
-   result (`=result…`, `=response…`, `=this["…"]`, `=Error`, a form or agent field such as `=Action`),
-   `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
-   script envelope (`=vars`, `=metadata`), a human-task form input
-   (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
-   a process input (`=vars.<inputId>`). Names, ids, documentation and
-   annotations are literal text and not scanned; at least one `=js:` must exist.
+   result (`=result…`, `=response…`, `=Error`, a form or agent field such as `=Action`),
+   an output row `source` of exactly `=this["<name>"]`, `=bindings.<id>`,
+   `=iterator…`, a `=jsonString:` configuration blob, the script envelope
+   (`=vars`, `=metadata`), a human-task form input (`=vars.<path>` in
+   `HitlTaskArguments`), and the start-event row that maps a process input
+   (`=vars.<inputId>`). Names, ids, documentation and annotations are literal
+   text and not scanned; at least one `=js:` must exist.
 2. No element reads a variable that is not set where it runs. A process input
    belongs to the start event, so reading `vars.<inputId>` downstream is "A
    variable is unresolved" on the canvas; `validate` reports it only as a
@@ -34,7 +35,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
-RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|this\[\"(?:[^\"\\]|\\.)*\"\]$|bindings\.|jsonString:)")
+RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
+# The engine reads the key raw up to the first `]`, so a key never contains one.
+THIS_READ = re.compile(r'^=this\["[^\]]*"\]$')
 # A form or agent output field (`=Decision`); also lets an undeclared typo such as `=totl` pass.
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")
@@ -97,6 +100,8 @@ def main() -> None:
         if owner in starts and re.fullmatch(r"=vars\.(\w+)", value) and value[6:] in inputs:
             return
         if RESULT_READ.match(value) or ENVELOPE.match(value):
+            return
+        if THIS_READ.match(value) and where == "output@source":
             return
         if BARE_FIELD.match(value) and where.endswith("@source") and (owner in forms or value[1:] not in declared):
             return
