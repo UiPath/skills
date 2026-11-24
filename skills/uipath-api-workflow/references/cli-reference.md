@@ -290,6 +290,7 @@ Failure modes:
 - `"Connection '<id>' was not found…"`, `"…belongs to connector …"`, `"…is <State>, not Enabled"` — pass a pinged `Enabled` connection of the activity's connector.
 - `"Could not read the connector's settings through connection '<id>': …"` — the cause follows the colon; check the connection with `uip is connections ping <id>`.
 - `"Could not read the metadata of trigger '<name>'…"` — check it with `uip is triggers describe <connector-key> <EVENT> <OBJECT> --connection-id <uuid>`.
+- `"The connector's design-time client left '<input>' out of the trigger's filterExpression…"` (`ErrorCode: not_supported`) — the trigger would fire on events that input should exclude. Check the input name with `uip is triggers describe`; if it is right, stub without `--connection-id` and set the connection id in the stub afterwards.
 
 <!--skill-flavor:connector-typical-sequence:start-->
 ### Typical sequence
