@@ -55,7 +55,7 @@ So validate and packing pass with no CLI step after compile, and
 decompile -> merge keeps the node and its key. Merge does the same for each
 Extract document node it writes, and gives a node the original has with no
 key the key compile minted for it, so a no-edit decompile -> merge repairs
-such a node (SDK with builder-sdk#2255;
+such a node (SDK 6.124.16 or later;
 [extract-document-node.md](extract-document-node.md#making-it-actually-extract)).
 Give the step a `label` that says what it extracts: the processor is named
 after it.
