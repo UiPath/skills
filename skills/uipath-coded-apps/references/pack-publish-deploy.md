@@ -259,7 +259,7 @@ That second read happens only when a Personal Workspace could be the target: a p
 
 Resolve it with the **server-side `--name` filter** — do **not** fetch the full list and match client-side. The plain list is **paginated at 50 per page**, so a folder beyond the first page is silently missed. `--name` (contains match), `--path` (prefix), and `--type` all **require `--all`**.
 
-> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`): show them the message and ask before running `uip tools install @uipath/orchestrator-tool` (if the `Message` also mentions a pin, ask before running the `uip update` its `Instructions` name instead; see Critical Rule 23).
+> **Prerequisite:** `uip or ...` commands need the Orchestrator tool. If it is missing, `uip` installs it on first use. If that fails with `automatic tool installation is disabled`, the user turned automatic installs off (`UIPATH_CLI_DISABLE_AUTOINSTALL`): show them the message and ask before running `uip tools install @uipath/orchestrator-tool` (if the `Message` also mentions a pin, ask before running the `uip update` its `Instructions` name instead; see Critical Rule 24).
 
 ```bash
 # 1. Filter by name server-side (--name is a CONTAINS match, and requires --all)
@@ -412,7 +412,7 @@ Deleting the package also removes the matching published app version, except in 
 <!--skill-flavor:frozen-cli-config:start-->
 ## Frozen CLI Config
 
-A team can pin the CLI and its tools in the `versions` block of `.uipath/config.json`; `<CLI_PIN>` is its `versions.cli`. While the installed CLI or a tool is off its pin, `uip` refuses the command, with a `Message` such as `which this frozen config does not list` or `freezes the CLI at`. Critical Rule 23 says what to do; this section holds the detail.
+A team can pin the CLI and its tools in the `versions` block of `.uipath/config.json`; `<CLI_PIN>` is its `versions.cli`. While the installed CLI or a tool is off its pin, `uip` refuses the command, with a `Message` such as `which this frozen config does not list` or `freezes the CLI at`. Critical Rule 24 says what to do; this section holds the detail.
 
 - **`Message` says `automatic tool installation is disabled`:** the user turned automatic installs off: show them the `Message` and `Instructions` and ask before running `uip update`.
 - **Otherwise, `Instructions` start with `Run 'uip update'`:** run `uip update --output json` once, then retry.

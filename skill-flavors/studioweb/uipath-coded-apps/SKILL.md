@@ -7,5 +7,5 @@ Everything else in this skill applies. Read and edit the app's files directly â€
 
 <!--skill-flavor:host-scope:end-->
 <!--skill-flavor:freeze-stop:start-->
-23. **When the CLI reports a freeze, stop and show the user.** If a `uip` failure's `Message` mentions a freeze, a frozen config or a pin, show the user the `Message` and `Instructions` and stop. The Studio Web host bundles its CLI, so no install, update or config command run here can fix it.
+24. **When the CLI reports a freeze, stop and show the user.** If a `uip` failure's `Message` mentions a freeze, a frozen config or a pin, show the user the `Message` and `Instructions` and stop. The Studio Web host bundles its CLI, so no install, update or config command run here can fix it.
 <!--skill-flavor:freeze-stop:end-->
