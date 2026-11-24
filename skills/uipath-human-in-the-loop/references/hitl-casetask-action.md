@@ -54,7 +54,7 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 
 The form schema lives in a separate `.hitl.json` file that sits alongside `caseplan.case` in the case project directory. Action Center renders the fields at runtime from the schema — no deployed app required.
 
-> **What makes Path 1 (QuickForm) unique — checklist before you finish:**
+> **What makes Path 1 (QuickForm) unique — checklist for a compiled task:**
 > - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.case`
 > - ✅ `data.context[hitlType].value` is `"quick"` (not `"custom"`)
 > - ✅ `data.context[_schemaFileId].value` is a **plain UUID v4 string** — e.g. `"f1e2d3c4-b5a6-7890-abcd-ef1234567890"`. Never an `=bindings.xxx` expression.
@@ -82,11 +82,11 @@ Use these roles to plan the fields before writing:
 - `outcomes[]`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the case won't use
 
-**Never block on this — write the schema, per Critical Rule 1 in SKILL.md, and record it in the final report so the user can adjust it afterward.**
+**Never block on this — design the schema, per Critical Rule 1 in SKILL.md, have the `uipath-maestro-case` skill author it in `<Name>.case.ts`, and record it in the final report so the user can adjust it afterward.**
 
-### Step 2 — Write the `.hitl.json` File
+### Step 2 — The `.hitl.json` File in a Compiled Plan
 
-Generate two UUID v4 values:
+A compiled QuickForm task carries two UUID v4 values:
 - `schemaId` — identity of the schema, stored inside the file and referenced from the action task
 - `fileId` — placeholder file system ID (Studio Web assigns the real one when it processes the project; use a fresh UUID v4 as a stable placeholder)
 
@@ -156,7 +156,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 > **`title` is required, top-level in the `.hitl.json` file** — the form's display title in Action Center, separate from both the task's `displayName` (canvas label) and `data.taskTitle` (the assignee-facing message). All three are independent strings and do not need to match.
 
-### Step 3 — Write the Action Task in `caseplan.case`
+### Step 3 — The Action Task in a Compiled `caseplan.case`
 
 ```json
 {
@@ -230,13 +230,9 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 > **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** Confirmed by direct reproduction against Studio Web: a placeholder UUID here makes "Edit Schema" fail with a `404` on `FileOperations/File/Rename` (the fileId in that failed request is whatever placeholder was written) — Studio Web does **not** silently reconcile it on upload, contrary to what an earlier draft of this doc claimed. There is currently no `uip` CLI command that resolves this.
 >
-> **Never block on this.** Write a fresh placeholder UUID v4, finish the task, validate, and move on — do not attempt the reconciliation below yourself, and do not stop to ask about it. State plainly in the final report that this task's schema won't be editable in Studio Web until the real file ID is reconciled, and offer to do it if asked:
-> 1. Upload the project once with any placeholder value in `_schemaFileId` (`uip solution upload`).
-> 2. Look up the real ID Studio Web assigned to the `.hitl.json` file via `GET /api/Project/{projectId}/FileOperations/Structure` (find the entry whose `name` matches the `.hitl.json` filename — an internal Studio Web REST endpoint, not a `uip` CLI verb).
-> 3. Patch `_schemaFileId` in `caseplan.case` to that real ID.
-> 4. Push the corrected `caseplan.case` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-pushes every file and mints a **new** random file ID for each one, including `.hitl.json`, immediately invalidating whatever you just patched.
+> **Never block on this.** Finish the task in the Case source, compile, validate, and move on; do not stop to ask about it. Never patch `_schemaFileId` in `caseplan.case`: the next compile drops the patch, and a whole-project `uip solution upload` mints a new file id for every file anyway. State plainly in the final report that this task's schema won't be editable in Studio Web until its file id is reconciled.
 >
-> This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. It's a follow-up the user can request, never a mid-task blocker.
+> This is a real gap, not just a documentation gap: today there is no supported path to make a freshly-authored QuickForm task's schema editable in Studio Web. It needs a product fix; report it, never work around it mid-task.
 
 ### Step 4 — Discover Upstream Variables
 
@@ -258,7 +254,7 @@ For cross-task references, source values come from upstream task `outputs[].var`
 
 > **No root-level bindings needed for QuickForm.** Unlike App-based (Path 2), QuickForm does **not** add entries to the top-level `bindings[]` array.
 
-### Post-Write Verification (QuickForm)
+### Verification After Compile (QuickForm)
 
 Run `uip maestro case validate <caseplan.case> --output json`. Confirm:
 
@@ -313,9 +309,9 @@ uip maestro case tasks describe --type action --id "<action-app-id>" --output js
 
 Returns `inputs[]` and `outputs[]`. Capture both — they define what the human fills in and what the automation reads back.
 
-### Step 3 — Write Root-Level Bindings
+### Step 3 — Root-Level Bindings in a Compiled Plan
 
-Add 2 entries to the top-level `bindings[]` array — one for `name` and one for `folderPath`. Deduplicate by `(default + resource + resourceKey)`.
+A compiled app-based task has 2 entries in the top-level `bindings[]` array — one for `name` and one for `folderPath`, deduplicated by `(default + resource + resourceKey)`.
 
 ```json
 {
@@ -344,7 +340,7 @@ Add 2 entries to the top-level `bindings[]` array — one for `name` and one for
 A builder-SDK Case names the app with `action({ app: { name, folder } })` in `<Name>.case.ts` and writes no root bindings by hand; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
 <!--skill-flavor:case-binding-pointer:end-->
 
-### Step 4 — Write the Task
+### Step 4 — The Task in a Compiled Plan
 
 ```json
 {
@@ -379,7 +375,7 @@ A builder-SDK Case names the app with `action({ app: { name, folder } })` in `<N
 `data.name` and `data.folderPath` MUST be `=bindings.<id>` references — never string literals.
 `data.inputs[]` and `data.outputs[]` are populated from the `tasks describe` response in Step 2.
 
-> **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **Never write `_schemaFileId` or `hitlSchemaId` for an app-based task** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
+> **`hitlType` is `"custom"` for app-based tasks.** App-based tasks have no schema file at all — the form is defined by the deployed app itself, not by a schema document. **An app-based task has no `_schemaFileId` or `hitlSchemaId`** — those two context entries exist only on the QuickForm path (Path 1), where they identify the `.hitl.json` schema file. An app-based task is fully described by `data.name`/`data.folderPath` (the bindings to the deployed app) plus `data.inputs[]`/`data.outputs[]` (from `tasks describe`) — nothing else identifies its "schema."
 
 <!--skill-flavor:case-action-shape-pointer:start-->
 A builder-SDK Case authors this task with `action(...)` in `<Name>.case.ts`; see the [Case skill's capability router](../../uipath-maestro-case/SKILL.md#capability-router).
@@ -387,7 +383,7 @@ A builder-SDK Case authors this task with `action(...)` in `<Name>.case.ts`; see
 
 ---
 
-## Post-Write Verification (all paths)
+## Verification After Compile (all paths)
 
 ```bash
 uip maestro case validate <caseplan.case> --output json
@@ -397,9 +393,9 @@ uip maestro case validate <caseplan.case> --output json
 |---|---|
 | QuickForm | `.hitl.json` file present with `title`, `fields[]`, `outcomes[]` (no `action` key), `schemaId`; task has `displayName`; `data.context[]` has `hitlType: "quick"`, `_schemaFileId`, `hitlSchemaId` (matches `.hitl.json` `schemaId`), `taskTitle`; `data.inputs[]`/`data.outputs[]` populated (not empty) and `data.inputSchema` present, mirroring `.hitl.json`'s fields; no `actionCatalogName` value; no top-level `bindings[]` entries added |
 | App-based | `type: "action"`, `data.taskTitle` non-empty, `data.name` and `data.folderPath` start with `=bindings.`, `data.context[]` has `hitlType: "custom"` and **no** `_schemaFileId`/`hitlSchemaId` entries (app-based tasks have no schema file), top-level `bindings[]` has 2 entries with `resource: "app"` and `propertyAttribute` = `name` / `folderPath`, `data.actionCatalogName` matches the deployed `deploymentTitle` |
-| Both | The task node has `entryConditions[]` set — e.g. `current-stage-entered` (see the Step 3/4 examples above). Without it, validate fails with `Task has no entry rules`. This is a case-structural requirement, not HITL-specific — it applies to every action task written via direct JSON. |
+| Both | The task node has `entryConditions[]` set — e.g. `current-stage-entered` (see the Step 3/4 examples above). Without it, validate fails with `Task has no entry rules`. This is a case-structural requirement, not HITL-specific — it applies to every action task in a compiled plan. |
 
-If validate reports errors, **never report success**. Diagnose from the JSON output and fix before reporting back. A validate error unrelated to the HITL task itself (e.g. `Case has no completion rules` on a stage/case that predates your edit) is a pre-existing gap in the case plan, not something this skill introduces — surface it to the user rather than reverse-engineering the CLI to silence it.
+If validate reports errors, **never report success**. Diagnose from the JSON output, fix the Case source, and recompile before reporting back. A validate error unrelated to the HITL task itself (e.g. `Case has no completion rules` on a stage/case that predates your edit) is a pre-existing gap in the case plan, not something this skill introduces — surface it to the user rather than reverse-engineering the CLI to silence it.
 
 ---
 
