@@ -11,6 +11,7 @@ stand in for the agent.
 
 from __future__ import annotations
 
+import json
 import os
 import random
 import sys
@@ -95,13 +96,30 @@ def assert_outputs(process: ET.Element, variables: Any, a: int, b: int, gender: 
         raise CheckFailure(f"output `reason` is empty; runtime values: {reasons!r}")
 
 
+def string_leaves(value: Any) -> list[str]:
+    """String leaves, descending into strings that hold a JSON object or array."""
+    out: list[str] = []
+    for leaf in value_leaves(value):
+        if not isinstance(leaf, str):
+            continue
+        text = leaf.strip()
+        if text[:1] in ("{", "["):
+            try:
+                out.extend(string_leaves(json.loads(text)))
+                continue
+            except json.JSONDecodeError:
+                pass
+        out.append(leaf)
+    return out
+
+
 def assert_agent_provenance(process: ET.Element, variables: Any, gender: str) -> None:
     node_ids = agent_job_ids(process)
     if not node_ids:
         raise CheckFailure(f"no serviceTask uses {AGENT_JOB_TYPE}; the agent is never called")
     records = element_output_records(variables, tuple(node_ids))
-    leaves = [leaf for record in records for leaf in value_leaves(record)]
-    if not any(isinstance(leaf, str) and leaf.strip().casefold() == gender for leaf in leaves):
+    leaves = [leaf for record in records for leaf in string_leaves(record)]
+    if not any(leaf.strip().casefold() == gender for leaf in leaves):
         raise CheckFailure(
             f"agent-job node(s) {node_ids} produced no {gender!r} in their own Outputs: {records!r}"
         )

@@ -90,6 +90,10 @@ class ProvenanceTests(unittest.TestCase):
     def test_agent_node_output_passes(self):
         check_behavior.assert_agent_provenance(process(), variables(), "female")
 
+    def test_agent_output_as_json_string_passes(self):
+        payload = variables(agent_outputs={"response": '{"gender": "Female", "reason": "x"}'})
+        check_behavior.assert_agent_provenance(process(), payload, "female")
+
     def test_other_node_cannot_cover_for_agent(self):
         payload = variables(agent_outputs={"response": {}})
         with self.assertRaisesRegex(CheckFailure, "Outputs"):
