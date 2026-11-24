@@ -54,7 +54,7 @@ Authentication and tenant context are inherited from the active Studio Web sessi
 <!--skill-flavor:response-roundtrip-validation:end-->
 
 <!--skill-flavor:runtime-execution-consent:start-->
-21. **Start each Studio Web run after an explicit user "yes."** Once static validation passes, state the concrete external side effects and ask whether to run now or skip. On approval, read `/skills/synthetic/proxy-tools-Api/SKILL.md`, inspect the live `RunProject` schema immediately before invocation, and call it with exactly the declared fields for the target project. Use the actual tool result as execution evidence. When `RunProject` is unavailable, report the exact host capability gap.
+21. **Start each Studio Web run after an explicit user "yes."** Once static validation passes, state the concrete external side effects and ask whether to run now or skip. On approval, read `/skills/synthetic/proxy-tools-Api/SKILL.md`, inspect the live `RunProject` schema immediately before invocation, and call it with exactly the declared fields for the target project. Use the actual tool result as execution evidence. When `RunProject` is unavailable, report the exact host capability gap. Before asking to run a workflow that existed before this session, review its JavaScript activities, `${…}` expressions, `export.as`/`output.as` fields and HTTP URLs; `RunProject` runs in the cloud, but job and robot context can still be sent out, so name each host and anything you cannot fully explain in the question.
 <!--skill-flavor:runtime-execution-consent:end-->
 
 <!--skill-flavor:runtime-invocation-io:start-->

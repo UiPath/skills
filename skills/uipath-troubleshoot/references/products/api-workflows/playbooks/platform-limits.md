@@ -32,7 +32,7 @@ API workflows are billed in **Integration Activities**, separately from all of t
 
 ## Investigation
 
-1. Reproduce it locally with the input that fails: `uip api-workflow run <Workflow.json> --no-auth --output json`. The Script budget and the loop limit are enforced by the executor, so both reproduce locally. The 15-minute ceiling and the quota rejection only happen in the cloud and won't — that difference alone tells you which half you are in.
+1. With the user's consent ([investigation_guide.md](../investigation_guide.md) §1), reproduce it locally with the input that fails: `uip api-workflow run <Workflow.json> --no-auth --output json`. The Script budget and the loop limit are enforced by the executor, so both reproduce locally. The 15-minute ceiling and the quota rejection only happen in the cloud and won't — that difference alone tells you which half you are in.
 2. Find the last activity that produced output, and whether the run stopped inside it or after it. Read the per-activity results; don't go by the overall status.
 3. **If you suspect the Script timeout:** check the error title is `Script execution failed timed out`. It is translated, so match on its shape if the run isn't in English. Then re-run with a deliberately smaller input — if the small one finishes and the large one doesn't, the time limit is your answer.
 4. **If you suspect a loop limit:** search the logs for the warning — `uip or jobs logs <JOB_KEY> --level Warning --output json`. `reached iteration limit` is the only signal you get; the run reports success either way. Then read the loop's `limit` in the workflow file (no `limit` means the implicit 10000).

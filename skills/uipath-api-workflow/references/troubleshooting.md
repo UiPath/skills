@@ -817,7 +817,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Symptom:** File appears unchanged after edit
 - **Cause:** Edit's `old_string` did not exactly match file content (whitespace, escaping)
 <!--skill-flavor:post-edit-validation:start-->
-- **Fix:** Always read the file before editing. After edit, re-run the workflow.
+- **Fix:** Always read the file before editing. After edit, re-run `uip api-workflow validate`; run the workflow only with rule-21 consent (SKILL.md).
 <!--skill-flavor:post-edit-validation:end-->
 
 ## File & Base64 Pitfalls

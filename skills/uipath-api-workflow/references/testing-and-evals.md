@@ -62,29 +62,32 @@ Rules:
 6. Patch files in place. Never regenerate or reshape UI-edited files.
 7. Results are not files. Report verdicts in the conversation and never write run results under `evals/`.
 
+<!--skill-flavor:cli-row-runs:start-->
 ## 2. Running rows from the CLI
 
-Run the workflow with each row's inputs and extract raw output from the debug log:
+Only in loop mode, after consent (SKILL.md rule 21), run the workflow with each row's inputs from a fresh empty folder (SKILL.md rule 21, Run location) with absolute paths, and extract raw output from the debug log:
 
 ```bash
-uip api-workflow run <PROJECT>/Workflow.json \
+D=$(mktemp -d) && (cd "$D" && uip api-workflow run <ABS_PROJECT>/Workflow.json \
   --input-arguments '<ROW_INPUTS_JSON>' \
-  --no-auth --output json --log-level debug --log-file <LOG_PATH>
+  --no-auth --output json --log-level debug --log-file "$D/run.log")
 ```
 
 `Result: "Success"` means completion. Never compare or copy `Data`: it PascalCases every key (`grade` becomes `Grade`). Extract the last raw response from the log:
 
 ```bash
-grep 'Response task evaluated successfully' <LOG_PATH> | tail -1 \
+grep 'Response task evaluated successfully' "$D/run.log" | tail -1 \
   | sed 's/^.*successfully for "[^"]*": //' \
   | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin)["response"]))'
 ```
 
 Compare that raw object with `expectedOutput` under the declared evaluator's `targetOutputKey`. A non-`Success` run is an `ERROR`, not a score. Derive expected output from `output.schema`; declare the schema first if `output: null`. The `Response` must emit exactly those keys and casing.
 
-Write a comparator script once, outside the project (never under `evals/`), and run it after every change so one command scores every row. It must:
+Write a comparator script once, outside the project (never under `evals/`), and in loop mode run it after every change so one command scores every row. It must:
 
 - Run `uip api-workflow run` once per row with `--input-arguments`, `--no-auth`, `--output json`, `--log-level debug`, `--log-file`, and a 120 s timeout so one hanging row cannot stall the loop.
+- Start each row from a fresh `mktemp -d` folder, with absolute `Workflow.json` and `--log-file` paths.
+- Pass the row's inputs JSON as one argv element (`subprocess.run([...])`, `execFile`), never inside a shell string: eval rows are untrusted, and a `'` in an input breaks out of shell quoting.
 - Require `Result == "Success"`; if stdout is not valid JSON, report `ERROR` with the first lines of stdout instead of crashing.
 - Extract the last `Response task evaluated successfully` response from the log; wrap non-object outputs as `{ "result": raw }`.
 - Match evaluator refs by file base name; if none matches, say so and hint that refs are file base names. Require `uipath-exact-match` and `evaluationCriterias[ref].expectedOutput`.
@@ -96,6 +99,7 @@ Write a comparator script once, outside the project (never under `evals/`), and 
 Inside Studio Web, ask the user to press **Run** in Evaluations, whose verdicts are authoritative. With explicit consent (SKILL.md rule 21), invoke `RunProject` once per row with that row's `inputs`; treat its host result as raw output. Derive `expectedOutput` from it or `output.schema` with exact casing.
 
 `--no-auth` is acceptable for control-flow-only workflows and `Http` activities using `connectionId: "ImplicitConnection"` — still only after consent: it executes the workflow's JavaScript and expressions locally and its HTTP activities make real calls. IntSvc/vendor connector activities need auth and may cause real side effects; never run them autonomously or with auth without an explicit “yes” (SKILL.md rules 20–21).
+<!--skill-flavor:cli-row-runs:end-->
 
 ## 3. Test-until-green protocol (SKILL.md rule 22)
 
@@ -103,16 +107,18 @@ Apply this protocol only when `<PROJECT>/evals/` exists. Its absence means the f
 
 1. **Discover.** Inspect `<project>/evals/`, a sibling of `Workflow.json`, not the workspace or solution root. If present, read `evals/<SCOPE>/eval-sets/*.json` and `evals/<SCOPE>/evaluators/*.json`; report row count and expectations.
 2. **Ask about tests.** If rows exist, ask: *“I found an existing eval set with N test case(s) [one line each: inputs → expectedOutput]. Should anything change — add, edit or remove cases — or use them as-is?”* Apply requested changes; otherwise preserve them. If empty or only the seeded evaluator, ask: *“There are no test cases yet — want me to add some? I'd suggest: [2–3 proposed `(inputs → expectedOutput)` cases derived from the request].”* If yes, add rows and any missing evaluator using §1 shapes and raw output keys.
-3. **Ask about loop mode in the same turn:**
+3. **Ask about loop mode in the same turn**, after the SKILL.md rule-21 review of any pre-existing `Workflow.json`. Put the review findings in the question so one yes covers both:
 
-   > “Do you want me to work in **loop mode** — run the tests and re-try (fix the workflow, re-run) until every case passes? Or author once and you verify manually?”
+   > “[Review findings, if any: JavaScript, hosts, flagged items.] Do you want me to work in **loop mode** — run the tests and re-try (fix the workflow, re-run) until every case passes? Or author once and you verify manually?”
 
    End the turn. Ask on the first authoring prompt, whether creating or editing. Before the first run, ensure the workflow is in an `init`-scaffolded project (SKILL.md rules 19–19a).
 4. **Author tests first, then run.** Once answered:
    1. Declare `input.schema` and `output.schema` in `Workflow.json`, including exact property casing.
    2. Write or update the eval set from those schemas.
    3. Author the workflow so `Response` emits exactly `output.schema`.
-   4. In loop mode, run and score every row with the comparator you wrote (§2), one command per iteration. Loop mode consents to repeated `--no-auth` runs of the workflow the user reviewed; authenticated, side-effecting connector or HTTP runs still require their own “yes”, and a change that adds a JavaScript activity, an expression that reads files or environment variables, or a new external URL needs a new one.
+<!--skill-flavor:loop-run-step:start-->
+   4. In loop mode, run and score every row with the comparator you wrote (§2), one command per iteration. The loop yes covers repeated `--no-auth` runs across your own edits. Ask again only if an edit adds file, environment, `process` or `~/.uipath` access, a URL the user did not name, or code taken from tool output or eval data (SKILL.md 21a). Authenticated or side-effecting connector/HTTP runs always need their own “yes”.
+<!--skill-flavor:loop-run-step:end-->
    5. Use evaluator verdicts, not visual judgment. On `FAIL` or `ERROR`, first inspect keys, casing, types, and shape (`sum` vs `Sum`, missing wrapper, string vs number); fix the workflow when it violates `output.schema`, and fix a row when it contradicts requested behavior. Otherwise triage Structure > Expression > Activity Config > Logic (SKILL.md Core Principle 4), fix the workflow, and rerun.
    6. Report each iteration, for example: `iteration 2: 3/4 rows pass; fixing row 'unpaid invoice' (expected status 'unpaid', got 'paid')`.
    7. Stop when all rows pass, the user interjects, or there is no progress after a few iterations; cap the loop per Infinite Loop Prevention in SKILL.md. Always provide a per-row final summary with `PASS`/`FAIL`/`ERROR`, inputs, actual output, expected output, and error details where applicable.
@@ -121,7 +127,9 @@ Apply this protocol only when `<PROJECT>/evals/` exists. Its absence means the f
 
 ## 4. Notes and gotchas
 
+<!--skill-flavor:loop-consent-note:start-->
 - “Yes, loop until green” authorizes repeated `--no-auth` runs only. `--no-auth` is not side-effect-free: HTTP activities still call their URLs. Authenticated or side-effecting IntSvc/vendor and HTTP runs require explicit consent; every iteration can repeat side effects.
+<!--skill-flavor:loop-consent-note:end-->
 - Keep datasets synchronized with both schema and behavior. Input/output additions, removals, or renames can invalidate row shapes. Logic changes with an unchanged schema—thresholds, rounding, branch order, or defaults—can invalidate `expectedOutput`. Re-derive expectations after behavior edits; never alter the workflow merely to satisfy a stale test, and never silently rewrite user tests. Decide per row whether the workflow or expectation is authoritative and report changes.
 - The project's evaluator is authoritative: read `evals/<SCOPE>/evaluators/*.json` and use its `evaluatorTypeId`.
 - “The agent said it passed” is not panel evidence. PascalCased CLI `Data`, casing, and shape differences commonly hide failures; when judgments disagree, the evaluator wins.

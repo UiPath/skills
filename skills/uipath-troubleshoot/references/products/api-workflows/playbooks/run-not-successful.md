@@ -24,7 +24,7 @@ What to look for:
 
 ## Investigation
 
-1. Reproduce and read the executor output: `uip api-workflow run <Workflow.json> --no-auth --output json`. Read `Instructions` first — it often names the fix.
+1. With the user's consent ([investigation_guide.md](../investigation_guide.md) §1), reproduce and read the executor output: `uip api-workflow run <Workflow.json> --no-auth --output json`. Read `Instructions` first — it often names the fix.
 2. If it reproduces locally, triage in category order **Structure > Expression > Activity Config > Logic** (see [investigation_guide.md](../investigation_guide.md)). Run `uip api-workflow validate <Workflow.json> --output json` to catch structural/schema faults the run may mask.
 3. If it runs clean locally but the cloud job is `Faulted`, pull the job evidence: `uip or jobs get <job-key> --output json`, then `uip or jobs logs <job-key> --output json` and `uip traces spans get --job-key <job-key> --output json`. If the logs show the workflow reached its `Response` with no activity error, check the reached `Response` for `markJobAsFailed: true` — the job status is driven by that flag, not by a thrown activity. Compare a passing run vs. the faulting run to see which branch set it.
 4. Reduce to a minimal repro — isolate the failing activity and confirm each upstream activity `export`s its output.

@@ -123,7 +123,13 @@ Before validating, run the **Required-field cross-check** above — if any `requ
 <!--skill-flavor:required-field-cloud-validation:end-->
 
 <!--skill-flavor:validate-and-run:start-->
-Then validate by running:
+Then validate:
+
+```bash
+uip api-workflow validate ./my-workflow.json --output json
+```
+
+Run it only after an explicit yes naming the side effects (SKILL.md rule 21):
 
 ```bash
 uip api-workflow run ./my-workflow.json --output json

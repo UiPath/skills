@@ -24,7 +24,7 @@ What to look for:
 
 ## Investigation
 
-1. Reproduce: `uip api-workflow run <Workflow.json> --no-auth --output json` and log the full output of the producing activity once to inspect its real shape.
+1. With the user's consent ([investigation_guide.md](../investigation_guide.md) §1), reproduce: `uip api-workflow run <Workflow.json> --no-auth --output json` and log the full output of the producing activity once to inspect its real shape.
 2. Confirm the producing activity has an `export.as` that spreads `...$context?.outputs` and writes its own key.
 3. For connector activities, two checks:
    - **Read key:** the key in the downstream `$context.outputs.<Activity>` read must equal the key string written inside the producing activity's `export.as` (`outputs: { ..., "<Activity>": $output }`) — not the activity's `do`-array slot key, which can differ from it for connector activities.

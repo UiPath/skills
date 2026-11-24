@@ -15,7 +15,7 @@ UiPath **API Workflows** are a Studio Web project type for real-time, system-to-
 | Stage | Surface | CLI |
 |-------|---------|-----|
 | Local / pre-publish | Static validation | `uip api-workflow validate <file> --output json` |
-| Local / pre-publish | Runtime execution (expression, logic, connection) | `uip api-workflow run <file> --no-auth --output json` |
+| Local / pre-publish | Runtime execution (expression, logic, connection) | `uip api-workflow run <file> --no-auth --output json` — only after the user's yes ([investigation_guide.md](investigation_guide.md) §1) |
 | Connection health | IS connection state | `uip is connections ping <uuid> --output json` |
 | Cloud run | Job status + fault | `uip or jobs get <job-key> --output json` |
 | Cloud run | Execution logs, including anything the workflow's **Log Message** activities or a `console.*` in a Script wrote (Info/Warning/Error) | `uip or jobs logs <job-key> --level Error --output json` |

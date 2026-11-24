@@ -39,7 +39,7 @@ initial_prompt: |
 
   Diagnose why and fix it, keeping the intent: total = sum of numbers.
 
-  Do NOT ask for approval or confirmation.
+  You may run it locally with `--no-auth`. Do NOT ask for approval or confirmation.
 
 success_criteria:
   - type: file_exists

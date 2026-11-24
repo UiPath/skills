@@ -153,7 +153,7 @@ Exit code: `1`. Common `Message` values:
 ### Examples
 
 ```bash
-# Smoke test (control flow + JS, the typical case for this skill)
+# Smoke test (control flow + JS) — only after consent (SKILL.md rule 21)
 uip api-workflow run ./hello.json --no-auth --output json
 
 # With inputs
@@ -323,6 +323,9 @@ uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json -
 uip solution resources refresh --solution-folder Solution --output json
 
 # 6. Validate:
+uip api-workflow validate ./my-workflow.json --output json
+
+# 7. Authenticated run — only after an explicit yes naming the side effects (SKILL.md rule 21)
 uip api-workflow run ./my-workflow.json --output json
 ```
 
@@ -547,7 +550,7 @@ uip api-workflow run ./MyApiProject/Workflow.json --no-auth --output json
 # 3. Authenticate (only needed for publish / deploy)
 uip login
 
-# 4. Authenticated run
+# 4. Authenticated run — only after an explicit yes naming the side effects (SKILL.md rule 21)
 uip api-workflow run ./MyApiProject/Workflow.json --output json
 
 # 5. Pack the solution

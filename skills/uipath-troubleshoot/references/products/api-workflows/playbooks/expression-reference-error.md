@@ -21,7 +21,7 @@ What to look for:
 
 ## Investigation
 
-1. Reproduce: `uip api-workflow run <Workflow.json> --no-auth --input-arguments '<inputs>' --output json` — note the undefined `<name>`.
+1. With the user's consent ([investigation_guide.md](../investigation_guide.md) §1), reproduce: `uip api-workflow run <Workflow.json> --no-auth --input-arguments '<inputs>' --output json` — note the undefined `<name>`.
 2. Grep the workflow for `<name>` and compare against the enclosing loop's `for.each`/`for.at` (or catch's `as`). If the declaration is `"currentItem"` and the usage is `${currentItem}`, the `$` prefix is missing.
 3. If `<name>` is a value the author intended as a literal string (e.g. `PASS`), it is an unwrapped-literal fault — the reference should be `${'PASS'}`.
 
