@@ -8,7 +8,7 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
    text, or a string inside a JSON body), is JavaScript: it starts with `=js:`.
    The designer opens a plain `=` expression in its C# editor.
    Exempt, as the canvas writes them: a row `source` reading the node's own
-   result (`=result…`, `=response…`, `=Error`, a form or agent field such as `=Action`),
+   result (`=result…`, `=response…`, `=this["…"]`, `=Error`, a form or agent field such as `=Action`),
    `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
    script envelope (`=vars`, `=metadata`), a human-task form input
    (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
-RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
+RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|this\[\"(?:[^\"\\]|\\.)*\"\]$|bindings\.|jsonString:)")
 # A form or agent output field (`=Decision`); also lets an undeclared typo such as `=totl` pass.
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")

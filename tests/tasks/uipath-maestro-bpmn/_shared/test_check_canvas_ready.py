@@ -55,6 +55,8 @@ CASES = [
     ("start-event input bridge", f'<bpmn:startEvent id="start">{_row("=vars.amount")}</bpmn:startEvent>', True),
     ("input read downstream", f'<bpmn:endEvent id="done">{_row("=vars.amount")}</bpmn:endEvent>', False),
     ("node result", f'<bpmn:scriptTask id="t">{_row("=result.response")}</bpmn:scriptTask>', True),
+    ("bracket result read", '<bpmn:serviceTask id="t">' + _row('=this["test-123"]') + "</bpmn:serviceTask>", True),
+    ("computed bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a"] + vars.b') + "</bpmn:serviceTask>", False),
     (
         "plain gateway condition",
         '<bpmn:sequenceFlow id="f"><bpmn:conditionExpression>=vars.amount &gt; 5</bpmn:conditionExpression></bpmn:sequenceFlow>',
