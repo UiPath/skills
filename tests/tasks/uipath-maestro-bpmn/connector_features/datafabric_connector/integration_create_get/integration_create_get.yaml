@@ -102,7 +102,7 @@ success_criteria:
     # SDK expands to the `_V3` operations itself: its only discovery is the entity
     # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
     # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\b[^\n]*--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
@@ -119,7 +119,7 @@ success_criteria:
     # SDK expands to the `_V3` operations itself: its only discovery is the entity
     # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
     # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\b[^\n]*--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
@@ -136,7 +136,7 @@ success_criteria:
     # SDK expands to the `_V3` operations itself: its only discovery is the entity
     # (`uip df entities list|get`, `registry prepare --entity`). Requiring the generic
     # describe/registry-get commands alone cost that route 0.45 (run 2026-11-23).
-    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\s+--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)\b)'
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b|maestro\s+registry\s+prepare\b[^\n]*--entity\s+FlowCodeEvalEntity\b|df\s+entities\s+(list|get)\b[^\n]*FlowCodeEvalEntity))(?=.*\b(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
