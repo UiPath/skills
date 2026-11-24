@@ -163,6 +163,13 @@ def review_check_step(node_type: str, inputs: dict) -> dict:
     return edge(flow, "checkFields", "lowConfidence")
 
 
+def review_before_check_step() -> dict:
+    """Every item goes to the person first; a check script after the review feeds the gate."""
+    flow = review_check_step("core.action.script", {"script": CHECK_SCRIPT})
+    retarget(flow, "analyzeItem", "success", "reviewDecision")
+    return retarget(flow, "reviewDecision", "outcome-approve", "checkFields")
+
+
 CHECK_SCRIPT = (
     "const p = $vars.analyzeItem.output; if (!p.decision) throw new Error('no decision'); "
     "return { decision: p.decision, confidence: p.confidence };"
@@ -228,6 +235,7 @@ CASES = [
      lambda: review_check_step("core.action.script", {"script": "return { decision: 'approve', confidence: 0.9 };"}), 1),
     ("composition/check_batch_review.py", "mock between agent and gate only names the agent",
      lambda: review_check_step("core.logic.mock", {"note": "passes on $vars.analyzeItem.output.confidence"}), 1),
+    ("composition/check_batch_review.py", "check script after the human task", review_before_check_step, 1),
     ("no_pattern/check_no_pattern.py", "export", lambda: fixture("export"), 0),
     ("no_pattern/check_no_pattern.py", "retrofitted gate", export_gated, 1),
     ("no_pattern_triage/check_near_miss.py", "classify and route", triage_without_person, 0),

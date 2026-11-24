@@ -36,12 +36,12 @@ def main() -> None:
         agents = [a for a in g.agents() if a in body]
         people = [p for p in g.hitl() if p in body]
         # The gate reads the agent's output, or a script downstream of the
-        # agent (any number of steps; no human task between it and the gate)
-        # that reads the agent and passes on a confidence.
+        # agent (any number of steps, no human task on the way from the agent
+        # to the gate) that reads the agent and passes on a confidence.
         gated = [
             (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in [a] + [
-                s for s in g.reachable(a)
+                s for s in g.reachable(a, blocked=people)
                 if s in body and g.type_of(s) == SCRIPT and _CONFIDENCE.search(g.text(s))
                 and g.reaches(s, n, blocked=people) and g.reads(s, a)
             ]
