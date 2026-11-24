@@ -120,13 +120,17 @@ Emit-only rules—mode selection by `package.json`, and `compile`/`check` behavi
 
 The JSON envelope has top-level `Result`; successful validation also reports `Data.Status: "Valid"` and may contain `Data.Warnings`. Treat warnings as failures except the reviewed shared-connection advisory and `err()` read diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve an exception's exact code/text and rationale; do not broaden the allowlist.
 
+`[UNRESOLVED_BINDING]`: the `.flow` lacks the `bindings[]` row a step's `<bindings.NAME>` placeholder needs, and Studio Web refuses to publish it. Re-emit once through the loop in use, then validate again: a new flow, `compile` its source; an existing `.flow`, decompile it (`--no-pipeline`) and `merge` it back ([the safe project loop](brownfield.md#the-safe-project-loop); with [a supplied source](brownfield.md#a-supplied-source), rerun its merge instead of decompiling). If it persists, report the node and placeholder. Validate reads only the `.flow`, so `bindings.json`, `bindings_v2.json` and solution resources cannot explain it.
+
+A warning with no fix in this skill gets one bounded experiment ([below](#bounded-completion)), then is reported as a failure with its code and node.
+
 ### Bounded completion
 
 Match final evidence to the acceptance bar after the last edit:
 
 - Validate-only: require `Data.Status: "Valid"` plus the required structural self-check, then stop; do not debug merely for confidence.
 - For each distinct behavior claim named by the bar, plan at most one bounded debug with inputs/attachments that exercise it; combine compatible claims and do not repeat equivalent inputs.
-- If one unknown blocks final wiring, run one bounded experiment distinguishing the choices, apply its answer, and return to final emit/validate. Do not create scratch-solution families.
+- If one unknown blocks final wiring, run one bounded experiment distinguishing the choices, apply its answer, and return to final emit/validate. If it does not settle the choice, stop experimenting: ask, or headless, take the most defensible choice and list it under Open questions. Do not create scratch-solution families.
 
 If evidence cannot be obtained within the bound, report the evidence boundary rather than repeating debug launches.
 

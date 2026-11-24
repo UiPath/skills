@@ -184,6 +184,16 @@ flow-merge: wrote bindings_v2.json (connection and agent resource rows, re-deriv
 - In a Flow project, copy `bindings_v2.json` with the merged `.flow`; it contains re-derived connection and agent rows, so removed indexes or swapped connections are no longer declared.
 - A stub connection label (`connection: "jira"`) resolves through edited-source `bindings.json`. Edit it to the connection id or fill `bindings.json`; merge writes the id and drops stub rows.
 
+### Swapping a connection
+
+A swap edits only the step's `connection:` and `folder:`:
+
+1. `uip is connections list <CONNECTOR_KEY> --all-folders --output json`: take the new connection's `Id` and `FolderKey`.
+2. Decompile, set that step's `connection:` to the `Id` and `folder:` to the `FolderKey`, then check, merge and validate as in [the safe project loop](#the-safe-project-loop). Merge rewrites the step's `bindings[]` rows and `bindings_v2.json`.
+3. An input holding an id looked up through the old connection (a Slack channel, a Jira issue type) may not exist behind the new one: re-run its `uip maestro registry prepare <CONNECTOR_KEY> --action <ACTION> --connection-id <ID>` with the same `--resolve`.
+
+No other step: do not read solution resource files or compile a scratch copy.
+
 ## Flows with draft nodes: let merge compile
 
 <!--skill-flavor:draft-nodes:start-->
