@@ -34,6 +34,7 @@ Check the solution root (the folder holding the `.uipx`):
 | `.git-studioweb` folder holds unexpected entries (see [Unexpected Entries](#unexpected-entries)) | Refused: `git-link` (with or without `--force`) fails with `configuration_error`, `Data.Problem` `UnexpectedRepositoryEntries` | Stop. Show the user the listed entries. Never delete them or bypass the refusal yourself. |
 | Solution folder holds files git or VS Code run on their own (see [Files That Run on Their Own](#files-that-run-on-their-own)) | Refused: `git-link` (with or without `--force`) fails with `configuration_error`, `Data.Problem` `AutoRunEntries` | Stop. Show the user `Data.AutoRunEntries`. Never delete them or bypass the refusal yourself. |
 | `.git` is a symlink or any other entry that is neither a regular file nor a folder | Unsupported; `git-link` refuses it, even with `--force` | Leave it. Tell the user. |
+| `.git-studioweb` folder, no `.git` entry, and a folder above holds a `.git` (the solution sits inside another repository) | git uses the outer repository. Auto-link skips with a warning; `git-link` fails with `configuration_error`, `Data.Problem` `InsideRepository`, `Data.EnclosingRepository` | Keep using the outer repository. Link (`--force`) only if the user asks: commits then go to `.git-studioweb`, not the outer repository. |
 
 ```bash
 ls -la <SOLUTION_DIR>
@@ -91,26 +92,38 @@ uip solution git-link <SOLUTION_DIR>
 |---|---|
 | `[solution-path]` | Solution root. Optional; defaults to the current folder. |
 | `--check` | Report the state only; write nothing. Non-zero exit unless linked or native. |
-| `--force` | Rewrite an invalid `.git` file. Use only after the user agreed. Never replaces a `.git` folder. |
+| `--force` | Rewrite an invalid `.git` file, or link a solution inside another repository. Use only after the user agreed. Never replaces a `.git` folder. |
+| `--remote <url>` | Add (or replace) a remote and the current branch's upstream while the repository stays locked. `https://`, `ssh://` or `user@host:path`. `Data.Action: "RemoteSet"`. |
+| `--remote-name <name>` | Name of the remote `--remote` writes. Default `origin`. |
+| `--unlock --acknowledge-risk` | Drop the locks for good. Only on the user's explicit request (see [Locked Entries](#locked-entries)). |
+| `--lock` | Lock again after `--unlock`. Refuses while `.git-studioweb` holds a `config` or hook the CLI did not write. |
 
 `git-link` writes the `.git` file only when no `.git` entry exists. If the CLI answers `unknown command 'git-link'`, the installed `uip` predates it: use the manual fallback below, or update the CLI.
 
 **Automatic linking.** Current CLIs link the folder on their own: every `uip solution` command that takes a solution path, a `.uipx` file, a solution name, `--solution-folder` or `--solution-file` first links a real `.git-studioweb` folder that has no `.git` entry at all, and prints one notice line on stderr.
 
 - Same safety checks as `git-link`. A refusal or a failed write only warns; the command continues unlinked.
+- Skips a solution inside another repository, with a warning.
+- The notice says what it locked and how to undo it. A folder the user unlocked (`--unlock --acknowledge-risk`) is linked without locks, Linux included.
 - Skipped for `--dry-run`, `--check` and archives. `UIPATH_AUTO_GIT_LINK_DISABLED=1` turns it off.
 
 ## Locked Entries
 
-When it links, the CLI makes `.git-studioweb/config`, `commondir`, `hooks`, `modules`, `worktrees` and the `.git` file immutable (macOS `chflags uchg`, Windows read-only), so a web page that keeps the folder handle cannot plant a config or hook later. git, VS Code and Studio Web keep working. `Data.Locked` says whether it took hold; on Linux it is `false` (no lock an unprivileged user can set) and the entries are only checked.
+When it links, the CLI makes `.git-studioweb/config`, `commondir`, `hooks`, `modules`, `worktrees` and the `.git` file immutable (macOS `chflags uchg`, Windows read-only), so a web page that keeps the folder handle cannot plant a config or hook later. git, VS Code and Studio Web keep working. `Data.Locked` says whether it took hold; on Linux it is `false` (no lock an unprivileged user can set) and the entries are only checked. A link that fails part-way removes what it wrote, so a retry starts from the same folder.
+
+What `--remote` writes and what `--unlock` chose are recorded in `~/.uipath/git-link.json`, outside the solution folder. Auto-link locks a config `--remote` wrote again; it refuses a `config` anything else wrote, even with the same content.
 
 On a locked folder:
 
 | Operation | Result | Do instead |
 |---|---|---|
-| `git config`, `git remote add`, `git push -u` | Fails on macOS: the repository `config` cannot be written. Git for Windows clears the read-only attribute and writes it anyway (the lock there guards against the browser, not git) | Push to a URL: `git push https://github.com/<org>/<repo>.git <branch>`. Do not write `config` even where git lets you: `--check` then reports it |
+| `git remote add`, `git push -u` | Fails on macOS: the repository `config` cannot be written. Git for Windows clears the read-only attribute and writes it anyway (the lock there guards against the browser, not git) | `uip solution git-link <SOLUTION_DIR> --remote <url> [--remote-name <name>]`: adds the remote and the current branch's upstream and stays locked. Then `git fetch`, `git pull` and `git push` work. For another branch, check it out and run `--remote` again, or `git push <remote> <branch>`. Do not write `config` even where git lets you: `--check` then reports it |
+| `git config` (repository-local) | Fails on macOS, as above | Set `user.name`, `user.email` and other settings with `git config --global` |
+| commit, branch, fetch, pull, `git push <remote> <branch>` | Work | — |
 | `git init` | Fails on any linked folder (`hooks` is a file) and creates nothing | Nothing to do: the repository already exists |
-| Delete or move the solution folder | Fails (`Operation not permitted` / access denied) | Ask the user. Only with their consent: `chflags -R nouchg <SOLUTION_DIR>` (macOS) or `attrib -R /S /D <SOLUTION_DIR>\*` (Windows) first |
+| Delete or move the solution folder | Fails (`Operation not permitted` / access denied) | Ask the user. Only with their consent: `uip solution git-link <SOLUTION_DIR> --unlock --acknowledge-risk` first |
+
+`--unlock --acknowledge-risk` removes the locks for good: it unlocks `.git` and the placeholders, removes the empty ones and puts `hooks` back as a folder. From then on a web page holding the folder (a compromised Studio Web tab) can plant a `config` or hook that git, VS Code or GitHub Desktop would run, exactly as with any `.git` folder Studio Web can reach, and solution commands stop locking it. Tell the user that before running it. `uip solution git-link <SOLUTION_DIR> --lock` turns the locks back on.
 
 After a `uip solution` command, an explicit `git-link` is usually unnecessary. Before running git yourself, still run `uip solution git-link --check <SOLUTION_DIR> --output json` and act on `Data.State`: a skipped or refused auto-link leaves the folder `NotLinked` or `Invalid`.
 
@@ -175,7 +188,7 @@ git merge --allow-unrelated-histories studioweb/main
 3. **Never overwrite an existing `.git` file without the user's consent.** Show its content first; rewrite with `uip solution git-link --force` or the manual fallback only after they agree.
 4. **Do not write into `.git-studioweb` beyond what git itself does** — no hand-added hooks, no `config` edits, no deleting it to "clean up".
 5. **Do not link through a symlinked `.git-studioweb`.** It must be a real folder.
-6. **Never unlock the [locked entries](#locked-entries) on your own.** Unlock only when the user asks to delete or move the solution folder, and never to make `git config` or `git remote add` work: push to a URL instead.
+6. **Never unlock the [locked entries](#locked-entries) on your own.** Run `--unlock --acknowledge-risk` only when the user asks for it after hearing the risk (typically to delete or move the folder), never to make `git remote add` work: use `--remote` instead. Never clear the flags by hand (`chflags nouchg`, `attrib -R`).
 
 ## Packaging and Sync
 
