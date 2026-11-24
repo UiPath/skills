@@ -30,7 +30,8 @@
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
-//           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
+//           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
+//           its `<slug>-genome/` component folder, never inside it; no H2 heading twice; no
 //           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
@@ -687,6 +688,11 @@ function checkProcess(path, a) {
   const targets = links.map(([, t]) => posix(t).toLowerCase());
   const first = (i) => targets.indexOf(targets[i]) === i;
   for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
+  // `<slug>-genome.md` sits beside its `<slug>-genome/` folder, never inside it
+  const slug = baseName(path).replace(/-genome\.md$/i, "");
+  if (baseName(dirname(resolvePath(path))).toLowerCase() === `${slug}-genome`.toLowerCase()) {
+    r.strict(`process genome sits inside its own component folder ${slug}-genome/; write it beside that folder`);
+  }
   checkSourceFramework(text, r);
   checkWrittenSdd(path, text, "process", r);
   // the process genome's entries are named in its own text or in a component's (`process D3`)

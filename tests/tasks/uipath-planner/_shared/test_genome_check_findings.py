@@ -626,6 +626,23 @@ def test_role_word_in_type_cell_fails_strict(check_process):
     assert "role word in the Type cell of 'Invoice Extraction and Matching'" in out
 
 
+def test_process_genome_inside_its_component_folder_fails_strict_only(process_tree):
+    folder = process_tree.parent / PROCESS_DIR.name
+    inside = folder / PROCESS.name
+    text = process_tree.read_text(encoding="utf-8").replace(f"]({PROCESS_DIR.name}/", "](")
+    inside.write_text(text, encoding="utf-8")
+    process_tree.unlink()
+    finding = f"process genome sits inside its own component folder {PROCESS_DIR.name}/"
+    assert finding not in cli("process", inside, "--profile", "core")[1]
+    rc, out = cli("process", inside, "--profile", "strict")
+    assert rc == 1
+    assert finding in out
+
+
+def test_process_example_beside_its_folder_has_no_placement_finding(check_process):
+    assert "inside its own component folder" not in check_process(profile="strict")[1]
+
+
 def test_components_table_with_no_links_fails_core(check_process):
     rc, out = check_process(transform=lambda t: re.sub(r"\[[^\]]*\]\([^)]*-genome\.md\)", "n/a", t))
     assert rc == 1

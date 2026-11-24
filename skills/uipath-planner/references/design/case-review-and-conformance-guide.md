@@ -36,7 +36,9 @@ When a design was handed over by `uipath-maestro-case` ([sdd-writing-guide.md](s
 
 ## Finalizing a Case Draft
 
-A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer:
+A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer.
+
+Start the final as a copy of the draft (`cp <NAME>.draft.md <NAME>.md`, the draft kept), then upgrade it in place, block by block, with file edits. Never rebuild it by writing ranges of draft lines in chunks: a chunk boundary inside a table silently drops the rows after it. Repairs:
 
 1. `user-selected-stage` repair per [case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane; wording such as "any active case" means every primary stage.
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
@@ -134,7 +136,8 @@ names only what to LOOK AT.
  29. The Case-Level SLA and every stage SLA expressed in minutes lie within 15–1000, and no stage SLA
      exceeds the case-level SLA.
  Draft parity (finalizing a draft only)
- 30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
+ 30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —
+     and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
