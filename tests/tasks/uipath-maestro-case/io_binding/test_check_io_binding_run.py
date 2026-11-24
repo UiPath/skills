@@ -19,6 +19,7 @@ import copy
 import importlib.util
 import json
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -177,7 +178,7 @@ NO_CASE_ID = {k: v for k, v in GLOBALS.items() if k != "CaseId"}
 def test_metadata_equal_to_the_instances_own_external_id_passes_on_either_id_format(case_id: str) -> None:
     payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": case_id})
 
-    assert grader.check_run(payload, evidence, grader.check_plan(PASSING), case_id) == ""
+    grader.check_run(payload, evidence, grader.check_plan(PASSING), case_id)
 
 
 @pytest.mark.parametrize(
@@ -197,50 +198,27 @@ def test_the_instances_external_id_outranks_the_case_id_variable() -> None:
         grader.check_run(payload, evidence, grader.check_plan(PASSING), AS_CASE_ID)
 
 
-@pytest.mark.parametrize("metadata", ["IOB-51234", AS_CASE_ID])
-def test_a_run_that_names_no_case_id_passes_on_the_plans_binding_and_says_what_it_did_not_compare(
-    metadata: str,
-) -> None:
+@pytest.mark.parametrize("metadata", ["IOB-51234", AS_CASE_ID, "garbage", None, "=js:metadata.ExternalId"])
+def test_a_run_that_names_no_case_id_fails_whatever_metadata_holds(metadata: object) -> None:
     payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": metadata})
-
-    unverified = grader.check_run(payload, evidence, grader.check_plan(PASSING), None)
-
-    assert "the run names no case id" in unverified
-    assert "could not be compared" in unverified
-
-
-@pytest.mark.parametrize("metadata", [None, "", "=metadata.ExternalId", "=js:metadata.ExternalId"])
-def test_a_run_that_names_no_case_id_fails_on_a_metadata_value_that_is_not_an_id(metadata: object) -> None:
-    payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": metadata})
-    with pytest.raises(SystemExit, match="metadataResult is .*not a case id"):
+    with pytest.raises(SystemExit, match="the run names no case id .*metadataResult .* cannot be checked"):
         grader.check_run(payload, evidence, grader.check_plan(PASSING), None)
 
 
-@pytest.mark.parametrize("value", ["=vars.renamedResult", '"IOB-51234"', "=js:metadata.CaseId"])
-def test_a_run_that_names_no_case_id_fails_when_the_plan_does_not_bind_the_external_id(value: str) -> None:
-    plan = copy.deepcopy(PASSING)
-    task = next(t for t in _tasks(plan) if t["displayName"] == "Echo expression")
-    for row in task["data"]["outputs"]:
-        if row.get("name") == "metadataResult":
-            row["value"] = row["source"] = value
-    payload, evidence = _run(plan, {**NO_CASE_ID, "metadataResult": "IOB-51234"})
-    with pytest.raises(SystemExit, match="does not bind metadataResult to metadata.ExternalId"):
-        grader.check_run(payload, evidence, grader.check_plan(plan), None)
-
-
-def _stub_instance_get(monkeypatch: pytest.MonkeyPatch, stdout: str) -> list[list[str]]:
+def _stub_instance_get(monkeypatch: pytest.MonkeyPatch, stdout: str, returncode: int = 0) -> list[list[str]]:
+    """Answer the CLI call under `_uip`, which the checker reads the instance through."""
     calls: list[list[str]] = []
 
     class Done:
-        returncode = 0
+        stderr = ""
 
     def run(cmd, *, timeout, what):
         calls.append(list(cmd))
         done = Done()
-        done.stdout = stdout
+        done.stdout, done.returncode = stdout, returncode
         return done
 
-    monkeypatch.setattr(grader, "_run", run)
+    monkeypatch.setattr(sys.modules[grader._uip.__module__], "_run", run)
     monkeypatch.setattr(grader, "folder_key_of", lambda instance_id, since: "folder-1")
     return calls
 
@@ -256,13 +234,28 @@ def test_the_external_id_is_read_from_the_instance_itself(monkeypatch: pytest.Mo
 
 @pytest.mark.parametrize(
     "stdout",
-    ['{"Result": "Success", "Data": {"InstanceId": "i-1"}}', '{"Result": "Success", "Data": {"ExternalId": ""}}',
-     '{"Result": "Failure", "Message": "not found"}', "not json"],
+    ['{"Result": "Success", "Data": {"InstanceId": "i-1"}}', '{"Result": "Success", "Data": {"ExternalId": ""}}'],
 )
 def test_an_instance_that_reports_no_external_id_gives_none(monkeypatch: pytest.MonkeyPatch, stdout: str) -> None:
     _stub_instance_get(monkeypatch, stdout)
 
     assert grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z") is None
+
+
+@pytest.mark.parametrize(
+    ("stdout", "returncode"),
+    [
+        ('{"Result": "Failure", "Message": "not found"}', 1),
+        ('{"Result": "Failure", "Message": "not found"}', 0),
+        ('{"Result": "Success", "Data": {"ExternalId": "IOB-1"}}', 1),
+        ("not json", 0),
+    ],
+)
+def test_a_failed_instance_read_fails_the_check(monkeypatch: pytest.MonkeyPatch, stdout: str, returncode: int) -> None:
+    """A read that failed is not an instance without an id: it must not fall through to the CaseId variable."""
+    _stub_instance_get(monkeypatch, stdout, returncode)
+    with pytest.raises(SystemExit, match="uip maestro case instance get failed"):
+        grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z")
 
 
 def test_a_payload_with_no_instance_id_gives_no_external_id() -> None:

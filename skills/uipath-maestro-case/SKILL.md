@@ -108,7 +108,7 @@ An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; e
 .entryWhen(rule('selected-stage-exited', { stage: 'Manager Approval', expression: '=js:vars.managerDecision === "Return"' }))  // Entry Rule 2
 ```
 
-`runs-sequentially` orders tasks only across lanes. For SDD tasks whose Entry Condition is `runs-sequentially`, pass `{ lane: N }` as the third argument of `.task()`, counting 0, 1, 2… down the stage's task table. Tasks with the same `lane`, or with none, start together: never give a chain one shared `lane`. Share a `lane` only where the SDD's Activation Mode says `parallel-after-predecessor` ([Activation modes](references/case-runtime.md#activation-modes)).
+`runs-sequentially` orders tasks only across lanes. For SDD tasks whose Entry Condition is `runs-sequentially`, pass `{ lane: N }` as the third argument of `.task()`, numbering the sets 0, 1, 2… in SDD order with no gaps: one number per task of a chain. `runs-sequentially` tasks with the same `lane`, or with none (lane 0), start together: never give a chain one shared `lane`. Share a number only among siblings the SDD's Activation Mode marks `parallel-after-predecessor`; a `parallel` task (no `runs-sequentially`) takes none ([Activation modes](references/case-runtime.md#activation-modes)).
 
 ```ts
 .task('Validate', t => t.process('validate').entryWhen(rule('runs-sequentially')), { lane: 0 })
