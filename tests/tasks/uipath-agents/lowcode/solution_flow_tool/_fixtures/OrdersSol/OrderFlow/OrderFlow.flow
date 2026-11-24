@@ -1,0 +1,140 @@
+{
+  "id": "c327b644-9013-44d0-aba5-8fb29d174de9",
+  "version": "1.9",
+  "name": "OrderFlow",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "1ae0062e-d52f-4355-9725-d3550c526762",
+        "isDefaultEntryPoint": true
+      }
+    }
+  ],
+  "edges": [],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "variables": {
+    "globals": [
+      {
+        "id": "orderId",
+        "direction": "in",
+        "type": "string",
+        "description": "Order identifier to look up",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "customer",
+        "direction": "in",
+        "type": "object",
+        "description": "Customer who placed the order",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "description": "Email address the order was placed with"
+            },
+            "accountNumber": {
+              "type": "string",
+              "description": "Customer account number"
+            }
+          },
+          "required": [
+            "email"
+          ]
+        },
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "status",
+        "direction": "out",
+        "type": "string",
+        "description": "Current status of the order"
+      },
+      {
+        "id": "retryCount",
+        "direction": "inout",
+        "type": "number",
+        "description": "Lookup attempts so far (internal Flow state)"
+      }
+    ],
+    "nodes": []
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      }
+    }
+  }
+}

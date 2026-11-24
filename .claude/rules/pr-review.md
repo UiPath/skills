@@ -17,6 +17,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 - [ ] CODEOWNERS has been updated with the new skill path
 - [ ] Registered in `assets/skill-status.json` and grouped in `skills.sh.json` (run `python3 scripts/check-skill-status.py` and `python3 scripts/check-skills-sh.py`)
 - [ ] No secrets, tokens, or personal paths committed
+- [ ] No step reads or decodes `~/.uipath/.auth`, extracts a bearer token, prints `uip login refresh` output, or asks the user for a token — see `content-quality.md` § Credentials and Authentication
 
 ### Existing Skill Modification Checklist
 

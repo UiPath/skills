@@ -79,7 +79,7 @@ Each public workflow can ship as a rich activity: custom display name, tooltip, 
   "OriginalIconFileName": "SendInvoiceNotification.xaml.svg",
   "Arguments": [
     {
-      "Name": "RecipientEmail",
+      "Name": "in_RecipientEmail",
       "DisplayName": "Recipient email",
       "Category": "Input",
       "Tooltip": "Email address that receives the notification",
@@ -90,7 +90,7 @@ Each public workflow can ship as a rich activity: custom display name, tooltip, 
       "ArgumentType": 0
     },
     {
-      "Name": "UrgentDelivery",
+      "Name": "in_UrgentDelivery",
       "DisplayName": "Urgent delivery",
       "Category": "Options",
       "Tooltip": "Send with high priority",
@@ -132,9 +132,9 @@ Rules:
 Each public workflow is an API surface. Apply every rule:
 
 1. **Name workflows verb-noun PascalCase, no spaces** — `SendNotificationEmail.xaml`, `DownloadInvoices.xaml`. The file name becomes the activity name in the consumer's panel.
-2. **Public arguments: PascalCase, NO `in_`/`out_`/`io_` prefixes** — `InvoiceId`, `RecipientEmail`, `NotificationResult`. Argument names become activity property names; prefixes become noise on the property grid. Private workflows follow SKILL.md Common Rule 4c.
+2. **Public arguments follow the Workflow Analyzer naming rules in force**, as every workflow argument does (SKILL.md Common Rule 4c): PascalCase after whatever prefixes those rules require. Argument names become activity property names, which consumers' XAML attributes and coded calls use as written; give each public argument a display name in the layout sidecar ([§ Activity Layout](#activity-layout--the-sidecar-file)) and the property grid shows readable labels.
 3. **Describe every public argument** via its `sap2010:Annotation.AnnotationText` — descriptions ship as property tooltips. For display names, placeholders, widgets, and grouping, add the layout sidecar ([§ Activity Layout](#activity-layout--the-sidecar-file)).
-4. **Expect — and keep — the analyzer naming warnings.** `build`/`pack` emit `Argument <Name> does not respect the set pattern ^in_...` for prefix-free library arguments, and a public DataTable argument also draws `doesn't have datatable prefix` (ST-NMG-011). The warnings are non-blocking. Do NOT rename arguments to silence them, `dt_` included.
+4. **Leave no analyzer naming warning.** `build`/`pack` report each argument whose name breaks a naming rule in force (`Argument <Name> does not respect the set pattern …`, `doesn't have datatable prefix`); rename it before packing. A published library's existing public arguments keep their names and their warnings: renaming one is a breaking change (§ Versioning), and the compatible change, a new argument beside the old, follows the rules.
 5. **Return application handles.** A workflow that opens or attaches to an app outputs the window/browser object, its card's Close set to `Never` so the window outlives the call; downstream public workflows accept it as an input argument instead of reopening, and the workflow that ends the application's work closes it with Close `Always` on its card.
 6. **Post-authoring audit:** before packing, re-check every public workflow against rules 1-3 — name form, argument naming, argument descriptions.
 
@@ -193,7 +193,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 ```xml
 <Activity ... xmlns:lib="clr-namespace:<SANITIZED_NAMESPACE>;assembly=<LIBRARY_NAME>">
-  <lib:SendInvoiceNotification RecipientEmail="..." InvoiceId="..." />
+  <lib:SendInvoiceNotification in_RecipientEmail="..." in_InvoiceId="..." />
 ```
 
 `<SANITIZED_NAMESPACE>` is the underscore form from [§ Activity identity](#activity-identity). Bind non-literal properties per the project's expression language rules ([xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md)).

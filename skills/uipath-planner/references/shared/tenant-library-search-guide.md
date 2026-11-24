@@ -66,7 +66,9 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    - **Interactive mode** — surface the failure and switch to the manual fallback (below).
    - **`unknown command` / `unknown option`** — CLI version drift, not an auth failure. Discover the installed surface with `uip or --help`. If no library verb exists, fall back in order — never invent a verb, never extract a token for a direct call:
      1. `uip or packages list` against the libraries feed (`--feed-id`);
+<!--skill-flavor:libraries-api-fallback:start-->
      2. the Orchestrator API through the CLI: `uip api "orchestrator_/odata/Libraries" --output json`;
+<!--skill-flavor:libraries-api-fallback:end-->
      3. neither works → the auth-failure branch above.
 
    Also skip this step (autonomous: public NuGet only) when the user's prompt forbids running `uip` commands.
@@ -108,7 +110,9 @@ If `uip` is unauthenticated, ask:
 ## Anti-patterns
 
 1. **Searching the local filesystem first.** Tenant is authoritative; local matches do not indicate org adoption.
+<!--skill-flavor:fallback-chain-anti-pattern:start-->
 2. **Inventing a verb or flag after a CLI rejection.** The surface drifts across versions (`--search` / `--feed-id` exist only on newer CLIs; older CLIs may lack `or libraries` entirely). On `unknown command` / `unknown option`, discover with `--help` and use the preflight's fallback chain (packages feed / `uip api`) — never guess.
+<!--skill-flavor:fallback-chain-anti-pattern:end-->
 3. **Using `--search` for multi-keyword scans.** `--search` takes one term; one call per keyword violates anti-pattern 7. Multi-keyword OR goes through `--output-filter`.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
 5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 1000` for a filtered scan; paginate via `--offset` while `Pagination.HasMore` is `true` (with `--output-filter`, `Data.length` counts matches, not rows fetched). Once `HasMore` is `false`, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.

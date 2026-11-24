@@ -74,7 +74,9 @@ Operationalizes item 2. Best-effort and auth-required — same rules as tenant l
 CLI surfaces drift across versions. When the installed CLI rejects a listed verb (`unknown command` / `unknown option`):
 
 1. Discover the supported surface with `uip <group> --help`.
+<!--skill-flavor:or-api-fallback:start-->
 2. For `or` resources, fall back to the Orchestrator API through the CLI: `uip api "orchestrator_/odata/<ENTITY>" --output json`. Never extract a token for a direct call.
+<!--skill-flavor:or-api-fallback:end-->
 3. Never invent a verb. Note any substitution in the Recommended Scope reasoning.
 
 **The estate is the session tenant's** — the same condition as [tenant-library-search-guide.md](tenant-library-search-guide.md) § Default search target. A listing that fails on permissions (HTTP 400/403, no folder accessible) records that estate row as unknown, like an auth failure.

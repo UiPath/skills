@@ -33,6 +33,8 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 **Built from the SDD.** A build skill that takes the designed SDD itself as its build input gets the SDD unchanged and builds from it, never redesigning it. `uipath-maestro-case` is one: an SDD whose first body section is `## Section 1: Case Definition` is its build input. Such a component's genome Interface names that SDD's path, relative to the genome ([genome-format-guide.md § Components Built from the SDD](genome-format-guide.md#components-built-from-the-sdd)).
 
+**Shared code of coded projects** — modules several coded functions, agents or apps import, a library component of its own ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 6) — is built by the skill most of its consumers use: `uipath-functions` for functions, `uipath-agents` for agents, `uipath-coded-apps` for apps.
+
 **Solution packaging** (`.uipx`) is not a Build With row. A process genome records it under **Deployment** with `uipath-solution`.
 
 ## Platform Dependencies (not Build With)
@@ -80,6 +82,8 @@ The Target answer of every extraction ([extract-guide.md](../extract/extract-gui
 4. **An event trigger stays an event trigger.** The target is one the source's event can start, directly or through a component it starts.
 5. **A target the delivery model cannot run is never offered.** The delivery model is the Step 1 answer, asked again when a later edit changes a target, since the genome names no platform. The [Constraint Gate](product-selection-guide.md#constraint-gate) filters every option, and a product the matrix leaves unconfirmed is a later option naming the gap.
 6. **Check the target before recommending it.** Each connector operation, trigger and limit the steps rely on is confirmed through the target's owning skill and its discovery commands (`uip is connectors list --output json`). An operation the registry does not list is confirmed when the owning skill documents an HTTP step through the connection and the vendor's API documentation has the call. A tenant or a connection the run cannot reach is no evidence against a target. A capability nothing confirms makes that target a later option, the gap named in its label.
+7. **A coded target keeps the language of the kept code it calls.** A component that calls shared code the refactor keeps is rebuilt as a function or agent in that code's language, named in the option (`coded function, Python`); another language rewrites the shared code and its platform calls.
+8. **A caller outside the rebuild keeps its call.** A component that an automation the request keeps unchanged starts or calls is Recommended on the product that caller starts today (an agent job starts an agent); every other host is an option that names the change it makes to that caller.
 
 ## Common Combinations
 
