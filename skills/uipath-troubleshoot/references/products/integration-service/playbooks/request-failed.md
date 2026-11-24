@@ -44,7 +44,9 @@ What to look for:
 
 ## Resolution
 
-- **401:** re-authenticate the connection (`uip is connections edit <connection-id>`). If the granted OAuth scope is insufficient, recreate the connection requesting the scope the operation needs.
+<!--skill-flavor:headless-sign-in-1:start-->
+- **401:** re-authenticate the connection (`uip is connections edit <connection-id>`). If the granted OAuth scope is insufficient, recreate the connection requesting the scope the operation needs. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 - **403:** widen the connection's scope or grant the external account the permission the operation requires, then re-authenticate.
 - **404:** correct the activity input to reference an existing record/object; guard upstream steps that produce the ID.
 - **429:** reduce call frequency, add backoff/batching, or request a higher provider quota. IS already retried twice — application-level pacing is required.

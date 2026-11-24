@@ -1,3 +1,7 @@
+<!--skill-flavor:headless-sign-in-1:start-->
+Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), the connection must be able to see it; Step 6, "Fields that load after a selection", says how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`.
+<!--skill-flavor:headless-sign-in-1:end-->
+
 <!--skill-flavor:is-solution-files-refresh:start-->
 3. Add the connection to the solution: `uip solution resources add --source remote --kind Connection --cloud-key <ConnectionId> --output json`. Do not run `uip solution resources refresh`: it fails in Studio Web (see [critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 7).
 <!--skill-flavor:is-solution-files-refresh:end-->

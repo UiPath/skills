@@ -72,7 +72,9 @@ When multiple options exist, present them clearly using **names, not UUIDs**:
 
 | Problem | Recovery |
 |---|---|
-| Ping returns non-enabled | Run `is connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another connection or create new. |
+<!--skill-flavor:headless-sign-in-1:start-->
+| Ping returns non-enabled | Run `is connections edit <id>` to re-authenticate. For basic, API key, personal access token or custom auth, add `--field` options as in [connections.md — Create or re-authenticate with no browser](connections.md#create-or-re-authenticate-with-no-browser). Then ping again. If still fails, ask user to choose another connection or create new. |
+<!--skill-flavor:headless-sign-in-1:end-->
 | List returns empty after `--refresh` | Inform user the data does not exist. Do not retry. Suggest checking permissions or folder context. |
 | Reference field lookup returns empty | Inform user — the referenced object has no records. Ask if they want to create one or use a different value. |
 | Execute fails with error | Read `Instructions` — the CLI passes through the raw vendor error body. Use it to diagnose and fix. See [agent-workflow.md — Error Recovery](agent-workflow.md#error-recovery). |
@@ -81,4 +83,6 @@ When multiple options exist, present them clearly using **names, not UUIDs**:
 | Connector not found | Fall back to HTTP connector (`uipath-uipath-http`). See [connectors.md](connectors.md#http-connector-fallback). |
 | No trigger objects for operation | Check operation name (CREATED/UPDATED/DELETED, uppercase). Verify connector supports events (`hasEvents` in connector list). See [triggers.md](triggers.md). |
 | Trigger metadata empty | Check object name matches exactly from `triggers objects` output. Try with `--connection-id` for custom fields. See [triggers.md](triggers.md). |
-| Execute fails with 403 (scope) | Connection is Enabled but lacks optional scopes for this activity. Re-authorize with broader scopes via `is connections edit <id>`. See [connections.md](connections.md). |
+<!--skill-flavor:headless-sign-in-2:start-->
+| Execute fails with 403 (scope) | Connection is Enabled but lacks optional scopes for this activity. Re-authorize with broader scopes via `is connections edit <id>`. For basic, API key, personal access token or custom auth, add `--field` options as in [connections.md — Create or re-authenticate with no browser](connections.md#create-or-re-authenticate-with-no-browser). See [connections.md](connections.md). |
+<!--skill-flavor:headless-sign-in-2:end-->

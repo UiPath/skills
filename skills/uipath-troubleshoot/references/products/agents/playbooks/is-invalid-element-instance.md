@@ -73,6 +73,10 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
+<!--skill-flavor:headless-sign-in-1:start-->
+  For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+
+<!--skill-flavor:headless-sign-in-1:end-->
   Note the new connection ID from the output. The span name from step 2 identifies `<ToolName>`. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
   Refresh and validate the agent:

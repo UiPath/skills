@@ -45,5 +45,8 @@ What to look for:
 - **If stale UUID (401):** rebind the workflow to a UUID that pings (update `connectionId` and, in Solutions mode, the connection resource + bindings).
 - **If tenant/folder mismatch (401):** log in to the same org+tenant, or deploy to the folder where the connection is enabled.
 - **If broken connection (403):** re-authenticate — `uip is connections edit <uuid>` (opens the OAuth browser flow) — or fix in the Studio Web UI, then re-ping.
+<!--skill-flavor:headless-sign-in-1:start-->
+  - If the connector uses basic, API key, personal access token or custom auth and `uip is connections edit --help` lists `--field`, re-authenticate with no browser: `uip is connections edit <connection-id> --auth-type <auth-type> --field <key>=env.NAME --output json`. Never write the secret in a command. Never ask the person to paste a secret into chat. The uipath-platform skill has the full steps. If the playbook says the element token cannot be refreshed in place, keep delete and recreate.
+<!--skill-flavor:headless-sign-in-1:end-->
 - **If missing scopes (403):** re-authorize the connection with the scopes the operation requires (grant them on the external system first if needed): `uip is connections edit <uuid>`, then re-run.
 - **Cross-reference:** for the connection's own auth internals (disabled states, scope grants, lockout), see the **Integration Service** product.

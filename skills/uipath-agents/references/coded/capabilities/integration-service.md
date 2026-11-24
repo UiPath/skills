@@ -5,7 +5,9 @@ Call IS connector activities (Slack, Jira, Web Search, …) from a coded Python 
 ## When to Use
 
 - Coded Python agent needs SaaS / API via IS (Slack, Salesforce, Jira, ServiceNow, Web Search, …).
-- Connection exists or user creates one via `uip is connections create <CONNECTOR_KEY>`.
+<!--skill-flavor:headless-sign-in-1:start-->
+- Connection exists or user creates one via `uip is connections create <CONNECTOR_KEY>`. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 
 ## When NOT to Use
 

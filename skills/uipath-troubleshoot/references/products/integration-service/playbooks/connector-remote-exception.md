@@ -25,7 +25,9 @@ For connector activities (`ConnectorActivity`, `ConnectorTriggerActivity`) the i
 
 ## Resolution
 
-- **Token / auth inner message:** re-authenticate the connection (`uip is connections edit <connection-id>` or the UI). If `invalid_grant` / revoked / scope errors, re-authorize the app in the external service first. If `user is no longer a member of the organization`, the connection's owning identity must be replaced.
+<!--skill-flavor:headless-sign-in-1:start-->
+- **Token / auth inner message:** re-authenticate the connection (`uip is connections edit <connection-id>` or the UI). If `invalid_grant` / revoked / scope errors, re-authorize the app in the external service first. If `user is no longer a member of the organization`, the connection's owning identity must be replaced. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 - **Transport / SSL / timeout / 5xx / 503:** treat as transient — retry the job. If persistent, check the external service's status and any network egress / proxy between the robot and the service; raise the activity timeout only after ruling out a real outage.
 - **404 (downstream):** correct the resource identifier the operation references; confirm the record exists in the external service.
 - **Inner message is non-connector** (process-not-found, assembly-load, missing file): stop — this is not an Integration Service failure; investigate under the relevant Orchestrator / runtime playbook.

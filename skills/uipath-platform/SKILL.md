@@ -29,7 +29,9 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 - "upload a file to a storage bucket" → `uip or bucket-files upload` (NOT a `PUT /buckets/.../signedUrl` dance)
 - "create an asset" → `uip or assets create` (NOT a `POST /odata/Assets`)
 - "start a job for a process" → `uip or jobs start <process-key>` (NOT `POST /odata/Jobs/UiPath.Server.Configuration.OData.StartJobs`)
-- "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow)
+<!--skill-flavor:headless-sign-in-1:start-->
+- "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow). For basic, API key, personal access token or custom auth, sign in with no browser: add `--auth-type` and `--field <key>=env.NAME` (NOT a secret in the command or in chat), see [references/integration-service/connections.md](references/integration-service/connections.md#create-or-re-authenticate-with-no-browser)
+<!--skill-flavor:headless-sign-in-1:end-->
 - "attach a file to a Data Fabric record" → `uip df files upload <entity-id> <record-id> <field-name> --file <path>` (NOT `records insert` / `records update` with the file value — the platform silently strips FILE columns and returns Success, see `references/data-fabric/data-fabric.md` Rule 6)
 
 ## CLI Bootstrap for Fresh Machines

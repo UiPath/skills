@@ -269,7 +269,9 @@ uip is connections list "<connector-key>" --all-folders --output json
 
 **Always pass `--all-folders`.** Without it the CLI searches only the default scope (usually the personal workspace) and reports "No connections found" for connections that live in shared folders. `--all-folders` is mutually exclusive with `--folder` / `--folder-key`.
 
-Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), the connection must be able to see it; Step 6, "Fields that load after a selection", says how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`.
+<!--skill-flavor:headless-sign-in-1:start-->
+Present connections to the user. Recommend the default enabled one but let the user confirm. When the task names something in the connected system (a Jira project, a Slack channel), the connection must be able to see it; Step 6, "Fields that load after a selection", says how to check. Note the connection `Id`, `FolderKey`, `Name`. If the `--all-folders` list is empty, no connection exists: prompt the user to create one via `uip is connections create "<connector-key>"` — never generate a placeholder or random `Id`. For basic, API key, personal access token or custom auth, the uipath-platform skill describes how to create and sign in a connection with no browser. Check `uip is connections create --help` for `--field` first.
+<!--skill-flavor:headless-sign-in-1:end-->
 
 This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resources refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resources list --kind Connection`, because refresh reads from the cache this command writes.
 
