@@ -70,7 +70,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
-| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })`; a sequential chain needs a unique `lane` per task, and `runs-sequentially` tasks sharing a `lane` start together after the predecessor set | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
+| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })`; chain: [one `lane` per task](#minimal-shape) | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
 
 ## Minimal shape
 
@@ -106,6 +106,14 @@ An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; e
 ```ts
 .entryWhen(rule('case-entered'))                       // Entry Rule 1
 .entryWhen(rule('selected-stage-exited', { stage: 'Manager Approval', expression: '=js:vars.managerDecision === "Return"' }))  // Entry Rule 2
+```
+
+`runs-sequentially` orders tasks only across lanes. For SDD tasks whose Entry Condition is `runs-sequentially`, pass `{ lane: N }` as the third argument of `.task()`, counting 0, 1, 2… down the stage's task table. Tasks with the same `lane`, or with none, start together: never give a chain one shared `lane`. Share a `lane` only where the SDD's Activation Mode says `parallel-after-predecessor` ([Activation modes](references/case-runtime.md#activation-modes)).
+
+```ts
+.task('Validate', t => t.process('validate').entryWhen(rule('runs-sequentially')), { lane: 0 })
+.task('Enrich', t => t.process('enrich').entryWhen(rule('runs-sequentially')), { lane: 1 })   // starts after Validate
+.task('Notify', t => t.process('notify').entryWhen(rule('runs-sequentially')), { lane: 2 })   // starts after Enrich
 ```
 
 ## Validation loop
