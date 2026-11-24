@@ -204,6 +204,8 @@ Entry shape follows the lane's trigger source:
 
 **Reachability walk — every write, a draft included.** Before the write ends, list each secondary lane with the row that enters it and, for a decision divert, the origin's gated exit: `<lane> ← <entry row> ← <origin exit row>`. A lane with no entry row, or a decision value the design names (reject, decline, withdraw, hold) with no `IF` on that value in an origin exit and a lane entry, is a gap: write the rows now — a reviewer of the draft routes a case only along rows that exist.
 
+**A role chosen by a value is the task's Recipient — every write, a draft included.** "Over $5M the Credit Analyst does it, otherwise the Underwriter" is ONE task whose `**Recipient:**` is `=js:vars.<amount> > 5000000 ? "Role:<role above>" : "Role:<role at or below>"` (numeral written out, high side first). A Business Rules row, a Personas note or an entry `IF` (which skips the task on the other side) is not that encoding.
+
 Omitting the diverting exit makes a decision path dual-fire (ungated completion → the next stage AND the lane both enter) or deadlock (gated completion with no alternative exit). Only a `selected-stage-exited` lane entry needs a diverting exit; a `selected-stage-completed("<origin>")` + `IF` lane keys off the origin's normal completion — guard only.
 
 Two lanes with identical entry rules (same rule, selectors, and expression) are ambiguous routing — give each a distinct selector or guard. This is a design requirement; validate does not reject the duplicate.

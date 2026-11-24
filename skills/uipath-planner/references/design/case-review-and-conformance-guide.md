@@ -38,12 +38,18 @@ When a design was handed over by `uipath-maestro-case` ([sdd-writing-guide.md](s
 
 A case draft resumed by [sdd-writing-guide.md](sdd-writing-guide.md) Step 2 item 6 keeps every business element; these repairs are the only changes it makes on the way to the final SDD, beside the template's § Validation footer.
 
-Start the final as a copy of the draft (`cp <NAME>.draft.md <NAME>.md`, the draft kept), then upgrade it in place, block by block, with file edits. Never rebuild it by writing ranges of draft lines in chunks: a chunk boundary inside a table silently drops the rows after it. Repairs:
+Start the final as a copy of the draft (`cp <NAME>.draft.md <NAME>.md`, the draft kept), then upgrade it in place, block by block, with file edits. Never rebuild it by writing ranges of draft lines in chunks: a chunk boundary inside a table silently drops the rows after it. After every scripted rewrite, and before the checklist walk, run
+
+```bash
+node "<SKILL_DIR>/scripts/case-draft-parity.mjs" "<NAME>.draft.md" "<NAME>.md"
+```
+
+(`<SKILL_DIR>` is the folder holding planner's `SKILL.md`). It compares the stages in order with their kinds, the tasks under each stage, the Case Variables rows and every `=js:` expression; each `FAIL:` line is a defect your edits introduced — repair it in place from the draft and run it again until it prints `OK`. Repairs:
 
 1. `user-selected-stage` repair per [case-product-guide.md](case-product-guide.md) § Repairing a `user-selected-stage` lane; wording such as "any active case" means every primary stage.
 2. Every `=js:` expression in the draft appears verbatim in the output, inside the same owning task or stage block, with its field names, variable references, and output mapping intact — an equivalent-looking shorthand that drops an input, predicate, or intermediate field is a failure, not a simplification.
 3. Threshold-policy conversion — MANDATORY scan, not optional polish. Scan the draft (descriptions, personas table, rationale) for comparator + amount phrases: `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to an amount (`$5M`, `100000`, `L4`). EVERY such policy must also appear in an executable cell of the owning task or stage in the final — prose-only is a render failure:
-    - A personas row whose draft scope reads `StageX (amount > $N only)` renders in the final as Stages `StageX` and Notes `amount > $N only` — the Stages cell holds exact stage names only, since convert turns it into the role's stage ids — and REQUIRES a matching guarded expression inside a StageX task block, phrased on the HIGH side and assigning the exception role: an owner/recipient cell or entry-condition IF cell containing `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"` — the numeral written out (`5000000`, not `$5M`), the role and attribute on the same line. The expression lives in a table cell (Inputs/owner/recipient/WHEN/IF); an `=js:` fragment inside `**Design Rationale:**` or `**Description:**` prose is NOT an encoding and fails the gate.
+    - A personas row whose draft scope reads `StageX (amount > $N only)` renders in the final as Stages `StageX` and Notes `amount > $N only` — the Stages cell holds exact stage names only, since convert turns it into the role's stage ids — and REQUIRES a matching guarded expression inside a StageX task block, phrased on the HIGH side and assigning the exception role: the task's `**Recipient:**` cell (the policy picks WHO does the task, so never an entry-condition IF, which skips the task on the other side) containing `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"` — the numeral written out (`5000000`, not `$5M`), the role and attribute on the same line. The expression lives in a table cell (Inputs/owner/recipient/WHEN/IF); an `=js:` fragment inside `**Design Rationale:**` or `**Description:**` prose is NOT an encoding and fails the gate.
     - Reuse an existing variable that carries the attribute; the conversion never adds or renames a task or variable.
     - Persona prose and Design Rationale alone are not final.
 4. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
@@ -150,7 +156,7 @@ names only what to LOOK AT.
      row (Marks `Yes`, IF set) — the exit always wins and the stage never completes.
  29. The Case-Level SLA and every stage SLA expressed in minutes lie within 15–1000, and no stage SLA
      exceeds the case-level SLA.
- Draft parity (finalizing a draft only)
+ Draft parity (finalizing a draft only) — items 30 and 31 PASS only after `case-draft-parity.mjs` prints `OK`; quote that line
  30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —
      and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
      Every stage keeps its draft kind: a draft primary stage (`### Stage <N>:`) stays `**Stage Kind:** primary`
@@ -161,7 +167,8 @@ names only what to LOOK AT.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
-     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, the same policy, with a role that
+     (owner / recipient / WHEN / IF / Inputs) of the owning task or stage — a policy that picks a role goes in
+     the `**Recipient:**`, never an entry IF that skips the task — the same policy, with a role that
      applies on one side only written on the high side (`=js:vars.amount > 5000000 ? "Role:<EXCEPTION_ROLE>"
      : "Role:<DEFAULT_ROLE>"`) — prose in Design Rationale, Description, Personas or Notes does not count. The
      PASS quote is the `=js:` cell itself; a quote without `=js:` is a FAIL, whatever it says.
