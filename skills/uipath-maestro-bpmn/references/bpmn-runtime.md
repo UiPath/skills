@@ -136,8 +136,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Script tasks
 
 <!-- RULE:bpmn.script.compute-step -->
-- A step that computes (totals, counts, filters, combines or decides from several values, such as totalling a batch's results before a report) is a `.scriptTask()`, in any pattern or composition.
-  `.task()` with `set` only assigns or copies values (a per-item append, a status flag): it is no step that does work, and a reader or grader looking for the computation finds none.
+- A step whose job is the computation (totals, counts, filters, combining several values, or a decision such as totalling a batch's results before a report) is a `.scriptTask()`, in any pattern or composition.
+  `.task()` with `set` assigns or copies values (a per-item append, a status flag, one simple expression); no step that does work belongs there, and a reader finds no computation step.
 
 <!-- RULE:bpmn.script.result-response -->
 - A script task (`scriptVersion` v3, what `.scriptTask()` writes) returns its value and the runtime wraps it as `result.response`.
