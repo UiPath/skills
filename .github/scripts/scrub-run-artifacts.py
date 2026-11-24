@@ -12,14 +12,16 @@ Runs carry a live UiPath login, so nothing agent- or grader-authored is trusted:
 * Other kept files (`run.*`, `experiment.*`, `variant.*`, `task.log`) must be strict
   UTF-8 text; every forwarded secret and every UiPath token issued in the run is
   replaced verbatim, then a verify pass re-reads each file once.
-* An unreadable required result (`run.json`, any `task.json`) or fewer task results
-  than --expect-tasks (a minimum: dataset tasks fan out) means the run is incomplete.
+* Task text is redacted before it is serialized to JSON or HTML (escaping would hide a
+  secret from a byte match). A missing or non-object `run.json`, an unreadable
+  `task.json`, a scheduled task id without a result in every variant, or a result
+  nobody scheduled means the run is incomplete (`ID*` also accepts a dataset task's rows).
 * A `publication-disabled` flag in $RUNNER_TEMP (written when a rotated token could
   not be recorded), a missing issued-tokens record under CI, or any error wipes the
   run dir (best effort), prints a fixed message and exits 1. Publishing steps
   require this step's success.
 
-Usage: scrub-run-artifacts.py <run_dir> [--expect-tasks N]
+Usage: scrub-run-artifacts.py <run_dir> [--expect-ids "ID ID* ..."]
 """
 
 from __future__ import annotations
@@ -92,10 +94,17 @@ def _criteria(items: object) -> list[dict]:
     return [{k: _scalar(c.get(k)) for k in _CRITERION_FIELDS} for c in items if isinstance(c, dict)]
 
 
-def sanitize_task(raw: dict) -> dict:
-    out = {k: _scalar(raw.get(k)) for k in _TASK_FIELDS}
-    out["success_criteria_results"] = _criteria(raw.get("success_criteria_results"))
-    out["post_failure_criteria_results"] = _criteria(raw.get("post_failure_criteria_results"))
+def _redact_value(value: object, needles: list[bytes]) -> object:
+    if isinstance(value, str):
+        return _replace(value.encode("utf-8"), needles).decode("utf-8")
+    return value
+
+
+def sanitize_task(raw: dict, needles: list[bytes]) -> dict:
+    """Structured fields only, redacted before any JSON or HTML serialization escapes them."""
+    out = {k: _redact_value(_scalar(raw.get(k)), needles) for k in _TASK_FIELDS}
+    for key in ("success_criteria_results", "post_failure_criteria_results"):
+        out[key] = [{k: _redact_value(v, needles) for k, v in c.items()} for c in _criteria(raw.get(key))]
     return out
 
 
@@ -134,10 +143,30 @@ def _replace(data: bytes, needles: list[bytes]) -> bytes:
     return data
 
 
-def scrub(root: pathlib.Path, needles: list[bytes], expect_tasks: int | None = None) -> int:
+def _covers(expected: str, task_id: str) -> bool:
+    """`id` matches exactly; `id*` (a dataset task) also matches its rows `id<sep>...`."""
+    if not expected.endswith("*"):
+        return task_id == expected
+    base = expected[:-1]
+    return task_id == base or (task_id.startswith(base) and not task_id[len(base)].isalnum())
+
+
+def check_coverage(found: dict[str, set[str]], expected_ids: list[str]) -> None:
+    """Every expected task has a result in every variant, and no result is unexpected."""
+    if not found:
+        raise RuntimeError("no variant results")
+    for ids in found.values():
+        if not all(any(_covers(e, i) for i in ids) for e in expected_ids):
+            raise RuntimeError("a scheduled task has no result")
+        if not all(any(_covers(e, i) for e in expected_ids) for i in ids):
+            raise RuntimeError("unexpected task result")
+
+
+def scrub(root: pathlib.Path, needles: list[bytes], expect_ids: list[str] | None = None) -> int:
     """Reduce `root` in place; returns the number of withheld files."""
     withheld = 0
-    tasks = 0
+    found: dict[str, set[str]] = {}
+    run_manifest = False
     kept: list[pathlib.Path] = []
     for path in sorted(root.rglob("*")):
         if path.is_dir() and not path.is_symlink():
@@ -155,12 +184,16 @@ def scrub(root: pathlib.Path, needles: list[bytes], expect_tasks: int | None = N
             withheld += 1
             continue
         if rel.name == "task.json":
-            task = sanitize_task(json.loads(data))
+            task = sanitize_task(json.loads(data), needles)
             if not task["task_id"] or task["final_status"] is None:
                 raise RuntimeError("task result incomplete")
+            found.setdefault(rel.parts[0], set()).add(task["task_id"])
             data = json.dumps(task, indent=2).encode("utf-8")
             (path.parent / "task.html").write_bytes(render_task_html(task).encode("utf-8"))
-            tasks += 1
+        elif rel == pathlib.PurePosixPath("run.json"):
+            if not isinstance(json.loads(data), dict):
+                raise RuntimeError("run manifest unreadable")
+            run_manifest = True
         elif rel.name == "task.html":
             continue  # re-rendered from its task.json
         path.write_bytes(_replace(data, needles))
@@ -172,8 +205,10 @@ def scrub(root: pathlib.Path, needles: list[bytes], expect_tasks: int | None = N
     for html_path in root.rglob("task.html"):
         kept.append(html_path)
         html_path.write_bytes(_replace(html_path.read_bytes(), needles))
-    if expect_tasks is not None and tasks < expect_tasks:  # dataset tasks fan out into several
-        raise RuntimeError("fewer task results than expected")
+    if not run_manifest:
+        raise RuntimeError("run manifest missing")
+    if expect_ids is not None:
+        check_coverage(found, expect_ids)
     for path in kept:  # verify, one read per file
         data = path.read_bytes()
         if any(n in data for n in needles):
@@ -199,7 +234,7 @@ def _wipe(root: pathlib.Path) -> None:
 def main(argv: list[str]) -> int:
     try:
         root = pathlib.Path(argv[1])
-        expect = int(argv[argv.index("--expect-tasks") + 1]) if "--expect-tasks" in argv else None
+        expect = argv[argv.index("--expect-ids") + 1].split() if "--expect-ids" in argv else None
         runner_temp = pathlib.Path(os.environ.get("RUNNER_TEMP", ""))
         issued = runner_temp / "issued-tokens"
         if os.environ.get("GITHUB_ACTIONS"):

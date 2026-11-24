@@ -120,6 +120,7 @@ jobs:
       linux_globs:    ${{ steps.split.outputs.linux_globs }}
       windows_globs:  ${{ steps.split.outputs.windows_globs }}
       linux_count:    ${{ steps.split.outputs.linux_count }}
+      linux_task_ids: ${{ steps.split.outputs.linux_task_ids }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
       coder_eval_version:    ${{ steps.ceref.outputs.version }}
       coder_eval_uipath_ref: ${{ steps.ceref.outputs.ref }}
@@ -201,6 +202,18 @@ jobs:
             mapfile -t LINUX < <(printf '%s\n' "${LINUX[@]}" | awk '!seen[$0]++')
           fi
           LCOUNT=${#LINUX[@]}
+          # Task identities the scrub requires results for: `id`, or `id*` when the task
+          # has a dataset (it fans out into one result per row).
+          LIDS=()
+          for f in "${LINUX[@]}"; do
+            id="$(sed -n 's/^task_id:[[:space:]]*//p' "$f" | head -n 1 | tr -d "\"'\r" | sed 's/[[:space:]]*#.*$//; s/[[:space:]]*$//')"
+            if [ -z "$id" ]; then
+              echo "::error::$f has no task_id"
+              exit 1
+            fi
+            if grep -qE '^dataset:' "$f"; then id="$id*"; fi
+            LIDS+=("$id")
+          done
           WCOUNT=${#WINDOWS[@]}
           TOTAL=$((LCOUNT + WCOUNT))
           echo "Matched $TOTAL task file(s): $LCOUNT linux + $WCOUNT windows"
@@ -216,6 +229,7 @@ jobs:
           echo "linux_globs=${LINUX[*]:-}"     >> "$GITHUB_OUTPUT"
           echo "windows_globs=${WINDOWS[*]:-}" >> "$GITHUB_OUTPUT"
           echo "linux_count=$LCOUNT"            >> "$GITHUB_OUTPUT"
+          echo "linux_task_ids=${LIDS[*]:-}"    >> "$GITHUB_OUTPUT"
           echo "windows_count=$WCOUNT"          >> "$GITHUB_OUTPUT"
 
       # run-windows installs coder-eval on the host (tempdir driver, no
@@ -801,7 +815,7 @@ jobs:
           E2E_LONG_PROCESS_KEY:      ${{ vars.E2E_LONG_PROCESS_KEY }}
           UIPATH_ROPC_CLIENT_SECRET: ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           UIPATH_BOT_PASSWORD:       ${{ secrets.UIPATH_BOT_PASSWORD }}
-          TASK_COUNT:                ${{ needs.partition.outputs.linux_count }}
+          TASK_IDS:                  ${{ needs.partition.outputs.linux_task_ids }}
         # Fail closed: on any error the run dir is wiped and this step fails; the
         # publishing steps below require its success, so nothing is published.
         # The refresher stops first so the issued-tokens record is final.
@@ -810,7 +824,7 @@ jobs:
           # in-flight rotation stops too.
           pid="$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null || true)"
           if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; fi
-          python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-tasks "$TASK_COUNT"
+          python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-ids "$TASK_IDS"
 
       - name: Report auth refresher status
         if: always()
@@ -978,7 +992,6 @@ jobs:
         if: always()
         env:
           SCRUB_OUTCOME: ${{ steps.scrub.outcome }}
-          TASK_COUNT:    ${{ needs.partition.outputs.linux_count }}
         run: |
           set -uo pipefail
           # Reads the run dir, so it only runs on what the scrub left behind.
@@ -996,16 +1009,15 @@ jobs:
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          python - "$run_dir" "$TASK_COUNT" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
           rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
-          expected = int(sys.argv[2])
-          print(f"\n{ok}/{len(rows)} PASS (linux; expected at least {expected})")
-          # >= : a dataset task fans out into one task.json per row; a missing task still fails.
-          sys.exit(0 if len(rows) >= expected and ok == len(rows) else 1)
+          print(f"\n{ok}/{len(rows)} PASS (linux)")
+          # The scrub step already required a result for every scheduled task id and rejected extras.
+          sys.exit(0 if rows and ok == len(rows) else 1)
           PY
 
   run-windows:

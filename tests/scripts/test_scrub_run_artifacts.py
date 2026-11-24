@@ -46,6 +46,7 @@ def _env(tmp_path, monkeypatch, issued=(TOKEN,)):
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     run = tmp_path / "runs"
     run.mkdir()
+    (run / "run.json").write_text("{}", encoding="utf-8")
     return run
 
 
@@ -76,7 +77,7 @@ def test_only_the_allow_list_survives(tmp_path, monkeypatch):
     (run / "default" / "x").mkdir()
     (run / "default" / "x" / "task.json").write_text("{}", encoding="utf-8")  # wrong depth
     (run / "notes.txt").write_text("x", encoding="utf-8")
-    assert scrub_mod.main(["x", str(run), "--expect-tasks", "1"]) == 0
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "t"]) == 0
     assert _names(run) == sorted(
         ["run.json", "run.md", "experiment.json", "default/variant.json"]
         + [f"default/t/00/{n}" for n in ("task.json", "task.log", "task.html")]
@@ -130,7 +131,7 @@ def test_non_text_optional_files_are_withheld(tmp_path, monkeypatch):
     (run / "experiment.md").write_bytes(b"\xff\xfe" + TOKEN.encode("utf-16-le"))
     (run / "experiment.log").write_bytes(gzip.compress(TOKEN.encode()))
     assert scrub_mod.main(["x", str(run)]) == 0
-    assert _names(run) == []
+    assert _names(run) == ["run.json"]
 
 
 @pytest.mark.parametrize("name", ["run.json", "task.json"])
@@ -140,28 +141,74 @@ def test_unreadable_required_result_makes_the_run_incomplete(tmp_path, monkeypat
     (run / "run.json").write_text("{}", encoding="utf-8")
     victim = run / name if name == "run.json" else task / name
     victim.write_bytes(gzip.compress(b"{}"))
-    assert scrub_mod.main(["x", str(run), "--expect-tasks", "1"]) == 1
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "t"]) == 1
     assert _names(run) == []
 
 
-def test_fewer_results_than_expected_fail_but_dataset_fan_out_passes(tmp_path, monkeypatch):
+def _expect(tmp_path, monkeypatch, tasks, ids, variants=("default",)):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     run = _env(tmp_path, monkeypatch)
-    _put_task(run, "a")
-    assert scrub_mod.main(["x", str(run), "--expect-tasks", "2"]) == 1
+    for variant in variants:
+        for name in tasks:
+            d = run / variant / name / "00"
+            d.mkdir(parents=True)
+            (d / "task.json").write_text(json.dumps(_task(name)), encoding="utf-8")
+    return scrub_mod.main(["x", str(run), "--expect-ids", ids]), run
+
+
+def test_exact_task_identities_are_required(tmp_path, monkeypatch):
+    # two successful rows of the first dataset task must not stand in for the second task
+    rc, run = _expect(tmp_path / "a", monkeypatch, ["a-1", "a-2"], "a* b")
+    assert rc == 1 and _names(run) == []
+    rc, _ = _expect(tmp_path / "b", monkeypatch, ["a-1", "a-2", "b"], "a* b")  # dataset fan-out is fine
+    assert rc == 0
+    rc, _ = _expect(tmp_path / "c", monkeypatch, ["a", "b", "zzz"], "a b")  # a result nobody scheduled
+    assert rc == 1
+    rc, _ = _expect(tmp_path / "d", monkeypatch, ["ab"], "a*")  # `a*` is a row prefix, not a string prefix
+    assert rc == 1
+
+
+def test_every_variant_must_cover_every_task(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    for variant, names in (("v1", ["a", "b"]), ("v2", ["a"])):
+        for name in names:
+            d = run / variant / name / "00"
+            d.mkdir(parents=True)
+            (d / "task.json").write_text(json.dumps(_task(name)), encoding="utf-8")
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "a b"]) == 1
+
+
+@pytest.mark.parametrize("manifest", [None, "{not json", "[]", "null"])
+def test_a_readable_run_manifest_is_required(tmp_path, monkeypatch, manifest):
+    run = _env(tmp_path, monkeypatch)
+    _put_task(run)
+    if manifest is None:
+        (run / "run.json").unlink()
+    else:
+        (run / "run.json").write_text(manifest, encoding="utf-8")
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "t"]) == 1
     assert _names(run) == []
-    second = tmp_path / "second"
-    second.mkdir()
-    run = _env(second, monkeypatch)
-    _put_task(run, "a")
-    _put_task(run, "b")
-    _put_task(run, "c")  # more results than task files: a dataset task fans out into several
-    assert scrub_mod.main(["x", str(run), "--expect-tasks", "2"]) == 0
+
+
+def test_secrets_are_redacted_before_json_and_html_escaping(tmp_path, monkeypatch):
+    monkeypatch.setenv("UIPATH_BOT_PASSWORD", NASTY)
+    run = _env(tmp_path, monkeypatch)
+    task = _put_task(run, description_token=1)
+    raw = json.loads((task / "task.json").read_text(encoding="utf-8"))
+    raw["success_criteria_results"][0]["description"] = f"password {NASTY}"
+    raw["model_used"] = NASTY
+    (task / "task.json").write_text(json.dumps(raw), encoding="utf-8")
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "t"]) == 0
+    blob = (task / "task.json").read_text(encoding="utf-8") + (task / "task.html").read_text(encoding="utf-8")
+    for form in (NASTY, json.dumps(NASTY)[1:-1], __import__("html").escape(NASTY), __import__("html").escape(json.dumps(NASTY)[1:-1])):
+        assert form not in blob
+    assert "password ***" in blob
 
 
 def test_bad_arguments_still_fail_with_the_fixed_message(tmp_path, monkeypatch, capsys):
     run = _env(tmp_path, monkeypatch)
     (run / "run.md").write_text("x", encoding="utf-8")
-    assert scrub_mod.main(["x", str(run), "--expect-tasks", ""]) == 1
+    assert scrub_mod.main(["x", str(run), "--expect-ids"]) == 1
     assert list(run.iterdir()) == [] and "withheld" in capsys.readouterr().out
 
 
@@ -175,11 +222,11 @@ def test_incomplete_task_record_fails_closed(tmp_path, monkeypatch):
 def test_symlinks_and_fifos_are_removed_unopened(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
     (tmp_path / "outside").mkdir()
-    (run / "run.json").symlink_to(tmp_path / "outside")
+    (run / "experiment.html").symlink_to(tmp_path / "outside")
     (run / "run.md").symlink_to(tmp_path / "nowhere")
     os.mkfifo(run / "experiment.json")
     assert scrub_mod.main(["x", str(run)]) == 0
-    assert _names(run) == [] and (tmp_path / "outside").is_dir() and not (run / "experiment.json").exists()
+    assert _names(run) == ["run.json"] and (tmp_path / "outside").is_dir() and not (run / "experiment.json").exists()
 
 
 def test_error_wipes_everything_with_a_fixed_message(tmp_path, monkeypatch, capsys):
