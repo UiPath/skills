@@ -220,16 +220,10 @@ Both resolve against the same library and both take the same `connection` / `fol
   Same rule as §2: a scope value that is an **id** (a mail folder, a channel, a workspace) takes a `lookup()`, never a pasted value; §3 resolves it (`--action email-received`).
 - `object` names what a **generic** event watches — `record-created` and its kin on Data Fabric, Salesforce, ServiceNow, Jira. Such an entry carries no default, so without it the node emits `objectName: ""`, validates, and watches nothing. `check` reports `EVENT_GENERIC_NO_OBJECT`. A curated event has its object built in and refuses one (`EVENT_OBJECT_NOT_GENERIC`).
 - A folder entity on a Data Fabric entity trigger (`record-created-preview-`, `record-updated-preview-`; object `EntityTriggers_V3`) is `entity: { name, folder: '<folder path>' }`, never `filter: { entityScope, folderEntityName }`: a literal filter watches the records but writes no picker, so `refresh` declares no entity and a deploy cannot re-point it.
-<<<<<<< HEAD
-=======
 <!--skill-flavor:sdk-event-entity:start-->
   Needs `@uipath/maestro-builder-sdk` 6.123.0 or later; an older SDK reports `TS2353` on `entity`, so upgrade the copy `uip` resolves, local copy first, then global. From the directory you run `uip` in (the workspace root), run `node -e "console.log(require.resolve('@uipath/maestro-builder-sdk/package.json',{paths:[process.cwd()]}))"`. When it prints a path, that `node_modules` (possibly in a parent directory) owns the copy: run `npm install --save-dev @uipath/maestro-builder-sdk@latest` in the directory holding it when a `package.json` sits beside it; otherwise tell the user the path, and never create a `package.json`. On error, run `npm install -g @uipath/maestro-builder-sdk@latest`. Then run `check` again. Never fall back to the literal `filter`.
 <!--skill-flavor:sdk-event-entity:end-->
->>>>>>> 8f2986f2c (fix(uipath-maestro-bpmn): follow-up to #5109 review (workspace SDK upgrade, Studio Web fallback) (#5194))
   `check` reports `RESOURCE_UNRESOLVED` and prints the `uip maestro registry prepare --entity <name> --folder-path <path>` that records the keys, as for `.dataService()`; the trigger and a task on that entity share one binding pair. Run `uip maestro bpmn refresh` after `compile`.
-<!--skill-flavor:sdk-event-entity:start-->
-  On an SDK without `entity` (`check` reports `TS2353` on it), run `uip maestro bpmn registry get Intsvc.EventTrigger --object-name EntityTriggers_V3 --operation <OPERATION> --connection-id <CONNECTION_ID> --input-details '{"queryParameters":{"entityScope":"folder","folderEntityName":"<ENTITY_NAME>"}}' --solution-folder <SOLUTION_DIR> --output json`, then author `.activity(<ID>, 'Intsvc.EventTrigger', { contextRows, inputs, outputRows, contextVerbatim: true })` from the `<uipath:context>`, input and output rows of `Data.V2.ElementXml`, and one `.binding(<BINDING_ID>, { resource, propertyAttribute, resourceKey, value })` per `Data.V2.RootBindings` row. Follow `Data.V2.Instructions` for the `{{VAR_ID}}` tokens. `examples/InvoiceApproval.bpmn.ts` (`Event_CiykXe`) shows the node's shape. `<OPERATION>` is `UPDATED_V3` or `CREATED_V3`. Never the literal `filter`.
-<!--skill-flavor:sdk-event-entity:end-->
 
 ```bash
 uip is triggers objects <connector> <EVENT> --connection-id <id> --output json   # what a generic event can watch
