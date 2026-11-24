@@ -10,7 +10,7 @@
 //   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
 //                                    [--shape-checks gate|advisory]  advisory: Transactional Shape findings
 //                                    are graded by the strict profile only (a task that tests something else)
-//                                    [--processes <inventory.json> --recordsets <recordsets.json>]
+//                                    [--processes <inventory.json> --recordsets <recordsets.json>] [--data-model <object-model.json>]
 //
 // uipath-planner runs it with --profile strict after `author`, `extract` and `edit`, and for `check`. An
 // extraction through the framework migration pack adds the two files the pack's `data` command writes. The
@@ -31,12 +31,17 @@
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
 //           in the kinds' order, an `Entity schema:` file under the Data Fabric table that exists beside the genome,
-//           parses, holds exactly the table's entities and none still of kind `review`, and a process genome's Deployment with its four bullets; no H2 heading twice; no
+//           parses, holds exactly the table's entities and none still of kind `review` (and a `<genome>.entities.json` beside
+//           the genome is named by that line), and a process genome's Deployment with its four bullets; no H2 heading twice; no
 //           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
 //           lists) and still has that fingerprint; an SDD written from the genome (`<slug>-sdd.md`, a process
 //           genome's `<slug>-solution-sdd.md`) whose `Genome` row carries the genome's current genome-sha256.
+//
+// Data model check (--data-model <object-model.json>, any profile): the genome's entity schema file realizes every class
+// of the checked data model, carries every property in a field and every link in a RELATIONSHIP field or as the inverse
+// side of one, and never both sides of an inverse pair.
 //
 // Export check (--processes and --recordsets, both required together):
 //   --processes   a list of {"id", "name", "recordset" (name or null), "calls": [{"calleeId", "recordset"}]}
@@ -184,7 +189,7 @@ export const TEMPLATE_PLACEHOLDERS = [
 
 const DEFAULTS = {
   profile: "core", expect: [], sourceMap: [], skills: [], shape: null, shapeChecks: "gate", flows: null,
-  unit: [], minSteps: 5, minCriteria: 5, min: 1.0, files: null, processes: null, recordsets: null,
+  unit: [], minSteps: 5, minCriteria: 5, min: 1.0, files: null, processes: null, recordsets: null, dataModel: null,
 };
 
 /** Collects findings; a strict finding is dropped under the core profile. */
@@ -459,7 +464,7 @@ function checkWrittenSdd(path, text, level, r) {
 
 /** strict: Platform Dependencies holds the stub or a table per kind in the kinds' order, another service's after
  * them; a process genome's Deployment holds its bullets. */
-function checkPlatformDependencies(text, level, r, path = null) {
+function checkPlatformDependencies(text, level, r, path = null, dataModel = null) {
   const body = sectionBody(text, "Platform Dependencies");
   const tables = [...body.matchAll(/^### (.+)$/gm)].map((m) => m[1].trim());
   if (!tables.length && !body.includes(NO_DEPENDENCIES)) r.strict(`Platform Dependencies: neither a table per kind nor the stub line '${NO_DEPENDENCIES}.'`);
@@ -471,7 +476,7 @@ function checkPlatformDependencies(text, level, r, path = null) {
     else if (kind < last) r.strict(`Platform Dependencies: '### ${h}' out of the kinds' order ${repr(DEPENDENCY_KINDS)}`);
     last = Math.max(last, kind);
   }
-  if (path) checkEntitySchema(path, body, r);
+  if (path) checkEntitySchema(path, body, r, dataModel);
   if (level !== "process") return;
   const missing = DEPLOYMENT_LABELS.filter((l) => !new RegExp(`^- \\*\\*${esc(l)}:\\*\\*`, "m").test(sectionBody(text, "Deployment")));
   if (missing.length) r.strict(`Deployment: no bullet for ${repr(missing)}`);
@@ -481,10 +486,15 @@ const ENTITY_SCHEMA = /^\{?Entity schema:\s*`?([^`\s}]+)`?/m;
 
 /** strict: an `Entity schema:` line under the Data Fabric table names a file beside the genome that parses, holds
  * exactly the table's entities, and has no entity whose kind is still `review`. */
-function checkEntitySchema(path, body, r) {
+function checkEntitySchema(path, body, r, dataModel = null) {
   const block = body.split(/^### /m).find((b) => b.startsWith("Data Fabric entities")) ?? "";
   const m = ENTITY_SCHEMA.exec(block);
-  if (!m || m[1].startsWith("<")) return;
+  if (!m || m[1].startsWith("<")) {
+    const beside = path.replace(/\.md$/, ".entities.json");
+    if (existsSync(beside)) r.strict(`Platform Dependencies: ${baseName(beside)} sits beside the genome, but no 'Entity schema:' line under the Data Fabric table names it`);
+    if (dataModel) r.core("--data-model: the genome names no entity schema file ('Entity schema:' under the Data Fabric table)");
+    return;
+  }
   const file = resolvePath(dirname(path), m[1]);
   let schema;
   try { schema = JSON.parse(readFileSync(file, "utf8")); } catch (err) {
@@ -499,6 +509,32 @@ function checkEntitySchema(path, body, r) {
   if (onlyFile.length) r.strict(`Platform Dependencies: ${m[1]} defines ${repr(onlyFile)}, missing from the Data Fabric table`);
   const review = [...inFile].filter((e) => schema.entities[e]?.kind === "review");
   if (review.length) r.strict(`Platform Dependencies: ${m[1]}: ${repr(review)} still kind "review"; the Developer settles native or federated`);
+  if (dataModel) checkDataModelCoverage(dataModel, schema, m[1], r);
+}
+
+/** --data-model: every class of the checked data model is realized by an entity, every property by a field, and every
+ * link by a RELATIONSHIP field (its `property` is the link's name) or as the inverse side of one, never both sides. */
+export function checkDataModelCoverage(modelPath, schema, fileName, r) {
+  let model;
+  try { model = JSON.parse(readFileSync(modelPath, "utf8")); } catch (err) { r.core(`--data-model: ${modelPath} cannot be read (${err.message})`); return; }
+  const entities = Object.values(schema?.entities ?? {});
+  const realized = new Set(entities.flatMap((e) => (e.realizes ?? []).map((x) => x.class)));
+  const carried = new Map();
+  for (const e of entities) for (const f of Object.values(e.fields ?? {})) if (f?.property) carried.set(f.property, f);
+  const short = (iri) => String(iri).split("#").pop();
+  const classes = model.classes ?? [];
+  const missingClasses = classes.map((c) => c.name).filter((c) => !realized.has(c));
+  if (missingClasses.length) r.core(`${fileName}: data-model classes ${repr(missingClasses)} are realized by no entity`);
+  const missingProps = classes.flatMap((c) => (c.fields ?? []).map((f) => f.name)).filter((n) => !carried.has(n));
+  if (missingProps.length) r.core(`${fileName}: data-model properties ${repr(missingProps)} are carried by no field`);
+  const links = new Map((model.links ?? []).map((l) => [l.name, l]));
+  for (const l of links.values()) {
+    const inverse = l.inverse ? links.get(short(l.inverse)) : null;
+    const own = carried.get(l.name)?.type === "RELATIONSHIP";
+    const other = inverse && carried.get(inverse.name)?.type === "RELATIONSHIP";
+    if (!own && !other) r.core(`${fileName}: link ${l.name} is carried by no RELATIONSHIP field${inverse ? ` (nor its inverse ${inverse.name})` : ""}`);
+    else if (own && other && l.name < inverse.name) r.core(`${fileName}: links ${l.name} and ${inverse.name} are one inverse pair but both carry a RELATIONSHIP field; keep only the to-one side`);
+  }
 }
 
 /** [flows, headed]: the '### Flow N' blocks, or — when there is no such heading but the section names a
@@ -674,7 +710,7 @@ function checkComponent(path, a, partOf, shape = true, library = false, processE
   if (!cq.trim()) r.core("Configuration Questions section is empty");
   else if (!questions.length && !cq.includes("no configuration needed")) r.strict("Configuration Questions: neither a numbered list of questions nor the stub line");
   checkOpenDecisions(text, r, processEntries);
-  checkPlatformDependencies(text, "component", r, path);
+  checkPlatformDependencies(text, "component", r, path, a.dataModel);
   if (a.sourceMap.length) {
     const sm = sectionBody(text, "Source Map");
     if (!sm.trim()) r.core("missing or empty '## Source Map' section");
@@ -717,7 +753,7 @@ function checkProcess(path, a) {
     try { for (const n of namedEntries(read(target), true)) namedByComponents.add(n); } catch (e) { if (!(e instanceof InputError)) throw e; }
   }
   checkOpenDecisions(text, r, null, namedByComponents);
-  checkPlatformDependencies(text, "process", r, path);
+  checkPlatformDependencies(text, "process", r, path, a.dataModel);
   const processEntries = openDecisions(text);
   const componentErrors = [];
   for (const [link, target, isLibrary] of links.filter((_, i) => first(i))) {
@@ -855,7 +891,7 @@ const HELP = `${USAGE}
   component|process <genome>  check a genome: [--profile core|strict] [--expect TOKEN ...] [--source-map TOKEN ...]
                               [--skills SKILL ...] [--shape transactional|stub] [--flows N] [--unit TOKEN ...]
                               [--shape-checks gate|advisory] [--min-steps N] [--min-criteria N]
-                              [--processes <inventory.json> --recordsets <recordsets.json>]
+                              [--processes <inventory.json> --recordsets <recordsets.json>] [--data-model <object-model.json>]
   tokens <pattern>            --expect TOKEN ... [--min FRACTION] [--files N]
   skills                      JSON of the skill names a genome may cite
 
@@ -865,7 +901,7 @@ const VALUE = {
   "--profile": ["profile", ["core", "strict"]], "--shape": ["shape", ["transactional", "stub"]],
   "--shape-checks": ["shapeChecks", ["gate", "advisory"]], "--flows": ["flows", "int"], "--min-steps": ["minSteps", "int"],
   "--min-criteria": ["minCriteria", "int"], "--min": ["min", "float"], "--files": ["files", "int"],
-  "--processes": ["processes", "str"], "--recordsets": ["recordsets", "str"],
+  "--processes": ["processes", "str"], "--recordsets": ["recordsets", "str"], "--data-model": ["dataModel", "str"],
 };
 
 class UsageError extends Error {}

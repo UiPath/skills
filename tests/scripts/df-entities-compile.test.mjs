@@ -206,5 +206,5 @@ test('the planner\'s entity schema guide names the same kinds, roles, field keys
   assert.deepEqual(row('`kind`'), KINDS);
   assert.deepEqual(row('`realizes[].role`').filter((r) => r !== 'key'), ROLES);
   assert.deepEqual(row('field `type`'), FIELD_TYPES);
-  assert.deepEqual(row('field keys').sort(), ['choiceSet', 'displayName', 'length', 'precision', 'property', 'required', 'target', 'type', 'unique']);
+  assert.deepEqual(row('field keys').sort(), ['choiceSet', 'display', 'displayName', 'length', 'precision', 'property', 'required', 'target', 'type', 'unique']);
 });

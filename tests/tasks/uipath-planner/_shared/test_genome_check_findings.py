@@ -1016,3 +1016,69 @@ def test_entity_schema_with_a_review_kind_fails_strict(check, tmp_path):
 def test_template_placeholder_entity_schema_line_is_not_checked(check, tmp_path):
     text = with_entities(tmp_path, schema=None, line="{Entity schema: <GENOME_SLUG>.entities.json — only when the entities come from a data model}")
     assert check(text, profile="strict")[0] == 0
+
+
+def test_entity_schema_file_beside_the_genome_without_its_line_fails_strict(check, tmp_path):
+    text = with_entities(tmp_path, line="")
+    (tmp_path / "sample-genome.entities.json").write_text(json.dumps(ENTITY_SCHEMA), encoding="utf-8")
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert "sample-genome.entities.json sits beside the genome, but no 'Entity schema:' line" in out
+
+
+DATA_MODEL = {"classes": [
+    {"name": "Requisition", "fields": [{"name": "Requisition.number"}]},
+    {"name": "Supplier", "fields": [{"name": "Supplier.code"}]}],
+    "links": [
+    {"name": "Requisition.Supplier", "from": "#Requisition", "to": "#Supplier", "required": True, "many": False, "inverse": "#Supplier.Requisition"},
+    {"name": "Supplier.Requisition", "from": "#Supplier", "to": "#Requisition", "required": False, "many": True, "inverse": "#Requisition.Supplier"}]}
+
+
+def coverage_schema(both_sides=False, drop_link=False):
+    schema = {"version": 1, "entities": {
+        "reqRequisition": {"kind": "native", "realizes": [{"class": "Requisition", "role": "owner"}], "fields": {
+            "number": {"type": "STRING", "length": 20, "required": True, "property": "Requisition.number"},
+            "supplier": {"type": "RELATIONSHIP", "target": "reqSupplier", "display": "code", "required": True, "property": "Requisition.Supplier"}}},
+        "reqSupplier": {"kind": "native", "realizes": [{"class": "Supplier", "role": "owner"}], "fields": {
+            "code": {"type": "STRING", "length": 10, "required": True, "property": "Supplier.code"}}}}}
+    if both_sides:
+        schema["entities"]["reqSupplier"]["fields"]["requisition"] = {"type": "RELATIONSHIP", "target": "reqRequisition", "display": "number", "property": "Supplier.Requisition"}
+    if drop_link:
+        del schema["entities"]["reqRequisition"]["fields"]["supplier"]
+    return schema
+
+
+def with_model(tmp_path, schema):
+    (tmp_path / "model.json").write_text(json.dumps(DATA_MODEL), encoding="utf-8")
+    return with_entities(tmp_path, entities=("reqRequisition", "reqSupplier"), schema=schema), ("--data-model", str(tmp_path / "model.json"))
+
+
+def test_data_model_fully_carried_passes(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema())
+    assert check(text, profile="strict", extra=extra)[0] == 0
+
+
+def test_data_model_link_carried_by_no_field_fails_core(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema(drop_link=True))
+    rc, out = check(text, extra=extra)
+    assert rc == 1
+    assert "link Requisition.Supplier is carried by no RELATIONSHIP field (nor its inverse Supplier.Requisition)" in out
+
+
+def test_data_model_inverse_pair_carried_twice_fails_core(check, tmp_path):
+    text, extra = with_model(tmp_path, coverage_schema(both_sides=True))
+    rc, out = check(text, extra=extra)
+    assert rc == 1
+    assert "are one inverse pair but both carry a RELATIONSHIP field" in out
+
+
+def test_data_model_class_and_property_not_carried_fail_core(check, tmp_path):
+    schema = coverage_schema()
+    del schema["entities"]["reqSupplier"]
+    del schema["entities"]["reqRequisition"]["fields"]["supplier"]
+    (tmp_path / "model.json").write_text(json.dumps(DATA_MODEL), encoding="utf-8")
+    text = with_entities(tmp_path, entities=("reqRequisition",), schema=schema)
+    rc, out = check(text, extra=("--data-model", str(tmp_path / "model.json")))
+    assert rc == 1
+    assert "classes ['Supplier'] are realized by no entity" in out
+    assert "properties ['Supplier.code'] are carried by no field" in out
