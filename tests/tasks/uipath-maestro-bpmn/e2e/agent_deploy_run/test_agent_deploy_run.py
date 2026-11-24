@@ -85,7 +85,7 @@ def process(xml=PROCESS_XML):
 
 def variables(sum_value=9, gender="female", reason=REASON, agent_outputs=None, agent_runs=None):
     if agent_outputs is None:
-        agent_outputs = {"response": {"gender": gender, "reason": reason}}
+        agent_outputs = {"gender": gender, "reason": reason}
     if agent_runs is None:
         agent_runs = [agent_outputs]
     return {
@@ -136,15 +136,15 @@ class ProvenanceTests(unittest.TestCase):
         check_behavior.assert_agent_provenance(process(), variables(), "female")
 
     def test_agent_output_as_json_string_passes(self):
-        payload = variables(agent_outputs={"response": f'{{"gender": "Female", "reason": "{REASON}"}}'})
+        payload = variables(agent_outputs=f'{{"gender": "Female", "reason": "{REASON}"}}')
         check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_reason_matches_across_whitespace_and_case(self):
-        payload = variables(agent_outputs={"response": {"gender": "female", "reason": f"  {REASON.upper()} "}})
+        payload = variables(agent_outputs={"gender": "female", "reason": f"  {REASON.upper()} "})
         check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_other_node_cannot_cover_for_agent(self):
-        payload = variables(agent_outputs={"response": {}})
+        payload = variables(agent_outputs={})
         with self.assertRaisesRegex(CheckFailure, "result.gender"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
@@ -155,21 +155,21 @@ class ProvenanceTests(unittest.TestCase):
     def test_wrong_gender_with_both_labels_fails(self):
         payload = variables(
             gender="male",
-            agent_outputs={"response": {"gender": "female", "reason": REASON, "labels": ["male", "female"]}},
+            agent_outputs={"gender": "female", "reason": REASON, "labels": ["male", "female"]},
         )
         with self.assertRaisesRegex(CheckFailure, "result.gender"):
             check_behavior.assert_agent_provenance(process(), payload, "male")
 
     def test_unknown_classification_with_a_matching_hint_fails(self):
-        payload = variables(agent_outputs={"response": {"gender": "unknown", "hint": "female", "note": REASON}})
+        payload = variables(agent_outputs={"gender": "unknown", "hint": "female", "note": REASON})
         with self.assertRaisesRegex(CheckFailure, "result.gender"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_label_and_reason_from_different_runs_fail(self):
         payload = variables(
             agent_runs=[
-                {"response": {"gender": "female", "reason": "A different explanation."}},
-                {"response": {"gender": "unknown", "reason": REASON}},
+                {"gender": "female", "reason": "A different explanation."},
+                {"gender": "unknown", "reason": REASON},
             ]
         )
         with self.assertRaisesRegex(CheckFailure, "ran 2 times"):
@@ -178,15 +178,15 @@ class ProvenanceTests(unittest.TestCase):
     def test_two_runs_of_the_agent_node_fail(self):
         payload = variables(
             agent_runs=[
-                {"response": {"gender": "unknown", "reason": "Retrying."}},
-                {"response": {"gender": "female", "reason": REASON}},
+                {"gender": "unknown", "reason": "Retrying."},
+                {"gender": "female", "reason": REASON},
             ]
         )
         with self.assertRaisesRegex(CheckFailure, "ran 2 times"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_empty_classification_with_a_matching_hint_fails(self):
-        payload = variables(agent_outputs={"response": {"gender": "", "hint": "female", "note": REASON}})
+        payload = variables(agent_outputs={"gender": "", "hint": "female", "note": REASON})
         with self.assertRaisesRegex(CheckFailure, "result.gender"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
@@ -210,21 +210,40 @@ class ProvenanceTests(unittest.TestCase):
         with self.assertRaisesRegex(CheckFailure, "classify2"):
             check_behavior.assert_agent_provenance(proc, variables(), "female")
 
+    def test_fields_nested_below_the_mapped_path_fail(self):
+        payload = variables(agent_outputs={"response": {"gender": "female", "reason": REASON}})
+        with self.assertRaisesRegex(CheckFailure, "result.gender"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_nested_mapping_reads_the_nested_fields(self):
+        proc = process(PROCESS_XML.replace("=result.gender", "=result.response.gender").replace(
+            "=result.reason", "=result?.response?.reason"
+        ))
+        payload = variables(agent_outputs={"response": {"gender": "female", "reason": REASON}})
+        check_behavior.assert_agent_provenance(proc, payload, "female")
+
     def test_gender_mapped_from_the_whole_response_passes(self):
         proc = process(PROCESS_XML.replace("=js:vars.classifyGender", "=js:vars.classify_processResponse.gender"))
         check_behavior.assert_agent_provenance(proc, variables(), "female")
 
     def test_constant_process_reason_fails(self):
-        payload = variables(
-            reason="Classified by the agent.",
-            agent_outputs={"response": {"gender": "female", "reason": REASON}},
-        )
-        with self.assertRaisesRegex(CheckFailure, "reason"):
-            check_behavior.assert_agent_provenance(process(), payload, "female")
+        proc = process(PROCESS_XML.replace("=js:vars.classifyReason", "=js:'Classified by the agent.'"))
+        with self.assertRaisesRegex(CheckFailure, "`reason` is published from"):
+            check_behavior.assert_agent_provenance(proc, variables(), "female")
+
+    def test_reason_published_from_the_gender_field_fails(self):
+        proc = process(PROCESS_XML.replace("=js:vars.classifyReason", "=js:vars.classifyGender"))
+        with self.assertRaisesRegex(CheckFailure, "both published from result.gender"):
+            check_behavior.assert_agent_provenance(proc, variables(), "female")
 
     def test_reason_that_is_only_the_label_fails(self):
-        payload = variables(reason="female", agent_outputs={"response": {"gender": "female", "reason": REASON}})
-        with self.assertRaisesRegex(CheckFailure, "reason"):
+        payload = variables(agent_outputs={"gender": "female", "reason": "Female"})
+        with self.assertRaisesRegex(CheckFailure, "result.reason"):
+            check_behavior.assert_agent_provenance(process(), payload, "female")
+
+    def test_empty_agent_reason_fails(self):
+        payload = variables(agent_outputs={"gender": "female", "reason": "  "})
+        with self.assertRaisesRegex(CheckFailure, "result.reason"):
             check_behavior.assert_agent_provenance(process(), payload, "female")
 
     def test_no_agent_job_fails(self):

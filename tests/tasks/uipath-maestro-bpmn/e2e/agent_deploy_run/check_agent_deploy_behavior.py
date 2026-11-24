@@ -9,7 +9,7 @@ and a non-empty `reason`. In the deployed BPMN, the end event must publish
 `gender` and `reason` straight from variables that only one agent-job node's
 response mapping writes, so a script, a literal or a second agent call cannot
 stand in. That node must run once, its Outputs must hold the expected label and
-the process `reason` in those mapped fields, and the one job it started (its
+an explanation in those two mapped fields, and the one job it started (its
 element-execution `JobKey`) must be a successful job of the seeded folder's
 Agent process.
 """
@@ -57,6 +57,7 @@ NAMES = {
     "female": ("Maria", "Olivia", "Sophia", "Emma", "Isabella"),
     "male": ("James", "Michael", "David", "Robert", "William"),
 }
+LABELS = {"male", "female", "unknown"}
 TRACED_OUTPUTS = ("gender", "reason")
 FIELDS = r"((?:\??\.[A-Za-z_][A-Za-z0-9_]*)*)"
 VARS_SOURCE = re.compile(rf"=(?:js:)?\s*vars\.([A-Za-z_][A-Za-z0-9_]*){FIELDS}\s*;?")
@@ -121,13 +122,13 @@ def output_writes(process: ET.Element) -> list[tuple[str, ET.Element]]:
     ]
 
 
-def traced_field(process: ET.Element, name: str, agent_ids: list[str]) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
-    """(node id, the node's output name, response path, path below that output)
-    of the agent-job response field the process output `name` is published from."""
+def traced_field(process: ET.Element, name: str, agent_ids: list[str]) -> tuple[str, tuple[str, ...]]:
+    """(node id, response path) of the agent-job response field the process
+    output `name` is published from."""
     output_ids = {
         d.attrib.get("id")
         for d in declarations(process)
-        if d.tag == q(UIPATH_NS, "output") and d.attrib.get("name") == name
+        if d.tag == q(UIPATH_NS, "output") and d.attrib.get("name") == name and d.attrib.get("id")
     }
     writes = output_writes(process)
     sources = [out.attrib.get("source", "") for _owner, out in writes if out.attrib.get("var") in output_ids]
@@ -151,24 +152,27 @@ def traced_field(process: ET.Element, name: str, agent_ids: list[str]) -> tuple[
         node_match = RESULT_SOURCE.fullmatch(node_source)
         if node_match is None:
             raise CheckFailure(f"vars.{var} takes {node_source!r} on {owner!r}, not a field of the agent's response")
-        traced.add((owner, write.attrib.get("name", ""), field_path(node_match.group(1)) + below, below))
+        traced.add((owner, field_path(node_match.group(1)) + below))
     if len(traced) != 1:
         raise CheckFailure(f"`{name}` is published from more than one agent response field: {sorted(traced)}")
     return traced.pop()
 
 
-def mapped_agent_fields(process: ET.Element) -> tuple[str, dict[str, tuple[str, tuple[str, ...], tuple[str, ...]]]]:
+def mapped_agent_fields(process: ET.Element) -> tuple[str, dict[str, tuple[str, ...]]]:
     """The one agent-job node `gender` and `reason` are published from, and
-    for each its (output name, response path, path below that output)."""
+    the response path each is read from."""
     agent_ids = agent_job_ids(process)
     if not agent_ids:
         raise CheckFailure(f"no serviceTask uses {AGENT_JOB_TYPE}; the agent is never called")
     traced = {name: traced_field(process, name, agent_ids) for name in TRACED_OUTPUTS}
-    nodes = {node for node, *_rest in traced.values()}
+    nodes = {node for node, _path in traced.values()}
     if len(nodes) != 1:
-        sources = {name: node for name, (node, *_rest) in traced.items()}
+        sources = {name: node for name, (node, _path) in traced.items()}
         raise CheckFailure(f"`gender` and `reason` come from different agent-job nodes: {sources}")
-    return nodes.pop(), {name: tuple(rest) for name, (_node, *rest) in traced.items()}
+    paths = {name: path for name, (_node, path) in traced.items()}
+    if paths["gender"] == paths["reason"]:
+        raise CheckFailure(f"`gender` and `reason` are both published from result.{'.'.join(paths['gender'])}")
+    return nodes.pop(), paths
 
 
 def parsed(value: Any) -> Any:
@@ -181,6 +185,8 @@ def parsed(value: Any) -> Any:
 
 
 def at_path(value: Any, path: tuple[str, ...]) -> Any:
+    """The field at `path` in an agent-job node's Outputs, which hold the
+    agent's response itself (`result`)."""
     for key in path:
         value = parsed(value)
         if not isinstance(value, dict):
@@ -189,24 +195,6 @@ def at_path(value: Any, path: tuple[str, ...]) -> Any:
         if value is MISSING:
             return MISSING
     return value
-
-
-def mapped_values(
-    record: Any, output_name: str, path: tuple[str, ...], below: tuple[str, ...]
-) -> list[tuple[str, Any]]:
-    """(where, value) for one mapped response field in the node's Outputs: the
-    node's own output of that name when present, else the field at `path` in
-    the Outputs or in a response object directly under them."""
-    record = parsed(record)
-    if not isinstance(record, dict):
-        return []
-    own = get_ci(record, output_name, MISSING) if output_name else MISSING
-    if own is not MISSING:
-        value = at_path(own, below)
-        return [] if value is MISSING else [(f"Outputs[{output_name!r}]", value)]
-    roots = [("Outputs", record), *((f"Outputs[{key!r}]", parsed(value)) for key, value in record.items())]
-    dotted = "".join(f".{key}" for key in path)
-    return [(f"{where}{dotted}", value) for where, root in roots if (value := at_path(root, path)) is not MISSING]
 
 
 def squash(text: str) -> str:
@@ -222,18 +210,20 @@ def assert_agent_provenance(process: ET.Element, variables: Any, gender: str) ->
             f"Outputs: {records!r}"
         )
     record = records[0]
-    reasons = {squash(v) for v in named_values(process, variables, "reason") if isinstance(v, str) and v.strip()}
-    expected = {"gender": {gender}, "reason": reasons}
-    found = {}
-    for name, (output_name, path, below) in fields.items():
-        values = mapped_values(record, output_name, path, below)
-        found[name] = values
-        if not values or any(not isinstance(v, str) or squash(v) not in expected[name] for _where, v in values):
+    wanted = {
+        "gender": (lambda text: text == gender, f"the label {gender!r}"),
+        "reason": (lambda text: bool(text) and text not in LABELS, "an explanation, not empty or only a label"),
+    }
+    for name, path in fields.items():
+        value = at_path(record, path)
+        accepts, description = wanted[name]
+        if not isinstance(value, str) or not accepts(squash(value)):
+            found = "nothing" if value is MISSING else repr(value)
             raise CheckFailure(
                 f"process `{name}` is mapped from result.{'.'.join(path)} of agent-job node {node_id!r}, which "
-                f"should hold {sorted(expected[name])!r}; found {values!r}; Outputs: {record!r}"
+                f"should hold {description}; found {found}; Outputs: {record!r}"
             )
-    return f"{node_id!r}: " + ", ".join(f"{name} from {where}" for name, values in found.items() for where, _v in values)
+    return f"{node_id!r}: " + ", ".join(f"{name} from result.{'.'.join(path)}" for name, path in fields.items())
 
 
 def agent_release_keys(rows: list[Any]) -> set[str]:
