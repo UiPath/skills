@@ -264,13 +264,14 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Stage routing
 
 <!-- RULE:case.exit.branch-entry -->
-- `exitToStage` does not route at run time: the runtime drops the exit's
-  target and, when a stage completes or exits, enters every stage whose entry
-  holds. A destination enters on `selected-stage-completed` when its exit
-  marks the stage complete, and on `selected-stage-exited` when it does not.
-  Without an expression, either holds for every exit of its kind out of that
-  stage, so a stage that branches several ways opens every destination at
-  once. Gate each destination's entry so only its own branch opens it:
+- `exitToStage` on an `exit-only` exit does not route at run time: the
+  runtime drops the target and, when a stage completes or exits, enters every
+  stage whose entry holds. A destination enters on `selected-stage-completed`
+  when its exit marks the stage complete, and on `selected-stage-exited` when
+  it does not. Without an expression, either holds for every exit of its kind
+  out of that stage, so a stage that branches several ways opens every
+  destination at once. Gate each destination's entry so only its own branch
+  opens it:
 
   ```ts
   .stage('Review', s => s
@@ -287,6 +288,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   a later pass. The SDK's `exitToStage` doc comments say the exit routes and
   suggest a `selected-tasks-completed` stage entry; `validate` refuses that
   rule in a stage entry (`CASE_MGMT_RULE_SLOT_MISMATCH`).
+
+  A `wait-for-user` exit's destination enters on `user-selected-stage`, since
+  a person picks the onward stage; this rule does not gate it.
 
   With an SDD, each entry row's IF is that entry's gate, and
   `validate --strict --sdd` refuses an expression on a row whose IF is blank
