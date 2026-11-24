@@ -56,7 +56,9 @@ CASES = [
     ("input read downstream", f'<bpmn:endEvent id="done">{_row("=vars.amount")}</bpmn:endEvent>', False),
     ("node result", f'<bpmn:scriptTask id="t">{_row("=result.response")}</bpmn:scriptTask>', True),
     ("bracket result read", '<bpmn:serviceTask id="t">' + _row('=this["test-123"]') + "</bpmn:serviceTask>", True),
-    ("raw backslash and quote bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a\\b&quot;c"]') + "</bpmn:serviceTask>", True),
+    ("raw backslash bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a\\b c"]') + "</bpmn:serviceTask>", True),
+    ("bracket read of a key with a quote", '<bpmn:serviceTask id="t">' + _row('=this["a&quot;b"]') + "</bpmn:serviceTask>", False),
+    ("bracket read of a key ending in a backslash", '<bpmn:serviceTask id="t">' + _row('=this["a\\"]') + "</bpmn:serviceTask>", False),
     ("computed bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a"] + vars.b') + "</bpmn:serviceTask>", False),
     (
         "bracket read on an input",
