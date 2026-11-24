@@ -150,7 +150,7 @@ No `.gitignore` is needed: Studio Web has no git working tree and no `.uipath/` 
 
 ### Build checklist
 
-Nothing builds the app in Studio Web, and its first `tsc -b` enforces the `tsconfig.app.json` above. Before handing the app over, check every file under `source/`:
+The app's first `tsc -b` (SKILL.md § Studio Web Command Scope) enforces the `tsconfig.app.json` above. Before handing the app over, check every file under `source/`:
 
 1. `tsconfig.app.json` keeps `"types": ["vite/client"]`.
 2. Each relative import resolves to a file you wrote, and each package import is listed in `package.json` or installed by a listed dependency (`pdfjs-dist` comes with `react-pdf`).

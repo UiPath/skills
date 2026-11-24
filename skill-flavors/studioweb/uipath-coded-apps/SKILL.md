@@ -20,7 +20,7 @@ Everything else in this skill applies. Read and edit the app's files directly �
 <!--skill-flavor:login-rule:end-->
 
 <!--skill-flavor:build-step-rule:start-->
-3. **Check the build by reading, after scaffolding and after every edit.** Nothing builds the app here, so run [web-app-template.md](assets/templates/web-app-template.md) § Build checklist over every file under `source/` before handing the app over.
+3. **Check the build by reading, after scaffolding and after every edit.** Run [web-app-template.md](assets/templates/web-app-template.md) § Build checklist over every file under `source/` before handing the app over.
 <!--skill-flavor:build-step-rule:end-->
 
 <!--skill-flavor:installed-types-rule:start-->

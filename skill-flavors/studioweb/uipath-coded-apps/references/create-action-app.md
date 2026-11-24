@@ -10,6 +10,6 @@ Studio Web has no `create-vite` or npm, so write the files `create-vite` would g
 2. Add `@uipath/uipath-typescript` to `package.json` only when SDK services are needed, and `react-pdf` only for the PDF viewer below, with the ranges the `package.json` section lists. Any other `npm install` follows SKILL.md § Studio Web Command Scope.
 3. Write every other file from the sections below.
 
-Nothing builds the app in Studio Web: its first `npm install` and `npm run build` (`tsc -b && vite build`) run later from `source/`. Before telling the user the scaffold is ready, run the [Build checklist](../assets/templates/web-app-template.md) in web-app-template.md § Studio Web base files over every file — the schema-adapted `Form.tsx` most of all.
+Before telling the user the scaffold is ready, run the [Build checklist](../assets/templates/web-app-template.md) in web-app-template.md § Studio Web base files over every file — the schema-adapted `Form.tsx` most of all.
 
 <!--skill-flavor:scaffold-commands:end-->
