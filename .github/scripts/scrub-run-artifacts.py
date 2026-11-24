@@ -149,7 +149,8 @@ def _covers(expected: str, task_id: str) -> bool:
     if not expected.endswith("*"):
         return task_id == expected
     base = expected[:-1]
-    return task_id == base or task_id.startswith(base + "/")
+    row = task_id[len(base) + 1 :] if task_id.startswith(base + "/") else ""
+    return task_id == base or (bool(row) and "/" not in row)
 
 
 def check_coverage(found: dict[str, set[str]], expected_ids: list[str]) -> None:
@@ -188,7 +189,10 @@ def scrub(root: pathlib.Path, needles: list[bytes], expect_ids: list[str] | None
             task = sanitize_task(json.loads(data), needles)
             if not task["task_id"] or task["final_status"] is None:
                 raise RuntimeError("task result incomplete")
-            found.setdefault(rel.parts[0], set()).add(task["task_id"])
+            if "/".join(rel.parts[1:-2]) != task["task_id"]:  # coder-eval derives the dir from the id
+                raise RuntimeError("task result misplaced")
+            ids = found.setdefault(rel.parts[0], set())
+            ids.add(task["task_id"])
             data = json.dumps(task, indent=2).encode("utf-8")
             (path.parent / "task.html").write_bytes(render_task_html(task).encode("utf-8"))
         elif rel == pathlib.PurePosixPath("run.json"):

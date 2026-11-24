@@ -175,6 +175,10 @@ def test_every_variant_must_cover_every_task(tmp_path, monkeypatch):
     run = _env(tmp_path, monkeypatch)
     assert scrub_mod.allowed(pathlib.PurePosixPath("default/s/row-1/00/task.json"))
     assert not scrub_mod.allowed(pathlib.PurePosixPath("default/s/row-1/x/00/task.json"))
+    for bad in ("default/s/row/x/task.json", "default/artifacts/row/00/task.json", "default/s/row/00/x.json"):
+        assert not scrub_mod.allowed(pathlib.PurePosixPath(bad)), bad
+    for bad in ("a/", "a/x/y", "a//1", "ab/1"):
+        assert not scrub_mod._covers("a*", bad), bad
     for variant, names in (("v1", ["a", "b"]), ("v2", ["a"])):
         for name in names:
             d = run / variant / name / "00"
@@ -285,3 +289,12 @@ def test_publication_disabled_flag_fails_closed(tmp_path, monkeypatch):
     (run / "run.md").write_text("x", encoding="utf-8")
     assert scrub_mod.main(["x", str(run)]) == 1
     assert list(run.iterdir()) == []
+
+
+def test_a_task_json_must_sit_at_the_path_of_its_own_task_id(tmp_path, monkeypatch):
+    run = _env(tmp_path, monkeypatch)
+    d = run / "default" / "a" / "00"
+    d.mkdir(parents=True)
+    (d / "task.json").write_text(json.dumps(_task("a/1")), encoding="utf-8")  # claims to be a row of `a`
+    assert scrub_mod.main(["x", str(run), "--expect-ids", "a*"]) == 1
+    assert _names(run) == []
