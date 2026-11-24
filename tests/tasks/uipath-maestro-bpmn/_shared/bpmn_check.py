@@ -93,14 +93,16 @@ def entry_point_files(project_dir: Path) -> list[Path] | None:
 # task names, and no task ships one as a fixture.
 SCRATCH_SUFFIXES = (".baseline.bpmn", ".edited.bpmn", ".merged.bpmn", ".original.bpmn")
 # Directories that hold scratch copies rather than the artifact: tool caches, an
-# agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run), and
-# temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
+# agent's archive of superseded scaffolds (`_created-scaffolds/`, the same run),
+# the builder SDK's work dir (`.flow-sdk/`, where the Studio Web flavor keeps the
+# undo copy `.flow-sdk/original/<Name>.bpmn`; pack, upload and debug leave it out),
+# and temp dirs made inside the workspace (`tmp/`, `mktemp -d -p .` -> `tmp.XXXXXXXXXX`).
 # Trade-off: `tmp`/`temp`/`.tmp` also hide a REAL project that lives in a folder of
 # that name. No task names one today; a task that must ever do so needs these
 # names taken out (or the grader pointed at the path), or its artifact goes unseen
 # and reads as "no BPMN file found".
 SCRATCH_DIR_NAMES = frozenset(
-    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", "tmp", "temp", ".tmp"}
+    {"node_modules", ".npm-prefix", ".venv", "_created-scaffolds", ".flow-sdk", "tmp", "temp", ".tmp"}
 )
 SCRATCH_DIR_PREFIXES = ("tmp.",)
 
@@ -177,10 +179,20 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
             # resolve_project's rule here as well so the draft is never graded.
             pool = _project_files(matches) or matches
             # Several candidates: the shallowest is the file the agent edited in
-            # place. A same-named copy in a work folder (`Foo-work/Foo.bpmn`) is
-            # deeper, and plain alphabetical order would put it first (`-` sorts
-            # before `.`).
-            return _entry_point_beside(min(pool, key=lambda p: (len(Path(p).parts), p)))
+            # place (a same-named copy in a work folder, `Foo-work/Foo.bpmn`, is
+            # deeper). At equal depth the folder named for the hint is the project
+            # (`Foo/Foo.bpmn`); a sibling copy never wins on spelling: as strings
+            # `Foo-work/` sorts before `Foo/` (`-` < `/`), so compare path parts.
+            stem = name_hint.removesuffix(".bpmn").lower()
+            best = min(
+                pool,
+                key=lambda p: (
+                    len(Path(p).parts),
+                    Path(p).parent.name.lower() != stem,
+                    Path(p).parts,
+                ),
+            )
+            return _entry_point_beside(best)
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]

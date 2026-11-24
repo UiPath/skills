@@ -5,7 +5,9 @@ description: >
   with `dynamicExtract()` (no model) and compiles: compile gives the node its
   IDP processor key and writes the processor's resource file into the
   solution, so the flow validates with no CLI step afterwards. The rest of the
-  flow is kept (an edge the new step splits aside). Needs `@uipath/maestro-builder-sdk` 6.118.0 or later.
+  flow is kept, apart from the edge the new step splits and the `end` node,
+  which may gain the flow output that returns the extraction (step 6 of the
+  skill's Extract document loop).
 
   No `flow debug`: extraction needs the IDP service.
 
@@ -45,10 +47,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The rest of PermitDesk is kept: every original node, variable and binding survives, only the one edge the new step splits may go"
+    description: "The rest of PermitDesk is kept: every original node, variable and binding survives, only the one edge the new step splits may go, and only the end node may change (the flow output that returns the extraction)"
     command: >-
       for edge in 'start:output>logReceipt:input' 'logReceipt:success>end:input'; do
-      python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk --project PermitDesk/PermitDesk --removed-edge "$edge" && exit 0;
+      python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/extract-document/_fixtures/PermitDesk/PermitDesk --project PermitDesk/PermitDesk --removed-edge "$edge" --changed-node end && exit 0;
       done; exit 1
     timeout: 30
     expected_exit_code: 0
