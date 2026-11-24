@@ -303,7 +303,7 @@ $WORK/<Name>.json           the compiled activity metadata
 ## Putting it in a flow
 
 <!--skill-flavor:flow-sdk-generated-activity:start-->
-<!-- TODO(before merge): replace each `<release with builder-sdk#2257>` in this block with the first @uipath/maestro-builder-sdk release that exports inlineActivity(). -->
+<!-- TODO(before merge): replace each `<release with builder-sdk#2257>` in this section with the first @uipath/maestro-builder-sdk release that exports inlineActivity(). -->
 A builder-SDK flow (the `uipath-maestro-flow` skill) runs a generated activity
 with `inlineActivity()`. It needs `@uipath/maestro-builder-sdk`
 `<release with builder-sdk#2257>` or later. The node embeds the whole activity: compile builds the node's
@@ -311,8 +311,13 @@ definition from `<Name>.json` and carries every script in the node.
 
 1. Copy `$WORK/<Name>.json` and every `$WORK/<scriptRef>.js` into the flow's
    work directory, for instance `.flow-sdk/activity/`, beside `<Name>.flow.ts`.
+<!--skill-flavor:flow-sdk-generated-activity:end-->
+<!--skill-flavor:flow-sdk-generated-activity-source:start-->
 2. Add the step. `inputs` take the metadata's own parameter and field names;
    compile puts each one in the query, path or body slot the metadata names.
+   A name the metadata declares in two slots is two inputs keyed
+   `<slot>:<name>`: a PATCH with path parameter `id` and request field `id`
+   takes `{ 'path:id': …, 'body:id': … }`, and a bare `id` is refused.
 
    ```ts
    import { readFileSync } from 'node:fs';
@@ -330,6 +335,7 @@ definition from `<Name>.json` and carries every script in the node.
    ```
 
    A List activity's output is the bare array of records: read `out('listMembers')`.
+<!--skill-flavor:flow-sdk-generated-activity-source:end-->
 3. Bind `connection` and `folder` in `.flow-sdk/bindings.json` to the Enabled
    connection you ran the scripts with in
    [step 4](#4-write-the-main-script-then-test-it): its `Id` and `FolderKey` from
@@ -343,22 +349,31 @@ definition from `<Name>.json` and carries every script in the node.
 
 On an older SDK there is no SDK node for a generated activity: `rawNode`
 refuses every `uipath.connector.*` type, and `connector()` only takes catalog
-operations. Add the node to the compiled `.flow` with the CLI instead, after the
-last compile (a later compile rewrites the `.flow` and drops it):
+operations. `uip` still places it with its graph commands until they are
+removed, which happens only after the SDK release above. Run them on the
+compiled `.flow` after the last compile: a later compile rewrites the `.flow`
+and drops the node. Create the node with its id, bind the connection and pass
+every required input in its slot, wire it between its neighbours, then
+validate:
 
 ```bash
 uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key>.<slug> \
-  --metadata $WORK/<Name>.json --scripts $WORK --output json
-uip maestro flow nodes configure <Name>.flow <node-id> \
-  --detail '{"connectionId":"<Id>","folderKey":"<FolderKey>"}' --output json
+  --id listMembers --metadata $WORK/<Name>.json --scripts $WORK --output json
+uip maestro flow nodes configure <Name>.flow listMembers --output json \
+  --detail '{"connectionId":"<Id>","folderKey":"<FolderKey>","queryParameters":{"usergroup":"<value or =expression>"}}'
+uip maestro flow edges list <Name>.flow --output json          # the edge the node goes into
+uip maestro flow edges delete <Name>.flow <edge-id> --output json
+uip maestro flow edges create <Name>.flow <previous-node-id> listMembers --output json
+uip maestro flow edges create <Name>.flow listMembers <next-node-id> --output json
+uip maestro flow validate <Name>.flow --output json
 ```
 
 The `<slug>` is the metadata's `name` in kebab case (`list-usergroup-users`);
-`--scripts` is the directory that holds every `<scriptRef>.js`. Never hand-edit
-the compiled `.flow`. When `uip` has no `nodes create`, report the gap to the
-user and offer managed HTTP in connector mode (the `uipath-maestro-flow` skill
-covers it).
-<!--skill-flavor:flow-sdk-generated-activity:end-->
+`--scripts` is the directory that holds every `<scriptRef>.js`. Each required
+input goes in the slot the metadata names: `queryParameters`, `pathParameters`
+or `bodyParameters`. Never hand-edit the compiled `.flow`. When `uip` has no
+`nodes create`, report the gap to the user and offer managed HTTP in connector
+mode (the `uipath-maestro-flow` skill covers it).
 
 ## Keep the scripts readable
 
