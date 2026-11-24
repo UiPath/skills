@@ -246,6 +246,7 @@ simulation:
     Get the existing sdd.draft.md finalized into an approved sdd.md. Resume from
     the draft, use it as-is, and approve. Keep the agent at design/finalization only.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "If it asks how you want to proceed with the existing draft, tell it to use the draft as-is and finalize it — you don't want to be re-interviewed or redo the design."
     - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items or unresolved/tenant-default connector IDs, approve anyway — the placeholders are intentional for this design spec."
     - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."

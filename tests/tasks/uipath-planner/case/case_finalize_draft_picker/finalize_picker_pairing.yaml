@@ -145,6 +145,7 @@ simulation:
   goal: |
     Get sdd.draft.md finalized into an approved sdd.md, then stop.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "If asked how to proceed with the existing draft, say to use it as-is and finalize it — you do not want to be re-interviewed."
     - "Approve the finalized sdd.md on the first pass only after the manual picker lane has its required wait-for-user exposure; the unresolved api-workflow identity is still acceptable."
     - "Confirm that the Compliance Officer launches Compliance Hold by hand from the stage picker; there is no event, SLA, or decision button that routes there."

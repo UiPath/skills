@@ -202,6 +202,8 @@ Entry shape follows the lane's trigger source:
 | SLA response | ONE `sla-status-change` entry row per SLA the lane answers ([Layer 4](case-data-and-time-guide.md#layer-4--time-slas--escalations)) — five phase SLAs into one lane are five rows on that lane, never one WHEN cell joined with `OR` |
 | Decision / signal divert | The origin stage carries a gated diverting exit — `Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF` on the signal, exit target → the lane — and the origin's completion exit carries the exact inverse `IF`. The lane enters via `selected-stage-exited("<origin>")` + the same `IF`. |
 
+**Reachability walk — every write, a draft included.** Before the write ends, list each secondary lane with the row that enters it and, for a decision divert, the origin's gated exit: `<lane> ← <entry row> ← <origin exit row>`. A lane with no entry row, or a decision value the design names (reject, decline, withdraw, hold) with no `IF` on that value in an origin exit and a lane entry, is a gap: write the rows now — a reviewer of the draft routes a case only along rows that exist.
+
 Omitting the diverting exit makes a decision path dual-fire (ungated completion → the next stage AND the lane both enter) or deadlock (gated completion with no alternative exit). Only a `selected-stage-exited` lane entry needs a diverting exit; a `selected-stage-completed("<origin>")` + `IF` lane keys off the origin's normal completion — guard only.
 
 Two lanes with identical entry rules (same rule, selectors, and expression) are ambiguous routing — give each a distinct selector or guard. This is a design requirement; validate does not reject the duplicate.

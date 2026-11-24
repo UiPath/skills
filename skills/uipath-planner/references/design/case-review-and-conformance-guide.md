@@ -87,6 +87,11 @@ names only what to LOOK AT.
      `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity / external-agent / external-workflow:
      `**Connector:**` / `**Operation:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
      `**Child Case:**`; http-request: `**Method:**` / `**URL:**`; script: a ```` ```js ```` fenced function body; document-extraction: `**IXP Deployment:**` / `**Model Name:**`; process / agent / rpa / api-workflow / function / business-rule / flow-process: `**Resolved Resource:**`.
+     The `**Activation Mode:**` value, and the Tasks table's Activation Mode cell, is one template literal
+     written verbatim — `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`,
+     `fan-in`, `conditional-gate`; `Parallel after predecessor` or `Sequential: stage start` is a FAIL. The
+     Tasks table keeps the template's nine columns. `runs-sequentially` is written bare, never with an
+     argument (`runs-sequentially("Collect Fees")` is a FAIL).
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
@@ -118,7 +123,10 @@ names only what to LOOK AT.
  Recipients, entry tables
  20. Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or carries a typed prefix
      (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`), and a `Role:` names the task's own
-     Persona from its Tasks-table row.
+     Persona from its Tasks-table row. Answer it as a list, one line per action task: `<task> — Persona
+     <cell> — Recipient <value>`; any line where the two differ is a FAIL. Recipients written by a script
+     are read back this way before the item can PASS — a script that read the wrong column writes one
+     role, or a cell value such as `Role:Yes`, into every task.
  21. Every task `**Entry Condition:**` table, every `#### Stage Entry Conditions` table and every
      `#### Stage Exit Conditions` table has at least one body row.
  Structure
@@ -140,6 +148,8 @@ names only what to LOOK AT.
  Draft parity (finalizing a draft only)
  30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered —
      and every Case Variables row of the draft is in the final with its name and type; count the rows in both.
+     Every stage keeps its draft kind: a draft primary stage (`### Stage <N>:`) stays `**Stage Kind:** primary`
+     with its completion exit, a secondary stays secondary; list `<stage> — draft kind — final kind`.
  31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell

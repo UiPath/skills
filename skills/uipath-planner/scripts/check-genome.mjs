@@ -32,7 +32,8 @@
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
 //           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
-//           its `<slug>-genome/` component folder, never inside it; no H2 heading twice; no
+//           its `<slug>-genome/` component folder, never inside it; a case component (Build With `uipath-maestro-case`) beside a Case
+//           Management SDD naming that SDD in its Interface or its `Designed in:` line; no H2 heading twice; no
 //           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
@@ -642,6 +643,22 @@ export function componentLinks(path, text) {
   return out;
 }
 
+/** strict: a case component (Build With `uipath-maestro-case`) beside a Case Management SDD — in its folder or the
+ * one above, the SDD whose first section is `## Section 1: Case Definition` — names that SDD as its build input, in
+ * its Interface or its own `Designed in:` line. */
+function checkCaseBuildInput(path, text, r) {
+  if (!/uipath-maestro-case/.test(sectionBody(text, "Build With"))) return;
+  const here = dirname(resolvePath(path));
+  const caseSdds = [here, dirname(here)].flatMap((dir) => {
+    let names;
+    try { names = readdirSync(dir); } catch { return []; }
+    return names.filter((n) => /-sdd\.md$/i.test(n) && /^## Section 1: Case Definition\b/m.test(read(join(dir, n))));
+  });
+  if (!caseSdds.length) return;
+  const named = sectionBody(text, "Interface") + (text.match(DESIGNED_IN)?.[0] ?? "");
+  if (!caseSdds.some((n) => named.includes(n))) r.strict(`case component: Interface names no case SDD as its build input; name ${caseSdds[0]} (its path relative to the genome)`);
+}
+
 function checkComponent(path, a, partOf, shape = true, library = false, processEntries = null) {
   const text = read(path);
   // a library is named so in its process genome's Components table, or in its own Transactional Shape stub
@@ -654,6 +671,7 @@ function checkComponent(path, a, partOf, shape = true, library = false, processE
   const bw = sectionPos(pos, "Build With"), wf = sectionPos(pos, "Workflow");
   if (bw !== null && wf !== null && bw > wf) r.core("Build With must precede Workflow");
   if (!/uipath-[a-z-]+/.test(sectionBody(text, "Build With"))) r.core("Build With names no skill");
+  checkCaseBuildInput(path, text, r);
   const workflow = sectionBody(text, "Workflow");
   const steps = (workflow.match(/^(?:\d+\.|[-*]) \S/gm) ?? []).length; // top-level numbered or bulleted steps
   // a test component's steps are its cases and a library's its public workflows

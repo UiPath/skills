@@ -219,6 +219,7 @@ simulation:
     designer has written the draft and asks whether to finalize, produce sdd.md,
     or proceed, tell them to STOP at the draft — the draft is all you need.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
     - "Ground every answer in the process described in your opening message. For a detail you never specified, make a sensible, consistent call and state it in one line — do not invent new stages, exception lanes, personas, external systems, or extra tasks beyond that brief."
     - "Capture the stages, tasks, personas, integrations, and rules described in the opening brief. Do not invent unrelated business processes or external systems."

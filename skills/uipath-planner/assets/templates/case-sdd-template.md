@@ -76,7 +76,7 @@ Durable copy of the Phase 1 Recommended Scope summary and platform constraint ou
 
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
 **Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
-**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... — every product the source signals that the gate blocks, the picked design's or not (an orchestration of several steps or systems on Automation Suite older than 2.2510.2 → Maestro Flow / BPMN, named even when RPA hosts it) | none>
 **Need profile:** <ONE_LINE_CORE_NEED_AND_TARGET_KPI>
 
 ---
@@ -331,7 +331,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| script \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| script \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <first of the sequential run, after <TASK>, stage enters (parallel only), connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -344,7 +344,7 @@ the exact stage display name — never the case name. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| api-event("<Business Event Name>") \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
+| <runs-sequentially (Activation Mode sequential or parallel-after-predecessor — the first task of the run too) \| current-stage-entered (Activation Mode parallel only) \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| api-event("<Business Event Name>") \| adhoc> | <conditionExpression or —> | <label or —> |
 
 <!-- The WHEN follows the Activation Mode (case-product-guide.md § Sequencing & activation): `sequential` and `parallel-after-predecessor` → `runs-sequentially`, on the FIRST task of the run too (never `current-stage-entered`, though it starts when the stage enters); `parallel` → `current-stage-entered`. -->
 

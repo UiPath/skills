@@ -195,6 +195,31 @@ def test_entry_withdrawn_as_a_question_without_its_cq_mark_fails_strict(check):
     assert finding not in check(marked, profile="strict")[1]
 
 
+CASE_SDD = "# SDD — Sample\n\n## Section 1: Case Definition\n\n### Case Metadata\n"
+NO_CASE_INPUT = "case component: Interface names no case SDD as its build input; name sample-case-sdd.md"
+
+
+def case_component(text):
+    """text built with uipath-maestro-case instead of uipath-rpa."""
+    return text.replace("| `uipath-rpa` |", "| `uipath-maestro-case` |")
+
+
+def test_case_component_beside_a_case_sdd_must_name_it_strict_only(check, tmp_path):
+    (tmp_path / "sample-case-sdd.md").write_text(CASE_SDD, encoding="utf-8")
+    text = case_component(COMPONENT)
+    assert text != COMPONENT
+    assert NO_CASE_INPUT not in check(text)[1]
+    rc, out = check(text, profile="strict")
+    assert rc == 1
+    assert NO_CASE_INPUT in out
+    named = re.sub(r"(## Interface\n)", r"\1\nBuild input: [the case SDD](sample-case-sdd.md).\n", text, count=1)
+    assert NO_CASE_INPUT not in check(named, profile="strict")[1]
+
+
+def test_case_component_with_no_case_sdd_beside_it_has_no_build_input_finding(check):
+    assert "case component:" not in check(case_component(COMPONENT), profile="strict")[1]
+
+
 def test_designed_in_line_without_fingerprint_fails_strict_only(check, tmp_path):
     text = designed_in(COMPONENT, "> Designed in: [Design](x-sdd.md)")
     assert text != COMPONENT
