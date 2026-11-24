@@ -42,7 +42,9 @@ simulation:
     - "Accept the folder names the assistant proposes. There is no external data source."
     - "If the assistant proposes another name for an entity the SDD names, accept it."
     - "If the assistant warns about the file field, keep it as a file field."
+    - "When a table is right, approve that table only. Never tell the assistant to build, validate or pack, and never waive a check."
     - "When asked to confirm the ontology artifact files (schema, mapping), say: stop here, I'll review the model first. Then end the conversation."
+    - "If the assistant reports a blocker, or asks about validation, packing or signing in, say the same: stop here, I'll review the model first. Then end the conversation."
   max_turns: 25
 
 success_criteria:
@@ -59,6 +61,14 @@ success_criteria:
     includes:
       - "CONFIRMED_THROUGH: model"
       - "WorkOrderPriority"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No artifact file was written: the run stopped at the artifact batch confirmation"
+    command: "test -z \"$(find maintenance -maxdepth 1 -type f 2>/dev/null)\""
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
