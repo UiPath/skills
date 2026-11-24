@@ -89,14 +89,19 @@ def test_the_refresher_exits_when_its_lease_is_gone(tmp_path):
     script = tmp_path / "refresher.sh"
     script.write_text(body)
     (tmp_path / ".github/scripts").mkdir(parents=True)
-    (tmp_path / ".github/scripts/rotate-auth.sh").write_text("exit 0\n")
+    (tmp_path / ".github/scripts/rotate-auth.sh").write_text(f"touch {tmp_path}/rotated\n")
     env = {**os.environ, "RUNNER_TEMP": str(tmp_path), "AUTH_REFRESH_INTERVAL_S": "1"}
     proc = subprocess.Popen(["bash", str(script)], cwd=tmp_path, env=env)
-    pid_file = tmp_path / "auth-refresher.pid"
-    for _ in range(50):
-        if pid_file.exists():
-            break
-        time.sleep(0.1)
-    assert pid_file.read_text().strip() == str(proc.pid)
-    pid_file.unlink()
-    assert proc.wait(timeout=10) == 0, "refresher must exit once its pid-file lease is gone"
+    try:
+        pid_file = tmp_path / "auth-refresher.pid"
+        for _ in range(50):
+            if pid_file.exists():
+                break
+            time.sleep(0.1)
+        assert pid_file.read_text().strip() == str(proc.pid)
+        pid_file.unlink()
+        assert proc.wait(timeout=10) == 0, "refresher must exit once its pid-file lease is gone"
+        assert not (tmp_path / "rotated").exists(), "refresher must not rotate after losing its lease"
+    finally:
+        proc.kill()
+        proc.wait()
