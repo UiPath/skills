@@ -57,9 +57,11 @@ Run the acquisition script with `node`, which Steps 2 to 4 already use for their
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
 ```
 
+When the user named the tool's folder, set `UIPATH_ACTIVITY_MIGRATOR_DIR` to it on this command, from the first run on.
+
 | `status` | Action |
 |---|---|
-| `ok` | Record `exe` as `<MIGRATOR_EXE>` and `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
+| `ok` | When the user named the tool's folder and `source` is `cached`, the variable was not on the command: rerun the script with it in the same command and apply this table to the new output. Otherwise record `exe` as `<MIGRATOR_EXE>` and `version`. When the object carries `update: true`, say once that UiPath published a newer build and that the script installs it when rerun with `--install`; do not ask, do not install, continue with the cached tool. |
 | `missing` | No tool is installed and nobody has approved a download. Ask the install question in [acquisition-guide.md § Install question](references/acquisition-guide.md#install-question), once, and act on the answer as that section says. |
 | `error`, `code: not-windows` | Rule 1. Stop. |
 | `error`, `code: runtime-missing` | Relay the script's message; it names the fix. Stop. |
