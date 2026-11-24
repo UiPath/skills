@@ -29,18 +29,12 @@
 //           or more projects, retry and consecutive-failure stop; step table cells
 //           holding references only; Open Decisions entries open, decided or withdrawn and numbered without a gap,
 //           every `*[Inferred]*` mark naming an open entry or a Configuration Question that exists (`*[Inferred: D3]*`,
-<<<<<<< HEAD
-//           `process D3`, `CQ2`), a withdrawn configuration question kept in place; Platform Dependencies' tables
-//           in the kinds' order, and a process genome's Deployment with its four bullets; no H2 heading twice; no
-//           component genome linked twice; the `Source framework`
-=======
 //           `process D3`, `CQ2`), a withdrawn configuration question kept in place, an entry withdrawn as Configuration Question <n> with a line marked
 //           `*[Inferred: CQ<n>]*`; Platform Dependencies' tables
 //           in the kinds' order, and a process genome's Deployment with its four bullets; a process genome beside
 //           its `<slug>-genome/` component folder, never inside it; no process genome of a dispatcher and a performer alone; a case component (Build With `uipath-maestro-case`) beside a Case
 //           Management SDD naming that SDD in its Interface or its `Designed in:` line; no H2 heading twice; no
-//           component genome linked twice; no cross-part reference left unfilled (`{{ref:…}}`); the `Source framework`
->>>>>>> a73fc25d3 (fix(uipath-planner): fix the 7 luna planner failures: genome placement check, case variable parity, reworded case and genome rules, Test grader (#5230))
+//           component genome linked twice; the `Source framework`
 //           row in the Source Map of a process or standalone component genome; a `Designed in:` line carrying its
 //           `sdd-sha256` fingerprint, linking an SDD that can be read (a solution root with every child SDD it
 //           lists) and still has that fingerprint, and a component genome carrying its SDD's Action Required items; an SDD written from the genome (`<slug>-sdd.md`, a process
