@@ -392,7 +392,8 @@ the exact stage display name — never the case name. -->
      is required (at most 500 characters) and ships as the role's description. A condition on the
      persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
      cell on the owning task (checklist rule 32). A cell convert cannot map is reported as a
-     `case-role` Unresolved item, never guessed at. -->
+     `case-role` Unresolved item, never guessed at. Trimming a persona's Permissions to these keys
+     never moves its tasks: each action task's Recipient stays the task's own Persona. -->
 
 | Persona | Scope | Stages | Permissions | Description | Notes |
 |---------|-------|--------|-------------|-------------|-------|

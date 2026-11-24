@@ -688,10 +688,12 @@ function checkProcess(path, a) {
   const targets = links.map(([, t]) => posix(t).toLowerCase());
   const first = (i) => targets.indexOf(targets[i]) === i;
   for (const [link] of links.filter((_, i) => !first(i))) r.strict(`Components table links ${link} more than once`);
-  // `<slug>-genome.md` sits beside its `<slug>-genome/` folder, never inside it
+  // `<slug>-genome.md` sits beside its `<slug>-genome/` folder, never inside it — whatever the folder is spelled
   const slug = baseName(path).replace(/-genome\.md$/i, "");
-  if (baseName(dirname(resolvePath(path))).toLowerCase() === `${slug}-genome`.toLowerCase()) {
-    r.strict(`process genome sits inside its own component folder ${slug}-genome/; write it beside that folder`);
+  const home = dirname(resolvePath(path));
+  const sameFolder = links.some(([, target]) => posix(dirname(target)).toLowerCase() === posix(home).toLowerCase());
+  if (/-genome$/i.test(baseName(home)) && (sameFolder || baseName(home).toLowerCase() === `${slug}-genome`.toLowerCase())) {
+    r.strict(`process genome sits inside its component folder ${baseName(home)}/; write it beside that folder`);
   }
   checkSourceFramework(text, r);
   checkWrittenSdd(path, text, "process", r);

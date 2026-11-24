@@ -632,15 +632,26 @@ def test_process_genome_inside_its_component_folder_fails_strict_only(process_tr
     text = process_tree.read_text(encoding="utf-8").replace(f"]({PROCESS_DIR.name}/", "](")
     inside.write_text(text, encoding="utf-8")
     process_tree.unlink()
-    finding = f"process genome sits inside its own component folder {PROCESS_DIR.name}/"
+    finding = f"process genome sits inside its component folder {PROCESS_DIR.name}/"
     assert finding not in cli("process", inside, "--profile", "core")[1]
     rc, out = cli("process", inside, "--profile", "strict")
     assert rc == 1
     assert finding in out
 
 
+def test_process_genome_inside_a_differently_spelled_component_folder_fails_strict(process_tree):
+    """The folder's spelling need not match the file's slug: `InvoiceOps-genome/invoice-ops-genome.md`."""
+    folder = process_tree.parent / PROCESS_DIR.name
+    inside = folder / "renamed-process-genome.md"
+    inside.write_text(process_tree.read_text(encoding="utf-8").replace(f"]({PROCESS_DIR.name}/", "]("), encoding="utf-8")
+    process_tree.unlink()
+    rc, out = cli("process", inside, "--profile", "strict")
+    assert rc == 1
+    assert f"process genome sits inside its component folder {PROCESS_DIR.name}/" in out
+
+
 def test_process_example_beside_its_folder_has_no_placement_finding(check_process):
-    assert "inside its own component folder" not in check_process(profile="strict")[1]
+    assert "inside its component folder" not in check_process(profile="strict")[1]
 
 
 def test_components_table_with_no_links_fails_core(check_process):

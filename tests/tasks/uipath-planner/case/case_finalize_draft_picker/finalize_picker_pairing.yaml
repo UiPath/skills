@@ -49,9 +49,9 @@ initial_prompt: |
   Repair mechanically required rule pairings without changing business intent:
   a manual stage-picker lane needs `wait-for-user` exposure from every primary
   stage where it may be selected. That exposure is not automatic event, SLA,
-  or decision routing. Replace each primary stage's existing completing
-  `required-tasks-completed` row with one `wait-for-user` / Marks Complete Yes
-  row; do not add a second, non-completing row.
+  or decision routing. On each primary stage's existing completing
+  `required-tasks-completed` row, make the exit type `wait-for-user` (Marks
+  Complete Yes, the WHEN unchanged); do not add a second, non-completing row.
 
 success_criteria:
   # No validator archaeology before the write. The § Validation gate is a checklist the
