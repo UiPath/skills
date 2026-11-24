@@ -11,7 +11,13 @@ value the SDD wires through it is known in advance (caseInput defaults to
   `case-seed-input-expression`; both NameToAge lookups get `case-seed`.
 - renamedResult = `case-seed`, literalResult = `literal-assigned`,
   copiedResult = `case-seed`, computedResult = `literal-seed-computed`,
-  metadataResult = the case's own id (`IOB-...`).
+  metadataResult = the case's own id, as the instance itself reports it
+  (`ExternalId`), else as the run's `CaseId` variable holds it. A tenant that
+  puts the plan's identifier in the ids it mints gives `IOB-...`; Automation
+  Suite 2.2610 gives a bare number, so the SDD's `IOB` prefix is read from the
+  plan, not from the run. When nothing in the run names the id, the value
+  cannot be compared: the plan must bind metadataResult to
+  `metadata.ExternalId`, and the result says the comparison was not made.
 
 NameToAge asks api.agify.io, which has no age for `case-seed`, so its value is
 not graded; the two tasks that consume it must receive a value, not the text of
@@ -24,8 +30,8 @@ that spells the expected value passes these checks as the SDD's reference does.
 Read from the debug instance (`uip maestro case instance variables-all`): each
 task's runtime inputs and the case variables by the names the SDD gives. The
 eight tasks must complete in the SDD's order. Static checks keep only what the
-SDD states (task names, the resources and folders, run once, no inline API
-project) and what any correct plan has (no unresolved `$xref`, unique task
+SDD states (the case identifier, task names, the resources and folders, run
+once, no inline API project) and what any correct plan has (no unresolved `$xref`, unique task
 output ids), plus the two agify-fed tasks binding their input to the producing
 task's output, since a null upstream passes any input; they accept any other
 binding, id or output-row layout.
@@ -46,6 +52,7 @@ from _shared.case_run_evidence import (  # noqa: E402
     assert_completed,
     execution_of,
     fail,
+    folder_key_of,
     leaf_values,
     read_run,
     since_iso,
@@ -53,6 +60,8 @@ from _shared.case_run_evidence import (  # noqa: E402
 )
 from _shared.case_check import (  # noqa: E402
     _get_ci,
+    _parse_json,
+    _run,
     assert_tasks_nested,
     find_tasks_of_type,
     read_caseplan,
@@ -91,6 +100,11 @@ CONSUMES = {
 CONSUMED_FIELD = "APIInput1"
 VARS_PREFIX = "=vars."
 CASE_ID_PREFIX = "IOB"
+CASE_ID_TYPE = "constant"
+METADATA_OUTPUT = "metadataResult"
+METADATA_TASK = "Echo expression"
+# The SDD row `metadataResult = =metadata.ExternalId`, however the plan spells the reference.
+EXTERNAL_ID_REFERENCE = re.compile(r"metadata\W{1,3}ExternalId")
 UNRESOLVED = re.compile(r"(^=?vars\.|\$xref\(|^=js:|^<-)")
 
 
@@ -187,9 +201,21 @@ def assert_consumers_bound(tasks: list[dict]) -> None:
             fail(f"task {name!r} must bind {CONSUMED_FIELD} to {expected!r}, got {bound!r}")
 
 
+def assert_case_identifier(plan: dict) -> None:
+    """The plan carries the SDD's case identifier (a constant prefix), whatever the ids the tenant mints from it."""
+    metadata = plan.get("metadata") or {}
+    identifier, kind = metadata.get("caseIdentifier"), metadata.get("caseIdentifierType")
+    if identifier != CASE_ID_PREFIX or kind != CASE_ID_TYPE:
+        fail(
+            f"the plan's case identifier is {identifier!r} (type {kind!r}), "
+            f"the SDD names the prefix {CASE_ID_PREFIX!r} (type {CASE_ID_TYPE!r})"
+        )
+
+
 def check_plan(plan: dict) -> list[dict]:
     """The eight SDD tasks in SDD order, after the static checks."""
     assert_tasks_nested(plan)
+    assert_case_identifier(plan)
     tasks = find_tasks_of_type(plan, "api-workflow")
     names = [name for name, *_ in CHAIN]
     extra = sorted(str(t.get("displayName")) for t in tasks if t.get("displayName") not in names)
@@ -271,20 +297,69 @@ def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
             fail(f"task {name!r} received the text {value!r} instead of the value it refers to")
 
 
-def check_outputs(evidence: RunEvidence, chain: list[dict]) -> None:
+def instance_external_id(payload: dict, since: str) -> str | None:
+    """The id the tenant gave this case, read from the instance itself; None when it reports none."""
+    instance_id = str(_get_ci(payload, "instanceId", "InstanceId") or "")
+    if not instance_id:
+        return None
+    folder_key = folder_key_of(instance_id, since)
+    r = _run(
+        ["uip", "maestro", "case", "instance", "get", instance_id, "--folder-key", folder_key, "--output", "json"],
+        timeout=180, what="uip maestro case instance get",
+    )
+    data = _get_ci(_parse_json(r.stdout) or {}, "Data")
+    value = _get_ci(data, "ExternalId") if isinstance(data, dict) else None
+    return str(value) if value else None
+
+
+def metadata_bound_to_external_id(chain: list[dict]) -> bool:
+    """The plan assigns metadataResult from the case's ExternalId, as the SDD row does."""
+    task = next(t for t, (name, *_) in zip(chain, CHAIN) if name == METADATA_TASK)
+    return any(
+        METADATA_OUTPUT in (row.get("name"), row.get("var"))
+        and EXTERNAL_ID_REFERENCE.search(f"{row.get('value')} {row.get('source')}")
+        for row in (task.get("data") or {}).get("outputs") or []
+        if isinstance(row, dict)
+    )
+
+
+def check_metadata(evidence: RunEvidence, chain: list[dict], external_id: str | None) -> str:
+    """metadataResult is the case's own id. Returns what could not be verified, else ''."""
+    metadata = evidence.value(METADATA_OUTPUT)
+    # The instance's own ExternalId is the authority; the run's CaseId variable stands in for it.
+    case_id = external_id or (evidence.value("caseId") if evidence.has("caseId") else None)
+    if case_id:
+        if metadata is None or str(metadata) != str(case_id):
+            fail(f"{METADATA_OUTPUT} is {metadata!r}, expected the case's id {case_id!r}")
+        return ""
+    # Nothing in the run names the case's id. A prefix would be a guess: it
+    # passes any `IOB-…` value and fails a tenant that mints a bare id.
+    if not metadata_bound_to_external_id(chain):
+        fail(
+            f"the run names no case id, and task {METADATA_TASK!r} does not bind "
+            f"{METADATA_OUTPUT} to metadata.ExternalId"
+        )
+    text = str(metadata or "").strip()
+    if not text or text.startswith("=") or EXTERNAL_ID_REFERENCE.search(text):
+        fail(f"{METADATA_OUTPUT} is {metadata!r}, not a case id")
+    return (
+        f"; the run names no case id, so {METADATA_OUTPUT} ({metadata!r}, bound to "
+        "metadata.ExternalId) could not be compared with it"
+    )
+
+
+def check_outputs(evidence: RunEvidence, chain: list[dict], external_id: str | None = None) -> str:
     for name, expected in NAMED_OUTPUTS.items():
         actual = evidence.value(name)
         if actual != expected:
             fail(f"{name} is {actual!r} after the run, expected {expected!r}")
-    metadata = evidence.value("metadataResult")
-    case_id = evidence.value("caseId") if evidence.has("caseId") else None
-    if not str(metadata or "").startswith(CASE_ID_PREFIX) or (case_id and metadata != case_id):
-        fail(f"metadataResult is {metadata!r}, expected the case's id {case_id or CASE_ID_PREFIX + '-…'!r}")
+    unverified = check_metadata(evidence, chain, external_id)
     collision = evidence.value("collisionCopy")
     custom = evidence.value("customReferenceCopy")
     age = _upstream(evidence, chain, *CONSUMES["Consume colliding output"])
     if not _same_number(custom, collision, age):
         fail(f"customReferenceCopy is {custom!r}, expected collisionCopy's {collision!r}")
+    return unverified
 
 
 def _same_number(a: object, b: object, age: object) -> bool:
@@ -294,12 +369,13 @@ def _same_number(a: object, b: object, age: object) -> bool:
     return a == b
 
 
-def check_run(payload: dict, evidence: RunEvidence, chain: list[dict]) -> None:
+def check_run(payload: dict, evidence: RunEvidence, chain: list[dict], external_id: str | None = None) -> str:
+    """Fail on the first thing the run got wrong. Returns what could not be verified, else ''."""
     for task in chain:
         assert_completed(payload, task)
     check_order(payload, chain)
     check_inputs(evidence, chain)
-    check_outputs(evidence, chain)
+    return check_outputs(evidence, chain, external_id)
 
 
 def main() -> None:
@@ -310,11 +386,12 @@ def main() -> None:
     since = since_iso()
     payload = run_debug(timeout=900)
     evidence = read_run(payload, since)
-    check_run(payload, evidence, chain)
+    unverified = check_run(payload, evidence, chain, instance_external_id(payload, since))
     print(
         "OK: debug Completed; the eight SDD tasks completed in order, each received the "
         "value its SDD binding names, and renamedResult, literalResult, copiedResult, "
         "computedResult, metadataResult and customReferenceCopy hold the expected values"
+        + unverified
     )
 
 

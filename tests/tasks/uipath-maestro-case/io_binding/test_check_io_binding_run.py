@@ -152,6 +152,146 @@ def test_metadata_must_be_the_cases_own_id() -> None:
         _check(PASSING, payload, evidence)
 
 
+# The id the Automation Suite 2.2610 ETE minted for a plan whose identifier is
+# IOB (adhoc-2026-11-20_06-39-43), and the one of the next ETE run.
+AS_CASE_ID = "17980423"
+OTHER_AS_CASE_ID = "57247565"
+
+
+def test_metadata_equal_to_a_case_id_the_tenant_did_not_prefix_passes() -> None:
+    values = {**GLOBALS, "metadataResult": AS_CASE_ID, "CaseId": AS_CASE_ID}
+    _check(PASSING, *_run(PASSING, values))
+
+
+def test_metadata_that_is_another_unprefixed_id_fails() -> None:
+    values = {**GLOBALS, "metadataResult": OTHER_AS_CASE_ID, "CaseId": AS_CASE_ID}
+    payload, evidence = _run(PASSING, values)
+    with pytest.raises(SystemExit, match=f"metadataResult is '{OTHER_AS_CASE_ID}', expected the case's id '{AS_CASE_ID}'"):
+        _check(PASSING, payload, evidence)
+
+
+NO_CASE_ID = {k: v for k, v in GLOBALS.items() if k != "CaseId"}
+
+
+@pytest.mark.parametrize("case_id", ["IOB-51234", AS_CASE_ID])
+def test_metadata_equal_to_the_instances_own_external_id_passes_on_either_id_format(case_id: str) -> None:
+    payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": case_id})
+
+    assert grader.check_run(payload, evidence, grader.check_plan(PASSING), case_id) == ""
+
+
+@pytest.mark.parametrize(
+    ("metadata", "external_id"),
+    [("IOB-1", "IOB-51234"), ("IOB-51234", AS_CASE_ID), (OTHER_AS_CASE_ID, AS_CASE_ID), (None, AS_CASE_ID)],
+)
+def test_metadata_that_is_not_the_instances_external_id_fails(metadata: object, external_id: str) -> None:
+    payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": metadata})
+    with pytest.raises(SystemExit, match=f"metadataResult is .*expected the case's id '{external_id}'"):
+        grader.check_run(payload, evidence, grader.check_plan(PASSING), external_id)
+
+
+def test_the_instances_external_id_outranks_the_case_id_variable() -> None:
+    values = {**GLOBALS, "metadataResult": "IOB-51234", "CaseId": "IOB-51234"}
+    payload, evidence = _run(PASSING, values)
+    with pytest.raises(SystemExit, match=f"expected the case's id '{AS_CASE_ID}'"):
+        grader.check_run(payload, evidence, grader.check_plan(PASSING), AS_CASE_ID)
+
+
+@pytest.mark.parametrize("metadata", ["IOB-51234", AS_CASE_ID])
+def test_a_run_that_names_no_case_id_passes_on_the_plans_binding_and_says_what_it_did_not_compare(
+    metadata: str,
+) -> None:
+    payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": metadata})
+
+    unverified = grader.check_run(payload, evidence, grader.check_plan(PASSING), None)
+
+    assert "the run names no case id" in unverified
+    assert "could not be compared" in unverified
+
+
+@pytest.mark.parametrize("metadata", [None, "", "=metadata.ExternalId", "=js:metadata.ExternalId"])
+def test_a_run_that_names_no_case_id_fails_on_a_metadata_value_that_is_not_an_id(metadata: object) -> None:
+    payload, evidence = _run(PASSING, {**NO_CASE_ID, "metadataResult": metadata})
+    with pytest.raises(SystemExit, match="metadataResult is .*not a case id"):
+        grader.check_run(payload, evidence, grader.check_plan(PASSING), None)
+
+
+@pytest.mark.parametrize("value", ["=vars.renamedResult", '"IOB-51234"', "=js:metadata.CaseId"])
+def test_a_run_that_names_no_case_id_fails_when_the_plan_does_not_bind_the_external_id(value: str) -> None:
+    plan = copy.deepcopy(PASSING)
+    task = next(t for t in _tasks(plan) if t["displayName"] == "Echo expression")
+    for row in task["data"]["outputs"]:
+        if row.get("name") == "metadataResult":
+            row["value"] = row["source"] = value
+    payload, evidence = _run(plan, {**NO_CASE_ID, "metadataResult": "IOB-51234"})
+    with pytest.raises(SystemExit, match="does not bind metadataResult to metadata.ExternalId"):
+        grader.check_run(payload, evidence, grader.check_plan(plan), None)
+
+
+def _stub_instance_get(monkeypatch: pytest.MonkeyPatch, stdout: str) -> list[list[str]]:
+    calls: list[list[str]] = []
+
+    class Done:
+        returncode = 0
+
+    def run(cmd, *, timeout, what):
+        calls.append(list(cmd))
+        done = Done()
+        done.stdout = stdout
+        return done
+
+    monkeypatch.setattr(grader, "_run", run)
+    monkeypatch.setattr(grader, "folder_key_of", lambda instance_id, since: "folder-1")
+    return calls
+
+
+@pytest.mark.parametrize("external_id", ["IOB-53208293", AS_CASE_ID])
+def test_the_external_id_is_read_from_the_instance_itself(monkeypatch: pytest.MonkeyPatch, external_id: str) -> None:
+    envelope = json.dumps({"Result": "Success", "Data": {"InstanceId": "i-1", "ExternalId": external_id}})
+    calls = _stub_instance_get(monkeypatch, envelope)
+
+    assert grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z") == external_id
+    assert calls == [["uip", "maestro", "case", "instance", "get", "i-1", "--folder-key", "folder-1", "--output", "json"]]
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    ['{"Result": "Success", "Data": {"InstanceId": "i-1"}}', '{"Result": "Success", "Data": {"ExternalId": ""}}',
+     '{"Result": "Failure", "Message": "not found"}', "not json"],
+)
+def test_an_instance_that_reports_no_external_id_gives_none(monkeypatch: pytest.MonkeyPatch, stdout: str) -> None:
+    _stub_instance_get(monkeypatch, stdout)
+
+    assert grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z") is None
+
+
+def test_a_payload_with_no_instance_id_gives_no_external_id() -> None:
+    assert grader.instance_external_id({}, "2026-11-23T00:00:00Z") is None
+
+
+@pytest.mark.parametrize("identifier", ["IoBindingCase", "iob", "", None])
+def test_a_plan_without_the_sdds_identifier_prefix_fails(identifier: object) -> None:
+    plan = copy.deepcopy(PASSING)
+    plan["metadata"]["caseIdentifier"] = identifier
+    with pytest.raises(SystemExit, match="the plan's case identifier is .* the SDD names the prefix 'IOB'"):
+        grader.check_plan(plan)
+
+
+@pytest.mark.parametrize("kind", ["external", "", None])
+def test_a_plan_whose_identifier_is_not_a_constant_prefix_fails(kind: object) -> None:
+    plan = copy.deepcopy(PASSING)
+    plan["metadata"]["caseIdentifierType"] = kind
+    with pytest.raises(SystemExit, match=r"case identifier is 'IOB' \(type .*\), the SDD names the prefix 'IOB' \(type 'constant'\)"):
+        grader.check_plan(plan)
+
+
+def test_a_plan_with_no_metadata_fails_on_the_identifier() -> None:
+    plan = copy.deepcopy(PASSING)
+    del plan["metadata"]
+    with pytest.raises(SystemExit, match="the plan's case identifier is None"):
+        grader.check_plan(plan)
+
+
 def test_custom_reference_copy_must_follow_collision_copy() -> None:
     payload, evidence = _run(PASSING, {**GLOBALS, "customReferenceCopy": 7})
     with pytest.raises(SystemExit, match="customReferenceCopy"):
