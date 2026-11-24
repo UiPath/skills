@@ -112,8 +112,8 @@ An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; e
 
 ```ts
 .task('Validate', t => t.process('validate').entryWhen(rule('runs-sequentially')), { lane: 0 })
-.task('Enrich', t => t.process('enrich').entryWhen(rule('runs-sequentially')), { lane: 1 })   // starts after Validate
-.task('Notify', t => t.process('notify').entryWhen(rule('runs-sequentially')), { lane: 2 })   // starts after Enrich
+.task('Enrich', t => t.process('enrich').entryWhen(rule('runs-sequentially')), { lane: 1 })
+.task('Notify', t => t.process('notify').entryWhen(rule('runs-sequentially')), { lane: 2 })
 ```
 
 ## Validation loop

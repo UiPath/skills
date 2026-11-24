@@ -52,7 +52,6 @@ from _shared.case_run_evidence import (  # noqa: E402
     execution_of,
     fail,
     _uip,
-    folder_key_of,
     leaf_values,
     read_run,
     since_iso,
@@ -67,6 +66,7 @@ from _shared.case_check import (  # noqa: E402
     task_is_skeleton,
 )
 
+DEBUG_TIMEOUT_S = 900
 RESOURCE_NAME = "API Workflow"
 GOLDEN_FOLDER = "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
 AGE_FOLDER = "Shared/uipath-maestro-case/NameToAgeFixed2"
@@ -292,15 +292,16 @@ def check_inputs(evidence: RunEvidence, chain: list[dict]) -> None:
             fail(f"task {name!r} received the text {value!r} instead of the value it refers to")
 
 
-def instance_external_id(payload: dict, since: str) -> str | None:
+def instance_external_id(payload: dict, folder_key: str | None) -> str | None:
     """The id the tenant gave this case, read from the instance itself; None when it reports none.
 
-    A failed read fails the check: it is not an instance without an id.
+    ``folder_key`` is the one ``read_run`` already resolved, so the instance is
+    not looked up in the list a second time. A failed read fails the check: it
+    is not an instance without an id.
     """
     instance_id = str(_get_ci(payload, "instanceId", "InstanceId") or "")
-    if not instance_id:
+    if not instance_id or not folder_key:
         return None
-    folder_key = folder_key_of(instance_id, since)
     data = _uip(
         ["maestro", "case", "instance", "get", instance_id, "--folder-key", folder_key],
         "uip maestro case instance get",
@@ -320,8 +321,9 @@ def check_metadata(evidence: RunEvidence, external_id: str | None) -> None:
             f"the run names no case id (no ExternalId on the instance, no CaseId variable), "
             f"so {METADATA_OUTPUT} ({metadata!r}) cannot be checked"
         )
-    if metadata is None or str(metadata) != str(case_id):
-        fail(f"{METADATA_OUTPUT} is {metadata!r}, expected the case's id {case_id!r}")
+    # The SDD declares metadataResult a string: the number 17980423 is not the id "17980423".
+    if not isinstance(metadata, str) or metadata != str(case_id):
+        fail(f"{METADATA_OUTPUT} is {metadata!r}, expected the case's id {str(case_id)!r} as a string")
 
 
 def check_outputs(evidence: RunEvidence, chain: list[dict], external_id: str | None = None) -> None:
@@ -358,9 +360,9 @@ def main() -> None:
     chain = check_plan(plan)
     assert_no_inline_api_project()
     since = since_iso()
-    payload = run_debug(timeout=900)
+    payload = run_debug(timeout=DEBUG_TIMEOUT_S)
     evidence = read_run(payload, since)
-    check_run(payload, evidence, chain, instance_external_id(payload, since))
+    check_run(payload, evidence, chain, instance_external_id(payload, evidence.folder_key))
     print(
         "OK: debug Completed; the eight SDD tasks completed in order, each received the "
         "value its SDD binding names, and renamedResult, literalResult, copiedResult, "

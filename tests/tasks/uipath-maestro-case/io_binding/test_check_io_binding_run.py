@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import inspect
 import json
 import re
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 HERE = Path(__file__).resolve().parent
 PASSING = json.loads((HERE / "testdata" / "plan_claude_2026-11-18_pass.json").read_text())
@@ -191,6 +193,17 @@ def test_metadata_that_is_not_the_instances_external_id_fails(metadata: object, 
         grader.check_run(payload, evidence, grader.check_plan(PASSING), external_id)
 
 
+@pytest.mark.parametrize("values", [
+    {**NO_CASE_ID, "metadataResult": int(AS_CASE_ID)},
+    {**GLOBALS, "metadataResult": int(AS_CASE_ID), "CaseId": AS_CASE_ID},
+])
+def test_metadata_that_is_the_ids_number_and_not_its_string_fails(values: dict) -> None:
+    """The SDD declares metadataResult a string; Automation Suite's bare id is the string, not the number."""
+    payload, evidence = _run(PASSING, values)
+    with pytest.raises(SystemExit, match=f"metadataResult is {AS_CASE_ID}, expected the case's id '{AS_CASE_ID}' as a string"):
+        grader.check_run(payload, evidence, grader.check_plan(PASSING), AS_CASE_ID)
+
+
 def test_the_instances_external_id_outranks_the_case_id_variable() -> None:
     values = {**GLOBALS, "metadataResult": "IOB-51234", "CaseId": "IOB-51234"}
     payload, evidence = _run(PASSING, values)
@@ -219,7 +232,6 @@ def _stub_instance_get(monkeypatch: pytest.MonkeyPatch, stdout: str, returncode:
         return done
 
     monkeypatch.setattr(sys.modules[grader._uip.__module__], "_run", run)
-    monkeypatch.setattr(grader, "folder_key_of", lambda instance_id, since: "folder-1")
     return calls
 
 
@@ -228,7 +240,7 @@ def test_the_external_id_is_read_from_the_instance_itself(monkeypatch: pytest.Mo
     envelope = json.dumps({"Result": "Success", "Data": {"InstanceId": "i-1", "ExternalId": external_id}})
     calls = _stub_instance_get(monkeypatch, envelope)
 
-    assert grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z") == external_id
+    assert grader.instance_external_id({"instanceId": "i-1"}, "folder-1") == external_id
     assert calls == [["uip", "maestro", "case", "instance", "get", "i-1", "--folder-key", "folder-1", "--output", "json"]]
 
 
@@ -239,7 +251,7 @@ def test_the_external_id_is_read_from_the_instance_itself(monkeypatch: pytest.Mo
 def test_an_instance_that_reports_no_external_id_gives_none(monkeypatch: pytest.MonkeyPatch, stdout: str) -> None:
     _stub_instance_get(monkeypatch, stdout)
 
-    assert grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z") is None
+    assert grader.instance_external_id({"instanceId": "i-1"}, "folder-1") is None
 
 
 @pytest.mark.parametrize(
@@ -255,11 +267,57 @@ def test_a_failed_instance_read_fails_the_check(monkeypatch: pytest.MonkeyPatch,
     """A read that failed is not an instance without an id: it must not fall through to the CaseId variable."""
     _stub_instance_get(monkeypatch, stdout, returncode)
     with pytest.raises(SystemExit, match="uip maestro case instance get failed"):
-        grader.instance_external_id({"instanceId": "i-1"}, "2026-11-23T00:00:00Z")
+        grader.instance_external_id({"instanceId": "i-1"}, "folder-1")
 
 
 def test_a_payload_with_no_instance_id_gives_no_external_id() -> None:
-    assert grader.instance_external_id({}, "2026-11-23T00:00:00Z") is None
+    assert grader.instance_external_id({}, "folder-1") is None
+
+
+def test_the_run_is_read_with_one_folder_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The instance get reuses the folder key read_run resolved: the instance list is scanned once."""
+    evidence_module = sys.modules[grader._uip.__module__]
+    lookups: list[str] = []
+    monkeypatch.setattr(evidence_module, "folder_key_of", lambda instance_id, since: lookups.append(instance_id) or "folder-1")
+    calls = _stub_instance_get(monkeypatch, json.dumps({"Result": "Success", "Data": {"ExternalId": AS_CASE_ID}}))
+    payload = {"instanceId": "i-1"}
+
+    evidence = grader.read_run(payload, "2026-11-23T00:00:00Z")
+
+    assert grader.instance_external_id(payload, evidence.folder_key) == AS_CASE_ID
+    assert lookups == ["i-1"]
+    assert [call[4] for call in calls] == ["variables-all", "get"]
+    assert all(call[call.index("--folder-key") + 1] == "folder-1" for call in calls)
+
+
+TASK_YAML = HERE / "io_binding.yaml"
+RUN_CRITERION_COMMAND = "check_io_binding_run.py"
+
+
+def test_the_run_criterion_timeout_covers_the_worst_case_grader_run() -> None:
+    task = yaml.safe_load(TASK_YAML.read_text(encoding="utf-8"))
+    criterion = next(c for c in task["success_criteria"] if RUN_CRITERION_COMMAND in c.get("command", ""))
+    case_check = sys.modules[grader.run_debug.__module__]
+    evidence_module = sys.modules[grader._uip.__module__]
+    refresh_s = inspect.signature(case_check.run_debug).parameters["refresh_timeout"].default
+    starts = 2  # run_debug starts the case again after a Cancelled run
+    calls_per_start = 2  # each start retries one transient fault
+    worst_case_s = (
+        starts * (refresh_s + calls_per_start * grader.DEBUG_TIMEOUT_S)
+        + (starts * (calls_per_start - 1) + starts - 1) * case_check._DEBUG_RETRY_SLEEP_S
+        + evidence_module.LIST_DEADLINE_S  # the one folder lookup
+        + 2 * evidence_module.READ_TIMEOUT_S  # variables-all, then instance get
+    )
+
+    assert criterion["timeout"] >= worst_case_s
+
+
+def test_the_task_timeout_outlasts_the_turn_and_every_criterion() -> None:
+    task = yaml.safe_load(TASK_YAML.read_text(encoding="utf-8"))
+    limits = task["run_limits"]
+    criteria = sum(c.get("timeout", 0) for c in task["success_criteria"])
+
+    assert limits["task_timeout"] > limits["turn_timeout"] + criteria
 
 
 @pytest.mark.parametrize("identifier", ["IoBindingCase", "iob", "", None])
