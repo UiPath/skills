@@ -1,0 +1,105 @@
+{
+  "source": "ETE weekly adhoc-2026-11-23_06-42-32 (Automation Suite 2.2610), skill-case-e2e-expense-runnable: the plan the agent built and the result of its own `uip maestro case debug`, trimmed to the fields the grader reads.",
+  "finalStatus": "Completed",
+  "plan": {"nodes": [
+    {"id": "trigger_1", "type": "uipath.case.trigger"},
+    {"id": "Stage_HYEgw5", "type": "case-management:Stage", "data": {"label": "Submission", "tasks": [
+      [{"id": "tfYqOrTTu", "displayName": "Validate Expense Data", "type": "api-workflow", "isRequired": true}],
+      [{"id": "tWCbVM1Xn", "displayName": "Auto-Categorize Expense", "type": "agent", "isRequired": false}]
+    ]}},
+    {"id": "Stage_ZOTTiR", "type": "case-management:Stage", "data": {"label": "Manager Approval", "tasks": [
+      [{"id": "txFSRs9oj", "displayName": "Send Approval Request", "type": "api-workflow", "isRequired": true}],
+      [{"id": "tNrOKUY6b", "displayName": "Approval Escalation", "type": "wait-for-timer", "isRequired": false}]
+    ]}},
+    {"id": "Stage_aoY6gm", "type": "case-management:Stage", "data": {"label": "Finance Approval", "tasks": [
+      [{"id": "td4s8b3Zt", "displayName": "Policy Compliance Check", "type": "api-workflow", "isRequired": true}],
+      [{"id": "tmXWkzIla", "displayName": "Fraud Anomaly Detection", "type": "agent", "isRequired": false}],
+      [{"id": "tDcmx7mTm", "displayName": "Budget & GL Reconciliation", "type": "process", "isRequired": true}]
+    ]}},
+    {"id": "Stage_1dbFcv", "type": "case-management:Stage", "data": {"label": "Payment", "tasks": [
+      [{"id": "tC8UPx1fE", "displayName": "Process Reimbursement", "type": "rpa", "isRequired": true}],
+      [{"id": "trrB9udgz", "displayName": "Track Reimbursement Sub-Case", "type": "case-management", "isRequired": false}],
+      [{"id": "tErOUKbFP", "displayName": "Payment Confirmation", "type": "api-workflow", "isRequired": true}]
+    ]}},
+    {"id": "Stage_CdzICU", "type": "case-management:Stage", "data": {"label": "Approved", "tasks": [
+      [{"id": "t6P2WYX6f", "displayName": "Send Approval Confirmation", "type": "api-workflow", "isRequired": true}],
+      [{"id": "tgolYR2PS", "displayName": "Update GL Records", "type": "process", "isRequired": true}]
+    ]}},
+    {"id": "Stage_Xd3eig", "type": "case-management:Stage", "data": {"label": "Rejected", "stageType": "secondary", "tasks": [
+      [{"id": "thRal3bFu", "displayName": "Send Rejection Notification", "type": "rpa", "isRequired": true}],
+      [{"id": "ticq4tU9r", "displayName": "Log Rejection for Audit", "type": "api-workflow", "isRequired": true}]
+    ]}},
+    {"id": "Stage_N6bkv1", "type": "case-management:Stage", "data": {"label": "Withdrawn", "stageType": "secondary", "tasks": [
+      [{"id": "thmXSDiOb", "displayName": "Send Withdrawal Confirmation", "type": "api-workflow", "isRequired": true}]
+    ]}}
+  ]},
+  "elementExecutions": [
+    {"elementId": "trigger_1", "elementType": "StartEvent", "status": "Completed"},
+    {"elementId": "triggerActivatedVariableTask_trigger_1", "elementType": "Task", "status": "Completed"},
+    {"elementId": "CaseInitialVariablesSetupNode", "elementType": "Task", "status": "Completed"},
+    {"elementId": "CaseGlobalsVariablesSetupNode", "elementType": "Task", "status": "Completed"},
+    {"elementId": "caseLifecycleSplitGateway", "elementType": "ParallelGateway", "status": "Completed"},
+    {"elementId": "caseStartedSendMessageEvent", "elementType": "IntermediateThrowEvent", "status": "Completed"},
+    {"elementId": "caseSLASendMessageEvent", "elementType": "IntermediateThrowEvent", "status": "Completed"},
+    {"elementId": "adhocCaseEventSubProcess", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "caseEndMessageCatchEvent", "elementType": "IntermediateCatchEvent", "status": "Completed"},
+    {"elementId": "caseSLASendMessageEndEvent", "elementType": "EndEvent", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Case", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_Vga8Mg_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_kPQ7Yj_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "CaseRulesEvaluatorNode", "elementType": "Task", "status": "Completed"},
+    {"elementId": "CaseManagerNode", "elementType": "Task", "status": "Completed"},
+    {"elementId": "Activity_Guardrails", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "Stage_HYEgw5", "elementType": "CaseStage", "status": "InProgress"},
+    {"elementId": "stageSlaEventSubprocess_Stage_HYEgw5", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "tasksEventSubProcess", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "stageSlaHandlerEventSubprocess_Stage_HYEgw5", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "tWCbVM1Xn", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "tfYqOrTTu", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Stage_HYEgw5", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_g9oz3g_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_PHhfEl_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "Stage_ZOTTiR", "elementType": "CaseStage", "status": "InProgress"},
+    {"elementId": "stageSlaEventSubprocess_Stage_ZOTTiR", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "StageExitedSLAReleaseLockNode_Stage_HYEgw5", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "stageSlaHandlerEventSubprocess_Stage_ZOTTiR", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "tNrOKUY6b_TaskSubprocess", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_tXBDQr_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_ydRuFV_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "tNrOKUY6b", "elementType": "IntermediateCatchEvent", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Stage_ZOTTiR", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "txFSRs9oj", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "Stage_aoY6gm", "elementType": "CaseStage", "status": "InProgress"},
+    {"elementId": "stageSlaEventSubprocess_Stage_aoY6gm", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "StageExitedSLAReleaseLockNode_Stage_ZOTTiR", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "tDcmx7mTm", "elementType": "CallActivity", "status": "Completed"},
+    {"elementId": "stageSlaHandlerEventSubprocess_Stage_aoY6gm", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "tmXWkzIla", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "td4s8b3Zt", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Stage_aoY6gm", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_FbfczM_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_KhvJp0_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "Stage_1dbFcv", "elementType": "CaseStage", "status": "InProgress"},
+    {"elementId": "stageSlaEventSubprocess_Stage_1dbFcv", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "StageExitedSLAReleaseLockNode_Stage_aoY6gm", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "stageSlaHandlerEventSubprocess_Stage_1dbFcv", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "trrB9udgz", "elementType": "CallActivity", "status": "Completed"},
+    {"elementId": "tErOUKbFP", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "tC8UPx1fE", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Stage_1dbFcv", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_lfLVgM_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_ihbCW0_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "Stage_CdzICU", "elementType": "CaseStage", "status": "InProgress"},
+    {"elementId": "stageSlaEventSubprocess_Stage_CdzICU", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "StageExitedSLAReleaseLockNode_Stage_1dbFcv", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "tgolYR2PS", "elementType": "CallActivity", "status": "Completed"},
+    {"elementId": "stageSlaHandlerEventSubprocess_Stage_CdzICU", "elementType": "SubProcess", "status": "Terminated"},
+    {"elementId": "t6P2WYX6f", "elementType": "ServiceTask", "status": "Completed"},
+    {"elementId": "UpdateSLAVariablesEventSubprocess_Stage_CdzICU", "elementType": "SubProcess", "status": "Completed"},
+    {"elementId": "caseSlaEventSubprocess_esc_PtcgJk_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseSlaEventSubprocess_esc_UFraoo_StartTimer", "elementType": "IntermediateCatchEvent", "status": "Terminated"},
+    {"elementId": "caseEndMessageGraceTimer", "elementType": "IntermediateCatchEvent", "status": "Completed"},
+    {"elementId": "caseEndMessageTerminalEndEvent", "elementType": "EndEvent", "status": "Completed"}
+  ]
+}

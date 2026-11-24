@@ -201,6 +201,19 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Published process, agent, RPA, API workflow, sub-case, connector, and folder
   references are tenant facts. Static validation cannot prove they exist.
 
+<!-- RULE:case.external.mode -->
+- An `externalAgent` or `externalWorkflow` task's `mode` is the connector
+  object's `executionType` (`sync`, `async` or `hybrid`), never a choice about
+  the case. Leave it out when the connector library records it; otherwise copy
+  it from the activity's `case spec` result
+  (`Data.EssentialConfiguration.essentialConfiguration.executionType`). An
+  `async` or `hybrid` object also answers through an event: unless the library
+  records it, pass `event: { operation, mode }` from the same result's
+  `Data.CaseShape.context` rows `operation` and `eventMode`. A `hybrid` task
+  without one is refused (`EXTERNAL_TASK_EVENT`); a `sync` task takes none.
+  `mode` does not decide whether the stage waits: a task the stage must not
+  wait on is `.required(false)`, whatever its `mode`.
+
 <!--skill-flavor:orphan-cleanup:start-->
 - Resource refresh is additive. After removing or repointing a resource-bound
   task, prune orphans before refreshing:
