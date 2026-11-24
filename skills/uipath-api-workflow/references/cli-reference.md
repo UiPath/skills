@@ -112,7 +112,7 @@ uip api-workflow run <file> \
 | `--input-file <name>=<path>` | no (repeatable) | Upload a local file to Orchestrator blob storage and pass the resulting `JobAttachment` reference as input `<name>` — the same object Studio Web's run panel produces, read as `$workflow.input.<name>`. MIME type from the extension. Needs a signed-in session; refused with `--no-auth`. |
 | `--output-dir <dir>` | no | After a successful run, download every `JobAttachment` reference found in the output into `<dir>`; each downloaded reference in the printed `Data` gains a `LocalPath`. Same-named blobs get an `-<Id>` suffix. Needs a signed-in session. |
 | `--folder-key <guid>` | no | Orchestrator folder key for the attachments the run creates (uploaded inputs and the files written by File to Base64 / Base64 to File). Pass it when the tenant's Attachments API rejects folder-less requests. |
-| `--no-auth` | no | Skip credential loading. Use for workflows that don't need Orchestrator/IS auth — control-flow-only workflows, or Http kind activities using `connectionId: "ImplicitConnection"`. IntSvc kind (vendor connector) activities always need auth at run time, and so do file features: a workflow calling `$helpers.file.*` (File to Base64 / Base64 to File) is refused up front under `--no-auth`, as are `--input-file` / `--output-dir`. |
+| `--no-auth` | no | Skip credential loading. Not a sandbox: JavaScript and expressions still run locally and HTTP activities still make real calls, so it needs the same consent as any run. Use for workflows that don't need Orchestrator/IS auth — control-flow-only workflows, or Http kind activities using `connectionId: "ImplicitConnection"`. IntSvc kind (vendor connector) activities always need auth at run time, and so do file features: a workflow calling `$helpers.file.*` (File to Base64 / Base64 to File) is refused up front under `--no-auth`, as are `--input-file` / `--output-dir`. |
 | `--output json` | no | Emit machine-readable JSON. Strongly recommended when output is parsed. |
 
 ### Success output
@@ -541,7 +541,7 @@ cd ./MySolution
 uip api-workflow init MyApiProject --output json
 # ... edit MyApiProject/Workflow.json to add tasks ...
 
-# 2. Local smoke test
+# 2. Local smoke test — ask for consent, then run if approved
 uip api-workflow run ./MyApiProject/Workflow.json --no-auth --output json
 
 # 3. Authenticate (only needed for publish / deploy)
