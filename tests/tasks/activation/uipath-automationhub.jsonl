@@ -27,3 +27,8 @@
 {"id": "uipath-automationhub-027", "prompt": "Delete my last comment on Automation Hub automation 4182, I posted it on the wrong one", "expected_skill": "uipath-automationhub"}
 {"id": "uipath-automationhub-028", "prompt": "can you check I can reach our Automation Hub with my login?", "expected_skill": "uipath-automationhub"}
 {"id": "uipath-automationhub-029", "prompt": "fix the typo in my comment on the vendor payments idea in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-030", "prompt": "log this as a new idea in our CoE pipeline", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-031", "prompt": "pull the PDD attached to the invoice process idea we submitted last week", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-032", "prompt": "move AH idea 4182 to the Assessment phase", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-033", "prompt": "archive the failed vendor onboarding automation in AH", "expected_skill": "uipath-automationhub"}
+{"id": "uipath-automationhub-034", "prompt": "reply to the last comment on AH idea 3301", "expected_skill": "uipath-automationhub"}
