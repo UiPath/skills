@@ -70,6 +70,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "A design-only request gets no genome: the genome is written only on demand"
+    command: "test -z \"$(find . -name '*-genome.md' -not -path '*/.venv/*' -print -quit)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Global-event, SLA-reference-closure, sequential-activation, and rationale contract is present"
     command: "python3 \"$REFERENCE_DIR/check_procurement_sla_interrupts.py\""
     timeout: 10

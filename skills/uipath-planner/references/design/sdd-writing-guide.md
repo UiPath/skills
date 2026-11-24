@@ -1,6 +1,6 @@
 # SDD Writing Guide — Phase 3 of `design`
 
-Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME items, checks it against its template and flips it to `ready`; the next turns write its genome and, when the request is to build, hand it to `uipath-genome`. Reached from [design-guide.md](design-guide.md) once Phase 2 is approved — that guide's § Verb Rules and its Phase 1 / Phase 2 results apply throughout. Read this guide whole before the first Phase 3 write.
+Phase 3 of `design` writes the full SDD to disk incrementally, resolves the SME items, checks it against its template and flips it to `ready`. The SDD is the deliverable: a genome is written from it only on demand — when the user asks for one or asks to build, since the build starts from the genome (Step 5). Reached from [design-guide.md](design-guide.md) once Phase 2 is approved — that guide's § Verb Rules and its Phase 1 / Phase 2 results apply throughout. Read this guide whole before the first Phase 3 write.
 
 ## Read Plan
 
@@ -159,7 +159,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - **Status** — the first incremental write stamps `draft`; flip to `ready` ONLY after Step 3 ran (every surviving SME item classified `default-carried`) AND the item 8 template-superset check passes (item 9). A `blocking` SME item keeps `draft`. The genome is written only from `ready`.
    - **Execution autonomy**, **Delivery model** — from Phase 1 Step 1; append the Suite version when known (`automation-suite 2025.1`). `Execution autonomy` governs only how the SDD and its genome are written — checkpoint stops, Decisions Made, the genome's follow-up rounds; it never answers or waives a question of `uipath-genome`.
    - **Solution root SDD**, **Solution ID**, **Project SDD role**, **Independently executable** — solution scope ONLY, written into EVERY SDD (the root names itself; `root` in the overview, `child` in each per-project SDD; `Independently executable: no` on children, so a child is built only through the Solution root's genome). Omit all four for single-product.
-   - **Genome** — never written by `design`: the genome turn adds it as the table's last row (Step 5 item 3).
+   - **Genome** — never written by `design`: a genome written on demand adds it as the table's last row (Step 5 item 3).
    - **Template validation** — set to `passed` as soon as the item 8 template-superset check passes, whatever the `Status`: it records that every required section is present. A `draft` held by a blocking item is complete and reads `passed`; only an unfinished run leaves `pending`.
 
    Never rename the heading or strip the marker.
@@ -239,28 +239,28 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 <INTERVIEW RAN, when items are open: the open items counted by role, and `interview <SDD_PATH>` to ask them ([interview-guide.md](../interview/interview-guide.md) § Asking rule 7).>
 
 **Next — branch on the handoff `Status`:**
-- `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 5), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
-- `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written until then.
+- `ready` — `design` is complete and the SDD is on disk. Open default-carried SME items gate production sign-off — confirm them before production. <REQUEST ASKED FOR A GENOME OR A BUILD: "The genome is written from it on the next turn, then <the build | nothing more>."> <OTHERWISE: one line offering the genome and the build: "Ask for its genome to get the build blueprint, or to build it."> A design a build skill handed over gets no genome.
+- `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; no genome is written before then.
 ```
 
-### Step 5: Next Turns — the Genome, then the Build
+### Step 5: Next Turns — the Genome and the Build, on Demand
 
 **A caller's request with `stop-after: sdd` skips this whole step**, the turn boundary included: its result ends the run in the same turn and the caller continues ([caller-request-guide.md](caller-request-guide.md)).
 
 The SDD is the deliverable of `design` ([design-guide.md](design-guide.md) Verb Rule 2). **Do not start executing.**
 
 <!--skill-flavor:turn-boundary:start-->
-> **The SDD write is a turn boundary — do not begin the genome or the build in the same turn as `design`.** Once the SDD is on disk, the superset check has passed, and the Step 4 item 10 summary is emitted, end the turn. Continue on the **next** turn with the sequence below. This is a turn checkpoint, **not** a structured question — do not prompt the user.
+> **The SDD write is a turn boundary — do not begin the genome or the build in the same turn as `design`.** Once the SDD is on disk, the superset check has passed, and the Step 4 item 10 summary is emitted, end the turn. When the request asked for a genome or a build, continue on the **next** turn with the sequence below. This is a turn checkpoint, **not** a structured question — do not prompt the user.
 <!--skill-flavor:turn-boundary:end-->
 
 Then continue:
 
-1. **`Status: draft`** (a blocking SME item) → no genome and no build. The Step 4 item 10 summary names the blocking items. The turn that receives the user's answers patches them into the SDD, reruns the superset check and flips it to `ready` as its last write, then ends; the genome (item 3) runs on the following turn.
+1. **`Status: draft`** (a blocking SME item) → no genome and no build. The Step 4 item 10 summary names the blocking items. The turn that receives the user's answers patches them into the SDD, reruns the superset check and flips it to `ready` as its last write, then ends; the genome (item 3), when asked for, runs on the following turn.
 2. **A design a build skill handed over** → no genome and no build: § Design Handed Over by a Build Skill returns it to the caller.
-3. **Next turn — the genome.** When the next message asks for an SDD change, apply it to the SDD first (`revise`: change only the sections the request touches, then rerun Step 4 items 8–10); the genome follows the revised SDD. Run the `author` verb on the `ready` SDD only when no genome exists yet — its `Genome` handoff row is missing or names no file on disk ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md)); an existing genome is updated through [§ Keeping the Genome Current](#keeping-the-genome-current) (`edit`), never rewritten by `author`. That guide's items 2 and 7 set the follow-up rounds, the genome's name and the `Genome` handoff row. Write the genome even when `uipath-genome` is not installed, and say that building from it needs `uipath-genome`. The genome write is a turn boundary too: end the turn after `author`'s summary.
+3. **The genome — only on demand.** It is written when the request, or a later message, asks for the genome ("write its genome", "the blueprint"). It is also written for a build ("create / build / implement / set up / make", "so we can build it", "ready to build"), since the build starts from the genome. A request that only asks to "design / architect / generate an SDD", or whose intent is unclear, gets no genome: stop after the SDD in either mode, with the Step 4 item 10 summary's one-line offer. When the next message asks for an SDD change, apply it to the SDD first (`revise`: change only the sections the request touches, then rerun Step 4 items 8–10); the genome follows the revised SDD. Run the `author` verb on the `ready` SDD only when no genome exists yet — its `Genome` handoff row is missing or names no file on disk ([genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md)); an existing genome is updated through [§ Keeping the Genome Current](#keeping-the-genome-current) (`edit`), never rewritten by `author`. That guide's items 2 and 7 set the follow-up rounds, the genome's name and the `Genome` handoff row. Write the genome even when `uipath-genome` is not installed, and say that building from it needs `uipath-genome`. The genome write is a turn boundary too: end the turn after `author`'s summary.
 4. **Turn after — the build, or stop.** The request's intent decides, never the execution mode — in both modes:
    - The intent implies implementation ("create / build / implement / set up / make", "so we can build it", "ready to build") → invoke `uipath-genome` with `build "<GENOME_MD>"` and the user's build request quoted verbatim on the turn after the genome, without asking. Do not add a "shall I build?" question here. It asks its own configuration questions, builds every component through its owning skill and ends with the hand-off folder. A request that also asks to publish or deploy follows [SKILL.md](../../SKILL.md) § Chaining. `uipath-genome` not installed → stop after the genome; `author`'s summary says the build needs it.
-   - The user only asked to "design / architect / generate an SDD", or the intent is unclear → stop after the genome in either mode; the SDD and the genome are the deliverable. Offer the build in one line of `author`'s summary.
+   - The request asked for the genome only → stop after it; the SDD and the genome are the deliverable. Offer the build in one line of `author`'s summary.
 
 ## Keeping the Genome Current
 
@@ -268,7 +268,7 @@ An SDD change is either a `design` revise (a `revise:` caller request, a design 
 
 1. **The SDD's `Genome` handoff row names a genome on disk** (the root's row, for a solution) → end the same run with `edit` "The SDD was revised: update the genome" ([edit-guide.md](../edit/edit-guide.md)) and its strict check ([SKILL.md](../../SKILL.md) § Check).
 2. **A caller's request with `stop-after: sdd`** → end at its result instead.
-3. **The `Genome` row is missing, or names no file on disk** → the genome comes through Step 5.
+3. **The `Genome` row is missing, or names no file on disk** → no genome to update; one is written only on demand (Step 5 item 3).
 
 ## Gap Markers
 

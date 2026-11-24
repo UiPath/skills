@@ -1,6 +1,6 @@
 # Design Guide — the `design` verb
 
-`design` converts a PDD or other process-knowledge source into an implementation-ready SDD in three phases: **Phase 1** analyzes the source and selects scope, **Phase 2** reviews architecture, and **Phase 3** incrementally writes the full SDD and flips it to `ready` ([sdd-writing-guide.md](sdd-writing-guide.md)). The next turn writes the genome from the `ready` SDD (Verb Rule 8). The source may be a document or the request itself; every product runs this guide; its template and its product guide hold what differs. Ask every user question as a structured question.
+`design` converts a PDD or other process-knowledge source into an implementation-ready SDD in three phases: **Phase 1** analyzes the source and selects scope, **Phase 2** reviews architecture, and **Phase 3** incrementally writes the full SDD and flips it to `ready` ([sdd-writing-guide.md](sdd-writing-guide.md)). A genome is written from the `ready` SDD only on demand (Verb Rule 8). The source may be a document or the request itself; every product runs this guide; its template and its product guide hold what differs. Ask every user question as a structured question.
 
 ## Verb Rules
 
@@ -18,7 +18,7 @@ Never put Task 1 / Task N templates or *implementation* tasks created with the t
 6. **The terminal artefact of a Solution build is a packed `.uipx`.** Point `## Next Steps` to `uipath-solution`, which packs it; a bare project folder is not the deliverable. When the Constraint Gate blocks Solutions, Next Steps routes the publish per [SKILL.md § Chaining](../../SKILL.md#chaining) instead.
 <!--skill-flavor:solution-terminal-artifact:end-->
 7. **Design resolves identities only.** A resource the design names is looked up (the Level 0 estate sweep; for RPA, the tenant library search per Step 5) and adopted when one match is confident. For ambiguous or missing resources, use the intended name and an `[SME REVIEW]` item. Schema discovery, scaffolding, and create-on-missing are build concerns recorded as build decisions; `design` never runs them.
-8. **Every `ready` SDD gets its genome on the next turn, including design-only requests**, except a build skill handoff, which returns to that skill. Follow [sdd-writing-guide.md](sdd-writing-guide.md) § Step 5; when revising an SDD whose genome is already on disk, update and check the genome in the same run per [sdd-writing-guide.md](sdd-writing-guide.md) § Keeping the Genome Current.
+8. **A `ready` SDD gets its genome only on demand** — when the user asks for the genome or for a build, which starts from it. A design-only request ends at the SDD, and a build skill handoff returns to that skill. Follow [sdd-writing-guide.md](sdd-writing-guide.md) § Step 5; when revising an SDD whose genome is already on disk, update and check the genome in the same run per [sdd-writing-guide.md](sdd-writing-guide.md) § Keeping the Genome Current.
 9. **Write the skeleton first and flip `ready` last; the SDD write is a turn boundary.** Write the skeleton before any other Phase 3 section so an early-ending turn leaves an SDD; `[SME REVIEW]` gates only the `ready` flip. Follow [sdd-writing-guide.md](sdd-writing-guide.md) Step 1 and its § Step 5. Scope and UI answers flow to the genome through the SDD.
 10. **Keep source wording.** Preserve roles, domain nouns, stage/step labels, outcomes, and system names exactly (`CFO`, `Vendor`, `Needs Info`, `Workday`); do not homogenize them (`Approver`, `Supplier`, `the HR system`). Only mechanical derivations change names: PascalCase project/case names, kebab-case file names, camelCase variables.
 11. **When sources conflict, the higher one wins:** platform constraints (delivery model/product schema) → stated or implied regulatory/compliance constraint → tenant evidence (deployed matching resource) → user statement → source documents → template/product-guide defaults. Record an overridden lower source as a Decisions Made row (autonomous) or a Phase 2 Step 5 review line.
@@ -63,9 +63,9 @@ Before fully reading the PDD, search for platform signals ("Automation Suite", "
 
 **Question 1 — Execution autonomy:**
 
-> How should I handle this SDD generation? (The SDD is written this turn; its genome — the build blueprint — is written from the finished SDD on the next turn.)
+> How should I handle this SDD generation? (The SDD is written this turn. Its genome — the build blueprint — is written from the finished SDD only when you ask for it or for a build.)
 >
-> 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, generate the full SDD, then write its genome on the next turn. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
+> 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (scope summary, architecture review) for your review before proceeding.
 
 Skip Question 1 symmetrically when the request states the mode ("autonomous", "don't pause for checkpoints", "interactive review"). A caller's `execution` answers it; ask only when missing (Verb Rule 14). When both execution and delivery model are known from context, skip the prompt and record both.
@@ -92,7 +92,7 @@ title="Finalize SDD (Status: ready)"              in-progress label="Finalizing 
 title="Write genome (next turn)"                  in-progress label="Writing genome…"
 ```
 
-The genome task remains `pending` when SDD writing ends the turn; the genome turn marks it `in_progress`, then `completed`. Omit it for a build-skill handoff (Verb Rule 8). Mark each task `in_progress` at start and `completed` at end. Creation/update are best-effort and never block the SDD: on task-list failure, warn once, continue without tasks, and never retry. Skeleton writing is task 4, never last ([sdd-writing-guide.md](sdd-writing-guide.md#step-1-write-the-sdd-skeleton-to-disk--hard-gate) Step 1). These tasks track SDD generation.
+Create the genome task only when the request asks for the genome or a build (Verb Rule 8). It remains `pending` when SDD writing ends the turn; the genome turn marks it `in_progress`, then `completed`. Mark each task `in_progress` at start and `completed` at end. Creation/update are best-effort and never block the SDD: on task-list failure, warn once, continue without tasks, and never retry. Skeleton writing is task 4, never last ([sdd-writing-guide.md](sdd-writing-guide.md#step-1-write-the-sdd-skeleton-to-disk--hard-gate) Step 1). These tasks track SDD generation.
 <!--skill-flavor:progress-tasks:end-->
 
 ### Step 3: Read the PDD

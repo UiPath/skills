@@ -1,6 +1,6 @@
 # Genome From SDD Guide — the genome of an agreed SDD
 
-`author` reads this guide when the input is an agreed SDD (`## Planner Handoff` with `Status: ready`): inside `design`, on the turn after the SDD is `ready` ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 5), or when a request hands over an agreed SDD. The SDD decided the architecture; the genome restates it as the coding-agent spec and adds what only the genome holds (replication-grade substeps, composite UI contracts, the configuration questions, numbered acceptance criteria).
+`author` reads this guide when the input is an agreed SDD (`## Planner Handoff` with `Status: ready`): inside `design`, on the turn after the SDD is `ready` when the request asks for the genome or a build ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Step 5). It also reads it when a request asks for the genome of an agreed SDD or to build one. The SDD decided the architecture; the genome restates it as the coding-agent spec and adds what only the genome holds (replication-grade substeps, composite UI contracts, the configuration questions, numbered acceptance criteria).
 
 ## Read Plan
 
