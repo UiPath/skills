@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import subprocess
 
 import yaml
 
@@ -65,3 +66,14 @@ def test_the_eval_does_not_stream_verbose_output_to_the_live_log():
     text = WORKFLOW.read_text(encoding="utf-8")
     assert re.search(r'args\+=\(-j "\$j" --model "\$model"\)', text)
     assert not re.search(r'args\+=\(-j "\$j" -v\b', text)
+
+
+def test_the_scrub_step_survives_a_missing_refresher_pid_file(tmp_path):
+    """GitHub runs steps as `bash -e`; no setsid means no pid file, and the scrub must still run."""
+    scrub, _ = _after_scrub()
+    prelude = scrub["run"].split("python3 ")[0] + "echo reached-scrub\n"
+    result = subprocess.run(
+        ["bash", "-e", "-c", prelude], env={"RUNNER_TEMP": str(tmp_path), "PATH": "/usr/bin:/bin"},
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0 and "reached-scrub" in result.stdout, result.stderr

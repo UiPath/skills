@@ -808,7 +808,7 @@ jobs:
         run: |
           # The refresher is its own process group (setsid): kill the group so an
           # in-flight rotation stops too.
-          pid="$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null)"
+          pid="$(cat "$RUNNER_TEMP/auth-refresher.pid" 2>/dev/null || true)"
           if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; fi
           python3 .github/scripts/scrub-run-artifacts.py /tmp/runs --expect-tasks "$TASK_COUNT"
 

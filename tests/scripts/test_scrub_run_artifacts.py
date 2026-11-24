@@ -154,7 +154,7 @@ def test_fewer_results_than_expected_fail_but_dataset_fan_out_passes(tmp_path, m
     run = _env(second, monkeypatch)
     _put_task(run, "a")
     _put_task(run, "b")
-    _put_task(run, "c")  # one task file, three dataset rows
+    _put_task(run, "c")  # more results than task files: a dataset task fans out into several
     assert scrub_mod.main(["x", str(run), "--expect-tasks", "2"]) == 0
 
 
