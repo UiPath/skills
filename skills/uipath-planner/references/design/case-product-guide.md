@@ -160,7 +160,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 - `wait-for-user` + `Marks Stage Complete: Yes` is legal and canonical for user-routed completion.
 - `return-to-origin` is completion-only, and its lane is always interrupting.
 
-**`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways: a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
+**`wait-for-user` ↔ `user-selected-stage` pairing.** `wait-for-user` is an Exit Type, never a WHEN. Validate enforces the pair both ways: an exit row with Exit Type `wait-for-user` and no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
 
 #### Repairing a `user-selected-stage` lane
 
@@ -172,7 +172,15 @@ Diagnose first; the two repairs are opposites.
 | Entry is automatic from a decision, event, or SLA | The picker rule itself | Decision-routed |
 | Nothing either way | Assume person-launched — re-keying on an unstated fact invents a business rule | Person-launched |
 
-**Person-launched.** Give every eligible upstream primary stage a completing exit row `| required-tasks-completed | — | wait-for-user | Yes |` (WHEN, IF, Exit Type, Marks Stage Complete — `wait-for-user` is the Exit Type, never a WHEN) ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+**Person-launched.** Give every eligible upstream primary stage ("any active case" means every primary stage) this completing exit row. It REPLACES that stage's existing `required-tasks-completed | — | exit-only | Yes` row — one completion row per stage, never a second one, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+
+```markdown
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|------|-----|-----------|---------------------|--------------|
+| required-tasks-completed | — | wait-for-user | Yes | — |
+```
+
+The WHEN stays `required-tasks-completed`; only the Exit Type changes. `wait-for-user` is never a WHEN value — `| wait-for-user | — | wait-for-user | Yes |` fails validation.
 
 **Decision-routed.** All four edits, or the branch dual-fires or deadlocks:
 
@@ -204,7 +212,7 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 
 | Described timing | Activation Mode token | Entry rule |
 |---|---|---|
-| Ordered run (`then`, `after`, `before`, a dependency) | `sequential` | One `runs-sequentially` row — on EVERY task in the run, including the first |
+| Ordered run (`then`, `after`, `before`, a dependency) | `sequential` | One `runs-sequentially` row — on EVERY task in the run, including the first: it starts when the stage enters, yet its rule is `runs-sequentially`, never `current-stage-entered` |
 | Independent, starts with the stage | `parallel` | `current-stage-entered` |
 | Independent siblings after one predecessor | `parallel-after-predecessor` | `runs-sequentially`; the siblings share the next task set |
 | External callback | `event-triggered` | `wait-for-connector` (or `sla-status-change` for an SLA-started task) |

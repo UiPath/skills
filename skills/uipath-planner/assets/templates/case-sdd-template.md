@@ -346,6 +346,8 @@ the exact stage display name — never the case name. -->
 |------|-----|--------------|
 | <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| api-event("<Business Event Name>") \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
 
+<!-- The WHEN follows the Activation Mode (case-product-guide.md § Sequencing & activation): `sequential` and `parallel-after-predecessor` → `runs-sequentially`, on the FIRST task of the run too (never `current-stage-entered`, though it starts when the stage enters); `parallel` → `current-stage-entered`. -->
+
 **Task envelope**
 
 | Required | Run Only Once | Skip Condition |

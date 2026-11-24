@@ -117,7 +117,8 @@ names only what to LOOK AT.
      outside the Buttons tables.
  Recipients, entry tables
  20. Every `**Recipient:**` is `—`, `<UNRESOLVED>`, an `=` expression, or carries a typed prefix
-     (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`).
+     (`Role:` / `User:` / `UserGroup:` / `Email:` / `Expression:`), and a `Role:` names the task's own
+     Persona from its Tasks-table row.
  21. Every task `**Entry Condition:**` table, every `#### Stage Entry Conditions` table and every
      `#### Stage Exit Conditions` table has at least one body row.
  Structure
@@ -125,7 +126,8 @@ names only what to LOOK AT.
  23. Case Triggers has at least one row.
  24. Case Exit Conditions has at least one row with Marks Case Complete `Yes`, and no two rows identical in
      (WHEN, IF, THEN, Marks).
- 25. A `wait-for-user` exit exists if and only if a `user-selected-stage` entry exists.
+ 25. An exit row with Exit Type `wait-for-user` exists if and only if a `user-selected-stage` entry exists;
+     no WHEN cell holds `wait-for-user`.
  26. `required-stages-completed` used → some stage declares `**Required for Case Completion:** Yes`;
      `required-tasks-completed` on a stage → some task envelope in that stage has Required `Yes`.
  Precedence & liveness
