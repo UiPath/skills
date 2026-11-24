@@ -279,7 +279,10 @@ make from syntax alone. Exact signatures remain in the generated API.
   rejects the rule at `validate` as an invalid discriminator.
 <!--skill-flavor:task-exit-upgrade:start-->
   Upgrade the one that is behind (the SDK with `npm install -g
-  @uipath/maestro-builder-sdk@latest`), then compile. Never remove the rule to
+  @uipath/maestro-builder-sdk@latest`), then compile. If `uip` still does not
+  list `task-exited` after the upgrade, no `uip` on this machine supports the
+  rule yet: stop and tell the user. Do not author the rule, and never write a
+  different rule in its place. Never remove a rule the plan already has to
   pass.
 <!--skill-flavor:task-exit-upgrade:end-->
 
