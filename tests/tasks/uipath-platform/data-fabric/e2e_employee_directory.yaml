@@ -11,6 +11,10 @@ sandbox:
     - type: template_dir
       path: _setup
       mount_point: _setup
+    - type: template_dir
+      path: _cli_recorder
+      mount_point: _cli_recorder
+  mock_path_dirs: [_cli_recorder]
 run_limits:
   expected_turns: 40
   max_turns: 50
@@ -78,11 +82,10 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent updated employee records with performance scores"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+update'
-    min_count: 1
+    command: python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --pattern 'uip\s+df\s+records\s+update'
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -119,11 +122,10 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: run_command
     description: "Agent included Id key in records update body"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+)'
-    min_count: 1
+    command: python3 _setup/verify_recorded_call.py --log _cli_recorder/uip-calls.jsonl --pattern '(?s)^uip\s+df\s+records\s+update.*\\?"Id\\?"\s*:'
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
