@@ -8,14 +8,17 @@ A compiled Case plan holds each HITL task as an `action` task in a stage of `cas
 
 > If the stage or case predates required entry/exit/completion rules (see the checklist below), add them in the Case source, never in the plan: the next compile rewrites `caseplan.case` and drops a hand-written rule. Use the `uipath-maestro-case` skill's brownfield loop: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`, add the rules in `<Name>.case.ts`, `uip maestro case check <Name>.case.ts --source` (with the `--baseline` copy that skill describes), then `uip maestro case compile <Name>.case.ts -o <project>/<plan>`. The rule shapes below show what a compiled plan holds; read them, do not write them. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
 
-Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
+A compiled plan can hold two kinds of action task. **Only the app-based kind can be authored:** the Case SDK has no builder call for a quick form. It keeps a quick form that was saved in the Studio Web Case designer across decompile and compile, but cannot create one (`@uipath/maestro-builder-sdk` `dist/case/preserve.d.ts`; support is tracked in [UiPath/builder-sdk#2279](https://github.com/UiPath/builder-sdk/issues/2279)).
 
-| Path | When to use | Requires |
+| Path | Where it comes from | Requires |
 |---|---|---|
-| **QuickForm** | Structured form fields, no deployed app needed | A separate `.hitl.json` schema file written alongside `caseplan.case` |
-| **App-based action task** | Existing deployed Action Center app with a custom form | `task-type-id` from registry + `tasks describe` |
+| **QuickForm** | Added in the Studio Web Case designer; kept by decompile and compile | A `.hitl.json` schema file the designer writes alongside `caseplan.case` |
+| **App-based action task** | Authored with `action({ app: { name, folder } })` in `<Name>.case.ts` | A deployed Action Center app: `task-type-id` from registry + `tasks describe` |
 
-> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a deployed Action Center app later."
+> **A new Case human task is always app-based. Never block on choosing, and do not wait for the user to pick.** Use the table below (§ Common business descriptions → path selection) only to decide the form's shape: its fields and outcomes. Then:
+> 1. A deployed Action App fits: author Path 2 with `action({ app: { name, folder } })`.
+> 2. None exists: build and deploy a Coded Action App with that shape (the `uipath-coded-apps` skill), then name it. While it is not published yet, write `t.unresolved('action')` and fill it in later; never invent an app name.
+> 3. The user wants a quick form anyway: author nothing for that task. Put the designed fields and outcomes in the final report, and say that the user adds the quick form in the Studio Web Case designer, which the next decompile and compile keep. Never write the `.hitl.json` or the task JSON by hand.
 
 > **Build time vs design time.** A case action task lives in two surfaces:
 > - **Design time** — the JSON compile writes into `caseplan.case`. Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
@@ -36,7 +39,7 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 | Who receives the task | A named person/email or team/group mentioned in the description; otherwise infer a sensible team name from the business context |
 | Priority | Any urgency language in the description ("urgent", "high priority") → High/Medium; otherwise Low |
 
-**Common business descriptions → path selection:**
+**Common business descriptions → path selection.** The Path column names the form's shape. A "QuickForm" row still goes through the routing at the top: an app-based task with that shape, or a report that the user adds the quick form in the designer.
 
 | Description | Path |
 |---|---|
@@ -53,6 +56,8 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 ## Path 1 — QuickForm (file-based schema, no deployed app)
 
 The form schema lives in a separate `.hitl.json` file that sits alongside `caseplan.case` in the case project directory. Action Center renders the fields at runtime from the schema — no deployed app required.
+
+**This path is read-only for an agent.** A QuickForm task comes from the Studio Web Case designer; the Case SDK keeps it but cannot create one (see the routing above). Use this section to read, check and keep an existing quick form. For instance, after a brownfield decompile and compile, the checklist below confirms the form survived.
 
 > **What makes Path 1 (QuickForm) unique — checklist for a compiled task:**
 > - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.case`
@@ -82,15 +87,15 @@ Use these roles to plan the fields before writing:
 - `outcomes[]`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the case won't use
 
-**Never block on this — design the schema, per Critical Rule 1 in SKILL.md, have the `uipath-maestro-case` skill author it in `<Name>.case.ts`, and record it in the final report so the user can adjust it afterward.**
+**Never block on this — design the schema, per Critical Rule 1 in SKILL.md, and record it in the final report.** The Case SDK cannot author it as a quick form: the design becomes the Coded Action App's schema, or the form the user adds in the Studio Web Case designer (see the routing at the top).
 
 ### Step 2 — The `.hitl.json` File in a Compiled Plan
 
 A compiled QuickForm task carries two UUID v4 values:
 - `schemaId` — identity of the schema, stored inside the file and referenced from the action task
-- `fileId` — placeholder file system ID (Studio Web assigns the real one when it processes the project; use a fresh UUID v4 as a stable placeholder)
+- `fileId` — the file system ID Studio Web assigned to the `.hitl.json` file when the designer saved the form
 
-Create a file named `<TaskLabel>.hitl.json` in the case project directory (alongside `caseplan.case`).
+The designer writes the file as `<TaskLabel>.hitl.json` in the case project directory (alongside `caseplan.case`).
 
 The file uses a **unified `fields[]` array** — every field has a `direction` property that determines its role. This is the format the sync runtime reads (`parsed?.fields`).
 
@@ -230,9 +235,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 > **`_schemaFileId` cannot be authored blind — it is a server-assigned foreign key, not a UUID you invent.** Confirmed by direct reproduction against Studio Web: a placeholder UUID here makes "Edit Schema" fail with a `404` on `FileOperations/File/Rename` (the fileId in that failed request is whatever placeholder was written) — Studio Web does **not** silently reconcile it on upload, contrary to what an earlier draft of this doc claimed. There is currently no `uip` CLI command that resolves this.
 >
-> **Never block on this.** Finish the task in the Case source, compile, validate, and move on; do not stop to ask about it. Never patch `_schemaFileId` in `caseplan.case`: the next compile drops the patch, and a whole-project `uip solution upload` mints a new file id for every file anyway. State plainly in the final report that this task's schema won't be editable in Studio Web until its file id is reconciled.
->
-> This is a real gap, not just a documentation gap: today there is no supported path to make a freshly-authored QuickForm task's schema editable in Studio Web. It needs a product fix; report it, never work around it mid-task.
+> **Never write or patch `_schemaFileId`.** A quick form saved in the Studio Web Case designer already carries the real id, and decompile and compile keep it. A patch in `caseplan.case` is dropped by the next compile, and a whole-project `uip solution upload` mints a new file id for every file anyway. This server-assigned id is one reason the SDK cannot author a quick form yet ([UiPath/builder-sdk#2279](https://github.com/UiPath/builder-sdk/issues/2279)).
 
 ### Step 4 — Discover Upstream Variables
 
