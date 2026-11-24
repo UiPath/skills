@@ -331,7 +331,7 @@ def main() -> None:
     if mode == "trycatch":
         check_trycatch(path, document)
     elif mode == "http":
-        seed = Path.cwd() / "_setup" / "seed-workflow.json"
+        seed = Path(__file__).resolve().parent / "http_request_retry" / "_fixtures" / "OrderSync" / "OrderSync" / "Workflow.json"
         check_http(document, load(seed))
     else:
         check_validation(path)
