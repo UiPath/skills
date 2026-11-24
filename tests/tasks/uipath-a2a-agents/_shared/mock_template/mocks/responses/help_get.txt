@@ -1,0 +1,21 @@
+Usage: uip agenthub remote-a2a-agent get [options] <slug>
+
+Get a remote A2A agent by its slug.
+
+Pass the slug exactly as returned by `remote-a2a-agent list`. The
+service also matches display names, before slugs: a display name,
+or a slug that is another agent's display name, fails and names the
+slug of the agent it matched. So does the slug in another case.
+
+Arguments:
+  slug                        Agent slug.
+
+Options:
+  --folder-key <key>          Orchestrator folder key (GUID). Use --folder-path
+                              for the folder name or fully-qualified path.
+  --folder-path <path>        Orchestrator folder display name or
+                              fully-qualified path (e.g. 'Shared' or
+                              'Foo/Shared'). Resolved to the folder key via the
+                              Orchestrator SDK.
+  --login-validity <minutes>  Interactive-login token lifetime.
+  -h, --help                  display help for command
