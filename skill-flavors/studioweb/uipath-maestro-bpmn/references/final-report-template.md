@@ -3,7 +3,7 @@ When the built process validates, the canvas shows it, so there is nothing to up
 <!--skill-flavor:final-upload:end-->
 
 <!--skill-flavor:final-first-line:start-->
-<Name>: built, validated<, run> (<draft|auto> mode). <One sentence if you kept the user's canvas edits.>
+<Name>: built, <validated|not validated><, run> (<draft|auto> mode). <One sentence if you kept the user's canvas edits.>
 <!--skill-flavor:final-first-line:end-->
 
 <!--skill-flavor:final-path-line:start-->
@@ -12,6 +12,7 @@ When the built process validates, the canvas shows it, so there is nothing to up
 
 <!--skill-flavor:final-status-rule:start-->
 Write `, run` only when this turn ran the process with the user's consent.
+`not runnable yet` replaces whichever of `validated` / `not validated` the line would carry; when not validated, keep the reason on `Unverified:`.
 <!--skill-flavor:final-status-rule:end-->
 
 <!--skill-flavor:final-path-rule:start-->
