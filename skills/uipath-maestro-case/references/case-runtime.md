@@ -271,8 +271,9 @@ make from syntax alone. Exact signatures remain in the generated API.
   keep them.
 
 <!-- RULE:case.task-exit.cli -->
-- The rule needs an SDK and a `uip` that both know it. An SDK without it
-  answers `UNKNOWN_RULE` (`Unknown rule "task-exited"`) at `check --source`.
+- The rule needs an SDK and a `uip` that both know it: SDK 6.125.0 or later
+  and `uip` 1.207.0 or later. An SDK without it answers `UNKNOWN_RULE`
+  (`Unknown rule "task-exited"`) at `check --source`.
   A `uip` that knows it lists `task-exited` under `task-entry` and `stage-exit`
   in `uip maestro case rule-types list --output json`; one that does not
   rejects the rule at `validate` as an invalid discriminator.
