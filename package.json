@@ -37,6 +37,8 @@
     "version-manifest.json",
     "README.md",
     "LICENSE",
+    "LICENSE.txt",
+    "THIRD_PARTY_NOTICES.txt",
     "CODEOWNERS",
     "scripts/npm-package-lifecycle.mjs"
   ],
