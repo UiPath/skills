@@ -75,6 +75,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 11. **No `Buffer`.** Use `Uint8Array`, `TextEncoder`, `TextDecoder`.
 12. **After `uip function publish`, manually update the Function Release** in Orchestrator (Automations → Processes) — triggers only sync to the new version once the release is updated.
 13. **`uip function run` is a one-shot job execution, not an HTTP call.** To exercise the HTTP surface locally, curl/fetch against the `serve` server — no CLI subcommand invokes a route for you.
+14. **Call Integration Service through `@uipath/uipath-typescript/integration-service`.** `executeActivity` runs an action that exists as an activity of a catalog or custom connector; `executeHttp` sends any other request through a connection. Take the connection id as a function input, and check `ok` on the result — both resolve on a vendor error. Route selection and version 4 options: [calling-uipath-apis-guide.md](references/js/calling-uipath-apis-guide.md#integration-service-connectors).
 
 ## Quick Start
 
@@ -160,7 +161,7 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 | JS/TS: run-as-job mode, fault semantics | [js/job-mode-guide.md](references/js/job-mode-guide.md) |
 | JS/TS: pack, publish, invoke in prod, solutions, cold start | [js/deployment-guide.md](references/js/deployment-guide.md) |
 | JS/TS: bindings — entry-points.json, bindings_v2.json, overrides | [js/bindings-guide.md](references/js/bindings-guide.md) |
-| JS/TS: call UiPath APIs from a function (uipath-typescript, IS) | [js/calling-uipath-apis-guide.md](references/js/calling-uipath-apis-guide.md) |
+| JS/TS: call UiPath APIs and Integration Service connectors from a function (`executeActivity`, `executeHttp`) | [js/calling-uipath-apis-guide.md](references/js/calling-uipath-apis-guide.md) |
 | JS/TS: wire a Coded App frontend to a function backend | [js/coded-app-wiring-guide.md](references/js/coded-app-wiring-guide.md) |
 
 ## Anti-patterns
@@ -185,3 +186,4 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 9. **`console.log` for production diagnostics** — never reaches job logs — JS Rule 10.
 10. **Building the invoke URL from the trigger's own Id** — 404 errorCode 1623; the URL takes the folder Key GUID + package id + slug.
 11. **Expecting a caller to recover a result after 25 s** — keep HTTP functions under 20 s, move longer work to a run-as-job function — JS Rule 6.
+12. **Hand-written `fetch` to an `elements_` endpoint** — use `executeActivity` / `executeHttp` — JS Rule 14.

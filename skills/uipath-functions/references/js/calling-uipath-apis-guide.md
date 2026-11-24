@@ -1,6 +1,6 @@
 # Calling UiPath APIs from a Function
 
-Calling UiPath platform APIs from inside a function handler: which token to send, where platform coordinates come from, `@uipath/uipath-typescript` patterns for Orchestrator, and the working route to Integration Service connectors.
+Calling UiPath platform APIs from inside a function handler: which token to send, where platform coordinates come from, `@uipath/uipath-typescript` patterns for Orchestrator, and the calls that reach Integration Service connectors.
 
 ## Token Decision
 
@@ -83,29 +83,103 @@ return { jobId: results?.[0]?.id ?? null };
 
 ## Integration Service Connectors
 
-Known sharp edge: no published SDK reaches Integration Service from inside a function. `@uipath/integrationservice-sdk` authenticates only from a `uip login` session (it cannot consume a ctx token) and `@uipath/uipath-typescript` has no Integration Service surface. The currently-working approach is the connector HTTP passthrough, called with a ctx token (same token decision as above; verified with the caller's delegated token):
+`@uipath/uipath-typescript/integration-service` calls Integration Service from inside a handler with the function's own token. It exports two functions, and both need a connector and a connection to exist first:
+
+| Function | Use when | Sends |
+|---|---|---|
+| `executeActivity(sdk, connection, objectName, method, options)` | the action exists as an activity of a catalog or custom connector | the activity's inputs; the connector builds the vendor request |
+| `executeHttp(sdk, connection, url, method, options)` | everything else, on a version 3 connector | one raw HTTP request; the connection adds the authentication |
+
+### Pick the route
+
+Run the Integration Service discovery workflow of the `uipath-platform` skill first (connector → connection → ping → describe), then pick by what the function needs:
+
+| The function needs | Route | Call |
+|---|---|---|
+| A straightforward API with no vendor auth flow | HTTP request, manual authentication, on the `uipath-uipath-http` connector | `executeHttp` |
+| A vendor action no catalog or custom connector covers | HTTP request, authentication from an `uipath-uipath-http` connection | `executeHttp` |
+| An action of a vendor a catalog or custom connector covers | that connector's activity; an HTTP request on its connection when the action has no activity | `executeActivity`, else `executeHttp` |
+| One or many actions of an uncovered vendor whose auth is complex | build a custom connector with `uip is connectors builder` (`uipath-connector-builder` skill), publish it, create a connection | `executeActivity` |
+
+### Set up the SDK
+
+Construct the SDK inside the handler, once per invocation, from `ctx`. On a deployed run it reads `ctx.platform` and `ctx.robot.accessToken`; on a local run, where both are null, it reads `UIPATH_BASE_URL`, `UIPATH_ORG_NAME`, `UIPATH_TENANT_NAME` and `UIPATH_ACCESS_TOKEN`.
 
 ```typescript
-const res = await fetch(`${baseUrl}/${orgId}/${tenantId}/elements_/v3/element/instances/<CONNECTION_ID>/http-request`, {
-  method: "POST",
-  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-  body: JSON.stringify({
-    authentication: "connector",
-    targetConnector: "<CONNECTOR_KEY>",   // e.g. "uipath-salesforce-slack"
-    method: "GET",
-    path: "/api/endpoint",
-    url: "/api/endpoint",
-    query: { param: "value" },
-  }),
-  signal: AbortSignal.timeout(8_000),
-});
-const envelope = await res.json();
-const downstream = Number(envelope.code ?? envelope.statusCode ?? res.status);
-if (downstream >= 400) throw new FunctionError(`Connector call failed (${downstream})`, downstream);
+import { defineFunction, defineSchema, FunctionError, type JobContext } from "@uipath/coded-functions-js-sdk";
+import { UiPath } from "@uipath/uipath-typescript/core";
+import { executeActivity, executeHttp } from "@uipath/uipath-typescript/integration-service";
+
+const sdk = new UiPath(ctx);
 ```
 
-1. **Never trust the 200 wrapper.** The passthrough can answer `200` while the downstream call failed — read the downstream status from the response envelope (`code`/`statusCode`) and surface 4xx/5xx as `FunctionError` carrying that status.
-2. `<CONNECTION_ID>` is the Integration Service connection instance id; `<CONNECTOR_KEY>` is the connector key. Both are deployment configuration — resolve them per environment, do not hardcode tenant-specific ids in shared code.
+Take the connection id as a function input (`connectionId: string`). It is deployment configuration: each environment has its own connection.
+
+### executeActivity
+
+`objectName` and `method` come from the activity's `describe` output (`operation.path` without the leading slash, `operation.method`). Query parameters go in `queryParams`, request fields in `body`.
+
+```typescript
+// Version 3 connector: the object name is the connector resource
+const spoken = await executeActivity(sdk, input.connectionId, "text_to_speech", "POST", {
+  queryParams: { voice_id: input.voiceId },
+  body: { text: input.text },
+  timeoutMs: 60_000,
+});
+```
+
+A connector activity of version `4.0.0` runs on the version 4 engine. Pass the connector's version and key; `objectName` is then the activity's `scriptRef`. A `resource.connection()` handle supplies the key, so pass `connectorKey` only with a plain connection id:
+
+```typescript
+// Version 4 connector: the object name is the activity's scriptRef
+const sent = await executeActivity(sdk, input.connectionId, "SendMessageToChannel", "POST", {
+  connectorVersion: "4.0.0",
+  connectorKey: "uipath-salesforce-slack",
+  queryParams: { send_as: "bot" },
+  body: { channel: input.channel, messageToSend: input.message },
+  timeoutMs: 15_000,
+});
+```
+
+Each engine takes its own options, and `executeActivity` throws a `ValidationError` for one passed to the other engine:
+
+| Engine | Options it takes |
+|---|---|
+| Version 3 (no `connectorVersion`, or below 4) | `files`, `bodyPartName`, `urlInputFields`, `fileResponse`, `maxRecords` |
+| Version 4 (`connectorVersion` 4 or later) | `scriptRef`, `headers` |
+
+### executeHttp
+
+`executeHttp` sends the request through the version 3 engine. `url` is a path relative to the connection's base URL, and an object `body` reaches the vendor as JSON.
+
+```typescript
+const channel = await executeHttp(sdk, input.connectionId, "/conversations.info", "GET", {
+  queryParams: { channel: input.channel },
+  timeoutMs: 8_000,
+});
+```
+
+### Read the result
+
+Both functions return `{ ok, status, statusText, headers, body }` and resolve on a non-2xx status. Check `ok` and throw a `FunctionError` that carries the vendor's answer:
+
+```typescript
+if (!sent.ok) {
+  throw new FunctionError(`Slack did not accept the message (status ${sent.status})`, {
+    errorCode: "SLACK_SEND_FAILED",
+    details: sent.body,
+  });
+}
+```
+
+1. `executeHttp` adds `isVendorError`: `true` when the vendor answered with an error status, `false` when Integration Service itself refused the call.
+2. Retrying is off unless `retry: { maxRetries }` is set, and a `POST` is retried only when listed in `retry.retryMethods`.
+3. `executeActivity` on a version 3 connector returns a file or binary response as a `Uint8Array` in `body`; `fileResponse: true` forces it.
+4. With `maxRecords`, `executeActivity` follows the connector's pages on a version 3 `GET`; without it the result carries `page` when more records exist.
+
+### Dependency
+
+`executeActivity`, `executeHttp` and the `/integration-service` import path are part of `@uipath/uipath-typescript`. Add it to the function project's `dependencies` beside `@uipath/coded-functions-js-sdk`, and add `"skipLibCheck": true` to the project's `tsconfig.json`.
 
 ## Timeout Budget
 
