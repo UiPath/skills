@@ -208,7 +208,7 @@ scope-recommendation-guide.md → Presenting the Recommendation:
 Recommended Scope + Project List + Queue Architecture>
 
 ### Interview
-<OFFER — interview-guide.md § The Offer, counted from the gap list, when the list holds an entry to ask; the message ends with it, and scope confirmation waits for its answer>
+<OFFER — interview-guide.md § The Offer, when the gap list holds an entry to ask: the count of P0 points and what they decide, what waits for the SDD, its two options; the message ends with it, and scope confirmation waits for its answer>
 
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY — left out when the interview is offered; a decline asks them then>

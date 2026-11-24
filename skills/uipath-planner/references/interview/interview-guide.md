@@ -123,7 +123,7 @@ The gap list is the document's open items: the SDD's Action Required, or, for a 
    > b. <option>
 
    Its options come from the item's `Options:`, a value item's `Default:` named. An item with one option is asked with "something else, in your words" beside it, never with an option the item lacks.
-5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then, in the same turn and with no request for it, apply them to the genome as [edit-guide.md § Applying the Answers](../edit/edit-guide.md) states, and run the strict check after the last edit; an SDD with no genome yet takes them as § Where Answers Go states. An SDD gains a new Document History row for the interview, `Interview: <n> points answered by <roles>; <n> left open`, below the rows it has.
+5. **Write, then apply.** Each answer goes after its item's `Answer` in the file that holds it — the option's letter, a value, or `default`, alone or for the rest of a group — and for a genome with neither an SDD nor a readiness file is held for the edit. Then, in the same turn and with no request for it, apply them to the genome as [edit-guide.md § Applying the Answers](../edit/edit-guide.md) states, and run the strict check after the last edit: the interview's result is the files edited, and a request not to build stops only the build; an SDD with no genome yet takes them as § Where Answers Go states. An SDD gains a new Document History row for the interview, `Interview: <n> points answered by <roles>; <n> left open`, below the rows it has.
 
 ## Where Answers Go
 
