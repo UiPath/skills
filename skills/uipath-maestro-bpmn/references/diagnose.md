@@ -1,66 +1,32 @@
 # Diagnose — why a BPMN run failed
 
-Triage in priority order. Each step is cheaper and more specific than the next,
-and starting at the wrong end is how a diagnosis turns into twenty tool calls —
-or into twenty guesses at a command shape. The commands below are the CLI's
-exact verbs; do not invent variants (`job get`, `incidents list`,
-`instance asset get --instance-id`, hyphenated forms) — every one of those is
-rejected, and the mocked harness answers them with an error too.
+Triage in order: context, incidents, runtime variables, deployed BPMN asset, element executions/cursors, generated package files, then traces. Use only the CLI verbs below; do not invent variants (`job get`, `incidents list`, `instance asset get --instance-id`, hyphenated forms).
 
-1. **Context** — the job, its instance, the folder.
-2. **Incidents** on the instance — the faulting element id and category.
-3. **Runtime variables** at the point of failure.
-4. **The deployed BPMN asset** — what actually ran, not what is on disk.
-5. **Element executions and cursors** — where the token went before it stopped.
-6. **Generated package files** — when the failure is a binding, entry point or package fault.
-7. **Traces**, last.
-
-> **Read-only boundary.** This guide diagnoses. Retry, cancel, pause, resume,
-> migrate and cursor movement are Operate actions ([operate.md](operate.md)) and
-> need the user's explicit decision after the root cause is known.
+> **Read-only boundary.** This guide diagnoses. Retry, cancel, pause, resume, migrate, and cursor movement are Operate actions ([operate.md](operate.md)) requiring the user's explicit decision after the root cause is known.
 >
-> **Folder context.** Every `uip maestro bpmn instance` subcommand,
-> and `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`. `processes incidents` takes
-> `--folder-key` only, with no `-f`. Without it the command is rejected before it reaches the API.
+> **Folder context.** Every `uip maestro bpmn instance` subcommand and `incident get` requires `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`. `processes incidents` accepts `--folder-key` only, not `-f`; without it the command is rejected before the API.
 >
-> **The CLI is the diagnostic interface.** Read with the `uip maestro bpmn` commands below, always with `--output json`.
-> In a test harness the `mocks/` and `fixtures/` directories are the CLI's backing
-> data: do not read them by any means — no `cat`, `head`, `grep`, `jq`, `sed`, and
-> no file-read tool. Capturing a CLI response to your own file and reading that
-> back is fine; it is the CLI's own output.
+> **CLI interface.** Run each `uip maestro bpmn` read with `--output json`. In a test harness the `mocks/` and `fixtures/` directories are the CLI's backing data: never read them by any means, including with `cat`, `head`, `grep`, `jq`, `sed`, or a file-read tool. You may capture CLI output to your own file and read it back.
 >
-> **One literal command per read, never a loop.** Write each read out in full,
-> for example `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`.
-> No loop, function, alias or shell variable stands in for the verb, the id or
-> the folder key: the command log is the record of what was read. To batch,
-> chain the literal reads in one Bash call, one per line.
+> **Literal reads.** Write every read as one full command; never use a loop, function, alias, or shell variable for its verb, id, or folder key. Batch only by chaining literal reads, one per line, in one Bash call.
 
 ## Step 1 — confirm context
 
-Collect the public-safe identifiers: process or package name, job key, instance
-id, folder key, approximate run time, and whether the run came from
-`uip maestro bpmn debug` or a deployed `process run`. Do not record secrets,
-tenant URLs, connection ids or payload data in notes.
+Collect only public-safe identifiers: process/package name, job key, instance id, folder key, approximate run time, and whether the run came from `uip maestro bpmn debug` or a deployed `process run`. Do not record secrets, tenant URLs, connection ids, or payload data.
 
-From a deployed job key, start here and parse the instance id, folder, process
-key and final status from the JSON:
+From a deployed job key, run and parse the instance id, folder, process key, and final status from JSON:
 
 ```bash
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 <!--skill-flavor:debug-handle:start-->
-For a **debug** run, the `instanceId` the debug command returned is the handle,
-and the `debug-instances` commands read it (see below;
-[`uip` version note](operate.md#debug--a-controlled-studio-web-run)). Keep
-deployed-instance reads and debug-session reads separate.
+For a **debug** run, use the `instanceId` returned by the debug command as the handle and read it with `debug-instances` (see [uip version note](operate.md#debug--a-controlled-studio-web-run)); keep deployed-instance and debug-session reads separate.
 <!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents
 
-The incident carries the category, the message and the **faulting BPMN element
-id**. With several incidents, start from the first root fault and ignore the
-downstream cancellation noise.
+Run:
 
 ```bash
 uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
@@ -69,79 +35,62 @@ uip maestro bpmn incident summary --output json                      # across in
 uip maestro bpmn processes incidents <PROCESS_DEFINITION_KEY> --folder-key <FOLDER_KEY> --output json  # one process, all runs
 ```
 
-`<PROCESS_DEFINITION_KEY>` is the bare process definition key, without the `:<processVersion>` suffix that `process run` takes.
+Use the incident category, message, and **faulting BPMN element id**. For several incidents, start with the first root fault and ignore downstream cancellation noise. `<PROCESS_DEFINITION_KEY>` is the bare process definition key, without the `:<processVersion>` suffix accepted by `process run`.
 
 ## Step 3 — inspect runtime variables
 
-Inspect the variables around the faulting element, redacting private payloads.
-Look for an expected output that is missing, malformed, or a literal string
-where an evaluated expression was meant. Inspect variables even on a
-`Completed` run when the user reports a wrong result: completion proves the
-control flow finished, not that the values are right.
+Run both as applicable and redact private payloads:
 
 ```bash
 uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
 
+Inspect values around the faulting element for missing/malformed output or a literal where an expression was intended. Inspect variables even for `Completed` runs with wrong results: completion proves control flow, not correctness.
+
 ## Step 4 — correlate the deployed BPMN
 
-Fetch the deployed asset **before writing the diagnosis, every time**, even when
-incidents and variables already explain the failure. It proves which definition
-ran, and it is where the faulting element id is looked up.
+**Fetch the deployed asset before writing the diagnosis, every time**, even when incidents and variables explain the failure:
 
 ```bash
 uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
-Find the incident's element id in the deployed asset first, then compare with
-the local `.bpmn.ts` and its compiled `.bpmn`: the element's mappings, its
-binding expressions (`=bindings.<id>`), the connector's context rows, the
-gateway's conditions and default. When they differ, diagnose what actually ran
-and treat the local edit as a future fix, not as the executed definition. A
-process edited but not re-uploaded is the most common explanation for "I fixed
-that already".
+Find the incident element id in the deployed asset and compare it with local `.bpmn.ts` and compiled `.bpmn`: mappings, `=bindings.<id>` expressions, connector context rows, gateway conditions, and default. Diagnose what ran; treat local differences as future fixes. An edited but not re-uploaded process commonly causes "I fixed that already".
 
 ## Step 5 — element executions and cursors
 
-Where the runtime moved before it faulted or stalled:
+Run:
 
 ```bash
 uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
-- **Activity fault** — its inputs, mappings, context rows and upstream variables.
-- **Gateway stall** — the outgoing conditions, the default flow, the variable values at the gateway.
-- **Event wait** — the message or timer configuration, the subscription, whether the external signal ever arrived.
-- **Sub-process or call fault** — the child dependency; do not invoke sibling skills on its behalf.
+Interpret the stopped path:
+
+- **Activity fault:** inputs, mappings, context rows, and upstream variables.
+- **Gateway stall:** outgoing conditions, default flow, and gateway-time variables.
+- **Event wait:** message/timer configuration, subscription, and whether the external signal arrived.
+- **Sub-process or call fault:** inspect the child dependency; do not invoke sibling skills on its behalf.
 
 ## Step 6 — generated package files
 
-For a binding, entry-point or package fault, correlate the four generated files
-with the deployed BPMN: `entry-points.json` names the BPMN file and the start
-event (`/content/<Name>.bpmn#<start-id>`), `bindings_v2.json` holds the
-resources the executable and connector elements need, `operate.json` names the
-main file and start event, and the `files` map in `package-descriptor.json`
-names each packaged file. These are derived: regenerate them with
-`uip maestro bpmn refresh <project-path> --output json` (`Data.WrittenFiles`
-names what was stale) rather than editing them, and fix the source when the
-source is wrong.
+For binding, entry-point, or package faults, correlate generated files with the deployed BPMN: `entry-points.json` names the BPMN file and start event (`/content/<Name>.bpmn#<start-id>`); `bindings_v2.json` holds executable and connector resources; `operate.json` names the main file and start event; and the `files` map in `package-descriptor.json` names each packaged file. Regenerate rather than edit them: run `uip maestro bpmn refresh <project-path> --output json`; `Data.WrittenFiles` identifies stale files. Fix the source when it is wrong.
 
 ## Step 7 — traces, last
+
+Run only when incidents, variables, the deployed asset, and package files do not explain the failure:
 
 ```bash
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
-Only when incidents, variables, the deployed asset and the package files do not
-explain the failure. Traces are the whole timeline and rarely say more.
+Traces contain the whole timeline and rarely add more.
 
 ## Debug runs
 
-A debug instance is ephemeral; read it in the same session, right after the run,
-with the commands below. The debug command's own output lists each
-element's status, never a variable's value.
+A debug instance is ephemeral. Read it immediately in the same session; the debug command's output lists element status, never variable values.
 
 <!--skill-flavor:debug-reads:start-->
 ```bash
@@ -153,102 +102,40 @@ uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 
 ## The diagnosis
 
-Report, concisely:
+Report concisely:
 
-- the faulting BPMN element id;
-- the user-visible symptom;
-- the likely root cause;
-- **who owns the fix**, using these labels even when a category is not implicated:
-  `BPMN source` (the `.bpmn.ts` — structure, variables, mappings, conditions),
-  `Generated package metadata` (the four files `refresh` writes),
-  `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas),
-  `Cloud configuration` (folder, process, release, connection state on the tenant);
-- the safe next action: the owner from the line above and its repair (a source
-  fix rebuilt through the validation loop, a package refresh, an operator hand-off), then the one
-  read-only command that shows the run's state before any Operate decision, for
-  example "`BPMN source` fixes `<ELEMENT_ID>`, then re-read
-  `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`"
-  (for a debug run, the `incidents` read under [Debug runs](#debug-runs)).
-  Name the read; do not run it now. When no repair is needed, the read alone is
-  the next action.
+- faulting BPMN element id;
+- user-visible symptom;
+- likely root cause;
+- **who owns the fix**, using these labels even when a category is not implicated: `BPMN source` (the `.bpmn.ts`: structure, variables, mappings, conditions), `Generated package metadata` (the four files `refresh` writes), `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas), `Cloud configuration` (folder, process, release, connection state on the tenant);
+- the safe next action: owner and repair (source fix rebuilt through the validation loop, package refresh, or operator hand-off), followed by the one read-only command that shows run state before any Operate decision, for example "`BPMN source` fixes `<ELEMENT_ID>`, then re-read `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`". Name that read; do not run it now. For debug, use the `incidents` read under [Debug runs](#debug-runs). If no repair is needed, the read alone is next.
 
-Retry, cancel, pause, resume, migrate, cursor movement, debug, process run,
-upload, publish and deploy are never the next action. When one fits later, name
-it on its own line, as an Operate decision outside the diagnosis. When the
-request says not to ask for approval, do not ask.
-
-Redact tenant, user, connection, folder, URL, payload and secret values.
+Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never the next action. If one may fit later, name it separately as an Operate decision outside the diagnosis. If the request says not to ask for approval, do not ask. Redact tenant, user, connection, folder, URL, payload, and secret values.
 
 ## Failure modes that reach the runtime
 
-The builder catches a class of BPMN defects before the process runs. `compile`
-refuses unparsable XML, an element with no id and a flow to nowhere. `check`
-reports a `vars.<id>` read of an undeclared variable (`EXPR_UNDECLARED_REF`, an
-error), a declared variable read without `vars.` (`EXPR_BARE_VAR_REF`, an error)
-and a gateway with every flow conditioned (`NO_DEFAULT_FLOW`, a warning); `compile`
-writes those as authored, so a process compiled without a clean `check` can carry
-them. A run that reads an undefined `vars.<id>` means: re-run `bpmn check --source`
-on the authored source and fix what it reports. (From the SDK release with
-UiPath/builder-sdk#1712; an older `compile` refuses the undeclared read itself.)
-These are the ones that survive both:
+The builder catches some defects before execution: `compile` refuses unparsable XML, an element with no id, and a flow to nowhere. `check` reports undeclared `vars.<id>` reads as `EXPR_UNDECLARED_REF` (error), declared-variable reads without `vars.` as `EXPR_BARE_VAR_REF` (error), and gateways whose every flow is conditioned as `NO_DEFAULT_FLOW` (warning). `compile` writes these as authored, so a process compiled without clean `check` can carry them. A run reading undefined `vars.<id>` requires re-running `bpmn check --source` on authored source and fixing its report. This behavior is from the SDK release with UiPath/builder-sdk#1712; an older `compile` refuses the undeclared read itself.
 
-- **Binding resolution** — a node reads `=bindings.<id>` and the resource the
-  binding names is not reachable from the folder the process ran in, or the
-  generated `bindings_v2.json` lacks the resource. Incident category
-  `BindingResolution`, element id = the node. Owner: `Cloud configuration` when
-  the resource exists in another folder or the connection is disabled;
-  `Generated package metadata` when `refresh` was skipped after the source
-  changed; `BPMN source` when the `.binding()` names the wrong resource.
-- **A folder binding keyed by the folder.** A `folderKey` binding whose
-  `resourceKey` is the folder's own key fails to resolve the connection
-  (`MISSING_BINDING` at validate; a `BindingResolution` incident at run time).
-  The compiler keys it by the companion connection; if the artifact was
-  hand-edited, fix the `.bpmn.ts` and rebuild it through the validation loop.
-- **Integration Service enrichment missing** — the connector node reached the
-  runtime with draft context, no connection binding, or a stale dynamic schema.
-  The incident points at the connector node; runtime variables show missing or
-  malformed output. Owner: `Integration Service enrichment`; the fix is the
-  CLI's enrichment path and `refresh`, never a hand-written connection id.
-- **Stale generated package files** — `entry-points.json` names an old start
-  event or file, `package-descriptor.json` omits the current BPMN,
-  `bindings_v2.json` does not match the binding references in the BPMN. Owner:
-  `Generated package metadata`; run `refresh`. The deprecated `update-metadata`
-  does not materialize `Intsvc.*` connection bindings — a package it wrote
-  validates and faults at run time.
-- **Gateway takes the wrong branch or stalls** — the conditions are fine
-  syntactically and wrong semantically, or the default flow points where the
-  author did not mean. Read the variables at the gateway and the element
-  executions before touching the conditions. Owner: `BPMN source`.
-- **Expression treated as literal** — a field authored as a plain string where
-  an `=` expression was meant, so the runtime saw the text. Owner: `BPMN source`.
-- **Script task faults or returns nothing** — `vars` undefined inside the
-  script, or a return the output row does not read: a v3 script returns a bare
-  value and the row reads `=result.response`; `return { response: … }`
-  double-wraps. Owner: `BPMN source`. A brownfield script task whose shape
-  differs from what `.scriptTask()` writes is not a fault by itself: propose a
-  rewrite only when run evidence names that task, and show the user that evidence
-  before any edit.
-- **Message or event wait that never ends** — the message id, the correlation
-  reference or the subscription does not match what the caller sends; cursors
-  show the token parked at the event. Owner: `BPMN source` for the reference,
-  `Cloud configuration` for the missing signal.
-- **Multi-instance loop faults on the first item** — the collection or item
-  variable is not declared where the loop reads it. Owner: `BPMN source`.
-- **Deployed asset differs from local** — a republish, a branch switch or a
-  local edit after deployment. Diagnose the deployed definition; the local
-  change is the future fix.
-- **Stuck with no incident** — a message or timer wait, a gateway whose
-  conditions never evaluate true, an external dependency. Cursors and element
-  executions show where; cursor movement is an Operate action.
+- **Binding resolution:** A node reads `=bindings.<id>` but its resource is unreachable from the run's folder or absent from `bindings_v2.json`. Incident category: `BindingResolution`; element id: the node. Owner is `Cloud configuration` when the resource is in another folder or the connection is disabled; `Generated package metadata` when `refresh` was skipped; `BPMN source` when `.binding()` names the wrong resource.
+- **A folder binding keyed by the folder:** A `folderKey` binding whose `resourceKey` is the folder's own key fails connection resolution (`MISSING_BINDING` at validate; `BindingResolution` at runtime). The compiler keys it by the companion connection. If hand-edited, fix `.bpmn.ts` and rebuild through the validation loop.
+- **Integration Service enrichment missing:** A connector reaches runtime with draft context, no connection binding, or stale dynamic schema. The incident points to the connector and variables show missing/malformed output. Owner: `Integration Service enrichment`; use the CLI enrichment path and `refresh`, never a hand-written connection id.
+- **Stale generated package files:** `entry-points.json` names an old start event/file, `package-descriptor.json` omits current BPMN, or `bindings_v2.json` disagrees with BPMN references. Owner: `Generated package metadata`; run `refresh`. Deprecated `update-metadata` does not materialize `Intsvc.*` connection bindings; its package validates and faults at runtime.
+- **Gateway takes the wrong branch or stalls:** Conditions are syntactically valid but semantically wrong, or the default points incorrectly. Read gateway variables and element executions before changing conditions. Owner: `BPMN source`.
+- **Expression treated as literal:** A plain string was authored where an `=` expression was intended. Owner: `BPMN source`.
+- **Script task faults or returns nothing:** `vars` is undefined in the script, or the output row reads the wrong return shape: a v3 script returns a bare value while the row reads `=result.response`; `return { response: … }` double-wraps. Owner: `BPMN source`. A brownfield script shape differing from `.scriptTask()` output is not itself a fault; propose a rewrite only when run evidence names that task, and show that evidence before editing.
+- **Message or event wait never ends:** Message id, correlation reference, or subscription mismatches the caller; cursors show the token parked at the event. Owner: `BPMN source` for the reference, `Cloud configuration` for the missing signal.
+- **Multi-instance loop faults on the first item:** Collection or item variable is undeclared where read. Owner: `BPMN source`.
+- **Deployed asset differs from local:** Republish, branch switch, or local edit after deployment. Diagnose the deployed definition; local change is the future fix.
+- **Stuck with no incident:** Message/timer wait, gateway conditions never true, or external dependency. Cursors and element executions locate it; cursor movement is an Operate action.
 
 ## Anti-patterns
 
 - **Never start with traces** when incidents are available.
-- **Never run a lifecycle command while diagnosing** — retry, cancel, migrate and cursor movement mutate.
+- **Never run a lifecycle command while diagnosing** — retry, cancel, migrate, and cursor movement mutate.
 - **Never assume the local BPMN is the deployed asset.**
 - **Never retry before the root cause is known.**
-- **Never paste private incident payloads or connection details** into notes, commits or issues.
-- **Never patch the generated package files as the only fix for a source defect** — fix the `.bpmn.ts`, rebuild it through the validation loop, `refresh`.
+- **Never paste private incident payloads or connection details** into notes, commits, or issues.
+- **Never patch generated package files as the only fix for a source defect** — fix `.bpmn.ts`, rebuild through the validation loop, and `refresh`.
 
 ## Command reference
 
@@ -275,5 +162,4 @@ uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 <!--skill-flavor:debug-reference:end-->
 
-Lifecycle commands are deliberately absent from this list; they are in
-[operate.md](operate.md), for after the diagnosis and the user's decision.
+Lifecycle commands are deliberately absent; they are in [operate.md](operate.md), for after diagnosis and the user's decision.
