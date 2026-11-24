@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-21T04:37:00Z",
-  "cli_commit": "16470f74cbfdfb750fc565fdb8fbba11d6a6ee2b",
+  "generated_at": "2026-11-24T04:37:33Z",
+  "cli_commit": "d64e3aa6ec3e09ea74e12586cd52bd231e7fa907",
   "verbs": [
     "admin audit org events",
     "admin audit org exclusions create",
@@ -1199,6 +1199,8 @@
     "pm transformations run",
     "pm transformations status",
     "pm transformations update",
+    "rules debug",
+    "rules describe",
     "rules format",
     "rules get",
     "rules init",
@@ -1454,6 +1456,7 @@
     "maestro bpmn pack": "pack builds the project's .nupkg with the Node-only packager",
     "maestro case debug": "debug runs the case against a live Orchestrator runtime through the Node-only debug service",
     "maestro case pack": "pack builds the project's .nupkg with the Node-only packager",
-    "maestro flow debug": "debug runs the flow against a live Orchestrator runtime through the Node-only debug service"
+    "maestro flow debug": "debug runs the flow against a live Orchestrator runtime through the Node-only debug service",
+    "rules debug": "debug packs and uploads the local project to Studio Web through the Node-only debug service"
   }
 }
