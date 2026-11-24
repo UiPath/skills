@@ -1,7 +1,7 @@
 <!--skill-flavor:host-base-files:start-->
 ## Studio Web base files
 
-Studio Web cannot run `create-vite`, so write these files yourself: they are what `create-vite --template react-ts` generates, without its demo assets and linter. Paths are relative to the app's `source/` folder. The version ranges are the ones `create-vite` and the CLI install steps write — keep them, and do not add a `package-lock.json`. Replace `{{APP_NAME}}` with the app name.
+Studio Web cannot run `create-vite`, so write these files yourself: they are what `create-vite --template react-ts` generates, without its demo assets and linter. Both app types share the `tsconfig` files and `index.html`; the Coded Action App's `package.json` is in [action-app-template.md](action-app-template.md) § Studio Web base files. Paths are relative to the app's `source/` folder. The version ranges are the ones `create-vite` and the CLI install steps write — keep them, and do not add a `package-lock.json`. Replace `{{APP_NAME}}` with the app name.
 
 ### `package.json` — Coded Web App
 
@@ -38,37 +38,6 @@ Studio Web cannot run `create-vite`, so write these files yourself: they are wha
 ```
 
 On `default styling = yes`, add to `dependencies`: `"@uipath/apollo-core": "^5.15.1"`, `"@uipath/apollo-wind": "^2.68.0"`, `"lucide-react": "^1.56.0"`, `"next-themes": "^0.4.6"`.
-
-### `package.json` — Coded Action App
-
-```json
-{
-  "name": "{{APP_NAME}}",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@uipath/coded-action-app": "^1.0.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
-  }
-}
-```
-
-Add `"@uipath/uipath-typescript": "^1.8.1"` to `dependencies` only when the app calls SDK services, and `"react-pdf": "^11.0.0"` only when it shows a PDF.
 
 ### `tsconfig.json`
 
@@ -184,7 +153,7 @@ No `.gitignore` is needed: Studio Web has no git working tree and no `.uipath/` 
 Nothing builds the app in Studio Web, and its first `tsc -b` enforces the `tsconfig.app.json` above. Before handing the app over, check every file under `source/`:
 
 1. `tsconfig.app.json` keeps `"types": ["vite/client"]`.
-2. Each relative import resolves to a file you wrote, and each package import is listed in `package.json`.
+2. Each relative import resolves to a file you wrote, and each package import is listed in `package.json` or installed by a listed dependency (`pdfjs-dist` comes with `react-pdf`).
 3. Type-only imports use `import type` (`verbatimModuleSyntax`).
 4. No local, parameter or import goes unused (`noUnusedLocals`, `noUnusedParameters`).
 5. No `enum`, `namespace` or constructor parameter property (`erasableSyntaxOnly`).

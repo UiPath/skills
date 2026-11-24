@@ -276,6 +276,11 @@ test("the built studioweb flavor creates coded apps with CreateProjects and writ
 
   const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
   assert.ok(template.includes('"types": ["vite/client"]'), "the base files must declare the Vite client types");
+  const actionTemplate = readFileSync(join(codedApps, "assets", "templates", "action-app-template.md"), "utf8");
+  assert.ok(
+    actionTemplate.includes('"@uipath/coded-action-app"') && !template.includes('"@uipath/coded-action-app"'),
+    "the Coded Action App package.json must live in the action-app template",
+  );
 
   for (const reference of SCAFFOLD_REFERENCES) {
     const text = readFileSync(join(codedApps, "references", reference), "utf8");
@@ -304,6 +309,8 @@ test("the default uipath-coded-apps skill keeps create-vite scaffolding (the gua
   }
   const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
   assert.ok(!template.includes("## Studio Web base files"));
+  const actionTemplate = readFileSync(join(codedApps, "assets", "templates", "action-app-template.md"), "utf8");
+  assert.ok(!actionTemplate.includes("## Studio Web base files"));
   const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
   assert.ok(solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "the default uipath-solution must keep its `uip codedapp init` rule");
   for (const reference of SCAFFOLD_REFERENCES) {

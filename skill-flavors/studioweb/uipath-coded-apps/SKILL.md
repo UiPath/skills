@@ -7,7 +7,7 @@ A coded app here is always an in-solution AppV2 project. If the open solution ha
 
 Everything else in this skill applies. Read and edit the app's files directly — React/TypeScript source, `package.json`, `uipath.json`, `webAppManifest.json`, OAuth scopes and SDK usage — following the authoring rules below. Nothing compiles the app in Studio Web: its first build runs later from `source/` with no lock file (`npm install`, then `npm run build`, which is `tsc -b && vite build`), so write every config file that build needs and keep every import type-correct. Do not run install, build, run, pack, publish or deploy commands, and do not report the app as built, run or deployed. Diagnosing a deployed failure works from the project files plus the families that *are* bundled (`uip or`, `uip traces`).
 
-**`npm install <package>` in any step:** add the package to `package.json` instead. Keep the version the step pins (`<package>@x.y.z` or `--save-exact`); otherwise use `"latest"`.
+**`npm install <package>` in any step:** add the package to `package.json` instead. A package the Studio Web base files list takes their range. Any other package takes the version the step pins (`<package>@x.y.z` or `--save-exact`), else `"latest"`.
 
 <!--skill-flavor:host-scope:end-->
 
