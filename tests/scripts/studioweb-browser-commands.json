@@ -208,13 +208,7 @@
     }
   },
   "uipath-coded-apps": {
-    "allow": [
-      {
-        "file": "references/widgets/decisions-and-reasons.md",
-        "command": "codedapp pack",
-        "reason": "Prose: names the lifecycle commands and points to pack-publish-deploy.md for them, not an instruction to run pack."
-      }
-    ],
+    "allow": [],
     "ceiling": {
       "codedapp": 13,
       "codedapp deploy": 36,
