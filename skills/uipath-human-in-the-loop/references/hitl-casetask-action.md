@@ -6,7 +6,7 @@
 <!--skill-flavor:case-json-reading-note:end-->
 The agent writes an `action` task into a stage of `caseplan.case`. In a project whose plan is `caseplan.json` (an older CLI scaffolded it), every `caseplan.case` below means that file. **Direct JSON write is the primary method on the Case surface.** There is no CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.case` directly per the path-specific JSON shapes below.
 
-> If the stage or case predates required entry/exit/completion rules (see the checklist below), write the correct rule shapes directly per the examples below. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
+> If the stage or case predates required entry/exit/completion rules (see the checklist below), add them in the Case source, never in the plan: the next compile rewrites `caseplan.case` and drops a hand-written rule. Use the `uipath-maestro-case` skill's brownfield loop: `uip maestro case decompile <project>/<plan> -o <Name>.case.ts --no-pipeline`, add the rules in `<Name>.case.ts`, `uip maestro case check <Name>.case.ts --source` (with the `--baseline` copy that skill describes), then `uip maestro case compile <Name>.case.ts -o <project>/<plan>`. The rule shapes below show what a compiled plan holds; read them, do not write them. The `uip maestro case` `*-conditions add` commands are retired: they no longer edit the plan and only print an error.
 
 Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
 
