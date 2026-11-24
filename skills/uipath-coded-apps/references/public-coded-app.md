@@ -5,7 +5,7 @@ A public coded app is a Coded Web App that **anyone with the link can use withou
 > **Preview.** Public coded apps need:
 > - SDK: `@uipath/uipath-typescript` `1.8.5` or later
 > - CLI: `npm install -g @uipath/cli` (`1.206.0` or later)
-> - Local runs: `@uipath/coded-apps-dev` `1.0.0-beta.2` or later
+> - Local runs: `@uipath/coded-apps-dev` `1.0.0` or later
 >
 > Today you write `bindings_v2.json` by hand. Generating it from the app code is coming soon.
 
