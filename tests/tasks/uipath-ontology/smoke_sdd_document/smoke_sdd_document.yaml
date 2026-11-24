@@ -6,16 +6,19 @@ description: >
   entities locally in a new solution. The user stops the run at the artifact
   batch confirmation. The SDD names an entity `Group`, which the CLI refuses,
   and a file field. Grades that the SDD's names, references and choice set
-  reach the entity definitions and the local resources, that `Group` is
-  renamed before any create, that the file field stays FILE, that the saved
-  model holds the confirmed tables, and that no Data Fabric write ran without
-  --local. No login needed beyond `uip login status`.
+  reach the built local entities, that `Group` is renamed before any create,
+  that the file field stays a file field, that the saved model holds the
+  confirmed tables, that no artifact file was written, and that no Data Fabric
+  write ran without --local. No login needed beyond `uip login status`.
 tags: [uipath-ontology, smoke, mode:build, lifecycle:generate, feature:entities, feature:conversational]
 
 sandbox:
   template_sources:
     - type: template_dir
       path: ../_sdd_crews
+
+reference:
+  directory: ..
 
 run_limits:
   task_timeout: 1500
@@ -72,29 +75,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Asset keeps the SDD's file field as FILE"
-    path: "maintenance/input/entities/Asset.json"
-    assertions:
-      - expression: "fields[?name=='manual'] | [0].type"
-        operator: equals
-        expected: "FILE"
+  - type: run_command
+    description: "The built Asset entity keeps the SDD's file field as a file field"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py fieldtype MaintenanceModel Asset manual:File"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "WorkOrder definition keeps the SDD's references and choice set, by name"
-    path: "maintenance/input/entities/WorkOrder.json"
-    assertions:
-      - expression: "fields[?name=='priority'] | [0].choiceSetName"
-        operator: equals
-        expected: "WorkOrderPriority"
-      - expression: "fields[?name=='asset'] | [0].referenceEntityName"
-        operator: equals
-        expected: "Asset"
-      - expression: "fields[?name=='assignedTo'] | [0].referenceEntityName"
-        operator: equals
-        expected: "Technician"
+  - type: run_command
+    description: "The built WorkOrder entity keeps the SDD's references and choice set, by name"
+    command: "python3 $REFERENCE_DIR/_shared/check_ontology.py depends MaintenanceModel WorkOrder ChoiceSet:WorkOrderPriority Entity:Asset Entity:Technician && python3 $REFERENCE_DIR/_shared/check_ontology.py fieldtype MaintenanceModel WorkOrder priority:ChoiceSetSingle asset:Relationship assignedTo:Relationship"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

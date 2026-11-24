@@ -175,7 +175,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
    uip df choice-sets create <C> --local --display-name "<DISPLAY_NAME>" --output json
    uip df choice-set-values create <C> <VALUE> --local --output json
    ```
-3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Document mode the confirmed tables are the preview: create without one. When a create changes a confirmed name or type (`NAME_RESERVED`, a refused type), ask, then save the change to `model.md`:
+3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Document mode the confirmed tables are the preview: create without one. Each body is read from its Stage 2 file: when `<WORKDIR>/input/entities/<E>.json` is missing, write it first, and never pass a native entity's body inline. When a create changes a confirmed name or type (`NAME_RESERVED`, a refused type), ask, then save the change to `model.md` and to that file:
    ```bash
    cd "<SOLUTION_DIR>" && uip df entities create <E> --local --body "$(cat "<WORKDIR>/input/entities/<E>.json")" --output json
    ```
