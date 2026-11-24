@@ -257,7 +257,7 @@ test("the built studioweb flavor creates coded apps with CreateProjects and writ
 
   const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
   assert.ok(skill.includes("`CreateProjects` host tool"), "uipath-coded-apps must create coded apps with CreateProjects");
-  assert.ok(skill.includes("`projectSubType`"), "uipath-coded-apps must name the projectSubType field");
+  assert.ok(skill.includes("Read its live schema first"), "uipath-coded-apps must take the CreateProjects fields from its live schema");
   assert.ok(
     skill.includes("Critical Rules 3 and 20") && skill.includes("Critical Rule 19:"),
     "uipath-coded-apps must replace the CLI-host build, scaffold and installed-types rules",
@@ -278,6 +278,12 @@ test("the built studioweb flavor creates coded apps with CreateProjects and writ
     .filter((file) => CODED_APP_CREATION_DENIAL.test(readFileSync(file, "utf8")))
     .map((file) => relative(output, file));
   assert.deepEqual(denials, [], "no studioweb skill may say coded apps cannot be created in Studio Web");
+
+  // Field names belong to the live CreateProjects schema; a copy in skill text goes stale on a rename.
+  const hardcodedFields = markdownFiles(output)
+    .filter((file) => readFileSync(file, "utf8").includes("projectSubType"))
+    .map((file) => relative(output, file));
+  assert.deepEqual(hardcodedFields, [], "studioweb skills must not hardcode CreateProjects field names");
 });
 
 test("the default uipath-coded-apps skill keeps create-vite scaffolding (the guard is not vacuous)", (t) => {
