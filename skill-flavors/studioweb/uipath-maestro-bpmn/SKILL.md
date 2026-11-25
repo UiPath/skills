@@ -31,7 +31,9 @@ The target is the `.bpmn` the user names, else the `.bpmn` at `CurrentFile.Absol
 
 1. Run `cd /tmp && mkdir -p /tmp/bpmn-work/<Name>`, then copy the target there as `<Name>.bpmn`. That folder stands in for `/solution/<Project>` in the [Workflow](#workflow) and the [Validation loop](#validation-loop), and `<Draft>` is `/tmp/bpmn-draft/<Name>`.
 2. Run the loop there without `refresh`, even where the Critical Rules, the Workflow or the loop say to run it every time: with no `project.uiproj`, `refresh` fails. Keep a seeded `.metadata({ entryPointId: false })`; only `refresh` needs the id, and deleting it stamps a new one on the start event. Skip the loop's **A process with connectors** bullet too: it reads `bindings_v2.json`, which only `refresh` writes.
-3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target. To undo, `cp .flow-sdk/original/<Name>.bpmn` from the work folder back over the target the same way.
+3. `cp` the result back over the target (`node` cannot reach it), then `validate` the target and `grep` it for what the edit added (for example `bpmn:subProcess`): `validate` also passes on the file you never changed. To undo, `cp .flow-sdk/original/<Name>.bpmn` from the work folder back over the target the same way.
+
+Never hand-edit the target's XML with `node`, `sed` or a regex instead: a command that answers an error did not run, so the edit is missing and the report must not claim it.
 
 Never run `init` to give an existing file outside `/solution` a project. The user did not ask for one, and its template is a second process that fails `validate`.
 

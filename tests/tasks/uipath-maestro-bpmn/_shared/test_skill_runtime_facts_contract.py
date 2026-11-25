@@ -154,6 +154,7 @@ REQUIRED = [
     ("references/connectors.md", "A connection is a sender's identity"),
     ("references/connectors.md", "belongs to the team whoever its `Owner` is, even when its Name is an email"),
     ("references/bpmn-runtime.md", "RULE:bpmn.script.ts-string-escapes"),
+    ("references/bpmn-runtime.md", "RULE:bpmn.script.compute-step"),
     ("references/bpmn-runtime.md", "Double every backslash the script needs"),
 ]
 
