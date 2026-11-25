@@ -39,7 +39,7 @@ In Files mode, copy only artifact files (`.ofn`, `.ttl`, `.yarrrml.yml`, `.json`
 5. **The only remote import is a federated entity's connection:** `uip solution resources add --source remote --kind Connection --name <CONNECTION> --folder-path "<CONNECTION_FOLDER>"`. No entity or choice-set import, re-import or refresh.
 6. **`uip ont --help` runs first in every mode. `uip login status` runs next, except in Artifacts-only mode** (offline; see Stage 1). Being logged out never blocks Stage 2: the model is confirmed and saved without a tenant, and login is asked for before Stage 3. The connection import, a federated entity's create over a connector source and service validation need login; native entities, choice sets and a federated entity over local native sources only do not.
 7. **A relationship is one `RELATIONSHIP` field on the referencing entity**; its inverse lives only in the schema (`InverseObjectProperties`). A federated target means a plain-column join. See [relationships-guide.md](references/relationships-guide.md).
-8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
+8. **Choice sets are mapped by value name** (`xsd:string`; the schema comment lists the values, each in single quotes: `Values of choice set <C>: 'A' | 'B' | 'C'`); `CHOICE_SET_MULTIPLE` gives one triple per value. See [mapping-yarrrml-guide.md](references/mapping-yarrrml-guide.md#choice-set-columns).
 9. **No Data Fabric id or GUID** (entity, field, choice-set, value, connection or folder) in an artifact, the saved model, `WORKDIR` or a `--body`. Bodies reference entities and choice sets by name.
 10. **An entity change is a local edit** (`uip df entities update <E> --local`), followed by validate.
 11. **Validation needs `uip login`.** `uip ont validate --local` always calls the ontology service; stop if it can't be reached. `uip ont artifacts check` is the offline per-file check.
@@ -175,7 +175,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
    uip df choice-sets create <C> --local --display-name "<DISPLAY_NAME>" --output json
    uip df choice-set-values create <C> <VALUE> --local --output json
    ```
-3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Document mode the confirmed tables are the preview: create without one. When a create changes a confirmed name or type (`NAME_RESERVED`, a refused type), ask, then save the change to `model.md`:
+3. Native entities in dependency order (a referenced entity first), previewing each schema before the create. In Document mode the confirmed tables are the preview: create without one. Each body is read from its Stage 2 file: when `<WORKDIR>/input/entities/<E>.json` is missing, write it first, and never pass a native entity's body inline. When a create changes a confirmed name or type (`NAME_RESERVED`, a refused type), ask, then save the change to `model.md` and to that file:
    ```bash
    cd "<SOLUTION_DIR>" && uip df entities create <E> --local --body "$(cat "<WORKDIR>/input/entities/<E>.json")" --output json
    ```
@@ -187,7 +187,7 @@ The `uip df` commands take no `--solution-folder`: prefix each with `cd "<SOLUTI
 
 ### Stage 5 — Write the artifacts against the created entities
 
-Before writing anything, list the artifact files (name and type, one line each) and ask the user to confirm them as one batch; wait for the reply. Confirming the model in Stage 2 does not count; skip the ask only when the user already said to go ahead without further confirmation. When the user says stop, stop: `model.md` stays at `model`. Then write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
+Before writing anything, list the artifact files (name and type, one line each) and ask the user to confirm them as one batch; wait for the reply. Confirming the model in Stage 2 does not count, and neither does a "go ahead and build" given in reply to a Stage 2 table: that approves the table. Never fold this ask into a Stage 2 question ("confirm these and I'll build"). Skip the ask only when the user already said to go ahead without further confirmation. When the user says stop, stop: `model.md` stays at `model`. Then write the schema, mapping and optional summary and context (constraints only per Critical Rule 16) into `WORKDIR` per [artifacts-guide.md](references/artifacts-guide.md). The mapping uses the created entity and field names exactly (artifacts-only mode: the confirmed definitions from Stage 2); a federated entity's external fields are the ones `create --local` read from the connector.
 
 Two annotations the ontology viewer reads, written in every ontology:
 

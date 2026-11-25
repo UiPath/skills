@@ -30,7 +30,7 @@
             <uipath:input name="releaseKey" type="string" value="=bindings.Binding_GreetingApiRelease" />
           </uipath:context>
           <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"name": "=vars.Var_Name"}]]></uipath:input>
-          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiResponse" />
+          <uipath:output name="Process response" type="Orchestrator.RunJob" source="=result" var="Var_ApiResponse" />
           <uipath:output name="message" type="string" source="=result.message" var="Var_Message" />
         </uipath:activity>
       </bpmn:extensionElements>

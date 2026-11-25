@@ -65,8 +65,9 @@ PINNED = {
         "ask once before the first run, even when the request is for a flow that works; "
         "that yes covers the fix-and-re-run loop on the flow the user asked to get working this turn.",
         "run it when the request is for a flow that works, unless a connection was guessed",
-        "for a solution not scaffolded this turn, debug only on a yes to a question that names that "
-        "overwrite, and headless, never debug it.",
+        "A request to run or debug the flow covers that overwrite; when you ask before the first run "
+        "on a solution not scaffolded this turn, the question names it.",
+        "Headless, never debug a solution not scaffolded this turn.",
     ],
     ("studioweb", "references/operate.md"): [
         "ask before each run, even when the request is for a flow that works.",
