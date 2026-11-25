@@ -11,6 +11,8 @@ Checks performed:
   3. Flow references the ``uipath-salesforce-slack`` connector.
   4. Flow references the Slack "Send File to channel" operation.
   5. Slack node references a Google Drive node id (data binding wired).
+  6. The Drive download node is compiled as a file response:
+     ``responseAsFile: true`` and a ``file`` definition output type.
 """
 
 from __future__ import annotations
@@ -34,6 +36,25 @@ def _fail(msg: str) -> None:
 
 def _flow_path() -> str:
     return find_flow_file(flow_glob=os.path.basename(FLOW_GLOB))
+
+
+def _essential_configuration(node: dict) -> dict:
+    raw = ((node.get("inputs") or {}).get("detail") or {}).get("configuration")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw.split("=jsonString:", 1)[-1])
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(raw, dict):
+        return {}
+    return raw.get("essentialConfiguration") if isinstance(raw.get("essentialConfiguration"), dict) else raw
+
+
+def _definition_output_type(flow: dict, node: dict) -> str | None:
+    for definition in flow.get("definitions") or []:
+        if definition.get("nodeType") == node.get("type"):
+            return ((definition.get("outputDefinition") or {}).get("output") or {}).get("type")
+    return None
 
 
 def main() -> None:
@@ -69,6 +90,19 @@ def main() -> None:
     if not any(did in slack_blob for did in drive_ids):
         _fail("Slack node does not reference Google Drive node id (no data binding)")
     print("OK: Slack node references Google Drive node output")
+
+    # Without these Studio Web compiles the download as JSON and the run fails with
+    # "File reference required to host a file in Data Fabric".
+    downloads = [n for n in drive_nodes if "download" in str(n.get("type", "")).lower()]
+    if not downloads:
+        _fail("No Google Drive download node found")
+    for node in downloads:
+        if _essential_configuration(node).get("responseAsFile") is not True:
+            _fail(f"Drive download node {node.get('id')!r}: essentialConfiguration.responseAsFile is not true")
+        out_type = _definition_output_type(flow, node)
+        if out_type != "file":
+            _fail(f"Drive download node {node.get('id')!r}: definition output type is {out_type!r}, expected 'file'")
+    print("OK: Drive download node is compiled as a file response")
 
     print("OK: all DriveToSlack checks passed")
 
