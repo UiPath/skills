@@ -361,13 +361,29 @@ still holds the previous graph, without the rest of your source edits:
    `.step('listMembers', inlineActivity(...))` call, the `inlineActivity`
    import, and the metadata and scripts that only it used (imports or
    literals). Keep every other edit, including the steps before and after the
-   activity. For example,
-   if the source adds a `getGroup` step and then `listMembers` after it, keep
-   `getGroup`: the chain now runs from `getGroup` straight to the step after
-   `listMembers`, or ends at `getGroup`.
+   activity. For example, if the source adds a `getGroup` step and then
+   `listMembers` after it, keep `getGroup`: the chain now runs from `getGroup`
+   straight to the step after `listMembers`, or ends at `getGroup`.
 2. Check and compile that source (an edit merges, as for any step), and
    confirm it succeeds. The `.flow` now holds every other edit, and the
    activity's predecessor is a node in it.
+
+   A kept step or `.return` that reads the activity, such as
+   `out('listMembers')`, still names the removed step. Leave the read as
+   written; step 3 gives the node the same id:
+   - **A new flow compiles.** `check` reports the read as an undeclared
+     reference (`UNKNOWN_REF` or `EXPR_UNDECLARED_REF`, naming
+     `listMembers`). Expect that finding and only that one; fix any other.
+     Then run `compile`, not `build`: compile does not run `check`, so it
+     writes the read as authored. Once step 3 creates the node with
+     `--id listMembers`, the read resolves, and `validate` confirms it.
+   - **An edit merges, and merge runs `check`:** it refuses that same finding
+     on a step the edit added or changed. A later merge cannot add the step
+     either, because the node the CLI places is not in the source. So when an
+     edit has a step that reads the activity, this fallback cannot carry it.
+     Use managed HTTP in connector mode for the activity instead (the
+     `uipath-maestro-flow` skill covers it), or tell the user that the edit
+     needs SDK 6.126.0 or later.
 3. Place the activity on that `.flow` with the commands below, after the last
    compile: a later compile rewrites the `.flow` and drops the node. Create the
    node with its id, bind the connection and pass every required input in its
