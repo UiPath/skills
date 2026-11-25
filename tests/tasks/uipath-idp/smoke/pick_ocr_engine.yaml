@@ -2,7 +2,7 @@ task_id: skill-idp-pick-ocr-engine-smoke
 description: >
   Smoke: the default OCR misread a Japanese document and the user wants the
   engine meant for that script. The skill names no engine, so the agent must
-  read the catalog with `discovery digitization-engines list` and pass the
+  read the catalog with `discovery digitization-engines get` and pass the
   engine it lists for Japanese. Offline: `uip` is a record_cli mock; only a
   digitization with that engine returns the readable markdown.
 tags: [uipath-idp, smoke, mode:operate, lifecycle:setup]
@@ -23,13 +23,23 @@ sandbox:
             "Organization":"example-org","Tenant":"DefaultTenant"}}
 
         - when:
-            verb: "documents discovery digitization-engines list"
+            verb: "documents discovery digitization-engines get"
+            flags:
+              kind: "ocr"
           stdout: >-
-            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesList","Data":[
-            {"kind":"ocr","engine":"uipath","model":"du-ocr","description":"Latin, Cyrillic and Greek scripts"},
-            {"kind":"ocr","engine":"uipath_extended","model":"du-extended-ocr","description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
-            {"kind":"ocr","engine":"auto","description":"Picks an engine for each page by the page's alphabet"}],
-            "Pagination":{"Returned":3,"Limit":50,"Offset":0,"Total":3,"HasMore":false}}
+            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":[
+            {"engine":"uipath","description":"Latin, Cyrillic and Greek scripts"},
+            {"engine":"uipath_extended","description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"engine":"auto","description":"Picks an engine for each page by the page's alphabet"}]}
+
+        - when:
+            verb: "documents discovery digitization-engines get"
+          stdout: >-
+            {"Result":"Success","Code":"DocumentsDiscoveryDigitizationEnginesGet","Data":{"ocr":[
+            {"engine":"uipath","description":"Latin, Cyrillic and Greek scripts"},
+            {"engine":"uipath_extended","description":"Adds Chinese, Japanese, Korean and Arabic scripts"},
+            {"engine":"auto","description":"Picks an engine for each page by the page's alphabet"}],
+            "layout":[{"engine":"uipath","description":"UiPath layout model: tables, forms, figures and reading order"}]}}
 
         - when:
             verb: "documents digitize"
@@ -83,7 +93,7 @@ success_criteria:
   - type: cli_called
     description: "Read the engine catalog instead of guessing an engine name (Critical Rule 7)"
     tool: uip
-    verb: "documents discovery digitization-engines list"
+    verb: "documents discovery digitization-engines get"
     weight: 2.0
     pass_threshold: 1.0
 

@@ -92,7 +92,7 @@ Common codes (an open set: expect others):
 
 | Code | Cause | Fix |
 |---|---|---|
-| `settings-invalid` | An unknown OCR or layout engine, or a layout engine with `--apply-on-pdf never` | Use `allowed` and `pointer`; re-read `discovery digitization-engines list` |
+| `settings-invalid` | An unknown OCR or layout engine, or a layout engine with `--apply-on-pdf never` | Use `allowed` and `pointer`; re-read `discovery digitization-engines get` |
 | `page-range-invalid` | A range outside the document, or a page outside the digitization on `pages get` | `detail` states the page count; fix `--page-range` or the page number |
 | `document-not-found` | The upload expired, or it was uploaded to another folder | Use its folder; upload again only when it expired |
 | `run-not-found` | A wrong id, another folder, or a run whose output has expired | Pass the folder the run was started in |

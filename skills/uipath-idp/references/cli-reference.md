@@ -12,14 +12,14 @@ Every command takes `--output json`. Preview builds of `uip` only (SKILL.md Crit
 | `--folder-key <key>` | same | Folder key (GUID), instead of `--folder-path`. Passing both is rejected. |
 | `-l, --limit <number>` / `--offset <number>` | `* list` | Row window (default 50 / 0). `Pagination` in the envelope carries `Returned`, `Limit`, `Offset`, `Total`, `HasMore`. |
 
-A required folder that is missing fails locally: `Result: ValidationError`, `Message: No folder given.`, nothing sent. `discovery digitization-engines list` takes no folder.
+A required folder that is missing fails locally: `Result: ValidationError`, `Message: No folder given.`, nothing sent. `discovery digitization-engines get` takes no folder.
 
 ## Discovery
 
 | Command | Output (`Data`) |
 |---|---|
 | `uip documents discovery capabilities list --output json` | `[{ name, route, status, description?, catalog?, inputs?, sunset?, reason? }]`. `status`: `available`, `preview`, `deprecated` (with `sunset`), `not-available` (with `reason`), `planned`. Tolerate other values. |
-| `uip documents discovery digitization-engines list [--kind <ocr\|layout>] --output json` | One row per engine: `{ kind, engine, model?, description? }`. OCR engines include `auto`, which picks an engine per page by the page's alphabet. The only layout engine is `uipath`; the layout rows are absent when layout parsing is off for the tenant. |
+| `uip documents discovery digitization-engines get [--kind <ocr\|layout>] --output json` | The API's catalog, `{ ocr: [...], layout: [...] }`, each entry `{ engine, description? }`; `--kind` returns only that array. OCR engines include `auto`, which picks an engine per page by the page's alphabet. The only layout engine is `uipath`; `layout` is empty when layout parsing is off for the tenant. |
 
 ## Uploads
 
@@ -54,7 +54,7 @@ Starts one run and prints the run envelope ([Results Guide](results-guide.md#run
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--ocr-engine <engine>` | `auto` | An `engine` from `discovery digitization-engines list --kind ocr`. `auto` picks per page by the page's alphabet and is reported as `auto` in `Data.engine.ocr.engine`. |
+| `--ocr-engine <engine>` | `auto` | An `engine` from `discovery digitization-engines get --kind ocr`. `auto` picks per page by the page's alphabet and is reported as `auto` in `Data.engine.ocr.engine`. |
 | `--apply-on-pdf <mode>` | `auto` | Whether PDF pages go through OCR. `auto` reads the text layer where a page has one and OCRs the rest; `always` OCRs every page (for a PDF whose text layer is wrong); `never` reads the text layer only, so a scanned page yields no text. Images are always OCR'd. |
 | `--layout-engine <engine>` | none | Only `uipath`: tables as HTML `<table>` with row and column spans, forms, tagged figures and page furniture, in layout reading order. Without it, markdown is still produced and tables come as lines of text. Runs on OCR output, so not with `--apply-on-pdf never` (`settings-invalid`). |
 
