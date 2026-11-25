@@ -4,6 +4,8 @@
 
 Invoke a deployed Maestro agentic process.
 
+When the request asks for an agent that gets its answer from the process, make the process a `kind: 'maestro'` tool of an inline agent instead ([inline-agent.md](inline-agent.md#tools)); a step of its own leaves no agent.
+
 Signature: `agenticProcess({ key?, name, folderPath?, location?, projectId?, inputs?, inputSchema?, returns? })`
 `folderPath` is required for a published process; a sibling project of the same solution takes `location: 'in-solution'` and `projectId` instead ([below](#in-solution-sibling)).
 For a published process, leave `key` and `returns` out: `check` prints the `registry prepare --kind Process` command that records them, and `compile` fills both in ([Orchestrator Processes](or-processes.md#getting-the-inputs-and-outputs)). An in-solution sibling still takes `key`.

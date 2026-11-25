@@ -207,7 +207,7 @@ These limits are not CLI-enforced but improve extraction:
 
 ## Editing a taxonomy that already exists
 
-Run `get` first, then send the complete document back. Preserve every existing id, including through renames, because ids connect annotations and evaluator settings; missing ids cause position-based fallback and can repoint annotations. Preserve every existing group and field's `description`, type, and id exactly as returned; add information only in new groups, fields, or `prompt`. Send all groups, `$defs`, and the overall prompt because `set` replaces rather than patches. Never write from scratch over existing content; if the user wants a fresh start, first say what will be lost.
+Change an existing taxonomy only with `set`, never in `.flow.ts` source: `merge` writes the schema without the draft check. Run `get` first; on `Data.HasDraft: true`, follow Draft protection above before any edit. Then send the complete document back. Preserve every existing id, including through renames, because ids connect annotations and evaluator settings; missing ids cause position-based fallback and can repoint annotations. Preserve every existing group and field's `description`, type, and id exactly as returned; add information only in new groups, fields, or `prompt`. Send all groups, `$defs`, and the overall prompt because `set` replaces rather than patches. Never write from scratch over existing content; if the user wants a fresh start, first say what will be lost.
 
 ## Reading the output
 

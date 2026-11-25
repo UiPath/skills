@@ -228,7 +228,7 @@ Maestro BPMN (`.bpmn` + `project.uiproj` with `"ProjectType": "ProcessOrchestrat
 | Flow validates without errors | Critical | `uip maestro flow validate` |
 | All resource bindings resolved | Critical | Check bindings_v2.json |
 | No mock placeholder nodes remain | Critical | Grep for `core.logic.mock` |
-| Entry points correctly defined | Warning | Check entry-points.json |
+| Entry points correctly defined | Warning | Check entry-points.json; a Flow lists `content/<Name>.bpmn#<trigger id>` with type `processorchestration` |
 | Environment-specific values externalized | Warning | Check for hardcoded URLs/paths |
 | Entry-point `uniqueId` values unique (duplicates block publishing) | Critical | Parse `entry-points.json` for duplicate `uniqueId` values |
 
