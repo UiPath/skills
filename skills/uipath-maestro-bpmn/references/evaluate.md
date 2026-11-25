@@ -5,10 +5,13 @@ Evaluators, eval sets, data points, and simulations are project assets managed b
 Every `eval` command takes `--path <path>`: a Maestro BPMN project directory (`<Project>`, written by `init`), or a solution directory containing exactly one BPMN project; it defaults to `.`.
 
 <!--skill-flavor:eval-host:start-->
-**Local `add` / `list` / `remove` edit project files and need no login.** Every `run` verb (`start`, `status`, `results`, `list`, `compare`) needs `uip login`; `run start` also deploys (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)).
+**Local `add` / `list` / `remove` edit project files and need no login.**
+Every `run` verb (`start`, `status`, `results`, `list`, `compare`) needs `uip login`; `run start` also deploys (see [Running a set deploys your solution](#running-a-set-deploys-your-solution--know-what-it-overwrites)).
 <!--skill-flavor:eval-host:end-->
 
-**Spellings.** `--help` lists plural groups and `create` / `delete` (`evaluators create`, `sets delete`, `simulations create`, `runs start`). The singular and `add` / `remove` aliases below are equivalent; use them as written. Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
+**Spellings.** `--help` lists plural groups and `create` / `delete` (`evaluators create`, `sets delete`, `simulations create`, `runs start`). The singular names and `add` / `remove` used below (`evaluator add`, `set remove`, `simulation add`, `run start`) are aliases of the same commands; use them as written.
+
+Probe the installed CLI once, then let it write the JSON formats and generated file references rather than hand-authoring them:
 
 ```bash
 uip maestro bpmn eval --help --output json
@@ -61,7 +64,7 @@ Use the generated evaluator id or filename when explicitly passing `--evaluators
 
 **Node-scoped (agent-node) and document eval sets are not authorable through the CLI yet**: the CLI creates only `flow`-scoped sets, and `set add` / `set list` output that `Scope`; create the others in Studio Web. This differs from Flow.
 
-A data point's input and output keys are validated against the entry point's declared schema in the project's **`entry-points.json`**, by the names a caller uses, not the ids in the `.bpmn`. An undeclared key fails with `Input "<name>" is not a declared input of the BPMN process. Declared inputs: …`. Declare the contract with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), rerun the [validation loop](../SKILL.md#validation-loop), then `eval add` again. Validation is best-effort: with no declared inputs or outputs, it skips rather than rejecting keys. Build expected outputs from real records; an invented key matches no record and scores a fault.
+A data point's input and output keys are validated against the entry point's declared schema in the project's **`entry-points.json`**, by the names a caller uses, not the ids in the `.bpmn`. An undeclared key fails with `Input "<name>" is not a declared input of the BPMN process. Declared inputs: …`. Declare the missing contract in the source with `.input()` / `.output()` (see [Process contract](bpmn-runtime.md#variables-and-the-process-contract)), rerun the [validation loop](../SKILL.md#validation-loop), then `eval add` again. Validation is best-effort: with no declared inputs or outputs, it skips rather than rejecting keys. Build expected outputs from real records; an invented key matches no record and scores a fault.
 
 ## Simulations — stop an eval from really sending
 
@@ -69,7 +72,7 @@ A simulation stands in for a component during a run, keyed by its `.bpmn` elemen
 
 `--mock-value` is the element's raw `result`; top-level keys must match outputs reading `=result.<key>`. For example, `=result.response.ok` requires `{"response":{"ok":true}}`, and an `Actions.HITL` output reading `=result.Action` requires `{"Action":"<outcome name>", "<fieldId>": <value>}`.
 
-Always run the BPMN simulation commands below, **never `maestro flow eval`** on a BPMN project: the flow verb skips the `--output-schema` requirement and lets a Flow-style `Llm` simulation silently bypass BPMN correctness.
+Always run the BPMN simulation commands below, **never `maestro flow eval`** on a BPMN project: the flow verb skips the `--output-schema` requirement and lets an `Llm` simulation added through it silently bypass BPMN correctness.
 
 ```bash
 # Static — returns --mock-value verbatim
@@ -92,7 +95,7 @@ uip maestro bpmn eval simulation remove <component-id> \
   --set "Smoke Tests" --data-point <id> --path <Project> --output json
 ```
 
-**`--output-schema` is required for every `Llm` simulation, the key divergence from Flow.** Flow resolves output schema from `.flow`; the BPMN CLI does not, so omission fails fast with `--output-schema is required for the Llm strategy (BPMN cannot auto-resolve the component's output schema)`. The id is checked against `.bpmn`; a missing one fails with `Component "<id>" not found in the BPMN process`.
+**`--output-schema` is required for every `Llm` simulation, the key divergence from Flow.** Flow resolves output schema from `.flow`; the BPMN CLI does not, so omission fails fast with `--output-schema is required for the Llm strategy (BPMN cannot auto-resolve the component's output schema)`. The id is checked against `.bpmn`: `simulation add <id>` fails with `Component "<id>" not found in the BPMN process` when no element has that id.
 
 Child tool simulations on an agent node (`--parent`) are **not supported for Maestro BPMN yet**: the CLI rejects `--parent` with "not supported for Maestro BPMN yet". Simulate the agent node itself with plain `--component-type agent`; Flow supports `--parent`, a BPMN divergence.
 
@@ -111,7 +114,7 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 `run start` returns `evalSetRunId` and does not block. Poll `run status` until settled, then read `run results`. `run list` reads records written by this checkout; on a fresh checkout or another machine it fails (`No local run records for eval set ... and no --project-id given`) unless passed `--project-id <workloadId>`, printed by `run start`.
 
-`run start` resolves workload/project id and solution from the parent `.uipx` or `SolutionStorage.json` and deploys from there. A scaffold created with `--skip-solution-registration` has neither and refuses with `No solution to package` unless both ids are passed. Pass both `--solution-id` and `--project-id` to run an already provisioned Studio Web solution, skipping package and upload; pass `--folder-key` outside the personal workspace and `--entry-point` to override the set's pinned start event.
+`run start` resolves workload/project id and solution from the parent `.uipx` or `SolutionStorage.json` and deploys from there. A scaffold created with `--skip-solution-registration` has neither and refuses with `No solution to package` unless both ids are passed. Pass both `--solution-id` and `--project-id` to run an already provisioned Studio Web solution, skipping package and upload; pass `--folder-key` outside the personal workspace and `--entry-point` to override the set's pinned start event for one run.
 
 `--wait` polls to a terminal state (`--timeout`, default 600 seconds) and prints one JSON envelope on stdout (`Code: BpmnEvalRunCompleted`), with per-data-point rows in `Data.Results`, directly `JSON.parse`-able in CI. Unlike `uip maestro flow eval`, it does not emit separate Started, Completed, and Results envelopes. Terminal `Failed` or `WorkloadFailed` emits one same-shaped failure envelope, with results still in `Data.Results`, and a **non-zero exit**; CI must not treat it as success. `WorkloadFailed` is a process runtime fault; triage it with [Diagnose](diagnose.md), not as an evaluator problem. Low evaluator scores on a completed run still mean the eval succeeded.
 
@@ -119,7 +122,7 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 ## Running a set deploys your solution — know what it overwrites
 
-`eval run start` is a deploy, not just a trigger: it packages local state and **uploads it to Studio Web, creating or overwriting the solution matching local `.uipx` `SolutionId`**, then provisions execution. The backend runs *deployed* resources; there is no separate upload step to run, and no prompt before the overwrite. This mirrors `uip maestro bpmn debug`, which also deploys before running.
+`eval run start` is a deploy, not just a trigger: it packages local state and **uploads it to Studio Web, creating or overwriting the solution matching local `.uipx` `SolutionId`**, then provisions execution. The backend runs *deployed* resources, not merely published ones; there is no separate upload step to run, and no prompt before the overwrite. This mirrors `uip maestro bpmn debug`, which also deploys before running.
 
 It has the same risks as manual `uip solution upload` when: (1) iterating locally before publishing, because work in progress reaches teammates and triggers; (2) changing a solution downloaded with `uip solution download`, because partial local state overwrites other changes; or (3) local and Studio Web diverge, because the remote side is discarded rather than merged.
 

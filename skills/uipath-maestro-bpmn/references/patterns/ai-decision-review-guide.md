@@ -1,6 +1,6 @@
 # Pattern: `ai-decision-review`
 
-AI makes a decision; one confidence gate auto-actions clear cases and sends the rest to accountable human review. Use this when some items are clear-cut and others require judgment.
+AI makes a decision; one confidence gate auto-actions clear cases and sends the rest to human review. Use this when some items are clear-cut, others require judgment, and someone must stay accountable for the non-trivial ones.
 
 ## Why it works
 
@@ -115,7 +115,7 @@ Add `verifierDecision` (string) and `verifierConfidence` (number). Bind the veri
 - **`performAction`**: Bind the downstream ERP, CRM, case system, or outbound message with `.connector()`, `.http()`, or `.startProcess()`.
 - **`validate`**: Use `.businessRule()` for the deployed BusinessRules package addressed by name. Its result is keyed by the decision's `OutputArguments` property name (such as `decision1`), not display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
 - **`humanReview`**: Use `.humanTask()` and route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
-- **Review SLA**: Configure the Task timer in the Studio Web task-panel; `.humanTask()` cannot write it. See [Human tasks](../bpmn-runtime.md#human-task-outcomes).
+- **Review SLA**: the Task timer, a Studio Web task-panel setting `.humanTask()` cannot write; the user sets it there. See [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 
 ## Adapting it
 
@@ -127,4 +127,4 @@ If the action already exists, decompile an imported process with `--style nested
 
 ## Composing
 
-Nested inside `high-volume-batch`, this is the per-item subprocess. Pair it with `failure-escalation` so failures in `analyze` or `performAction` do not vanish. See [composing-guide.md](composing-guide.md).
+Nested inside `high-volume-batch`, this is the per-item sub-process. Pair it with `failure-escalation` so failures in `analyze` or `performAction` do not vanish. See [composing-guide.md](composing-guide.md).

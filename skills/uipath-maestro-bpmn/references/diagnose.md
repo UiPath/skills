@@ -1,6 +1,6 @@
 # Diagnose — why a BPMN run failed
 
-Triage in order: context, incidents, runtime variables, deployed BPMN asset, element executions/cursors, generated package files, then traces. Use only the CLI verbs below; do not invent variants (`job get`, `incidents list`, `instance asset get --instance-id`, hyphenated forms).
+Triage in order: context, incidents, runtime variables, deployed BPMN asset, element executions/cursors, generated package files, then traces. Use only the CLI verbs below; do not invent variants (`job get`, `incidents list`, `instance asset get --instance-id`, hyphenated forms): each is rejected, and the mocked harness answers them with an error too.
 
 > **Read-only boundary.** This guide diagnoses. Retry, cancel, pause, resume, migrate, and cursor movement are Operate actions ([operate.md](operate.md)) requiring the user's explicit decision after the root cause is known.
 >
@@ -8,7 +8,7 @@ Triage in order: context, incidents, runtime variables, deployed BPMN asset, ele
 >
 > **CLI interface.** Run each `uip maestro bpmn` read with `--output json`. In a test harness the `mocks/` and `fixtures/` directories are the CLI's backing data: do not read them by any means, including with `cat`, `head`, `grep`, `jq`, `sed`, or a file-read tool. You may capture CLI output to your own file and read it back.
 >
-> **One literal command per read, never a loop.** Write every read in full. No loop, function, alias or shell variable stands in for the verb, the id or the folder key. To batch, chain the literal reads in one Bash call, one per line.
+> **One literal command per read, never a loop.** Write every read in full, e.g. `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`. No loop, function, alias or shell variable stands in for the verb, the id or the folder key: the command log is the record of what was read. To batch, chain the literal reads in one Bash call, one per line.
 
 ## Step 1 — confirm context
 
@@ -21,7 +21,7 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 <!--skill-flavor:debug-handle:start-->
-For a **debug** run, use the `instanceId` returned by the debug command as the handle and read it with `debug-instances` (see [uip version note](operate.md#debug--a-controlled-studio-web-run)); keep deployed-instance and debug-session reads separate.
+For a **debug** run, use the `instanceId` returned by the debug command as the handle and read it with `debug-instances` (see [Debug runs](#debug-runs); [uip version note](operate.md#debug--a-controlled-studio-web-run)); keep deployed-instance and debug-session reads separate.
 <!--skill-flavor:debug-handle:end-->
 
 ## Step 2 — read incidents
@@ -39,7 +39,7 @@ Use the incident category, message, and **faulting BPMN element id**. For severa
 
 ## Step 3 — inspect runtime variables
 
-Run both as applicable and redact private payloads:
+Run, redacting private payloads:
 
 ```bash
 uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
@@ -110,7 +110,7 @@ Report concisely:
 - **who owns the fix**, using these labels even when a category is not implicated: `BPMN source` (the `.bpmn.ts`: structure, variables, mappings, conditions), `Generated package metadata` (the four files `refresh` writes), `Integration Service enrichment` (connector metadata, connection binding, dynamic schemas), `Cloud configuration` (folder, process, release, connection state on the tenant);
 - the safe next action: owner and repair (source fix rebuilt through the validation loop, package refresh, or operator hand-off), followed by the one read-only command that shows run state before any Operate decision, for example "`BPMN source` fixes `<ELEMENT_ID>`, then re-read `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`". Name the read; do not run it now. For debug, use the `incidents` read under [Debug runs](#debug-runs). If no repair is needed, the read alone is the next action.
 
-Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish and deploy are never the next action. If one may fit later, name it on its own line as an Operate decision outside the diagnosis. When the request says not to ask for approval, do not ask. Redact tenant, user, connection, folder, URL, payload, and secret values.
+Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish and deploy are never the next action. If one may fit later, name it on its own line as an Operate decision outside the diagnosis. When the request says not to ask for approval, do not ask. Redact tenant, user, connection, folder, URL, payload and secret values.
 
 ## Failure modes that reach the runtime
 
@@ -122,7 +122,7 @@ The builder catches some defects before execution: `compile` refuses unparsable 
 - **Stale generated package files:** `entry-points.json` names an old start event/file, `package-descriptor.json` omits current BPMN, or `bindings_v2.json` disagrees with BPMN references. Owner: `Generated package metadata`; run `refresh`. Deprecated `update-metadata` does not materialize `Intsvc.*` connection bindings; its package validates and faults at runtime.
 - **Gateway takes the wrong branch or stalls:** Conditions are syntactically valid but semantically wrong, or the default points incorrectly. Read gateway variables and element executions before changing conditions. Owner: `BPMN source`.
 - **Expression treated as literal:** A plain string was authored where an `=` expression was intended. Owner: `BPMN source`.
-- **Script task faults or returns nothing:** `vars` is undefined in the script, or the output row reads the wrong return shape: a v3 script returns a bare value while the row reads `=result.response`; `return { response: … }` double-wraps. Owner: `BPMN source`. A brownfield script shape differing from `.scriptTask()` output is not itself a fault; propose a rewrite only when run evidence names that task, and show the user that evidence before editing.
+- **Script task faults or returns nothing:** `vars` is undefined in the script, or the script's return does not match what the output row reads: a v3 script returns a bare value and the row reads `=result.response`; `return { response: … }` double-wraps. Owner: `BPMN source`. A brownfield script shape differing from `.scriptTask()` output is not itself a fault; propose a rewrite only when run evidence names that task, and show the user that evidence before editing.
 - **Message or event wait never ends:** Message id, correlation reference, or subscription mismatches the caller; cursors show the token parked at the event. Owner: `BPMN source` for the reference, `Cloud configuration` for the missing signal.
 - **Multi-instance loop faults on the first item:** Collection or item variable is undeclared where read. Owner: `BPMN source`.
 - **Deployed asset differs from local:** Republish, branch switch, or local edit after deployment. Diagnose the deployed definition; local change is the future fix.
@@ -131,10 +131,10 @@ The builder catches some defects before execution: `compile` refuses unparsable 
 ## Anti-patterns
 
 - **Never start with traces** when incidents are available.
-- **Never run a lifecycle command while diagnosing** — retry, cancel, migrate, and cursor movement mutate.
+- **Never run a lifecycle command while diagnosing** — retry, cancel, migrate and cursor movement mutate.
 - **Never assume the local BPMN is the deployed asset.**
 - **Never retry before the root cause is known.**
-- **Never paste private incident payloads or connection details** into notes, commits, or issues.
+- **Never paste private incident payloads or connection details** into notes, commits or issues.
 - **Never patch generated package files as the only fix for a source defect** — fix `.bpmn.ts`, rebuild through the validation loop, and `refresh`.
 
 ## Command reference

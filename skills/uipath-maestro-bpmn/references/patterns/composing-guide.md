@@ -4,7 +4,7 @@ Read this when a process uses multiple patterns or when writing a shared join; a
 
 ## Shared joins: the mechanism nesting hides
 
-Most patterns turn on one shared step through a dispatch gate (`smart-triage`), action (`ai-decision-review`), or rejection exit (`approval-chain`). Writing what happens next inside each arm duplicates the step per arm; `check`, `compile` and `validate` all pass the duplicate, and only the pattern's grader, or a reader, notices. Write the shared step once, by one of three forms, in this order of preference:
+Most patterns turn on one step reached two ways: a dispatch gate (`smart-triage`), an action (`ai-decision-review`), or a rejection exit (`approval-chain`). Writing what happens next inside each arm duplicates the step per arm; `check`, `compile` and `validate` all pass the duplicate, and only the pattern's grader, or a reader, notices. Write the shared step once, by one of three forms, in this order of preference:
 
 1. **Fall through.** Leave reaching arms empty or ending at their last element, then write the step AFTER `.choose()`. Falling-through arms join as `<choose id>_join`, emitted only when more than one does. An arm that must not reach it ends with an end event or `.goto()`. This works through nesting: an empty inner arm falls through both chooses.
 2. **A gateway you name.** For routes fall-through cannot reach (a later arm, outer scope, or second stage), declare `.exclusiveGateway(id)`, send each route with `.goto(id)`, and wire its sole exit with `.sequenceFlow(id, next)`. A bare gateway's outgoing flow is never implied, even in sequence mode. The tiered reviewer in [ai-decision-review-guide.md](ai-decision-review-guide.md#variants) uses this form.

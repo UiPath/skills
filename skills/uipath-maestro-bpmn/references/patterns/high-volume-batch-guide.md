@@ -7,7 +7,10 @@ Process independent items in one run with one sub-process instance per item, the
 These four carry the shape.
 Change one and you are building something else.
 
-Run each item in its own `.subProcess()` instance with `loop`, never a `.goto()` loop. The marker runs once per item with its own `iterator` but does not contain failures, so put a `failure-escalation` net directly inside the iteration; an unhandled failure propagates outward. Every item must produce a result: normal and net exits append to `itemResults` (Parallel: write to the store), and the multi-instance sub-process waits for all instances before aggregation. Aggregation counts results; a separate policy gate decides success. Best-effort, all-or-nothing, and quorum differ only in that condition. Send the summary before the verdict so it runs on both outcomes.
+- **Each item runs in its own sub-process instance:** `loop` on a `.subProcess()`, never a `.goto()` loop. The marker runs once per item with its own `iterator` but does not contain failures; an unhandled failure propagates outward, so put a `failure-escalation` net directly inside the iteration.
+- **Every item leaves a result; aggregate once, after the block:** normal and net exits append to `itemResults` (Parallel: write to the store), and the multi-instance sub-process waits for all instances.
+- **Policy is separate from aggregation:** aggregation counts results; a policy gate decides success. Best-effort, all-or-nothing, and quorum differ only in that condition.
+- **Summary before verdict:** send the report ahead of the policy gate so it runs on both outcomes.
 
 ## Shape
 
@@ -54,7 +57,7 @@ export default bpmn('invoice-batch')
 
 Preserve `itemVar: 'iterator[N]'` and its reads for Studio Web-created or `decompile`-seeded looped sub-processes. A looped task outside a looped sub-process has no `inputElement` on the canvas and reads `iterator.item`; `decompile` seeds `itemVar: 'item'`, recompiling to `inputElement="item"` and moving the item to `iterator["item"]["item"]`, so rewrite reads accordingly. For another `itemVar`, such as `'invoice'`, the outer key is that value and the inner key stays `item`: `iterator["invoice"]["item"]`; `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
 
-Scripts do not see `iterator` directly: their scope contains only the `args` envelope, and the engine builds script `iterator` entries from `iterator[N]` keys. Pass the item with `inputs: { 'iterator[0]': '=iterator[0]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive when the key is present. A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
+Scripts do not see `iterator` directly: their scope contains only the `args` envelope, and the engine builds script `iterator` entries only from `iterator[N]` keys in its inputs. Pass the item with `inputs: { 'iterator[0]': '=iterator[0]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive when the key is present. A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
 
 The body is its own sequence scope: give it its own `.flowMode('sequence')`, start event and end event.
 
@@ -97,7 +100,7 @@ Keep `aggregate` as a `.scriptTask()` that totals records from `vars.<queryId>_r
 
 ## What to bind
 
-- **`fetchBatch`**: bind a database query, file, API list, or queue; decide batch size and filters.
+- **`fetchBatch`**: bind a database query, file, API list, or queue; batch size and filters belong to this node.
 - **Per-item work** inside `processEach`: bind a UiPath agent, RPA job, Document Understanding, or API call. Place and bind the node; it runs at runtime, not while authoring.
 - **`aggregate`**: a `.scriptTask()` that counts `itemResults` (Parallel: query records), applies policy, and sets `policySatisfied` through `outputs`. Best-effort is always true; all-or-nothing is true only with zero failures; quorum is true above its threshold. Evaluate it in a node, not the loop's `completion` condition: completion stops the block early and cannot see the results needed for post-run policy.
 - **`sendReport`**: bind email, chat, dashboard, or audit store.
@@ -120,6 +123,6 @@ The append is a `set` expression because it reads `iterator` directly and valida
 
 ## Composing
 
-The per-item work is the normal nesting point: `ai-decision-review` or `external-wait` can become the body of `processEach`, giving every item its own decision or wait.
+The per-item work is the usual nesting point: `ai-decision-review` or `external-wait` becomes the body of `processEach`, giving every item its own decision or wait.
 
 Place the `failure-escalation` net **directly inside** `processEach` so a per-item failure ends that iteration and the run continues. A net at process level catches the first failure and ends the whole instance. See [composing-guide.md](composing-guide.md#scoping-the-failure-net).
