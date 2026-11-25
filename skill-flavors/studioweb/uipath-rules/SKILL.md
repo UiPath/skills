@@ -16,4 +16,6 @@ uip rules versions <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 ```
 
 Each command takes `--folder-path` or `--folder-key`, never both. `uip rules describe` is not available in Studio Web, so a deployed rule's inputs and outputs cannot be read here.
+
+A deployed rule is held by the Business Rules service, or still by Orchestrator when it was deployed before rules moved there; each row's `Source` (`BusinessRules` or `Orchestrator`) says which. `get` and `versions` find a rule in either. `list` shows the service's rules in the folder, or Orchestrator's when the service holds none there. When it leaves Orchestrator's rules out, it says so on stderr: read those by name with `get`.
 <!--skill-flavor:deployed-rules:end-->
