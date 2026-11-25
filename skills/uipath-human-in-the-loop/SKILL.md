@@ -224,7 +224,7 @@ Never block on these — use the stated default when no answer is available, wri
 
 ## Step 4b — Schema Design Resilience (QuickForm — Flow and Case)
 
-Apply these checks while designing the schema, before writing it — per Critical Rule 1, do not wait on the user to confirm. Applies equally to Flow QuickForm nodes and to a Case form design (the Case SDK cannot author a quick form, so the design goes into a Coded Action App or into the report for the Studio Web designer) — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
+Apply these checks while designing the schema, before writing it — per Critical Rule 1, do not wait on the user to confirm. Applies to Flow QuickForm nodes and to a Case form design. The Case SDK cannot author a quick form, so a Case design goes into a Coded Action App or into the report for the Studio Web designer. The field intent below (direction, type, outcomes) carries over to a Coded Action App, but the serialization does not: QuickForm writes `fields[]` + `outcomes[]`, while the app's `action-schema.json` has four sections. An `input` field goes in `inputs.properties`, an `output` field in `outputs.properties`, an `inOut` field in `inOuts.properties`, and each outcome is a `string` property in `outcomes.properties`. For example, an editable `amount` field is `"inOuts": { "type": "object", "properties": { "amount": { "type": "number" } } }`. Write the app schema from [the Coded Action App schema rules](../uipath-coded-apps/references/create-action-app.md#action-schemajson), not from the QuickForm shape.
 
 ### Field direction
 
