@@ -34,7 +34,7 @@ jobs:
         run: pip install pytest pyyaml
 
       - name: Run pytest
-        run: pytest tests/tasks/uipath-maestro-bpmn/ -v
+        run: pytest tests/tasks/uipath-maestro-bpmn/ tests/scripts/test_scrub_run_artifacts.py tests/scripts/test_run_coder_eval_publication_gate.py tests/scripts/test_rotate_auth.py -v
 
   pytest-flow-check:
     runs-on: uipath-ubuntu-latest
