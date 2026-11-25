@@ -216,7 +216,7 @@ A source-only draft may lack a connection, operation, tenant access, or permitte
 
 Never use placeholder `.activity(id, 'Intsvc.ActivityExecution', …)`: `check` rejects empty context (`EMPTY_REQUIRED_FIELD`) and sentinels (`INTSVC_METHOD_UNKNOWN`, `INTSVC_OPERATION_NOT_IDENTIFIER`), and `validate` rejects a compiled file. §4 hand-filled activity requires reachable-tenant evidence.
 
-Leave `README.md` beside the source with each blocker named exactly and its resolution:
+Leave `README.md` beside the source naming each CLI-owned blocker exactly, what it is, and the step that resolves it:
 
 | Blocker | What it is | Resolved by |
 | --- | --- | --- |
@@ -228,4 +228,4 @@ Leave `README.md` beside the source with each blocker named exactly and its reso
 | package metadata | `entry-points.json`, `operate.json`, `package-descriptor.json` | the same `refresh`; `uip solution resources refresh --solution-folder <solution-dir>` for the solution |
 <!--skill-flavor:package-metadata-row:end-->
 
-Name blockers exactly as written, not "the connection" or "the schema"; name the artifact and resolution step. Never include private connection id, folder key, tenant URL, resource key, or tenant schema.
+Name blockers exactly as written, not "the connection" or "the schema"; name the artifact and resolution step. Name no private value: no connection id, folder key, tenant URL, resource key, or schema copied from a tenant.

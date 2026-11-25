@@ -145,7 +145,7 @@ Runtime choices static validation cannot make; exact signatures are in the gener
   A `ProcessType` not in the table cannot be called from a process. Never author `A2A.AgentExecution`.
 
 <!-- RULE:bpmn.orchestrator.in-solution-process -->
-- A Maestro BPMN sibling in the same solution is called without deploying it: bind by name with `resourceKey` equal to the project name and no folder, then call `.startAgenticProcess()`:
+- A Maestro BPMN sibling in the same solution is called without deploying it: bind by name with a binding pair whose `resourceKey` is the project name and whose `folderPath` binding has no value, then call `.startAgenticProcess()`:
   ```ts
   .binding('childName', { name: 'name', value: 'CreditAssessment', resource: 'process',
     propertyAttribute: 'name', resourceKey: 'CreditAssessment', resourceSubType: 'ProcessOrchestration' })
