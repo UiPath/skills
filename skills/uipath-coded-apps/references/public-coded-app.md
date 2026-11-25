@@ -2,6 +2,9 @@
 
 A public coded app is a Coded Web App that **anyone with the link can use without signing in to UiPath** — customers, suppliers, event guests. It calls UiPath as a **confidential external application** of the organization, and only for the resources it declares.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
+
 > **Preview.** Public coded apps need:
 > - SDK: `@uipath/uipath-typescript` `1.8.5` or later
 > - CLI: `npm install -g @uipath/cli` (`1.206.0` or later)
@@ -45,7 +48,9 @@ List every resource the app reads, and use `session` for anything personal.
 
 ## Hard rules
 
+<!--skill-flavor:solution-only-rule:start-->
 1. **Solutions only.** A public app must live in a solution: `uip solution init` → `uip codedapp init` inside it. Never use `uip codedapp publish/deploy` for it.
+<!--skill-flavor:solution-only-rule:end-->
 2. **No sign-in code.** `const sdk = new UiPath(); await sdk.initialize();` — the app runs without sign-in once it is deployed as public. Never add login buttons, PKCE, or tokens.
 3. **Only these calls work** (anything else throws `ValidationError` before a request is sent):
 
@@ -73,12 +78,14 @@ List every resource the app reads, and use `session` for anything personal.
 
 ## Build
 
+<!--skill-flavor:project-setup:start-->
 ```bash
 uip solution init "Feedback"
 cd Feedback
 uip codedapp init ./feedback-app
 # scaffold the React/Vite sources into feedback-app/source (create-web-app.md, Step 3), build output in source/dist
 ```
+<!--skill-flavor:project-setup:end-->
 
 ### Declare the resources
 
