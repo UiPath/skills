@@ -372,8 +372,8 @@ jobs:
     timeout-minutes: 120
     name: Run skill smoke tests
     # Disable uip CLI version-sync: a task's `uip login status` re-pins
-    # ~/.uipath/config.json to a stale line and, via smoke.yaml's shared
-    # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
+    # ~/.uipath/config.json to a stale line and downgrades the CLI for the
+    # rest of that task. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
@@ -462,8 +462,9 @@ jobs:
       # valid login while still receiving 401 from the guardrail endpoints.
       #
       # Reuse the same ROPC helper as the nightly workflow. It writes the
-      # standard ~/.uipath/.auth file that the smoke experiment mounts into
-      # every Docker sandbox.
+      # standard ~/.uipath/.auth file. The smoke experiment mounts it read-only
+      # and each Docker sandbox copies it to its own /.uipath
+      # (tests/docker/seed-uipath-auth.sh).
       - name: Mint UiPath Alpha bot token (ROPC)
         env:
           UIPATH_URL:               https://alpha.uipath.com
@@ -483,16 +484,19 @@ jobs:
           # containers (reference anti-cheat), so container-root can no longer
           # read the host-owned ~/.uipath extra_mount by capability. Widen it
           # recursively via the "other" bits so the mounted .auth file (mode
-          # 600) is readable — mirrors coder-eval's own grant_container_access.
-          chmod -R o+rwX "$HOME/.uipath"
+          # 600) is readable. Read only: containers copy it, never write it.
+          chmod -R o+rX "$HOME/.uipath"
 
           # Fail once at setup, with a direct error, rather than letting every
           # guardrail task discover an unusable auth context independently.
+          # Same mount, capabilities and seeding as a task container.
           docker run --rm \
-            -v "$HOME/.uipath:/.uipath:rw" \
+            --cap-drop DAC_OVERRIDE --cap-drop DAC_READ_SEARCH \
+            -v "$HOME/.uipath:/.uipath-host:ro" \
             --entrypoint /bin/sh \
             skills-image:latest -lc '
               set -eu
+              seed-uipath-auth
               uip login status --output json
               uip agent guardrails list --output json
             '
