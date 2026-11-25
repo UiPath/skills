@@ -468,7 +468,7 @@ This SDD captures architecture and decisions. To build it, load `uipath-planner`
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
-**Build from the genome.** On the turn after this SDD is `Status: ready`, `uipath-planner` writes its genome beside it (`author`) and records the path in the `Genome` row of the Planner Handoff. `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
+**Build from the genome.** Once this SDD is approved, ask `uipath-planner` for its genome or for the build: it writes the genome beside this SDD (`author`), and `uipath-genome` builds every component from that genome through each component's owning skill. Without `uipath-genome` installed, the genome stays on disk for a later build.
 
 Implementation steps **do not live in this SDD** — the genome carries them.
 
