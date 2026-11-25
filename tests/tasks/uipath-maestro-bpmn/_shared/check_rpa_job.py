@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.bpmn_assertions import mapping_inputs, mapping_outputs, variable_ids  # noqa: E402
+from _shared.bpmn_assertions import has_source, mapping_inputs, mapping_outputs, variable_ids  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
@@ -49,9 +49,9 @@ def main() -> None:
     if len(mapping_inputs(task)) < 1:
         fail("RPA job task should bind at least one request input (JobArguments)")
 
-    outputs = mapping_outputs(task)
+    outputs = [o for o in mapping_outputs(task) if has_source(o)]
     if not outputs:
-        fail("RPA job task should capture the job response as an output")
+        fail("RPA job task should capture the job response as an output with a source")
     declared = variable_ids(root)
     if not declared:
         fail("no process variables declared (expected a BPMN.Variables mapping)")
