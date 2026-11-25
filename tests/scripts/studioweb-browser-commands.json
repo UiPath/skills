@@ -228,6 +228,11 @@
         "file": "references/pack-publish-deploy.md",
         "command": "codedapp delete",
         "reason": "Studio Web's host-scope override at the top of this file says `uip codedapp` does not run here; the delete mention is Node-only guidance under that banner."
+      },
+      {
+        "file": "references/public-coded-app.md",
+        "command": "solution pack",
+        "reason": "The pack/publish and upgrade blocks of the public app reference. Studio Web's host-scope note at the top of this file says these commands do not run here and are handed to the user to run on their machine."
       }
     ],
     "ceiling": {
