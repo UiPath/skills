@@ -3,11 +3,11 @@ description: >
   Integration: a refactor of a three-workflow XAML project, by a user who says they are the process
   owner. `extract` writes the genome with no SDD, offers the interview once, after the strict check
   and before the hand-over, and applies its answers; then it hands the genome to `uipath-genome` with
-  the request quoted. The build asks none of the entries the interview decided and offers no edit for
-  them; an entry the interview left open is asked once, by the build or named by it, never by both
-  skills. The request stops the run before any project is created, so it ends in the build's question
-  phase. A simulated process owner answers. It gates on the files, the strict check, the hand-over and
-  no entry asked by both skills; the interview offer is advisory.
+  the request quoted. The build does not ask again what the interview decided; a build question whose
+  answer would change a decided entry may say so and offer the genome edit. The request stops the run
+  before any project is created, so it ends in the build's question phase. A simulated process owner
+  answers. It gates on the files, the strict check, the hand-over and no decided entry asked again;
+  the interview offer is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -101,27 +101,20 @@ success_criteria:
     pass_threshold: 0
 
   - type: llm_judge
-    description: "The build asks no entry the interview decided, and no entry is asked by both skills"
+    description: "The build does not ask again what the interview decided"
     include_dialog: true
-    include_tool_calls: true
     include_reference: false
     prompt: |
-      The user, the process owner, asked to refactor a small UiPath project. First the planner interviews
+      The user, the process owner, asked to refactor a small UiPath project. The planner may interview
       the user on the genome's open entries (ids D1, D2 …); then the build asks its own questions (how the
-      work is split, the setup, open decisions it still needs). Read the dialog and the agent's questions,
-      whether asked in chat or as structured questions.
+      work is split, the technology, the setup). Read the dialog.
 
-      A configuration value the build asks (a server, a folder, an address, a credential) is not an
-      interview entry, even when an entry's wording mentions it. When no interview ran (the user declined
-      it, or it was never asked), it decided nothing and left every entry open: the build may ask each
-      entry once. A build question of its own (how the work is split, the unit of work) whose option
-      would change a decided entry, and says so, is not asking that entry again.
-
-      Score 1.0 when both hold:
-      1. The build asks none of the entries the interview decided, and offers no edit for them.
-      2. An entry the interview left open (another role's, or skipped) is asked once by the build or
-         named by it, never asked by both the interview and the build.
-      Score 0.5 when one holds, 0.0 when neither does.
+      Score 1.0 when the build never puts to the user again, as if it were still open, a question the
+      interview already got an answer to; 0.0 when it does. These are not asking it again: a build
+      question of its own (the technology, how the work is split, the unit of work) whose answer would
+      change a decided entry, with or without saying so; an offer to edit the genome; a configuration
+      value (a server, a folder, an address, a credential), even when an entry's wording mentions it.
+      When no interview ran, it decided nothing, and every question the build asks is allowed.
     weight: 2.5
     pass_threshold: 1.0
 

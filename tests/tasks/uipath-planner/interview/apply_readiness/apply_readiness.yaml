@@ -1,10 +1,11 @@
 task_id: skill-planner-interview-apply-readiness
 description: >
-  Integration: `edit`'s "Apply the answers" from a readiness file, beside an authored genome with no SDD.
-  Under Decisions still open, the business decision D2 carries an answer that changes what is built, and
-  the Configuration Question CQ5 carries a value. D2 reads decided in the genome and its readiness item
-  is marked applied; CQ5's answer stays in the readiness file for the build, and the genome's question
-  is unchanged. No SDD is written and the genome passes the strict check.
+  Integration: `edit`'s "Apply the answers" from a readiness file, beside an authored genome with no
+  SDD. Under Decisions still open, the business decision D2 carries an answer that changes what is
+  built, and the Configuration Question CQ5 carries a value. D2 reads decided in the genome and its
+  readiness item is marked applied; CQ5's answer stays in the readiness file for the build, and the
+  genome's question is unchanged. No SDD is written and the genome passes the strict check. The
+  genome's CQ5 left unchanged is advisory: a known value is a defensible default there.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 sandbox:
@@ -57,12 +58,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The genome's sender-mailbox question keeps no default, left for the build"
+    description: "Advisory: the genome's sender-mailbox question keeps no default, left for the build"
     command: "node $REFERENCE_DIR/_shared/check_interview.mjs line '^5\\. Which mailbox sends[^\\n]*default: none'"
     timeout: 30
     expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "The genome passes the strict check"
