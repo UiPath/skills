@@ -36,7 +36,7 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 
 ## Quick Start
 
-The common case: one file, its markdown.
+The common case: digitize one file and get its text back as markdown.
 
 ```bash
 uip documents uploads create "<FILE_PATH>" --folder-path "<FOLDER_PATH>" --output json
