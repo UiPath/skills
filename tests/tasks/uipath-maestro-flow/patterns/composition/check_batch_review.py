@@ -84,8 +84,10 @@ def passes_confidence(script: str, agent: str) -> bool:
     for prop in top_level(value[1:-1]) if value.startswith("{") and value.endswith("}") else []:
         if prop.startswith("..."):
             decides = prop[3:].strip() in outputs
-        elif re.match(r"['\"]?confidence['\"]?\s*(:|$)", prop):
+        elif re.match(r"\.?['\"]?confidence['\"]?\s*(:|$)", prop):
             decides = prop.split(":", 1)[-1].strip() in scores
+        elif prop.startswith(("[", ".")):  # a computed key may override the confidence
+            decides = False
     return decides
 
 
