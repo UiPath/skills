@@ -1,6 +1,6 @@
 # BPMN runtime decisions
 
-Runtime facts and choices that syntax/static validation cannot establish; exact signatures remain in the generated API.
+Runtime facts and choices that syntax/static validation cannot establish; exact signatures remain in the generated API. Registry extension types: [bpmn-registry.md](bpmn-registry.md); contract metadata, packaging/layout, validation layers: [bpmn-packaging.md](bpmn-packaging.md).
 
 ## Variables and the process contract
 
@@ -74,7 +74,7 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
   Returning an object: `script: 'return { severity: s, nextSteps: n };'` with `outputs: { severity: '=result.response.severity', nextSteps: '=result.response.nextSteps' }`.
 
 <!-- RULE:bpmn.script.mapping-type -->
-- Do not pass `type` to `.scriptTask()`; mapping type is always `BPMN.Variables`. Any other value replaces the extension type, prevents execution, and yields null outputs. `registry get BPMN.ScriptTask` lists `BPMN.ScriptTask` but it is not a value to pass. Other values fail `BPMN_SCRIPT_TASK_TYPE_INVALID`; `.activity(id, 'BPMN.ScriptTask', …)` fails `BPMN_ACTIVITY_SCRIPT_TASK_TYPE`; use `.scriptTask()`.
+- Do not pass `type` to `.scriptTask()`; mapping type is always `BPMN.Variables`. Any other value (including `BPMN.ScriptTask`, which `registry get` lists) replaces the extension type, so the task does not run and outputs are null; it fails `BPMN_SCRIPT_TASK_TYPE_INVALID`. `.activity(id, 'BPMN.ScriptTask', …)` fails `BPMN_ACTIVITY_SCRIPT_TASK_TYPE`; use `.scriptTask()`.
 <!--skill-flavor:sdk-script-type:start-->
   Needs `@uipath/maestro-builder-sdk` 6.93.8 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 <!--skill-flavor:sdk-script-type:end-->
@@ -111,10 +111,10 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
 - An event subprocess catches failures only in its direct container. At process level it ends the whole run on first failure; inside a multi-instance subprocess it ends only that iteration. Place `.eventSubProcess()` in the intended scope.
 
 <!-- RULE:bpmn.activity.retry -->
-- Configure activity retry as `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }`; it compiles to `<uipath:retry maxRetryCount retryBackoff …>` and equals Studio Web Error handling → Retry. `maxDuration` caps each delay, not total time. `allErrors: true`, only when every failure of that step is transient, because it also retries business errors; otherwise only `errorMapping` rows with `retryable: true`; neither means no retry. `errorMapping.code` is the **id of a declared `bpmn:error`**, whose `errorCode` is matched against the failure's code (for an HTTP or connector call, the status as a string, `"429"`); `code: '429'` passes checks but retries nothing. To retry one status, declare it with a boundary, e.g. `t.onError({ name: 'RateLimited', code: '429' }, { id: 'onRateLimit' }, …)`, which also catches it once retries run out; compile, read the declaration id from `<bpmn:error id="Error_1" … errorCode="429">` (numbered declaration order), use that id in the row, and compile again. HTTP/connector 5xx already retry 3 times internally; 4xx such as 429 do not. Never draw a retry loop; `.goto()` rerunning a business block such as a parallel block ([Draft skeleton](draft-skeleton.md)) is a process step, not retry.
+- Configure retry as `retry: { maxRetries, backoff, backoffType, exponentialBase, maxDuration, allErrors }` (compiles to `<uipath:retry maxRetryCount retryBackoff …>`, Studio Web Error handling → Retry). `maxDuration` caps each delay, not total time. Set `allErrors: true` only when every failure of the step is transient (it also retries business errors); otherwise only `errorMapping` rows with `retryable: true` retry; neither means no retry. `errorMapping.code` is the **id of a declared `bpmn:error`**, whose `errorCode` is matched against the failure's code (HTTP/connector: the status as a string, `"429"`); `code: '429'` passes checks but retries nothing. To retry one status, declare it with a boundary, e.g. `t.onError({ name: 'RateLimited', code: '429' }, { id: 'onRateLimit' }, …)` (also catches it once retries run out); compile, read the id from `<bpmn:error id="Error_1" … errorCode="429">` (numbered in declaration order), use it in the row, compile again. HTTP/connector 5xx already retry 3 times internally; 4xx such as 429 do not. Never draw a retry loop; `.goto()` rerunning a business block such as a parallel block ([Draft skeleton](draft-skeleton.md)) is a process step, not retry.
 
 <!-- RULE:bpmn.event.error-context -->
-- Failed-element errors use capital `Error`. Boundary `errorVar` and event-subprocess captures use lowercase `code`, `message`, `detail`, `category`, `status`, `response`, `element`; script `Error` rows use PascalCase; other task rows are unverified. `.eventSubProcess({ error: true })` captures by default at its start into `vars.<net>_Error`, with nothing more written (a net called `failures` captures `vars.failures_Error`); `errorVar` renames it and `errorVar: false` omits it. Every event-subprocess capture is a JSON **string**: parse it (`=js:JSON.parse(vars.failures_Error).message` or `JSON.parse(vars.failures_Error).code`). A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm; direct boundary/script-row captures are not strings. `vars.Error` never resolves. Reading a `vars.<id>` that no capture or declaration provides is `VARIABLE_DOES_NOT_EXIST`. Runtime ids are flat/unique regardless of `elementId`, requiring per-net defaults. A boundary captures nothing unless `errorVar` is set.
+- Failed-element errors use capital `Error`. Boundary `errorVar` and event-subprocess captures use lowercase `code`, `message`, `detail`, `category`, `status`, `response`, `element`; script `Error` rows use PascalCase; other task rows are unverified. `.eventSubProcess({ error: true })` captures by default at its start into `vars.<net>_Error` (net `failures`: `vars.failures_Error`); `errorVar` renames it, `errorVar: false` omits it. Every event-subprocess capture is a JSON **string**: parse it (`=js:JSON.parse(vars.failures_Error).message` or `JSON.parse(vars.failures_Error).code`). A plain `vars.failures_Error.message` reads undefined, and a condition on it always takes the other arm; direct boundary/script-row captures are not strings. `vars.Error` never resolves. Reading a `vars.<id>` that no capture or declaration provides is `VARIABLE_DOES_NOT_EXIST`. Runtime ids are flat/unique regardless of `elementId`, requiring per-net defaults. A boundary captures nothing unless `errorVar` is set.
 
 <!-- RULE:bpmn.event.non-interrupting-path -->
 - A non-interrupting boundary runs beside the continuing token; its path must end independently. Rejoining executes subsequent work twice, and the builder rejects an open handler path.
@@ -161,22 +161,17 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
 <!--skill-flavor:in-solution-debug:end-->
 
 <!-- RULE:bpmn.orchestrator.sibling-resource -->
-- A resource another skill builds for this process is bound after it is deployed, in this order:
-  1. Create its project in the same solution as the process.
-  2. Hand its authoring to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case) with the
-     inputs and outputs the process needs; without that skill, tell the user to build it and stop there.
+- Bind a resource another skill builds for this process after it is deployed, in order:
+  1. Create its project in the process's solution.
+  2. Hand its authoring, with the inputs and outputs the process needs, to the owning skill (uipath-rpa, uipath-api-workflow, uipath-agents, uipath-maestro-flow, uipath-functions, uipath-maestro-case); without that skill, tell the user to build it and stop.
 <!--skill-flavor:sibling-deploy:start-->
   3. With the user's go-ahead, pack the solution with `uip solution pack <SolutionDir> <OutputDir> --version <VERSION> --output json`,
      publish it to the tenant feed as [Orchestrator deployment](operate.md#orchestrator-deployment) does (not a Studio Web upload), then deploy it with
      `uip solution deploy run --name <DEPLOYMENT_NAME> --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-name <FOLDER_NAME> --parent-folder-path <FOLDER_PATH> --output json`.
 <!--skill-flavor:sibling-deploy:end-->
-  4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`:
-     its folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`) and its
-     type is `ProcessType`. Only then write the node with that `process` and `folder`.
+  4. Find it with `uip or processes list --all-folders --name <PROCESS_NAME> --all-fields --output json`: folder is `OrganizationUnitFullyQualifiedName` (`--all-fields` omits `FolderPath`), type is `ProcessType`. Only then write the node with that `process` and `folder`.
 
-  `folder: 'solution_folder'` compiles to a literal folder with no binding, so `bindings_v2.json`
-  stays empty; for a Maestro BPMN sibling use the binding pair in `RULE:bpmn.orchestrator.in-solution-process` above instead.
-  The owning skill handing the project back is not the end.
+  `folder: 'solution_folder'` compiles to a literal folder with no binding (`bindings_v2.json` stays empty); for a Maestro BPMN sibling use the `RULE:bpmn.orchestrator.in-solution-process` binding pair instead. The owning skill handing the project back is not the end.
 <!--skill-flavor:sibling-redeploy:start-->
   A new `deploy run` name deploys to a new folder, so ship the finished solution into the same
   deployment: with the user's go-ahead, pack it with a higher `--version` than step 3's and publish it, then
@@ -186,7 +181,7 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
 
 <!-- RULE:bpmn.orchestrator.job-outputs -->
 - Job output arguments are `result` fields; map with node `outputs`, e.g. `.executeApiWorkflow('greet', { process, folder, input, outputs: { message: '=result.message' } })`. The same applies to `.startProcess()`, `.startAgent()`, and waited `.startAgenticProcess()`/`.startCaseProcess()` without `async`. These builders take no `outputRows`, and only `.startAgenticProcess()`/`.startCaseProcess()` take `async`: an older SDK drops either silently, a newer one refuses it (`BPMN_UNKNOWN_OPTION`). `outputVar` (default `<id>_processResponse`) is the envelope, not arguments; do not chain into it with `=js:`. Use the deployed workflow's own argument name; if no live run has shown it, say the mapping is unverified.
-  The source is an expression, not a key: a name that is not an identifier (`test-123`, a space, unicode) is read with brackets, `outputs: { test123: '=this["test-123"]' }`, which writes `source="=this[&quot;test-123&quot;]"`. The expression holds the name exactly as declared, with no escaping (a TypeScript string literal still needs its own escapes); an empty name or one containing `"` or `]` cannot be mapped, so report it as unsupported. A bare `=result.test-123` is subtraction: it stores a wrong number (`27` when `result.test` is `150`) or leaves the variable empty, with no error.
+  The source is an expression, not a key: read a non-identifier name (`test-123`, a space, unicode) with brackets, `outputs: { test123: '=this["test-123"]' }`, written `source="=this[&quot;test-123&quot;]"`. Use the name exactly as declared, unescaped (a TypeScript string literal still needs its own escapes); an empty name or one containing `"` or `]` cannot be mapped: report it unsupported. Bare `=result.test-123` is subtraction: a wrong number (`27` when `result.test` is `150`) or an empty variable, with no error.
 
 <!-- RULE:bpmn.http.manual -->
 - Manual no-connection HTTP is `.http(id, { url, method, parameters, headers, body })` with no `connection`; it uses `ImplicitConnection`. `outputVar` defaults to `<id>_response`; `<id>_code`, `<id>_headers`, and `<id>_Error` hold the rest. Never put credentials in `headers`/`url`; use a connection ([connectors](connectors.md)), ask the user when none exists, and if a literal is insisted on, state its visibility before upload. Rewrite old `mode="manual"` context-row form when `check` warns `HTTP_MANUAL_V1`; it faults 102018 `Body cannot be null`; rewrite it as `.http()` and compile.
@@ -195,7 +190,7 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
 <!--skill-flavor:sdk-http-manual:end-->
 
 <!-- RULE:bpmn.http.connector -->
-- For an existing connection and catalog-absent endpoint use `.http(id, { method, url, connection, folder, connectorKey })`. First run `uip is connections base-url <CONNECTION_ID> --output json`; it must host the target API. Otherwise do not bind it and never send this API's path relative to it; use absolute manual HTTP, which carries no credential, and name a suitable connection on `Needs:` ([connectors](connectors.md)). `url` is the vendor endpoint relative to that base, such as Slack's `/team.info` under `https://slack.com/api`, never an Integration Service `Path`; another-host absolute URLs fail 400 `Invalid request URL` (`MANAGED_HTTP_ABSOLUTE_URL`), and wrong paths can yield `[102021] Received failure from vendor system`. Get `connectorKey` from `uip is connections list --all-folders --output json`; omit only for `uipath-uipath-http`. Wrong/missing key passes `check` but fails `validate` with `MISSING_BINDING`. `connection`/`folder` bind `ConnectionId`/`folderKey` (the connection's `Id` and `FolderKey`, or what `prepare` wrote); folder is required (`EMPTY_REQUIRED_FIELD folderKey`). `outputVar` is `<id>_response`; `<id>_code`, `<id>_headers`, and `<id>_Error` hold the rest.
+- For an existing connection and catalog-absent endpoint use `.http(id, { method, url, connection, folder, connectorKey })`. First run `uip is connections base-url <CONNECTION_ID> --output json`; it must host the target API, else do not bind it or send this API's path relative to it: use absolute manual HTTP (no credential) and name a suitable connection on `Needs:` ([connectors](connectors.md)). `url` is the vendor endpoint relative to that base (Slack's `/team.info` under `https://slack.com/api`), never an Integration Service `Path`; another-host absolute URLs fail 400 `Invalid request URL` (`MANAGED_HTTP_ABSOLUTE_URL`); wrong paths can yield `[102021] Received failure from vendor system`. Get `connectorKey` from `uip is connections list --all-folders --output json`; omit only for `uipath-uipath-http`. A wrong/missing key passes `check`, fails `validate` with `MISSING_BINDING`. `connection`/`folder` bind `ConnectionId`/`folderKey` (the connection's `Id` and `FolderKey`, or what `prepare` wrote); folder is required (`EMPTY_REQUIRED_FIELD folderKey`). `outputVar` is `<id>_response`; `<id>_code`, `<id>_headers`, and `<id>_Error` hold the rest.
 
   ```ts
   .binding('gh', { resource: 'Connection', propertyAttribute: 'ConnectionId', value: '<CONNECTION_ID>' })
@@ -218,15 +213,15 @@ Runtime facts and choices that syntax/static validation cannot establish; exact 
 ## Human task outcomes
 
 <!-- RULE:bpmn.hitl.inline-form-default -->
-- Always author inline forms: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`; the form travels in `.bpmn`. SDK app-backed tasks write v1 `Actions.HITL` with only `appId`, rejected by `uip maestro bpmn validate` with `MISSING_BINDING`/`MISSING_RESOURCE` and unread by the engine. For a deployed Action App, author the inline form, tell the user it is unbound, and direct them to Studio Web to switch it; never substitute `.task()`.
-- Field `direction` is `input` (shown, `value: '=vars.x'`), `output` (answer lands in `variable`, default id), or `inOut` (shown, editable, written back); `type` is the data type: `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=vars.amount' }`; `type: 'input'` fails `check` with `TS2322`. Field ids are plain non-reserved identifiers (`reviewNote`, not `review-note` or `default`); no field may be `Action`; outcome ids are unique including derived ids (`Needs review` and `Needs-review` collide); each variable has one writer; no answer variable may equal an `outputs` key (a field named `decision` beside `outputs: { decision: '=Action' }` is refused); pickers (`singleSelect`, `multiSelect`, `enum`, or dropdown `controlType`) require `options` such as `[{ id: 'o1', value: 'high', label: 'High' }]`.
-- Inline forms require the cloud quick-form flag. Without it runtime fails at the human task with `170004` `Invalid input for the HITL task`, or pre-mid-September 2026 engines with `170015` `No app … found`; tell the user to enable it and never fall back to `.task()` or `app`. Studio Web Edit Schema does not open for inline forms.
+- Always author inline forms: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`; the form travels in `.bpmn`. SDK app-backed tasks write v1 `Actions.HITL` with only `appId`: `uip maestro bpmn validate` rejects it (`MISSING_BINDING`/`MISSING_RESOURCE`), the engine does not read it. For a deployed Action App, author the inline form, tell the user it is unbound and to switch it in Studio Web; never substitute `.task()`.
+- Field `direction`: `input` (shown, `value: '=vars.x'`), `output` (answer lands in `variable`, default id), `inOut` (shown, editable, written back); `type` is the data type: `{ id: 'amount', label: 'Amount', type: 'number', direction: 'input', value: '=vars.amount' }`; `type: 'input'` fails `check` (`TS2322`). Field ids are plain non-reserved identifiers (`reviewNote`, not `review-note` or `default`), never `Action`; outcome ids are unique, derived ids included (`Needs review` and `Needs-review` collide); one writer per variable; no answer variable equals an `outputs` key (field `decision` beside `outputs: { decision: '=Action' }` is refused); pickers (`singleSelect`, `multiSelect`, `enum`, dropdown `controlType`) require `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
+- Inline forms need the cloud quick-form flag; without it the human task fails `170004` `Invalid input for the HITL task` (pre-mid-September 2026 engines: `170015` `No app … found`). Tell the user to enable it; never fall back to `.task()` or `app`. Studio Web Edit Schema does not open for inline forms.
 
 <!-- RULE:bpmn.hitl.no-completer-identity -->
-- Inline forms return fields and `Action`, not completer identity. `hitlTask` fields `CompletedByUser`, `AssignedToUser`, and `CompletionTime` come only from Action App tasks, which SDK cannot bind. Do not derive identity controls (four-eyes, "a different approver", an audit "who") from typed fields; route instead and tell the user to switch to an Action App in Studio Web or use Action Center assignee groups.
+- Inline forms return fields and `Action`, not completer identity: `hitlTask` `CompletedByUser`, `AssignedToUser`, `CompletionTime` come only from Action App tasks, which the SDK cannot bind. Never derive identity controls (four-eyes, "a different approver", an audit "who") from typed fields; route instead and tell the user to switch to an Action App in Studio Web or use Action Center assignee groups.
 
 <!-- RULE:bpmn.hitl.task-settings -->
-- `title`, `priority` (`Low`, `Medium`, `High`, `Critical`), and string `labels` are the only Action Center task settings `.humanTask()` writes. Configure the Task timer (the task's SLA: reminder, reassign, unassign or auto-complete after a time) and assignee in Studio Web; `Timer` fails `check --source` (`TS2353`) and compile alone drops it. Tell the user to set SLA in the panel. If Task timer is unavailable behind a feature flag, or the process must act on breach, draw a non-interrupting `onTimer` in the task's body (notify a manager) and call it a process timer, not task SLA.
+- `.humanTask()` writes only Action Center settings `title`, `priority` (`Low`, `Medium`, `High`, `Critical`), and string `labels`. Task timer (task SLA: reminder, reassign, unassign or auto-complete after a time) and assignee are set in Studio Web; `Timer` fails `check --source` (`TS2353`), compile alone drops it. Tell the user to set SLA in the panel. If Task timer is behind an unavailable feature flag, or the process must act on breach, draw a non-interrupting `onTimer` in the task body (notify a manager) and call it a process timer, not task SLA.
 
 <!-- RULE:bpmn.hitl.output-map -->
 - Map decisions used by routing through `outputs`; typed platform output is not populated by local runtime. Exercise every important outcome.
@@ -242,16 +237,16 @@ Choosing operations and the author → check → prepare → check → compile l
 - Keep connection/folder values symbolic in TypeScript and resolve them from `bindings.json`; only a live run proves environment bindings.
 
 <!-- RULE:bpmn.binding.value-vs-resource-key -->
-- `value` is runtime value; `resourceKey` is never resolved. `=bindings.<id>` reads `value` (`default` on the wire); resolution is `supplied[id] ?? supplied[name] ?? value`, so a binding with neither is `UNRESOLVED` and a dispatching run refuses to start, naming every one. `resourceKey` is design-time provenance for deploy re-resolution; set both when identity/value differ, and expect no `value` on `folderPath`. Author-side `bindings.json` reverses the meaning (`resourceKey` is tenant value, `default` offline placeholder); do not transfer semantics between files.
+- `value` is the runtime value; `resourceKey` is never resolved. `=bindings.<id>` reads `value` (`default` on the wire); resolution is `supplied[id] ?? supplied[name] ?? value`, so a binding with neither is `UNRESOLVED` and a dispatching run refuses to start, naming each. `resourceKey` is design-time provenance for deploy re-resolution; set both when identity and value differ; `folderPath` has no `value`. Author-side `bindings.json` reverses them (`resourceKey` = tenant value, `default` = offline placeholder); never carry semantics between the files.
 
 <!-- RULE:bpmn.connector.folder-companion -->
-- `folderKey` is a connection companion, not an independent resource: its `resourceKey` is the connection key and only `value` is the folder key. Declare the pair once with `.binding(c, { resource: 'Connection', propertyAttribute: 'ConnectionId', value })` and `.binding(f, { resource: 'Connection', propertyAttribute: 'folderKey', value })`; read both from the same node (`connection: '=bindings.c'`, `folderKey: '=bindings.f'`). `validate` reports `MISSING_BINDING` for folder-keyed folders; `check` warns `FOLDER_BINDING_KEYED_BY_FOLDER`/`FOLDER_BINDING_UNPAIRED` when pairing fails.
+- `folderKey` is a connection companion, not a resource of its own: its `resourceKey` is the connection key; only `value` is the folder key. Declare the pair once, `.binding(c, { resource: 'Connection', propertyAttribute: 'ConnectionId', value })` and `.binding(f, { resource: 'Connection', propertyAttribute: 'folderKey', value })`, and read both from one node (`connection: '=bindings.c'`, `folderKey: '=bindings.f'`). A folder-keyed folder binding fails `validate` `MISSING_BINDING`; `check` warns `FOLDER_BINDING_KEYED_BY_FOLDER`/`FOLDER_BINDING_UNPAIRED` on bad pairing.
 
 <!-- RULE:bpmn.connector.data-service -->
 - Data Fabric records/files use `.dataService(id, { entity, connection, folder, op, … })`, with exactly `create`, `update`, `get`, `query`, `delete`, `downloadFile`, `uploadFile`, `deleteFile`. It writes `Intsvc.ActivityExecution`, needs no connector library or `prepare`, and declares `<id>_response`/`<id>_Error`; read record id as `=js:vars.<id>_response.Id`. Map results at the end event (`payload: { type: 'BPMN.Variables', outputRows: [{ name, type, var, source: '=js:vars.<id>_response' }] }`). Do not hand-fill `.activity('Intsvc.ActivityExecution', …)` or use `.connector()` for these operations.
 
 <!-- RULE:bpmn.connector.data-service-folder-entity -->
-- Folder entities (the picker shows it under a folder; the request says "folder entity" or "entity scope: folder") use `entity: { name, folder: '<folder path>' }`, not plain name/hand-found keys. When `bpmn check --source` reports `RESOURCE_UNRESOLVED`, run `uip maestro registry prepare --entity <name> --folder-path <path>` in the directory used for `bpmn check`/`compile`, then `check` again; it records `./.flow-sdk/resources.json`. Without a folder, `prepare` searches all folders, records one match and names it, or lists several. `entity.folder` is the folder holding the ENTITY; the `folder` option stays the folder holding the CONNECTION. They are often the same folder and are still two options. Record operations use `_V3` (`CreateEntityRecord_V3`, …); `create`, `update`, `get`, `query` use V2 picker bindings, while `delete` remains V1 with `entityScope=folder`, `folderEntityName`, and `folderEntityName_folderKey`. Do not hand-convert. Tenant entities use curated V2 operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`) with entity in `pathParameters`.
+- Folder entities (picker shows it under a folder; request says "folder entity" or "entity scope: folder") use `entity: { name, folder: '<folder path>' }`, not plain name/hand-found keys. On `bpmn check --source` `RESOURCE_UNRESOLVED`, run `uip maestro registry prepare --entity <name> --folder-path <path>` in the `bpmn check`/`compile` directory (records `./.flow-sdk/resources.json`), then `check` again. Without a folder, `prepare` searches all folders: it records and names one match, or lists several. `entity.folder` holds the ENTITY; the `folder` option holds the CONNECTION: two options even when the same folder. Record operations use `_V3` (`CreateEntityRecord_V3`, …); `create`, `update`, `get`, `query` use V2 picker bindings; `delete` stays V1 with `entityScope=folder`, `folderEntityName`, `folderEntityName_folderKey`. Do not hand-convert. Tenant entities use curated V2 operations (`CreateEntityRecordCurated`, `UpdateEntityRecordV2`, `GetEntityRecordByIdCurated`, `QueryEntityRecordsCurated`, `DeleteEntityRecordCurated`) with entity in `pathParameters`.
 <!--skill-flavor:sdk-upgrade:start-->
   Needs `@uipath/maestro-builder-sdk` 6.73.0 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`. If `uip maestro registry prepare --entity …` reports `missing required argument 'connector-key'`, run `npx flow-sdk registry prepare --entity …`.
 <!--skill-flavor:sdk-upgrade:end-->
@@ -268,46 +263,11 @@ Choosing operations and the author → check → prepare → check → compile l
 - An `=` folder key cannot be recorded and produces V1 with no solution declaration; prefer `{ name, folder }`. Decompiled folder tasks remain `.activity()` with rows/bindings and compile unchanged. File operations refuse folder-scoped entities; tell the user unsupported and do not fall back to tenant entity or hand-fill. `.eventTrigger()` uses the same `entity: { name, folder }` ([connector events](connectors.md#6-connector-events)).
 
 <!-- RULE:bpmn.connector.parameter-rows -->
-- `.connector()`, `.dataService()`, `.eventTrigger()`, and `.waitForEvent()` write V2 (`activityConfigurationVersion: v2`), the shape Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds: path parameters go in one JSON `pathParameters` row, query parameters in `queryParameters`, body in one `target="body"` row, and multipart parts in `target="file"`; use library names such as `send_as`, not `sendAs`. `.dataService()` still writes V1 tasks for the file operations (`downloadFile`, `uploadFile`, `deleteFile`), and on a folder-scoped entity for `delete` and for a folder key written as an `=`-expression.
+- `.connector()`, `.dataService()`, `.eventTrigger()`, `.waitForEvent()` write V2 (`activityConfigurationVersion: v2`), as Studio Web's connector panel saves and `uip maestro bpmn registry get --input-details` builds: path parameters in one JSON `pathParameters` row, query parameters in `queryParameters`, body in one `target="body"` row, multipart parts in `target="file"`; use library names (`send_as`, not `sendAs`). `.dataService()` still writes V1 for file operations (`downloadFile`, `uploadFile`, `deleteFile`) and, on a folder-scoped entity, for `delete` and an `=`-expression folder key.
 <!--skill-flavor:sdk-v2-connector:start-->
   Needs `@uipath/maestro-builder-sdk` 6.84.0 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` and compile again; do not hand-convert old rows.
 <!--skill-flavor:sdk-v2-connector:end-->
-- V1 imported tasks retain one `target="path"`/`target="query"` row per parameter plus `operation`; leave them. Leave the process-level `uipath:intsvcActivityConfig` marker as found; do not add it to an existing workflow: Studio Web would then read every unversioned V1 task in the file as V2. Through `.activity()`, copy `registry get --input-details` `Data.V2.ElementXml` context rows, including `activityConfigurationVersion: 'v2'`; use `inputs` for body (`inputs: { script }` on a JDBC query becomes `{"script": …}` in the body), `pathParameters`, and `queryParameters`. `inputRows`, when present, replaces `inputs`: spell every row, the body row included (`{ name: 'body', type: 'json', target: 'body', body: { script } }`), or the request fields are silently dropped. Every row needs `target`; otherwise it is not sent and `check` fails `CONNECTOR_INPUT_ROW_NO_TARGET`. See [§4 of the connectors reference](connectors.md#4-when-the-connector-is-not-in-the-library).
-
-## Registry extension types
-
-<!-- RULE:bpmn.activity.escape-hatch -->
-- Use `.activity(id, 'Type.Name', opts)` for registry extension types without typed methods; prefer typed methods when available.
-
-<!-- RULE:bpmn.activity.discover-type -->
-- Find types with `uip maestro bpmn registry search <term> --output json`, then inspect with `registry get <Type.Name> --output json`. Typed methods cover only the committed snapshot; ask the registry before concluding a type cannot be authored.
-
-<!-- RULE:bpmn.activity.discovery-only -->
-- **Discovery only:** when asked to discover/save evidence or not author, run no `init`, write no `.bpmn.ts`, and read no other reference. Save raw JSON one file per command in named `<EVIDENCE_DIR>`, otherwise `registry-evidence/` outside `<Project>` (Studio Web: `/tmp/registry-evidence/`).
-  ```bash
-  E=<EVIDENCE_DIR>
-  mkdir -p "$E"
-  uip maestro bpmn registry pull --output json > "$E/pull.json"
-  uip maestro bpmn registry list --limit -1 --output json > "$E/list.json"
-  uip maestro bpmn registry search <TERM> --output json > "$E/search-<TERM>.json"
-  uip maestro bpmn registry get <TYPE_NAME> --output json > "$E/get-<TYPE_NAME>.json"
-  ```
-  Run `get` for every needed type, then stop and report found names. Preserve a response with `"Result": "Failure"` exactly and report it; never fabricate JSON.
-
-<!-- RULE:bpmn.activity.two-registries -->
-- `uip maestro bpmn registry` serves `uipath:*` extension types; `uip maestro registry` serves Integration Service operations. A connector key passed to the first correctly yields `Extension type not found`; caches are separate. See [`connectors.md`](connectors.md).
-
-<!-- RULE:bpmn.activity.registry-freshness -->
-- Registry search/get use a non-self-refreshing cache. Run `uip maestro bpmn registry pull --force` before checking newer or apparently missing types.
-
-<!-- RULE:bpmn.activity.inline-spec -->
-- If `registry get` says `Extension type not found`, emit with `.activity(id, 'Type.Name', { spec, context, inputs })`, where `spec` is a `RegistryTypeSpec` containing BPMN element/tag, typed/default context fields, `inputPattern`, and output row. `decompile` supplies specs for imported unknown nodes; leave those specs as decompile wrote them, beside explicit `contextRows`/`inputRows`/`outputRows`. Editing a row's value is fine; the row is written exactly as it reads. New nodes need the full spec.
-<!--skill-flavor:sdk-inline-spec:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.85.7 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` when older decompile reports `BPMN_TYPE_UNKNOWN`.
-<!--skill-flavor:sdk-inline-spec:end-->
-
-<!-- RULE:bpmn.activity.offsnapshot-resolve -->
-- A type outside the SDK snapshot may resolve from the registry at compile time. Report that a tenant and snapshot refresh were needed; until refreshed, offline compilation is unavailable.
+- Imported V1 tasks keep one `target="path"`/`target="query"` row per parameter plus `operation`; leave them. Leave the process-level `uipath:intsvcActivityConfig` marker as found; never add it to an existing workflow: Studio Web would read every unversioned V1 task as V2. Through `.activity()`, copy `registry get --input-details` `Data.V2.ElementXml` context rows, including `activityConfigurationVersion: 'v2'`; use `inputs` for body (JDBC `inputs: { script }` becomes body `{"script": …}`), `pathParameters`, `queryParameters`. `inputRows` replaces `inputs`: spell every row, body row included (`{ name: 'body', type: 'json', target: 'body', body: { script } }`), or request fields are silently dropped. A row without `target` is not sent; `check` fails `CONNECTOR_INPUT_ROW_NO_TARGET`. See [§4 of the connectors reference](connectors.md#4-when-the-connector-is-not-in-the-library).
 
 ## Brownfield editing
 
@@ -328,7 +288,7 @@ Choosing operations and the author → check → prepare → check → compile l
 - `bpmn decompile --style nested` lifts boundaries, gateways, and event subprocesses, uses `flowMode('sequence')`, and verifies the lifted graph before writing. Preserve original flow ids with `.flowIds([{ source, target, id }])` once at the top; merge requires this because it keys every process child by id (a renamed flow leaves an untouched gateway's `default` naming a missing id: `MISSING_CONDITION_EXPRESSION` at validate). `--keep-flow-ids` limits lifting to already matching derived ids. A non-`Flow_<source>_<target>` id remains flat without changing graph or ids.
 
 <!-- RULE:bpmn.brownfield.connector-lift -->
-- With `--library <dir>` (otherwise registry-pull cache; `--connectors-local <dir>` overlays it), decompile lifts only V2 `Intsvc.ActivityExecution` tasks the library can name into `.connector(key, action, inputs, { connection, folder, outputVar, errorVar, outputs })`; otherwise keep verbatim `.activity()` with `contextVerbatim` and metadata, reporting each reason (a V1 task: `a V1 connector task, kept verbatim so it stays V1`). Each lift is compiled and compared before writing. The lifted `.connector()` form is the one to copy when adding a connector task to an import. What stays verbatim: a body field the static library does not declare (a Data Fabric update's entity columns; `registry prepare` loads them), a `connection` that is not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task keeps the file's own `jsonSchema` declaration as an explicit `.vars([…])` entry. Lifted canvas metadata may differ; `--connectors verbatim` preserves tasks byte-identically. `examples/InvoiceApproval.bpmn.ts` shows both forms.
+- With `--library <dir>` (else the registry-pull cache; `--connectors-local <dir>` overlays it), decompile lifts only V2 `Intsvc.ActivityExecution` tasks the library can name into `.connector(key, action, inputs, { connection, folder, outputVar, errorVar, outputs })`, compiling and comparing each lift before writing; others stay verbatim `.activity()` with `contextVerbatim` and metadata, each reason reported (V1: `a V1 connector task, kept verbatim so it stays V1`). Copy the lifted `.connector()` form when adding a connector task to an import. Kept verbatim: a body field the static library does not declare (Data Fabric update entity columns; `registry prepare` loads them), a `connection` not a `=bindings.<id>` reference, a designer row with an attribute no option spells. A lifted task keeps the file's `jsonSchema` declaration as an explicit `.vars([…])` entry. Lifted canvas metadata may differ; `--connectors verbatim` preserves tasks byte-identically. `examples/InvoiceApproval.bpmn.ts` shows both forms.
 
 <!-- RULE:bpmn.brownfield.unused-bindings -->
 - `bpmn decompile` drops unreferenced bindings and reports them; a binding without `value` is unresolved and blocks dispatch. Retain them with `--keep-unused-bindings`. Tenant cleanup occurs through `uip maestro bpmn merge`, which takes the edited source extension block.
@@ -341,47 +301,4 @@ Choosing operations and the author → check → prepare → check → compile l
 - Decompile refuses a complex gateway with `activationCondition` or bare call with `calledElement`; tell the user, remove the attribute, and decompile again. Runtime does not read the former and the platform ignores the latter. The bare call still fails `validate` with `CALL_ACTIVITY_NO_PAYLOAD` until given an `Orchestrator.Start*Process` type and binding.
 
 <!-- RULE:bpmn.brownfield.format -->
-- Do not relayout a merged process. Merge preserves original shapes, edges, pools, lanes, colors, and placement (it grows a lane, pool or expanded sub-process that has no room for a new shape and shifts the shapes below it, and reroutes an existing edge whose flow the edit rewired) and draws only additions. `format --relayout` lays out the whole diagram; plain `format` on a CLI whose help lacks `--relayout` also relayouts and drops pools, lanes, colors, and placement. Run plain `format` only for `BPMN_PARSE_ERROR`/`No diagrams found`, `MISSING_DI_SHAPE`, or `MISSING_DI_EDGE`; then `refresh` and `validate`, and, on a CLI without `--relayout`, when the original had a diagram (`MISSING_DI_SHAPE` / `MISSING_DI_EDGE`), tell the user that the canvas layout was reset. For a one-start/at-most-one-end template or user-chosen replacement, run `format --relayout` (plain `format` without the flag), then `refresh` and `validate`.
-
-## Contract metadata
-
-<!-- RULE:bpmn.metadata.case-management -->
-- Process-level `uipath:caseManagement` is distinct from typed `Orchestrator.StartCaseMgmtProcess`/`Orchestrator.StartCaseMgmtProcessAsync`. When explicitly required, author `.metadata({ caseManagement: { version: 'v1', value: '{"mode":"preserve-only"}' } })`; a case-process call does not emit or replace it.
-
-## Packaging and layout
-
-<!-- RULE:bpmn.package.derived -->
-- Metadata derives from BPMN: `operate.json.main` and each `entry-points.json` `filePath` are `/content/<Name>.bpmn#<start-id>`; `package-descriptor.json` has a `files` map; `project.uiproj` names no file. Every root start gets `uipath:entryPointId`: explicit or stable SDK-derived GUID; changing process/start id changes it, so pin the old id when renaming a deployed process. `refresh` reads it. Preserve `bpmn init` ids by decompiling its stub or use `.metadata({ entryPointId: '<uuid>' })`; additional root starts set `entryPointId` on each `.startEvent(id, { entryPointId })`; `false` emits none and must be deleted for id-less imports. Values must be GUIDs: `validate` refuses any other (`Root start event uipath:entryPointId value … must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first.
-  Run:
-  ```sh
-  uip maestro bpmn refresh <project-dir> --output json
-  ```
-  `Data.WrittenFiles` identifies stale files. Do not use deprecated `update-metadata`; it omits `Intsvc.*` connection bindings.
-
-  For `Demo.bpmn` with root start event `start`, `init` plus `refresh` write these
-  values (other fields omitted):
-
-  ```jsonc
-  // project.uiproj (written by init; refresh leaves it alone)
-  { "Name": "Demo", "ProjectType": "ProcessOrchestration" }
-  // operate.json
-  { "main": "/content/Demo.bpmn#start", "contentType": "ProcessOrchestration", "targetFramework": "Portable" }
-  // entry-points.json
-  { "entryPoints": [{ "filePath": "/content/Demo.bpmn#start", "type": "ProcessOrchestration",
-      "input": { "type": "object", "properties": {} }, "output": { "type": "object", "properties": {} } }] }
-  // bindings_v2.json
-  { "version": "2.0", "resources": [] }
-  // package-descriptor.json
-  { "files": { "operate.json": "operate.json", "entry-points.json": "entry-points.json",
-      "bindings.json": "bindings_v2.json", "Demo.bpmn": "Demo.bpmn" } }
-  ```
-
-  Inspect every generated metadata file against this contract: `entry-points.json.entryPoints` must be non-empty and reference the built BPMN/start id. If it is empty, do not hand-write the JSON: the BPMN was not compiled by the SDK and its root start event has no `uipath:entryPointId`; fix the source, rebuild, and rerun `refresh`. If refresh says `Expected one uipath:entryPointId on root manual start event`, delete `entryPointId: false` and rebuild.
-
-<!-- RULE:bpmn.layout.separate -->
-- Compile emits semantic XML without diagram; `validate` refuses files without one. Format every newly compiled process; format a merged one only for missing diagram/shape, a template, or a user-chosen replacement (`bpmn.brownfield.format`).
-
-## Product boundary
-
-<!-- RULE:bpmn.validation.layers -->
-- TypeScript checks call shape; `bpmn check` checks graph semantics; `uip maestro bpmn validate` checks the compiled product contract; a live run remains necessary for tenant resources and runtime outcomes.
+- Do not relayout a merged process. Merge keeps original shapes, edges, pools, lanes, colors, placement (growing a lane, pool or expanded sub-process lacking room for a new shape and shifting shapes below, rerouting an existing edge whose flow the edit rewired) and draws only additions. `format --relayout` lays out the whole diagram; plain `format` on a CLI whose help lacks `--relayout` also relayouts, dropping pools, lanes, colors, placement. Run plain `format` only for `BPMN_PARSE_ERROR`/`No diagrams found`, `MISSING_DI_SHAPE`, or `MISSING_DI_EDGE`; then `refresh` and `validate`; on a CLI without `--relayout`, when the original had a diagram (`MISSING_DI_SHAPE`/`MISSING_DI_EDGE`), tell the user the canvas layout was reset. For a one-start/at-most-one-end template or user-chosen replacement, run `format --relayout` (plain `format` without the flag), then `refresh` and `validate`.
