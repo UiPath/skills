@@ -169,6 +169,14 @@
       },
       "last_synced": null
     },
+    "uipath-a2a-agents": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-mcp-servers": {
       "status": "preview",
       "confluence": {

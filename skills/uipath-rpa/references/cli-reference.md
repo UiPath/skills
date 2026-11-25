@@ -76,8 +76,8 @@ Both return `{Result, Code, Data}`. Identify the backend from `Data`:
 
 | Backend | `Data` keys | Workflow `Log Message` output |
 |---|---|---|
-| Headless Studio (Helm) | `output` (serialized output arguments, `"{}"` if none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails`, `errorScope` | stdout lines such as `[Information] …` and `[Error] …` above the JSON envelope; none in `Data` |
-| Studio Desktop | `output` (completion status `"Session ended"`), `errors` array, `logEntries` array of `{source, level, message}` where `source` is `Compile` or `Debug`, and `debugState` (`"Completed"` on completion; absent if the file could not open) | `Data.logEntries`; nothing above the envelope |
+| Headless Studio (Helm) | `output` (serialized output arguments, `"{}"` if none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails`, `errorScope`; `robotRefusal` on `--remote` runs | stdout lines such as `[Information] …` and `[Error] …` above the JSON envelope; none in `Data` |
+| Studio Desktop | `output` (completion status `"Session ended"`), `errors` array, `logEntries` array of `{source, level, message}` where `source` is `Compile` or `Debug`, and `debugState` (`"Completed"` on completion, failed or not; absent if the file could not open); `currentActivity` on `--remote` runs | `Data.logEntries`; nothing above the envelope |
 
 Field meanings are in [debugging.md § Output Format](debugging.md#output-format).
 

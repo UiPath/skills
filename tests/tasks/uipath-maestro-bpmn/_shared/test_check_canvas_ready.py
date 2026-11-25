@@ -55,6 +55,32 @@ CASES = [
     ("start-event input bridge", f'<bpmn:startEvent id="start">{_row("=vars.amount")}</bpmn:startEvent>', True),
     ("input read downstream", f'<bpmn:endEvent id="done">{_row("=vars.amount")}</bpmn:endEvent>', False),
     ("node result", f'<bpmn:scriptTask id="t">{_row("=result.response")}</bpmn:scriptTask>', True),
+    ("bracket result read", '<bpmn:serviceTask id="t">' + _row('=this["test-123"]') + "</bpmn:serviceTask>", True),
+    ("raw backslash bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a\\b c"]') + "</bpmn:serviceTask>", True),
+    ("bracket read of a key with a quote", '<bpmn:serviceTask id="t">' + _row('=this["a&quot;b"]') + "</bpmn:serviceTask>", False),
+    ("bracket read of a key ending in a backslash", '<bpmn:serviceTask id="t">' + _row('=this["a\\"]') + "</bpmn:serviceTask>", True),
+    ("bracket read of a key ending in two backslashes", '<bpmn:serviceTask id="t">' + _row('=this["a\\\\"]') + "</bpmn:serviceTask>", True),
+    (
+        "bracket read on another namespace's output",
+        '<bpmn:serviceTask id="t"><bpmn:extensionElements><o:output xmlns:o="http://example.com/other" source=\'=this["x-y"]\'/>'
+        "</bpmn:extensionElements></bpmn:serviceTask>",
+        False,
+    ),
+    ("bracket read of an empty key", '<bpmn:serviceTask id="t">' + _row('=this[""]') + "</bpmn:serviceTask>", False),
+    ("bracket read with a trailing newline", '<bpmn:serviceTask id="t">' + _row('=this["x"]&#10;') + "</bpmn:serviceTask>", False),
+    ("bracket read inside a JSON source", '<bpmn:serviceTask id="t">' + _row('["=this[\\"x\\"]"]') + "</bpmn:serviceTask>", False),
+    ("computed bracket read", '<bpmn:serviceTask id="t">' + _row('=this["a"] + vars.b') + "</bpmn:serviceTask>", False),
+    (
+        "bracket read on an input",
+        '<bpmn:serviceTask id="t"><bpmn:extensionElements><uipath:input name="a">=this["test-123"]</uipath:input>'
+        "</bpmn:extensionElements></bpmn:serviceTask>",
+        False,
+    ),
+    (
+        "bracket read as a condition",
+        '<bpmn:sequenceFlow id="f"><bpmn:conditionExpression>=this["test-123"]</bpmn:conditionExpression></bpmn:sequenceFlow>',
+        False,
+    ),
     (
         "plain gateway condition",
         '<bpmn:sequenceFlow id="f"><bpmn:conditionExpression>=vars.amount &gt; 5</bpmn:conditionExpression></bpmn:sequenceFlow>',

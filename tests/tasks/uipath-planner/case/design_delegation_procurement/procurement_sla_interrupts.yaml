@@ -145,6 +145,7 @@ simulation:
   goal: |
     Get an approved sdd.md, then stop before implementation.
   constraints:
+    - "Every file the agent writes belongs in its working directory, under the name it reports. Never ask it to move, copy, or rename a file to another folder or path."
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, owners, timing, or global-event behavior."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
     - "Do not authorize creating a case plan, running, publishing, or deploying."

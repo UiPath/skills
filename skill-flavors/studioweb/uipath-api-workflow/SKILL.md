@@ -34,6 +34,8 @@ Authentication and tenant context are inherited from the active Studio Web sessi
 19. **Create API Workflow projects with the Studio Web project tool.** First distinguish an explicit request for a new project from a request to add workflow content to the current project. For a new project, inspect the live `proxy-tools-Solution` / `CreateProjects` schema and invoke the API Workflow project type using exactly the fields and enum values it declares.
 
 19a. **Continue from the project returned by Studio Web.** Verify `/solution/<projectName>` with `LsDirectory`, then edit `/solution/<projectName>/Workflow.json`; alternatively, open that project before using `CurrentProject.AbsolutePath`. Preserve the host-generated project tree and metadata. When the creation operation, project type, or generated tree is unavailable, report the exact capability gap.
+
+19b. **Edit an existing workflow in place.** When the user asks to fix or change a `Workflow.json` that already exists — in a project or as a loose file anywhere in the workspace — edit that file at its own path and keep the result there: the user's file is the deliverable, and a copy in a new project leaves the original unchanged. Reserve `CreateProjects` for an explicit new-workflow request.
 <!--skill-flavor:project-creation:end-->
 
 <!--skill-flavor:runtime-validation-contract:start-->
@@ -89,6 +91,7 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 - **Use the successful `CreateProjects` result and host-exposed project tree as creation evidence.**
 - **Preserve the host-generated project tree and solution metadata** while authoring `/solution/<projectName>/Workflow.json`.
 - **Report an unavailable creation capability or project type as an exact host gap** and ask how the user wants to proceed.
+- **Edit an existing `Workflow.json` at its own path** and reserve `CreateProjects` for explicit new-workflow requests (rule 19b).
 <!--skill-flavor:project-creation-antipatterns:end-->
 
 <!--skill-flavor:authentication-remediation:start-->
