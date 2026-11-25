@@ -50,7 +50,7 @@ Discovery-only requests (discover types or save registry evidence, no authoring)
    - Otherwise stop and ask the user which to use, as a pick list if the host has one: one option per found solution (folder name) plus "Create a new solution".
      Do not run `init` until the user answers, and never silently adopt an existing solution: `init` registers the project in a solution above it without asking.
      Unless upload is forbidden, say in the question that adopting a solution means a later upload overwrites its cloud copy.
-     For an unnamed new solution ask only for its name, offering `<Name>Solution` as the default, or a free name by the numbering rule below when that one is taken.
+     When the request asks for a new solution without naming it, ask only for its name, offering `<Name>Solution` as the default, or a free name by the numbering rule below when that one is taken.
 
    For an existing solution, from its directory run `init`; project is `<SolutionDir>/<Name>/`. If selected after warning about cloud overwrite, upload without asking again; if named in the request, confirm before the first upload as [Operate](references/operate.md#studio-web-upload) requires, while a draft holds upload as [Draft skeleton](references/draft-skeleton.md#steps) says. Check its cloud copy before overwriting.
 
