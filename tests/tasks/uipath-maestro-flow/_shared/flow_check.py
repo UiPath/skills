@@ -2204,15 +2204,21 @@ def _flow_node_count(project_dir: str) -> int | None:
     return total
 
 
-def _flow_file_node_count(path: str) -> int | None:
-    """Return one Flow file's node count, or ``None`` when unreadable."""
+def _flow_file_nodes(path: str) -> list | None:
+    """Return one Flow file's ``nodes`` list, or ``None`` when unreadable."""
     try:
         with open(path, encoding="utf-8") as f:
             flow = json.load(f)
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         return None
     nodes = flow.get("nodes") if isinstance(flow, dict) else None
-    return len(nodes) if isinstance(nodes, list) else None
+    return nodes if isinstance(nodes, list) else None
+
+
+def _flow_file_node_count(path: str) -> int | None:
+    """Return one Flow file's node count, or ``None`` when unreadable."""
+    nodes = _flow_file_nodes(path)
+    return None if nodes is None else len(nodes)
 
 
 def _dedupe_flow_projects(project_uiprojs: list[str]) -> list[str]:

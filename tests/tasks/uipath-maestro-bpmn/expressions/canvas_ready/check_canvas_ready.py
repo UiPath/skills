@@ -9,11 +9,12 @@ check catches them (dogfood 2026-11-17, issues 6 and 7):
    The designer opens a plain `=` expression in its C# editor.
    Exempt, as the canvas writes them: a row `source` reading the node's own
    result (`=result…`, `=response…`, `=Error`, a form or agent field such as `=Action`),
-   `=bindings.<id>`, `=iterator…`, a `=jsonString:` configuration blob, the
-   script envelope (`=vars`, `=metadata`), a human-task form input
-   (`=vars.<path>` in `HitlTaskArguments`), and the start-event row that maps
-   a process input (`=vars.<inputId>`). Names, ids, documentation and
-   annotations are literal text and not scanned; at least one `=js:` must exist.
+   an output row `source` of exactly `=this["<name>"]`, `=bindings.<id>`,
+   `=iterator…`, a `=jsonString:` configuration blob, the script envelope
+   (`=vars`, `=metadata`), a human-task form input (`=vars.<path>` in
+   `HitlTaskArguments`), and the start-event row that maps a process input
+   (`=vars.<inputId>`). Names, ids, documentation and annotations are literal
+   text and not scanned; at least one `=js:` must exist.
 2. No element reads a variable that is not set where it runs. A process input
    belongs to the start event, so reading `vars.<inputId>` downstream is "A
    variable is unresolved" on the canvas; `validate` reports it only as a
@@ -35,6 +36,8 @@ from bpmn_check import NS, fail, resolve_bpmn_file  # noqa: E402
 import xml.etree.ElementTree as ET  # noqa: E402
 
 RESULT_READ = re.compile(r"^=((result|response|Error|iterator)(\.\w+|\[\d+\])*$|bindings\.|jsonString:)")
+# The key is interpolated raw, so an empty one or one holding `"` or `]` cannot be mapped.
+THIS_READ = re.compile(r'=this\["[^"\]]+"\]')
 # A form or agent output field (`=Decision`); also lets an undeclared typo such as `=totl` pass.
 BARE_FIELD = re.compile(r"^=(?!(true|false|null)$)[A-Za-z_]\w*$")
 ENVELOPE = re.compile(r"^=(vars|metadata)$")
@@ -74,6 +77,7 @@ def main() -> None:
     starts = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}startEvent")}
     declared = {e.get("id") for e in root.iter() if e.get("id") and e.get("elementId")}
     forms = {e.get("id") for e in root.iter(f"{{{NS['bpmn']}}}userTask")}
+    output_tag = f"{{{NS['uipath']}}}output"
 
     bad: list[str] = []
     authored = 0
@@ -107,6 +111,9 @@ def main() -> None:
     def walk(element: ET.Element, owner: str | None) -> None:
         owner = element.get("id") or owner
         for attr, value in element.attrib.items():
+            # Checked on the raw attribute: a JSON-valued source must not lend the exemption to its strings.
+            if element.tag == output_tag and attr == "source" and THIS_READ.fullmatch(value):
+                continue
             if local(attr) not in LITERAL_ATTRS:
                 scan(value, owner, f"{local(element.tag)}@{local(attr)}")
         if element.text and local(element.tag) not in LITERAL_TEXT:

@@ -1,0 +1,84 @@
+task_id: skill-rules-e2e-graph-create-and-debug
+description: >
+  Agent creates a Business Rules project whose rule holds two chained
+  decisions, a credit-risk band and an interest rate that reads it, and
+  verifies it with `uip rules debug` against a tenant with Business Rules
+  enabled. Grades the debug command and the rules engine's risk band and
+  interest rate on six cases; the DMN's structure is graded by the smoke tasks.
+tags: [uipath-rules, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+run_limits:
+  # 1800 turn + 1500 for the engine grade + 300 margin. At 2400 an agent that used its
+  # whole turn was killed partway through grading, which reads as a failure.
+  task_timeout: 3600
+  turn_timeout: 1800
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named LoanRules for our loan policy,
+  and verify it returns the right answers before you finish. The interest
+  rate builds on the risk band, so keep them as two decisions in the one rule:
+
+  Risk band
+  - Inputs: `creditScore` (number) and `income` (number).
+  - Output: `riskBand` (string), one of "High", "Medium", "Low".
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+
+  Interest rate
+  - Inputs: the risk band and `loanAmount` (number).
+  - Output: `interestRate` (number).
+  - High risk is 12.5.
+  - Medium risk is 9 for a loan amount of 100000 or more, otherwise 8.
+  - Low risk is 6 for a loan amount of 100000 or more, otherwise 5.5.
+
+  Do NOT publish or deploy anything. Do NOT ask for approval, confirmation, or
+  feedback. Do NOT pause between planning and implementation.
+  Before starting, load the uipath-rules skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified the rule with rules debug"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rules engine returns the policy's risk band and interest rate for every case"
+    command: "python3 $REFERENCE_DIR/_shared/graph_check.py engine"
+    timeout: 1500
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rate decision requires the band decision and the whole-file entry point carries the contract"
+    command: "python3 $REFERENCE_DIR/_shared/graph_check.py chain"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+# What is already on disk is not ours to delete; `solution_cleanup.py` says why.
+pre_run:
+  - command: 'python3 _setup/solution_cleanup.py record LoanRules'
+    timeout: 60
+
+# `rules debug` uploads a Studio Web solution per run; delete the ones this run created so they
+# do not accumulate on the tenant, and only those.
+post_run:
+  - command: 'python3 _setup/solution_cleanup.py delete LoanRules || true'
+    timeout: 180

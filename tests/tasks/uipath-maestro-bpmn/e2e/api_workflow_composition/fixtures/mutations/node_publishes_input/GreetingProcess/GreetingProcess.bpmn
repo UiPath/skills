@@ -31,7 +31,7 @@
             <uipath:input name="folderKey" type="string" value="22222222-2222-4222-8222-222222222222" />
           </uipath:context>
           <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"name": "=vars.Var_Name"}]]></uipath:input>
-          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiResponse" />
+          <uipath:output name="Process response" type="Orchestrator.RunJob" source="=result" var="Var_ApiResponse" />
           <uipath:output name="message" type="string" source="=js:'Hello, ' + vars.Var_Name" var="Var_Message" />
         </uipath:activity>
       </bpmn:extensionElements>
