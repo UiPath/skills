@@ -19,6 +19,11 @@ sandbox:
     - type: template_dir
       path: ../../../uipath-planner/interview/edit_no_sdd/fixtures
 
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../../../uipath-planner/interview/_shared/attended-session.md
+
 reference:
   directory: ../../../uipath-planner/interview
 
@@ -107,7 +112,8 @@ success_criteria:
 
       Score 1.0 when, apart from how the user wants to answer, the agent asks only about the split, the
       libraries or the technology for a capability, and leaves everything else in the file for later;
-      0.0 otherwise.
+      0.0 otherwise. Only questions put to the user in chat count: what the agent asks its subagents or
+      tools is not one, nor is an offer of the next step once the file is written.
     weight: 2.5
     pass_threshold: 1.0
 

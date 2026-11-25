@@ -20,6 +20,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | start | — | this guide, [extracted-genome-guide.md](../shared/extracted-genome-guide.md) and [skill-mapping-guide.md](../shared/skill-mapping-guide.md) whole; [genome-format-guide.md](../shared/genome-format-guide.md) every section before § Process Genome Sections |
 | start | the source is a UiPath project or solution (`project.json`, `.uipx`, `project.uiproj`, `.xaml`, `.flow`, `agent.json` and the other kinds that section lists) | [uipath-source-guide.md](uipath-source-guide.md) as its opening line says, with the § Signals file it routes to ([uipath-rpa-signals-guide.md](uipath-rpa-signals-guide.md) or [uipath-non-rpa-signals-guide.md](uipath-non-rpa-signals-guide.md)), and [source-frameworks-guide.md § UiPath sources](source-frameworks-guide.md) only |
 | start | the source is another framework's export | [source-frameworks-guide.md](source-frameworks-guide.md) whole, then the pack's source guide it names |
+| start | the run is attended | [interview-guide.md](../interview/interview-guide.md) whole, for Step 7's offer |
 | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | [transactional-shape-guide.md](../shared/transactional-shape-guide.md), in the turn after the first such signal |
 | the sizing plan is stated | — | the template of the level chosen ([component](../../assets/templates/component-genome-template.md), [process](../../assets/templates/process-genome-template.md)) |
 | the sizing plan is stated | a process genome | [genome-format-guide.md](../shared/genome-format-guide.md) § Process Genome Sections |
@@ -27,7 +28,7 @@ The writing rules of [genome-format-guide.md § Writing Rules](../shared/genome-
 | the first suspected source defect | — | [defect-verification-guide.md](../shared/defect-verification-guide.md) |
 | the user names a preferences file (Step 1) | — | [genome-format-guide.md](../shared/genome-format-guide.md) § Design Links; the file itself, whole |
 | the genome is written (Step 7) | a documentation request, or the request asks for the SDD | [sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md), whose § Read Plan names the rest |
-| the strict check passes or ends (Step 7) | the run is attended, and the genome has an open Open Decisions entry, or its SDD an open item | [interview-guide.md](../interview/interview-guide.md) whole; when the interview is accepted, [edit-guide.md](../edit/edit-guide.md) whole and the reads its § Read Plan names |
+| the strict check passes or ends (Step 7) | the interview is accepted | [edit-guide.md](../edit/edit-guide.md) whole and the reads its § Read Plan names |
 
 Each phase's reads go out in at most three turns: turn 1 every file read whole and the heading list of every file read by section; turn 2 the sections chosen; turn 3 only what turn 2 routed to.
 
@@ -190,23 +191,18 @@ Write all files, each named by the slug rule ([genome-format-guide.md § File Na
 node "<SKILL_DIR>/scripts/check-genome.mjs" <component|process> "<GENOME_MD>" --profile strict --processes "<INVENTORY_JSON>" --recordsets "<RECORDSETS_JSON>"
 ```
 
-`--processes` and `--recordsets` are the two files the framework migration pack's `data` command wrote into the scratch folder (Step 6b); a UiPath source, or a pack that writes neither, runs without them. Fix every `FAIL` and run it again, at most three rounds. Then, once every verdict on a suspected source defect is edited in and Step 6b's check has run, write the SDD from the genome for a documentation request, or when the request asks for it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md)), and an attended run offers the interview on the genome's open items ([interview-guide.md](../interview/interview-guide.md) § After Writing). Accepted, its answers are applied to the genome ([interview-guide.md](../interview/interview-guide.md) § Where Answers Go), an SDD beside the genome is written again, and the strict check runs after the last edit.
+`--processes` and `--recordsets` are the two files the framework migration pack's `data` command wrote into the scratch folder (Step 6b); a UiPath source, or a pack that writes neither, runs without them. Fix every `FAIL` and run it again, at most three rounds. Then, once every verdict on a suspected source defect is edited in and Step 6b's check has run:
 
-The closing message of every run, unattended included, names:
-
-1. the genome and any SDD;
-2. how many questions are open — the SDD's Action Required, or the genome's open entries — per group and by the role that answers them, and how many are needed before the build;
-3. every `FAIL` left after the third round;
-4. with no SDD and items open, `interview <GENOME_MD>` as the way any answerer, in this session or a later one, answers them, and an offer to write the SDD for answerers who are not in the session ([edit-guide.md](../edit/edit-guide.md), "Write the SDD");
-5. the preferences file question, when Step 1 left it to this message.
-
-It ends on "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md)). A ruling given in reply is written in as [extracted-genome-guide.md § Source Defects](../shared/extracted-genome-guide.md) says, and an SDD written again. Edits: [edit-guide.md](../edit/edit-guide.md).
+1. **The SDD.** Write it from the genome for a documentation request, or when the request asks for it ([sdd-from-genome-guide.md](../shared/sdd-from-genome-guide.md)).
+2. **The interview offer**, in an attended run, which is not finished without it: [interview-guide.md](../interview/interview-guide.md) § After Writing's first question on the open items, the SDD's when one was written, its block as written, a message of its own that ends the turn. "Answer them later" is not the offer.
+3. **Accepted**, its answers are applied to the genome ([interview-guide.md](../interview/interview-guide.md) § Where Answers Go), an SDD beside the genome is written again, and the strict check runs after the last edit.
+4. **The closing message** of every run, unattended included, is the message of [genome-format-guide.md § Write, Then Offer Edits](../shared/genome-format-guide.md), its open counts taken from the SDD's Action Required or, with no SDD, the genome's open entries. Its `interview <GENOME_MD>` is the way any answerer, in this session or a later one, answers them; the SDD it offers is written as [edit-guide.md](../edit/edit-guide.md) "Write the SDD" states. A ruling given in reply is written in as [extracted-genome-guide.md § Source Defects](../shared/extracted-genome-guide.md) says, and an SDD written again. Edits: [edit-guide.md](../edit/edit-guide.md).
 
 ### Step 8 — Hand the genome to `uipath-genome`
 
 A refactor or migration request continues from the written genome in the same session; no PDD is needed:
 
-1. **Invoke `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare the build, and the user's request quoted verbatim** once the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there, and Build With / Components, the `Requested change` row and the `Decided:` lines are its target design — the handover message adds nothing else the genome does not hold, and never a waiver of the build's questions the user did not write.
+1. **Invoke `uipath-genome` with `build "<GENOME_MD>"`, or `prepare "<GENOME_MD>"` for a request to prepare the build, and the user's request quoted verbatim** once Step 7's interview offer is answered and the user's edits are in; an unattended run hands it over without asking. Building a genome extracted from a UiPath source is a refactor there, and Build With / Components, the `Requested change` row and the `Decided:` lines are its target design — the handover message adds nothing else the genome does not hold, and never a waiver of the build's questions the user did not write.
 2. **`uipath-genome` not installed** → stop after Step 7 and say that the build needs it.
 
 A refactor or migration produces the genome, and its SDD only on request: `uipath-genome` plans and builds from the genome, and no tasks file is written. A documentation request ends at Step 7, with the genome as the as-built record and the SDD as its document for people.

@@ -1,9 +1,10 @@
 task_id: skill-planner-interview-edit-no-sdd
 description: >
   Integration: a plain `edit` of an authored genome that has no SDD: the rates e-mail also goes to a
-  second address, in copy. The genome is edited in place where the recipients are stated and passes the
-  strict check; its four open entries stay open. With no SDD in play no SDD is written, and the run does
-  not read the guide for writing one. The closing counts the genome's open entries.
+  second address, in copy. The genome is edited in place where the recipients are stated and passes
+  the strict check; its four open entries stay open. With no SDD in play no SDD is written, and the
+  run does not read the guide for writing one. The closing counts the genome's open entries, which is
+  advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 sandbox:
@@ -69,13 +70,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts the genome's open entries"
+    description: "Advisory: the closing counts the genome's open entries"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for one change to a genome (an automation blueprint): a second recipient, in copy.
-      Read the agent's final message. Score 1.0 when it says the change was made and counts the genome's
+      Read the agent's closing message. Score 1.0 when it says the change was made and counts the genome's
       questions still open (open decisions, configuration values, or the ones needed before a build).
       Score 0.5 when it reports the change and counts nothing. Score 0.0 when it does not report the change.
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0

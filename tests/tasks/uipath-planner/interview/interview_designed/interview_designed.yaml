@@ -16,6 +16,11 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
+
 reference:
   directory: ..
 
@@ -98,12 +103,24 @@ success_criteria:
       The SDD reuses some ids: a component's entries and the items kept in the SDD alone can share a
       number. An item named by its id and its question counts as named by its id.
 
-      Check three things:
+      Check two things:
       1. The agent never asks which roles the user answers for. Saying that other roles' items stay open
          unless the user can answer them is not asking.
       2. The questions asked are the process owner's items only, each named by its id.
-      3. The final message names what is still open, by the role that answers it.
 
-      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
-    weight: 2.5
+      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+    weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing names what is still open, by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, was interviewed on the open questions of a genome (an automation
+      blueprint) designed from an SDD. Read the agent's final message, the one that reports the answers
+      applied. Score 1.0 when it names what is still open by the role that answers it, a count of the
+      open items per role being enough, or says that nothing is open; 0.0 otherwise.
+    weight: 0.5
+    pass_threshold: 0

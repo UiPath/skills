@@ -40,7 +40,7 @@ Exception: when the Constraint Gate blocks Solutions for standalone, Automation 
 | Phase 1 Steps 4–6 | Level 1 = Solution, or the user picks "Solution (customize)" | solution-composition-guide.md § Level 1.75 — Solution Composition |
 | Phase 1 Step 5 | the primary is Agents or Coded Apps and product-specific information is missing | [scope-recommendation-guide.md](scope-recommendation-guide.md) § Gap Handling for Agent / Coded App |
 | Phase 1 Step 6 | — | scope-recommendation-guide.md § Presenting the Recommendation (its Summary block holds the Recommended Scope, Project List and Queue Architecture formats) |
-| Phase 1 Step 6 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole |
+| Phase 1 Step 0 | `Execution autonomy` is `interactive` and the request carries no `planner-design-request: v1` block | [interview-guide.md](../interview/interview-guide.md) whole, for Step 6's offer |
 | Phase 1 Step 3.5 or Phase 2 Step 4 | an external system needs its Integration Service check, or a Level 3 add-on is in play (HITL, Integration Service, API Workflow as integrated component, reusable or shared assets) | component-placement-guide.md § Level 3 — Capability Add-ons |
 | Phase 2 Step 1 | — | scope-recommendation-guide.md § Template Mapping |
 | Phase 1 Step 4 | whenever the Constraint Gate runs — every delivery model: Cloud is not uniform, and its variants (Public Sector, Dedicated, Test Cloud) and per-tenant entitlements can block products inside the Cloud column | [platform-availability-guide.md](../shared/platform-availability-guide.md) |
@@ -206,6 +206,9 @@ Step 6 runs four moves in this order; autonomous mode skips it (Step 0), and a c
 <RECOMMENDED_SCOPE_SUMMARY_BLOCK — emit the "Summary block" from
 scope-recommendation-guide.md → Presenting the Recommendation:
 Recommended Scope + Project List + Queue Architecture>
+
+### Interview
+<OFFER — interview-guide.md § The Offer, when the gap list holds an entry to ask: the count of P0 points and what they decide, what waits for the SDD, its two options; the message ends with it, and scope confirmation waits for its answer>
 
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY — left out when the interview is offered; a decline asks them then>

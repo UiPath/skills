@@ -1,11 +1,11 @@
 task_id: skill-planner-interview-extract-unattended
 description: >
-  Integration: `extract` of a three-workflow XAML project "to rebuild later", in a run that says nobody
-  will answer questions. No structured question is asked and no SDD is written, since the request is
-  not a documentation request and does not ask for one. The closing message, which every run writes,
-  unattended included, counts the open decisions by the role that answers them, names
-  `interview <genome>` and offers to write the SDD for answerers outside the session; the interview and
-  the SDD offer are advisory. Nothing is built.
+  Integration: `extract` of a three-workflow XAML project "to rebuild later", in a run that says
+  nobody will answer questions. No structured question is asked and no SDD is written, since the
+  request is not a documentation request and does not ask for one. The closing message, which every
+  run writes, unattended included, counts the open decisions by the role that answers them, names
+  `interview <genome>` and offers to write the SDD for answerers outside the session; the count, the
+  interview and the SDD offer are advisory. Nothing is built.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 sandbox:
@@ -59,10 +59,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts what is open, by role"
+    description: "Advisory: the closing counts what is open, by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for the genome (an automation blueprint) of a small UiPath project, in a run where
       nobody answers questions, and wrote no SDD (solution design document). Read the agent's final
       message, its closing summary.
@@ -73,13 +77,17 @@ success_criteria:
       without a role, and those listed beside the decisions are not part of their count. Do not grade the
       genome.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names the interview and the SDD offer"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for the genome (an automation blueprint) of a small UiPath project, in a run where
       nobody answers questions, and wrote no SDD (solution design document). Read the agent's final
       message, its closing summary. Check two things:

@@ -369,8 +369,8 @@ Each item names a role, so one person's questions can be picked out:
 1. It asks how you want to answer:
    - every item, a batch at a time;
    - only what needs a decision: the items with no default and the business outcomes;
-   - the defaults: each value takes its default, and each choice stays open, since a default nobody confirmed decides nothing;
-   - the defaults, with the overrides you name.
+   - the defaults, with any overrides you name: each value takes its default or yours, and each choice stays open, since a default nobody confirmed decides nothing;
+   - not now: every item stays open.
 2. It asks which roles you answer for, unless your request said ("I'm the process owner") or every item has the same owner. It then asks only those roles' items.
 3. It asks up to four items at a time: items with no default first, then business outcomes, run behaviours, readings, material and values. While items remain, each batch offers "use the defaults for the rest".
 

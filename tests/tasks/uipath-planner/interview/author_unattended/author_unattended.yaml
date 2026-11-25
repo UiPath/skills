@@ -1,11 +1,11 @@
 task_id: skill-planner-interview-author-unattended
 description: >
   Integration: `author` on a one-sentence idea, in a run that says nobody will answer questions. The
-  interview is never offered in an unattended run and the follow-up rounds ask nothing, so the run asks
-  no structured question and writes a genome with no SDD. A business value the idea does not give (the
-  approval limit) reads `default: none` instead of an invented amount. The closing counts the open
-  decisions by role, names `interview <genome>` and the offer to write the SDD for answerers outside the
-  session, and asks for the preferences file; all but the count by role is advisory. Nothing is built.
+  interview is never offered in an unattended run and the follow-up rounds ask nothing, so the run
+  asks no structured question and writes a genome with no SDD. A business value the idea does not give
+  (the approval limit) reads `default: none` instead of an invented amount. The closing counts the
+  open decisions by role, names `interview <genome>` and the offer to write the SDD for answerers
+  outside the session, and asks for the preferences file; all of it is advisory. Nothing is built.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 reference:
@@ -58,12 +58,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts what is open, by role"
+    description: "Advisory: the closing counts what is open, by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for a genome (an automation blueprint) of a one-sentence idea, in a run where
-      nobody answers questions. Read the agent's final message, its closing summary.
+      nobody answers questions. Read the agent's closing message, its closing summary.
 
       Score 1.0 when it counts the genome's open decisions, split by who answers them (a role such as the
       process owner or the system's owner), or says that none is open; 0.0 otherwise. Decisions counted
@@ -71,15 +75,19 @@ success_criteria:
       role, and those listed beside the decisions are not part of their count. Do not grade the genome
       itself.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing says how what is open gets answered"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
       The user asked for a genome (an automation blueprint) of a one-sentence idea, in a run where
-      nobody answers questions. Read the agent's final message, its closing summary. Check four things:
+      nobody answers questions. Read the agent's closing message, its closing summary. Check four things:
       1. It says how many configuration values are open or needed before a build.
       2. It names the interview command for the genome, in the form `interview <genome file name>`.
       3. It offers to write an SDD (solution design document) for answerers who are not in the session.

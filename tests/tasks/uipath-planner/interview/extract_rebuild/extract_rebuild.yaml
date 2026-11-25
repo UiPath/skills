@@ -4,8 +4,8 @@ description: >
   are the process owner. No SDD is written: the request is not a documentation request and does not
   ask for one. After the strict check, the interview is offered on the genome's open items, asked by
   genome id, and its answers are applied with the strict check passing again. The closing names the
-  open items by role and offers to write the SDD for items whose answerer is not in the session, the
-  offer advisory. Nothing is built. A simulated process owner answers.
+  open items by role and offers to write the SDD for items whose answerer is not in the session, both
+  advisory. Nothing is built. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -16,6 +16,11 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../../extract_component/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
 
 reference:
   directory: ..
@@ -33,6 +38,7 @@ simulation:
   goal: |
     Get the genome extracted and answer the open questions that are yours, then stop.
   constraints:
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
@@ -103,23 +109,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing names open items by role"
+    description: "Advisory: the closing names open items by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers to the genome (an automation
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
       blueprint). Score 1.0 when it says which decisions are still open and who answers each (counted by
       role, or each named with its role; configuration values may be counted without a role), or that
       none is; 0.0 otherwise.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing offers the SDD for absent answerers"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers to the genome (an automation
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers to the genome (an automation
       blueprint). Score 1.0 when it offers to write an SDD (solution design document) for the items whose
       answerer is not in the session, or no decision is left open for another role (configuration values
       the build asks need no SDD offer); 0.0 otherwise.

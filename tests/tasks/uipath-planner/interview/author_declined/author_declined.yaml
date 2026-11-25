@@ -5,12 +5,18 @@ description: >
   follow-up questions. The genome is written with defaults and open entries, the approval limit as a
   Configuration Question with `default: none`, no SDD, and passes the strict check. With no round
   asked, the closing asks for the preferences file; it names `interview <genome>` and offers to write
-  the SDD for answerers outside the session, which is advisory. A simulated process owner answers.
+  the SDD for answerers outside the session. The preferences question, the interview and the SDD
+  offer are advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
   turn_timeout: 1500
   task_timeout: 2400
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
 
 reference:
   directory: ..
@@ -76,7 +82,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "No interview, at most one follow-up round, and the preferences file asked"
+    description: "No interview, and at most one follow-up round"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -85,24 +91,36 @@ success_criteria:
       said: do not interview me, use your defaults and write the open points down. Read the dialog and the
       agent's questions, whether asked in chat or as structured questions.
 
-      Check two things:
-      1. Before the genome is written, the agent neither offers nor runs an interview, and asks at most
-         one round of follow-up questions. The final message, once the genome is written, may name
-         `interview <genome>` as the way to answer later: that is not an offer.
-      2. When no follow-up round was asked, the final message asks whether the user has a preferences
-         file (team standing answers and development standards); when a round was asked, that round
-         asked it.
-
-      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
-    weight: 2.5
+      Score 1.0 when, before the genome is written, the agent neither offers nor runs an interview, and
+      asks at most one round of follow-up questions; 0.0 otherwise. The closing message, once the genome
+      is written, may name `interview <genome>` as the way to answer later: that is not an offer.
+    weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the preferences file is asked"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea and
+      said: do not interview me, use your defaults and write the open points down. Read the dialog.
+
+      Score 1.0 when the agent asks whether the user has a preferences file (team standing answers and
+      development standards): in its round of follow-up questions when it asked one, otherwise in the
+      closing message that reports the genome written; 0.0 otherwise.
+    weight: 0.5
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names the interview and the SDD offer"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Check two things:
       1. It names the interview command for the genome, `interview <genome file name>`.
       2. It offers to write an SDD (solution design document) for answerers who are not in the session.
 

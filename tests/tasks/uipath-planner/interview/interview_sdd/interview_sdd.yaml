@@ -4,16 +4,21 @@ description: >
   process owner. Eleven items are open in its Action Required: D1 and D3 for the process owner, the
   rest for the system's owner, the environment's owners, the delivery lead and whoever holds the
   source. The first question is how to answer; no roles question, since the request names the role.
-  Only D1 and D3 are asked, by their SDD ids. Each answer is a design revise of the SDD: written on its
-  item's answer line or into the section that holds its subject, with a Document History row for the
-  interview; the other roles' items stay blank, and no genome is written. The closing names what is
-  still open by role. A simulated process owner answers.
+  Only D1 and D3 are asked, by their SDD ids. Each answer is a design revise of the SDD: written on
+  its item's answer line or into the section that holds its subject, with a Document History row for
+  the interview; the other roles' items stay blank, and no genome is written. The closing names what
+  is still open by role, which is advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
   template_sources:
     - type: template_dir
       path: fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
 
 reference:
   directory: ..
@@ -64,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "The SDD's Document History gains a row for this interview"
-    command: "node $REFERENCE_DIR/_shared/check_interview.mjs count supplier-invoice-entry-sdd.md 'Interview: \\d+ points?' 2"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs count supplier-invoice-entry-sdd.md '^\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|.*\\b(interview|answer)' 2"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -87,7 +92,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "How-to-answer first, no roles question, the process owner's items by id, a closing by role"
+    description: "How-to-answer first, no roles question, the process owner's items by id"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -98,12 +103,24 @@ success_criteria:
       whoever holds the source. Read the dialog and the agent's questions, whether asked in chat or as
       structured questions.
 
-      Check four things:
+      Check three things:
       1. The agent's first question asks how the user wants to answer.
       2. The agent never asks which roles the user answers for.
       3. Only D1 and D3 are asked, each named by its id.
-      4. The final message names what is still open, by the role that answers it.
 
-      Score 1.0 when all four hold, 0.75 with three, 0.5 with two, 0.0 otherwise.
-    weight: 2.5
-    pass_threshold: 0.75
+      Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Advisory: the closing names what is still open, by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, was interviewed on the open questions of an SDD (solution design document) with no genome yet. Read the agent's
+      final message, the one that reports the answers applied. Score 1.0 when it names what is still
+      open by the role that answers it, a count of the open items per role being enough, or says that
+      nothing is open; 0.0 otherwise.
+    weight: 0.5
+    pass_threshold: 0

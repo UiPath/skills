@@ -1,12 +1,12 @@
 task_id: skill-planner-interview-extract-with-sdd
 description: >
   Integration: `extract` of a three-workflow XAML project "to rebuild later", where the request asks
-  for the SDD too, by a user who says they are the process owner. The SDD is written beside the genome.
-  After the strict check the interview is offered on the SDD's items, with no roles question since the
-  request names the role; the answers are written into the SDD's items and applied to the genome, and
-  the genome passes the strict check with the SDD's `Genome` row current. The closing counts what is
-  open by role; naming the two files and the counts by group are advisory. Nothing is built. A
-  simulated process owner answers.
+  for the SDD too, by a user who says they are the process owner. The SDD is written beside the
+  genome. After the strict check the interview is offered on the SDD's items, with no roles question
+  since the request names the role; the answers are written into the SDD's items and applied to the
+  genome, and the genome passes the strict check with the SDD's `Genome` row current. The closing
+  counts what is open by role, names the two files and counts by group, all advisory. Nothing is
+  built. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -17,6 +17,11 @@ sandbox:
   template_sources:
     - type: template_dir
       path: ../../extract_component/fixtures
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
 
 reference:
   directory: ..
@@ -34,6 +39,7 @@ simulation:
   goal: |
     Get the genome and its SDD written, answering the open questions that are yours, then stop.
   constraints:
+    - "When asked how you want to answer the open items, choose to go through every item, a batch at a time."
     - "When a question lists options, pick the one marked Recommended; when none is, pick the first. Answer every question of a batch."
     - "When asked for a preferences file, answer that you have none."
     - "When a question asks for something you do not know (a host, an account, a mailbox), say it is for the environment's owners."
@@ -66,7 +72,7 @@ success_criteria:
   - type: file_matches_regex
     description: "The SDD's Document History records the interview"
     path: "*-sdd.md"
-    pattern: 'Interview: \d+ points? answered by'
+    pattern: '(?im)^\|\s*\d{4}-\d{2}-\d{2}\s*\|.*\b(interview|answer)'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -107,21 +113,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The closing counts what is open by role"
+    description: "Advisory: the closing counts what is open by role"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers. Score 1.0 when it counts the
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers. Score 1.0 when it counts the
       items still open by the role that answers them, or says that none is open; 0.0 otherwise.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names both files and counts what is open by group"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it applied the user's answers. Check two things:
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it applied the user's answers. Check two things:
       1. It names the genome file and the SDD (solution design document) file.
       2. It counts the items still open by group (business decisions, material, configuration values …).
          A group shown by the items' ids or labels (CQ1–CQ10 for configuration values, the preferences

@@ -7,13 +7,18 @@ description: >
   approval limit is written as a Configuration Question with `default: none`. No SDD is written and
   the genome passes the strict check. The closing names the open items by role, offers the interview
   on them and offers to write the SDD for answerers who are not in the session, asking none of them.
-  The P0-only questions, the limit's `default: none` and the closing's interview and SDD offer are
-  advisory. A simulated process owner answers.
+  The P0-only questions, the limit's `default: none` and the closing's count by role, interview and
+  SDD offer are advisory. A simulated process owner answers.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
   turn_timeout: 1500
   task_timeout: 2400
+
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../_shared/attended-session.md
 
 reference:
   directory: ..
@@ -132,29 +137,49 @@ success_criteria:
     pass_threshold: 0
 
   - type: llm_judge
-    description: "The closing counts the open decisions by role and asks none of them"
+    description: "The closing asks none of the open decisions"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
-      1. It counts the genome's open decisions by the role that answers them (the process owner, the
-         system's owner …), or says that none is open. Configuration values need no role, and those
-         listed beside the decisions are not part of their count, nor are the build's own questions
-         (how the work is split or queued, libraries, technology, setup); when every decision belongs to
-         one role, saying so is the count.
-      2. It asks none of the open questions itself. Ending on "Want to adjust anything?", or offering
-         the interview, an SDD or edits, is not asking an open question.
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
 
-      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
-    weight: 2.0
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Score 1.0
+      when it asks none of the genome's open questions itself; 0.0 otherwise. Ending on "Want to adjust
+      anything?", or offering the interview, an SDD or edits, is not asking an open question.
+    weight: 1.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing counts the open decisions by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Score 1.0
+      when it counts the genome's open decisions by the role that answers them (the process owner, the
+      system's owner, whoever knows the process, whoever holds the source …), or says that none is open;
+      0.0 otherwise. Configuration values need no role, and those listed beside the decisions are not
+      part of their count, and the count need not include the build's own questions (how the work is
+      split or queued, libraries, technology, setup), nor is it wrong for listing one of them among the
+      decisions; when every decision belongs to one role, saying so is the count.
+    weight: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names `interview <genome>` and offers the SDD for absent answerers"
     include_agent_output: true
+    include_dialog: true
     include_reference: false
     prompt: |
-      Read the agent's final message after it wrote the genome (an automation blueprint). Check two things:
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint). Check two things:
       1. It offers the interview on the open decisions, naming `interview <genome file name>`.
       2. It offers to write an SDD (solution design document) for answerers who are not in the session.
 
