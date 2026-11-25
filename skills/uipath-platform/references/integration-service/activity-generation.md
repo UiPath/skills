@@ -371,9 +371,14 @@ still holds the previous graph, without the rest of your source edits:
 3. Place the activity on that `.flow` with the commands below, after the last
    compile: a later compile rewrites the `.flow` and drops the node. Create the
    node with its id, bind the connection and pass every required input in its
-   slot, wire it between its neighbours, then validate. When the activity
-   ended its branch, there is no edge to replace: skip the delete and create
-   only the edge from the predecessor.
+   slot, wire it between its neighbours, then validate. Let `edges list`
+   decide the wiring. When the predecessor has an outgoing edge on the
+   activity's path, replace it as below; by default compile ends a path with
+   an End node, so a step that was last still has an edge into that End. When
+   it has none (a path left open, as `.openTails()` writes), skip the delete
+   and the second create, and create only the edge from the predecessor,
+   naming the arm with `--source-port` when the predecessor is a decision,
+   loop or other node with several output ports.
 
 ```bash
 uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key>.<slug> \

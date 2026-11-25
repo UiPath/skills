@@ -36,9 +36,10 @@
 Studio Web bundles its own SDK copy, so neither you nor the user can upgrade it
 from the open solution. When `check` or `compile` reports that
 `@uipath/maestro-builder-sdk` does not export `inlineActivity`, the host's SDK
-is older than 6.126.0. That compile wrote nothing, so the `.flow` lacks the
-other edits in that source too: take the `uip` route below, which first removes
-the `inlineActivity` step and compiles or merges the rest. If `uip` has no
+is older than 6.126.0. A `compile` or `merge` that fails on it writes nothing,
+so the `.flow` lacks the other edits in that source too: take the `uip` route
+below, which first removes the `inlineActivity` step and compiles or merges the
+rest. If `uip` has no
 `nodes create` either, tell the user that this step needs Studio Web with SDK
 6.126.0 or later, then offer managed HTTP as below. Never run `npm` to work
 around it.
