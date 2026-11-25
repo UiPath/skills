@@ -55,6 +55,12 @@ Paths are relative to the skill folder.
 | Where a UI check goes, in every build | `references/ui-verification-guide.md` |
 | Test components at build | `references/test-execution-guide.md` |
 | Refactor of a UiPath source: contract, build questions, plan, run modes, cutover | `references/refactor-guide.md` |
+| Federated entities from a logical data model: the seven phases, the pack and what each artifact uniquely carries, the id scheme, the pack manifest's and the ledger's rules, the decision procedures (source budget, the deterministic partition, entity names, a missing constraints file), the hard constraints, the native-lane boundary | `references/federated-entity-pipeline-guide.md` |
+| Every pack artifact's JSON shape: each field, its type, whether it is required, and a worked example from a real run | `references/federated-artifact-shapes-guide.md` |
+| Source YARRRML over external objects: block shape, subject identity, join columns, what the file is authoritative for | `references/federated-source-mapping-guide.md` |
+| Target YARRRML over created federated entities: block shape, subject identity, column read-back, folded classes | `references/federated-mapping-guide.md` |
+| Phase 7: the check report, the three shipped-checker rejections to expect, the `xsd`-to-Data Fabric bridge, the agreement rule, the declared/observed/enforced reconciliation | `references/federated-check-guide.md` |
+| A second run or a resumed one: the identity map, the three diff classes, the merge rule, registration and packaging | `references/federated-rerun-guide.md` |
 | Open items for the target environment | `references/open-items-guide.md` |
 | Completion report and hand-off folder | `references/completion-report-guide.md` |
 | Package doc and tool errata (temporary) | `references/package-doc-errata-guide.md` |
@@ -132,6 +138,7 @@ One change, every file in its row, same PR.
 | Fact about reading a UiPath source or its deployed state | planner `uipath-source-guide.md` (or its RPA / non-RPA signals guide); what the build re-reads of the source: builder `source-migration-guide.md` |
 | New scaffolding question | builder `configuration-questions-guide.md` |
 | New report line | builder `completion-report-guide.md` |
+| New field on a federated pack artifact, or a new artifact's shape | builder `federated-artifact-shapes-guide.md`; the rule that fills it: the phase's section in `federated-entity-pipeline-guide.md` |
 | Rule for a build in parts | builder `execution-parts-guide.md` |
 | UiPath selector fact | the builder's selector guide of its technology; `selector-translation-guide.md` when it holds for every technology; matching quirk: `selector-matching-guide.md` |
 | Build pattern for a composite interaction across technologies | builder `composite-interactions-guide.md` |
