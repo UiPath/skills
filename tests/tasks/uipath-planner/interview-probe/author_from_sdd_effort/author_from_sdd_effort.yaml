@@ -1,0 +1,143 @@
+task_id: skill-planner-interview-author-from-sdd-effort-high
+description: >
+  Integration: `author` from an agreed, ready SDD whose design already settled every point that
+  changes the design, by a user who says they are the process owner. No interview is offered and no
+  question that only a later step can place is asked before the genome is written. One genome is
+  written with a `Designed in:` line pinned to the SDD; no second SDD. The SDD's body stays as
+  `design` wrote it, its Action Required section is written again from the genome, and its handoff
+  gains the `Genome` row. The genome passes the strict check, and the closing names the open items by
+  role. A simulated process owner answers. It gates on the files, the SDD's body, Action Required and
+  handoff, the strict check, and nothing the SDD settled asked again; the closing is advisory.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../interview/interview_sdd/fixtures
+agent:
+  # The simulated user answers between turns; a harness whose prompt is built for unattended runs
+  # otherwise skips the questions the skill asks.
+  system_prompt_file: ../../interview/_shared/attended-session.md
+reference:
+  directory: ../../interview
+initial_prompt: |
+  Write the genome for the SDD in this folder.
+
+  I'm the process owner. Do not build anything in this run.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the process owner of supplier invoice entry, and you agreed this SDD.
+  goal: |
+    Get the genome written from the SDD, then stop.
+  constraints:
+    - "When a question lists options, pick the one marked Recommended; when none is, pick the first."
+    - "When asked for a preferences file, answer that you have none."
+    - "If the agent offers an interview, edits or a build after writing the genome, decline."
+    - "Once the agent reports the genome written, end the conversation."
+  max_turns: 6
+
+pre_run:
+  - command: ':; f="${CODEX_HOME:-$HOME/.codex}/config.toml"; mkdir -p "$(dirname "$f")"; grep -q "^model_reasoning_effort" "$f" 2>/dev/null || printf "\nmodel_reasoning_effort = \"high\"\n" >> "$f"; cat "$f"; true'
+    timeout: 30
+
+post_run:
+  - command: ':; mkdir -p codex-rollouts; cp -r "${CODEX_HOME:-$HOME/.codex}/sessions" codex-rollouts/ 2>/dev/null; true'
+    timeout: 60
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome passes the strict check, its Designed in fingerprint matching the SDD"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs strict"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The genome's Designed in line names the SDD"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs line '^>\\s*Designed in:.*supplier-invoice-entry-sdd\\.md'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No second SDD was written"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs absent '^(?!(.*/)?supplier-invoice-entry-sdd\\.md$).*sdd(\\.draft)?\\.md$'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD's body is unchanged"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs body supplier-invoice-entry-sdd.md
+      e81e69d1316ee1d6835d2958458fbd95f494beda228f78d6fc92f688103c9b37
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SDD's Action Required is written again from the genome"
+    command: >-
+      node $REFERENCE_DIR/_shared/check_interview.mjs unchanged supplier-invoice-entry-sdd.md
+      94ac85773adb7464ab0090e0af4d84697fa6409bc15541852d62601a2aea7b54 "Action Required"
+    timeout: 30
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "The SDD's handoff gains the Genome row"
+    path: "supplier-invoice-entry-sdd.md"
+    pattern: '\| \*\*Genome\*\* \| [^|\n]*-genome\.md'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "No interview offered, and nothing the SDD settled asked again before writing"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for the genome (an automation blueprint) of an agreed SDD
+      (solution design document) whose design already settled the trigger, the systems, the approval
+      route and the scope, and left items open for others (the approval limit, how the ERP is reached,
+      the environments' values). Read the dialog.
+
+      Score 1.0 when, before the genome is written, the agent neither offers an interview nor asks again a
+      point the SDD settled; a question about a point the SDD leaves open, or about a preferences file, is
+      allowed. Only questions put to the user count: listing the SDD's open items in the closing is not
+      asking them. 0.0 otherwise.
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the closing counts the open decisions by role"
+    include_agent_output: true
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The closing message is the one that reports the work written. A shorter reply the agent sends after
+      the user answers a question that message asked is not it: grade the closing message.
+
+      Read the agent's closing message after it wrote the genome (an automation blueprint) of an agreed
+      SDD. Score 1.0 when it counts the genome's open decisions by the role that answers them, or says
+      that none is open; 0.0 otherwise. Configuration values, and the items the SDD keeps alone (sizing,
+      deployment), need no role.
+    weight: 0.5
+    pass_threshold: 0
