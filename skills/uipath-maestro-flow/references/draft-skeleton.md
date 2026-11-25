@@ -5,7 +5,7 @@ It makes no registry calls.
 
 **When.** The user asks for a draft or wants to see the shape before the flow is built: *draft*, *outline it*, *sketch it*, *show me the shape*, *what would it look like*, *before you build it*, or a session in host plan mode.
 Judge intent, not the word: a step or value named "draft" inside the flow (*draft a reply email* as a step) is not draft mode.
-A request for a draft, an outline or a sketch always gates, even when it describes the whole flow.
+A request for a draft, an outline or a sketch always gates, even when it describes the whole flow. When nobody can answer (CI, headless), still stop at the gate: the outline is the result.
 Wording that only leans toward a draft (*a rough version*, *a first pass*, *a quick mock-up*) gates unless the request also says outright to build the whole flow.
 A request with none of these cues is a build. So is a brownfield edit, and so is a "draft project" that asks for source files to hand off later, with no upload or run.
 Never ask the user whether to draft or build. Default to build.
