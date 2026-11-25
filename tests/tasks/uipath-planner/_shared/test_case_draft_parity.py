@@ -129,3 +129,10 @@ def test_a_tasks_row_with_a_cell_too_many_fails(tmp_path):
     rc, out = parity(tmp_path, text.replace(row, row + " extra |", 1), INTERVIEW)
     assert rc == 1
     assert "FAIL: Tasks table row 'Sync Application from Greenhouse' has" in out
+
+
+def test_a_role_threshold_naming_one_role_on_both_sides_fails(tmp_path):
+    same = GUARD.replace('"Role:Credit Analyst"', '"Role:Underwriter"')
+    rc, out = parity(tmp_path, finalized(LOAN.read_text(encoding="utf-8")).replace(GUARD, same))
+    assert rc == 1
+    assert "names two different roles, one of them Credit Analyst" in out

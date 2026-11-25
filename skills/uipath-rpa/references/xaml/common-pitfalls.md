@@ -126,25 +126,6 @@ Some properties are only required when another property has a specific value:
 
 Full hotkey encoding: the Keyboard Shortcuts activity doc, routed from `ui-automation-guide.md` § Documentation.
 
-## NTypeInto `Text` with literal `[k(...)]` special-key tokens
-
-When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
-
-**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
-
-**Correct:**
-```xml
-<uix:NTypeInto ...>
-  <uix:NTypeInto.Text>
-    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
-  </uix:NTypeInto.Text>
-</uix:NTypeInto>
-```
-
-Alternatives:
-- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
-- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` for Enter ([§ NKeyboardShortcuts](#nkeyboardshortcuts-shortcuts-vs-shortcutsargument)).
-
 ## UIA `N*` Activities Carry a `Version` — Never Strip It
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).

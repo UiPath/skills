@@ -135,3 +135,7 @@ Unless the request explicitly requires a live subscription witness, a connector-
 At most one bounded direct-input debug may be used for a downstream behavior question; stop when answered; it is not subscription proof. Do not poll or sleep on debug instances, create a scratch solution, or upload seed content solely to manufacture a trigger event.
 
 If the stated acceptance bar requires live delivery, cause one real platform event and record that witness once. If the environment cannot provide it, report that boundary instead of repeating debug launches.
+
+## Testing a polling event live
+
+Apply this section only when the request needs a live event. A polling-mode event (any mode other than `webhooks`) checks for new events once per polling interval, often 5 minutes. Before you cause the event, offer to set the interval to 1 minute: `uip is connections update-polling-interval <connection-id> --polling-interval 1 --output json`. `uip is connections list` does not show the current value, so ask the user for it. When the test is done, set it back to that value, or to 5 if the user does not know it, and tell the user. If the connector rejects the value, keep the interval and tell the user how long one cycle takes.
