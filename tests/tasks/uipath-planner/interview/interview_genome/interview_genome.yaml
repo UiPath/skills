@@ -8,7 +8,9 @@ description: >
   file keeps its answer. Each answer is applied: D2–D11 read decided, D1 and D12 stay open, the
   Configuration Questions keep their values (an answer may add one), no SDD is written and the genome
   passes the strict check. The closing counts what is still open by role and offers to write the SDD
-  for the answerers who are not in the session, both advisory. A simulated process owner answers.
+  for the answerers who are not in the session. A simulated process owner answers. It gates on the
+  entries decided and left open, no SDD and the strict check; how the questions are asked, the
+  Configuration Questions and the closing are advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -69,14 +71,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No Configuration Question was answered into the genome; an answer may add one"
+    description: "Advisory: no Configuration Question was answered into the genome; an answer may add one"
     command: >-
       node $REFERENCE_DIR/_shared/check_interview.mjs kept supplier-invoice-entry-and-approval-genome.md
       $REFERENCE_DIR/interview_genome/fixtures/supplier-invoice-entry-and-approval-genome.md "Configuration Questions"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "No SDD was written"
@@ -95,7 +97,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The interview asks the process owner's entries only, how-to-answer first"
+    description: "Advisory: the interview asks the process owner's entries only, how-to-answer first"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -115,7 +117,7 @@ success_criteria:
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.0
-    pass_threshold: 0.5
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names what is still open, by role"

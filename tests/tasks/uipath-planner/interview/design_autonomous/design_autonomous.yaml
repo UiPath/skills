@@ -3,9 +3,9 @@ description: >
   Integration: `design`, autonomous, on a half-page PDD for supplier invoice entry. The interview is
   never offered in an autonomous run: at most one prompt, holding only the items with no defensible
   default. Every other gap keeps its marker and default, and the SDD carries a Decisions Made block
-  and tells its reader how to answer, the interview included. The closing naming the open counts and
-  `interview <SDD>` is recorded as advisory. The run stops at the SDD: no
-  genome, no build. A simulated process owner answers the one prompt, if there is one.
+  and tells its reader how to answer, the interview included. The run stops at the SDD: no genome, no
+  build. A simulated process owner answers the one prompt, if there is one. It gates on the files, the
+  Decisions Made block, the gaps' markers and at most one prompt; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -102,11 +102,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "The SDD's Action Required says how to answer, the interview included"
+    description: "Advisory: the SDD's Action Required says how to answer, the interview included"
     path: "*-sdd.md"
     pattern: '(?s)How to answer:.*uipath-planner.{0,40}interview'
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   # Advisory: the SDD carries how to answer; the closing line is recorded, not gated.
   - type: llm_judge

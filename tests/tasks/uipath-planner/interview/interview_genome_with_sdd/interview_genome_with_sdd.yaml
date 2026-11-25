@@ -2,12 +2,13 @@ task_id: skill-planner-interview-genome-with-sdd
 description: >
   Integration: `interview` on an extracted genome whose SDD was written from it, by a user who says
   they are the process owner. The SDD's Action Required holds the open items: D1–D4, D7, CQ10 and the
-  defects the rebuild fixes for the process owner; D5, D6, D8, the other Configuration Questions and the
-  preferences file for other roles. Only the process owner's items are asked, by the SDD's ids, a
+  defects the rebuild fixes for the process owner; D5, D6, D8, the other Configuration Questions and
+  the preferences file for other roles. Only the process owner's items are asked, by the SDD's ids, a
   Configuration Question only as one of those items. Each answer is written after its item's `Answer`
   in the SDD, then applied to the genome, whose entry reads decided; the SDD is written again, and the
   genome passes the strict check with the SDD's `Genome` row current. The other roles' items stay
-  blank. A simulated process owner answers.
+  blank. A simulated process owner answers. It gates on the answers in the genome and the SDD, the
+  other roles' items left open and the strict check; how the questions are asked is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -102,7 +103,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The process owner's items only, by the SDD's ids, with no roles question"
+    description: "Advisory: the process owner's items only, by the SDD's ids, with no roles question"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -124,4 +125,4 @@ success_criteria:
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0

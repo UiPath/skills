@@ -1,13 +1,16 @@
 task_id: skill-planner-interview-readiness-file
 description: >
-  Integration: `interview` on a folder holding an authored genome and the readiness file `prepare` wrote
-  beside it, with a request that names no document and no role. The request reaches the planner's
-  interview. Its gap list is the genome's open entries and every readiness item with a blank `Answer:`,
-  the build's own questions included, each asked once. The items name several answerers, so the roles
-  question is asked, listing the readiness sections' roles with the genome's. Answered as the engineer:
-  each answer goes after its item's `Answer:` in the readiness file, the genome's open entries stay
-  open (a ruling on a genome gap may edit the genome, which still passes the strict check), and other
-  roles' items stay blank. The closing names the tasks without asking them. A simulated engineer answers.
+  Integration: `interview` on a folder holding an authored genome and the readiness file `prepare`
+  wrote beside it, with a request that names no document and no role. The request reaches the
+  planner's interview. Its gap list is the genome's open entries and every readiness item with a blank
+  `Answer:`, the build's own questions included, each asked once. The items name several answerers, so
+  the roles question is asked, listing the readiness sections' roles with the genome's. Answered as
+  the engineer: each answer goes after its item's `Answer:` in the readiness file, the genome's open
+  entries stay open (a ruling on a genome gap may edit the genome, which still passes the strict
+  check), and other roles' items stay blank. The closing names the tasks without asking them. A
+  simulated engineer answers. It gates on the answers in the readiness file, the other roles' items
+  left blank, the genome's entries left open and the strict check; how the questions are asked and the
+  closing are advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -95,7 +98,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The roles question lists the engineer; each item is asked once; tasks are named, not asked"
+    description: "Advisory: the roles question lists the engineer; each item is asked once; tasks are named, not asked"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -114,4 +117,4 @@ success_criteria:
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0

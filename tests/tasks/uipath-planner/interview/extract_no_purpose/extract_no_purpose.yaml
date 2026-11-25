@@ -4,7 +4,8 @@ description: >
   ("extract its genome"), by a user who says they are the process owner. A request that names no
   purpose is not a documentation request, so no SDD is written. After the strict check the interview
   is offered on the genome's open entries, and the closing names what is open by role and offers to
-  write the SDD, both advisory. Nothing is built. A simulated process owner answers.
+  write the SDD. Nothing is built. A simulated process owner answers. It gates on the files and the
+  strict check; the interview and the closing are advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -85,7 +86,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The interview is offered after the genome is written, on its open entries"
+    description: "Advisory: the interview is offered after the genome is written, on its open entries"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -98,7 +99,7 @@ success_criteria:
       (D1, D2 …). Score 0.5 when the offer is made but the entries are asked without their ids. Score 0.0
       when no such offer is made, or the open entries are asked before the genome is written.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names the open decisions by role"

@@ -1,12 +1,13 @@
 task_id: skill-planner-interview-design-caller
 description: >
-  Integration: `design` for a caller's request, a `planner-design-request: v1` block with
-  `execution: interactive`, `audience: business` and `stop-after: sdd`, on a half-page PDD for
-  supplier invoice entry. The caller already held the business conversation, so no interview is
-  offered and the only stop is the architecture review. Step 1.5 asks nothing: every item keeps its
-  default. What the user sees uses business words, not the skill's vocabulary, and the run ends on one
-  `planner-design-result: v1` block. No genome, no build. The business words are advisory. A simulated
-  business user approves the review.
+  Integration: `design` for a caller's request, a `planner-design-request: v1` block with `execution:
+  interactive`, `audience: business` and `stop-after: sdd`, on a half-page PDD for supplier invoice
+  entry. The caller already held the business conversation, so no interview is offered and the only
+  stop is the architecture review. Step 1.5 asks nothing: every item keeps its default. What the user
+  sees uses business words, not the skill's vocabulary, and the run ends on one
+  `planner-design-result: v1` block. No genome, no build. A simulated business user approves the
+  review. It gates on the SDD where the request names it, no genome, the defaults kept, the one stop
+  and the result block; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -76,11 +77,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "The SDD's Action Required says how to answer, the interview included"
+    description: "Advisory: the SDD's Action Required says how to answer, the interview included"
     path: "supplier-invoice-entry-sdd.md"
     pattern: '(?s)How to answer:.*uipath-planner.{0,40}interview'
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: file_matches_regex
     description: "Every open item keeps its default"

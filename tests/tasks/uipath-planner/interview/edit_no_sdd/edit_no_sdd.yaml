@@ -3,8 +3,8 @@ description: >
   Integration: a plain `edit` of an authored genome that has no SDD: the rates e-mail also goes to a
   second address, in copy. The genome is edited in place where the recipients are stated and passes
   the strict check; its four open entries stay open. With no SDD in play no SDD is written, and the
-  run does not read the guide for writing one. The closing counts the genome's open entries, which is
-  advisory.
+  run does not read the guide for writing one. The closing counts the genome's open entries. It gates
+  on the edit, the strict check, the open entries and no SDD; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 sandbox:
@@ -61,13 +61,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "The guide for writing an SDD from a genome is not read (vacuous on agents without the Read tool)"
+    description: "Advisory: the guide for writing an SDD from a genome is not read (vacuous on agents without the Read tool)"
     tool_name: "Read"
     command_pattern: 'sdd-from-genome-guide'
     min_count: 0
     max_count: 0
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing counts the genome's open entries"

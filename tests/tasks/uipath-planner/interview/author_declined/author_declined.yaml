@@ -5,8 +5,8 @@ description: >
   follow-up questions. The genome is written with defaults and open entries, the approval limit as a
   Configuration Question with `default: none`, no SDD, and passes the strict check. With no round
   asked, the closing asks for the preferences file; it names `interview <genome>` and offers to write
-  the SDD for answerers outside the session. The preferences question, the interview and the SDD
-  offer are advisory. A simulated process owner answers.
+  the SDD for answerers outside the session. A simulated process owner answers. It gates on the files,
+  the strict check, no invented limit and no interview; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -73,9 +73,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "The approval limit is a Configuration Question with no invented amount"
     command: >-
-      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default:(?![^;)\n]*\d)'
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

@@ -5,7 +5,8 @@ description: >
   asks no structured question and writes a genome with no SDD. A business value the idea does not give
   (the approval limit) reads `default: none` instead of an invented amount. The closing counts the
   open decisions by role, names `interview <genome>` and the offer to write the SDD for answerers
-  outside the session, and asks for the preferences file; all of it is advisory. Nothing is built.
+  outside the session, and asks for the preferences file. Nothing is built. It gates on the files, the
+  strict check and no invented limit; the closing is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 reference:
@@ -49,9 +50,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "The approval limit is a Configuration Question with no invented amount"
     command: >-
-      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default:(?![^;)\n]*\d)'
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

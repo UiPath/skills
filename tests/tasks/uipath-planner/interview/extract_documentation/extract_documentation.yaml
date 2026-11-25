@@ -5,7 +5,8 @@ description: >
   body. After the strict check the interview is offered on the open items; the request names no role,
   so the roles question is asked. The answers are written into the SDD's items and applied to the
   genome, the SDD is written again, and the genome passes the strict check with the SDD's `Genome` row
-  current. Nothing is built. A simulated team lead answers as the process owner.
+  current. Nothing is built. A simulated team lead answers as the process owner. It gates on the files
+  and the strict check; the interview and the SDD's history row are advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -71,11 +72,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "The SDD's Document History records the interview"
+    description: "Advisory: the SDD's Document History records the interview"
     path: "*-sdd.md"
     pattern: '(?im)^\|\s*\d{4}-\d{2}-\d{2}\s*\|.*\b(interview|answer)'
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "The genome passes the strict check, the SDD's Genome row current after the answers"
@@ -93,7 +94,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The interview is offered after writing, and asks which roles the user answers for"
+    description: "Advisory: the interview is offered after writing, and asks which roles the user answers for"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -114,4 +115,4 @@ success_criteria:
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0

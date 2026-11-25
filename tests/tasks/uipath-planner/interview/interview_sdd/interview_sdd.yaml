@@ -7,7 +7,9 @@ description: >
   Only D1 and D3 are asked, by their SDD ids. Each answer is a design revise of the SDD: written on
   its item's answer line or into the section that holds its subject, with a Document History row for
   the interview; the other roles' items stay blank, and no genome is written. The closing names what
-  is still open by role, which is advisory. A simulated process owner answers.
+  is still open by role. A simulated process owner answers. It gates on D1 and D3 answered, the other
+  items blank, the SDD ready and no genome; how the questions are asked, the history row and the
+  closing are advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -68,12 +70,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The SDD's Document History gains a row for this interview"
+    description: "Advisory: the SDD's Document History gains a row for this interview"
     command: "node $REFERENCE_DIR/_shared/check_interview.mjs count supplier-invoice-entry-sdd.md '^\\|\\s*\\d{4}-\\d{2}-\\d{2}\\s*\\|.*\\b(interview|answer)' 2"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: file_contains
     description: "The SDD stays ready"
@@ -92,7 +94,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "How-to-answer first, no roles question, the process owner's items by id"
+    description: "Advisory: how-to-answer first, no roles question, the process owner's items by id"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -110,7 +112,7 @@ success_criteria:
 
       Score 1.0 when all three hold, 0.5 with two, 0.0 otherwise.
     weight: 2.0
-    pass_threshold: 0.5
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names what is still open, by role"

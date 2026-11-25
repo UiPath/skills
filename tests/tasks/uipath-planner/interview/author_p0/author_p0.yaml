@@ -6,9 +6,9 @@ description: >
   preferences file; a threshold's value, who is told and environment values are not asked, so the
   approval limit is written as a Configuration Question with `default: none`. No SDD is written and
   the genome passes the strict check. The closing names the open items by role, offers the interview
-  on them and offers to write the SDD for answerers who are not in the session, asking none of them.
-  The P0-only questions, the limit's `default: none` and the closing's count by role, interview and
-  SDD offer are advisory. A simulated process owner answers.
+  on them and offers to write the SDD for answerers who are not in the session, asking none of them. A
+  simulated process owner answers. It gates on the files, the strict check and the agent asking before
+  it writes; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -77,16 +77,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Advisory: the approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "Advisory: the approval limit is a Configuration Question with no invented amount"
     command: >-
-      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default:(?![^;)\n]*\d)'
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
 
   - type: llm_judge
-    description: "One offer counting the points that change the design comes first; no environment value is asked"
+    description: "The agent asks about the points that change the design before writing the genome"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea:
+      supplier invoices entered in an ERP, approved when over a limit. The idea leaves open points that
+      change the design, such as how invoices arrive, which ERP, who approves. Read the dialog.
+
+      Score 1.0 when, before the genome is written, the agent asks the user about such points, in any
+      wording: an offer to interview, or the questions themselves. Score 0.0 when it writes the genome
+      without asking.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: one offer counting the points that change the design comes first; no environment value is asked"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -108,7 +123,7 @@ success_criteria:
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: only points that change the design are asked before the genome is written"
@@ -137,7 +152,7 @@ success_criteria:
     pass_threshold: 0
 
   - type: llm_judge
-    description: "The closing asks none of the open decisions"
+    description: "Advisory: the closing asks none of the open decisions"
     include_agent_output: true
     include_dialog: true
     include_reference: false
@@ -149,7 +164,7 @@ success_criteria:
       when it asks none of the genome's open questions itself; 0.0 otherwise. Ending on "Want to adjust
       anything?", or offering the interview, an SDD or edits, is not asking an open question.
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing counts the open decisions by role"

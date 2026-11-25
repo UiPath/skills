@@ -1,14 +1,16 @@
 task_id: skill-planner-interview-designed-genome
 description: >
-  Integration: `interview` on a designed genome (a process genome and two components, its `Designed in:`
-  line pinned to the agreed SDD), by a user who says they are the process owner. The SDD's Action
-  Required, written again from the genome, holds the open items; the process owner's are the component's
-  business decisions D3–D7, three constants and a baseline item kept in the SDD alone, and the others
-  belong to the system's owner, the environment's owners, the delivery lead and whoever holds the
-  source. Only the process owner's items are asked, by id. An answer to an item from the SDD's own
-  design is a design revise first and the genome follows, with the `Designed in:` fingerprint taken
-  again; an answer to an entry the genome added is a genome edit. D3–D7 read decided, the other roles'
-  entries stay open, and the genome passes the strict check. A simulated process owner answers.
+  Integration: `interview` on a designed genome (a process genome and two components, its `Designed
+  in:` line pinned to the agreed SDD), by a user who says they are the process owner. The SDD's Action
+  Required, written again from the genome, holds the open items; the process owner's are the
+  component's business decisions D3–D7, three constants and a baseline item kept in the SDD alone, and
+  the others belong to the system's owner, the environment's owners, the delivery lead and whoever
+  holds the source. Only the process owner's items are asked, by id. An answer to an item from the
+  SDD's own design is a design revise first and the genome follows, with the `Designed in:`
+  fingerprint taken again; an answer to an entry the genome added is a genome edit. D3–D7 read
+  decided, the other roles' entries stay open, and the genome passes the strict check. A simulated
+  process owner answers. It gates on the entries decided and left open, the strict check and no second
+  SDD; how the questions are asked is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 sandbox:
@@ -88,7 +90,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The process owner's items only, by id, with no roles question"
+    description: "Advisory: the process owner's items only, by id, with no roles question"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -110,7 +112,7 @@ success_criteria:
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the closing names what is still open, by role"

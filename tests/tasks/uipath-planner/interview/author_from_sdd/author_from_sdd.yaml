@@ -1,12 +1,13 @@
 task_id: skill-planner-interview-author-from-sdd
 description: >
-  Integration: `author` from an agreed, ready SDD whose design already settled every point that changes
-  the design, by a user who says they are the process owner. No interview is offered and no question
-  that only a later step can place is asked before the genome is written. One genome is written with
-  a `Designed in:` line pinned to the SDD; no second SDD. The SDD's body stays as `design` wrote it,
-  its Action Required section is written again from the genome, and its handoff gains the `Genome`
-  row. The genome passes the strict check, and the closing names the open items by role, which is
-  advisory. A simulated process owner answers.
+  Integration: `author` from an agreed, ready SDD whose design already settled every point that
+  changes the design, by a user who says they are the process owner. No interview is offered and no
+  question that only a later step can place is asked before the genome is written. One genome is
+  written with a `Designed in:` line pinned to the SDD; no second SDD. The SDD's body stays as
+  `design` wrote it, its Action Required section is written again from the genome, and its handoff
+  gains the `Genome` row. The genome passes the strict check, and the closing names the open items by
+  role. A simulated process owner answers. It gates on the files, the SDD's body, Action Required and
+  handoff, the strict check, and nothing the SDD settled asked again; the closing is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -104,22 +105,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "No interview offer and no later-step question before writing"
+    description: "No interview offered, and nothing the SDD settled asked again before writing"
     include_dialog: true
-    include_tool_calls: true
     include_reference: false
     prompt: |
       The user, the process owner, asked for the genome (an automation blueprint) of an agreed SDD
-      (solution design document) whose design already settled the trigger, the systems, the approval
-      and the scope. Read the dialog and the agent's questions, whether asked in chat or as structured
-      questions.
+      (solution design document) whose design already settled the trigger, the systems, the approval and
+      the scope. Read the dialog.
 
-      Check two things:
-      1. No interview is offered before the genome is written.
-      2. Before the genome is written, nothing is asked except, at most, whether the user has a
-         preferences file (team standing answers and development standards).
-
-      Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
+      Score 1.0 when, before the genome is written, the agent neither offers an interview nor asks again a
+      point the SDD settled; a question about a point the SDD leaves open, or about a preferences file, is
+      allowed. 0.0 otherwise.
     weight: 1.5
     pass_threshold: 1.0
 

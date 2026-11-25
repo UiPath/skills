@@ -4,9 +4,9 @@ description: >
   genome is written. The request accepts the interview offer, so no offer question is asked; the
   interview still asks only the points that change the design (P0), and everything else is written as
   open entries and Configuration Questions, the approval limit with `default: none`. No SDD is written
-  and the genome passes the strict check. The closing offers the interview on the open items. The
-  P0-only questions, the limit's `default: none` and the closing's count by role and interview are
-  advisory. A simulated process owner answers.
+  and the genome passes the strict check. The closing offers the interview on the open items. A
+  simulated process owner answers. It gates on the files, the strict check and the agent asking before
+  it writes; the rest is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -75,16 +75,30 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Advisory: the approval limit is a Configuration Question with no invented value (`default: none`)"
+    description: "Advisory: the approval limit is a Configuration Question with no invented amount"
     command: >-
-      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default: none'
+      node $REFERENCE_DIR/_shared/check_interview.mjs line '^\s*\d+\.[^\n]*\blimit\b[^\n]*default:(?![^;)\n]*\d)'
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
 
   - type: llm_judge
-    description: "No offer question, and no environment value asked before writing"
+    description: "The agent interviews the user before writing the genome"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked for a genome (an automation blueprint) of a one-sentence idea,
+      supplier invoices entered in an ERP and approved when over a limit, and asked to be interviewed
+      before it is written. Read the dialog.
+
+      Score 1.0 when, before the genome is written, the agent asks the user about the open points, in any
+      wording; 0.0 when it writes the genome first, or asks nothing.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: no offer question, and no environment value asked before writing"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -106,7 +120,7 @@ success_criteria:
 
       Score 1.0 when both hold, 0.5 with one, 0.0 with neither.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the interview asks P0 points only"

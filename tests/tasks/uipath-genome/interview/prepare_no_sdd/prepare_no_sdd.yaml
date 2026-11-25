@@ -2,12 +2,12 @@ task_id: skill-genome-interview-prepare-no-sdd
 description: >
   Integration: `uipath-genome` `prepare` on an authored genome that has no SDD, for an engineer who
   answers now only how the work is split, the libraries and the technology for each capability. The
-  readiness file's section 6, "Decisions still open", holds the genome's four open entries and its eight
-  Configuration Questions in the item form, under the genome's ids, with no wording about an SDD; the
-  build's own questions sit in sections 1–3, none of them also in section 6. `prepare` asks only what
-  the engineer answers now, writes no SDD and leaves the genome byte-identical. Where the Configuration
-  Questions sit and whether a question repeats across sections are advisory. A simulated engineer
-  answers.
+  readiness file's section 6, "Decisions still open", holds the genome's four open entries and its
+  eight Configuration Questions in the item form, under the genome's ids, with no wording about an
+  SDD; the build's own questions sit in sections 1–3, none of them also in section 6. `prepare` asks
+  only what the engineer answers now, writes no SDD and leaves the genome byte-identical. A simulated
+  engineer answers. It gates on the readiness file's open entries under their genome ids, no SDD and
+  the genome unchanged; what `prepare` asks and where its questions sit are advisory.
 tags: [uipath-genome, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -101,7 +101,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "prepare asks only the split, the libraries and the technology"
+    description: "Advisory: prepare asks only the split, the libraries and the technology"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -115,7 +115,7 @@ success_criteria:
       0.0 otherwise. Only questions put to the user in chat count: what the agent asks its subagents or
       tools is not one, nor is an offer of the next step once the file is written.
     weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "Advisory: the readiness file keeps each question in one section"

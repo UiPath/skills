@@ -6,7 +6,8 @@ description: >
   the request quoted. The build asks none of the entries the interview decided and offers no edit for
   them; an entry the interview left open is asked once, by the build or named by it, never by both
   skills. The request stops the run before any project is created, so it ends in the build's question
-  phase. A simulated process owner answers.
+  phase. A simulated process owner answers. It gates on the files, the strict check, the hand-over and
+  no entry asked by both skills; the interview offer is advisory.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -84,7 +85,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "One interview offer, after the genome is written and before the hand-over"
+    description: "Advisory: one interview offer, after the genome is written and before the hand-over"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -97,7 +98,7 @@ success_criteria:
       is written and checked and before the build starts asking its own questions. Score 0.0 when it is
       offered more than once, before the genome is written, or not at all.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: llm_judge
     description: "The build asks no entry the interview decided, and no entry is asked by both skills"

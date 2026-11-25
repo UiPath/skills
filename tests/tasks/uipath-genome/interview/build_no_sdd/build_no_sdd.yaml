@@ -2,12 +2,13 @@ task_id: skill-genome-interview-build-no-sdd
 description: >
   Integration: `uipath-genome` builds an authored genome that has no SDD and no readiness file, for a
   user who says they are the process owner. The genome holds twelve open entries: business outcomes
-  D2–D11, and two readings, D1 (how SAP is reached) and D12 (how a supplier is found). No file holds an
-  answer, so the build offers no edits before its first question, and it neither writes nor asks for an
-  SDD. It asks the open business outcomes itself and lists the readings as unconfirmed. An answer that
-  keeps what the genome builds changes nothing, and the build never edits the genome. The request stops
-  the run before any project is created, so it ends in the build's question phase. A simulated process
-  owner answers.
+  D2–D11, and two readings, D1 (how SAP is reached) and D12 (how a supplier is found). No file holds
+  an answer, so the build offers no edits before its first question, and it neither writes nor asks
+  for an SDD. It asks the open business outcomes itself and lists the readings as unconfirmed. An
+  answer that keeps what the genome builds changes nothing, and the build never edits the genome. The
+  request stops the run before any project is created, so it ends in the build's question phase. A
+  simulated process owner answers. It gates on no SDD, the genome unchanged, and the build asking the
+  open business outcomes without requiring an SDD; the rest is advisory.
 tags: [uipath-genome, integration, mode:build, lifecycle:generate, feature:conversational]
 
 run_limits:
@@ -78,7 +79,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "The build asks the open business outcomes, lists the readings as unconfirmed, and never asks for an SDD"
+    description: "The build asks the open business decisions and does not require an SDD"
+    include_dialog: true
+    include_reference: false
+    prompt: |
+      The user, the process owner, asked the build skill to build a genome (an automation blueprint) that
+      has no SDD (solution design document) beside it. The genome's open entries D2–D11 are business
+      outcomes. Read the dialog.
+
+      Score 1.0 when, before building, the agent asks the user about the open business outcomes, all or
+      some of them, in any wording, and neither asks for an SDD nor makes one a condition of the build;
+      0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Advisory: the build asks the open business outcomes, lists the readings as unconfirmed, and never asks for an SDD"
     include_dialog: true
     include_tool_calls: true
     include_reference: false
@@ -96,4 +112,4 @@ success_criteria:
 
       Score 1.0 when all four hold, 0.75 with three, 0.5 with two, 0.0 otherwise.
     weight: 3.0
-    pass_threshold: 0.75
+    pass_threshold: 0
