@@ -59,7 +59,7 @@ Decompile the existing `.bpmn` with `--style nested` and edit that source; see [
 
 One net covers its entire container, including nested sub-processes, because unhandled failures propagate outward container by container. It catches only failures raised in the container where it sits directly ([Events](../bpmn-runtime.md#events-and-timers)); a nested sub-process's unhandled failure surfaces as that sub-process failing in its parent, reaching the next outer net. A single process-level net is usual.
 
-Add an inner net inside a looped sub-process or queue performer only for per-item handling: one bad item is recorded and the batch continues. Otherwise the failure reaches the process-level net and ends the instance.
+Add an inner net inside a looped sub-process or queue performer only for per-item handling: one bad item is recorded and the batch continues. Without an inner net, the first failure reaches the process-level net and ends the instance.
 
 Choose among a net, an `onError` handler in one activity's body, and `retry` on the node using [Events](../bpmn-runtime.md#events-and-timers).
 

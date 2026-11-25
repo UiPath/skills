@@ -86,7 +86,7 @@ For missing schema, lookup, or binding, run the named `uip maestro registry prep
 uip maestro registry search retrieve --connector <CONNECTOR_KEY> --limit 50 --output json
 ```
 
-Read each row's field reference; rerun with `--limit <TOTAL>` when `Data.Total` is higher. If none exists, ask the user, or, when the request says nobody will answer, choose a listed value and put it on the final report's `Assumed:` line.
+Read each row's field reference; rerun with `--limit <TOTAL>` when `Data.Total` is higher. If none exists, each lookup is an open question: ask the user, or, when the request says nobody will answer, choose one of that lookup's listed values and put it on the final report's `Assumed:` line.
 
 `--object`, `--resolve`, and `-f NAME=VALUE` compose in one invocation, for example:
 
@@ -120,7 +120,7 @@ If several Enabled matches exist, `prepare` refuses and lists them; rerun with `
 
 A connection is a sender's identity. Never bind or offer another person's personal connection (folder `<USER_NAME>'s workspace`). A shared-folder connection belongs to the team whoever its `Owner` is, even when its Name is an email: a normal candidate, chosen by the preceding rule. "Use whatever exists" means nobody will answer which one. Never bind any connection as a stand-in for a mailbox, channel or account the request names (`ar@…`) that has no connection. Bind the requester's personal connection only when explicitly requested or *Build it* is selected on a draft gate naming it. If none remains, leave the step unbound (§7; for `http()`, use the next rule) and put the missing connection on `Needs:`.
 
-Bind `http()` only when `uip is connections base-url <CONNECTION_ID> --output json` is the target API host. A different host is wrong even if sole or named; state that and write manual `.http()` with the absolute URL under `RULE:bpmn.http.manual` in [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work). It carries no credential; credentialed APIs reject it (Slack can return HTTP 200 with `ok: false`). Put missing `<API_HOST>` connection on `Needs:` and say to rebuild as connected `.http()`.
+Bind `http()` only when `uip is connections base-url <CONNECTION_ID> --output json` is the target API host. A different host is wrong even if sole or named; state that and write manual `.http()` with the absolute URL under `RULE:bpmn.http.manual` in [HTTP and Orchestrator work](bpmn-runtime.md#http-and-orchestrator-work). It carries no credential; credentialed APIs reject it (Slack can return HTTP 200 with `ok: false`). Put missing `<API_HOST>` connection on `Needs:` and say to rebuild as connected `.http()` once it exists.
 
 `prepare` refuses non-Enabled connections; `check`, `compile`, and `refresh` do not. `validate` reports `MISSING_BINDING`; `debug` faults `[102002] Integration Services operation failed`. Never bind one; ask the user to re-authenticate. `prepare` JSON `Message` retains only the last explanation line; read stderr for the full refusal. Report Name and Folder from the `connections list` row whose `Id` equals `prepare` `Data.ConnectionId`; `Owner` is a user id. `uip maestro bpmn validate` checks tenant bindings; outside Studio Web pass the same `--profile` as `prepare`, or a correct binding reports `MISSING_BINDING`.
 

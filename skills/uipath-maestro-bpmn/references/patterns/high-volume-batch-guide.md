@@ -125,4 +125,4 @@ The append is a `set` expression because it reads `iterator` directly and valida
 
 The per-item work is the usual nesting point: `ai-decision-review` or `external-wait` becomes the body of `processEach`, giving every item its own decision or wait.
 
-Place the `failure-escalation` net **directly inside** `processEach` so a per-item failure ends that iteration and the run continues. A net at process level catches the first failure and ends the whole instance. See [composing-guide.md](composing-guide.md#scoping-the-failure-net).
+Place the `failure-escalation` net **directly inside** `processEach` so a per-item failure ends that iteration and the run continues. A net at process level instead catches the first failure and ends the whole instance. See [composing-guide.md](composing-guide.md#scoping-the-failure-net).
