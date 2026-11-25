@@ -59,7 +59,10 @@ After authoring, run `uip rules eval list` and compare every row with the table.
 uip rules eval runs start --set <SET_NAME> --wait --path <PROJECT_DIR> --output json
 ```
 
-`--wait` polls until the run ends (default 600 seconds; `--timeout <SECONDS>`, at most 3600) and prints one envelope with `Code: RulesEvalRunCompleted` and each data point's result in `Data.Results`. Without a folder flag the rule is evaluated in the personal workspace, which needs a user login (`uip login`); pass `--folder-path` or `--folder-key` (never both) for another folder. `runs start` needs the project inside its solution folder, as `uip rules init` creates it.
+`--wait` polls until the run ends (default 600 seconds; `--timeout <SECONDS>`, at most 3600) and prints one envelope with `Code: RulesEvalRunCompleted` and each data point's result in `Data.Results`.
+<!--skill-flavor:run-target:start-->
+Without a folder flag the rule is evaluated in the personal workspace, which needs a user login (`uip login`); pass `--folder-path` or `--folder-key` (never both) for another folder. `runs start` needs the project inside its solution folder, as `uip rules init` creates it.
+<!--skill-flavor:run-target:end-->
 
 ### 5. Read results
 
@@ -70,7 +73,7 @@ uip rules eval runs list --set <SET_NAME> --path <PROJECT_DIR> --output json
 uip rules eval runs compare <RUN_ID> --compare-to <OTHER_RUN_ID> --path <PROJECT_DIR> --output json
 ```
 
-`<RUN_ID>` is `Data.EvalSetRunId` from `runs start`. The read commands find the run from a record `runs start` keeps on this machine; elsewhere, pass `--project-id <PROJECT_ID>` (`Data.ProjectId` from `runs start`).
+`<RUN_ID>` is `Data.EvalSetRunId` from `runs start`. The read commands find the run from a record `runs start` keeps on this machine; elsewhere, pass `--project-id <PROJECT_ID>` (`Data.ProjectId` from `runs start`). When the `--compare-to` run was started under another project (a re-imported solution), also pass `--compare-to-project-id <OTHER_PROJECT_ID>`.
 
 A failing data point means the table or the expected output is wrong. Check the row the inputs should hit against the policy, fix the table (then `refresh` and `validate`) or recreate the data point, and run again. Stop after 3 rounds and show the user the table and the failing data points.
 
@@ -87,7 +90,9 @@ A failing data point means the table or the expected output is wrong. Check the 
 | `Evaluator name "<NAME>" matches 2 evaluators` | Pass the evaluator id |
 | `holds 2 .dmn files` | Keep one `.dmn` per project |
 | `runs start`: `has no data points` / `links no evaluators` / `expects nothing` | Fix the set locally; `runs start` refuses it before login or upload |
+<!--skill-flavor:personal-workspace-row:start-->
 | `runs start`: `permission_denied` on the personal workspace | Log in as a user with `uip login`, or pass `--folder-path` |
+<!--skill-flavor:personal-workspace-row:end-->
 | `runs start --wait`: `Result: TimeoutError`, exit 4 | The run is still going; check it with the `runs status` command in `Instructions`, or wait longer with `--timeout` |
 | `runs start --wait`: `Evaluation run finished with status "workloadFailed"` | The rule did not run. Read each data point's error in `Data.Results`; run `uip rules refresh` so decision names match the `.dmn` |
 | `No local record of eval run` (`not_found`) | Pass `--project-id <PROJECT_ID>` |
