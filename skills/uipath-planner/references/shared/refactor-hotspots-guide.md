@@ -7,8 +7,11 @@ Where to look in an extracted genome and its source for a place the rebuild may 
 1. **Look for every spot below where its Look for line points**, after Step 6c's Retire, Fold and Target topics, and ask one question per spot found. A component the Fold topic already asked about is not asked again as spot 1.
 2. **The options are the entry's, plus the source's shape**, each naming what it changes and what it requires; none is marked Recommended. The same question asks the facts its Keep as is when line turns on — another caller, the owners, release cycles, the business cadence — that the genome, the deployed state and Step 1 leave open.
 3. **A pattern the catalogue does not list** — the source building by hand a component, a call or a trigger the target platform offers — is asked the same way. How a step is built is no hot spot: the technology of each capability (mail, spreadsheets, documents), where the run logs, how closely the steps follow the source and a library's layout are `uipath-genome`'s build questions, and a flow's unit of work, split, item store and coordination are the Transactional Shape's ([transactional-shape-guide.md](transactional-shape-guide.md); [skill-mapping-guide.md § Refactor Targets](skill-mapping-guide.md) rule 3).
-4. **An answer is a refactor answer, written as Step 6c writes Fold and Target:** a folded component keeps its row with its Rationale opening `Folded into <component>:`, a component rebuilt as a library is its Build With / Components row, and the `Requested change` row records `Fold: <component> into <component>` or `Target: <component> → library`; a changed trigger is that row's entry in the user's words, naming the component and the trigger it gets.
-5. **Unattended runs ask none.** Each spot found is an Open Decisions entry of the business-outcome tier, since it decides what is built, as a `Not covered` object does: at the component it concerns, or in the process genome when it spans components, `Builds now:` the source's shape, one `instead:` per other option ([genome-questions-guide.md § Open Decisions](genome-questions-guide.md)).
+4. **An answer is a refactor answer, written as Step 6c writes Fold:**
+   - a folded component keeps its row, its Rationale opening `Folded into <component>:`; a component rebuilt as a library keeps its row and genome, typed as a library; a library made of shared steps is a new row and component genome, and each component that shared the steps calls it there;
+   - a Handoffs row to a folded component from any component but the one it is folded into names that one instead, and a row to a library names a library workflow call;
+   - the `Requested change` row records a fold as `Fold: <component> into <component>`, and any other answer in the user's words, naming each component it touches and what changes for it.
+5. **Unattended runs ask none.** Each spot found is an Open Decisions entry of the business-outcome tier, since it decides what is built, as a `Not covered` object does: in the process genome when it spans components, else in its component genome, `Builds now:` the source's shape, one `instead:` per other option, and named `(D<n>)` in each Components, Handoffs or Triggers row it concerns ([genome-questions-guide.md § Open Decisions](genome-questions-guide.md)).
 6. **An option that changes an input or output another party reads says so in its text**, since it changes only on the user's word ([extract-guide.md](../extract/extract-guide.md) Step 6c).
 
 ## Hot spots
@@ -31,8 +34,8 @@ Where to look in an extracted genome and its source for a place the rebuild may 
 
 - **Look for:** components whose Workflow steps match step for step and differ only in their Configuration Questions' defaults or the names in Platform Dependencies — folders, sheets, queues.
 - **Why reconsider:** every fix is made twice and the copies drift apart.
-- **Options:** one component, the others folded into it, their differences its settings and one process deployed per variant; the shared steps as a library component, each component keeping only what differs — the choice when each should keep its own queue or schedule; keep them apart.
-- **Keep as is when:** their owners, release cycles or schedules differ.
+- **Options:** the shared steps as a library component, each component keeping only what differs and its own trigger and queue; keep them apart.
+- **Keep as is when:** their owners or release cycles differ.
 
 ### 4. Polling where a trigger would do
 
