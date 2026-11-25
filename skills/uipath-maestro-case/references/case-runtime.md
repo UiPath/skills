@@ -505,6 +505,11 @@ make from syntax alone. Exact signatures remain in the generated API.
      expression), keep the SDD's casing and null-guard it:
      `vars.analysisResult?.unusualClauses`.
 
+<!-- RULE:case.sdd.input-literals -->
+- An SDD Inputs cell that does not start with `=` is a literal. `""` and
+  `"" (empty literal)` are the empty string, `value: ''`, as the Designer
+  saves it; never `'""'`.
+
 ## Metadata fidelity
 
 <!-- RULE:case.metadata.intsvc-activity-config -->
