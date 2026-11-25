@@ -38,7 +38,7 @@ List every task box in order, including boxes needing no resource, and nothing e
 <!--skill-flavor:gate-not-checked-rule:start-->
 Write `not checked` only for a box whose lookup ran and failed, or when this run found no `uip login`; a box not looked up is not a reply line yet, so run its lookup first.
 <!--skill-flavor:gate-not-checked-rule:end-->
-Explain each lookup failure once, in the first line's sentence, never on its box line.
+When a lookup failed, say why once, in the first line's one sentence, never on its box line.
 
 ## Nothing else
 

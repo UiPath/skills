@@ -142,7 +142,7 @@ Fix these source errors and rerun `check`; `prepare` does not:
 
 ## 4. When the connector is not in the library
 
-Without a pulled library, `check` and `compile` fetch through `uip` from the Flow node catalog; with one they refuse absent operations, and `uip maestro registry pull` refreshes it. A refusal's final sentence explains why:
+Without a pulled library, `check` and `compile` fetch through `uip` from the Flow node catalog, so a connector the tenant serves there needs nothing more; with one they refuse absent operations, and `uip maestro registry pull` refreshes it. A refusal's final sentence explains why:
 
 ```
 connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set. … The tenant was asked through uip (`uip maestro flow registry get`) and does not serve it.
@@ -178,15 +178,15 @@ The identity comes from the catalog, never from the connector's OpenAPI document
 uip is resources describe <CONNECTOR_KEY> <OBJECT_NAME> --operation <VERB> --output json
 ```
 
-(`/curated_create_issue`, `/curated_get_issue/{issueId}`). It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
+Examples: `/curated_create_issue`, `/curated_get_issue/{issueId}`. It differs per operation and is not always `/<objectName>` (`issue_properties` is `/issue/{issueIdOrKey}/properties`), so never derive it.
 
-Use the operation-specific route, not the provider's REST route (`/rest/api/2/issue`); provider routes can validate but debug faults `[102002] Integration Services operation failed` (observed Jira Create Issue provider 401). Copy `<uipath:context>` rows of `Data.V2.ElementXml`, including `activityConfigurationVersion: 'v2'`. Without `--input-details`, `registry get` returns only V1 (`activityConfigurationVersion` defaults to `v1`); pass the node's values as JSON to `--input-details` (`'{}'` when none) and use `Data.V2.MissingRequired` for remaining required inputs. Put `{param}` path values in `inputs: { pathParameters: { <param>: … } }`, query values in `inputs: { queryParameters: { … } }`; a bare `inputs: { <param> }` lands in the body. See [the parameter rows](bpmn-runtime.md#connectors-and-bindings).
+Use the operation-specific route, not the provider's REST route (`/rest/api/2/issue`); provider routes can validate but debug faults `[102002] Integration Services operation failed` (observed Jira Create Issue provider 401). Copy `<uipath:context>` rows of `Data.V2.ElementXml` into the `.activity()` context, including `activityConfigurationVersion: 'v2'`. Without `--input-details`, `registry get` returns only V1 (`activityConfigurationVersion` defaults to `v1`); pass the node's values as JSON to `--input-details` (`'{}'` when none) and use `Data.V2.MissingRequired` for remaining required inputs. Put `{param}` path values in `inputs: { pathParameters: { <param>: … } }`, query values in `inputs: { queryParameters: { … } }`; a bare `inputs: { <param> }` lands in the body. See [the parameter rows](bpmn-runtime.md#connectors-and-bindings).
 
 For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: obtain `objectName` from `uip is resources list <key> --connection-id <id> --output json`; use the catalog Integration Service method, not the HTTP verb: `GETBYID` (single Retrieve), `GET` (list), `POST` to create, `PATCH`/`PUT` to update, or `DELETE`; obtain `path` from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id> --output json`.
 
 ## 5. Data Fabric is not this
 
-Data Fabric records/files use `.dataService(id, { entity, connection, folder, op, … })`, one of eight operations. A folder entity is `entity: { name, folder: '<folder path>' }`; once `check`'s `prepare` records its keys, every record operation uses `_V3`: `create`, `update`, `get`, `query` as V2 Studio Web tasks, `delete` as V1; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings). The library has one Data Service operation, so `.connector()` cannot author the rest, and hand-filled `.activity()` gets object, parameter targets, and folder binding wrong in ways `validate` does not report. See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `examples/ContractRegistry.bpmn.ts`.
+Data Fabric records/files use `.dataService(id, { entity, connection, folder, op, … })`, one of eight operations. A folder entity is `entity: { name, folder: '<folder path>' }`; once `check`'s `prepare` records its keys, it writes the connector's `_V3` operation: `create`, `update`, `get`, `query` as V2 Studio Web tasks, `delete` as V1; see [the folder-entity rule](bpmn-runtime.md#connectors-and-bindings) for these and the other V1 cases. The library has one Data Service operation, so `.connector()` cannot author the rest, and hand-filled `.activity()` gets object, parameter targets, and folder binding wrong in ways `validate` does not report. See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `examples/ContractRegistry.bpmn.ts`.
 
 ## 6. Connector events
 
@@ -209,7 +209,7 @@ Payload/failure go to `outputVar` (default `<id>_result`) and `<id>_Error`; down
 
 ## 7. Draft with an unresolved connector
 
-A source-only draft may lack a connection, operation, tenant access, or permitted real ids. Keep the CLI authoritative:
+A source-only draft may lack a connection, operation, tenant access, or permitted real ids. Write the step so that `check` passes and the CLI, not prose, says what is missing:
 
 - If operation metadata is local (§1 finds it in the library, a local cache, so this works offline; and `check` names no `uip maestro registry prepare` for it: `OBJECT_UNPREPARED`, `CUSTOM_FIELDS_UNPREPARED`, or a `CONNECTOR_INPUT` for a field only the connection discovers), write the §2 `.connector()` with symbolic `connection`/`folder` and no `bindings.json`. Leave no `lookup()`, because `compile` refuses one until `prepare` records it (`LOOKUP_UNRESOLVED`); use runtime `=js:vars.<id>` or fixed-vocabulary literals such as `send_as: 'bot'`. `check`, `compile`, and `format` pass, emitting `Intsvc.ActivityExecution` reading `=bindings.<name>`, while `LOOKUP_RUNTIME_VALUE`/`LOOKUP_LITERAL_ID` are warnings. `refresh` refuses `Connection binding "<name>" default must be a GUID.` and `validate` reports `MISSING_BINDING`; stop there; do not edit bindings or package files.
 - Otherwise, with no tenant for `prepare` to reach (the operation is not in the library, or `check` asks for a `prepare`), write a bare `.task(id, { name })` naming the action, exact connector key, and operation, such as `'Send Slack digest (uipath-salesforce-slack / send-message-to-channel, unresolved)'` or `.task('sendDigest', { name: 'Send digest via uipath-salesforce-slack' })`. The operation may be unresolved, but the name must contain the exact library key (`uipath-salesforce-slack`, not "Slack" or "Integration Service") and a verb; notes must say it is a placeholder.

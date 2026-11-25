@@ -16,7 +16,7 @@ After writing a pattern, run `uip maestro bpmn check <Name>.bpmn.ts --graph`; th
 
 ## Patterns are graph fragments
 
-Guides show a standalone start event, but it is an artifact unless the pattern begins the process; drop it inside an existing process.
+Guides show a standalone start event, but it is an artifact unless the pattern begins the process; remove it when inserting into the middle of an existing process.
 
 Placement constraints:
 
@@ -67,7 +67,7 @@ Choose among a net, an `onError` handler in one activity's body, and `retry` on 
 
 Nesting does not create local variables. Variable ids are document-wide, and the runtime resolves `vars.<id>` in one flat namespace wherever declared ([Variables](../bpmn-runtime.md#variables-and-the-process-contract)). Nested patterns read parent variables by id without input mapping, and parents read nested writes without output mapping.
 
-Independent state needs unique ids. If composed patterns each hold their own value of the same kind, rename one everywhere it is read, including gate conditions: use `claimReviewOutcome` and `paymentReviewOutcome`, not two `reviewOutcome` declarations. A duplicate id is not a second variable; `check` refuses it as `DUPLICATE_DOCUMENT_ID`. Keep a shared name only when both patterns mean the same value, such as a nested review gating on its parent's score.
+Independent state needs unique ids. If composed patterns each hold their own value of the same kind, rename it everywhere that pattern reads it, including its gate conditions: use `claimReviewOutcome` and `paymentReviewOutcome`, not two `reviewOutcome` declarations. A duplicate id is not a second variable; `check` refuses it as `DUPLICATE_DOCUMENT_ID`. Keep a shared name only when both patterns mean the same value, such as a nested review gating on its parent's score.
 
 Looped sub-process iterations write the same ids. On the local engine, parallel iterations overwrite each other's writes; one variable collects all results only in a sequential loop. See [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
 

@@ -126,7 +126,7 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 It has the same risks as manual `uip solution upload` when: (1) iterating locally before publishing, because work in progress reaches teammates and triggers; (2) changing a solution downloaded with `uip solution download`, because partial local state overwrites other changes; or (3) local and Studio Web diverge, because the remote side is discarded rather than merged.
 
-The overwrite is recorded as a restorable version unless uploaded with `--no-snapshot`; recovery is browser-only, after the fact, by the user. Treat `eval run start` like an upload and confirm the local solution is intended for publication. To avoid overwriting, pass **both** `--solution-id` and `--project-id` for an already provisioned cloud solution; this skips package and upload. Never run `uip solution upload` for the user without asking: the same rule as [Operate](operate.md).
+The overwrite is recorded as a restorable version unless uploaded with `--no-snapshot`; recovery is browser-only, after the fact, by the user. Treat `eval run start` like an upload and confirm the local solution is the one the user means to publish. To avoid overwriting, pass **both** `--solution-id` and `--project-id` for an already provisioned cloud solution; this skips package and upload. Never run `uip solution upload` for the user without asking: the same rule as [Operate](operate.md).
 
 ## Confirm what was written
 
@@ -134,4 +134,4 @@ After authoring, list the evaluator and eval set and read generated JSON. Confir
 
 ## Evidence boundary
 
-A score is evidence about this process's output on these inputs under these evaluators—not proof of correctness. An `llm-judge-output` score includes model variance; movement of one or two points is noise. Compare runs rather than one result, and name the eval set and evaluator behind every reported number.
+A score is evidence about this process's output on these inputs under these evaluators, not proof of correctness. An `llm-judge-output` score includes model variance; movement of one or two points is noise. Compare runs rather than one result, and name the eval set and evaluator behind every reported number.
