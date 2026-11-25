@@ -573,6 +573,9 @@ def main():
             return emit(LOGIN_STATUS, EXIT_SUCCESS)
         if args[:3] == ["login", "tenant", "list"]:
             return emit(LOGIN_TENANTS, EXIT_SUCCESS)
+    # Bridged into Studio Web's browser shell: exit 199 so the browser's own uip runs the call.
+    if os.environ.get("STUDIOWEB_HOST_MOCK"):
+        return 199
     real = real_uip()
     if not real:
         sys.stderr.write("uip: command not found\n")
