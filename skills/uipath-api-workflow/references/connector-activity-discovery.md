@@ -98,14 +98,14 @@ uip api-workflow registry stub <activity-type-id> \
 
 #### Required-field cross-check
 
-After every stub, inspect `metadata.configuration` → `optionalConfiguration.fieldsContainer.inputFields`, including `name`, `required`, `fieldLocation`, and `defaultValue`, or run:
+After every stub, read `Data.Warnings`, which names every required field the stub left empty, and the `required` flags in `Data.Parameters` (query, path, header, and multipart parameters, each with its `type`) and `Data.RequestFields` (body fields). The activity's `metadata.configuration` carries only `essentialConfiguration`, not field definitions. A parameter with a `reference`, such as LLM Call's `modelName`, takes one of the records its `reference.path` lookup returns, using the field named by `reference.lookupValue`. To see an operation's full schema, run:
 
 ```bash
 uip is resources describe <connector-key> <object-name> \
   --operation <op> --connection-id <uuid> --output json
 ```
 
-The first describe call without `--operation` lists available operations. For every `required: true` field, verify a value exists in the matching `queryParameters`, `pathParameters`, or `bodyParameters` block. Re-run the stub with `--inputs` or add the missing flat, bare-literal field manually. Empty parameter blocks on a non-trivial CRUD operation are suspicious. Do not complete the workflow until `Data.Warnings` contains no missing-required-field warning.
+The first describe call without `--operation` lists available operations. For every `required: true` field, verify a value exists in the matching `queryParameters`, `pathParameters`, or `bodyParameters` block. Re-run the stub with `--inputs` or add the missing flat, bare-literal field manually. Empty parameter blocks on a non-trivial CRUD operation are suspicious. Do not complete the workflow until `Data.Warnings` names no missing required field. The one exception is a multipart string part (`body`, `RagRequest`): the stub still lists it after its required body fields are set, and the executor builds that part from `bodyParameters` (see [Multipart endpoints](#multipart-endpoints)).
 
 <!--skill-flavor:resource-lookup-runtime:start-->
 Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker displays the friendly name only when the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once by running `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
@@ -248,6 +248,15 @@ Manual loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging
 ## Multipart endpoints
 
 The stub detects `parameters[].type === "multipart"` and emits both flat `bodyParameters` and `multipartParameters`, commonly including `{ "name": "body", "dataType": "string" }` and a file part. Keep `multipartParameters` even without an attachment: the executor JSON-stringifies the entire `bodyParameters` object into the string part and expects file references in file parts. Removing the declaration causes `400 "Unable to parse multipart body"`.
+
+## Model calls (UiPath GenAI Activities)
+
+Call a model through the `uipath-uipath-airdk` connector (UiPath GenAI Activities) with **Content Generation**: `registry resolve "Content Generation"`, then `stub --inputs '{"prompt": "...", "instruction": "..."}'`.
+
+- **Request.** `prompt` is required; `instruction`, `max_tokens`, and `temperature` are optional, and so is the query `modelName`. The activity is multipart: keep the stub's `multipartParameters` as emitted and set the fields in `bodyParameters`. The executor builds the multipart part from `bodyParameters` and ignores a `value` set on the part, so do not assemble the request JSON yourself.
+- **Answer.** Read `$context.outputs.<ExportBucketKey>.content.text`; `.content.choices[0].message.content` holds the same text. [assets/templates/genai-model-call-example.json](../assets/templates/genai-model-call-example.json) is a working example.
+- **Structured answers.** Ask for JSON only in `instruction`, then parse `.content.text` in a JavaScript activity: strip a leading code fence (```` ```json ````) and the closing one, `JSON.parse`, and fall back when parsing fails. Return the parsed object from the script, not the raw text.
+- **LLM Call** (`POST /v1/llmCall`) is not in `registry resolve`'s index, so do not choose it for new work. When a workflow already uses it, it needs the query `modelName`, or the call fails with HTTP 400; the parameter's `reference.path` (`/getLlmCallModels`) lists the tenant's models, and a record's `model` is the value. With `outputSchema`, the schema's root must be `type: "object"`; an array root also fails with HTTP 400. It returns the parsed object in `.content.output`.
 
 ## Editing after stubbing
 
