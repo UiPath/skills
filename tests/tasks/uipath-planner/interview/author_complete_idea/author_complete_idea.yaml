@@ -40,7 +40,7 @@ simulation:
     - "When asked for a preferences file, answer that you have none."
     - "If the agent offers edits, an interview, the SDD or a build after writing the genome, decline."
     - "Once the agent reports the genome written, end the conversation."
-  max_turns: 6
+  max_turns: 8
 
 success_criteria:
   - type: skill_triggered

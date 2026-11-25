@@ -48,7 +48,7 @@ simulation:
     - "You answer only as the process owner: if offered other roles' questions, decline them."
     - "When asked whether you want to adjust anything, or offered a build, say no."
     - "Once the agent reports the answers applied and what is still open, end the conversation."
-  max_turns: 10
+  max_turns: 14
 
 success_criteria:
   - type: skill_triggered

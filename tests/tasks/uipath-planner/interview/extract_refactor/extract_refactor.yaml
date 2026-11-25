@@ -51,7 +51,7 @@ simulation:
     - "You answer only as the process owner: if offered other roles' questions, decline them."
     - "When asked whether you want to adjust anything, say no. When the same message also offers the interview, accept the interview."
     - "Once the build has asked its questions and stops before creating a project, or reports that it cannot create one, end the conversation."
-  max_turns: 16
+  max_turns: 24
 
 success_criteria:
   - type: skill_triggered

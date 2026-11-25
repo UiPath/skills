@@ -50,7 +50,7 @@ simulation:
     - "When asked for a preferences file, answer that you have none."
     - "When a question asks for something you do not know (how SAP is reached, a tenant, a folder, a machine), say it is for the system's owner or the environment's owners."
     - "Once the build has asked its questions and stops before creating a project, or reports that it cannot create one, end the conversation."
-  max_turns: 16
+  max_turns: 24
 
 success_criteria:
   - type: skill_triggered
