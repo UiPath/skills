@@ -6,15 +6,13 @@ instead of ending the run."""
 
 from __future__ import annotations
 
-import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from _shared.flow_graph import CASE_PREFIX, CONTINUE_PORT, CONTROL, DECISION, LOOP, SWITCH, fail, load_graph  # noqa: E402
+from _shared.flow_graph import CONTINUE_PORT, CONTROL, DECISION, LOOP, SWITCH, fail, load_graph  # noqa: E402
 
 ERROR_PORT = "error"
 SCRIPT = "core.action.script"
@@ -24,66 +22,41 @@ def moves_on(g, edge, loop: str) -> bool:
     return (edge["targetNodeId"] == loop and edge.get("targetPort") == CONTINUE_PORT) or g.continues(edge["targetNodeId"], loop)
 
 
-# Runs a check script and the gate on a mocked agent output, in a bare vm
-# context (for determinism, not a security boundary), 2 s per run.
-ROUTE_JS = r"""
-const vm = require("vm");
-const context = vm.createContext(Object.assign(Object.create(null), { JOB: require("fs").readFileSync(0, "utf8") }));
-const run = code => vm.runInContext(code, context, { timeout: 2000 });
-run(`
-  const console = { log() {}, info() {}, warn() {}, error() {}, debug() {} };
-  const { agent, step, script, gate, fallback, fields, scores } = JSON.parse(JOB);
-  // Any other value the script reads: a harmless object that reads as "".
-  const anything = new Proxy({}, { get: (_, key) => key === Symbol.toPrimitive ? () => "" : anything });
-  const call = (code, $vars) => new Function("$vars", "vars", "$metadata", "return (function () {" + code + "\\n})();")($vars, $vars, anything);
-  globalThis.route = confidence => {
-    const output = new Proxy({ ...fields, ...Object.fromEntries(scores.map(name => [name, confidence])) }, {
-      get: (t, key) => key in t ? t[key] : typeof key !== "string" ? undefined : /confid/i.test(key) ? confidence : "approve",
-    });
-    const $vars = new Proxy({ [agent]: { output } }, { get: (t, key) => key in t ? t[key] : anything });
-    $vars[step] = { output: call(script, $vars) };
-    const taken = gate.find(([, expression]) => call("return (" + expression + ");", $vars));
-    return taken ? taken[0] : fallback;
-  };
-`);
-process.stdout.write(JSON.stringify([run("route(0.3)"), run("route(0.95)")]));
-"""
+def top_level(items: str) -> list[str]:
+    """``items`` split on the commas outside any brackets."""
+    parts, depth, start = [], 0, 0
+    for i, ch in enumerate(items):
+        depth += (ch in "([{") - (ch in ")]}")
+        if ch == "," and depth == 0:
+            parts, start = parts + [items[start:i]], i + 1
+    return [p.strip() for p in parts + [items[start:]] if p.strip()]
 
 
-def routes_on_confidence(g, script: str, agent: str, gate: str) -> bool:
-    """Running ``script`` on the agent's output, a low confidence (0.3) takes a
-    below-the-bar port of ``gate`` and a high one (0.95) does not. A script that
-    throws, never returns or needs anything outside ``$vars`` fails. Fields the
-    agent declares get typed placeholders; any other field reads as "approve"."""
-    schema = (g.nodes[agent].get("outputs") or {}).get("output", {}).get("schema") or {}
-    placeholder = {"number": 0.5, "integer": 1, "boolean": True, "array": [], "object": {}}
-    fields = {
-        name: (spec.get("enum") or ["approve"])[0] if spec.get("type") == "string" else placeholder.get(spec.get("type"))
-        for name, spec in (schema.get("properties") or {}).items()
+def passes_confidence(script: str, agent: str) -> bool:
+    """``script`` may check the agent's output, then ends in its only ``return``:
+    the output itself, a spread of it no later key overrides, or an object whose
+    ``confidence`` is the agent's own (``const`` names, nothing assigns one)."""
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", script, flags=re.S)
+    code = re.sub(r"\[\s*['\"]confidence['\"]\s*\]", ".confidence", code)
+    out = f"$vars.{agent.rsplit('/', 1)[-1]}.output"
+    bound = lambda value: re.findall(rf"\bconst\s+(\w+)\s*=\s*{re.escape(value)}\s*;", code)
+    outputs = {out, *bound(out)}
+    scores = {o + ".confidence" for o in outputs} | set(bound(out + ".confidence")) | {
+        "confidence" for names, source in re.findall(r"\bconst\s*\{([^}]*)\}\s*=\s*([\w$.]+)\s*;", code)
+        if source in outputs and "confidence" in top_level(names)
     }
-    inputs = g.nodes[gate].get("inputs") or {}
-    if g.type_of(gate) == DECISION:
-        ports, fallback = [("true", inputs.get("expression", ""))], "false"
-    else:
-        ports, fallback = [(f"{CASE_PREFIX}{c.get('id')}", c.get("expression", "")) for c in inputs.get("cases") or []], "default"
-    job = {
-        "agent": agent.rsplit("/", 1)[-1], "step": script.rsplit("/", 1)[-1],
-        "script": str((g.nodes[script].get("inputs") or {}).get("script", "")),
-        "gate": [(port, re.sub(r"^=(js:)?", "", str(e).strip())) for port, e in ports],
-        "fallback": fallback, "fields": fields,
-        "scores": [k for k in fields if re.search("confid", k, re.I)] or ["confidence"],
-    }
-    try:
-        done = subprocess.run(["node", "-e", ROUTE_JS], input=json.dumps(job), capture_output=True, text=True, timeout=15)
-    except FileNotFoundError:
-        fail("node is needed to run the check script between the agent and the gate")
-    except subprocess.TimeoutExpired:
+    end = re.search(r"\breturn\s+(.*?)\s*;?\s*$", code, re.S)
+    if not end or len(re.findall(r"\breturn\b", code)) != 1 or re.search(r"\.confidence\s*([-+*/]?=(?!=)|\+\+|--)", code):
         return False
-    if done.returncode != 0:
-        return False
-    low, high = json.loads(done.stdout)
-    below = g.low_ports(gate, script)
-    return low in below and high not in below
+    value, decides = end.group(1), False
+    if value in outputs:
+        return True
+    for prop in top_level(value[1:-1]) if value.startswith("{") and value.endswith("}") else []:
+        if prop.startswith("..."):
+            decides = prop[3:].strip() in outputs
+        elif re.match(r"['\"]?confidence['\"]?\s*(:|$)", prop):
+            decides = prop.split(":", 1)[-1].strip() in scores
+    return decides
 
 
 def only_control_between(g, source: str, target: str, blocked) -> bool:
@@ -101,16 +74,16 @@ def main() -> None:
         agents = [a for a in g.agents() if a in body]
         people = [p for p in g.hitl() if p in body]
         # The gate reads the agent's output, or a script downstream of the
-        # agent (any number of steps, no human task on the way from the agent
-        # to the gate) that, when run, sends a low-confidence item to review
-        # and a high-confidence one past it.
+        # agent (no human task on the way to the gate) that passes the
+        # agent's confidence on unchanged.
         gated = [
             (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in [a] + [
                 s for s in g.reachable(a, blocked=people)
                 if s in body and g.type_of(s) == SCRIPT and g.reaches(s, n, blocked=people)
+                and passes_confidence(str((g.nodes[s].get("inputs") or {}).get("script", "")), a)
             ]
-            if g.thresholds(n, s) and g.routes_low(n, people, s) and (s == a or routes_on_confidence(g, s, a, n))
+            if g.thresholds(n, s) and g.routes_low(n, people, s)
         ]
         if not (gated and people):
             continue
