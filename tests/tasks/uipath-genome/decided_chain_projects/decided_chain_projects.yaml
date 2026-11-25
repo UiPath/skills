@@ -27,8 +27,8 @@ reference:
 
 initial_prompt: |
   Build the automation described in `invoice-dispatch-genome.md` in this folder.
-  This is an unattended run: take the default for every question. Do not publish or
-  deploy anything.
+  This is an unattended run: take the default for every question. Create nothing in the
+  tenant, and do not publish or deploy anything.
 
 success_criteria:
   - type: skill_triggered
