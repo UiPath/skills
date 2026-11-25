@@ -11,7 +11,7 @@
 {"id": "uipath-idp-011", "prompt": "The text layer of this PDF is garbled — have UiPath OCR every page instead", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-012", "prompt": "Digitize this PDF with the UiPath layout engine so the tables come out as HTML", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-013", "prompt": "Where on page 1 is the word Total? I need its box from the UiPath digitized document DOM", "expected_skill": "uipath-idp"}
-{"id": "uipath-idp-014", "prompt": "Upload a TIFF with uip documents and tell me when the upload expires", "expected_skill": "uipath-idp"}
+{"id": "uipath-idp-014", "prompt": "Upload a TIFF with uip documents and digitize it", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-015", "prompt": "Convert this scanned image to markdown using UiPath document digitization", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-016", "prompt": "uip documents uploads create fails with unsupported-media-type — what do I do?", "expected_skill": "uipath-idp"}
 {"id": "uipath-idp-017", "prompt": "Is digitize available in my UiPath folder? Check the document capabilities", "expected_skill": "uipath-idp"}

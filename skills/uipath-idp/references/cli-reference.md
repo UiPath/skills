@@ -27,13 +27,13 @@ A required folder that is missing fails locally: `Result: ValidationError`, `Mes
 uip documents uploads create "<FILE_PATH>" --folder-path "<FOLDER_PATH>" --output json
 ```
 
-`Data`: `{ documentId, name, size, createdAt, expiresAt }`.
+`Data.documentId` is the document to pass to `digitize`; `Data` also carries the file's `name` and `size`.
 
 - One file per call, up to 160 MB; a larger file fails locally with `ValidationError`.
 - Accepted: PDF, PNG, JPEG, TIFF, GIF, BMP. The type is read from the file's bytes; anything else answers `unsupported-media-type`.
 - No OCR runs on upload.
 - The `documentId` works only in the folder it was uploaded to.
-- There is no command to read, list, download or delete an upload; it expires at `expiresAt`.
+- There is no command to read, list, download or delete an upload.
 
 ## Digitize
 

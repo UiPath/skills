@@ -26,7 +26,7 @@ Turn documents into text with `uip documents`: upload a file to a folder, digiti
 1. **Verify `uip documents` syntax in the [CLI Reference](references/cli-reference.md) before running a command.** Copy the exact subcommand and options; never guess. Do NOT call the REST API with curl, and do NOT read CLI source. The tool ships in **preview builds of `uip` only**: if `uip documents` answers `unknown command`, report that this `uip` build has no Documents tool and stop.
 2. **Always pass `--output json`** and parse the envelope: `Result`, `Code`, `Data`, plus `Message`, `Instructions`, `Warning`, `ErrorCode`, `Retry` and `Context` when present. `Data` keeps the API's camelCase keys (`runId`, `result.markdown`), so `--output-filter` expressions use those exact names. The examples under `--help` print the same keys capitalised; trust the real output.
 3. **Name the folder on every folder-scoped call, and keep it the same.** `uploads create`, `digitize`, `runs get` and `pages get` need `--folder-path "<FOLDER_PATH>"` or `--folder-key "<FOLDER_KEY>"` (one, never both); without it they fail locally with `ValidationError` (`No folder given.`). An upload and its runs are visible only from their folder. When the user has not named a folder, ask; do not guess one.
-4. **Upload a file once and reuse its `documentId`.** Another page range or another engine is a new `digitize` on the same `documentId`, in the same folder. Upload again only after `expiresAt`: an upload cannot be read back or deleted from the CLI.
+4. **Upload a file once and reuse its `documentId`.** Another page range or another engine is a new `digitize` on the same `documentId`, in the same folder. An upload cannot be read back or deleted from the CLI.
 5. **Start a run once, with `--wait`, and resume it with `runs get`. Never start it again.** Every `digitize` call starts a new digitization. On `Result: TimeoutError` the run is still going on the server: run the `runs get` command printed in `Instructions`, which already carries the folder.
 6. **Keep `--timeout` under your shell's own command timeout.** `--wait` gives up after 300 seconds by default; a tool runner that kills commands sooner loses the output. Pass a lower `--timeout <SECONDS>` and resume as in Rule 5. Never poll in a shell loop.
 7. **Read engine names from `discovery digitization-engines list`; never guess one.** The defaults (OCR `auto`, `--apply-on-pdf auto`, no layout engine) suit most documents. Change them only when the user asks or the text comes back wrong. A layout engine runs on OCR output, so `--layout-engine` cannot be combined with `--apply-on-pdf never`.
@@ -61,7 +61,6 @@ uip documents pages get <PAGE_NUMBER> --run-id "<RUN_ID>" --format markdown --fo
 | "Only pages 2 to 4" | Add `--page-range 2-4` (syntax `1-3,5,8-`; the order given is the order digitized). |
 | "Give me page 3" / "Where is this word on the page?" | `uip documents pages get 3 --run-id "<RUN_ID>" --format <text\|markdown\|dom> --folder-path "<FOLDER_PATH>" --output json`. `dom` holds the words with their boxes. |
 | "Check on run X" / the wait timed out | `uip documents runs get "<RUN_ID>" --folder-path "<FOLDER_PATH>" --wait --timeout <SECONDS> --output json` (Critical Rule 5). |
-| "When does my upload expire?" | `expiresAt` in the `uploads create` output. Keep it: the upload cannot be read again later. |
 
 ## Common Pitfalls
 
@@ -82,7 +81,7 @@ Recognise the request, give the response, stop. Do NOT go looking for an endpoin
 | "Train / label / publish / deploy a model" | Out of this skill: hand off to `uipath-ixp`. |
 | "Cancel this run" | No cancel exists; the run finishes on its own. Do not start a new one to replace it. |
 | "List my runs" / "List my uploads" | No list exists: a run is read only by its `runId`. Ask for the id. |
-| "Download / delete the uploaded file" | Not possible from the CLI; an upload expires on its own at `expiresAt`. |
+| "Download / delete the uploaded file" | Not possible from the CLI. |
 
 ## Reference Navigation
 
