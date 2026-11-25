@@ -58,7 +58,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
 | A task that failed, or that a person ended: start a fallback task, or leave the stage for review | `rule('task-exited', { tasks, exitReasons?, errorCategories? })` on a task entry or a non-completing stage exit; `exitOnTaskFailure`, `taskExitRules` (SDK 6.125.0+ and `uip` 1.207.0+; an older SDK answers `UNKNOWN_RULE`) | [Task exit rules](references/case-runtime.md#task-exit-rules) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
-| Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
+| Business rules (one result key per decision) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
 | Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
 | Document extraction | `documentExtraction(model, { deployment, folderKey, folder, deploymentKey, file, pageRange? })` (SDK 6.82.0+, uip 1.206.0+) | [Document extraction](references/case-runtime.md#document-extraction) | `examples/DocumentExtractionCase.case.ts` |
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
