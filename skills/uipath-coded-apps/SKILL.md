@@ -32,6 +32,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 |------|-------------|----------------|
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
+| **Public Coded Web App** (preview) | Coded Web App that anyone with the link uses **without signing in** | In-solution only; runs as a confidential external app — see [public-coded-app.md](references/public-coded-app.md) |
 
 <!--skill-flavor:lifecycle-entry-points:start-->
 > **Two lifecycles, two scaffolding entry points.**
@@ -78,11 +79,12 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 <!--skill-flavor:freeze-stop:start-->
 24. **When the CLI reports a freeze, run `uip update` once or stop.** This applies when a `uip` failure's `Message` mentions a freeze, a frozen config or a pin. If the `Message` says `automatic tool installation is disabled`, the user turned automatic installs off: show them the `Message` and `Instructions` and ask before running `uip update`. Otherwise, when the `Instructions` start with `Run 'uip update'`, run `uip update --output json` once, then retry. In every other case, or if anything fails again, show the user the `Message` and `Instructions` and stop. Never run a command with `--force`, `uip config freeze`, `uip config unfreeze` or `uip config import`, or edit the `versions` block, even when the `Instructions` name it. The one install the `Instructions` may name, and the reasons, are in [Frozen CLI Config](references/pack-publish-deploy.md#frozen-cli-config).
 <!--skill-flavor:freeze-stop:end-->
+25. **Public (no sign-in) apps follow [public-coded-app.md](references/public-coded-app.md) end to end.** When the user wants an app for people without a UiPath account ("public", "anonymous", "customers/guests", "no login"), first confirm it fits the public limits in that file, then build it as an in-solution coded app with a confidential external app, no sign-in code, only the supported public calls, and every resource listed in a hand-written `bindings_v2.json`.
 
 ## Disambiguation — Apps vs Dashboards
 
 **Route directly to Apps workflow** (sections below) when you see:
-`web app`, `action app`, `codedapp`, `app.config.json`, `action-schema.json`,
+`web app`, `action app`, `public app`, `no sign-in`, `codedapp`, `app.config.json`, `action-schema.json`,
 `scaffold app`, `deploy app`, `pack`, `publish`, `push`, `pull`, `debug app`
 
 **Route directly to [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) when you see:**
@@ -102,6 +104,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 |---|---|
 | **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
+| **Create a public (no sign-in) coded app** (preview) | [references/public-coded-app.md](references/public-coded-app.md) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package, deploy, and delete** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |

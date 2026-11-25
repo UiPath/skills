@@ -16,6 +16,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.bpmn_assertions import has_source  # noqa: E402
 from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
@@ -79,9 +80,9 @@ def main() -> None:
     if not uipath_children(task, "input"):
         fail("agent job task should bind at least one request input (JobArguments)")
 
-    outputs = uipath_children(task, "output")
+    outputs = [o for o in uipath_children(task, "output") if has_source(o)]
     if not outputs:
-        fail("agent job task should capture the agent response as an output")
+        fail("agent job task should capture the agent response as an output with a source")
     declared = variable_ids(root)
     if not declared:
         fail("no process variables declared (expected a BPMN.Variables mapping)")

@@ -70,14 +70,17 @@ Calendars define non-working days (holidays, company shutdowns). Time triggers r
 |---------|--------------|
 | `uip or calendars list` | List calendars (returns Id, Name, TimeZoneId — the tenant time zone). |
 | `uip or calendars get <key>` | Get calendar details including excluded dates. |
-| `uip or calendars create <name>` | Create a calendar. It takes no time zone (see Gotchas). |
-| `uip or calendars update <key>` | Rename a calendar (`--name`). |
+| `uip or calendars create <name>` | Create a calendar. `--excluded-dates <YYYY-MM-DD ...>` sets its non-working days. It takes no time zone (see Gotchas). |
+| `uip or calendars update <key>` | Rename a calendar (`--name`) or change its non-working days: `--excluded-dates` replaces the list, `--add-excluded-dates` and `--remove-excluded-dates` change it. `--excluded-dates` cannot be combined with the other two. |
 | `uip or calendars delete <key>` | Delete a calendar. |
 
 ```bash
 # Create a calendar for US holidays
-uip or calendars create "US Holidays" --output json
+uip or calendars create "US Holidays" --excluded-dates 2027-01-01 2027-07-05 --output json
 # Save the returned Key (GUID)
+
+# Add a day later
+uip or calendars update <calendar-key> --add-excluded-dates 2027-11-25 --output json
 
 # Use the calendar key when creating a time trigger
 uip or triggers create --type time --name "WeekdayReport" \

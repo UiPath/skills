@@ -25,6 +25,10 @@ Never run `uip maestro flow format` on a merged file: it lays out every node
 again and discards the positions on the canvas of the user.
 <!--skill-flavor:local-gates:end-->
 
+<!--skill-flavor:unresolved-binding-persists:start-->
+Still there after the merge: report the node and placeholder. Studio Web owns the SDK copy, so update nothing.
+<!--skill-flavor:unresolved-binding-persists:end-->
+
 <!--skill-flavor:product-cli-scaffold:start-->
 In Studio Web the project and its `.flow` come from Studio Web itself, and the
 SDK verbs run in the page — see
