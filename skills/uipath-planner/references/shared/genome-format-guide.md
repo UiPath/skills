@@ -245,16 +245,7 @@ When intent is unclear from the source, write the best interpretation, append `*
 
 ## Write, Then Offer Edits
 
-Every writing verb writes the file(s) to the working directory immediately — no preview, no confirmation — then closes with this message, a line with nothing to report left out:
-
-> **Written:** `<GENOME_MD>`, and `<SDD_MD>` when there is one. Strict check: OK, or each `FAIL` left after the third round.
-> **Open:** <n> decisions — <role> <n>; <role> <n>. <n> configuration values, <n> of them needed before the build.
-> **Tasks:** <the readiness file's tasks beside the genome, by id>, for whoever prepares the build.
-> **To answer them:** `interview <GENOME_MD>`, or the SDD's Action Required when there is one. I can write an SDD for <the roles not in this session>.
-> Do you have a preferences file: your team's standing answers and development standards for UiPath builds? A path, or none.
-> Want to adjust anything?
-
-For example: "**Open:** 6 decisions — the process owner 4; the ERP's owner 1; whoever knows the process 1. 9 configuration values, 2 of them needed before the build." A total with no roles leaves each answerer to search the file for theirs. The SDD offer is made only with no SDD beside the genome and an open item whose answerer is not in the session; the preferences question only when no earlier question asked it. Edits are targeted and in place, never a regeneration, and made only by the `edit` verb of the skill that writes genomes.
+Every writing verb writes the file(s) to the working directory immediately — no preview, no confirmation — then says where they are and asks "Want to adjust anything?". Edits are targeted and in place, never a regeneration, and made only by the `edit` verb of the skill that writes genomes.
 
 ## Provenance
 

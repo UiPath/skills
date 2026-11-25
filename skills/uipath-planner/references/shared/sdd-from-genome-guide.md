@@ -39,7 +39,7 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
      A component built by a skill with no template (a function, an IXP model, a connector) gets no SDD of its own. Its contract goes in the table its consumer's template holds for it.
    - **A large extraction** writes its SDDs once the whole genome passes its strict check: the lead agent writes the solution overview, and may give each per-project SDD to a subagent that reads this guide, its template and that component genome, run as the parts are ([extraction-parts-guide.md § Running in Parts](extraction-parts-guide.md) item 7).
 2. **Front matter, in the template's order:**
-   - **Document History:** one row per write, naming the verb; a write after an interview adds the interview's row as [interview-guide.md](../interview/interview-guide.md) § Where Answers Go words it.
+   - **Document History:** one row per write, naming the verb.
    - **Planner Handoff:**
      - `Status: ready`: the genome exists, and its open entries are Action Required items, not a gate;
      - `Execution autonomy`: `interactive` when someone answers the run's questions, otherwise `autonomous`;

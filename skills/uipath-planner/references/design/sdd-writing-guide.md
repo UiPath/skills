@@ -124,7 +124,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [scope-recommendation-guide.md → Summary block](scope-recommendation-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
 
-4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision: the template's block is copied as it stands — its count line, How to answer and item form — and only its placeholders are filled:
+4. If any `[SME REVIEW]` items remain, add the `## Action Required — SME Review Items` section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body, before the Table of Contents in every template. It is written in the item form of [open-questions-guide.md](../shared/open-questions-guide.md), one item per decision, as the template's block shows:
    - each item is numbered `D1`, `D2`, … in the order of the sections it concerns;
    - its marker in the body names it (`[SME REVIEW] D2: <note>`);
    - a `default-carried` item lists its options, the default applied marked `(built now)`, or as a value its `Default:`; for a value or material nobody has yet (a production amount, sample documents), the `Default:` is what the design builds until it arrives (an empty setting, a placeholder document), never an invented value;
@@ -177,7 +177,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
-9. Output a summary in the conversation, in this form. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
+9. Output a summary in the conversation. When items are open, it counts them by the role that answers them and names `interview <SDD_PATH>` as the way to have them asked. A caller's design request replaces it with the `planner-design-result` block, its prose in the request's `audience` ([caller-request-guide.md](caller-request-guide.md) § The Result):
 
 ```markdown
 ## SDD Generated
@@ -187,8 +187,6 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ...
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
-By role: <ROLE> <COUNT>; <ROLE> <COUNT>.
-To answer them: write after each item's `Answer` in the SDD, or ask `interview <SDD_PATH>`.
 
 **Next — branch on the handoff `Status`:**
 - `ready` — `design` is complete and the SDD is on disk. The genome is written from it on the next turn (Step 3), then `uipath-genome` builds it when the request is to build; open default-carried SME items travel into the genome as Open Decisions entries, and the SDD's Action Required is written again from the genome — confirm them before production. A design a build skill handed over gets no genome.
