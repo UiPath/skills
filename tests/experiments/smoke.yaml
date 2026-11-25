@@ -28,7 +28,10 @@ defaults:
         - CODEX_API_KEY
         - CODEX_BASE_URL
       extra_mounts:
-        - ~/.uipath:/.uipath:rw
+        # Read-only seed, never the live login: the first pre_run below copies
+        # it to a container-private /.uipath, so one container's `uip` cannot
+        # change the directory or file every other container reads.
+        - ~/.uipath:/.uipath-host:ro
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
@@ -49,6 +52,12 @@ defaults:
       env_params:
         api_base: CODEX_BASE_URL
         api_key: CODEX_API_KEY
+
+  # Runs before each task's own pre_run, so a task's setup scripts already see
+  # the login. See tests/docker/seed-uipath-auth.sh.
+  pre_run:
+    - command: "seed-uipath-auth"
+      timeout: 30
 
   # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
   # sandboxes don't leak Node module resolution).
