@@ -32,7 +32,7 @@ Paths are relative to the skill folder.
 | `edit`: edit requests and what each updates, partial re-extraction | `references/edit/edit-guide.md` |
 | Interview: the offer, the gap list and its coverage, asking order, where answers go (inside `design`, `author`, `extract`, and the `interview` verb) | `references/interview/interview-guide.md` |
 | Skill mapping: Build With names, Decision Tree, target choice (a refactor's targets included), operate-only skills, common combinations | `references/shared/skill-mapping-guide.md` |
-| Refactor hot spots: places where the rebuild may be better shaped than the source, each a question with the source's shape as an option, and the design inputs asked first | `references/shared/refactor-hotspots-guide.md` |
+| Refactor hot spots: where to look for a place the rebuild may be better shaped than the source, each a question with the source's shape as an option | `references/shared/refactor-hotspots-guide.md` |
 | `design`: SDD phases, products, packages, solution composition, caller requests | `references/design/design-guide.md`; Phase 3: `references/design/sdd-writing-guide.md`; the rest of `references/design/` per subject |
 | SDD and genome fingerprints | `scripts/sdd-fingerprint.mjs` |
 | `check` and the strict check after `author`, `extract` and `edit`; genome checker: what it checks | `SKILL.md`; checker: `scripts/check-genome.mjs` header comment |
