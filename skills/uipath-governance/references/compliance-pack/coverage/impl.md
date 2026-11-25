@@ -2,6 +2,8 @@
 
 **Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
 
+**Output:** print the template for the case (posture, Enable view, Observe view, Enforced view) filled in, in one fenced code block, with every section, box line and table row it defines. Never paraphrase it as prose or bullets, drop or merge sections, or add lines it doesn't have (SKILL.md critical rule 11). A preference for short answers applies to the text around it, not to the template.
+
 Compares the compliance standard's recommended settings against what is currently deployed on the tenant. Does NOT require the standard to be enabled first. Does NOT certify compliance — it identifies which settings from the standard are not yet configured.
 
 `<packId>` / `<packName>` below = the standard being checked, resolved via [`../catalog/impl.md` § Pack ID lookup](../catalog/impl.md#pack-id-lookup). Coverage is per standard — if the user asked about posture without naming one, resolve it there first; do not default to whichever pack is listed first.
@@ -155,7 +157,7 @@ Evaluate IN THIS ORDER (first match wins):
    - **3·0. If the pack is not enforced** (modes on, `Mode` is `"audit"`, null or absent): render the [If you enforce](#if-you-apply--if-you-enforce) block, and offer first: `'Enforce <packName>'`. On yes, hand off to [`../full-apply/impl.md` § Modes on](../full-apply/impl.md#modes-on) — it asks the mode and, for every conflict, keep or update. Every ✗ setting that is in `Conflicts[]` is covered by this offer. Do NOT route a conflict to restore or to the product UI.
    - **3a′. Modes on and the pack is Enforced, with conflicts** (`ConflictStatus == "evaluated"`, `ConflictCount > 0`): the conflicts are the drifted settings. Offer `'Correct the changed <packName> settings'` and hand off to [`../full-apply/impl.md` § Modes on](../full-apply/impl.md#modes-on) (Enforce again): for each one the admin chooses `pack` (put the standard's value back) or `keep` (accept the change). Settings kept on an earlier apply come back as conflicts too — say so. Use 3a for a Cannot-Be-Checked product.
    - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`** (and 3a′ does not cover it): `'Reset the changed <packName> settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
-   - If any ⚙ `manual` controls exist: `'Configure the manual <packName> settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
+   - If any ⚙ `manual` controls exist: `'Configure the manual <packName> settings'` — the ⚙ items with expected/actual (in DETAILS, shown on 'show full details' or when the admin accepts this offer) ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
    - On an active pack there is no third remedy: a plain ✗ (not-deployed, not drifted, not a conflict) only occurs under a Cannot-Be-Checked product whose policy is missing — restore recreates it (3a). Never tell the user to configure an active pack's settings in the product's own UI. (Exception: an older server that doesn't return drift fields at all — then ✗ under an active pack is indistinguishable drift, and restore is still the remedy.)
    - Fallback, if that ever fails to hold — ✗ settings on an active pack with no drift, no conflict and no Cannot-Be-Checked product: do NOT leave them unexplained. Offer restore anyway (it re-asserts the standard's values on every live policy) and say the settings are not in place for a reason the posture data doesn't explain.
 
@@ -200,11 +202,13 @@ Render this template ONLY for cases 1 and 3 above (pack not applied, or applied 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REQUIREMENTS
-┌──────────────────────┬──────────────────────┬──────────────────────┐
-│ Not applied          │ Needs configuration  │ Applied              │
-│ <NotDeployedCount>   │ <PartiallyDepl…Count>│ <FullyDeployedCount> │
-└──────────────────────┴──────────────────────┴──────────────────────┘
+┌──────────────────────────────┬──────────────────────────────┬──────────────────────────────┐
+│ Not applied - <NotDeployed…> │ Needs configuration - <Par…> │ Applied - <FullyDeployed…>   │
+│ None of its settings in      │ Some settings in place, or   │ All its settings in place    │
+│ place yet                    │ one needs your input         │                              │
+└──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
 <pack not active: "Not applied on this tenant yet." · active: nothing>
+(Counts are <NotDeployedCount>, <PartiallyDeployedCount>, <FullyDeployedCount>. The two legend lines in each cell are fixed text; pad every cell to 30 characters so the borders line up, e.g. `│ Not applied - 12             │ Needs configuration - 4      │ Applied - 0                  │`.)
 
 POLICY STATUS[ · <Enforced | Observe | Mode not chosen> — modes on only]  ·  <S> stable[ · <D> drifted][ · <U> cannot be checked]
   <catalog PolicyName>                      <ProductDisplayName> Policy   ● <Stable | N drifted | Cannot Be Checked>
@@ -225,24 +229,26 @@ IMPACT OF WHAT'S NOT APPLIED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Needs configuration  (<PartiallyDeployedCount> requirements)
 UiPath settings are applied but these requirements also need manual configuration steps. Once completed, they will move to Applied.
-  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath settings[ — waits on the conflicts above]
+  <ClauseId>  <clauseName>[ — waits on the conflicts above]
   … every requirement with this status
 
 Not applied  (<NotDeployedCount> requirements)
 Requirements not yet addressed by any UiPath settings.
-  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath settings[ — waits on the conflicts above]
+  <ClauseId>  <clauseName>[ — waits on the conflicts above]
 
 Applied  (<FullyDeployedCount> requirements)
 Requirements fully addressed by UiPath recommended settings applied through this pack. No further action needed.
-  <ClauseId>  <clauseName>                        <CheckableControlCount> UiPath setting(s)
+  <ClauseId>  <clauseName>
 
 Outside platform scope  (<count> requirements)
 These requirements cannot be addressed through platform configuration. Your auditor will need independent organizational evidence.
   • <ClauseId> — <ClauseName>: <Description>
   (first 3, then "and <N> more")
 
+[DETAILS: only when the admin asked to 'show full details' (or for the settings of a named requirement);
+ otherwise leave this whole section out and go straight to Next action]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DETAILS  (per requirement with gaps; all of them on 'Show full details')
+DETAILS  (every requirement, every setting)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   <clauseName>                                       <deployedControlCount>/<checkableControlCount> <bar>
@@ -276,10 +282,10 @@ DETAILS  (per requirement with gaps; all of them on 'Show full details')
   predicate — the predicate is for machine comparison; the two can differ in units
   (e.g. "Development only" vs `{Eq: true}`).
 
-  [repeat per clause with gaps]
+  [repeat per clause: every requirement, Applied ones included]
 
   When any product is Cannot Be Checked (unverifiable), add ONE note after the last
-  clause block, naming the affected ✗ settings without exposing product status values:
+  clause block (when DETAILS is left out: after the requirement lists), naming the affected ✗ settings without exposing product status values:
   "Note: the ✗ settings above (<their display names or products>) sit behind a policy
   that is missing from the tenant, so they can't currently be verified. Resetting the
   standard recreates that policy with the recommended values."
@@ -291,13 +297,14 @@ Next action (state-aware — see "Next-action suggestion"):
   · any ⟳ settings or Cannot-Be-Checked → 'Reset the changed <packName> settings back to the standard'
   · Active == true, ⚙ settings          → 'Configure the manual <packName> settings'   ·   'What does [clause name] require?'
   · nothing applied yet                 → 'Apply <packName> settings' (y/n)   ·   'Just fix the High impact gaps'   ·   'Apply only <specific area> settings'
+  · DETAILS left out                    → also 'Show full details' (every setting in each requirement)
 ```
 
 Layout rules:
 - **Do not compress the layout.** Every non-empty section (Needs configuration, Not applied, Applied) lists **every** requirement in it on its own line. Never merge requirements into "N other requirements", and never mention a requirement only inside the conflict table. The number of lines in a section must equal its count in the REQUIREMENTS row; check this before printing. Omit a section with zero entries (its count still shows in the REQUIREMENTS row).
 - Append `— waits on the conflicts above` to a requirement whose remaining gaps are all conflicts: it has no ⚙ setting, and every one of its ✗ settings is in its `Conflicts[]` (`Clauses[].ConflictCount` equals its count of `Status == "not-deployed"` controls). A requirement with conflicts *and* other ✗ settings does not get the note. Count these from the data; never estimate.
 - **POLICY STATUS is one line per product**, never a sentence: the catalog `PolicyName` verbatim (no shortening, no live-name suffix such as "(12)"), then `<ProductDisplayName> Policy`, then the badge. Two products can share a policy name (Studio and Studio Web); the subtitle tells them apart. Stable = product `in-place` or `needs-manual-config` with `DriftedControlCount == 0`; drifted = `DriftedControlCount > 0`; Cannot Be Checked = `unverifiable`. Only when a product has several entries in `Policies[]`, list each under its line as `<LicenseTypes[].DisplayName joined by ", ">: <live PolicyName>`.
-- Drift: a product with `DriftedControlCount > 0` gets its ⟳ settings listed under its POLICY STATUS line (`<ControlDisplayName>` + its `Lines[]` per the [line rules](#line-rules) + `Requirement impacted by this drift: <clauseName> (<ImpactedClauseId>)`), as well as the ⟳ rows in DETAILS.
+- Drift: a product with `DriftedControlCount > 0` gets its ⟳ settings listed under its POLICY STATUS line (`<ControlDisplayName>` + its `Lines[]` per the [line rules](#line-rules) + `Requirement impacted by this drift: <clauseName> (<ImpactedClauseId>)`), as well as the ⟳ rows in DETAILS when DETAILS is shown.
 
 ### Observe view
 
@@ -553,8 +560,8 @@ WHAT HAPPENS TO YOUR AOPS POLICIES
   break a rule are reported, not blocked.
 
   ENFORCE
-  ✓ 48 settings will be applied · ⚙ 17 will still need a value only you can set (listed
-    before you confirm)
+  ✓ 48 settings will be applied
+  ⚙ 17 will still need a value only you can set (listed before you confirm)
 ┌───────────────────┬────────────────┬───────┬──────────────────────┬──────────────────────────┐
 │ Product           │ License type   │ Today │ On enforce           │ AOps policy after        │
 │                   │                │       │                      │ enforce                  │
@@ -680,7 +687,8 @@ WHAT HAPPENS TO YOUR AOPS POLICIES
   break a rule are reported, not blocked.
 
   ENFORCE                                  (modes off: APPLY)
-  ✓ <count of Controls[].StatusAfterApply == "deployed"> settings will be applied · ⚙ <sum of Clauses[].ManualConfigControlCountAfterApply> will still need a value only you can set: <their ControlDisplayNames>
+  ✓ <count of Controls[].StatusAfterApply == "deployed"> settings will be applied
+  ⚙ <sum of Clauses[].ManualConfigControlCountAfterApply> will still need a value only you can set: <their ControlDisplayNames>
 ┌───────────────────┬────────────────┬───────┬──────────────────────┬──────────────────────────┐
 │ Product           │ License type   │ Today │ On enforce           │ AOps policy after        │
 │                   │                │       │                      │ enforce                  │
@@ -704,8 +712,9 @@ WHAT HAPPENS TO YOUR AOPS POLICIES
   break a rule are reported, not blocked.
 
   ENFORCE
-  ✓ 52 settings will be applied · ⚙ 5 will still need a value only you can set: Connector
-    Allowlist, App Allowlist, App Blocklist, URL Allowlist, URL Blocklist
+  ✓ 52 settings will be applied
+  ⚙ 5 will still need a value only you can set: Connector Allowlist, App Allowlist,
+    App Blocklist, URL Allowlist, URL Blocklist
 ┌───────────────────┬────────────────┬───────┬──────────────────────┬──────────────────────────┐
 │ Product           │ License type   │ Today │ On enforce           │ AOps policy after        │
 │                   │                │       │                      │ enforce                  │
@@ -743,7 +752,7 @@ WHAT HAPPENS TO YOUR AOPS POLICIES
    - **Today** = `P<i>` of the deployed policy in that product and license type (the `DeploymentPolicies[].Policies[]` entry whose `LicenseTypes[].Identifier` includes the entry's `LicenseTypeIdentifier`); none → `—`. The names are in [Your deployed policies](#your-deployed-policies); don't repeat them here.
    - **On enforce**: `update` of the Today policy → `Update in place (P<i> is a <packName> policy)` · `update` of another policy with a Today policy → `Reuse with P<i>'s values and your C…–C… choices; deploy in place of P<i> (P<i> not edited)` (name the conflict numbers only when P<i> has conflicts) · `update` with Today `—` → `Reuse, update, deploy` (an earlier apply of this standard left that policy in Policy Library, not deployed) · `new` from the Today policy (`SourcePolicyId`) → `Create from P<i> with your choices; deploy in place of P<i> (P<i> not edited)` · other `new` → `Create, deploy`. Modes off: the same, without "your choices".
    - **AOps policy after enforce** = the entry's `PolicyName` verbatim — the title the policy has in Policy Library after the apply. The server leaves `PolicyName` out for some `update` entries (a policy reused from an earlier apply). Then write the standard's own title for that product — `catalog.json` `Data.DeploymentPolicies[].PolicyName`, joined by `ProductIdentifier` — with no tag in the cell, on every row (each row is its own policy; never `(same as above)`). Say it once under the table: `All <n> reuse a policy <packName> created on its earlier apply and kept in Policy Library, one per product and license type; none is created new. Their names there may carry a suffix such as (6).` — or `<k> of the <n> …` when only some rows are `Reuse`. For a `new` entry without a name: `New <catalog PolicyName>`. Never write "this standard's policy", "a policy", or an id.
-4. The ✓ / ⚙ line: compute both numbers with the command below and name the ⚙ settings here once — not again elsewhere in the reply. In the [Enable view](#enable-view), give only the two counts and end with `(listed before you confirm)`; the Enforce confirmation names them. Creates in the table (`Create…` rows' entries) + updates must equal `ApplyPlan.length`.
+4. The ✓ / ⚙ lines: ✓ on its own line, ⚙ on the next, never joined with `·`. Compute both numbers with the command below and name the ⚙ settings here once — not again elsewhere in the reply. In the [Enable view](#enable-view), give only the two counts and end with `(listed before you confirm)`; the Enforce confirmation names them. Creates in the table (`Create…` rows' entries) + updates must equal `ApplyPlan.length`.
 
 - The two counts come from `StatusAfterApply` and `ManualConfigControlCountAfterApply` only — never from `ManualConfigChecks[]` entries, keys or products. If `StatusAfterApply` is absent on every control (older server), drop the ✓ / ⚙ line rather than guess.
 - **Compute all three numbers with a command — never count by reading the JSON.** Then check: will-be-applied + still-need-a-value = the total number of `Controls[]` entries, and created + updated = `ApplyPlan.length`. If either check fails, recompute; never print numbers that don't add up.
