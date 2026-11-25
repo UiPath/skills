@@ -110,12 +110,14 @@ success_criteria:
     include_reference: false
     prompt: |
       The user, the process owner, asked for the genome (an automation blueprint) of an agreed SDD
-      (solution design document) whose design already settled the trigger, the systems, the approval and
-      the scope. Read the dialog.
+      (solution design document) whose design already settled the trigger, the systems, the approval
+      route and the scope, and left items open for others (the approval limit, how the ERP is reached,
+      the environments' values). Read the dialog.
 
       Score 1.0 when, before the genome is written, the agent neither offers an interview nor asks again a
       point the SDD settled; a question about a point the SDD leaves open, or about a preferences file, is
-      allowed. 0.0 otherwise.
+      allowed. Only questions put to the user count: listing the SDD's open items in the closing is not
+      asking them. 0.0 otherwise.
     weight: 1.5
     pass_threshold: 1.0
 
