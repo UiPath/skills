@@ -645,3 +645,43 @@ class TestHitPolicyIsRespected:
           </decisionTable></decision>''')
         with pytest.raises(SystemExit):
             gc.answering_cell(decision, {"tier": 15})
+
+
+class TestANoteIsAboutSomething:
+    """An association joins a note to the element it describes, not to a note."""
+
+    @staticmethod
+    def document(source: str, target: str, second_note: bool = False) -> ET.Element:
+        model = 'xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"'
+        other = '<textAnnotation id="n2"><text>another note</text></textAnnotation>' if second_note else ""
+        return ET.fromstring(f'''<definitions {model}>
+          <decision id="d" name="d"><decisionTable/></decision>
+          <textAnnotation id="n"><text>percentages are whole numbers</text></textAnnotation>
+          {other}
+          <association id="a"><sourceRef href="#{source}"/><targetRef href="#{target}"/></association>
+        </definitions>''')
+
+    def test_a_note_tied_to_a_decision_is_attached(self):
+        gc.check_annotations_attached(self.document("d", "n"))
+
+    def test_a_note_tied_to_itself_is_attached_to_nothing(self):
+        # Both ends in `notes` satisfied "tied", so a self-association passed while telling a
+        # reader nothing about which element the note is for.
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.document("n", "n"))
+
+    def test_a_note_tied_to_another_note_is_attached_to_nothing(self):
+        with pytest.raises(SystemExit):
+            gc.check_annotations_attached(self.document("n", "n2", second_note=True))
+
+
+class TestFeelEqualityInsideAList:
+    def test_a_list_of_numbers_does_not_satisfy_a_list_of_booleans(self):
+        assert not gc.same_value([True], [1])
+        assert not gc.same_value([1, True], [1, 1])
+
+    def test_a_list_of_integers_satisfies_a_list_of_fractional_numbers(self):
+        assert gc.same_value([1, 2], [1.0, 2.0])
+
+    def test_lists_of_different_length_do_not_match(self):
+        assert not gc.same_value([1], [1, 2])

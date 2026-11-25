@@ -371,6 +371,10 @@ def same_value(actual: object, expected: object) -> bool:
         return False
     if not isinstance(actual, bool) and isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
         return float(actual) == float(expected)
+    # A list of values is compared the same way, element by element: `[True] == [1]` in Python
+    # too, so letting the fallback handle a list would reopen the hole one level down.
+    if isinstance(actual, list) and isinstance(expected, list):
+        return len(actual) == len(expected) and all(same_value(a, e) for a, e in zip(actual, expected))
     return actual == expected
 
 
@@ -547,6 +551,13 @@ def check_annotations_attached(root: ET.Element) -> None:
         for end in ends:
             if end not in ids:
                 fail(f"association {association.get('id')} points at {end}, which the file does not hold")
+        # A note counts as attached only when the other end is something it can be about. An
+        # association from a note to itself, or to a second note, satisfied "tied to an element"
+        # while telling a reader nothing — the point of the note is what it sits beside.
+        described = [end for end in ends if end not in notes]
+        if not described:
+            fail(f"association {association.get('id')} joins {ends}, which are both text annotations; "
+                 f"a note is attached to the element it is about")
         tied |= {end for end in ends if end in notes}
     loose = sorted(set(notes) - tied)
     if loose:
