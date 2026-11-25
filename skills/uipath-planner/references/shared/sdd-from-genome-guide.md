@@ -89,5 +89,5 @@ A genome designed from an SDD (one with a `Designed in:` line) keeps that SDD as
    - the genome's Configuration Questions;
    - every entry the genome added.
 
-   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. An SDD a component is built from is never written again: [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6.
+   The SDD's fingerprint leaves this section out, so the genome's `Designed in:` line stays current. An SDD a component is built from is never written again: [genome-from-sdd-guide.md](../author/genome-from-sdd-guide.md) item 6. For a solution, the section is written into the root SDD only, holding every child's items; every child SDD stays byte for byte as `design` wrote it — no `## Action Required` section is added to a child.
 7. **A client Word document** is made on request, as `design` makes one ([sdd-writing-guide.md](../design/sdd-writing-guide.md) § Client Word Document). It is for reading and sign-off: answers come back through the markdown, an interview or a reply.

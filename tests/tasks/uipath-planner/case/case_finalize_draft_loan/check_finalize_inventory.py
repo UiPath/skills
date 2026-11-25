@@ -15,7 +15,8 @@ TASK_HEADING = re.compile(r"(?im)^#####\s+Task\s+[^:\n]+:\s*(.+?)\s*$")
 
 
 def clean_name(value: str) -> str:
-    return re.sub(r"\s+\(`[^`]+`\)\s*$", "", value).strip()
+    # a trailing id suffix, backticked or not: `(`t01`)`, `(t01)`, `(stage_1)`
+    return re.sub(r"\s+\(`?[A-Za-z][\w-]*`?\)\s*$", "", value).strip()
 
 
 def inventory(text: str, pattern: re.Pattern[str]) -> list[str]:

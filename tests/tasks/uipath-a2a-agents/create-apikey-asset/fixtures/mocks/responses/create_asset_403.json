@@ -1,0 +1,13 @@
+{
+  "Result": "AuthenticationError",
+  "Code": "AgentHubRemoteA2aAgentCreate",
+  "ErrorCode": "permission_denied",
+  "Message": "Forbidden (403). The account lacks permission for this operation, or the token carries no scope for this API. Run `uip login status --detailed` to see the token's scopes.",
+  "Instructions": "Confirm your user has access to the resource, and the required permissions in this folder or tenant",
+  "Retry": "RetryWillNotFix",
+  "Context": {
+    "HttpStatus": 403,
+    "ErrorCode": "10400",
+    "TraceId": "00-00000000000000000000000000000001-0000000000000001-00"
+  }
+}

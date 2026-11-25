@@ -86,6 +86,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 <!-- BEGIN GENERATED SKILL STATUS -->
 | Skill | Status |
 |-------|--------|
+| `uipath-a2a-agents` | In-development |
 | `uipath-activity-migrator` | In-development |
 | `uipath-admin` | Stable |
 | `uipath-agents` | Stable |

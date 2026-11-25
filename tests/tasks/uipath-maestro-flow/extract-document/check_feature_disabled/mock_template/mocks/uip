@@ -27,6 +27,9 @@ if sys.argv[1:5] == ["maestro", "flow", "extraction", "check"]:
     }, indent=2))
     sys.exit(0)
 
+# Bridged into Studio Web's browser shell: exit 199 so the browser's own uip runs the call.
+if os.environ.get("STUDIOWEB_HOST_MOCK"):
+    sys.exit(199)
 me = os.path.realpath(__file__)
 for path_dir in os.environ.get("PATH", "").split(os.pathsep):
     real = os.path.join(path_dir or ".", "uip")

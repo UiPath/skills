@@ -60,9 +60,10 @@ success_criteria:
   # Studio Web's ManageSolutionResources host tool (recorded as a ProxyTool call
   # whose JSON params carry toolName/action/kind/source). The \A(?!\{") guard keeps
   # the CLI alternative off other tools' JSON params, e.g. a file that quotes it.
+  # The list check accepts the CLI kind value in any case (`--kind index` too).
   - type: command_executed
     description: "Agent discovered the index identity with uip solution resources list --kind Index (or ManageSolutionResources)"
-    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b(?:\\\n|[^;&|\n])*?--kind[\s=]+Index\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Index)'
+    command_pattern: '\A(?!\{")[\s\S]*?uip\s+solution\s+resources\s+list\b(?:\\\n|[^;&|\n])*?--kind[\s=]+(?i:Index)\b|\A\{(?=[^{}]*"toolName":\s*"ManageSolutionResources")(?=[^{}]*"params":\s*\{[^{}]*"action":\s*"list")(?=[^{}]*"params":\s*\{[^{}]*"kind":\s*"Index)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -45,3 +45,10 @@ fix only the errors on stages and tasks you changed, even though the exit code
 stays non-zero. If a compile then stops on a task you did not change, stop: name the
 task and its code to the user.
 <!--skill-flavor:check-baseline-sdk-upgrade:end-->
+
+<!--skill-flavor:task-exit-upgrade:start-->
+  Studio Web owns both copies. When either is behind, this Studio Web build
+  does not support task exit rules yet: tell the user. Do not author the rule
+  there, and never write a different rule in its place. Keep a `task-exited`
+  rule that the plan already has.
+<!--skill-flavor:task-exit-upgrade:end-->

@@ -28,6 +28,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Process Mining app | `uipath-process-mining` | "analyse the event log", "process app" | dbt models, process-app data mapping |
 | MCP server / resource tools | `uipath-mcp-servers` | "expose these as MCP tools" | `uipath`-type MCP server registration |
 | Ontology: OWL schema, SHACL constraints and YARRRML mapping over local Data Fabric entities. Packed in the solution | `uipath-ontology` | "an ontology for this domain", "a semantic model over our entities", "classes and relationships the agent can query" | `{name}.ofn`, `{name}-constraints.ttl`, `{name}-mapping.yarrrml.yml`, an Ontology resource in the `.uipx` solution |
+| Remote A2A agent: an external agent (another vendor's or team's) called over A2A | `uipath-a2a-agents` | "call our Agentforce agent", "use the vendor's A2A agent", "register this agent card" | an A2A agent card (`/.well-known/agent-card.json`) the project calls |
 
 **Human approval or validation checkpoints** inside a Flow, BPMN process, Case plan, or agent belong to the containing component's skill. Name `uipath-human-in-the-loop` in the Rationale column only for a Flow host; a BPMN, Case or agent human step stays with its host skill ([component-placement-guide.md § HITL](component-placement-guide.md#hitl-human-in-the-loop)).
 
