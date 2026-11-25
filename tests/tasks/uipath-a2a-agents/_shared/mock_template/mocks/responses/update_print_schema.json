@@ -1,0 +1,59 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubRemoteA2aAgentSchema",
+  "Data": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 500,
+        "description": "Omitted clears it."
+      },
+      "agentCardUrl": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 2000,
+        "description": "New card URL, fetched on the next refresh-card with the headers and the connection's token. `remote-a2a-agent update` refuses one on another origin while the update keeps the agent's credentials."
+      },
+      "headers": {
+        "type": "string",
+        "maxLength": 6000,
+        "description": "Newline-separated Name:Value lines, sent with the card fetch and every call. A value of exactly %ASSETS/<asset-name>% is replaced by that Orchestrator asset's value, from the agent's folder, each time the header is sent. An Authorization line is not sent while the agent has a connection. Omitted keeps the stored headers; an empty string removes them all. A header sent back with the masked value **** keeps its stored value; `remote-a2a-agent update` refuses **** under a name `remote-a2a-agent get` does not show masked."
+      },
+      "isActive": {
+        "type": "boolean"
+      },
+      "agentCardJson": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The agent card as a JSON string, stored as the card instead of fetching one. The service calls the endpoint the card names. Replaces the stored card; `remote-a2a-agent update` refuses one whose endpoint is on another origin while the update keeps the agent's credentials."
+      },
+      "connectionId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid",
+        "description": "Integration Service connection whose token authenticates the card fetch and every call, in place of an Authorization header. Use an OAuth connection of the Agent 2 Agent connector (uipath-google-agent2agent), the one Agent Gateway offers: the service stores any connection Integration Service finds, and one it gets no OAuth token from fails every call. Omitted or null keeps the stored one."
+      },
+      "clearConnectionId": {
+        "type": "boolean",
+        "description": "Removes the stored connection. Cannot be combined with connectionId."
+      },
+      "useRelay": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "Route the card fetch and every call through UiPath Relay, for an agent in a private network. Omitted keeps the stored setting. Send it with an agentCardUrl on a Relay agent: the service checks the URL as a public host unless this payload sets it to true."
+      }
+    }
+  }
+}

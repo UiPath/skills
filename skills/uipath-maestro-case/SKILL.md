@@ -50,14 +50,15 @@ three entry points; each file's header spells the paths its rows resolve against
 
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
-| Case, stages, and completion | `casePlan`, `stage`, `completeWhen`; SDD `Stage Kind: secondary` is `exceptionStage`, an optional task or stage (SDD `Required` / `Required for Case Completion: No`) gets `.required(false)`, and a gating one `.required()` ([optionality](references/case-runtime.md#completion-and-optionality)) | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Case, stages, and completion | `casePlan`, `identifier`, `stage`, `completeWhen`; the SDD row labelled exactly `Case Identifier` replaces the `.identifier` decompile seeded (`Type: constant` with `Prefix: X` is `.identifier('X')`, `Type: external` with `Source: <expr>` is `.identifier('<expr>', 'external')`; the `Case Identifier source` row is not an identifier); SDD `Stage Kind: secondary` is `exceptionStage`, an optional task or stage (SDD `Required` / `Required for Case Completion: No`) gets `.required(false)`, and a gating one `.required()` ([optionality](references/case-runtime.md#completion-and-optionality)) | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Variables and arguments | `var`, `input`, `output`, `jsonSchema`. A numeric case variable is `'integer'`, `'float'` or `'double'`, never `'number'` ([closed types](references/case-runtime.md#metadata-fidelity)) | [CaseBuilder](#api-index) | `examples/IntakeBinding.case.ts`, `examples/CreditDecision.case.ts` |
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
 | A task's outputs, and reading them from a later task or gate (SDK 6.70.7+) | `outputs`: the source is the result field as the Designer saves it, `=<Field>` on every task that runs published work (agent, process, RPA, API workflow, case management, flow process, function, business rule: `AgentExpenseRequest: '=AgentExpenseRequest'`) and `=response.<field>` only on a connector or wait-for-connector task, or on a task whose own output argument is an object named `response` ([Design fidelity](references/case-runtime.md#design-fidelity)); a key equal to the source's last segment (`app_id: '=response.app_id'`) keeps the output on the task, with no case variable, unless a `.var()` of that name exists or another task uses the same key (then both write one shared case variable; give the second task the suffixed key, `Result2: '=Result'`, to keep it on its task); `taskOutput('<stage>', '<task>', '<output>')`, or the SDD's `vars.$xref(...)` as written, reads it, where `<output>` is the result field it reads or its `outputs` key, and an unknown name is refused (`TASK_OUTPUT_REF_UNRESOLVED`) | [TaskBuilder, taskOutput](#api-index) | — |
-| Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Entry, exit, and data gates; a stage that exits to several stages | `rule`, `when`, `exitToStage` | [Rules](#api-index), [Stage routing](references/case-runtime.md#stage-routing) | `examples/ClaimReviewSLA.case.ts` |
 | Business events an outside system sends to a running case | `businessEvent`, `rule('api-event', { businessEvent })` (SDK 6.47.0+) | [CaseBuilder, Rules](#api-index) | — |
+| A task that failed, or that a person ended: start a fallback task, or leave the stage for review | `rule('task-exited', { tasks, exitReasons?, errorCategories? })` on a task entry or a non-completing stage exit; `exitOnTaskFailure`, `taskExitRules` (SDK 6.125.0+ and `uip` 1.207.0+; an older SDK answers `UNKNOWN_RULE`) | [Task exit rules](references/case-runtime.md#task-exit-rules) | — |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
-| Business rules (decision tables) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
+| Business rules (one result key per decision) | `businessRule` (SDK 6.34.0+) | [TaskBuilder](#api-index) | `examples/CreditDecision.case.ts` |
 | Deployed Coded Functions | `function` (SDK 6.47.1+) | [TaskBuilder](#api-index) | — |
 | Document extraction | `documentExtraction(model, { deployment, folderKey, folder, deploymentKey, file, pageRange? })` (SDK 6.82.0+, uip 1.206.0+) | [Document extraction](references/case-runtime.md#document-extraction) | `examples/DocumentExtractionCase.case.ts` |
 | Script tasks | `script(fn \| body)` (SDK 6.81.0+) | [Script tasks](references/case-runtime.md#script-tasks) | `examples/ScriptCase.case.ts` |
@@ -70,7 +71,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Deadlines and escalation | `sla`, `escalation`, `toUser`, `toGroup` | [SLA](references/case-runtime.md#sla-and-runtime-semantics) | `examples/ClaimReviewSLA.case.ts` |
 | Case App and layout | `caseApp`, `layout` | [CaseBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Existing Case plans | `case decompile --no-pipeline`, then `compile -o <plan>` | [Brownfield](references/case-runtime.md#brownfield-editing) | `examples/ClaimReviewSLA.case.ts` |
-| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })` | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
+| Task activation modes (parallel, parallel-after-predecessor, sequential) | `rule('runs-sequentially')`, `.task(name, fn, { lane })`; chain: [one `lane` per task](#minimal-shape) | [Activation modes](references/case-runtime.md#activation-modes) | `examples/PermitIssuance.case.ts` |
 
 ## Minimal shape
 
@@ -106,6 +107,14 @@ An array in one `entryWhen`, `exitWhen` or `completeWhen` call ANDs its rules; e
 ```ts
 .entryWhen(rule('case-entered'))                       // Entry Rule 1
 .entryWhen(rule('selected-stage-exited', { stage: 'Manager Approval', expression: '=js:vars.managerDecision === "Return"' }))  // Entry Rule 2
+```
+
+`runs-sequentially` orders tasks only across lanes. For SDD tasks whose Entry Condition is `runs-sequentially`, pass `{ lane: N }` as the third argument of `.task()`, numbering each stage's sets 0, 1, 2… in SDD order with no gaps: one number per task of a chain. `runs-sequentially` tasks with the same `lane`, or with none (lane 0), start together: never give a chain one shared `lane`. Share a number only among siblings the SDD's Activation Mode marks `parallel-after-predecessor`; a `parallel` task (no `runs-sequentially`) takes none ([Activation modes](references/case-runtime.md#activation-modes)).
+
+```ts
+.task('Validate', t => t.process('validate').entryWhen(rule('runs-sequentially')), { lane: 0 })
+.task('Enrich', t => t.process('enrich').entryWhen(rule('runs-sequentially')), { lane: 1 })
+.task('Notify', t => t.process('notify').entryWhen(rule('runs-sequentially')), { lane: 2 })
 ```
 
 ## Validation loop

@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubRemoteA2aAgentDelete",
+  "Data": {
+    "Slug": "vendor-agent",
+    "Deleted": true
+  }
+}

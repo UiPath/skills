@@ -72,30 +72,6 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Advisory: live-v1 agent added Create Entity Record nodes"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
-    min_count: 1
-    weight: 0
-    pass_threshold: 0.0
-
-  - type: command_executed
-    description: "Advisory: live-v1 agent added Get Entity Record By Id nodes"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.get-entity-record-by-id'
-    min_count: 1
-    weight: 0
-    pass_threshold: 0.0
-
-  - type: command_executed
-    description: "Advisory: live-v1 agent added Delete Entity Record nodes"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
-    min_count: 1
-    weight: 0
-    pass_threshold: 0.0
-
-  - type: command_executed
     description: "Flow file was validated"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'

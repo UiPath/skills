@@ -52,11 +52,27 @@ Choose it when a caller, test, or another process should start each run.
 ## Multiple entry points
 
 A flow may have more than one root. `.trigger()` / `.input()` stay the DEFAULT
-root; `.entryPoint(id, trigger, { inputs?, version?, updates? }, prefixFn?)` adds another
+root unless an entry point says `default: true`;
+`.entryPoint(id, trigger, { inputs?, version?, updates?, default? }, prefixFn?)` adds another
 — its own trigger node, its own scoped inputs (read them with
 `entryInput('<id>', '<name>')`, i.e. `$vars.<id>.output.<name>`), and an
 optional prefix that runs before the root joins the first shared step. A prefix
 that ends terminally (or hands off with `.stepToRef(...)`) joins nothing.
+
+`{ default: true }` on one `.entryPoint()` makes that root the default
+(`isDefaultEntryPoint`) instead of `.trigger()`. `.trigger()` keeps its id, its
+inputs and every `input()` read. Decompile writes it when the `.flow` has a root
+named `start` and marks a different root as the default, for instance a trigger
+added to the `.flow` outside the SDK source. A `.flow` with no root named
+`start` opens with its marked root as `.trigger()` and needs no `default`. Keep
+the option when you edit the source. Two entry points with `default: true` are
+refused (`ENTRY_POINT_DEFAULT`).
+
+The option needs an SDK that lists the `flow-entry-point-default` capability.
+An older SDK refuses the option when it compiles. Do not delete it to get
+past that: without it, `.trigger()` becomes the default and the flow starts
+from a different trigger. Leave the original `.flow` unchanged and report that
+the SDK in use is too old for this flow.
 
 Every root's inputs need their own names. Inputs, outputs and vars share one
 namespace, `uip maestro flow validate` refuses two globals with the same id even

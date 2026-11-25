@@ -14,6 +14,8 @@ Complete, copy-paste scaffold for a new UiPath Coded Action App (React + TypeScr
 
 ---
 
+<!--skill-flavor:host-base-files:start-->
+<!--skill-flavor:host-base-files:end-->
 ## `src/index.css`
 
 Design system: CSS variables for light + dark, fonts, accent gradient palette, shadows, radii. Required — every component references these tokens.

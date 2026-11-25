@@ -50,7 +50,9 @@ caller said is lost if they hang up before the agent ends the session.
 session, not the call, with `reason` set to a route name. `routeCall`, a switch
 on `$vars.triageAgent.output.uipath__voice_session.reason`, sends each route to
 its specialist voice agent and `default` to a general agent. Every specialist
-reads the same `callContext` and converges on one `endCall`. Change a route name
+reads the same `callContext` and converges on one `endCall`: add
+`.step('hangUp', endCall({ callContext }))` once, after `.switch(...)`, and no
+`endCall` inside a case. Change a route name
 in the triage prompt and the switch together. The canvas version places the call
 with `createOutgoingCall`; for an incoming call, start with `voiceTrigger()` and
 bind every `callContext` to the trigger.
