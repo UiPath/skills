@@ -10,7 +10,7 @@ Most patterns turn on one shared step through a dispatch gate (`smart-triage`), 
 2. **A gateway you name.** For routes fall-through cannot reach (a later arm, outer scope, or second stage), declare `.exclusiveGateway(id)`, send each route with `.goto(id)`, and wire its sole exit with `.sequenceFlow(id, next)`. A bare gateway's outgoing flow is never implied, even in sequence mode. The tiered reviewer in [ai-decision-review-guide.md](ai-decision-review-guide.md#variants) uses this form.
 3. **A loop back to a gateway.** `.goto(id)` to an earlier gateway is itself a join; the reminder arm of `.race('wait', …)` ends in `.goto('wait')`.
 
-Never `.goto()` an activity from two places. This fake join makes `check` warn `FAKE_JOIN` while `validate` says nothing; although the platform accepts and runs the activity, the graph lacks a join node. A `.goto()` back to a human task to redo it (`examples/InvoiceEscalation.bpmn.ts`) has the same warning and is accepted there, never as a pattern merge.
+Never `.goto()` an activity from two places. This fake join makes `check` warn `FAKE_JOIN` while `validate` says nothing; although the platform accepts and runs the activity, the graph lacks a join node, so a grader looking for the join finds none. A `.goto()` back to a human task to redo it (`examples/InvoiceEscalation.bpmn.ts`) has the same warning and is accepted there, never as a pattern merge.
 
 After writing a pattern, run `uip maestro bpmn check <Name>.bpmn.ts --graph`; the shared step must appear once, with multiple incoming flows or behind a `_join`.
 
@@ -31,7 +31,7 @@ When building from scratch with several patterns, the outermost keeps its start 
 
 ### Inserted inline
 
-Drop the pattern's start event, continue from the preceding step into its first real node, and make its steps part of the surrounding chain. Use this when no encapsulation is needed.
+Drop the pattern's start event, continue from the preceding step into its first real node, and make its steps part of the surrounding chain. The default: use it whenever the work belongs in this process and there is no reason to encapsulate.
 
 ### Nested as a `.subProcess()`
 

@@ -26,7 +26,7 @@ Write `, uploaded` only when this turn's upload succeeded.
 
 ## Nothing before the first line
 
-The final message begins immediately after the last tool call with `<Name>:` and contains only the gate reply. Write nothing before that line: not a status or validation sentence (`Valid`, `zero errors`, `Uploaded`, "Presenting the gate"), not an introduction ("Here is the outline:"), and not a `---` separator. When the request forbids upload, the one sentence never mentions the upload: no sentence that it was skipped, deferred or not performed. Include no progress; put lookup results on box lines and failures in the first line's sentence. Put progress before the last tool call; the next message contains only the gate reply.
+The final message begins immediately after the last tool call with `<Name>:` and contains only the gate reply. Write nothing before that line: not a status or validation sentence (`Valid`, `zero errors`, `Uploaded`, "Presenting the gate"), not an introduction ("Here is the outline:"), and not a `---` separator. When the request forbids upload, the one sentence never mentions the upload: no sentence that it was skipped, deferred or not performed. Report no steps you ran or skipped beyond that sentence; put lookup results on box lines and failures in the first line's sentence. Put progress before the last tool call; the next message contains only the gate reply.
 
 ## The path line
 
@@ -34,7 +34,7 @@ When the path line is the local path, write the plain path, such as InvoiceIntak
 
 ## The box lines
 
-List every task box in order, including boxes needing no resource; exclude the start event, timer, gateway, and end event. Use each label exactly as its `.task()` name spells it, including any `→ variable` suffix; omit branch conditions, arm labels, and routes: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`. After `: ` write exactly one status: the resource name and folder; the two candidates plus the default *Build it* takes (`<A> in <folder> or <B> in <folder>, which one? Build it takes the first`, omitting ` in <folder>` when a row has no folder); or exactly `none yet, create it or name one`, `not checked`, or `no resource needed`. Keep each box to one short clause; omit element type ids, build-time plans, and alternatives for the kind.
+List every task box in order, including boxes needing no resource; exclude the start event, timer, gateway, and end event. Use each label exactly as its `.task()` name spells it, including any `→ variable` suffix; omit branch conditions, arm labels, and routes: `- Manager review [Action app]`, not `- Manager review [Action app] (amount 1000 or more)`. After `: ` write exactly one status: the resource name and folder; the two candidates plus the default *Build it* takes (`<A> in <folder> or <B> in <folder>, which one? Build it takes the first`, omitting ` in <folder>` when a row has no folder); or exactly `none yet, create it or name one`, `not checked`, or `no resource needed`. Keep each box to one short clause (which-of-two is the one two-part form); omit element type ids, build-time plans, and alternatives for the kind.
 <!--skill-flavor:gate-not-checked-rule:start-->
 Write `not checked` only for a box whose lookup ran and failed, or when this run found no `uip login`; a box not looked up is not a reply line yet, so run its lookup first.
 <!--skill-flavor:gate-not-checked-rule:end-->
@@ -42,7 +42,7 @@ Explain each lookup failure once, in the first line's sentence, never on its box
 
 ## Nothing else
 
-Do not restate the shape. Send no `Flow:` or `The shape:` line, diagram, code block, gateway/condition/variable line, table, heading, or step log. Do not explain validation warnings or defaults except in the first line's sentence, ask no question of your own, and put decisions on *Change it*. Put each which-of-two resource question, including the default *Build it* choice, on its box line. Compare the reply line by line with the template and delete every non-template line.
+Do not restate the shape. Send no `Flow:` or `The shape:` line, diagram, code block, gateway/condition/variable line, table, heading, or step log. Do not explain validation warnings, nor defaults you chose beyond the first line's sentence; ask no question of your own: anything the user should settle waits for *Change it*. Put each which-of-two resource question, including the default *Build it* choice, on its box line. Compare the reply line by line with the template and delete every non-template line.
 
 ## End the turn
 

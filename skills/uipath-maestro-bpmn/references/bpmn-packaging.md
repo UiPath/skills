@@ -11,9 +11,9 @@ Package metadata, layout, and validation layers for a compiled `.bpmn`; split fr
 
 <!-- RULE:bpmn.package.derived -->
 - Metadata derives from BPMN: `operate.json.main` and each `entry-points.json` `filePath` are `/content/<Name>.bpmn#<start-id>`; `package-descriptor.json` has a `files` map; `project.uiproj` names no file. Every root start gets `uipath:entryPointId`: explicit or stable SDK-derived GUID; changing process/start id changes it, so pin the old id when renaming a deployed process. `refresh` reads it. Preserve `bpmn init` ids by decompiling its stub or use `.metadata({ entryPointId: '<uuid>' })`; additional root starts set `entryPointId` on each `.startEvent(id, { entryPointId })`; `false` emits none and must be deleted for id-less imports. Values must be GUIDs: `validate` refuses any other (`Root start event uipath:entryPointId value … must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first.
-  Run:
+  Then generate the files from the built BPMN:
   ```sh
-  uip maestro bpmn refresh <project-dir> --output json
+  uip maestro bpmn refresh <project-dir> --output json   # needs its project.uiproj
   ```
   `Data.WrittenFiles` identifies stale files. Do not use deprecated `update-metadata`; it omits `Intsvc.*` connection bindings.
 

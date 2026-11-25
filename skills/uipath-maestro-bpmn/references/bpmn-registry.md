@@ -35,4 +35,4 @@ Registry discovery and `.activity()` for types without a typed method; split fro
 <!--skill-flavor:sdk-inline-spec:end-->
 
 <!-- RULE:bpmn.activity.offsnapshot-resolve -->
-- A type outside the SDK snapshot may resolve from the registry at compile time. Report that a tenant and snapshot refresh were needed; until refreshed, offline compilation is unavailable.
+- Do not transcribe the shape by hand: a type outside the SDK snapshot is resolved from the registry at compile time. The build warns that it needed a tenant and names the snapshot refresh; report that warning, never suppress it: until refreshed, the project no longer compiles offline.

@@ -8,7 +8,7 @@ These four carry the shape.
 Change one and you are building something else.
 
 - One tunable confidence threshold owns the auto-action/review split.
-- Validation precedes the gate: malformed output is not low confidence, it is invalid, and it must reach a reviewer carrying the reason.
+- Validation precedes the gate: malformed output is not low confidence, it is invalid, and it must reach a reviewer carrying the reason; one gate handles both "unsure" and "broken" without a second branch.
 - Auto and approved-review routes converge at one join, then one outgoing flow reaches one action node. Do not send both directly to the action (for example, `.goto('performAction')` from the review arm): that fake join produces `FAKE_JOIN` from `check`, while `validate` does not.
 - Every item exits through a named outcome: auto-actioned or reviewer-rejected.
 
@@ -111,9 +111,9 @@ Add `verifierDecision` (string) and `verifierConfidence` (number). Bind the veri
 
 ## What to bind
 
-- **`analyze`**: Bind the runtime decision producer: UiPath agent (`.startAgent()`), Document Understanding, or both. Never choose categories or hardcode a result while authoring. Its `outputs` keys are process variables (`aiDecision`, `aiConfidenceLevel`); values read the agent result (`'=Decision'`, `'=Confidence'`, or output arguments). A key matching the agent argument but not the process variable leaves gate inputs at their defaults.
+- **`analyze`**: Bind the runtime decision producer: UiPath agent (`.startAgent()`), Document Understanding, or both. Never choose categories or hardcode a result while authoring. Its `outputs` keys are process variables (`aiDecision`, `aiConfidenceLevel`); values read the agent result (`'=Decision'`, `'=Confidence'`: the agent's output arguments). A key matching the agent argument but not the process variable leaves gate inputs at their defaults.
 - **`performAction`**: Bind the downstream ERP, CRM, case system, or outbound message with `.connector()`, `.http()`, or `.startProcess()`.
-- **`validate`**: Use `.businessRule()` for the deployed BusinessRules package addressed by name. Key its result by the decision's `OutputArguments` property name (such as `decision1`), not display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
+- **`validate`**: Use `.businessRule()` for the deployed BusinessRules package addressed by name. Its result is keyed by the decision's `OutputArguments` property name (such as `decision1`), not display name ([Work dispatch](../bpmn-runtime.md#http-and-orchestrator-work)).
 - **`humanReview`**: Use `.humanTask()` and route `postReviewGate` on the exact variable its `outputs` maps `=Action` into, not a copy.
 - **Review SLA**: Configure the Task timer in the Studio Web task-panel; `.humanTask()` cannot write it. See [Human tasks](../bpmn-runtime.md#human-task-outcomes).
 
@@ -123,7 +123,7 @@ If the process already scores items, insert only `validate` onward, gate on its 
 
 If the action already exists, decompile an imported process with `--style nested` ([Brownfield](../bpmn-runtime.md#brownfield-editing)), place `confidenceGate` directly before that action, and make the action the statement after it. Keep its id: `merge` keys on it, and renaming it is a delete plus an add. Do not route both new paths into the action; that creates the fake join described above.
 
-Remove `validate` only when its mechanism is vacuous: if schema-constrained analyzer output cannot be malformed, route on confidence alone. If malformed output is merely unlikely, keep validation. Keep both named end events for the audit trail.
+`validate` is the only load-bearing step you can remove, and only when its mechanism is vacuous rather than unwanted: if schema-constrained analyzer output cannot be malformed, route on confidence alone. If malformed output is merely unlikely, keep validation. Keep both named end events regardless, for the audit trail.
 
 ## Composing
 

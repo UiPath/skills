@@ -119,11 +119,11 @@ uip maestro bpmn eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
 
 ## Running a set deploys your solution — know what it overwrites
 
-`eval run start` is a deploy, not just a trigger: it packages local state and **uploads it to Studio Web, creating or overwriting the solution matching local `.uipx` `SolutionId`**, then provisions execution. The backend runs *deployed* resources; there is no separate upload or overwrite prompt. This mirrors `uip maestro bpmn debug`, which also deploys before running.
+`eval run start` is a deploy, not just a trigger: it packages local state and **uploads it to Studio Web, creating or overwriting the solution matching local `.uipx` `SolutionId`**, then provisions execution. The backend runs *deployed* resources; there is no separate upload step to run, and no prompt before the overwrite. This mirrors `uip maestro bpmn debug`, which also deploys before running.
 
 It has the same risks as manual `uip solution upload` when: (1) iterating locally before publishing, because work in progress reaches teammates and triggers; (2) changing a solution downloaded with `uip solution download`, because partial local state overwrites other changes; or (3) local and Studio Web diverge, because the remote side is discarded rather than merged.
 
-The overwrite is recorded as a restorable version unless uploaded with `--no-snapshot`; recovery is browser-only and after the fact. Treat `eval run start` like an upload and confirm the local solution is intended for publication. To avoid overwriting, pass **both** `--solution-id` and `--project-id` for an already provisioned cloud solution; this skips package and upload. Never run `uip solution upload` for the user without asking: the same rule as [Operate](operate.md).
+The overwrite is recorded as a restorable version unless uploaded with `--no-snapshot`; recovery is browser-only, after the fact, by the user. Treat `eval run start` like an upload and confirm the local solution is intended for publication. To avoid overwriting, pass **both** `--solution-id` and `--project-id` for an already provisioned cloud solution; this skips package and upload. Never run `uip solution upload` for the user without asking: the same rule as [Operate](operate.md).
 
 ## Confirm what was written
 
