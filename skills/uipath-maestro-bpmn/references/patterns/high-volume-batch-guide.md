@@ -55,7 +55,7 @@ export default bpmn('invoice-batch')
 
 `loop: { collection, itemVar }` on sub-process options is the multi-instance marker. `sequential: true` runs one at a time so each append sees the preceding list (see [Getting results to `aggregate`](#getting-results-to-aggregate)). Name the loop the way Studio Web does: `itemVar: 'iterator[0]'`, `iterator[1]` for nested loops; every connected loop, including ancestor, descendant, or sibling, has its own index. Expressions (`set`, conditions, and `outputs`) read the item as `iterator[0].item` and its 1-based position as `iterator[0].loopCounter`.
 
-Preserve `itemVar: 'iterator[N]'` and its reads for Studio Web-created or `decompile`-seeded looped sub-processes. A looped task outside a looped sub-process has no `inputElement` on the canvas and reads `iterator.item`; `decompile` seeds `itemVar: 'item'`, recompiling to `inputElement="item"` and moving the item to `iterator["item"]["item"]`, so rewrite reads accordingly. For another `itemVar`, such as `'invoice'`, the outer key is that value and the inner key stays `item`: `iterator["invoice"]["item"]`; `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
+Preserve `itemVar: 'iterator[N]'` and its reads for Studio Web-created or `decompile`-seeded looped sub-processes. A looped task outside a looped sub-process has no `inputElement` on the canvas and reads `iterator.item`; `decompile` seeds `itemVar: 'item'`, recompiling to `inputElement="item"` and moving the item to `iterator["item"]["item"]`, so rewrite its reads to that form. For another `itemVar`, such as `'invoice'`, the outer key is that value and the inner key stays `item`: `iterator["invoice"]["item"]`; `iterator[0]` and `iterator["invoice"]["invoice"]` read `null`.
 
 Scripts do not see `iterator` directly: their scope contains only the `args` envelope, and the engine builds script `iterator` entries only from `iterator[N]` keys in its inputs. Pass the item with `inputs: { 'iterator[0]': '=iterator[0]' }` and read `iterator[0].item`; `validate` still warns that `iterator` is undefined, a false positive when the key is present. A wrong iterator read fails nothing: it yields `null` (or `"undefined"` after `String()`), every check passes and the run completes. Prove a loop by reading per-item results with `debug-instances variables-all` after a Maestro debug run; local `flow-debug` reads loops differently ([offline checks](../operate.md#debug--a-controlled-studio-web-run)).
 
@@ -92,7 +92,7 @@ The body is its own sequence scope: give it its own `.flowMode('sequence')`, sta
 | Sequential | — | Shape above |
 | Parallel | Must items run concurrently? | With a named store, drop `sequential` and record outside the process; without one, stay sequential |
 
-**Parallel.** Drop `sequential: true` for concurrent items, but do not append in-process ([Getting results to `aggregate`](#getting-results-to-aggregate)). If no store is named, do not invent an entity or connection or ask: keep `sequential: true` and put on the final report's `Assumed:` line that items run one at a time because no store was named.
+**Parallel.** Drop `sequential: true` for concurrent items, but do not append in-process ([Getting results to `aggregate`](#getting-results-to-aggregate)). If no store is named, do not invent an entity or connection, and do not stop to ask: keep `sequential: true` and put on the final report's `Assumed:` line that items run one at a time because no store was named.
 
 With a store, write each outcome as one Data Fabric record per item: use a `.dataService()` `op: 'create'` in place of `recordResult` (`ok: true`) and another in place of `recordItemFailure` (`ok: false`). Declare `.var('batchId', 'string')`; set it before the sub-process with `.task('newBatch', { set: { batchId: '=js:"BATCH-" + Date.now()' } })`; write it on every record. After the sub-process, read the batch with a `.dataService()` `query`, ``where: "=js:`batchId = '${vars.batchId}'`"``, and `limit` at or above the batch size; the default is 100 and silently drops the rest.
 
@@ -111,7 +111,7 @@ If items arrive on the trigger, drop `fetchBatch` and point `collection` directl
 
 If every run succeeds by definition and only counts matter, drop `policyGate` and `endFailed`, but keep `sendReport`.
 
-When changing the body, keep `recordResult` and `recordItemFailure` (Parallel: their store writes): an item with no result cannot be counted by `aggregate`. Add fields such as a reason or skipped flag as policy requires.
+When changing the body, keep `recordResult` and `recordItemFailure` (Parallel: their store writes): an item with no result cannot be counted by `aggregate`. Add fields to the record, such as a reason or skipped flag, as policy requires.
 
 ## Getting results to `aggregate`
 

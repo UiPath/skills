@@ -50,10 +50,10 @@ Runtime choices static validation cannot make; exact signatures are in the gener
 - `elementId` is runtime placement/canvas scope. Runtime declarations share one flat, document-wide-unique namespace; `elementId` identifies canvas ownership and is required by `uip maestro bpmn validate` 1.203. For inputs see `bpmn.variables.inputs-through-start`.
 
 <!-- RULE:bpmn.variables.array-forms -->
-- `.vars([…])`, `.bindings([…])`, and `.schemas([…])` take complete blocks; non-internal entries use `direction: 'input' | 'output'`. The singular forms remain interchangeable. Prefer arrays for more than a handful, as `bpmn decompile` writes them.
+- `.vars([…])`, `.bindings([…])`, and `.schemas([…])` take complete blocks; non-internal entries use `direction: 'input' | 'output'`. Singular `.var()`/`.input()`/`.output()`/`.binding()`/`.schema()` mix freely. Prefer arrays for more than a handful, as `bpmn decompile` writes them.
 
 <!-- RULE:bpmn.variables.preserve-block -->
-- `.preserve({ … })` is source-only state, currently `variableOrder`; `bpmn decompile` writes it. Leave it alone and add nothing; authorable data goes in the typed builder. If declarations change, update every id or delete the call; on a partial list `check` warns `VARIABLE_ORDER_INCOMPLETE`, `VARIABLE_ORDER_UNKNOWN_ID`, or `VARIABLE_ORDER_DUPLICATE_ID`, and the block silently reorders.
+- `.preserve({ … })` is source-only state, currently `variableOrder`; `bpmn decompile` writes it. Leave it and add nothing; authorable data goes in the typed builder. If declarations change, update every id or delete the call; on a partial list `check` warns `VARIABLE_ORDER_INCOMPLETE`, `VARIABLE_ORDER_UNKNOWN_ID`, or `VARIABLE_ORDER_DUPLICATE_ID`, and the block silently reorders.
 
 ## Script tasks
 
@@ -271,7 +271,7 @@ Operation choice and the author → check → prepare → check → compile loop
 ## Brownfield editing
 
 <!-- RULE:bpmn.brownfield.merge -->
-- For targeted edits, decompile the original, edit the source, then `merge` it into the original. Bare recompile rewrites untouched elements and loses layout; merge preserves untouched elements byte for byte.
+- For targeted edits, decompile the original, edit the source, then `merge` it back. Bare recompile rewrites untouched elements and loses layout; merge keeps them byte for byte.
 
 <!--skill-flavor:brownfield-merge-form:start-->
   ```bash

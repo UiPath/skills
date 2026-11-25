@@ -6,7 +6,7 @@ Read this when a process uses multiple patterns or when writing a shared join; a
 
 Most patterns turn on one step reached two ways: a dispatch gate (`smart-triage`), an action (`ai-decision-review`), or a rejection exit (`approval-chain`). Writing what happens next inside each arm duplicates the step per arm; `check`, `compile` and `validate` all pass the duplicate, and only the pattern's grader, or a reader, notices. Write the shared step once, by one of three forms, in this order of preference:
 
-1. **Fall through.** Leave reaching arms empty or ending at their last element, then write the step AFTER `.choose()`. Falling-through arms join as `<choose id>_join`, emitted only when more than one does. An arm that must not reach it ends with an end event or `.goto()`. This works through nesting: an empty inner arm falls through both chooses.
+1. **Fall through.** Leave each arm that should reach the step empty or ending at its last element, then write the step AFTER `.choose()`. Falling-through arms join as `<choose id>_join`, emitted only when more than one does. An arm that must not reach it ends with an end event or `.goto()`. This works through nesting: an empty inner arm falls through both chooses.
 2. **A gateway you name.** For routes fall-through cannot reach (a later arm, outer scope, or second stage), declare `.exclusiveGateway(id)`, send each route with `.goto(id)`, and wire its sole exit with `.sequenceFlow(id, next)`. A bare gateway's outgoing flow is never implied, even in sequence mode. The tiered reviewer in [ai-decision-review-guide.md](ai-decision-review-guide.md#variants) uses this form.
 3. **A loop back to a gateway.** `.goto(id)` to an earlier gateway is itself a join; the reminder arm of `.race('wait', …)` ends in `.goto('wait')`.
 
@@ -27,7 +27,7 @@ These are engine behavior, not style.
 
 ## Four ways to join
 
-When building from scratch with several patterns, the outermost keeps its start event and the rest go inside it.
+Building from scratch with several patterns, the outermost one keeps its start event and the rest go inside it.
 
 ### Inserted inline
 
@@ -39,7 +39,7 @@ The pattern's start event becomes the sub-process start; the sub-process owns in
 
 Prefer this for a `loop` over the pattern, its own `failure-escalation` net, or a collapsed box. A container provides no separate variables; see [Variables across a nesting boundary](#variables-across-a-nesting-boundary).
 
-Risk-tiered `approval-chain` already uses this form internally: its standard and extended chains are sub-processes selected by the risk gate.
+Risk-tiered `approval-chain` already works this way internally: the standard and extended chains are sub-processes the risk gate chooses between.
 
 ### Placed, not wired
 
@@ -67,7 +67,7 @@ Choose among a net, an `onError` handler in one activity's body, and `retry` on 
 
 Nesting does not create local variables. Variable ids are document-wide, and the runtime resolves `vars.<id>` in one flat namespace wherever declared ([Variables](../bpmn-runtime.md#variables-and-the-process-contract)). Nested patterns read parent variables by id without input mapping, and parents read nested writes without output mapping.
 
-Independent state needs unique ids. If composed patterns hold same-kind values, rename one everywhere it is read, including gate conditions: use `claimReviewOutcome` and `paymentReviewOutcome`, not two `reviewOutcome` declarations. A duplicate id is not a second variable; `check` refuses it as `DUPLICATE_DOCUMENT_ID`. Keep a shared name only when both patterns mean the same value, such as a nested review gating on its parent's score.
+Independent state needs unique ids. If composed patterns each hold their own value of the same kind, rename one everywhere it is read, including gate conditions: use `claimReviewOutcome` and `paymentReviewOutcome`, not two `reviewOutcome` declarations. A duplicate id is not a second variable; `check` refuses it as `DUPLICATE_DOCUMENT_ID`. Keep a shared name only when both patterns mean the same value, such as a nested review gating on its parent's score.
 
 Looped sub-process iterations write the same ids. On the local engine, parallel iterations overwrite each other's writes; one variable collects all results only in a sequential loop. See [high-volume-batch-guide.md](high-volume-batch-guide.md#getting-results-to-aggregate).
 

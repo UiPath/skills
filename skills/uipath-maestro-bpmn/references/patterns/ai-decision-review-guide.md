@@ -73,7 +73,7 @@ The empty confident and approved arms emit `confidenceGate_join` before `perform
 | `reviewOutcome` | string | | `Approve` or `Reject` |
 | `reviewerRationale` | string | | Reviewer's free-text reasoning |
 
-Defaults fail closed: `0` and `false` send unmapped items to review (for example, a wrong output path or skipped node); `0.95` or `true` would auto-action every unmapped item. The sketch omits `aiRationale`, `validationFailures`, and `reviewerRationale`; map them from the analyzer, rule, and form field when needed for review or audit. Names are recommended, not required; bind differently named existing variables when inserting into an existing process.
+Defaults fail closed: `0` and `false` send unmapped items to review (for example, a wrong output path or skipped node); `0.95` or `true` would auto-action every unmapped item. The sketch omits `aiRationale`, `validationFailures`, and `reviewerRationale`; map them from the analyzer, rule, and form field when needed for review or audit. Names are recommended, not required; when inserting into a process that already holds one under another name, bind to the existing one.
 
 ## Variants
 
@@ -127,4 +127,4 @@ If the action already exists, decompile an imported process with `--style nested
 
 ## Composing
 
-Nested inside `high-volume-batch`, this is the per-item sub-process. Pair it with `failure-escalation` so failures in `analyze` or `performAction` do not vanish. See [composing-guide.md](composing-guide.md).
+Nested inside `high-volume-batch`, this becomes the per-item sub-process. Pair it with `failure-escalation` so failures in `analyze` or `performAction` do not vanish. See [composing-guide.md](composing-guide.md).
