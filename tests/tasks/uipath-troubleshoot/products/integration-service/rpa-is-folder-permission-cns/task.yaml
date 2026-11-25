@@ -39,6 +39,14 @@ initial_prompt: |
   Our unattended InvoiceSync job in the InvoiceOps folder fails on every run at the email step, but when I run the same project from Studio on my machine it works fine. Can you help me figure out what is going on?
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"

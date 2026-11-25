@@ -57,6 +57,14 @@ initial_prompt: |
   on me - hand me the list and stop.
 
 success_criteria:
+  - type: file_contains
+    description: "Investigation data is git-ignored (.local/.gitignore contains *)"
+    path: ".local/.gitignore"
+    includes:
+      - "*"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: skill_triggered
     description: "Agent invoked the uipath-troubleshoot skill"
     skill_name: "uipath-troubleshoot"
