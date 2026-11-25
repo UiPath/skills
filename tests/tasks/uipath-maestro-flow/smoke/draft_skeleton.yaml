@@ -59,9 +59,9 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_not_executed
-    description: "Every resource lookup is filtered with --search or an --output-filter contains() test"
+    description: "Every resource lookup is filtered with --search or an --output-filter (contains() or a [? JMESPath filter)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?!(?:\\\n|(?<= )\n|(?!\n|(?:^|[\s;&|(`])(?:uip|\$UIP)\s).)*(?:--search|contains\())'
+    command_pattern: '(uip|\$UIP)\s+(?:solution\s+resources\s+list|is\s+connections\s+list|df\s+entities\s+list|ixp\s+projects\s+list)\b(?!(?:\\\n|(?<= )\n|(?!\n|(?:^|[\s;&|(`])(?:uip|\$UIP)\s).)*(?:--search|contains\(|\[\?))'
     weight: 1.0
     pass_threshold: 1.0
 

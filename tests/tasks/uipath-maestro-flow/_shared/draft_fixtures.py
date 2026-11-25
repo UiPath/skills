@@ -35,7 +35,6 @@ SKELETON = {
         edge("each", "start", "line"), edge("line", "output", "each"),
         edge("each", "success", "notify"), edge("notify", "output", "end"),
     ],
-    "layout": {"nodes": {"start": {}}},
 }
 
 SCHEDULED_SWITCH = {
@@ -57,8 +56,17 @@ SCHEDULED_SWITCH = {
         edge("route", "case-case_1", "ha"), edge("route", "case-case_2", "hb"), edge("route", "case-case_3", "hc"),
         edge("ha", "output", "end"), edge("hb", "output", "end"), edge("hc", "output", "end"),
     ],
-    "layout": {"nodes": {"start": {}}},
 }
+
+
+def place(doc: dict) -> dict:
+    for i, n in enumerate(doc["nodes"]):
+        n["ui"] = {"position": {"x": 200 * i, "y": 100}}
+    return doc
+
+
+place(SKELETON)
+place(SCHEDULED_SWITCH)
 
 
 def built(doc: dict) -> dict:

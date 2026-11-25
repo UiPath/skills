@@ -125,6 +125,7 @@ The header lines are the ones `init` seeds. It checks, compiles and validates wi
 <!--skill-flavor:draft-steps:end-->
    A skeleton checks, compiles and validates with no warning. Treat any warning or error as real and fix it without adding a real node.
    `check` prints `HANDLE_NOT_IN_CURRENT_MANIFEST did not run` when no tenant is logged in. That is not a failure.
+   Do not reply after `validate`. Steps 4 and 5 come first: the gate reply needs the lookups.
 <!--skill-flavor:draft-upload:start-->
 4. **Upload it, so the user sees it on the canvas**, unless the request forbids upload:
 

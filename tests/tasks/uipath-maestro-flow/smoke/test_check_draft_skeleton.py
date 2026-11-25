@@ -114,12 +114,13 @@ def test_wrong_trigger_fails(sandbox, capsys):
     assert "core.trigger.scheduled" in capsys.readouterr().err
 
 
-def test_unformatted_flow_fails(sandbox, capsys):
+def test_unplaced_node_fails(sandbox, capsys):
     doc = copy.deepcopy(fx.SKELETON)
-    del doc["layout"]
+    del node(doc, "record")["ui"]["position"]
     sandbox(doc)
     assert cds.main([]) == 1
-    assert "layout" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "layout" in err and "record" in err
 
 
 def test_variable_suffix_after_kind_passes(sandbox):

@@ -14,7 +14,7 @@ layout (`<Project>/new.flow`) passes too. A skeleton passes when:
   - `--switch-arms N`: a switch has at least N labelled cases;
   - `--loop`: a loop exists and holds a mock box;
   - no decision, switch or loop reads a mock box's output;
-  - `format` laid out the canvas;
+  - every node has a numeric `ui.position` (`compile` lays out the canvas);
   - `uip maestro flow validate` reports Valid.
 """
 
@@ -32,6 +32,11 @@ from _shared.draft_flow import (  # noqa: E402
 
 BOX_LABEL = re.compile(r"\S(?:.*?\S)? \[[A-Z][^\[\]]*\](?:\s*(?:→|->)\s*\S.*)?")
 DECISION_DEFAULT_LABEL = re.compile(r"(?i)true|false")
+
+
+def has_position(node: dict) -> bool:
+    pos = (node.get("ui") or {}).get("position") or {}
+    return all(isinstance(pos.get(k), (int, float)) and not isinstance(pos.get(k), bool) for k in ("x", "y"))
 
 
 def is_labelled(label, default=None) -> bool:
@@ -150,8 +155,9 @@ def main(argv: list[str]) -> int:
     if reads:
         return fail(f"routing reads a mock output (it is always null): {reads}")
 
-    if not (doc.get("layout") or {}).get("nodes"):
-        return fail("no layout: `uip maestro flow format` did not run")
+    unplaced = [n.get("id") for n in nodes if not has_position(n)]
+    if unplaced:
+        return fail(f"no layout: nodes without a numeric ui.position: {unplaced}")
 
     print(f"Skeleton OK: {len(boxes)} mock boxes in {path}", flush=True)
     return validate(path)
