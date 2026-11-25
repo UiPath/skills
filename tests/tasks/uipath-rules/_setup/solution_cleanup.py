@@ -15,7 +15,7 @@ is not proof of anything; the before-and-after record is.
 Ownership is inferred from that record, not proven: only `uip rules debug` knows which solution
 it made, and `post_run` never sees its output. Where ownership is unknown the id is left on the
 tenant, and no record at all deletes nothing -- a leftover solution is tidied by hand, a deleted
-one is not. Narrowing this to a trusted create record is MST-18679.
+one is not. Narrowing this to a trusted create record is MST-18847.
 """
 
 from __future__ import annotations
