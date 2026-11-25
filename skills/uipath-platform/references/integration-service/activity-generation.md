@@ -352,11 +352,28 @@ definition from `<Name>.json` and carries every script in the node.
 On an older SDK there is no SDK node for a generated activity: `rawNode`
 refuses every `uipath.connector.*` type, and `connector()` only takes catalog
 operations. `uip` still places it with its graph commands until they are
-removed, which happens only after the SDK release above. Run them on the
-compiled `.flow` after the last compile: a later compile rewrites the `.flow`
-and drops the node. Create the node with its id, bind the connection and pass
-every required input in its slot, wire it between its neighbours, then
-validate:
+removed, which happens only after the SDK release above. Those commands edit
+the compiled `.flow`, so every other edit must be in that `.flow` first. A
+compile that rejects the `inlineActivity` import writes nothing, so the `.flow`
+still holds the previous graph, without the rest of your source edits:
+
+1. Remove the unsupported step from `<Name>.flow.ts`: the
+   `.step('listMembers', inlineActivity(...))` call, the `inlineActivity`
+   import, and the metadata and scripts that only it used (imports or
+   literals). Keep every other edit, including the steps before and after the
+   activity. For example,
+   if the source adds a `getGroup` step and then `listMembers` after it, keep
+   `getGroup`: the chain now runs from `getGroup` straight to the step after
+   `listMembers`, or ends at `getGroup`.
+2. Check and compile that source (an edit merges, as for any step), and
+   confirm it succeeds. The `.flow` now holds every other edit, and the
+   activity's predecessor is a node in it.
+3. Place the activity on that `.flow` with the commands below, after the last
+   compile: a later compile rewrites the `.flow` and drops the node. Create the
+   node with its id, bind the connection and pass every required input in its
+   slot, wire it between its neighbours, then validate. When the activity
+   ended its branch, there is no edge to replace: skip the delete and create
+   only the edge from the predecessor.
 
 ```bash
 uip maestro flow nodes create <Name>.flow uipath.connector.custom.<connector-key>.<slug> \
