@@ -34,10 +34,33 @@ def top_level(items: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+WRITE = r"(?:[-+*/%&|^]|\*\*|<<|>>>?|&&|\|\||\?\?)?=(?![=>])"
+# The bar of the task's "less than 80% sure goes to review": c < 0.8 or c >= 0.8
+# (0.8 or 80), either operand order.
+BAR = r"(?<![\w.])(?:0?\.80*|80(?:\.0*)?)(?![\w.])"
+
+
+def changes(code: str, name: str) -> bool:
+    """``code`` writes to ``name`` other than its ``const`` binding, or hands it to
+    ``Object.assign``/``defineProperty``/``Reflect.set``."""
+    rest = re.sub(rf"\bconst\s+{re.escape(name)}\s*=", "", code)
+    return re.search(
+        rf"(?<![\w$.]){re.escape(name)}\s*{WRITE}"
+        rf"|\b(?:Object\.(?:assign|defineProperty|defineProperties)|Reflect\.set)\(\s*{re.escape(name)}(?![\w$])",
+        rest,
+    ) is not None
+
+
+def at_80(g, gate: str, step: str) -> bool:
+    """``gate`` compares ``step``'s confidence with 80%: below it is low, 80% is not."""
+    score = rf"\$?{g.subject_pattern(step, gate).pattern}(?:\.output)?\.confidence"
+    return re.search(rf"{score}\s*(?:<|>=)\s*{BAR}|{BAR}\s*(?:>|<=)\s*{score}", g.text(gate)) is not None
+
+
 def passes_confidence(script: str, agent: str) -> bool:
     """``script`` may check the agent's output, then ends in its only ``return``:
     the output itself, a spread of it no later key overrides, or an object whose
-    ``confidence`` is the agent's own (``const`` names, nothing assigns one)."""
+    ``confidence`` is the agent's own (``const`` names, nothing writes to one)."""
     code = re.sub(r"/\*.*?\*/|//[^\n]*", "", script, flags=re.S)
     code = re.sub(r"\[\s*['\"]confidence['\"]\s*\]", ".confidence", code)
     out = f"$vars.{agent.rsplit('/', 1)[-1]}.output"
@@ -52,8 +75,8 @@ def passes_confidence(script: str, agent: str) -> bool:
     }
     end = re.search(r"\breturn\s+(.*)", code.rstrip().removesuffix(";"), re.S)
     one_return = len(re.findall(r"\breturn\b", code)) == 1
-    assigns = re.search(r"\.confidence\s*([-+*/]?=(?!=)|\+\+|--)", code)
-    if not end or not one_return or assigns:
+    assigns = re.search(rf"\.confidence\s*({WRITE}|\+\+|--)|(\+\+|--|\bdelete)\s*[\w$.]+\.confidence\b", code)
+    if not end or not one_return or assigns or any(changes(code, o) for o in outputs):
         return False
     value, decides = end.group(1).rstrip(), False
     if value in outputs:
@@ -87,21 +110,23 @@ def main() -> None:
         people = [p for p in g.hitl() if p in body]
         # The gate reads the agent's output, or a script downstream of the
         # agent (no human task on the way to the gate) that passes the
-        # agent's confidence on unchanged.
+        # agent's confidence on unchanged to a gate at 80%.
         gated = [
             (a, n) for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in [a] + [
                 s for s in g.reachable(a, blocked=people)
                 if s in body and g.type_of(s) == SCRIPT and g.reaches(s, n, blocked=people)
-                and passes_confidence(script_of(g, s), a)
+                and passes_confidence(script_of(g, s), a) and at_80(g, n, s)
             ]
             if g.thresholds(n, s) and g.routes_low(n, people, s)
         ]
         rejected = [
-            f"{n} reads {s}, which does not return {a}'s confidence unchanged"
+            f"{n} reads {s}, which does not return {a}'s confidence unchanged" if not passes_confidence(script_of(g, s), a)
+            else f"{n} reads {s}'s confidence but does not send below 80% to review and 80% on"
             for a in agents for n in g.ids(DECISION, SWITCH) if n in body
             for s in g.reachable(a, blocked=people)
-            if s in body and g.type_of(s) == SCRIPT and g.thresholds(n, s) and not passes_confidence(script_of(g, s), a)
+            if s in body and g.type_of(s) == SCRIPT and g.thresholds(n, s)
+            and not (passes_confidence(script_of(g, s), a) and at_80(g, n, s))
         ]
         if people and rejected and not gated:
             reason = rejected[0]

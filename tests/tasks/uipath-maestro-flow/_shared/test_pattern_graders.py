@@ -197,6 +197,19 @@ CHECK_SCRIPT = (
 )
 
 
+def review_check_gate(expression: str, low_port: str = "true") -> dict:
+    """The check script's gate with ``expression``; ``low_port`` leads to the review."""
+    flow = review_check_script(CHECK_SCRIPT)
+    node(flow, "lowConfidence")["inputs"]["expression"] = expression
+    for e in flow["edges"]:
+        if e["sourceNodeId"] == "lowConfidence":
+            e["sourcePort"] = low_port if e["targetNodeId"] == "reviewDecision" else {"true": "false", "false": "true"}[low_port]
+    return flow
+
+
+FORWARD = "const p = $vars.analyzeItem.output; {} return p;"
+
+
 def triage_without_person() -> dict:
     """Classify and route with the human fallback removed: what the near miss asks for."""
     flow = fixture("triage_ai")
@@ -286,6 +299,39 @@ CASES = [
      lambda: review_check_script("const p = $vars.analyzeItem.output; return { confidence: p.confidence + 0.3 };"), 1),
     ("composition/check_batch_review.py", "check script overwrites the agent's confidence, returns the output",
      lambda: review_check_script("const p = $vars.analyzeItem.output; p.confidence = 1; return p;"), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with ||=, returns the output",
+     lambda: review_check_script(FORWARD.format('p.confidence ||= 1;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with ??=, returns the output",
+     lambda: review_check_script(FORWARD.format('p.confidence ??= 1;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with &&=, returns the output",
+     lambda: review_check_script(FORWARD.format('p.confidence &&= 1;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with **=, returns the output",
+     lambda: review_check_script(FORWARD.format('p.confidence **= 2;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with ['confidence'] =, returns the output",
+     lambda: review_check_script(FORWARD.format("p['confidence'] = 1;")), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with ++ before, returns the output",
+     lambda: review_check_script(FORWARD.format('++p.confidence;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with delete, returns the output",
+     lambda: review_check_script(FORWARD.format('delete p.confidence;')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with Object.assign, returns the output",
+     lambda: review_check_script(FORWARD.format('Object.assign(p, { confidence: 1 });')), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with Object.defineProperty, returns the output",
+     lambda: review_check_script(FORWARD.format("Object.defineProperty(p, 'confidence', { value: 1 });")), 1),
+    ("composition/check_batch_review.py", "check script changes the confidence with reassigns the name, returns the output",
+     lambda: review_check_script(FORWARD.format("p = { decision: 'approve', confidence: 1 };")), 1),
+    ("composition/check_batch_review.py", "check script hands the output to Object.assign, returns a spread",
+     lambda: review_check_script("const p = $vars.analyzeItem.output; Object.assign(p, { confidence: 1 }); return { ...p };"), 1),
+    ("composition/check_batch_review.py", "check script reads the output's keys, returns the output",
+     lambda: review_check_script(FORWARD.format("if (!Object.keys(p).includes('confidence')) throw new Error('x');")), 0),
+    ("composition/check_batch_review.py", "check script gate < 0.8", lambda: review_check_gate('$vars.checkFields.output.confidence < 0.8', 'true'), 0),
+    ("composition/check_batch_review.py", "check script gate >= 0.8, auto on true", lambda: review_check_gate('$vars.checkFields.output.confidence >= 0.8', 'false'), 0),
+    ("composition/check_batch_review.py", "check script gate 0.8 > confidence", lambda: review_check_gate('0.8 > $vars.checkFields.output.confidence', 'true'), 0),
+    ("composition/check_batch_review.py", "check script gate < 80 (percent)", lambda: review_check_gate('$vars.checkFields.output.confidence < 80', 'true'), 0),
+    ("composition/check_batch_review.py", "check script gate <= 0.8 (80% reviewed)", lambda: review_check_gate('$vars.checkFields.output.confidence <= 0.8', 'true'), 1),
+    ("composition/check_batch_review.py", "check script gate > 0.8, auto on true (80% reviewed)", lambda: review_check_gate('$vars.checkFields.output.confidence > 0.8', 'false'), 1),
+    ("composition/check_batch_review.py", "check script gate < 0.79 (79% auto)", lambda: review_check_gate('$vars.checkFields.output.confidence < 0.79', 'true'), 1),
+    ("composition/check_batch_review.py", "check script gate < 0.81 (81% reviewed)", lambda: review_check_gate('$vars.checkFields.output.confidence < 0.81', 'true'), 1),
+    ("composition/check_batch_review.py", "check script gate < 0.5", lambda: review_check_gate('$vars.checkFields.output.confidence < 0.5', 'true'), 1),
     ("no_pattern/check_no_pattern.py", "export", lambda: fixture("export"), 0),
     ("no_pattern/check_no_pattern.py", "retrofitted gate", export_gated, 1),
     ("no_pattern_triage/check_near_miss.py", "classify and route", triage_without_person, 0),
