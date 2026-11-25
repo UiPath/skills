@@ -10,7 +10,7 @@ requires. Cell rules are complete where they stand, as in the main template. -->
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
-**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; none known → drop the cell + high review item>
+**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; the task's Tasks row names a persona → `Role:<that Persona>`, never `—`; no persona and no other identity known → drop the cell + high review item> <!-- `Role:` names THIS task's Persona (its Tasks-table row), never a role copied from another task's block. A Persona cell IS the assignment: a human task whose row names a persona is never left `—`. -->
 **Priority:** <Low \| Medium \| High \| Critical> · **Task Title:** <one-line Action Center prompt> · **Labels:** <csv or —>
 
 **Input Schema:**
