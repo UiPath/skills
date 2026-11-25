@@ -68,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Advisory: every open entry and Configuration Question is an item under its genome id"
-    command: "node $REFERENCE_DIR/_shared/check_interview.mjs count ecb-fx-rates-readiness.md '^\\*\\*(?:R\\d+\\.\\s+)?(D[1-4]|CQ[1-8])(?:[.:]|\\s+[—–-])\\s' 12"
+    command: "node $REFERENCE_DIR/_shared/check_interview.mjs count ecb-fx-rates-readiness.md '^\\*\\*(?:R\\d+\\.\\s+)?(D[1-4]|CQ[1-8])(?:[.:]|\\s+[—–-])(?:\\*\\*)?\\s' 12"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

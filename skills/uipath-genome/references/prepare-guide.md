@@ -181,7 +181,24 @@ Usually answered by: the engineer, with the tenant admin.
 
 Usually answered by: as each item names.
 
-<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it; with no SDD, each open entry and Configuration Question of the genome, in the item form under the same group headings, naming its id and who answers it>
+<each open item of the SDD's Action Required, under its id and its group's heading, as the SDD writes it. With no SDD, the genome's open entries and Configuration Questions, as below; a material entry goes under Material to supply>
+
+### Business decisions
+
+**D<n>. <The entry's question>**
+- **Context:** Answered by: <the entry's `answered by:`>.
+- **See:** <the step the entry names>
+- **Options:**
+  - a. <what the genome builds now> (built now)
+  - b. <the entry's alternative, one per line>
+- **Answer:**
+
+### Configuration values
+
+**CQ<n>. <The Configuration Question>**
+- **Context:** Answered by: <the environment's owners for a setting, the process owner for a constant>.
+- **Default:** <the question's default, or none>
+- **Answer:**
 ````
 
 ## Read Plan

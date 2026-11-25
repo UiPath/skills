@@ -118,6 +118,20 @@ def test_items_takes_a_dash_after_the_id(tmp_path):
     assert grade(tmp_path, "count", "x-readiness.md", r"^\*\*(?:R\d+\.\s+)?D[12](?:[.:]|\s+[—–-])\s", "2").returncode == 0
 
 
+def test_items_takes_the_id_alone_in_bold(tmp_path):
+    (tmp_path / "x-readiness.md").write_text(
+        "**D1.** Which rates?\n- **Context:** the process owner.\n- **Answer:**\n\n"
+        "**CQ5.** Which mailbox sends?\n- **Answer:** the AP mailbox\n", encoding="utf-8")
+    assert grade(tmp_path, "items", "x-readiness.md", "blank", "D1").returncode == 0
+    assert grade(tmp_path, "items", "x-readiness.md", "answered", "CQ5").returncode == 0
+
+
+def test_items_without_an_answer_line_are_neither_blank_nor_answered(tmp_path):
+    (tmp_path / "x-readiness.md").write_text("**D1.** Which rates? **Context:** the process owner.\n", encoding="utf-8")
+    assert grade(tmp_path, "items", "x-readiness.md", "blank", "D1").returncode == 1
+    assert grade(tmp_path, "items", "x-readiness.md", "answered", "D1").returncode == 1
+
+
 def test_count_needs_the_minimum(sandbox):
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "1").returncode == 0
     assert grade(sandbox, "count", SDD.name, r"Interview: \d+ points?", "2").returncode == 1

@@ -10,9 +10,11 @@
 //   entries <genome> <state> <ids>...     each Open Decisions entry is in that state: open, decided, withdrawn;
 //                                         ids as `3` or `2-11`; <genome> is a path or a glob such as `*-genome.md`
 //   items <file> <answered|blank> <ids>... each item `**D<n>. …**`, `**CQ<n>. …**` or `**R<n>. …**` (a readiness
-//                                         item may carry both: `**R15. D1. …**`, `**R15. D1 — …**`) of an SDD's Action Required, or
-//                                         anywhere in a readiness file, is answered (its `Answer` line filled, or the
-//                                         item gone) or blank (present, unfilled); ids as `D3`, `D2-11`, `CQ10`, `R3-6`.
+//                                         item may carry both: `**R15. D1. …**`, `**R15. D1 — …**`; the bold may end
+//                                         after the id: `**D1.** …`) of an SDD's Action Required, or anywhere in a
+//                                         readiness file, is answered (its `Answer` line filled, or the item gone) or
+//                                         blank (present, its `Answer` line unfilled); an item with no `Answer` line is
+//                                         neither. Ids as `D3`, `D2-11`, `CQ10`, `R3-6`.
 //                                         An item is its heading and the `- ` lines under it; any other text ends it.
 //   count <file> <regex> <min>            at least <min> lines of the file match, case-insensitive
 //   unchanged <file> <sha256> [section]   the file, or its `## <section>`, hashes to <sha256> (line endings LF)
@@ -126,10 +128,10 @@ switch (command) {
     const answers = new Map();
     let current = [];
     for (const l of body.split("\n")) {
-      const item = /^\*\*(?:(R\d+)\.\s+)?((?:D|CQ|R)\d+)(?:[.:]|\s+[—–-])\s/.exec(l);
+      const item = /^\*\*(?:(R\d+)\.\s+)?((?:D|CQ|R)\d+)(?:[.:]|\s+[—–-])(?:\*\*)?\s/.exec(l);
       if (item) {
         current = [item[1], item[2]].filter(Boolean);
-        for (const id of current) answers.set(id, "");
+        for (const id of current) answers.set(id, null);
         continue;
       }
       if (l.trim() && !/^\s*- /.test(l)) current = [];
@@ -142,8 +144,11 @@ switch (command) {
       if (!m) fail(`bad item id: ${a}`, 2);
       return ids([m[3] ? `${m[2]}-${m[3]}` : m[2]]).map((n) => `${m[1]}${n}`);
     });
-    const wrong = wanted.filter((id) => (state === "answered" ? answers.get(id) === "" : answers.get(id) !== ""))
-      .map((id) => `${id} is ${answers.has(id) ? (answers.get(id) ? `answered "${answers.get(id)}"` : "blank") : "gone"}`);
+    const state_of = (id) => !answers.has(id) ? "gone" : answers.get(id) === null ? "without an Answer line"
+      : answers.get(id) ? `answered "${answers.get(id)}"` : "blank";
+    const wrong = wanted.filter((id) => (state === "answered"
+      ? answers.has(id) && !answers.get(id) : answers.get(id) !== ""))
+      .map((id) => `${id} is ${state_of(id)}`);
     if (wrong.length) fail(`${file}: expected ${state}: ${wrong.join("; ")}`);
     break;
   }
