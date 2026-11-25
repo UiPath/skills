@@ -98,11 +98,11 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
    uip extension submit --security-contact "<SECURITY_CONTACT_EMAIL>" --dry-run --output json
    ```
 
-   For the first registration of a node, ask for the maintainers in the same `AskUserQuestion` call that asks for the security contact. A maintainer is a GitHub username of someone who may submit new versions of the node.
+   For the first registration of a node, ask only for the security contact. Tell the user that `submit` writes the signed-in GitHub account as the only maintainer of the node. Only a listed maintainer, or someone with write access to the index, may submit new versions. When `Data` of the dry run holds a `MaintainersNote`, tell the user why no maintainer was written.
 
    Run `submit` again without `--dry-run` after the user approves the pull request.
 
-6. Add the maintainers to the pull request. `submit` has no option for them, so show the user these lines for `nodes/<PUBLISHER>/<NAME>/registration.yaml` on the pull request branch.
+6. Add more maintainers later, by hand. `submit` has no option for them. A person who is already a maintainer adds each new one in a pull request to the index. Show the user this entry to add to the `maintainers:` list in `nodes/<PUBLISHER>/<NAME>/registration.yaml`.
 
    ```yaml
    maintainers:
@@ -110,9 +110,9 @@ Every command takes `--path <PROJECT_DIR>`. The default is the current folder.
        id: <GITHUB_USER_ID>
    ```
 
-   Get each id with `gh api users/<GITHUB_LOGIN> --jq .id`. Write each login in lowercase, and list at most 20 people. Edit the file only after the user agrees. Once the list is on `main`, the index refuses a pull request for the node from anyone who is not on it, unless that person can write to the index repository. Adding a person later takes a pull request from an existing maintainer.
+   Get each id with `gh api users/<GITHUB_LOGIN> --jq .id`. Write each login in lowercase, and list at most 20 people. Edit the file only after the user agrees. Once the list is on `main`, the index refuses a pull request for the node from anyone who is not on it, unless that person can write to the index repository.
 
-   Every `submit` rebuilds `registration.yaml` from the default branch of the index and drops this list, including a `submit` that follows a change a reviewer asked for. After the last `submit` and before the merge, check that the pull request branch still holds the `maintainers:` block, and add it again when it does not.
+   A `submit` for a later version keeps the list of the default branch as it is. A first registration that is not merged yet has no list there, so every `submit` that updates its pull request writes the list again from the signed-in account. Add people only after that pull request is merged.
 
 ## Outcome Codes
 
