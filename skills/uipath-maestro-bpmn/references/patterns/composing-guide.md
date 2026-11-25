@@ -31,7 +31,7 @@ Building from scratch with several patterns, the outermost one keeps its start e
 
 ### Inserted inline
 
-Drop the pattern's start event, continue from the preceding step into its first real node, and make its steps part of the surrounding chain. The default: use it whenever the work belongs in this process and there is no reason to encapsulate.
+Drop the pattern's start event, continue from the preceding step into its first real node, and make its steps part of the surrounding chain. The default: use it whenever the work belongs in this process and there is no reason to encapsulate, such as a confidence-gated review added partway through a running process.
 
 ### Nested as a `.subProcess()`
 

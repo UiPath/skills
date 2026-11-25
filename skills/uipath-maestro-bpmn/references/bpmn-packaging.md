@@ -38,7 +38,7 @@ Package metadata, layout, and validation layers for a compiled `.bpmn`.
   Inspect every generated metadata file against this contract: `entry-points.json.entryPoints` must be non-empty and reference the built BPMN/start id. If it is empty, do not hand-write the JSON: the BPMN was not compiled by the SDK and its root start event has no `uipath:entryPointId`; fix the source, rebuild, and rerun `refresh`. If refresh says `Expected one uipath:entryPointId on root manual start event`, delete `entryPointId: false` and rebuild.
 
 <!-- RULE:bpmn.layout.separate -->
-- Compile emits semantic XML without diagram; `validate` refuses files without one. Format every newly compiled process; format a merged one only for missing diagram/shape, a template, or a user-chosen replacement ([`bpmn.brownfield.format`](bpmn-runtime.md#brownfield-editing)).
+- Compile emits semantic XML without diagram; `validate` refuses files without one. Format every newly compiled process; format a merged one only when `refresh`/`validate` reports a missing diagram or shape, or for a template or a user-chosen replacement ([`bpmn.brownfield.format`](bpmn-runtime.md#brownfield-editing)).
 
 ## Product boundary
 

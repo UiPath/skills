@@ -42,7 +42,7 @@ When a lookup failed, say why once, in the first line's one sentence, never on i
 
 ## Nothing else
 
-Do not restate the shape. Send no `Flow:` or `The shape:` line, diagram, code block, gateway/condition/variable line, table, heading, or step log. Do not explain validation warnings, nor defaults you chose beyond the first line's sentence; ask no question of your own: anything the user should settle waits for *Change it*. Put each which-of-two resource question, including the default *Build it* choice, on its box line, in this same message: the one exception to asking no question. Compare the reply line by line with the template and delete every non-template line.
+Do not restate the shape. Send no `Flow:` or `The shape:` line, diagram, code block, gateway/condition/variable line, table, heading, or step log. Do not explain validation warnings or note defaults you chose beyond the first line's sentence; ask no question of your own (a time zone, which app): anything the user should settle waits for *Change it*. Put each which-of-two resource question, including the default *Build it* choice, on its box line, in this same message: the one exception to asking no question. Compare the reply line by line with the template and delete every non-template line.
 
 ## End the turn
 

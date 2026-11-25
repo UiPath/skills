@@ -29,7 +29,7 @@ Registry discovery and `.activity()` for types without a typed method.
 - Registry search/get use a non-self-refreshing cache. Run `uip maestro bpmn registry pull --force` before checking newer or apparently missing types.
 
 <!-- RULE:bpmn.activity.inline-spec -->
-- If `registry get` says `Extension type not found`, emit with `.activity(id, 'Type.Name', { spec, context, inputs })`, where `spec` is a `RegistryTypeSpec` containing BPMN element/tag, typed/default context fields, `inputPattern`, and output row; it is used as is, in place of the snapshot and the tenant. `decompile` supplies specs for imported unknown nodes; leave those specs as decompile wrote them, beside explicit `contextRows`/`inputRows`/`outputRows`. Editing a row's value is fine; the row is written exactly as it reads. New nodes need the full spec.
+- If `registry get` says `Extension type not found`, emit with `.activity(id, 'Type.Name', { spec, context, inputs })`, where `spec` is a `RegistryTypeSpec` containing BPMN element/tag, typed/default context fields, `inputPattern`, and output row; it is used as is, in place of the snapshot and the tenant. `decompile` writes a spec for an imported unknown node holding only the element and payload tag, with every `contextRows`/`inputRows`/`outputRows` row beside it; leave it as written. Editing a row's value is fine; the row is written exactly as it reads. That spec does not say which fields the type needs, so a new node of that type needs the full spec.
 <!--skill-flavor:sdk-inline-spec:start-->
   Needs `@uipath/maestro-builder-sdk` 6.85.7 or later; upgrade with `npm install -g @uipath/maestro-builder-sdk@latest` when older decompile reports `BPMN_TYPE_UNKNOWN`.
 <!--skill-flavor:sdk-inline-spec:end-->
