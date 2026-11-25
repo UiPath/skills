@@ -1,10 +1,22 @@
 <!--skill-flavor:solution-lifecycle-steps:start-->
 ```
-1. Create projects   → CreateProjects tool / New Project UI
+1. Create projects   → each project type's own step (table below) / New Project UI
 2. resources refresh → Sync bundled artefacts with cloud state (if needed)
 3. publish           → uip solution publish (packaging and auth handled by Studio Web)
 4. deploy run        → uip solution deploy run (installs the published package into a folder)
 ```
+
+**Create each project in the open solution with its type's own step, run from `/solution`.** Never use `solution init` or `projects add`. The skill that owns the project type has the details.
+
+| Project type | Create it with |
+|---|---|
+| Flow | `uip maestro flow init <Name>` (`--automate` for Maestro Automate), or the `CreateProjects` tool |
+| Case | `uip maestro case init <Name>` |
+| BPMN | `uip maestro bpmn init <Name>` |
+| Agent | `uip agent init "<Name>"` |
+| RPA | `uip rpa init <Name>`, which the host serves; its workflows are authored in the Studio Web designer or Studio Desktop |
+| API Workflow, BusinessRules, coded app (AppV2) | The `CreateProjects` tool: read its live schema and use exactly the fields and enum values it declares. Never run `uip rules init` here; its folder never becomes a Studio Web project. |
+| Function | Cannot be created in Studio Web |
 
 > **No `pack`, `restore`, `login`, or `upload` steps in Studio Web.** The packager is Node-only and excluded from the browser bundle, authentication is injected by the host, and `/solution` already IS the open project so there is nothing to upload. `publish` and `deploy` both work here.
 
@@ -31,7 +43,7 @@
 <!--skill-flavor:when-to-use-detected-uipx:end-->
 
 <!--skill-flavor:when-to-use-create:start-->
-- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>` (families: flow, case, agent, api-workflow, bpmn, rpa — Studio Web cannot create function or coded-app projects), never with `solution init` or `projects add`
+- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — each project is created inside it with its type's own step ([Workflow](#workflow) lists them), never with `solution init` or `projects add`
 <!--skill-flavor:when-to-use-create:end-->
 
 <!--skill-flavor:cli-surface-probe:start-->
@@ -48,8 +60,12 @@ Studio Web runs the post-rename CLI — use the commands and flags as documented
 1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; there is no pre-rename fallback.
 <!--skill-flavor:probe-rule:end-->
 
+<!--skill-flavor:appv2-registration-rule:start-->
+7. **AppV2 coded apps are created in the open solution with the `CreateProjects` tool.** Studio Web has no coded-app CLI tool and no `create-vite`: create the project with `CreateProjects` (type `AppV2` with the coded sub-type, as its live schema declares them). The host writes `project.uiproj` + `webAppManifest.json` and registers the app under `resources/solution_folder/app/{Coded,CodedAction}/`; the app's sources go under `source/`. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+<!--skill-flavor:appv2-registration-rule:end-->
+
 <!--skill-flavor:develop-solution-row:start-->
-| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created as [Workflow](#workflow) lists; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
 <!--skill-flavor:develop-solution-row:end-->
 
 <!--skill-flavor:when-to-use-existing:start-->

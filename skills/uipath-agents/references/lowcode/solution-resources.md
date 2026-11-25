@@ -13,7 +13,7 @@ MySolution/
 ├── resources/         ← solution-level Orchestrator resource definitions
 │   └── solution_folder/
 │       ├── package/   ← deployment packages (one per project)
-│       ├── process/   ← runnable processes (agent/, process/, api/, processOrchestration/)
+│       ├── process/   ← runnable processes (agent/, process/, api/, processOrchestration/, flow/)
 │       ├── connection/ ← IS connections needed by agents
 │       ├── index/     ← semantic search indexes
 │       └── bucket/    ← storage buckets for indexes
@@ -277,7 +277,7 @@ Handled kinds and what refresh produces:
 | Binding kind | Solution-level files | `debug_overwrites.json` entry |
 |---|---|---|
 | `Queue`, `Asset`, `Bucket` | Virtual resource in solution | none required |
-| `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
+| `Process` (RPA / agent / api / processOrchestration / flow) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
 | `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
 | `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
 | `MemorySpace` | `memorySpace/<Name>.json` | `kind: "memorySpace"` when imported from RCS |

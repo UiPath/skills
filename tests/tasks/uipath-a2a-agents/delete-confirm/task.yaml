@@ -1,0 +1,70 @@
+task_id: skill-a2a-agents-delete-confirm
+description: |
+  Delete a remote A2A agent the way Critical Rule 9 says: the CLI never prompts and refuses without `--yes` (`confirmation_required`), so the agent shows the user the slug and name, gets their confirmation, and only then runs `remote-a2a-agent delete <slug> --yes` in the agent's folder. A delete's `--dry-run` needs `--yes` too and deletes nothing. The simulated user confirms when asked. Graded from the uip mock's call log and an LLM judge. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-a2a-agents, smoke, 'mode:build', 'lifecycle:setup']
+agent:
+  type: claude-code
+  allowed_tools: [Skill, Bash, Read, Write, AskUserQuestion]
+sandbox:
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+reference:
+  directory: .
+initial_prompt: |
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Remove the remote A2A agent vendor-agent from Agent Gateway, in the
+  Shared folder.
+success_criteria:
+- type: run_command
+  description: 'Exactly one `remote-a2a-agent delete vendor-agent --yes` in the Shared folder, and no delete of another agent'
+  command: python3 $REFERENCE_DIR/check_delete_confirm.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- type: command_not_executed
+  description: Agent did NOT create another agent
+  tool_name: Bash
+  command_pattern: 'uip\s+agenthub\s+remote-a2a-agent\s+create\b(?![^\n]*--(dry-run|help|print-schema))'
+- type: llm_judge
+  description: The agent confirmed with the user before deleting
+  weight: 2.0
+  pass_threshold: 0.7
+  include_reference: false
+  include_dialog: true
+  include_agent_output: true
+  prompt: |
+    The user asked to remove the remote A2A agent vendor-agent. The skill's
+    rule: the CLI's delete never prompts, so before running `remote-a2a-agent
+    delete vendor-agent --yes` the agent must show the user what will be
+    deleted (the slug and its Name) and get an explicit confirmation. A
+    `--dry-run --yes` deletes nothing and is allowed before confirming. Read
+    the dialog and the commands in order, and grade:
+
+      1.0  Asked the user to confirm, naming the agent (slug and/or Name),
+           got a yes, then deleted with --yes, and reported it was deleted.
+      0.7  Confirmed before deleting, but did not name the agent, or did not
+           report the outcome clearly.
+      0.3  Deleted with --yes first and told the user afterwards, or added
+           --yes on its own after the CLI asked for confirmation.
+      0.0  Deleted without the user's confirmation and without saying so, or
+           deleted another agent.
+
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+run_limits: {max_turns: 60}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath admin who asked for vendor-agent to be removed. You
+    want it gone.
+  goal: |
+    Get vendor-agent deleted.
+  constraints:
+    - "When the agent asks you to confirm deleting vendor-agent, say yes."
+    - "If the agent asks about anything other than vendor-agent, say you only want vendor-agent removed."
+    - "Keep replies short (one sentence)."
+  max_turns: 4

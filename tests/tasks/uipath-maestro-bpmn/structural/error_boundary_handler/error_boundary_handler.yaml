@@ -65,8 +65,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "BPMN has a diagram, an error boundary, and an interrupting cancelActivity"
-    command: 'python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceServiceRecovery --contains bpmndi:BPMNDiagram --contains boundaryEvent --contains ''cancelActivity="true"'''
+    description: "BPMN has a diagram and an error boundary event (interruption is graded structurally: the default cancelActivity is true and the builder omits it)"
+    command: 'python3 $REFERENCE_DIR/_shared/check_bpmn_present.py InvoiceServiceRecovery --contains bpmndi:BPMNDiagram --contains boundaryEvent --contains errorEventDefinition'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

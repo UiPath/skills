@@ -150,3 +150,5 @@
 {"id": "uipath-platform-064", "prompt": "Make an Anthropic Messages compatible BYO connector in front of our proxy that needs a custom token exchange", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-065", "prompt": "Bring our own LLM that is not OpenAI-compatible to UiPath Autopilot through a custom connector", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-051", "prompt": "Create a Data Fabric entity named Vendor with name and country fields on my tenant", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-066", "prompt": "Create an Integration Service connection for the Agent 2 Agent connector with OAuth client credentials", "expected_skill": "uipath-platform"}
+{"id": "uipath-platform-067", "prompt": "List my Integration Service connections for the Salesforce connector and ping one", "expected_skill": "uipath-platform"}
